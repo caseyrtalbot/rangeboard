@@ -1,0 +1,157 @@
+import type { Vec2 } from '../model/types'
+
+/** World frame: meters, +x east, +y south (screen-down). Heading 0 = north (up), clockwise. */
+
+const DEG = Math.PI / 180
+
+export function dist(a: Vec2, b: Vec2): number {
+  return Math.hypot(b.x - a.x, b.y - a.y)
+}
+
+/** Heading in degrees [0, 360) from a to b. 0 = north, 90 = east. */
+export function bearingDeg(a: Vec2, b: Vec2): number {
+  const deg = Math.atan2(b.x - a.x, -(b.y - a.y)) / DEG
+  return (deg + 360) % 360
+}
+
+/** Point at the given heading and distance from origin p. */
+export function destination(p: Vec2, headingDeg: number, distM: number): Vec2 {
+  const r = headingDeg * DEG
+  return { x: p.x + Math.sin(r) * distM, y: p.y - Math.cos(r) * distM }
+}
+
+/** Smallest absolute angular difference between two headings, degrees [0, 180]. */
+export function angleDiffDeg(a: number, b: number): number {
+  const d = Math.abs(((a - b) % 360) + 360) % 360
+  return d > 180 ? 360 - d : d
+}
+
+export function pointInCircle(center: Vec2, rangeM: number, p: Vec2): boolean {
+  return dist(center, p) <= rangeM
+}
+
+/** True when p lies inside a sector footprint. sectorDeg >= 360 means a full circle. */
+export function pointInSector(
+  center: Vec2,
+  headingDeg: number,
+  sectorDeg: number,
+  rangeM: number,
+  p: Vec2,
+): boolean {
+  if (dist(center, p) > rangeM) return false
+  if (sectorDeg >= 360) return true
+  return angleDiffDeg(bearingDeg(center, p), headingDeg) <= sectorDeg / 2
+}
+
+/**
+ * Flat [x0, y0, x1, y1, ...] polygon for a sector wedge, starting at the
+ * center. For a full circle, use a Konva Circle instead.
+ */
+export function wedgePoints(
+  center: Vec2,
+  headingDeg: number,
+  sectorDeg: number,
+  rangeM: number,
+  steps = 32,
+): number[] {
+  const pts: number[] = [center.x, center.y]
+  const start = headingDeg - sectorDeg / 2
+  for (let i = 0; i <= steps; i++) {
+    const p = destination(center, start + (sectorDeg * i) / steps, rangeM)
+    pts.push(p.x, p.y)
+  }
+  return pts
+}
+
+export function pathLength(points: Vec2[]): number {
+  let total = 0
+  for (let i = 1; i < points.length; i++) total += dist(points[i - 1], points[i])
+  return total
+}
+
+export interface PathSample {
+  pos: Vec2
+  headingDeg: number
+  /** Distance traveled along the path, meters. */
+  distM: number
+  done: boolean
+}
+
+/** Position after traveling distM along the waypoint list. Clamps at both ends. */
+export function posAlongPath(points: Vec2[], distM: number): PathSample {
+  if (points.length === 0) return { pos: { x: 0, y: 0 }, headingDeg: 0, distM: 0, done: true }
+  if (points.length === 1) return { pos: points[0], headingDeg: 0, distM: 0, done: true }
+  let remaining = Math.max(0, distM)
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]
+    const b = points[i]
+    const seg = dist(a, b)
+    if (remaining <= seg && seg > 0) {
+      const t = remaining / seg
+      return {
+        pos: { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t },
+        headingDeg: bearingDeg(a, b),
+        distM,
+        done: false,
+      }
+    }
+    remaining -= seg
+  }
+  const last = points[points.length - 1]
+  const prev = points[points.length - 2]
+  return { pos: last, headingDeg: bearingDeg(prev, last), distM: pathLength(points), done: true }
+}
+
+/** Position at time t for a path flown at speedMps after startDelayS. */
+export function posAtTime(
+  points: Vec2[],
+  speedMps: number,
+  startDelayS: number,
+  tS: number,
+): PathSample {
+  const flightT = Math.max(0, tS - startDelayS)
+  return posAlongPath(points, flightT * speedMps)
+}
+
+/** Closest approach of a path (flown at speed) to a fixed point: time and distance. */
+export function closestApproach(
+  points: Vec2[],
+  speedMps: number,
+  startDelayS: number,
+  target: Vec2,
+  durationS: number,
+  dtS = 0.5,
+): { tS: number; distM: number } {
+  let best = { tS: startDelayS, distM: Number.POSITIVE_INFINITY }
+  for (let t = startDelayS; t <= durationS; t += dtS) {
+    const s = posAtTime(points, speedMps, startDelayS, t)
+    const d = dist(s.pos, target)
+    if (d < best.distM) best = { tS: t, distM: d }
+    if (s.done) break
+  }
+  return best
+}
+
+/** Grid step in meters that keeps grid lines a readable distance apart on screen. */
+export function gridStepM(pxPerMeter: number, targetPx = 90): number {
+  const raw = targetPx / pxPerMeter
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)))
+  for (const mult of [1, 2, 5, 10]) {
+    if (pow * mult >= raw) return pow * mult
+  }
+  return pow * 10
+}
+
+export function formatDistance(m: number): string {
+  if (m >= 10000) return `${(m / 1000).toFixed(0)} km`
+  if (m >= 1000) return `${(m / 1000).toFixed(1)} km`
+  return `${Math.round(m)} m`
+}
+
+export function formatTime(s: number): string {
+  const sign = s < 0 ? '-' : ''
+  const abs = Math.abs(s)
+  const mm = Math.floor(abs / 60)
+  const ss = Math.floor(abs % 60)
+  return `${sign}${mm}:${ss.toString().padStart(2, '0')}`
+}

@@ -1,0 +1,117 @@
+import type { Scenario, SpecModel } from '../model/types'
+import { emptyScenario } from '../model/seed'
+import { useStore } from '../state/store'
+
+const STORAGE_KEY = 'rangeboard.scenario.v1'
+
+export function loadAutosave(): Scenario | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Scenario
+    if (parsed.schemaVersion !== 1) return null
+    // Fill any fields added after the save was written.
+    return { ...emptyScenario(), ...parsed }
+  } catch {
+    return null
+  }
+}
+
+/** Subscribe the store to localStorage autosave. Call once at startup. */
+export function startAutosave(): void {
+  let timer: number | undefined
+  useStore.subscribe((state, prev) => {
+    if (state.scenario === prev.scenario) return
+    window.clearTimeout(timer)
+    timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.scenario))
+      } catch {
+        // Storage full (large underlay image): skip autosave, export still works.
+      }
+    }, 500)
+  })
+}
+
+function downloadJson(data: unknown, filename: string): void {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function safeName(name: string): string {
+  return name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'scenario'
+}
+
+export function exportScenario(scenario: Scenario): void {
+  downloadJson(scenario, `${safeName(scenario.name)}.rangeboard.json`)
+}
+
+export function exportLibrary(library: SpecModel[]): void {
+  downloadJson({ rangeboardLibrary: 1, models: library }, 'rangeboard-library.json')
+}
+
+/** Open a file picker and parse the chosen JSON file. */
+export function pickJsonFile(onLoad: (data: unknown) => void): void {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json,.json'
+  input.onchange = () => {
+    const file = input.files?.[0]
+    if (!file) return
+    file
+      .text()
+      .then((text) => onLoad(JSON.parse(text)))
+      .catch(() => window.alert('Could not read that file as JSON.'))
+  }
+  input.click()
+}
+
+export function importScenarioFile(): void {
+  pickJsonFile((data) => {
+    const s = data as Scenario
+    if (s?.schemaVersion !== 1 || !Array.isArray(s.entities)) {
+      window.alert('That file is not a RangeBoard scenario.')
+      return
+    }
+    useStore.getState().replaceScenario({ ...emptyScenario(), ...s })
+  })
+}
+
+export function importLibraryFile(): void {
+  pickJsonFile((data) => {
+    const d = data as { rangeboardLibrary?: number; models?: SpecModel[] }
+    if (d?.rangeboardLibrary !== 1 || !Array.isArray(d.models)) {
+      window.alert('That file is not a RangeBoard library.')
+      return
+    }
+    useStore.getState().mergeLibrary(d.models)
+  })
+}
+
+/** Open a file picker for an image and load it as the satellite underlay. */
+export function importUnderlayImage(): void {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = () => {
+    const file = input.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const img = new Image()
+      img.onload = () => {
+        useStore.getState().setUnderlayImage(dataUrl, img.naturalWidth, img.naturalHeight)
+        useStore.getState().setBasemap('sat')
+      }
+      img.src = dataUrl
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
