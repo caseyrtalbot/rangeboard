@@ -62,6 +62,17 @@ Data flow for a click/drag: Konva event → store action → new scenario → Re
 - Basemap modes (`canvas | sat | airspace`) are render toggles only — never move data. Sat underlay scale is set by two-point calibration, which scales the image about point A.
 - Test cards follow the Field Guide standard card; `linkedEntityIds` drive the cyan on-canvas highlight when a card is selected.
 
+## T&E Operations module (src/te/)
+
+- Second workspace ("T&E Ops" toggle in the toolbar): end-to-end C-UAS test campaigns from customer request to delivered evidence. Spec sources: `docs/te-plan.md` and the four MASTER-*.md files in `docs/te-compilation/`.
+- **Separate store, no undo:** `src/te/state/teStore.ts` (zustand), persisted at `rangeboard.te.v1`. T&E records are versioned and append-only by doctrine (runs never renumber; issued cards freeze; changes create new versions), so undo does not apply. Never embed campaign data in `Scenario`.
+- IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the record, not in the id. Cards use `id` (unique per version record) + `cardCode` (shared across versions).
+- Gates live in `src/te/validate.ts` (pocket rules: no issued card no run, no validity status no analysis, no traceability no finding). `issueCard` enforces blockers in the store.
+- Calc engine `src/te/calc/` is pure TS, fixture-tested from MASTER-CALCULATIONS.md. Measure labels suppress pass/fail unless `thresholdApproved`.
+- Seeds `src/te/seed/`: measure dictionary, checklist templates, card templates, vignettes, question banks, and `buildJiatf401()` (demo campaign, `illustrative: true`).
+- Print artifacts `src/te/print/` render into `PrintOverlay` (portals to body; `@media print` hides `.app`); CSV exports in `src/te/io/exportCsv.ts`. The Products phase tab is the deliverables hub.
+- Board frame capture: `src/te/io/frameCapture.ts` (stage registered by CanvasStage; capture only works from the Board workspace).
+
 ## Testing and verification
 
 - Unit tests colocate as `*.test.ts` next to source (geometry, store). Keep geometry/store logic in pure TS so it stays testable without a DOM.

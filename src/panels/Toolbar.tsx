@@ -1,4 +1,7 @@
 import { useStore } from '../state/store'
+import { useTeStore } from '../te/state/teStore'
+import type { Workspace } from '../te/state/teStore'
+import { captureFrameToCampaign } from '../te/io/frameCapture'
 import type { BasemapMode, BoundaryType } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import {
@@ -40,9 +43,47 @@ export function Toolbar() {
     setMoveUnderlay,
   } = useStore.getState()
 
+  const workspace = useTeStore((s) => s.ui.workspace)
+  const setWorkspace = useTeStore((s) => s.setWorkspace)
+  const hasCampaign = useTeStore((s) => s.activeCampaignId != null)
+  const workspaces: Array<{ id: Workspace; label: string }> = [
+    { id: 'board', label: 'Board' },
+    { id: 'ops', label: 'T&E Ops' },
+  ]
+
+  if (workspace === 'ops') {
+    return (
+      <header className="toolbar">
+        <div className="brand">RANGEBOARD</div>
+        <div className="tool-group" aria-label="Workspace">
+          {workspaces.map((w) => (
+            <button
+              key={w.id}
+              className={workspace === w.id ? 'active' : ''}
+              onClick={() => setWorkspace(w.id)}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
+      </header>
+    )
+  }
+
   return (
     <header className="toolbar">
       <div className="brand">RANGEBOARD</div>
+      <div className="tool-group" aria-label="Workspace">
+        {workspaces.map((w) => (
+          <button
+            key={w.id}
+            className={workspace === w.id ? 'active' : ''}
+            onClick={() => setWorkspace(w.id)}
+          >
+            {w.label}
+          </button>
+        ))}
+      </div>
       <input
         className="scenario-name"
         value={scenario.name}
@@ -135,6 +176,20 @@ export function Toolbar() {
         </button>
         <button onClick={importScenarioFile}>Import</button>
         <button onClick={() => exportScenario(scenario)}>Export</button>
+        {hasCampaign && (
+          <button
+            title="Save the current board view as a PNG frame on the active T&E campaign"
+            onClick={() => {
+              const frameName = window.prompt('Frame name (attached to the active campaign)?')
+              if (frameName === null) return
+              if (!captureFrameToCampaign(frameName)) {
+                window.alert('Could not capture: no active campaign or canvas.')
+              }
+            }}
+          >
+            Capture frame
+          </button>
+        )}
       </div>
     </header>
   )

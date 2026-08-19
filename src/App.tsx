@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './state/store'
 import type { RightTab } from './state/store'
+import { useTeStore } from './te/state/teStore'
+import { OpsWorkspace } from './te/ui/OpsWorkspace'
 import { CanvasStage } from './canvas/CanvasStage'
 import { Toolbar } from './panels/Toolbar'
 import { Palette } from './panels/Palette'
@@ -78,11 +80,14 @@ function CalibrateDialog() {
 export default function App() {
   const rightTab = useStore((s) => s.ui.rightTab)
   const setRightTab = useStore((s) => s.setRightTab)
+  const workspace = useTeStore((s) => s.ui.workspace)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const st = useStore.getState()
       if (isTypingTarget(e.target)) return
+      // Canvas shortcuts stay off inside the T&E workspace.
+      if (useTeStore.getState().ui.workspace === 'ops') return
       const mod = e.metaKey || e.ctrlKey
       if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault()
@@ -115,6 +120,15 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  if (workspace === 'ops') {
+    return (
+      <div className="app">
+        <Toolbar />
+        <OpsWorkspace />
+      </div>
+    )
+  }
 
   return (
     <div className="app">

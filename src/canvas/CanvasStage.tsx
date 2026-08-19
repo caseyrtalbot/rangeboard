@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layer, Rect, Stage } from 'react-konva'
+import { registerStage } from '../te/io/frameCapture'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../model/types'
@@ -36,6 +37,12 @@ interface Marquee {
 export function CanvasStage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
+
+  // Expose the stage to the T&E frame-capture module while mounted.
+  useEffect(() => {
+    registerStage(stageRef.current)
+    return () => registerStage(null)
+  })
   const [size, setSize] = useState({ w: 800, h: 600 })
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
   const lastClicks = useRef<Array<{ x: number; y: number; t: number }>>([])

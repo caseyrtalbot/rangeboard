@@ -1,0 +1,43 @@
+/**
+ * Board frame capture for the T&E plane. The canvas registers its Konva stage
+ * here; capture runs from the Board workspace (the stage must be mounted) and
+ * stores a PNG into the active campaign's frame library.
+ */
+
+import type Konva from 'konva'
+import { useTeStore } from '../state/teStore'
+import { useStore } from '../../state/store'
+import { newId } from '../../model/types'
+import { nowIso } from '../model/empty'
+
+let stage: Konva.Stage | null = null
+
+export function registerStage(s: Konva.Stage | null): void {
+  stage = s
+}
+
+/** True when a capture can succeed right now. */
+export function canCaptureFrame(): boolean {
+  return stage != null && useTeStore.getState().activeCampaignId != null
+}
+
+/**
+ * Capture the current board view as a PNG frame on the active campaign.
+ * Returns the frame id, or null when no stage or campaign is available.
+ */
+export function captureFrameToCampaign(name: string): string | null {
+  const te = useTeStore.getState()
+  if (!stage || !te.activeCampaignId) return null
+  const pixelRatio = Math.min(2, 1600 / Math.max(1, stage.width()))
+  const pngDataUrl = stage.toDataURL({ pixelRatio })
+  const id = newId('tefrm')
+  te.addItem('frames', {
+    id,
+    name: name || `Frame ${nowIso().slice(0, 16).replace('T', ' ')}`,
+    pngDataUrl,
+    capturedAt: nowIso(),
+    simTimeS: useStore.getState().playback.simTimeS,
+    note: '',
+  })
+  return id
+}
