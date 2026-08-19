@@ -19,7 +19,7 @@ export function PathLayer({ mouseWorld }: Props) {
   const paths = scenario.paths.map((p) => {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null
-    const color = entity.color ?? modelFor(scenario, entity)?.color ?? '#ff5c74'
+    const color = entity.color ?? modelFor(scenario, entity)?.color ?? '#c46a5a'
     const flat = p.points.flatMap((pt) => [pt.x, pt.y])
     const lengthM = pathLength(p.points)
     const etaS = lengthM / pathSpeed(scenario, p)
@@ -39,7 +39,7 @@ export function PathLayer({ mouseWorld }: Props) {
         {p.points.map((pt, i) => (
           <Circle key={i} x={pt.x} y={pt.y} radius={3 / k} fill={color} />
         ))}
-        <Text
+        <Text fontFamily="IBM Plex Mono"
           x={last.x + 8 / k}
           y={last.y}
           text={`${formatDistance(lengthM)} · ${Math.round(etaS)} s`}
@@ -88,16 +88,16 @@ export function PathLayer({ mouseWorld }: Props) {
           <>
             <Line
               points={[a.x, a.y, b.x, b.y]}
-              stroke="#ffd166"
+              stroke="#d9a441"
               strokeWidth={1.5}
               strokeScaleEnabled={false}
             />
-            <Text
+            <Text fontFamily="IBM Plex Mono"
               x={(a.x + b.x) / 2}
               y={(a.y + b.y) / 2 - 16 / k}
               text={formatDistance(dist(a, b))}
               fontSize={12 / k}
-              fill="#ffd166"
+              fill="#d9a441"
             />
           </>
         )}
@@ -119,9 +119,9 @@ function CalMark({ p, k, label }: { p: Vec2; k: number; label: string }) {
   const r = 8 / k
   return (
     <Group listening={false}>
-      <Line points={[p.x - r, p.y, p.x + r, p.y]} stroke="#ffd166" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Line points={[p.x, p.y - r, p.x, p.y + r]} stroke="#ffd166" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Text x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#ffd166" />
+      <Line points={[p.x - r, p.y, p.x + r, p.y]} stroke="#d9a441" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Line points={[p.x, p.y - r, p.x, p.y + r]} stroke="#d9a441" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Text fontFamily="IBM Plex Mono" x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#d9a441" />
     </Group>
   )
 }

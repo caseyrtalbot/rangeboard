@@ -1,4 +1,4 @@
-import type { Vec2 } from '../model/types'
+import type { FormationShape, Vec2 } from '../model/types'
 
 /** World frame: meters, +x east, +y south (screen-down). Heading 0 = north (up), clockwise. */
 
@@ -61,6 +61,62 @@ export function wedgePoints(
     pts.push(p.x, p.y)
   }
   return pts
+}
+
+/**
+ * World offsets for each ship of a formation. Ship 0 is the lead at {0,0}.
+ * Local frame: along = flight direction, across = right of flight direction.
+ */
+export function formationOffsets(
+  shape: FormationShape,
+  count: number,
+  spacingM: number,
+  headingDeg: number,
+): Vec2[] {
+  const n = Math.max(1, Math.floor(count))
+  const local: Array<[number, number]> = []
+  for (let i = 0; i < n; i++) {
+    const rank = Math.ceil(i / 2)
+    const side = i % 2 === 1 ? 1 : -1
+    switch (shape) {
+      case 'line':
+        local.push([0, i === 0 ? 0 : side * rank * spacingM])
+        break
+      case 'wedge':
+        local.push([-rank * spacingM, i === 0 ? 0 : side * rank * spacingM])
+        break
+      case 'column':
+        local.push([-i * spacingM, 0])
+        break
+      case 'echelon':
+        local.push([-i * spacingM, i * spacingM])
+        break
+      case 'cluster': {
+        // Concentric rings: ring k holds 6k ships at radius k * spacing.
+        if (i === 0) {
+          local.push([0, 0])
+          break
+        }
+        let ring = 1
+        let first = 1
+        while (i >= first + 6 * ring) {
+          first += 6 * ring
+          ring += 1
+        }
+        const slot = i - first
+        const a = (slot / (6 * ring)) * 2 * Math.PI
+        local.push([Math.cos(a) * ring * spacingM, Math.sin(a) * ring * spacingM])
+        break
+      }
+    }
+  }
+  const r = headingDeg * DEG
+  const fwd = { x: Math.sin(r), y: -Math.cos(r) }
+  const right = { x: Math.cos(r), y: Math.sin(r) }
+  return local.map(([along, across]) => ({
+    x: fwd.x * along + right.x * across,
+    y: fwd.y * along + right.y * across,
+  }))
 }
 
 export function pathLength(points: Vec2[]): number {

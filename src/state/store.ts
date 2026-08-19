@@ -11,6 +11,7 @@ import type {
   RunLogEntry,
   Scenario,
   SpecModel,
+  SystemPreset,
   TestCard,
   Vec2,
 } from '../model/types'
@@ -60,6 +61,8 @@ interface UiState {
   rightTab: RightTab
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
+  /** Open right-click menu; screen px within the canvas host, world meters. */
+  contextMenu: { screen: Vec2; world: Vec2; entityId: string | null } | null
 }
 
 interface PlaybackState {
@@ -89,7 +92,18 @@ export interface Store {
   addEntityFromModel: (modelId: string, pos: Vec2) => void
   updateEntity: (id: string, patch: Partial<Entity>) => void
   moveEntity: (id: string, pos: Vec2) => void
+  duplicateEntity: (id: string) => void
   deleteSelection: () => void
+
+  // Systems
+  addSystemFromPreset: (presetId: string, center: Vec2) => void
+  saveSelectionAsSystem: (name: string) => void
+  deleteSystemPreset: (id: string) => void
+  selectSystem: (systemId: string) => void
+
+  // Context menu
+  openContextMenu: (screen: Vec2, world: Vec2, entityId: string | null) => void
+  closeContextMenu: () => void
 
   // Connections
   beginConnect: (fromId: string) => void
@@ -187,6 +201,7 @@ export const useStore = create<Store>()((set, get) => {
       calibrateB: null,
       rightTab: 'inspect',
       moveUnderlay: false,
+      contextMenu: null,
     },
     playback: { playing: false, simTimeS: 0, speedMult: 1 },
 
@@ -249,6 +264,20 @@ export const useStore = create<Store>()((set, get) => {
 
     moveEntity: (id, pos) => get().updateEntity(id, { pos }),
 
+    duplicateEntity: (id) =>
+      mutate((s) => {
+        const src = s.entities.find((e) => e.id === id)
+        if (!src) return s
+        const copy: Entity = {
+          ...JSON.parse(JSON.stringify(src)),
+          id: newId('ent'),
+          name: `${src.name} (copy)`,
+          pos: { x: src.pos.x + 500, y: src.pos.y + 500 },
+          systemId: null,
+        }
+        return { ...s, entities: [...s.entities, copy] }
+      }),
+
     deleteSelection: () =>
       mutate((s) => {
         const { entityIds, boundaryId, connectionId } = get().selection
@@ -295,6 +324,93 @@ export const useStore = create<Store>()((set, get) => {
         ...s,
         connections: s.connections.map((c) => (c.id === id ? { ...c, ...patch } : c)),
       })),
+
+    addSystemFromPreset: (presetId, center) =>
+      mutate((s) => {
+        const preset = s.systemPresets.find((p) => p.id === presetId)
+        if (!preset) return s
+        const systemId = newId('sys')
+        // Aligned with preset.components so link indexes stay valid; null when
+        // the referenced model is gone.
+        const placed: Array<Entity | null> = preset.components.map((comp, i) => {
+          const model = s.library.find((m) => m.id === comp.specId)
+          if (!model) return null
+          const baseName = model.name.split(':').pop()?.trim() ?? model.name
+          const dupes = preset.components.filter((c) => c.specId === comp.specId).length
+          const nth = preset.components.slice(0, i).filter((c) => c.specId === comp.specId).length
+          return {
+            id: newId('ent'),
+            name: dupes > 1 ? `${baseName} ${nth + 1}` : baseName,
+            kind: model.kind,
+            specId: model.id,
+            pos: { x: center.x + comp.offsetM.x, y: center.y + comp.offsetM.y },
+            headingDeg: comp.headingDeg,
+            color: null,
+            notes: comp.purpose,
+            systemId,
+          }
+        })
+        const connections: Connection[] = []
+        for (const [a, b] of preset.links) {
+          const from = placed[a]
+          const to = placed[b]
+          if (from && to) {
+            connections.push({ id: newId('con'), fromId: from.id, toId: to.id, label: '' })
+          }
+        }
+        return {
+          ...s,
+          entities: [...s.entities, ...placed.filter((e): e is Entity => e !== null)],
+          connections: [...s.connections, ...connections],
+        }
+      }),
+
+    saveSelectionAsSystem: (name) => {
+      const { entityIds } = get().selection
+      mutate((s) => {
+        const selected = s.entities.filter((e) => entityIds.includes(e.id) && e.specId)
+        if (selected.length < 2) return s
+        const cx = selected.reduce((sum, e) => sum + e.pos.x, 0) / selected.length
+        const cy = selected.reduce((sum, e) => sum + e.pos.y, 0) / selected.length
+        const index = new Map(selected.map((e, i) => [e.id, i]))
+        const links: Array<[number, number]> = []
+        for (const c of s.connections) {
+          const a = index.get(c.fromId)
+          const b = index.get(c.toId)
+          if (a != null && b != null) links.push([a, b])
+        }
+        const preset: SystemPreset = {
+          id: newId('sysp'),
+          name: name || `System ${s.systemPresets.length + 1}`,
+          description: 'Saved from canvas selection.',
+          builtin: false,
+          components: selected.map((e) => ({
+            specId: e.specId!,
+            offsetM: { x: e.pos.x - cx, y: e.pos.y - cy },
+            headingDeg: e.headingDeg,
+            purpose: e.notes,
+          })),
+          links,
+        }
+        return { ...s, systemPresets: [...s.systemPresets, preset] }
+      })
+    },
+
+    deleteSystemPreset: (id) =>
+      mutate((s) => ({ ...s, systemPresets: s.systemPresets.filter((p) => p.id !== id) })),
+
+    selectSystem: (systemId) => {
+      const ids = get()
+        .scenario.entities.filter((e) => e.systemId === systemId)
+        .map((e) => e.id)
+      get().select({ entityIds: ids })
+    },
+
+    openContextMenu: (screen, world, entityId) =>
+      set((st) => ({ ui: { ...st.ui, contextMenu: { screen, world, entityId } } })),
+
+    closeContextMenu: () =>
+      set((st) => (st.ui.contextMenu ? { ui: { ...st.ui, contextMenu: null } } : st)),
 
     addDraftPoint: (p) => set((st) => ({ ui: { ...st.ui, draftPoints: [...st.ui.draftPoints, p] } })),
 
@@ -411,7 +527,7 @@ export const useStore = create<Store>()((set, get) => {
           name: `New ${KIND_NAMES[kind]} model`,
           kind,
           description: '',
-          color: '#8ab4ff',
+          color: '#7da7c4',
           builtin: false,
         }
         if (kind === 'sensor') {

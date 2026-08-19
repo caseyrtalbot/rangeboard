@@ -32,8 +32,8 @@ export function ConnectionLayer() {
               to.pos.x - ux * trim,
               to.pos.y - uy * trim,
             ]}
-            stroke={selected ? '#ffffff' : '#8fa3c0'}
-            fill={selected ? '#ffffff' : '#8fa3c0'}
+            stroke={selected ? '#ffffff' : '#8a9199'}
+            fill={selected ? '#ffffff' : '#8a9199'}
             strokeWidth={1.5}
             dash={[3, 4]}
             strokeScaleEnabled={false}
@@ -53,13 +53,13 @@ export function ConnectionLayer() {
         const to = scenario.entities.find((e) => e.id === c.toId)
         if (!from || !to) return null
         return (
-          <Text
+          <Text fontFamily="IBM Plex Mono"
             key={`${c.id}-label`}
             x={(from.pos.x + to.pos.x) / 2}
             y={(from.pos.y + to.pos.y) / 2 - 14 / k}
             text={c.label}
             fontSize={10 / k}
-            fill="#8fa3c0"
+            fill="#8a9199"
             listening={false}
           />
         )

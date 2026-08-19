@@ -13,6 +13,7 @@ import { PathLayer } from './layers/PathLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
 import { EntityLayer } from './layers/EntityLayer'
 import { HudLayer } from './layers/HudLayer'
+import { ContextMenu } from './ContextMenu'
 
 const MIN_SCALE = 0.0005
 const MAX_SCALE = 20
@@ -34,6 +35,9 @@ export function CanvasStage() {
   const finishBoundary = useStore((s) => s.finishBoundary)
   const finishPath = useStore((s) => s.finishPath)
   const setCalibratePoint = useStore((s) => s.setCalibratePoint)
+  const addSystemFromPreset = useStore((s) => s.addSystemFromPreset)
+  const openContextMenu = useStore((s) => s.openContextMenu)
+  const closeContextMenu = useStore((s) => s.closeContextMenu)
 
   useEffect(() => {
     const el = containerRef.current
@@ -57,8 +61,19 @@ export function CanvasStage() {
     return pointer ? toWorld(pointer) : null
   }
 
+  function handleContextMenu(e: KonvaEventObject<MouseEvent>) {
+    e.evt.preventDefault()
+    // Entity nodes open their own menu and cancel bubbling; any other target
+    // (stage, boundary, connection) gets the placement menu.
+    const pointer = stageRef.current?.getPointerPosition()
+    const world = pointerWorld()
+    if (!pointer || !world) return
+    openContextMenu(pointer, world, null)
+  }
+
   function handleWheel(e: KonvaEventObject<WheelEvent>) {
     e.evt.preventDefault()
+    closeContextMenu()
     const pointer = stageRef.current?.getPointerPosition()
     if (!pointer) return
     const factor = e.evt.deltaY > 0 ? 1 / 1.1 : 1.1
@@ -101,11 +116,13 @@ export function CanvasStage() {
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault()
-        const modelId = e.dataTransfer.getData('text/rangeboard-model')
-        if (!modelId || !containerRef.current) return
+        if (!containerRef.current) return
         const rect = containerRef.current.getBoundingClientRect()
         const world = toWorld({ x: e.clientX - rect.left, y: e.clientY - rect.top })
-        addEntityFromModel(modelId, world)
+        const modelId = e.dataTransfer.getData('text/rangeboard-model')
+        const systemId = e.dataTransfer.getData('text/rangeboard-system')
+        if (modelId) addEntityFromModel(modelId, world)
+        else if (systemId) addSystemFromPreset(systemId, world)
       }}
     >
       <Stage
@@ -120,7 +137,11 @@ export function CanvasStage() {
         onWheel={handleWheel}
         onClick={handleClick}
         onDblClick={handleDblClick}
+        onContextMenu={handleContextMenu}
         onMouseMove={() => setMouseWorld(pointerWorld())}
+        onDragStart={(e) => {
+          if (e.target === stageRef.current) closeContextMenu()
+        }}
         onDragEnd={(e) => {
           if (e.target === stageRef.current) {
             setCamera({ ...camera, x: e.target.x(), y: e.target.y() })
@@ -142,6 +163,7 @@ export function CanvasStage() {
         </Layer>
       </Stage>
       <HudLayer mouseWorld={mouseWorld} />
+      <ContextMenu />
     </div>
   )
 }

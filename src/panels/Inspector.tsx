@@ -1,6 +1,10 @@
-import type { Boundary, BoundaryType, Entity } from '../model/types'
+import type { Boundary, BoundaryType, Entity, FormationShape } from '../model/types'
+import { entityActive } from '../model/types'
+import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
 import { formatDistance, pathLength } from '../geometry/geo'
+
+const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -13,11 +17,20 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function EntityInspector({ entity }: { entity: Entity }) {
   const scenario = useStore((s) => s.scenario)
-  const { updateEntity, deleteSelection, setTool, beginPath, updatePath, deletePathForEntity } =
-    useStore.getState()
+  const {
+    updateEntity,
+    deleteSelection,
+    setTool,
+    beginPath,
+    updatePath,
+    deletePathForEntity,
+    selectSystem,
+  } = useStore.getState()
   const model = modelFor(scenario, entity)
   const sameKindModels = scenario.library.filter((m) => m.kind === entity.kind)
   const path = scenario.paths.find((p) => p.entityId === entity.id)
+  const blue = entity.kind === 'sensor' || entity.kind === 'effector' || entity.kind === 'c2'
+  const formation = entity.formation
 
   return (
     <div className="inspector-body">
@@ -62,15 +75,45 @@ function EntityInspector({ entity }: { entity: Entity }) {
           />
         </Field>
       </div>
-      <Field label={`Heading ${Math.round(entity.headingDeg)} deg`}>
-        <input
-          type="range"
-          min={0}
-          max={359}
-          value={entity.headingDeg}
-          onChange={(e) => updateEntity(entity.id, { headingDeg: Number(e.target.value) })}
-        />
-      </Field>
+      <div className="field-row">
+        <Field label={`Heading ${Math.round(entity.headingDeg)} deg`}>
+          <input
+            type="range"
+            min={0}
+            max={359}
+            value={entity.headingDeg}
+            onChange={(e) => updateEntity(entity.id, { headingDeg: Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="deg">
+          <input
+            type="number"
+            min={0}
+            max={359}
+            value={Math.round(entity.headingDeg)}
+            onChange={(e) =>
+              updateEntity(entity.id, { headingDeg: ((Number(e.target.value) % 360) + 360) % 360 })
+            }
+          />
+        </Field>
+      </div>
+      {blue && (
+        <Field label="Enabled in analysis">
+          <input
+            type="checkbox"
+            checked={entityActive(entity)}
+            onChange={(e) => updateEntity(entity.id, { enabled: e.target.checked })}
+          />
+        </Field>
+      )}
+      {entity.systemId && (
+        <div className="spec-summary">
+          System component{entity.notes ? `: ${entity.notes}` : ''}
+          <button className="mini" onClick={() => selectSystem(entity.systemId!)}>
+            Select system
+          </button>
+        </div>
+      )}
       <Field label="Notes">
         <textarea
           rows={3}
@@ -81,19 +124,107 @@ function EntityInspector({ entity }: { entity: Entity }) {
 
       {model?.sensor && (
         <div className="spec-summary">
+          {model.sensor.role ? `${model.sensor.role} · ` : ''}
           Detect {formatDistance(model.sensor.detectRangeM)} · sector {model.sensor.sectorDeg} deg
           {model.sensor.classifyRangeM ? ` · classify ${formatDistance(model.sensor.classifyRangeM)}` : ''}
+          {model.sensor.elevationDeg
+            ? ` · elev ${model.sensor.elevationDeg[0]} to ${model.sensor.elevationDeg[1]} deg`
+            : ''}
+          {model.sensor.maxAltitudeFt ? ` · to ${model.sensor.maxAltitudeFt} ft` : ''}
         </div>
       )}
       {model?.effector && (
         <div className="spec-summary">
-          Envelope {formatDistance(model.effector.minRangeM)} – {formatDistance(model.effector.maxRangeM)} ·
+          WEZ {formatDistance(model.effector.minRangeM)} – {formatDistance(model.effector.maxRangeM)} ·
           engage {model.effector.engageTimeS} s
+          {(model.effector.sectorDeg ?? 360) < 360 ? ` · sector ${model.effector.sectorDeg} deg` : ''}
+          {model.effector.maxAltitudeFt ? ` · to ${model.effector.maxAltitudeFt} ft` : ''}
         </div>
       )}
       {model?.uas && (
         <div className="spec-summary">
           Group {model.uas.group} · cruise {model.uas.cruiseSpeedMps} m/s · {model.uas.navMode}
+        </div>
+      )}
+
+      {entity.kind === 'uas' && (
+        <div className="subsection">
+          <div className="panel-subtitle">Formation / swarm</div>
+          <Field label="Known construct">
+            <select
+              value=""
+              onChange={(e) => {
+                const c = SEED_FORMATIONS.find((f) => f.name === e.target.value)
+                if (c) updateEntity(entity.id, { formation: { ...c.formation } })
+              }}
+            >
+              <option value="">apply a reported construct…</option>
+              {SEED_FORMATIONS.map((f) => (
+                <option key={f.name} value={f.name} title={f.description}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Fly as formation">
+            <input
+              type="checkbox"
+              checked={!!formation}
+              onChange={(e) =>
+                updateEntity(entity.id, {
+                  formation: e.target.checked ? { count: 3, shape: 'wedge', spacingM: 50 } : null,
+                })
+              }
+            />
+          </Field>
+          {formation && (
+            <>
+              <div className="field-row">
+                <Field label="Ships">
+                  <input
+                    type="number"
+                    min={2}
+                    max={60}
+                    value={formation.count}
+                    onChange={(e) =>
+                      updateEntity(entity.id, {
+                        formation: { ...formation, count: Math.max(2, Number(e.target.value)) },
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Spacing (m)">
+                  <input
+                    type="number"
+                    min={5}
+                    step={5}
+                    value={formation.spacingM}
+                    onChange={(e) =>
+                      updateEntity(entity.id, {
+                        formation: { ...formation, spacingM: Math.max(5, Number(e.target.value)) },
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+              <Field label="Shape">
+                <select
+                  value={formation.shape}
+                  onChange={(e) =>
+                    updateEntity(entity.id, {
+                      formation: { ...formation, shape: e.target.value as FormationShape },
+                    })
+                  }
+                >
+                  {FORMATION_SHAPES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </>
+          )}
         </div>
       )}
 

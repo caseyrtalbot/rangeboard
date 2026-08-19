@@ -1,5 +1,15 @@
-import type { SpecModel } from '../model/types'
+import type { SensorRole, SpecModel } from '../model/types'
+import { SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
 import { useStore } from '../state/store'
+
+const SENSOR_ROLES: SensorRole[] = [
+  'early-warning',
+  'surveillance',
+  'target-acquisition',
+  'tracking',
+  'fire-control',
+  'classification',
+]
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -84,12 +94,38 @@ export function LibraryEditor() {
               <option value="rf">rf</option>
             </select>
           </Field>
+          <Field label="Role (sets default range when unknown)">
+            <select
+              value={sensor.role ?? ''}
+              onChange={(e) => {
+                const role = (e.target.value || undefined) as SensorRole | undefined
+                patch({ sensor: { ...sensor, role } })
+              }}
+            >
+              <option value="">unset</option>
+              {SENSOR_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r} (default {SENSOR_ROLE_DEFAULT_RANGE_M[r] / 1000} km)
+                </option>
+              ))}
+            </select>
+          </Field>
           <Num
             label="Detect range (m)"
             value={sensor.detectRangeM}
             step={100}
             onChange={(n) => patch({ sensor: { ...sensor, detectRangeM: n } })}
           />
+          {sensor.role && (
+            <button
+              className="mini"
+              onClick={() =>
+                patch({ sensor: { ...sensor, detectRangeM: SENSOR_ROLE_DEFAULT_RANGE_M[sensor.role!] } })
+              }
+            >
+              Use role default range
+            </button>
+          )}
           <Num
             label="Classify range (m, 0 = none)"
             value={sensor.classifyRangeM ?? 0}
@@ -101,6 +137,28 @@ export function LibraryEditor() {
             value={sensor.sectorDeg}
             step={5}
             onChange={(n) => patch({ sensor: { ...sensor, sectorDeg: Math.min(360, Math.max(5, n)) } })}
+          />
+          <div className="field-row">
+            <Num
+              label="Elev min (deg)"
+              value={sensor.elevationDeg?.[0] ?? 0}
+              onChange={(n) =>
+                patch({ sensor: { ...sensor, elevationDeg: [n, sensor.elevationDeg?.[1] ?? 90] } })
+              }
+            />
+            <Num
+              label="Elev max (deg)"
+              value={sensor.elevationDeg?.[1] ?? 90}
+              onChange={(n) =>
+                patch({ sensor: { ...sensor, elevationDeg: [sensor.elevationDeg?.[0] ?? 0, n] } })
+              }
+            />
+          </div>
+          <Num
+            label="Alt ceiling (ft, 0 = unknown)"
+            value={sensor.maxAltitudeFt ?? 0}
+            step={500}
+            onChange={(n) => patch({ sensor: { ...sensor, maxAltitudeFt: n > 0 ? n : null } })}
           />
         </div>
       )}
@@ -120,7 +178,9 @@ export function LibraryEditor() {
               <option value="interceptor">interceptor</option>
               <option value="jammer">jammer</option>
               <option value="gun">gun</option>
-              <option value="de">directed energy</option>
+              <option value="de">directed energy (laser)</option>
+              <option value="hpm">high-power microwave</option>
+              <option value="net">net capture</option>
             </select>
           </Field>
           <Num
@@ -139,6 +199,20 @@ export function LibraryEditor() {
             label="Engage time (s)"
             value={effector.engageTimeS}
             onChange={(n) => patch({ effector: { ...effector, engageTimeS: n } })}
+          />
+          <Num
+            label="Sector (deg, 360 = omni)"
+            value={effector.sectorDeg ?? 360}
+            step={5}
+            onChange={(n) =>
+              patch({ effector: { ...effector, sectorDeg: Math.min(360, Math.max(5, n)) } })
+            }
+          />
+          <Num
+            label="Alt ceiling (ft, 0 = unknown)"
+            value={effector.maxAltitudeFt ?? 0}
+            step={500}
+            onChange={(n) => patch({ effector: { ...effector, maxAltitudeFt: n > 0 ? n : null } })}
           />
         </div>
       )}
@@ -170,6 +244,7 @@ export function LibraryEditor() {
                 <option value="fixed-wing">fixed-wing</option>
                 <option value="vtol">vtol</option>
                 <option value="one-way-attack">one-way attack</option>
+                <option value="fpv">fpv</option>
               </select>
             </Field>
           </div>
@@ -216,6 +291,20 @@ export function LibraryEditor() {
               value={uas.altBandFt[1]}
               step={100}
               onChange={(n) => patch({ uas: { ...uas, altBandFt: [uas.altBandFt[0], n] } })}
+            />
+          </div>
+          <div className="field-row">
+            <Num
+              label="Control link (m, 0 = autonomous)"
+              value={uas.controlLinkRangeM ?? 0}
+              step={500}
+              onChange={(n) => patch({ uas: { ...uas, controlLinkRangeM: n > 0 ? n : null } })}
+            />
+            <Num
+              label="Mission radius (m)"
+              value={uas.operatingRadiusM ?? 0}
+              step={1000}
+              onChange={(n) => patch({ uas: { ...uas, operatingRadiusM: n > 0 ? n : null } })}
             />
           </div>
           <Field label="Emissions">

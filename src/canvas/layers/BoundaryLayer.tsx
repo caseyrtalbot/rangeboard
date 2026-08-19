@@ -3,10 +3,10 @@ import type { Boundary, BoundaryType } from '../../model/types'
 import { useStore } from '../../state/store'
 
 const STYLE: Record<BoundaryType, { stroke: string; dash: number[]; fill: string }> = {
-  range: { stroke: '#9ad0a0', dash: [10, 6], fill: 'rgba(154,208,160,0.05)' },
-  restricted: { stroke: '#ff5c5c', dash: [4, 4], fill: 'rgba(255,92,92,0.08)' },
-  asset: { stroke: '#7dff8a', dash: [], fill: 'rgba(125,255,138,0.08)' },
-  corridor: { stroke: '#6fd3ff', dash: [14, 6], fill: 'rgba(111,211,255,0.05)' },
+  range: { stroke: '#7f9a86', dash: [10, 6], fill: 'rgba(127,154,134,0.06)' },
+  restricted: { stroke: '#c4564a', dash: [4, 4], fill: 'rgba(196,86,74,0.09)' },
+  asset: { stroke: '#8fae7a', dash: [], fill: 'rgba(143,174,122,0.10)' },
+  corridor: { stroke: '#7da7c4', dash: [14, 6], fill: 'rgba(125,167,196,0.06)' },
 }
 
 function BoundaryShape({ boundary }: { boundary: Boundary }) {
@@ -38,7 +38,7 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
           select({ boundaryId: boundary.id })
         }}
       />
-      <Text
+      <Text fontFamily="IBM Plex Mono"
         x={boundary.points[0].x}
         y={boundary.points[0].y}
         text={label}

@@ -1,7 +1,10 @@
 import { Circle, Group, Line, Rect, RegularPolygon, Star, Text } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Entity } from '../../model/types'
+import { entityActive } from '../../model/types'
 import { useStore, modelFor } from '../../state/store'
+import { bearingDeg } from '../../geometry/geo'
+import { memberPositions } from '../../playback/sim'
 import type { DetectionHit, LiveTrack } from '../../playback/sim'
 
 interface Props {
@@ -10,12 +13,12 @@ interface Props {
 }
 
 const FALLBACK: Record<Entity['kind'], string> = {
-  sensor: '#4fa3ff',
-  effector: '#ff7a5c',
-  c2: '#e0e6f0',
-  uas: '#ff5c74',
-  asset: '#7dff8a',
-  marker: '#c9d2e0',
+  sensor: '#7da7c4',
+  effector: '#c9975a',
+  c2: '#d6d9d2',
+  uas: '#c46a5a',
+  asset: '#8fae7a',
+  marker: '#b7bdb2',
 }
 
 function Glyph({ entity, color }: { entity: Entity; color: string }) {
@@ -34,7 +37,7 @@ function Glyph({ entity, color }: { entity: Entity; color: string }) {
       return (
         <>
           <Rect x={-8} y={-8} width={16} height={16} stroke={color} strokeWidth={2} />
-          <Text x={-8} y={-5} width={16} text="C2" fontSize={9} fill={color} align="center" />
+          <Text fontFamily="IBM Plex Mono" x={-8} y={-5} width={16} text="C2" fontSize={9} fill={color} align="center" />
         </>
       )
     case 'uas':
@@ -54,6 +57,47 @@ function Glyph({ entity, color }: { entity: Entity; color: string }) {
   }
 }
 
+/** Drag handle that points a directional sensor/effector. Child drag does not move the group. */
+function HeadingHandle({ entity, pos, color }: { entity: Entity; pos: { x: number; y: number }; color: string }) {
+  const updateEntity = useStore((s) => s.updateEntity)
+  const camera = useStore((s) => s.camera)
+  const r = (entity.headingDeg * Math.PI) / 180
+  const hx = Math.sin(r) * 34
+  const hy = -Math.cos(r) * 34
+
+  function headingFromPointer(e: KonvaEventObject<DragEvent>): number | null {
+    const pointer = e.target.getStage()?.getPointerPosition()
+    if (!pointer) return null
+    const world = {
+      x: (pointer.x - camera.x) / camera.scale,
+      y: (pointer.y - camera.y) / camera.scale,
+    }
+    return Math.round(bearingDeg(pos, world))
+  }
+
+  return (
+    <Group>
+      <Line points={[0, 0, hx, hy]} stroke={color} strokeWidth={1} dash={[2, 3]} />
+      <Circle
+        x={hx}
+        y={hy}
+        radius={6}
+        fill={color}
+        stroke="#121415"
+        strokeWidth={1.5}
+        draggable
+        onDragMove={(e) => {
+          const h = headingFromPointer(e)
+          if (h != null) updateEntity(entity.id, { headingDeg: h % 360 })
+        }}
+        onDragEnd={(e) => {
+          e.target.position({ x: hx, y: hy })
+        }}
+      />
+    </Group>
+  )
+}
+
 function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
@@ -71,15 +115,28 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
   const beginConnect = useStore((s) => s.beginConnect)
   const completeConnect = useStore((s) => s.completeConnect)
   const beginPath = useStore((s) => s.beginPath)
+  const openContextMenu = useStore((s) => s.openContextMenu)
 
   const k = camera.scale
   const track = tracks.get(entity.id)
   const pos = track?.pos ?? entity.pos
+  const headingDeg = track?.headingDeg ?? entity.headingDeg
   const heading = track ? { ...entity, headingDeg: track.headingDeg } : entity
+  const off = !entityActive(entity)
   const color = entity.color ?? modelFor(scenario, entity)?.color ?? FALLBACK[entity.kind]
   const hits = detections.get(entity.id) ?? []
   const detected = hits.length > 0
   const classified = hits.some((h) => h.classified)
+
+  const model = modelFor(scenario, entity)
+  const sectorDeg =
+    entity.kind === 'sensor'
+      ? model?.sensor?.sectorDeg
+      : entity.kind === 'effector'
+        ? (model?.effector?.sectorDeg ?? 360)
+        : undefined
+  const directional = sectorDeg != null && sectorDeg < 360
+  const members = entity.kind === 'uas' ? memberPositions(entity, pos, headingDeg) : [pos]
 
   function handleClick(e: KonvaEventObject<MouseEvent>) {
     e.cancelBubble = true
@@ -95,35 +152,63 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
     select({ entityIds: [entity.id] }, e.evt.shiftKey)
   }
 
+  function handleContextMenu(e: KonvaEventObject<MouseEvent>) {
+    e.evt.preventDefault()
+    e.cancelBubble = true
+    const pointer = e.target.getStage()?.getPointerPosition()
+    if (!pointer) return
+    const world = { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
+    select({ entityIds: [entity.id] })
+    openContextMenu(pointer, world, entity.id)
+  }
+
   return (
-    <Group
-      x={pos.x}
-      y={pos.y}
-      scaleX={1 / k}
-      scaleY={1 / k}
-      draggable={tool === 'select'}
-      onClick={handleClick}
-      onDragStart={() => select({ entityIds: [entity.id] })}
-      onDragEnd={(e) => moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })}
-    >
-      {selected && <Circle radius={16} stroke="#ffffff" strokeWidth={1.5} dash={[4, 3]} />}
-      {cardLinked && <Circle radius={19} stroke="#6fd3ff" strokeWidth={1.5} dash={[2, 3]} />}
-      {connectFromId === entity.id && <Circle radius={16} stroke="#ffd166" strokeWidth={2} />}
-      {detected && entity.kind === 'uas' && (
-        <Circle radius={13} stroke={classified ? '#ff4d4d' : '#ffd166'} strokeWidth={2} />
-      )}
-      <Glyph entity={heading} color={color} />
-      <Text
-        x={-60}
-        y={14}
-        width={120}
-        text={entity.name}
-        fontSize={11}
-        fill="#c9d2e0"
-        align="center"
-        listening={false}
-      />
-    </Group>
+    <>
+      {members.slice(1).map((m, i) => (
+        <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
+          <RegularPolygon sides={3} radius={6} fill={color} rotation={headingDeg} scaleY={1.4} />
+        </Group>
+      ))}
+      <Group
+        x={pos.x}
+        y={pos.y}
+        scaleX={1 / k}
+        scaleY={1 / k}
+        opacity={off ? 0.45 : 1}
+        draggable={tool === 'select'}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        onDragStart={() => select({ entityIds: [entity.id] })}
+        onDragEnd={(e) => moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })}
+      >
+        {/* Invisible hit disc: stroke-only glyphs are otherwise hard to click. */}
+        <Circle radius={13} fill="#000" opacity={0} />
+        {selected && <Circle radius={16} stroke="#ffffff" strokeWidth={1.5} dash={[4, 3]} />}
+        {cardLinked && <Circle radius={19} stroke="#7da7c4" strokeWidth={1.5} dash={[2, 3]} />}
+        {connectFromId === entity.id && <Circle radius={16} stroke="#d9a441" strokeWidth={2} />}
+        {detected && entity.kind === 'uas' && (
+          <Circle radius={13} stroke={classified ? '#c4564a' : '#d9a441'} strokeWidth={2} />
+        )}
+        <Glyph entity={heading} color={color} />
+        {off && <Line points={[-11, 11, 11, -11]} stroke="#c4564a" strokeWidth={2} />}
+        {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
+          <Text fontFamily="IBM Plex Mono" x={10} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={color} listening={false} />
+        )}
+        <Text fontFamily="IBM Plex Mono"
+          x={-60}
+          y={14}
+          width={120}
+          text={entity.name}
+          fontSize={11}
+          fill="#b7bdb2"
+          align="center"
+          listening={false}
+        />
+        {selected && directional && tool === 'select' && (
+          <HeadingHandle entity={entity} pos={pos} color={color} />
+        )}
+      </Group>
+    </>
   )
 }
 

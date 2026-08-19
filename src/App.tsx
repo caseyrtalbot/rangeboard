@@ -96,6 +96,7 @@ export default function App() {
         return
       }
       if (e.key === 'Escape') {
+        st.closeContextMenu()
         st.cancelDraft()
         st.setTool('select')
         st.clearSelection()

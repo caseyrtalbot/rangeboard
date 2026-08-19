@@ -20,8 +20,8 @@ export function GridLayer({ size }: Props) {
   const right = left + size.w / camera.scale
   const bottom = top + size.h / camera.scale
 
-  const stroke = basemap === 'airspace' ? '#1d3050' : '#243044'
-  const major = basemap === 'airspace' ? '#28405f' : '#2f4059'
+  const stroke = basemap === 'airspace' ? '#232729' : '#26292c'
+  const major = basemap === 'airspace' ? '#2e3336' : '#323639'
 
   const lines = []
   for (let x = Math.floor(left / step) * step; x <= right; x += step) {

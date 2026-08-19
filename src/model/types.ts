@@ -13,32 +13,73 @@ export type EntityKind = 'sensor' | 'effector' | 'c2' | 'uas' | 'asset' | 'marke
 
 export type SensorType = 'radar' | 'eo-ir' | 'acoustic' | 'rf'
 
+/** C-UAS sensor role in the detect/track/identify chain. */
+export type SensorRole =
+  | 'early-warning'
+  | 'surveillance'
+  | 'target-acquisition'
+  | 'tracking'
+  | 'fire-control'
+  | 'classification'
+
 export interface SensorSpec {
   sensorType: SensorType
+  /** Absent on saves made before roles existed; defaultSensorRole fills in. */
+  role?: SensorRole
   detectRangeM: number
   /** Range at which classification/track quality is assumed usable. */
   classifyRangeM: number | null
   /** 360 for omnidirectional. */
   sectorDeg: number
+  /** [min, max] elevation coverage in degrees, null when unknown. */
+  elevationDeg?: [number, number] | null
+  /** Altitude coverage ceiling, feet. Null when unknown. */
+  maxAltitudeFt?: number | null
+}
+
+/** Representative detect ranges by role, used when a system's WEZ is unknown. */
+export const SENSOR_ROLE_DEFAULT_RANGE_M: Record<SensorRole, number> = {
+  'early-warning': 40000,
+  surveillance: 20000,
+  'target-acquisition': 15000,
+  tracking: 10000,
+  'fire-control': 8000,
+  classification: 5000,
+}
+
+export function defaultSensorRole(spec: SensorSpec): SensorRole {
+  if (spec.role) return spec.role
+  if (spec.sensorType === 'acoustic') return 'early-warning'
+  if (spec.sensorType === 'rf') return 'surveillance'
+  if (spec.sensorType === 'eo-ir') return 'classification'
+  return spec.detectRangeM >= 30000 ? 'early-warning' : 'tracking'
 }
 
 export type UasGroup = 1 | 2 | 3 | 4 | 5
 
 export interface UasSpec {
   group: UasGroup
-  airframe: 'quad' | 'fixed-wing' | 'vtol' | 'one-way-attack'
+  airframe: 'quad' | 'fixed-wing' | 'vtol' | 'one-way-attack' | 'fpv'
   cruiseSpeedMps: number
   maxSpeedMps: number
   enduranceMin: number
   altBandFt: [number, number]
   navMode: 'gps' | 'inertial' | 'rf-manual' | 'optical' | 'mixed'
   emissionsNote: string
+  /** Operator control-link range, meters. Null when autonomous. */
+  controlLinkRangeM?: number | null
+  /** Typical mission radius from launch, meters. */
+  operatingRadiusM?: number | null
 }
 
 export interface EffectorSpec {
-  effectorType: 'interceptor' | 'jammer' | 'gun' | 'de'
+  effectorType: 'interceptor' | 'jammer' | 'gun' | 'de' | 'hpm' | 'net'
   minRangeM: number
   maxRangeM: number
+  /** Engagement altitude ceiling, feet. Null when unknown. */
+  maxAltitudeFt?: number | null
+  /** Azimuth coverage in degrees. Absent means 360 (omni/trainable). */
+  sectorDeg?: number
   /** Seconds from assignment to effect at a target inside the envelope. */
   engageTimeS: number
 }
@@ -66,6 +107,15 @@ export interface SpecModel {
   threatProfile?: ThreatProfile
 }
 
+export type FormationShape = 'line' | 'wedge' | 'column' | 'echelon' | 'cluster'
+
+/** Multi-ship formation carried by one UAS entity. The entity is the lead ship. */
+export interface FormationSpec {
+  count: number
+  shape: FormationShape
+  spacingM: number
+}
+
 export interface Entity {
   id: string
   name: string
@@ -75,6 +125,17 @@ export interface Entity {
   headingDeg: number
   color: string | null
   notes: string
+  /** False excludes the entity from detection and kill-chain analysis. Absent means true. */
+  enabled?: boolean
+  /** Placement group id shared by components placed from one system preset. */
+  systemId?: string | null
+  /** UAS only: swarm/formation configuration. */
+  formation?: FormationSpec | null
+}
+
+/** True unless the entity was explicitly disabled. */
+export function entityActive(e: Entity): boolean {
+  return e.enabled !== false
 }
 
 export interface Connection {
@@ -159,10 +220,35 @@ export interface Underlay {
   opacity: number
 }
 
+/** One placed component of a system preset. */
+export interface SystemComponent {
+  specId: string
+  /** Offset from the system drop point, world meters. */
+  offsetM: Vec2
+  headingDeg: number
+  /** Role of this component inside the system, for the inspector and tooltips. */
+  purpose: string
+}
+
+/**
+ * A composable IADS / C-UAS system: dropping it places every component as an
+ * entity (sharing one systemId) and creates the kill-chain connections in
+ * `links` (index pairs into `components`).
+ */
+export interface SystemPreset {
+  id: string
+  name: string
+  description: string
+  builtin: boolean
+  components: SystemComponent[]
+  links: Array<[number, number]>
+}
+
 export interface Scenario {
   schemaVersion: 1
   name: string
   library: SpecModel[]
+  systemPresets: SystemPreset[]
   entities: Entity[]
   connections: Connection[]
   boundaries: Boundary[]

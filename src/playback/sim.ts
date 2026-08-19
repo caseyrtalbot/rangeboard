@@ -1,6 +1,17 @@
 import type { Entity, Scenario, Vec2 } from '../model/types'
-import { dist, pointInSector, posAtTime } from '../geometry/geo'
+import { entityActive } from '../model/types'
+import { dist, formationOffsets, pointInSector, posAtTime } from '../geometry/geo'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
+
+/** Positions of every ship in the entity's formation (just the lead when none). */
+export function memberPositions(entity: Entity, pos: Vec2, headingDeg: number): Vec2[] {
+  const f = entity.formation
+  if (!f || f.count <= 1) return [pos]
+  return formationOffsets(f.shape, f.count, f.spacingM, headingDeg).map((o) => ({
+    x: pos.x + o.x,
+    y: pos.y + o.y,
+  }))
+}
 
 export interface LiveTrack {
   entityId: string
@@ -40,19 +51,27 @@ export interface DetectionHit {
 /** Sensors currently holding each UAS: uasId -> hits. */
 export function detectionsAt(scenario: Scenario, tS: number): Map<string, DetectionHit[]> {
   const tracks = liveTracks(scenario, tS)
-  const sensors = scenario.entities.filter((e) => e.kind === 'sensor')
+  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const out = new Map<string, DetectionHit[]>()
   for (const uas of scenario.entities) {
-    if (uas.kind !== 'uas') continue
-    const pos = tracks.get(uas.id)?.pos ?? uas.pos
+    if (uas.kind !== 'uas' || !entityActive(uas)) continue
+    const track = tracks.get(uas.id)
+    const pos = track?.pos ?? uas.pos
+    const heading = track?.headingDeg ?? uas.headingDeg
+    const members = memberPositions(uas, pos, heading)
     const hits: DetectionHit[] = []
     for (const sensor of sensors) {
       const spec = modelFor(scenario, sensor)?.sensor
       if (!spec) continue
-      if (pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, spec.detectRangeM, pos)) {
+      const inDetect = members.some((m) =>
+        pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, spec.detectRangeM, m),
+      )
+      if (inDetect) {
         const classified =
           spec.classifyRangeM != null &&
-          pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, spec.classifyRangeM, pos)
+          members.some((m) =>
+            pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, spec.classifyRangeM!, m),
+          )
         hits.push({ sensorId: sensor.id, classified })
       }
     }
@@ -89,7 +108,8 @@ const DT = 0.5
 
 /** True when some detecting sensor routes through a C2 node to some effector. */
 function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean {
-  const kinds = new Map(scenario.entities.map((e) => [e.id, e.kind]))
+  // Disabled entities drop out of the chain entirely.
+  const kinds = new Map(scenario.entities.filter(entityActive).map((e) => [e.id, e.kind]))
   const c2FromSensor = new Set<string>()
   for (const c of scenario.connections) {
     if (sensorIds.has(c.fromId) && kinds.get(c.toId) === 'c2') c2FromSensor.add(c.toId)
@@ -121,9 +141,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
   const speed = pathSpeed(scenario, path)
   const duration = scenarioDurationS(scenario)
-  const sensors = scenario.entities.filter((e) => e.kind === 'sensor')
+  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const assets = scenario.entities.filter((e) => e.kind === 'asset')
-  const effectors = scenario.entities.filter((e) => e.kind === 'effector')
+  const effectors = scenario.entities.filter((e) => e.kind === 'effector' && entityActive(e))
 
   const detectingSensors = new Set<string>()
   const effectorInRange = new Map<string, Array<[number, number]>>()
@@ -158,7 +178,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
       const d = dist(pos, eff.pos)
-      const inRange = d >= spec.minRangeM && d <= spec.maxRangeM
+      const inRange =
+        d >= spec.minRangeM &&
+        pointInSector(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, spec.maxRangeM, pos)
       const intervals = effectorInRange.get(eff.id) ?? []
       const last = intervals[intervals.length - 1]
       if (inRange) {
@@ -217,5 +239,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 }
 
 export function assessAllThreats(scenario: Scenario): ThreatAssessment[] {
-  return scenario.entities.filter((e) => e.kind === 'uas').map((e) => assessThreat(scenario, e.id))
+  return scenario.entities
+    .filter((e) => e.kind === 'uas' && entityActive(e))
+    .map((e) => assessThreat(scenario, e.id))
 }

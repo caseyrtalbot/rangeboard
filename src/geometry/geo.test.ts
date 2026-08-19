@@ -6,6 +6,7 @@ import {
   destination,
   dist,
   formatDistance,
+  formationOffsets,
   gridStepM,
   pathLength,
   pointInSector,
@@ -107,6 +108,52 @@ describe('paths', () => {
     const best = closestApproach(square, 10, 0, { x: 100, y: 80 }, 60)
     expect(best.distM).toBeLessThan(1)
     expect(best.tS).toBeCloseTo(18, 0)
+  })
+})
+
+describe('formationOffsets', () => {
+  it('puts the lead at the origin and returns one offset per ship', () => {
+    for (const shape of ['line', 'wedge', 'column', 'echelon', 'cluster'] as const) {
+      const offs = formationOffsets(shape, 5, 50, 45)
+      expect(offs).toHaveLength(5)
+      expect(offs[0].x).toBeCloseTo(0)
+      expect(offs[0].y).toBeCloseTo(0)
+    }
+  })
+
+  it('column trails the lead opposite the heading', () => {
+    // Heading north: trailers sit south (+y).
+    const offs = formationOffsets('column', 3, 100, 0)
+    expect(offs[1].x).toBeCloseTo(0)
+    expect(offs[1].y).toBeCloseTo(100)
+    expect(offs[2].y).toBeCloseTo(200)
+  })
+
+  it('line spreads abreast, perpendicular to the heading', () => {
+    // Heading north: wingmen sit east/west of the lead.
+    const offs = formationOffsets('line', 3, 100, 0)
+    expect(offs[1].x).toBeCloseTo(100)
+    expect(offs[1].y).toBeCloseTo(0)
+    expect(offs[2].x).toBeCloseTo(-100)
+  })
+
+  it('wedge trails behind and outboard', () => {
+    const offs = formationOffsets('wedge', 3, 100, 0)
+    expect(offs[1].y).toBeCloseTo(100)
+    expect(offs[1].x).toBeCloseTo(100)
+    expect(offs[2].y).toBeCloseTo(100)
+    expect(offs[2].x).toBeCloseTo(-100)
+  })
+
+  it('cluster stays within ring radius for the count', () => {
+    const offs = formationOffsets('cluster', 7, 50, 90)
+    for (const o of offs) {
+      expect(Math.hypot(o.x, o.y)).toBeLessThanOrEqual(50 + 1e-9)
+    }
+  })
+
+  it('clamps count to at least one', () => {
+    expect(formationOffsets('line', 0, 50, 0)).toHaveLength(1)
   })
 })
 

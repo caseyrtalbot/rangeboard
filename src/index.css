@@ -1,15 +1,18 @@
 :root {
-  --bg: #0d1420;
-  --bg-panel: #121b2b;
-  --bg-input: #0a111c;
-  --border: #24324a;
-  --text: #d5deec;
-  --text-dim: #7f8ea6;
-  --accent: #4fa3ff;
-  --danger: #ff5c5c;
-  --good: #7dff8a;
-  --warn: #ffd166;
-  font-family: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
+  /* Charcoal tactical palette: near-black surfaces, gray-green text, amber accent. */
+  --bg: #16181a;
+  --bg-panel: #1d2023;
+  --bg-input: #121415;
+  --border: #33383b;
+  --hover: #26292c;
+  --text: #cfd4cc;
+  --text-dim: #82887e;
+  --accent: #d9a441;
+  --danger: #c4564a;
+  --good: #8fae7a;
+  --warn: #d98f41;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 13px;
   color-scheme: dark;
 }
@@ -93,7 +96,7 @@ button {
 }
 
 button:hover {
-  background: #1b2840;
+  background: var(--hover);
 }
 
 button:disabled {
@@ -103,7 +106,7 @@ button:disabled {
 
 button.active {
   background: var(--accent);
-  color: #071018;
+  color: #121415;
   font-weight: 600;
 }
 
@@ -114,7 +117,7 @@ button.danger {
 
 button.primary {
   background: var(--accent);
-  color: #071018;
+  color: #121415;
   font-weight: 600;
 }
 
@@ -172,11 +175,11 @@ label.inline input[type='range'] {
 }
 
 .canvas-host.airspace {
-  background: #081120;
+  background: #131619;
 }
 
 .canvas-host.sat {
-  background: #0a0e14;
+  background: #0e0f10;
 }
 
 .canvas-host.drawing {
@@ -194,7 +197,7 @@ label.inline input[type='range'] {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(10, 17, 28, 0.9);
+  background: rgba(18, 20, 21, 0.9);
   border: 1px solid var(--warn);
   color: var(--warn);
   padding: 5px 12px;
@@ -230,7 +233,9 @@ label.inline input[type='range'] {
 /* ---------- Palette ---------- */
 
 .palette {
+  position: relative;
   width: 230px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg-panel);
@@ -273,12 +278,12 @@ label.inline input[type='range'] {
 }
 
 .palette-item:hover {
-  background: #1b2840;
+  background: var(--hover);
 }
 
 .palette-item.selected {
   border-left-color: var(--accent);
-  background: #1b2840;
+  background: var(--hover);
 }
 
 .palette-name {
@@ -599,4 +604,98 @@ label.inline input[type='range'] {
 .dialog-title {
   font-weight: 700;
   color: var(--warn);
+}
+
+/* ---------- Context menu ---------- */
+
+.ctx-menu {
+  position: absolute;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.ctx-head {
+  padding: 5px 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctx-item:hover {
+  background: var(--hover);
+}
+
+.ctx-item.danger {
+  color: var(--danger);
+}
+
+.ctx-sub {
+  position: relative;
+}
+
+.ctx-flyout {
+  position: absolute;
+  left: calc(100% - 4px);
+  top: -4px;
+}
+
+/* ---------- Typography ---------- */
+
+.brand,
+.panel-title,
+.palette-heading,
+.panel-subtitle,
+.ctx-head,
+.spec-summary,
+.hud-bottom,
+.hud-hint,
+.time-readout,
+.scenario-name,
+input[type='number'] {
+  font-family: var(--font-mono);
+}
+
+.palette-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+.palette-resizer:hover {
+  background: var(--accent);
+  opacity: 0.4;
 }
