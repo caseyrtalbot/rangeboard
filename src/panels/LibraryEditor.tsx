@@ -307,6 +307,37 @@ export function LibraryEditor() {
               onChange={(n) => patch({ uas: { ...uas, operatingRadiusM: n > 0 ? n : null } })}
             />
           </div>
+          <div className="field-row">
+            <Num
+              label="Combat radius (m, 0 = unknown)"
+              value={uas.combatRadiusM ?? 0}
+              step={1000}
+              onChange={(n) => patch({ uas: { ...uas, combatRadiusM: n > 0 ? n : null } })}
+            />
+            <Field label="Employment">
+              <select
+                value={uas.oneWay == null ? '' : uas.oneWay ? 'one-way' : 'rth'}
+                onChange={(e) =>
+                  patch({
+                    uas: {
+                      ...uas,
+                      oneWay: e.target.value === '' ? undefined : e.target.value === 'one-way',
+                    },
+                  })
+                }
+              >
+                <option value="">by airframe</option>
+                <option value="one-way">one-way</option>
+                <option value="rth">return-to-home</option>
+              </select>
+            </Field>
+          </div>
+          <Field label="Range note (observed mods)">
+            <input
+              value={uas.rangeNote ?? ''}
+              onChange={(e) => patch({ uas: { ...uas, rangeNote: e.target.value } })}
+            />
+          </Field>
           <Field label="Emissions">
             <input
               value={uas.emissionsNote}

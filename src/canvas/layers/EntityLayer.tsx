@@ -112,6 +112,7 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
   })
   const select = useStore((s) => s.select)
   const moveEntity = useStore((s) => s.moveEntity)
+  const updateEntity = useStore((s) => s.updateEntity)
   const beginConnect = useStore((s) => s.beginConnect)
   const completeConnect = useStore((s) => s.completeConnect)
   const beginPath = useStore((s) => s.beginPath)
@@ -206,6 +207,36 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
         />
         {selected && directional && tool === 'select' && (
           <HeadingHandle entity={entity} pos={pos} color={color} />
+        )}
+        {selected && entity.kind === 'uas' && tool === 'select' && (
+          <Group
+            y={28}
+            onClick={(e) => {
+              e.cancelBubble = true
+              updateEntity(entity.id, { showRange: !entity.showRange })
+            }}
+          >
+            <Rect
+              x={-34}
+              width={68}
+              height={16}
+              cornerRadius={8}
+              fill={entity.showRange ? '#d9a441' : '#1d2023'}
+              stroke={entity.showRange ? '#d9a441' : '#82887e'}
+              strokeWidth={1}
+            />
+            <Text
+              fontFamily="IBM Plex Mono"
+              x={-34}
+              y={4}
+              width={68}
+              align="center"
+              text={entity.showRange ? 'RANGE ON' : 'RANGE OFF'}
+              fontSize={9}
+              fill={entity.showRange ? '#121415' : '#82887e'}
+              listening={false}
+            />
+          </Group>
         )}
       </Group>
     </>

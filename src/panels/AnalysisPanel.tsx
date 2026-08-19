@@ -67,6 +67,75 @@ function ThreatRow({ a }: { a: ThreatAssessment }) {
   )
 }
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      {children}
+    </label>
+  )
+}
+
+/** Scenario covariates: wind, temperature, field elevation. Feed range rings. */
+function EnvironmentEditor() {
+  const env = useStore((s) => s.scenario.environment)
+  const updateEnvironment = useStore((s) => s.updateEnvironment)
+  return (
+    <div className="subsection">
+      <div className="panel-subtitle">Environment (covariates)</div>
+      <Field label="Apply to range estimates">
+        <input
+          type="checkbox"
+          checked={env.apply}
+          onChange={(e) => updateEnvironment({ apply: e.target.checked })}
+        />
+      </Field>
+      <div className="field-row">
+        <Field label="Wind (m/s)">
+          <input
+            type="number"
+            min={0}
+            value={env.windSpeedMps}
+            onChange={(e) => updateEnvironment({ windSpeedMps: Math.max(0, Number(e.target.value)) })}
+          />
+        </Field>
+        <Field label="Wind from (deg)">
+          <input
+            type="number"
+            min={0}
+            max={359}
+            value={env.windFromDeg}
+            onChange={(e) =>
+              updateEnvironment({ windFromDeg: ((Number(e.target.value) % 360) + 360) % 360 })
+            }
+          />
+        </Field>
+      </div>
+      <div className="field-row">
+        <Field label="Temperature (C)">
+          <input
+            type="number"
+            value={env.temperatureC}
+            onChange={(e) => updateEnvironment({ temperatureC: Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="Field elevation (ft)">
+          <input
+            type="number"
+            step={500}
+            value={env.fieldElevationFt}
+            onChange={(e) => updateEnvironment({ fieldElevationFt: Number(e.target.value) })}
+          />
+        </Field>
+      </div>
+      <p className="muted small">
+        Cold and altitude shrink battery-drone endurance; wind stretches one-way reach downwind
+        and shrinks return-to-home reach. Coefficients are open-source planning estimates.
+      </p>
+    </div>
+  )
+}
+
 /** Computed engagement picture for every threat with a flight path. */
 export function AnalysisPanel() {
   const scenario = useStore((s) => s.scenario)
@@ -76,6 +145,7 @@ export function AnalysisPanel() {
 
   return (
     <div className="inspector-body">
+      <EnvironmentEditor />
       <div className="panel-subtitle">Engagement analysis</div>
       {assessments.length === 0 && (
         <p className="muted">Place a UAS threat on the canvas to analyze it.</p>

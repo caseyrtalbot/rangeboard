@@ -121,6 +121,9 @@ export interface Store {
   updatePath: (id: string, patch: Partial<FlightPath>) => void
   deletePathForEntity: (entityId: string) => void
 
+  // Environment
+  updateEnvironment: (patch: Partial<Scenario['environment']>) => void
+
   // Underlay
   setUnderlayImage: (dataUrl: string, naturalW: number, naturalH: number) => void
   updateUnderlay: (patch: Partial<Scenario['underlay']>) => void
@@ -507,6 +510,9 @@ export const useStore = create<Store>()((set, get) => {
 
     deletePathForEntity: (entityId) =>
       mutate((s) => ({ ...s, paths: s.paths.filter((p) => p.entityId !== entityId) })),
+
+    updateEnvironment: (patch) =>
+      mutate((s) => ({ ...s, environment: { ...s.environment, ...patch } })),
 
     setUnderlayImage: (dataUrl, naturalW, naturalH) =>
       mutate((s) => ({

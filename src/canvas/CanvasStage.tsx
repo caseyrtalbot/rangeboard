@@ -9,6 +9,7 @@ import { GridLayer } from './layers/GridLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
 import { BoundaryLayer } from './layers/BoundaryLayer'
 import { FootprintLayer } from './layers/FootprintLayer'
+import { RangeLayer } from './layers/RangeLayer'
 import { PathLayer } from './layers/PathLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
 import { EntityLayer } from './layers/EntityLayer'
@@ -158,6 +159,7 @@ export function CanvasStage() {
         <Layer>
           <BoundaryLayer />
           <FootprintLayer detections={detections} />
+          <RangeLayer />
           <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
           <ConnectionLayer />
           <EntityLayer tracks={tracks} detections={detections} />

@@ -551,6 +551,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'OcuSync 2.4/5.8 GHz link and video',
       controlLinkRangeM: 15000,
       operatingRadiusM: 10000,
+      combatRadiusM: 8000,
+      oneWay: false,
+      rangeNote: 'Combat recon radius 5-10 km under EW; repeaters and directional antennas push toward 10-15 km.',
     },
     threatProfile: {
       designator: 'THR-G1-Q-01',
@@ -579,6 +582,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'OcuSync 2.4/5.8 GHz, low power',
       controlLinkRangeM: 10000,
       operatingRadiusM: 5000,
+      combatRadiusM: 4000,
+      oneWay: false,
+      rangeNote: 'Practical radius 3-5 km under EW; occasionally paired with repeaters.',
     },
     threatProfile: {
       designator: 'THR-G1-Q-02',
@@ -607,6 +613,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'Analog 5.8 GHz video, ELRS 900 MHz control',
       controlLinkRangeM: 10000,
       operatingRadiusM: 8000,
+      combatRadiusM: 10000,
+      oneWay: true,
+      rangeNote: 'Strikes 5-15 km; relay drones and high-gain video links push 20-30 km. Extended packs and wing kits reported.',
     },
     threatProfile: {
       designator: 'THR-G1-FPV-01',
@@ -635,6 +644,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'None: fiber-optic control and video',
       controlLinkRangeM: 20000,
       operatingRadiusM: 15000,
+      combatRadiusM: 15000,
+      oneWay: true,
+      rangeNote: 'Fielded fiber spools of 10, 15, and 20 km confirmed in combat; 41-50 km spools demonstrated on larger frames.',
     },
     threatProfile: {
       designator: 'THR-G1-FPV-02',
@@ -663,6 +675,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'OcuSync 3 Enterprise, 2.4/5.8 GHz',
       controlLinkRangeM: 20000,
       operatingRadiusM: 15000,
+      combatRadiusM: 10000,
+      oneWay: false,
+      rangeNote: 'Employed 8-12 km where EW permits; repeaters and elevated antennas hold the link.',
     },
     threatProfile: {
       designator: 'THR-G2-Q-01',
@@ -691,6 +706,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'Custom links, often 700-900 MHz with repeater',
       controlLinkRangeM: 15000,
       operatingRadiusM: 12000,
+      combatRadiusM: 10000,
+      oneWay: false,
+      rangeNote: 'Night sorties 10-20 km with ~15 kg payload; Starlink-relay control reported on some airframes.',
     },
     threatProfile: {
       designator: 'THR-G2-HB-01',
@@ -719,6 +737,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'Digital datalink, directional antenna',
       controlLinkRangeM: 50000,
       operatingRadiusM: 50000,
+      combatRadiusM: 50000,
+      oneWay: false,
+      rangeNote: 'Legs beyond 100 km reported for the class; combat ISR bounded by ~50 km datalink.',
     },
     threatProfile: {
       designator: 'THR-G2-V-01',
@@ -747,6 +768,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'Video downlink until terminal; some variants autonomous',
       controlLinkRangeM: 50000,
       operatingRadiusM: 40000,
+      combatRadiusM: 40000,
+      oneWay: true,
+      rangeNote: 'Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.',
     },
     threatProfile: {
       designator: 'THR-G2-LM-01',
@@ -775,6 +799,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'C2 and video links; multi-ship relay employment',
       controlLinkRangeM: 120000,
       operatingRadiusM: 120000,
+      combatRadiusM: 120000,
+      oneWay: false,
+      rangeNote: 'Routinely operates 110-150 km from its ground station on 14-16 hour sorties.',
     },
     threatProfile: {
       designator: 'THR-G3-ISR-01',
@@ -803,6 +830,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'RF silent en route; some variants add SATCOM or cellular',
       controlLinkRangeM: null,
       operatingRadiusM: 1000000,
+      combatRadiusM: 900000,
+      oneWay: true,
+      rangeNote: 'Strike routes 600-900+ km with evasive doglegs; Kometa anti-jam GNSS and jet-powered variants reported.',
     },
     threatProfile: {
       designator: 'THR-G3-OWA-01',
@@ -831,6 +861,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'Some carry emitters to mimic Shahed signatures',
       controlLinkRangeM: null,
       operatingRadiusM: 300000,
+      combatRadiusM: 300000,
+      oneWay: true,
+      rangeNote: 'About 300 km with a combat payload; unarmed decoy flights reported to 600 km.',
     },
     threatProfile: {
       designator: 'THR-G2-DEC-01',
@@ -859,6 +892,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'RF silent on ingress',
       controlLinkRangeM: null,
       operatingRadiusM: 400000,
+      combatRadiusM: 400000,
+      oneWay: true,
+      rangeNote: 'Early conversions flew about 500 km with 25 kg of explosives; MICH 2000 derivative extends the class.',
     },
     threatProfile: {
       designator: 'THR-G3-OWA-02',
@@ -887,6 +923,9 @@ const THREATS: SpecModel[] = [
       emissionsNote: 'Line-of-sight C2 and video, ~200 km',
       controlLinkRangeM: 200000,
       operatingRadiusM: 200000,
+      combatRadiusM: 200000,
+      oneWay: false,
+      rangeNote: 'Bounded by line-of-sight datalink, about 200 km from the control station; up to 500 km claimed.',
     },
     threatProfile: {
       designator: 'THR-G4-MALE-01',

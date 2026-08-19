@@ -70,6 +70,12 @@ export interface UasSpec {
   controlLinkRangeM?: number | null
   /** Typical mission radius from launch, meters. */
   operatingRadiusM?: number | null
+  /** Combat-observed employment radius in calm air, meters. Outranks operatingRadiusM. */
+  combatRadiusM?: number | null
+  /** True when flown one-way (no return leg budgeted). Defaults by airframe. */
+  oneWay?: boolean
+  /** Observed range-affecting combat modifications (batteries, relays, fiber spools). */
+  rangeNote?: string
 }
 
 export interface EffectorSpec {
@@ -131,6 +137,8 @@ export interface Entity {
   systemId?: string | null
   /** UAS only: swarm/formation configuration. */
   formation?: FormationSpec | null
+  /** UAS only: draw the wind-adjusted range ring for this drone. */
+  showRange?: boolean
 }
 
 /** True unless the entity was explicitly disabled. */
@@ -244,11 +252,23 @@ export interface SystemPreset {
   links: Array<[number, number]>
 }
 
+/** Scenario-wide covariates that modify UAS range estimates. */
+export interface EnvironmentSpec {
+  windSpeedMps: number
+  /** Direction the wind blows FROM, degrees true. */
+  windFromDeg: number
+  temperatureC: number
+  fieldElevationFt: number
+  /** When false, range rings use calm standard-day performance. */
+  apply: boolean
+}
+
 export interface Scenario {
   schemaVersion: 1
   name: string
   library: SpecModel[]
   systemPresets: SystemPreset[]
+  environment: EnvironmentSpec
   entities: Entity[]
   connections: Connection[]
   boundaries: Boundary[]

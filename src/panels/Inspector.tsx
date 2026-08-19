@@ -3,6 +3,7 @@ import { entityActive } from '../model/types'
 import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
 import { formatDistance, pathLength } from '../geometry/geo'
+import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
 
@@ -144,6 +145,44 @@ function EntityInspector({ entity }: { entity: Entity }) {
       {model?.uas && (
         <div className="spec-summary">
           Group {model.uas.group} · cruise {model.uas.cruiseSpeedMps} m/s · {model.uas.navMode}
+        </div>
+      )}
+
+      {entity.kind === 'uas' && model?.uas && (
+        <div className="subsection">
+          <div className="panel-subtitle">Range</div>
+          <Field label="Show range ring">
+            <input
+              type="checkbox"
+              checked={!!entity.showRange}
+              onChange={(e) => updateEntity(entity.id, { showRange: e.target.checked })}
+            />
+          </Field>
+          {(() => {
+            const uas = model.uas!
+            const env = scenario.environment
+            const basis = rangeBasis(uas)
+            const windTo = (env.windFromDeg + 180) % 360
+            const down = effectiveRadiusM(uas, env, windTo)
+            const up = effectiveRadiusM(uas, env, env.windFromDeg)
+            return (
+              <>
+                <div className="spec-summary">
+                  Basis: {basis.source} · {formatDistance(basis.radiusM)} calm ·{' '}
+                  {basis.oneWay ? 'one-way' : 'return-to-home'}
+                  <br />
+                  With environment: {formatDistance(down)} downwind · {formatDistance(up)} upwind
+                </div>
+                {basis.source === 'estimated' && (
+                  <p className="muted small">
+                    No reported employment radius. This is an estimate from endurance and cruise
+                    speed. Enter a known radius in the model editor to replace it.
+                  </p>
+                )}
+                {uas.rangeNote && <p className="muted small">{uas.rangeNote}</p>}
+              </>
+            )
+          })()}
         </div>
       )}
 

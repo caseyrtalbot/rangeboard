@@ -93,6 +93,12 @@ export function ContextMenu() {
         )}
         {entity.kind === 'uas' && (
           <Item
+            label={entity.showRange ? 'Hide range ring' : 'Show range ring'}
+            onPick={() => st.updateEntity(entity.id, { showRange: !entity.showRange })}
+          />
+        )}
+        {entity.kind === 'uas' && (
+          <Item
             label={entity.formation ? 'Remove formation' : 'Make formation (3-ship wedge)'}
             onPick={() =>
               st.updateEntity(entity.id, {
