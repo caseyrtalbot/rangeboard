@@ -33,7 +33,9 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
         dash={style.dash}
         strokeScaleEnabled={false}
         fill={boundary.closed ? style.fill : undefined}
-        hitStrokeWidth={12 / camera.scale}
+        // With strokeScaleEnabled=false the hit stroke is in screen px;
+        // dividing by scale would inflate it to hundreds of px.
+        hitStrokeWidth={12}
         // Filled polygons and wide hit bands must not swallow clicks while drawing.
         listening={tool === 'select'}
         onClick={(e) => {

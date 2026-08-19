@@ -40,7 +40,9 @@ export function ConnectionLayer() {
             strokeScaleEnabled={false}
             pointerLength={9 / k}
             pointerWidth={7 / k}
-            hitStrokeWidth={12 / k}
+            // With strokeScaleEnabled=false the hit stroke is in screen px;
+            // dividing by scale would inflate it to hundreds of px.
+            hitStrokeWidth={12}
             // Wide hit bands must not swallow waypoint clicks while drawing.
             listening={tool === 'select'}
             onClick={(e) => {

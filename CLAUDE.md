@@ -49,7 +49,7 @@ Data flow for a click/drag: Konva event → store action → new scenario → Re
 - Constant screen-size strokes: `strokeScaleEnabled={false}` (stroke width and dash are then in px).
 - Constant screen-size icons/labels: wrap in a Group with `scale={1/camera.scale}`; inner units are px.
 - Footprints and other large fills must be `listening={false}` or they swallow stage clicks.
-- Hit tolerance for thin lines: `hitStrokeWidth={n / camera.scale}`.
+- Hit tolerance for thin lines with `strokeScaleEnabled={false}`: `hitStrokeWidth={n}` (screen px — the hit stroke ignores the stage transform too; dividing by camera.scale inflates it to hundreds of px).
 - Drawing tools do not use Konva drag: stage `draggable` only when `ui.tool === 'select'`; other tools consume plain clicks (`ui.draftPoints` holds the rubber-band draft).
 
 ## Domain semantics worth knowing
