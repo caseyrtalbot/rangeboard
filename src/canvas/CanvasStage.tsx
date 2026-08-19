@@ -12,6 +12,7 @@ import { FootprintLayer } from './layers/FootprintLayer'
 import { PathLayer } from './layers/PathLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
 import { EntityLayer } from './layers/EntityLayer'
+import { SystemHandleLayer } from './layers/SystemHandleLayer'
 import { HudLayer } from './layers/HudLayer'
 import { ContextMenu } from './ContextMenu'
 
@@ -160,6 +161,7 @@ export function CanvasStage() {
           <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
           <ConnectionLayer />
           <EntityLayer tracks={tracks} detections={detections} />
+          <SystemHandleLayer />
         </Layer>
       </Stage>
       <HudLayer mouseWorld={mouseWorld} />

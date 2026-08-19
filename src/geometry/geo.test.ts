@@ -12,6 +12,7 @@ import {
   pointInSector,
   posAlongPath,
   posAtTime,
+  rotatePoint,
   wedgePoints,
 } from './geo'
 
@@ -108,6 +109,22 @@ describe('paths', () => {
     const best = closestApproach(square, 10, 0, { x: 100, y: 80 }, 60)
     expect(best.distM).toBeLessThan(1)
     expect(best.tS).toBeCloseTo(18, 0)
+  })
+})
+
+describe('rotatePoint', () => {
+  it('rotates clockwise on screen about a center', () => {
+    // North of center rotated 90 deg -> east of center.
+    const p = rotatePoint({ x: 0, y: -100 }, O, 90)
+    expect(p.x).toBeCloseTo(100)
+    expect(p.y).toBeCloseTo(0)
+  })
+
+  it('keeps distance and returns the center unchanged', () => {
+    const c = { x: 50, y: -20 }
+    const p = rotatePoint({ x: 90, y: 10 }, c, 137)
+    expect(dist(c, p)).toBeCloseTo(dist(c, { x: 90, y: 10 }))
+    expect(rotatePoint(c, c, 90)).toEqual(c)
   })
 })
 

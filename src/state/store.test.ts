@@ -125,6 +125,33 @@ describe('store scenario actions', () => {
     expect(north).toBeDefined()
   })
 
+  it('places a preset with an orientation and rotates a placed system', () => {
+    // Facing east at placement: the north RPS-42 face slews to 90 deg and its
+    // offset {0,-50} rotates to {50,0}.
+    useStore.getState().addSystemFromPreset('sys-fslids', { x: 0, y: 0 }, 90)
+    let s = useStore.getState().scenario
+    const north = s.entities[0]
+    expect(north.headingDeg).toBe(90)
+    expect(north.pos.x).toBeCloseTo(50)
+    expect(north.pos.y).toBeCloseTo(0)
+
+    // Rotating the whole system keeps the centroid fixed.
+    const systemId = north.systemId!
+    const members = () =>
+      useStore.getState().scenario.entities.filter((e) => e.systemId === systemId)
+    const centroid = (es: { pos: { x: number; y: number } }[]) => ({
+      x: es.reduce((sum, e) => sum + e.pos.x, 0) / es.length,
+      y: es.reduce((sum, e) => sum + e.pos.y, 0) / es.length,
+    })
+    const before = centroid(members())
+    useStore.getState().rotateSystem(systemId, 90)
+    s = useStore.getState().scenario
+    const after = centroid(members())
+    expect(after.x).toBeCloseTo(before.x)
+    expect(after.y).toBeCloseTo(before.y)
+    expect(s.entities[0].headingDeg).toBe(180)
+  })
+
   it('duplicates an entity without carrying its system membership', () => {
     const st = useStore.getState()
     st.addEntityFromModel('lib-rps42', { x: 0, y: 0 })

@@ -107,7 +107,17 @@ export function ContextMenu() {
         }} />
         <Item label="Duplicate" onPick={() => st.duplicateEntity(entity.id)} />
         {entity.systemId && (
-          <Item label="Select whole system" onPick={() => st.selectSystem(entity.systemId!)} />
+          <>
+            <Item label="Select whole system" onPick={() => st.selectSystem(entity.systemId!)} />
+            <Item
+              label="Rotate system 45° right"
+              onPick={() => st.rotateSystem(entity.systemId!, 45)}
+            />
+            <Item
+              label="Rotate system 45° left"
+              onPick={() => st.rotateSystem(entity.systemId!, -45)}
+            />
+          </>
         )}
         {multi && (
           <Item label="Save selection as system" onPick={() => st.saveSelectionAsSystem('')} />

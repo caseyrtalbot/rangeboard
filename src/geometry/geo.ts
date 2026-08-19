@@ -63,6 +63,13 @@ export function wedgePoints(
   return pts
 }
 
+/** Rotate p about center by deltaDeg clockwise on screen (heading convention). */
+export function rotatePoint(p: Vec2, center: Vec2, deltaDeg: number): Vec2 {
+  const d = dist(center, p)
+  if (d === 0) return { ...p }
+  return destination(center, bearingDeg(center, p) + deltaDeg, d)
+}
+
 /**
  * World offsets for each ship of a formation. Ship 0 is the lead at {0,0}.
  * Local frame: along = flight direction, across = right of flight direction.

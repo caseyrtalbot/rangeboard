@@ -370,9 +370,28 @@ export function Inspector() {
     )
   }
   if (selection.entityIds.length > 1) {
+    const selected = scenario.entities.filter((e) => selection.entityIds.includes(e.id))
+    const systemId = selected[0]?.systemId
+    const wholeSystem = !!systemId && selected.every((e) => e.systemId === systemId)
+    const rotateSystem = useStore.getState().rotateSystem
     return (
       <div className="inspector-body">
         <div className="panel-subtitle">{selection.entityIds.length} entities selected</div>
+        {wholeSystem && (
+          <div className="subsection">
+            <div className="panel-subtitle">System orientation</div>
+            <div className="spec-summary">
+              Drag the amber handle on the canvas to face any direction, or slew in steps.
+            </div>
+            <div className="field-row">
+              {[-90, -45, 45, 90].map((d) => (
+                <button key={d} onClick={() => rotateSystem(systemId!, d)}>
+                  {d > 0 ? `${d}°→` : `←${-d}°`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button className="danger" onClick={useStore.getState().deleteSelection}>
           Delete all
         </button>

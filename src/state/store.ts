@@ -17,7 +17,7 @@ import type {
 } from '../model/types'
 import { newId } from '../model/types'
 import { emptyScenario } from '../model/seed'
-import { pathLength } from '../geometry/geo'
+import { pathLength, rotatePoint } from '../geometry/geo'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -96,10 +96,11 @@ export interface Store {
   deleteSelection: () => void
 
   // Systems
-  addSystemFromPreset: (presetId: string, center: Vec2) => void
+  addSystemFromPreset: (presetId: string, center: Vec2, headingDeg?: number) => void
   saveSelectionAsSystem: (name: string) => void
   deleteSystemPreset: (id: string) => void
   selectSystem: (systemId: string) => void
+  rotateSystem: (systemId: string, deltaDeg: number) => void
 
   // Context menu
   openContextMenu: (screen: Vec2, world: Vec2, entityId: string | null) => void
@@ -325,7 +326,7 @@ export const useStore = create<Store>()((set, get) => {
         connections: s.connections.map((c) => (c.id === id ? { ...c, ...patch } : c)),
       })),
 
-    addSystemFromPreset: (presetId, center) =>
+    addSystemFromPreset: (presetId, center, headingDeg = 0) =>
       mutate((s) => {
         const preset = s.systemPresets.find((p) => p.id === presetId)
         if (!preset) return s
@@ -338,13 +339,16 @@ export const useStore = create<Store>()((set, get) => {
           const baseName = model.name.split(':').pop()?.trim() ?? model.name
           const dupes = preset.components.filter((c) => c.specId === comp.specId).length
           const nth = preset.components.slice(0, i).filter((c) => c.specId === comp.specId).length
+          // Orient the whole laydown: rotate offsets about the drop point and
+          // slew each component's own facing by the same amount.
+          const off = rotatePoint(comp.offsetM, { x: 0, y: 0 }, headingDeg)
           return {
             id: newId('ent'),
             name: dupes > 1 ? `${baseName} ${nth + 1}` : baseName,
             kind: model.kind,
             specId: model.id,
-            pos: { x: center.x + comp.offsetM.x, y: center.y + comp.offsetM.y },
-            headingDeg: comp.headingDeg,
+            pos: { x: center.x + off.x, y: center.y + off.y },
+            headingDeg: (comp.headingDeg + headingDeg + 360) % 360,
             color: null,
             notes: comp.purpose,
             systemId,
@@ -398,6 +402,27 @@ export const useStore = create<Store>()((set, get) => {
 
     deleteSystemPreset: (id) =>
       mutate((s) => ({ ...s, systemPresets: s.systemPresets.filter((p) => p.id !== id) })),
+
+    rotateSystem: (systemId, deltaDeg) =>
+      mutate((s) => {
+        const members = s.entities.filter((e) => e.systemId === systemId)
+        if (members.length === 0) return s
+        const cx = members.reduce((sum, e) => sum + e.pos.x, 0) / members.length
+        const cy = members.reduce((sum, e) => sum + e.pos.y, 0) / members.length
+        const center = { x: cx, y: cy }
+        return {
+          ...s,
+          entities: s.entities.map((e) =>
+            e.systemId === systemId
+              ? {
+                  ...e,
+                  pos: rotatePoint(e.pos, center, deltaDeg),
+                  headingDeg: (e.headingDeg + deltaDeg + 360) % 360,
+                }
+              : e,
+          ),
+        }
+      }),
 
     selectSystem: (systemId) => {
       const ids = get()
