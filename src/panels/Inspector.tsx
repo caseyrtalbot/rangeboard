@@ -453,6 +453,10 @@ export function Inspector() {
         Scroll to zoom. Drag empty space to pan. Shift-click adds to the selection. Delete removes
         the selection.
       </p>
+      <p>
+        Cmd-drag (or Ctrl-drag) on empty space box-selects. Shift-drag adds a box to the current
+        selection.
+      </p>
     </div>
   )
 }

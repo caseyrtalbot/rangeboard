@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Layer, Stage } from 'react-konva'
+import { Layer, Rect, Stage } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../model/types'
@@ -23,6 +23,15 @@ const MAX_SCALE = 20
 const DBL_CLICK_PX = 6
 /** Konva's dblclick pairing window, ms (Konva.dblClickWindow default). */
 const DBL_CLICK_MS = 400
+/** Pointer travel (screen px) before a modifier-drag counts as a box select. */
+const MARQUEE_MIN_PX = 4
+
+interface Marquee {
+  a: Vec2
+  b: Vec2
+  /** Shift-drag adds to the selection; Cmd/Ctrl-drag replaces it. */
+  additive: boolean
+}
 
 export function CanvasStage() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -30,6 +39,11 @@ export function CanvasStage() {
   const [size, setSize] = useState({ w: 800, h: 600 })
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
   const lastClicks = useRef<Array<{ x: number; y: number; t: number }>>([])
+  const [marquee, setMarquee] = useState<Marquee | null>(null)
+  const marqueeRef = useRef<Marquee | null>(null)
+  const suppressClick = useRef(false)
+  // Held modifier keys disable stage panning so the same drag can box-select.
+  const [modKey, setModKey] = useState(false)
 
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
@@ -37,6 +51,7 @@ export function CanvasStage() {
   const ui = useStore((s) => s.ui)
   const simTimeS = useStore((s) => s.playback.simTimeS)
   const clearSelection = useStore((s) => s.clearSelection)
+  const select = useStore((s) => s.select)
   const addEntityFromModel = useStore((s) => s.addEntityFromModel)
   const addDraftPoint = useStore((s) => s.addDraftPoint)
   const finishBoundary = useStore((s) => s.finishBoundary)
@@ -56,6 +71,19 @@ export function CanvasStage() {
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    const update = (e: KeyboardEvent) => setModKey(e.metaKey || e.ctrlKey || e.shiftKey)
+    const clear = () => setModKey(false)
+    window.addEventListener('keydown', update)
+    window.addEventListener('keyup', update)
+    window.addEventListener('blur', clear)
+    return () => {
+      window.removeEventListener('keydown', update)
+      window.removeEventListener('keyup', update)
+      window.removeEventListener('blur', clear)
+    }
+  }, [])
+
   const tracks = useMemo(() => liveTracks(scenario, simTimeS), [scenario, simTimeS])
   const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
 
@@ -70,6 +98,9 @@ export function CanvasStage() {
 
   function handleContextMenu(e: KonvaEventObject<MouseEvent>) {
     e.evt.preventDefault()
+    // Ctrl+left-click also fires contextmenu on macOS; the menu is
+    // right-button only so Ctrl-drag stays a clean box select.
+    if (e.evt.button !== 2) return
     // Entity nodes open their own menu and cancel bubbling; any other target
     // (stage, boundary, connection) gets the placement menu.
     const pointer = stageRef.current?.getPointerPosition()
@@ -99,7 +130,60 @@ export function CanvasStage() {
     return !!a && !!b && b.t - a.t < DBL_CLICK_MS && Math.hypot(b.x - a.x, b.y - a.y) <= DBL_CLICK_PX
   }
 
+  function beginMarquee(e: KonvaEventObject<MouseEvent>) {
+    // A stale suppress flag (mouseup off-stage) must not eat this gesture's click.
+    suppressClick.current = false
+    if (ui.tool !== 'select' || e.target !== stageRef.current) return
+    if (!(e.evt.metaKey || e.evt.ctrlKey || e.evt.shiftKey)) return
+    const world = pointerWorld()
+    if (!world) return
+    const m: Marquee = { a: world, b: world, additive: e.evt.shiftKey }
+    marqueeRef.current = m
+    setMarquee(m)
+  }
+
+  function updateMarquee(world: Vec2 | null) {
+    const m = marqueeRef.current
+    if (!m || !world) return
+    const next = { ...m, b: world }
+    marqueeRef.current = next
+    setMarquee(next)
+  }
+
+  function finishMarquee() {
+    const m = marqueeRef.current
+    if (!m) return
+    marqueeRef.current = null
+    setMarquee(null)
+    const movedPx = Math.hypot(m.b.x - m.a.x, m.b.y - m.a.y) * camera.scale
+    if (movedPx < MARQUEE_MIN_PX) return
+    const x0 = Math.min(m.a.x, m.b.x)
+    const x1 = Math.max(m.a.x, m.b.x)
+    const y0 = Math.min(m.a.y, m.b.y)
+    const y1 = Math.max(m.a.y, m.b.y)
+    const ids = scenario.entities
+      .filter((en) => {
+        const p = tracks.get(en.id)?.pos ?? en.pos
+        return p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1
+      })
+      .map((en) => en.id)
+    select({ entityIds: ids }, m.additive)
+    // Konva fires a click on the same mouseup; it must not clear this selection.
+    suppressClick.current = true
+  }
+
+  // Releasing the mouse outside the stage still ends the box select.
+  useEffect(() => {
+    if (!marquee) return
+    window.addEventListener('mouseup', finishMarquee)
+    return () => window.removeEventListener('mouseup', finishMarquee)
+  })
+
   function handleClick(e: KonvaEventObject<MouseEvent>) {
+    if (suppressClick.current) {
+      suppressClick.current = false
+      return
+    }
     const onEmpty = e.target === stageRef.current
     const world = pointerWorld()
     if (!world) return
@@ -156,12 +240,18 @@ export function CanvasStage() {
         y={camera.y}
         scaleX={camera.scale}
         scaleY={camera.scale}
-        draggable={ui.tool === 'select'}
+        draggable={ui.tool === 'select' && !modKey}
         onWheel={handleWheel}
         onClick={handleClick}
         onDblClick={handleDblClick}
         onContextMenu={handleContextMenu}
-        onMouseMove={() => setMouseWorld(pointerWorld())}
+        onMouseDown={beginMarquee}
+        onMouseUp={finishMarquee}
+        onMouseMove={() => {
+          const world = pointerWorld()
+          setMouseWorld(world)
+          updateMarquee(world)
+        }}
         onDragStart={(e) => {
           if (e.target === stageRef.current) closeContextMenu()
         }}
@@ -185,6 +275,20 @@ export function CanvasStage() {
           <ConnectionLayer />
           <EntityLayer tracks={tracks} detections={detections} />
           <SystemHandleLayer />
+          {marquee && (
+            <Rect
+              x={Math.min(marquee.a.x, marquee.b.x)}
+              y={Math.min(marquee.a.y, marquee.b.y)}
+              width={Math.abs(marquee.b.x - marquee.a.x)}
+              height={Math.abs(marquee.b.y - marquee.a.y)}
+              stroke="#d9a441"
+              strokeWidth={1}
+              dash={[4, 4]}
+              strokeScaleEnabled={false}
+              fill="rgba(217, 164, 65, 0.08)"
+              listening={false}
+            />
+          )}
         </Layer>
       </Stage>
       <HudLayer mouseWorld={mouseWorld} />

@@ -165,6 +165,8 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
   function handleContextMenu(e: KonvaEventObject<MouseEvent>) {
     e.evt.preventDefault()
     e.cancelBubble = true
+    // Ctrl+left-click also fires contextmenu on macOS; menu is right-button only.
+    if (e.evt.button !== 2) return
     const pointer = e.target.getStage()?.getPointerPosition()
     if (!pointer) return
     const world = { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
