@@ -1,4 +1,5 @@
 import type { TestCard } from '../model/types'
+import { CARD_TEMPLATES, cardFromTemplate } from '../model/seedCards'
 import { useStore } from '../state/store'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -167,6 +168,7 @@ function CardEditor({ card }: { card: TestCard }) {
 
 export function TestCardsPanel() {
   const cards = useStore((s) => s.scenario.testCards)
+  const environment = useStore((s) => s.scenario.environment)
   const selectedId = useStore((s) => s.selection.cardId)
   const { addCard, select } = useStore.getState()
   const selected = cards.find((c) => c.id === selectedId)
@@ -186,6 +188,21 @@ export function TestCardsPanel() {
         <button className="card-chip add" onClick={() => select({ cardId: addCard() })}>
           + New card
         </button>
+        <select
+          className="card-chip add"
+          value=""
+          onChange={(e) => {
+            const t = CARD_TEMPLATES.find((x) => x.name === e.target.value)
+            if (t) select({ cardId: addCard(cardFromTemplate(t, environment)) })
+          }}
+        >
+          <option value="">+ From scenario template…</option>
+          {CARD_TEMPLATES.map((t) => (
+            <option key={t.name} value={t.name}>
+              {t.category}: {t.name}
+            </option>
+          ))}
+        </select>
       </div>
       {selected ? (
         <CardEditor card={selected} />

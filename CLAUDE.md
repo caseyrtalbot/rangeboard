@@ -56,7 +56,9 @@ Data flow for a click/drag: Konva event → store action → new scenario → Re
 
 - `SpecModel` (library entry) vs `Entity` (canvas instance referencing `specId`). Entities survive model deletion (`specId → null`). Custom models: `builtin: false`; duplicate-and-edit supported.
 - Kill chain = `Connection` list; `sim.killChainConnected` accepts sensor→C2→effector or direct sensor→effector.
-- `assessThreat` statuses: `no-path | never-detected | detect-only | no-kill-chain | window-too-short | engageable`. Warning time = arrival at nearest `asset` entity minus first detection. Engagement windows start no earlier than first detection.
+- `assessThreat` statuses: `no-path | never-detected | not-confirmed | detect-only | no-kill-chain | window-too-short | engageable`. Warning time = arrival at nearest `asset` entity minus first detection. Engagement windows start when the `Scenario.engageOn` track quality is met (`detected` default, or `confirmed` = 2 simultaneous technologies).
+- Sensor physics live in `src/analysis/sensorEnv.ts` (COURAGEOUS-based planning factors): rain/fog/night/urban-EM/wind derate ranges per `SensorType`; radar range scales with target `UasGroup` (rings show the Group 1 range); RF sensors only hear `rf-manual`/`mixed` nav modes; EO/IR only holds targets another technology already holds; jammers cannot affect `fiber`/`inertial`/`optical` threats. `SensorSpec.resolutionM` merges formations spaced below it into one track (`swarmMerged`).
+- `src/analysis/mcda.ts` scores a configuration 0-100 from `Scenario.mcdaWeights`; pinned results live in `Scenario.scorecards`. Card templates and the standard covariate checklist live in `src/model/seedCards.ts`.
 - Basemap modes (`canvas | sat | airspace`) are render toggles only — never move data. Sat underlay scale is set by two-point calibration, which scales the image about point A.
 - Test cards follow the Field Guide standard card; `linkedEntityIds` drive the cyan on-canvas highlight when a card is selected.
 

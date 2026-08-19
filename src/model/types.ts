@@ -35,6 +35,8 @@ export interface SensorSpec {
   elevationDeg?: [number, number] | null
   /** Altitude coverage ceiling, feet. Null when unknown. */
   maxAltitudeFt?: number | null
+  /** Minimum target separation the sensor splits into two tracks, meters. Null when unknown. */
+  resolutionM?: number | null
 }
 
 /** Representative detect ranges by role, used when a system's WEZ is unknown. */
@@ -49,7 +51,9 @@ export const SENSOR_ROLE_DEFAULT_RANGE_M: Record<SensorRole, number> = {
 
 export function defaultSensorRole(spec: SensorSpec): SensorRole {
   if (spec.role) return spec.role
-  if (spec.sensorType === 'acoustic') return 'early-warning'
+  // Acoustic effective range is short (COURAGEOUS: ~100-300 m typical), so it
+  // defaults to a close-in tracking role, not early warning.
+  if (spec.sensorType === 'acoustic') return 'tracking'
   if (spec.sensorType === 'rf') return 'surveillance'
   if (spec.sensorType === 'eo-ir') return 'classification'
   return spec.detectRangeM >= 30000 ? 'early-warning' : 'tracking'
@@ -64,7 +68,8 @@ export interface UasSpec {
   maxSpeedMps: number
   enduranceMin: number
   altBandFt: [number, number]
-  navMode: 'gps' | 'inertial' | 'rf-manual' | 'optical' | 'mixed'
+  /** 'fiber' = wire-guided: no RF emissions and immune to jamming. */
+  navMode: 'gps' | 'inertial' | 'rf-manual' | 'optical' | 'fiber' | 'mixed'
   emissionsNote: string
   /** Operator control-link range, meters. Null when autonomous. */
   controlLinkRangeM?: number | null
@@ -252,15 +257,45 @@ export interface SystemPreset {
   links: Array<[number, number]>
 }
 
-/** Scenario-wide covariates that modify UAS range estimates. */
+export type Precipitation = 'clear' | 'rain' | 'fog'
+export type LightLevel = 'day' | 'night'
+export type EmBackground = 'rural' | 'urban'
+
+/** Scenario-wide covariates that modify UAS range estimates and sensor performance. */
 export interface EnvironmentSpec {
   windSpeedMps: number
   /** Direction the wind blows FROM, degrees true. */
   windFromDeg: number
   temperatureC: number
   fieldElevationFt: number
-  /** When false, range rings use calm standard-day performance. */
+  /** Absent on old saves; treat as 'clear'. Derates radar, EO/IR, and acoustic. */
+  precipitation?: Precipitation
+  /** Absent on old saves; treat as 'day'. Night derates EO/IR detection. */
+  light?: LightLevel
+  /** Absent on old saves; treat as 'rural'. Urban EM clutter derates RF and radar. */
+  emBackground?: EmBackground
+  /** When false, all rings and analysis use calm standard-day performance. */
   apply: boolean
+}
+
+/** Track quality a kill chain needs before an engagement may start. */
+export type EngagePolicy = 'detected' | 'confirmed'
+
+/** Weights (0-5) and normalized scores (0-1) share this shape. */
+export interface McdaVector {
+  warning: number
+  coverage: number
+  confirm: number
+  engage: number
+}
+
+/** A pinned scorecard result for comparing IADS configurations. */
+export interface ScorecardSnap {
+  id: string
+  name: string
+  /** Weighted 0-100 total at pin time. */
+  score: number
+  parts: McdaVector
 }
 
 export interface Scenario {
@@ -269,6 +304,12 @@ export interface Scenario {
   library: SpecModel[]
   systemPresets: SystemPreset[]
   environment: EnvironmentSpec
+  /** Absent on old saves; treat as 'detected'. */
+  engageOn?: EngagePolicy
+  /** MCDA scorecard weights, 0-5 each. Absent on old saves. */
+  mcdaWeights?: McdaVector
+  /** Pinned scorecard results. Absent on old saves. */
+  scorecards?: ScorecardSnap[]
   entities: Entity[]
   connections: Connection[]
   boundaries: Boundary[]

@@ -160,6 +160,12 @@ export function LibraryEditor() {
             step={500}
             onChange={(n) => patch({ sensor: { ...sensor, maxAltitudeFt: n > 0 ? n : null } })}
           />
+          <Num
+            label="Track split distance (m, 0 = always splits)"
+            value={sensor.resolutionM ?? 0}
+            step={10}
+            onChange={(n) => patch({ sensor: { ...sensor, resolutionM: n > 0 ? n : null } })}
+          />
         </div>
       )}
 
@@ -275,6 +281,7 @@ export function LibraryEditor() {
                 <option value="inertial">inertial</option>
                 <option value="rf-manual">rf manual</option>
                 <option value="optical">optical</option>
+                <option value="fiber">fiber (jam-immune)</option>
                 <option value="mixed">mixed</option>
               </select>
             </Field>

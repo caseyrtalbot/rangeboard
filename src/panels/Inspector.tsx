@@ -4,6 +4,7 @@ import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
 import { formatDistance, pathLength } from '../geometry/geo'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
+import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
 
@@ -132,6 +133,13 @@ function EntityInspector({ entity }: { entity: Entity }) {
             ? ` · elev ${model.sensor.elevationDeg[0]} to ${model.sensor.elevationDeg[1]} deg`
             : ''}
           {model.sensor.maxAltitudeFt ? ` · to ${model.sensor.maxAltitudeFt} ft` : ''}
+          {sensorEnvFactor(model.sensor.sensorType, scenario.environment) < 1 && (
+            <>
+              <br />
+              In this environment: detect{' '}
+              {formatDistance(effectiveDetectRangeM(model.sensor, scenario.environment))}
+            </>
+          )}
         </div>
       )}
       {model?.effector && (

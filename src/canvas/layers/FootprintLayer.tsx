@@ -3,6 +3,7 @@ import type { Entity } from '../../model/types'
 import { entityActive } from '../../model/types'
 import { useStore, modelFor } from '../../state/store'
 import { wedgePoints } from '../../geometry/geo'
+import { effectiveClassifyRangeM, effectiveDetectRangeM } from '../../analysis/sensorEnv'
 import type { DetectionHit } from '../../playback/sim'
 
 interface Props {
@@ -27,19 +28,22 @@ export function FootprintLayer({ detections }: Props) {
     const fillOpacity = off ? 0.03 : dim ? 0.04 : active ? 0.2 : 0.1
     const strokeOpacity = off ? 0.25 : dim ? 0.3 : 0.7
     const full = spec.sectorDeg >= 360
+    // Rings show the environment-derated small-target (Group 1) range.
+    const detectRangeM = effectiveDetectRangeM(spec, scenario.environment)
+    const classifyRangeM = effectiveClassifyRangeM(spec, scenario.environment)
     return (
       <Group key={e.id} listening={false}>
         {full ? (
           <Circle
             x={e.pos.x}
             y={e.pos.y}
-            radius={spec.detectRangeM}
+            radius={detectRangeM}
             fill={color}
             opacity={fillOpacity}
           />
         ) : (
           <Line
-            points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, spec.detectRangeM)}
+            points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, detectRangeM)}
             closed
             fill={color}
             opacity={fillOpacity}
@@ -49,7 +53,7 @@ export function FootprintLayer({ detections }: Props) {
           <Circle
             x={e.pos.x}
             y={e.pos.y}
-            radius={spec.detectRangeM}
+            radius={detectRangeM}
             stroke={color}
             strokeWidth={active ? 2 : 1}
             strokeScaleEnabled={false}
@@ -57,7 +61,7 @@ export function FootprintLayer({ detections }: Props) {
           />
         ) : (
           <Line
-            points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, spec.detectRangeM)}
+            points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, detectRangeM)}
             closed
             stroke={color}
             strokeWidth={active ? 2 : 1}
@@ -65,11 +69,11 @@ export function FootprintLayer({ detections }: Props) {
             opacity={strokeOpacity}
           />
         )}
-        {!off && spec.classifyRangeM != null && spec.classifyRangeM > 0 && (
+        {!off && classifyRangeM != null && classifyRangeM > 0 && (
           <Circle
             x={e.pos.x}
             y={e.pos.y}
-            radius={spec.classifyRangeM}
+            radius={classifyRangeM}
             stroke={color}
             strokeWidth={1}
             dash={[4, 6]}

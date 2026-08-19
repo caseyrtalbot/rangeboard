@@ -92,3 +92,137 @@ describe('formation detection', () => {
     expect(memberPositions(uas, uas.pos, 0)).toEqual([{ x: 100, y: 200 }])
   })
 })
+
+describe('emissions and detection technology rules', () => {
+  beforeEach(reset)
+
+  it('an RF sensor never sees a fiber-guided threat', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rf360', { x: 0, y: 0 }) // 2000 m omni RF
+    st.addEntityFromModel('lib-fpv-fiber', { x: 1000, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toBeUndefined()
+  })
+
+  it('the same RF sensor sees an RF-linked threat', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rf360', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-mavic3', { x: 1000, y: 0 }) // mixed nav: emits
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toHaveLength(1)
+  })
+
+  it('EO/IR alone never detects; it holds after a cue from another technology', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-hdcmr', { x: 0, y: 0 }) // 3000 m EO/IR
+    st.addEntityFromModel('lib-mavic3', { x: 1500, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toBeUndefined()
+    useStore.getState().addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // radar cue
+    const hits = detectionsAt(useStore.getState().scenario, 0).get(uasId)!
+    expect(hits.map((h) => h.sensorType).sort()).toEqual(['eo-ir', 'radar'])
+  })
+})
+
+describe('environment effects on sensors', () => {
+  beforeEach(reset)
+
+  it('rain shrinks radar detection range', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // 10 km radar
+    st.addEntityFromModel('lib-mavic3', { x: 9500, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toHaveLength(1)
+    useStore.getState().updateEnvironment({ precipitation: 'rain' }) // x0.75 -> 7500 m
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toBeUndefined()
+  })
+
+  it('radar sees a Group 3 airframe farther than a Group 1 at the same spot', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // 10 km base
+    st.addEntityFromModel('lib-mavic3', { x: 14000, y: 0 }) // G1
+    st.addEntityFromModel('lib-shahed136', { x: -14000, y: 0 }) // G3: x1.6 -> 16 km
+    const [, g1, g3] = useStore.getState().scenario.entities
+    const hits = detectionsAt(useStore.getState().scenario, 0)
+    expect(hits.get(g1.id)).toBeUndefined()
+    expect(hits.get(g3.id)).toHaveLength(1)
+  })
+
+  it('when apply is off, no environment effect remains', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-mavic3', { x: 9500, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEnvironment({ precipitation: 'rain', apply: false })
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toHaveLength(1)
+  })
+})
+
+describe('engagement policy and jammer limits', () => {
+  beforeEach(reset)
+
+  it('confirmed policy blocks a single-technology chain', () => {
+    placeKillChain()
+    const uasId = placeThreat()
+    useStore.getState().patchScenario({ engageOn: 'confirmed' })
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    expect(a.status).toBe('not-confirmed')
+    expect(a.firstConfirmS).toBeNull()
+  })
+
+  it('a second technology confirms the track and restores engageability', () => {
+    placeKillChain()
+    const uasId = placeThreat()
+    useStore.getState().addEntityFromModel('lib-rf360', { x: 0, y: 0 }) // omni RF, 2 km
+    useStore.getState().patchScenario({ engageOn: 'confirmed' })
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    expect(a.firstConfirmS).not.toBeNull()
+    expect(a.status).toBe('engageable')
+  })
+
+  it('a jammer is no effector against a fiber-guided threat', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-modi', { x: 0, y: 0 }) // jammer, 2 km
+    const [radar, jam] = useStore.getState().scenario.entities
+    useStore.getState().beginConnect(radar.id)
+    useStore.getState().completeConnect(jam.id)
+    st.addEntityFromModel('lib-fpv-fiber', { x: -30000, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 30000, y: 0 })
+    useStore.getState().finishPath()
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    expect(a.status).toBe('detect-only')
+    // The same jammer works against a GNSS-guided threat.
+    useStore.getState().addEntityFromModel('lib-mugin5', { x: -30000, y: 0 })
+    const gpsId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().beginPath(gpsId)
+    useStore.getState().addDraftPoint({ x: 30000, y: 0 })
+    useStore.getState().finishPath()
+    expect(assessThreat(useStore.getState().scenario, gpsId).status).toBe('engageable')
+  })
+})
+
+describe('swarm track resolution', () => {
+  beforeEach(reset)
+
+  it('flags a formation no detecting sensor can split', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-acoustic-picket', { x: 0, y: 0 }) // resolution 500 m
+    st.addEntityFromModel('lib-fpv7', { x: -20000, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEntity(uasId, {
+      formation: { count: 5, shape: 'wedge', spacingM: 100 },
+    })
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 20000, y: 0 })
+    useStore.getState().finishPath()
+    expect(assessThreat(useStore.getState().scenario, uasId).swarmMerged).toBe(true)
+    // Wider spacing than the sensor resolution splits the tracks.
+    useStore.getState().updateEntity(uasId, {
+      formation: { count: 5, shape: 'wedge', spacingM: 600 },
+    })
+    expect(assessThreat(useStore.getState().scenario, uasId).swarmMerged).toBe(false)
+  })
+})

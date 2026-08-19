@@ -25,6 +25,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 90,
       elevationDeg: [0, 90],
       maxAltitudeFt: 30000,
+      resolutionM: 50,
     },
   },
   {
@@ -43,6 +44,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 90,
       elevationDeg: [0, 90],
       maxAltitudeFt: 30000,
+      resolutionM: 50,
     },
   },
   {
@@ -61,6 +63,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
+      resolutionM: 30,
     },
   },
   {
@@ -79,6 +82,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 130,
       elevationDeg: [-45, 45],
       maxAltitudeFt: null,
+      resolutionM: 30,
     },
   },
   {
@@ -97,6 +101,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: [0, 30],
       maxAltitudeFt: 25000,
+      resolutionM: 150,
     },
   },
   {
@@ -115,6 +120,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
+      resolutionM: 100,
     },
   },
   {
@@ -133,6 +139,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: [0, 60],
       maxAltitudeFt: null,
+      resolutionM: 50,
     },
   },
   {
@@ -151,6 +158,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 120,
       elevationDeg: [-40, 40],
       maxAltitudeFt: null,
+      resolutionM: 50,
     },
   },
   {
@@ -169,6 +177,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 90,
       elevationDeg: null,
       maxAltitudeFt: null,
+      resolutionM: 100,
     },
   },
   {
@@ -187,6 +196,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
+      resolutionM: 100,
     },
   },
   {
@@ -205,6 +215,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 105,
       elevationDeg: [0, 60],
       maxAltitudeFt: null,
+      resolutionM: 200,
     },
   },
   {
@@ -223,6 +234,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: 10000,
+      resolutionM: 500,
     },
   },
   {
@@ -241,6 +253,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: [-40, 60],
       maxAltitudeFt: null,
+      resolutionM: 20,
     },
   },
   {
@@ -259,6 +272,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
+      resolutionM: 15,
     },
   },
 ]
@@ -640,7 +654,7 @@ const THREATS: SpecModel[] = [
       maxSpeedMps: 25,
       enduranceMin: 20,
       altBandFt: [10, 300],
-      navMode: 'rf-manual',
+      navMode: 'fiber',
       emissionsNote: 'None: fiber-optic control and video',
       controlLinkRangeM: 20000,
       operatingRadiusM: 15000,

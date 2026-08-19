@@ -4,14 +4,23 @@ import { useStore } from '../state/store'
 
 const STORAGE_KEY = 'rangeboard.scenario.v1'
 
+/** Fill fields added after a save was written, including nested environment fields. */
+function fillScenario(parsed: Scenario): Scenario {
+  const empty = emptyScenario()
+  return {
+    ...empty,
+    ...parsed,
+    environment: { ...empty.environment, ...parsed.environment },
+  }
+}
+
 export function loadAutosave(): Scenario | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Scenario
     if (parsed.schemaVersion !== 1) return null
-    // Fill any fields added after the save was written.
-    return { ...emptyScenario(), ...parsed }
+    return fillScenario(parsed)
   } catch {
     return null
   }
@@ -78,7 +87,7 @@ export function importScenarioFile(): void {
       window.alert('That file is not a RangeBoard scenario.')
       return
     }
-    useStore.getState().replaceScenario({ ...emptyScenario(), ...s })
+    useStore.getState().replaceScenario(fillScenario(s))
   })
 }
 

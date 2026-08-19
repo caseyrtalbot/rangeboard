@@ -17,6 +17,7 @@ import type {
 } from '../model/types'
 import { newId } from '../model/types'
 import { emptyScenario } from '../model/seed'
+import { standardCovariates } from '../model/seedCards'
 import { pathLength, rotatePoint } from '../geometry/geo'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
@@ -124,6 +125,9 @@ export interface Store {
   // Environment
   updateEnvironment: (patch: Partial<Scenario['environment']>) => void
 
+  // Scenario-level settings (engage policy, MCDA weights, pinned scorecards)
+  patchScenario: (patch: Partial<Scenario>) => void
+
   // Underlay
   setUnderlayImage: (dataUrl: string, naturalW: number, naturalH: number) => void
   updateUnderlay: (patch: Partial<Scenario['underlay']>) => void
@@ -138,7 +142,7 @@ export interface Store {
   mergeLibrary: (models: SpecModel[]) => void
 
   // Test cards
-  addCard: () => string
+  addCard: (patch?: Partial<TestCard>) => string
   updateCard: (id: string, patch: Partial<TestCard>) => void
   deleteCard: (id: string) => void
   toggleCardEntity: (cardId: string, entityId: string) => void
@@ -514,6 +518,8 @@ export const useStore = create<Store>()((set, get) => {
     updateEnvironment: (patch) =>
       mutate((s) => ({ ...s, environment: { ...s.environment, ...patch } })),
 
+    patchScenario: (patch) => mutate((s) => ({ ...s, ...patch })),
+
     setUnderlayImage: (dataUrl, naturalW, naturalH) =>
       mutate((s) => ({
         ...s,
@@ -625,7 +631,7 @@ export const useStore = create<Store>()((set, get) => {
         return { ...s, library: [...s.library, ...added] }
       }),
 
-    addCard: () => {
+    addCard: (patch) => {
       const id = newId('tc')
       mutate((s) => {
         const card: TestCard = {
@@ -641,7 +647,7 @@ export const useStore = create<Store>()((set, get) => {
           threatProfile: '',
           independentVars: '',
           controlledVars: '',
-          covariates: '',
+          covariates: standardCovariates(s.environment),
           measures: [],
           procedure: [],
           thresholds: '',
@@ -649,6 +655,7 @@ export const useStore = create<Store>()((set, get) => {
           expectedResults: '',
           linkedEntityIds: [],
           runs: [],
+          ...patch,
         }
         return { ...s, testCards: [...s.testCards, card] }
       })
