@@ -8,6 +8,7 @@ export function ConnectionLayer() {
   const select = useStore((s) => s.select)
   const selectedId = useStore((s) => s.selection.connectionId)
   const camera = useStore((s) => s.camera)
+  const tool = useStore((s) => s.ui.tool)
   const k = camera.scale
 
   return (
@@ -40,6 +41,8 @@ export function ConnectionLayer() {
             pointerLength={9 / k}
             pointerWidth={7 / k}
             hitStrokeWidth={12 / k}
+            // Wide hit bands must not swallow waypoint clicks while drawing.
+            listening={tool === 'select'}
             onClick={(e) => {
               e.cancelBubble = true
               select({ connectionId: c.id })

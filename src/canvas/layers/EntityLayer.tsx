@@ -103,6 +103,7 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
   const camera = useStore((s) => s.camera)
   const tool = useStore((s) => s.ui.tool)
   const connectFromId = useStore((s) => s.ui.connectFromId)
+  const pathEntityId = useStore((s) => s.ui.pathEntityId)
   const selected = useStore((s) => s.selection.entityIds.includes(entity.id))
   const cardLinked = useStore((s) => {
     const cardId = s.selection.cardId
@@ -140,16 +141,24 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
   const members = entity.kind === 'uas' ? memberPositions(entity, pos, headingDeg) : [pos]
 
   function handleClick(e: KonvaEventObject<MouseEvent>) {
-    e.cancelBubble = true
     if (tool === 'connect') {
+      e.cancelBubble = true
       if (!connectFromId) beginConnect(entity.id)
       else completeConnect(entity.id)
       return
     }
-    if (tool === 'path' && entity.kind === 'uas') {
-      beginPath(entity.id)
+    if (tool === 'path') {
+      // A UAS click starts its path only before drafting. Any other click
+      // during a draft must bubble to the stage and become a waypoint.
+      if (entity.kind === 'uas' && !pathEntityId) {
+        e.cancelBubble = true
+        beginPath(entity.id)
+      }
       return
     }
+    // Boundary and calibrate clicks bubble to the stage as draw points.
+    if (tool !== 'select') return
+    e.cancelBubble = true
     select({ entityIds: [entity.id] }, e.evt.shiftKey)
   }
 

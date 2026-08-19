@@ -19,12 +19,17 @@ import { ContextMenu } from './ContextMenu'
 
 const MIN_SCALE = 0.0005
 const MAX_SCALE = 20
+/** Max pointer travel (px) between two clicks that still counts as a double-click. */
+const DBL_CLICK_PX = 6
+/** Konva's dblclick pairing window, ms (Konva.dblClickWindow default). */
+const DBL_CLICK_MS = 400
 
 export function CanvasStage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const [size, setSize] = useState({ w: 800, h: 600 })
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
+  const lastClicks = useRef<Array<{ x: number; y: number; t: number }>>([])
 
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
@@ -88,12 +93,24 @@ export function CanvasStage() {
     })
   }
 
+  /** True when the last two clicks form a genuine in-place double-click. */
+  function isInPlacePair(): boolean {
+    const [a, b] = lastClicks.current
+    return !!a && !!b && b.t - a.t < DBL_CLICK_MS && Math.hypot(b.x - a.x, b.y - a.y) <= DBL_CLICK_PX
+  }
+
   function handleClick(e: KonvaEventObject<MouseEvent>) {
     const onEmpty = e.target === stageRef.current
     const world = pointerWorld()
     if (!world) return
+    const pointer = stageRef.current?.getPointerPosition()
+    if (pointer) {
+      lastClicks.current = [...lastClicks.current.slice(-1), { ...pointer, t: performance.now() }]
+    }
     if (ui.tool === 'boundary' || ui.tool === 'path') {
-      addDraftPoint(world)
+      // The 2nd click of an in-place double-click is not a new vertex; the
+      // dblclick handler finishes the shape instead.
+      if (!isInPlacePair()) addDraftPoint(world)
       return
     }
     if (ui.tool === 'calibrate') {
@@ -104,6 +121,10 @@ export function CanvasStage() {
   }
 
   function handleDblClick() {
+    // Konva pairs any two clicks inside its time window into a dblclick, even
+    // far apart. Only a true in-place double-click finishes; rapid waypoint
+    // clicks keep drawing.
+    if (!isInPlacePair()) return
     if (ui.tool === 'boundary') finishBoundary(true)
     if (ui.tool === 'path') finishPath()
   }

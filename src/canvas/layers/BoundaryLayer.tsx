@@ -14,6 +14,7 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
   const selected = useStore((s) => s.selection.boundaryId === boundary.id)
   const basemap = useStore((s) => s.ui.basemap)
   const camera = useStore((s) => s.camera)
+  const tool = useStore((s) => s.ui.tool)
   const style = STYLE[boundary.type]
   const flat = boundary.points.flatMap((p) => [p.x, p.y])
   const airspace = basemap === 'airspace'
@@ -33,6 +34,8 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
         strokeScaleEnabled={false}
         fill={boundary.closed ? style.fill : undefined}
         hitStrokeWidth={12 / camera.scale}
+        // Filled polygons and wide hit bands must not swallow clicks while drawing.
+        listening={tool === 'select'}
         onClick={(e) => {
           e.cancelBubble = true
           select({ boundaryId: boundary.id })
