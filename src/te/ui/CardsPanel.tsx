@@ -268,9 +268,15 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
         <NumberField label="Post-event margin (s)" value={card.postEventMarginS} onChange={(v) => set({ postEventMarginS: v ?? 0 })} disabled={frozen} />
       </div>
       {card.procedure.map((s, i) => (
-        <div key={s.id} className="field-row te-table-row">
+        <div key={s.id} className="field-row te-table-row te-step-row">
           <Field label={`Step ${i + 1} action`}>
-            <input value={s.action} disabled={frozen} onChange={(e) => setStep(s.id, { action: e.target.value })} />
+            <textarea
+              rows={1}
+              value={s.action}
+              disabled={frozen}
+              onChange={(e) => setStep(s.id, { action: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+            />
           </Field>
           <SelectField label="Role" value={s.role} options={RUN_ROLES.map((v) => ({ v, label: v }))} onChange={(v) => v && setStep(s.id, { role: v })} disabled={frozen} />
           <Field label="Complete when">

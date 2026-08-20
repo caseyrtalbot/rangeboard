@@ -520,7 +520,7 @@ label.inline input[type='range'] {
 
 .card-chip.active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: #121415;
 }
 
 .card-chip.add {
@@ -875,6 +875,20 @@ input[type='number'] {
 
 .te-table-row > button {
   margin-bottom: 4px;
+}
+
+/* Procedure step rows: wide auto-growing action column, narrow checkbox columns. */
+.te-step-row .field:first-child {
+  flex: 3;
+}
+
+.te-step-row .field:has(> input[type='checkbox']) {
+  flex: 0 1 auto;
+}
+
+.te-step-row textarea {
+  field-sizing: content;
+  resize: none;
 }
 
 .gate-item {
