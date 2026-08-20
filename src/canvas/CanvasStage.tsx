@@ -14,6 +14,8 @@ import { RangeLayer } from './layers/RangeLayer'
 import { PathLayer } from './layers/PathLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
 import { EntityLayer } from './layers/EntityLayer'
+import { CalloutLayer } from './layers/CalloutLayer'
+import { layoutLabels } from './labelLayout'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 import { HudLayer } from './layers/HudLayer'
 import { ContextMenu } from './ContextMenu'
@@ -93,6 +95,26 @@ export function CanvasStage() {
 
   const tracks = useMemo(() => liveTracks(scenario, simTimeS), [scenario, simTimeS])
   const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
+  const prevSpokeIds = useRef<Set<string>>(new Set())
+  const labelPlacements = useMemo(
+    () =>
+      layoutLabels(
+        scenario.entities.map((e) => {
+          const pos = tracks.get(e.id)?.pos ?? e.pos
+          return { id: e.id, name: e.name, sx: pos.x * camera.scale + camera.x, sy: pos.y * camera.scale + camera.y }
+        }),
+        // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
+        { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
+      ),
+    [scenario.entities, tracks, camera, size],
+  )
+  const spokeIds = useMemo(
+    () => new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
+    [labelPlacements],
+  )
+  useEffect(() => {
+    prevSpokeIds.current = spokeIds
+  }, [spokeIds])
 
   function toWorld(pointer: Vec2): Vec2 {
     return { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
@@ -280,8 +302,9 @@ export function CanvasStage() {
           <RangeLayer />
           <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
           <ConnectionLayer />
-          <EntityLayer tracks={tracks} detections={detections} />
+          <EntityLayer tracks={tracks} detections={detections} spokeIds={spokeIds} />
           <SystemHandleLayer />
+          <CalloutLayer placements={labelPlacements} />
           {marquee && (
             <Rect
               x={Math.min(marquee.a.x, marquee.b.x)}

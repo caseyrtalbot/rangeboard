@@ -10,6 +10,8 @@ import type { DetectionHit, LiveTrack } from '../../playback/sim'
 interface Props {
   tracks: Map<string, LiveTrack>
   detections: Map<string, DetectionHit[]>
+  /** Entities whose labels render as spoke callouts in CalloutLayer instead. */
+  spokeIds: Set<string>
 }
 
 const FALLBACK: Record<Entity['kind'], string> = {
@@ -98,7 +100,7 @@ function HeadingHandle({ entity, pos, color }: { entity: Entity; pos: { x: numbe
   )
 }
 
-function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) {
+function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity } & Props) {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
   const tool = useStore((s) => s.ui.tool)
@@ -206,16 +208,18 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
         {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
           <Text fontFamily="IBM Plex Mono" x={10} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={color} listening={false} />
         )}
-        <Text fontFamily="IBM Plex Mono"
-          x={-60}
-          y={14}
-          width={120}
-          text={entity.name}
-          fontSize={11}
-          fill="#b7bdb2"
-          align="center"
-          listening={false}
-        />
+        {!spokeIds.has(entity.id) && (
+          <Text fontFamily="IBM Plex Mono"
+            x={-60}
+            y={14}
+            width={120}
+            text={entity.name}
+            fontSize={11}
+            fill="#b7bdb2"
+            align="center"
+            listening={false}
+          />
+        )}
         {selected && directional && tool === 'select' && (
           <HeadingHandle entity={entity} pos={pos} color={color} />
         )}
@@ -254,12 +258,12 @@ function EntityNode({ entity, tracks, detections }: { entity: Entity } & Props) 
   )
 }
 
-export function EntityLayer({ tracks, detections }: Props) {
+export function EntityLayer({ tracks, detections, spokeIds }: Props) {
   const entities = useStore((s) => s.scenario.entities)
   return (
     <>
       {entities.map((e) => (
-        <EntityNode key={e.id} entity={e} tracks={tracks} detections={detections} />
+        <EntityNode key={e.id} entity={e} tracks={tracks} detections={detections} spokeIds={spokeIds} />
       ))}
     </>
   )
