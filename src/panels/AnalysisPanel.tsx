@@ -11,13 +11,21 @@ import type {
 } from '../model/types'
 import { newId } from '../model/types'
 import { useStore } from '../state/store'
-import { assessAllThreats } from '../playback/sim'
 import type { ClassificationTimes, ThreatAssessment, ThreatStatus } from '../playback/sim'
-import { resolveEngagements } from '../playback/attrition'
 import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
 import { formatDistance, formatTime } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 import { buildAarSummary } from '../analysis/aar'
+import type { ImpactSeverity, LeakerImpact } from '../analysis/impact'
+import { engagementPicture, SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../analysis/impact'
+import { LeakerWarningStrip } from './LeakerWarningStrip'
+
+/** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
+const TIER_CLS: Record<ImpactSeverity, string> = {
+  severe: 'bad',
+  moderate: 'warn',
+  low: 'neutral',
+}
 import { exportAar } from '../io/persist'
 
 const STATUS_TEXT: Record<ThreatStatus, { label: string; cls: string }> = {
@@ -49,11 +57,55 @@ function classificationTimeline(c: ClassificationTimes): string {
   return steps.join(' → ') + tail
 }
 
-function ThreatRow({ a, att }: { a: ThreatAssessment; att?: ThreatAttrition }) {
+/**
+ * Engagement-potential line copy: WEZ membership at arrival, expected ships
+ * and leaked warhead, severity tier, and any jam degrade. Honest blanks:
+ * unknown radius reads "r unknown" (asset assumed inside, conservative) and
+ * an unknown warhead reads "warhead unknown", never 0.
+ */
+function engagementPotentialText(
+  a: ThreatAssessment,
+  imp: LeakerImpact | undefined,
+  kind: ReturnType<typeof wezKindFor>,
+  radiusM: number | null,
+): string {
+  if (kind === 'none') return 'no weapon zone (ISR or decoy platform)'
+  if (!imp) return '—'
+  if (imp.assetId == null) return 'no asset placed'
+  if (!imp.assetInWez) {
+    return `target outside WEZ (CPA ${formatDistance(a.closestApproachM ?? 0)} > r ${formatDistance(
+      radiusM ?? 0,
+    )})`
+  }
+  const inside = radiusM == null ? 'target assumed inside WEZ (r unknown)' : 'target inside WEZ'
+  const parts = [
+    imp.arrivalS != null ? `${inside} at ${formatTime(imp.arrivalS)}` : inside,
+    `${imp.expectedShipsArriving.toFixed(1)} ships`,
+    imp.expectedWarheadKg > 0 ? `${Math.round(imp.expectedWarheadKg)} kg` : 'warhead unknown',
+    imp.severity != null ? SEVERITY_LABEL[imp.severity] : 'below warning floor',
+  ]
+  if (imp.jamDegradedProb > 0.005) {
+    parts.push(`arrives jam-degraded ${Math.round(imp.jamDegradedProb * 100)}%`)
+  }
+  return parts.join(' · ')
+}
+
+function ThreatRow({
+  a,
+  att,
+  imp,
+}: {
+  a: ThreatAssessment
+  att?: ThreatAttrition
+  imp?: LeakerImpact
+}) {
   const scenario = useStore((s) => s.scenario)
   const name = (id: string | null) => scenario.entities.find((e) => e.id === id)?.name ?? '—'
   const status = STATUS_TEXT[a.status]
   const winLen = a.windowS ? a.windowS[1] - a.windowS[0] : null
+  const threatModel = scenario.library.find(
+    (m) => m.id === scenario.entities.find((e) => e.id === a.uasId)?.specId,
+  )
 
   return (
     <div className="threat-row">
@@ -154,6 +206,12 @@ function ThreatRow({ a, att }: { a: ThreatAssessment; att?: ThreatAttrition }) {
                         : ''
                     }`
                   : '—'}
+              </td>
+            </tr>
+            <tr>
+              <td>Engagement potential</td>
+              <td>
+                {engagementPotentialText(a, imp, wezKindFor(threatModel), wezRadiusM(threatModel))}
               </td>
             </tr>
           </tbody>
@@ -358,6 +416,21 @@ function classifyCell(t: AarThreatRowData): string {
 const aarTime = (v: number | null) => (v == null ? '—' : formatTime(v))
 const aarPct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`)
 
+/**
+ * Impact cell from the optional I&W row fields. Three states: a severity
+ * tier with the expected arriving mass, 'none' when the row was assessed and
+ * nothing warns (severity present but null), and '—' for pins made before
+ * the fields existed.
+ */
+function aarImpactCell(t: AarThreatRowData): string {
+  if (t.impactSeverity != null) {
+    const kg =
+      (t.expectedWarheadKg ?? 0) > 0 ? ` · ${Math.round(t.expectedWarheadKg!)} kg` : ''
+    return `${SEVERITY_LABEL[t.impactSeverity]} · ${(t.expectedShipsArriving ?? 0).toFixed(1)} ships${kg}`
+  }
+  return t.impactSeverity === null ? 'none' : '—'
+}
+
 /** AAR totals and per-effector shot ledger. Renders from the summary alone. */
 function AarTotals({ aar }: { aar: AarSummary }) {
   return (
@@ -433,6 +506,14 @@ function AarThreatLines({ aar }: { aar: AarSummary }) {
           <span className={`status ${OUTCOME_TEXT[t.outcome].cls}`}>
             {OUTCOME_TEXT[t.outcome].label}
           </span>
+          {t.impactSeverity != null && (
+            <>
+              {' · '}
+              <span className={`status ${TIER_CLS[t.impactSeverity]}`}>
+                I&W {SEVERITY_LABEL[t.impactSeverity]}
+              </span>
+            </>
+          )}
         </div>
       ))}
     </>
@@ -455,6 +536,7 @@ function AarSection({ aar }: { aar: AarSummary }) {
             <th>Classify</th>
             <th>Engage</th>
             <th>Outcome</th>
+            <th>Impact</th>
           </tr>
         </thead>
         <tbody>
@@ -475,6 +557,7 @@ function AarSection({ aar }: { aar: AarSummary }) {
                   ? ` ${aarPct(t.leakProbability)} leak`
                   : ''}
               </td>
+              <td>{aarImpactCell(t)}</td>
             </tr>
           ))}
         </tbody>
@@ -624,11 +707,12 @@ function Scorecard({
 export function AnalysisPanel() {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
-  const assessments = useMemo(() => assessAllThreats(scenario), [scenario])
-  const report = useMemo(() => resolveEngagements(scenario), [scenario])
+  // One shared computation per scenario with the canvas WEZ layer
+  // (module-level WeakMap in impact.ts), so the sweep never runs twice.
+  const { assessments, report, impacts } = useMemo(() => engagementPicture(scenario), [scenario])
   const aar = useMemo(
-    () => buildAarSummary(scenario, assessments, report),
-    [scenario, assessments, report],
+    () => buildAarSummary(scenario, assessments, report, impacts),
+    [scenario, assessments, report, impacts],
   )
   const threats = assessments.filter((a) => a.status !== 'no-path')
   const noPath = assessments.length - threats.length
@@ -655,8 +739,14 @@ export function AnalysisPanel() {
       {assessments.length === 0 && (
         <p className="muted">Place a UAS threat on the canvas to analyze it.</p>
       )}
+      <LeakerWarningStrip impacts={impacts} />
       {threats.map((a) => (
-        <ThreatRow key={a.uasId} a={a} att={report.threats.find((t) => t.uasId === a.uasId)} />
+        <ThreatRow
+          key={a.uasId}
+          a={a}
+          att={report.threats.find((t) => t.uasId === a.uasId)}
+          imp={impacts.find((i) => i.uasId === a.uasId)}
+        />
       ))}
       {threats.length > 0 && <EffectorSummary report={report} />}
       <AarSection aar={aar} />

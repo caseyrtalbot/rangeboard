@@ -7,6 +7,7 @@ import type {
 } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
+import type { LeakerImpact } from './impact'
 
 /**
  * After-action summary: composes the threat assessments (detect/classify
@@ -27,6 +28,7 @@ export function buildAarSummary(
   scenario: Scenario,
   assessments: ThreatAssessment[],
   report: AttritionReport,
+  impacts: LeakerImpact[],
 ): AarSummary {
   const name = (id: string | null): string | null =>
     id == null ? null : (scenario.entities.find((e) => e.id === id)?.name ?? null)
@@ -35,6 +37,7 @@ export function buildAarSummary(
     .filter((a) => a.status !== 'no-path')
     .map((a) => {
       const att = report.threats.find((t) => t.uasId === a.uasId)
+      const imp = impacts.find((i) => i.uasId === a.uasId)
       return {
         uasId: a.uasId,
         name: name(a.uasId) ?? a.uasId,
@@ -51,6 +54,18 @@ export function buildAarSummary(
         leakProbability: att?.leakProbability ?? 1,
         outcome: aarOutcome(att),
         killedByName: att ? name(att.killedByEffectorId) : null,
+        // Engagement-potential fields; absent when no impact row exists so
+        // old-shape pins and new summaries share one optional contract.
+        ...(imp
+          ? {
+              assetName: imp.assetName,
+              arrivalS: imp.arrivalS,
+              assetInWez: imp.assetInWez,
+              expectedShipsArriving: imp.expectedShipsArriving,
+              expectedWarheadKg: imp.expectedWarheadKg,
+              impactSeverity: imp.severity,
+            }
+          : {}),
       }
     })
 

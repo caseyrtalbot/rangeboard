@@ -4,6 +4,7 @@ import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '
 import { assessAllThreats } from '../playback/sim'
 import { resolveEngagements } from '../playback/attrition'
 import { buildAarSummary } from './aar'
+import { assessLeakerImpacts } from './impact'
 
 /**
  * One scenario with all three outcomes: an interceptor hard-kills threat A,
@@ -139,7 +140,14 @@ function mixedScenario(): {
 }
 
 function summarize(scenario: Scenario) {
-  return buildAarSummary(scenario, assessAllThreats(scenario), resolveEngagements(scenario))
+  const assessments = assessAllThreats(scenario)
+  const report = resolveEngagements(scenario)
+  return buildAarSummary(
+    scenario,
+    assessments,
+    report,
+    assessLeakerImpacts(scenario, assessments, report),
+  )
 }
 
 describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () => {
@@ -213,6 +221,81 @@ describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () =>
   it('is JSON-serializable and round-trips intact', () => {
     const round = JSON.parse(JSON.stringify(aar))
     expect(round).toEqual(aar)
+  })
+})
+
+describe('AAR engagement-potential (I&W) fields', () => {
+  /** OWA threat into a defended asset at the path end; no defenses. */
+  function owaScenario(): { scenario: Scenario; uasId: string } {
+    const scenario = emptyScenario()
+    const owa: SpecModel = {
+      ...TARGET,
+      id: 'tst-owa',
+      uas: {
+        ...TARGET.uas!,
+        airframe: 'one-way-attack',
+        warheadKg: 40,
+        effectRadiusM: 50,
+        weaponProfile: 'impact',
+      },
+    }
+    scenario.library = [...scenario.library, owa]
+    const uas = ent('uas', owa.id, { x: -1000, y: 0 }, 'OWA Threat')
+    const asset = ent('asset', TARGET.id, { x: 0, y: 0 }, 'CP Main')
+    scenario.entities = [uas, asset]
+    scenario.paths = [
+      {
+        id: 'path-owa',
+        entityId: uas.id,
+        points: [
+          { x: -1000, y: 0 },
+          { x: 0, y: 0 },
+        ],
+        speedMps: 40,
+        startDelayS: 0,
+      },
+    ]
+    return { scenario, uasId: uas.id }
+  }
+
+  it('carries the impact fields on the threat row', () => {
+    const { scenario, uasId } = owaScenario()
+    const aar = summarize(scenario)
+    const row = aar.threats.find((t) => t.uasId === uasId)!
+    expect(row.assetName).toBe('CP Main')
+    expect(row.arrivalS).toBeCloseTo(25, 1)
+    expect(row.assetInWez).toBe(true)
+    expect(row.expectedShipsArriving).toBe(1)
+    expect(row.expectedWarheadKg).toBe(40)
+    expect(row.impactSeverity).toBe('severe')
+  })
+
+  it('round-trips the optional fields through JSON intact', () => {
+    const aar = summarize(owaScenario().scenario)
+    const round = JSON.parse(JSON.stringify(aar))
+    expect(round).toEqual(aar)
+  })
+
+  it('accepts an old-shape pin whose rows lack the impact fields', () => {
+    const aar = summarize(owaScenario().scenario)
+    // A scorecard pinned before the I&W fields existed: strip them.
+    const pin = JSON.parse(JSON.stringify(aar)) as typeof aar
+    for (const t of pin.threats) {
+      const rec = t as unknown as Record<string, unknown>
+      delete rec.assetName
+      delete rec.arrivalS
+      delete rec.assetInWez
+      delete rec.expectedShipsArriving
+      delete rec.expectedWarheadKg
+      delete rec.impactSeverity
+    }
+    const round = JSON.parse(JSON.stringify(pin)) as typeof aar
+    expect(round).toEqual(pin)
+    expect(round.threats[0].impactSeverity).toBeUndefined()
+    expect(round.threats[0].expectedShipsArriving).toBeUndefined()
+    // The pre-existing row contract still reads normally.
+    expect(round.threats[0].name).toBe('OWA Threat')
+    expect(round.threats[0].outcome).toBe('not-engaged')
   })
 })
 

@@ -365,6 +365,12 @@ export interface RaidPlan {
  */
 export type AarOutcome = 'hard-kill' | 'soft-kill' | 'leaker' | 'not-engaged'
 
+/**
+ * Leaker engagement-potential tier (I&W). Canonical thresholds and the
+ * derivation live in src/analysis/impact.ts, which re-exports this type.
+ */
+export type ImpactSeverity = 'low' | 'moderate' | 'severe'
+
 /** One threat's timeline row in the AAR: detect, classify, engage, outcome. */
 export interface AarThreatRow {
   uasId: string
@@ -386,6 +392,20 @@ export interface AarThreatRow {
   outcome: AarOutcome
   /** Dominant killer's name at summary time; null when no kills. */
   killedByName: string | null
+  // Engagement-potential (I&W) fields. All optional: pinned scorecards made
+  // before they existed still parse and render, no storage key bump.
+  /** Defended asset name at summary time; null when no asset is placed. */
+  assetName?: string | null
+  /** Arrival (closest approach) at the defended asset, sim seconds. */
+  arrivalS?: number | null
+  /** True when the asset sits inside the threat's WEZ at arrival. */
+  assetInWez?: boolean
+  /** shipCount * leakProbability: expected ships arriving. */
+  expectedShipsArriving?: number
+  /** expectedShipsArriving * warheadKg; 0 when the warhead mass is unknown. */
+  expectedWarheadKg?: number
+  /** I&W severity tier; null when nothing warns. */
+  impactSeverity?: ImpactSeverity | null
 }
 
 /** One effector's shot ledger in the AAR. */
