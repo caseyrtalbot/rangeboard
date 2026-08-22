@@ -31,7 +31,7 @@ export function emptyScenario(): Scenario {
     systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
     environment: defaultEnvironment(),
     engageOn: 'detected',
-    mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3 },
+    mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3, attrition: 3 },
     scorecards: [],
     entities: [],
     connections: [],

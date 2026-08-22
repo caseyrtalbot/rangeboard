@@ -292,6 +292,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 15000,
       maxAltitudeFt: 20000,
       engageTimeS: 60,
+      pk: 0.85,
+      magazineSize: 4,
+      salvoCooldownS: 30,
     },
   },
   {
@@ -308,6 +311,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 15000,
       maxAltitudeFt: 20000,
       engageTimeS: 45,
+      pk: 0.85,
+      magazineSize: 4,
+      salvoCooldownS: 30,
     },
   },
   {
@@ -324,6 +330,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 4000,
       maxAltitudeFt: 5000,
       engageTimeS: 90,
+      pk: 0.75,
+      magazineSize: 2,
+      salvoCooldownS: 60,
     },
   },
   {
@@ -340,6 +349,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 20000,
       maxAltitudeFt: 16000,
       engageTimeS: 120,
+      pk: 0.8,
+      magazineSize: 4,
+      salvoCooldownS: 60,
     },
   },
   {
@@ -356,6 +368,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 2000,
       maxAltitudeFt: 5000,
       engageTimeS: 10,
+      pk: 0.75,
+      magazineSize: 30,
+      salvoCooldownS: 10,
     },
   },
   {
@@ -372,6 +387,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 1500,
       maxAltitudeFt: 5000,
       engageTimeS: 5,
+      pk: 0.7,
+      magazineSize: 20,
+      salvoCooldownS: 5,
     },
   },
   {
@@ -388,6 +406,9 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 250,
       maxAltitudeFt: 800,
       engageTimeS: 8,
+      pk: 0.7,
+      magazineSize: 24,
+      salvoCooldownS: 10,
     },
   },
   {
@@ -404,6 +425,8 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 3000,
       maxAltitudeFt: 8000,
       engageTimeS: 15,
+      pk: 0.85,
+      salvoCooldownS: 15,
     },
   },
   {
@@ -420,6 +443,8 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 5000,
       maxAltitudeFt: 10000,
       engageTimeS: 15,
+      pk: 0.85,
+      salvoCooldownS: 10,
     },
   },
   {
@@ -437,6 +462,8 @@ const EFFECTORS: SpecModel[] = [
       maxAltitudeFt: 3000,
       sectorDeg: 120,
       engageTimeS: 3,
+      pk: 0.7,
+      salvoCooldownS: 5,
     },
   },
   {
@@ -453,6 +480,8 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 800,
       maxAltitudeFt: 3000,
       engageTimeS: 2,
+      pk: 0.7,
+      salvoCooldownS: 5,
     },
   },
   {
@@ -470,6 +499,8 @@ const EFFECTORS: SpecModel[] = [
       maxAltitudeFt: 1200,
       sectorDeg: 60,
       engageTimeS: 5,
+      pk: 0.6,
+      salvoCooldownS: 5,
     },
   },
   {
@@ -486,6 +517,8 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 2000,
       maxAltitudeFt: 3500,
       engageTimeS: 5,
+      pk: 0.65,
+      salvoCooldownS: 5,
     },
   },
   {
@@ -502,6 +535,8 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 3500,
       maxAltitudeFt: 1200,
       engageTimeS: 20,
+      pk: 0.7,
+      salvoCooldownS: 20,
     },
   },
 ]

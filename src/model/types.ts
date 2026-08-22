@@ -93,6 +93,12 @@ export interface EffectorSpec {
   sectorDeg?: number
   /** Seconds from assignment to effect at a target inside the envelope. */
   engageTimeS: number
+  /** Single-shot probability of kill, 0..1. Absent on old saves; attrition uses a type baseline. */
+  pk?: number
+  /** Rounds or interceptors carried. Absent means unlimited (jammers, DE, HPM). */
+  magazineSize?: number
+  /** Seconds between salvos at the same or the next target. Absent: type baseline. */
+  salvoCooldownS?: number
 }
 
 /** Threat employment intent, carried by threat/UAS models for cards and playback. */
@@ -287,6 +293,8 @@ export interface McdaVector {
   coverage: number
   confirm: number
   engage: number
+  /** Attrition part: expected kill fraction of the raid. Absent on old saves and old pins. */
+  attrition?: number
 }
 
 /** A pinned scorecard result for comparing IADS configurations. */

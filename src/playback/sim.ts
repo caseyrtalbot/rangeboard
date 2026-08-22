@@ -150,12 +150,16 @@ export interface ThreatAssessment {
   /** Longest usable engagement interval [start, end] against any effector. */
   windowS: [number, number] | null
   windowEffectorId: string | null
+  /** Sensors that detected the threat at any time during the sweep. */
+  detectingSensorIds: string[]
+  /** Raw in-range intervals per effector (DT-sampled, before the track-quality gate). */
+  effectorWindows: Array<{ effectorId: string; intervals: Array<[number, number]> }>
 }
 
 const DT = 0.5
 
-/** True when some detecting sensor routes through a C2 node to some effector. */
-function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean {
+/** Effector ids reachable from the given sensors, directly or through one C2 hop. */
+export function connectedEffectorIds(scenario: Scenario, sensorIds: Set<string>): Set<string> {
   // Disabled entities drop out of the chain entirely.
   const kinds = new Map(scenario.entities.filter(entityActive).map((e) => [e.id, e.kind]))
   const c2FromSensor = new Set<string>()
@@ -163,11 +167,17 @@ function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean
     if (sensorIds.has(c.fromId) && kinds.get(c.toId) === 'c2') c2FromSensor.add(c.toId)
   }
   // Allow direct sensor -> effector links for architectures without a C2 hop.
+  const out = new Set<string>()
   for (const c of scenario.connections) {
-    if (sensorIds.has(c.fromId) && kinds.get(c.toId) === 'effector') return true
-    if (c2FromSensor.has(c.fromId) && kinds.get(c.toId) === 'effector') return true
+    if (kinds.get(c.toId) !== 'effector') continue
+    if (sensorIds.has(c.fromId) || c2FromSensor.has(c.fromId)) out.add(c.toId)
   }
-  return false
+  return out
+}
+
+/** True when some detecting sensor routes through a C2 node to some effector. */
+function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean {
+  return connectedEffectorIds(scenario, sensorIds).size > 0
 }
 
 /** Full timeline analysis of one threat by sampling the scenario at DT steps. */
@@ -186,6 +196,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     warningS: null,
     windowS: null,
     windowEffectorId: null,
+    detectingSensorIds: [],
+    effectorWindows: [],
   }
   const path = scenario.paths.find((p) => p.entityId === uasId)
   if (!path || path.points.length < 2) return base
@@ -267,6 +279,11 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   }
 
   base.techs = [...techsSeen]
+  base.detectingSensorIds = [...detectingSensors]
+  base.effectorWindows = [...effectorInRange.entries()].map(([effectorId, intervals]) => ({
+    effectorId,
+    intervals,
+  }))
   base.swarmMerged = hasFormation && base.firstDetectS != null && !anyResolved
   if (closest.assetId != null) {
     base.assetId = closest.assetId

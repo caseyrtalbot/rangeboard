@@ -4,6 +4,8 @@ import { newId } from '../model/types'
 import { useStore } from '../state/store'
 import { assessAllThreats } from '../playback/sim'
 import type { ThreatAssessment, ThreatStatus } from '../playback/sim'
+import { resolveEngagements } from '../playback/attrition'
+import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
 import { formatDistance, formatTime } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 
@@ -24,7 +26,7 @@ const TECH_LABEL: Record<string, string> = {
   rf: 'RF',
 }
 
-function ThreatRow({ a }: { a: ThreatAssessment }) {
+function ThreatRow({ a, att }: { a: ThreatAssessment; att?: ThreatAttrition }) {
   const scenario = useStore((s) => s.scenario)
   const name = (id: string | null) => scenario.entities.find((e) => e.id === id)?.name ?? '—'
   const status = STATUS_TEXT[a.status]
@@ -79,6 +81,28 @@ function ThreatRow({ a }: { a: ThreatAssessment }) {
                       winLen ?? 0,
                     )} s) · ${name(a.windowEffectorId)}`
                   : 'none after track quality is met'}
+              </td>
+            </tr>
+            <tr>
+              <td>Shots fired</td>
+              <td>
+                {att && att.shotsFired > 0
+                  ? `${att.shotsFired}${
+                      att.firstShotS != null ? ` · first at ${formatTime(att.firstShotS)}` : ''
+                    }${att.killedByEffectorId ? ` · ${name(att.killedByEffectorId)}` : ''}`
+                  : 'none'}
+              </td>
+            </tr>
+            <tr>
+              <td>Leak probability</td>
+              <td>
+                {att
+                  ? `${Math.round(att.leakProbability * 100)}%${
+                      att.shipCount > 1
+                        ? ` · ${att.expectedKills.toFixed(1)} of ${att.shipCount} ships expected killed`
+                        : ''
+                    }`
+                  : '—'}
               </td>
             </tr>
           </tbody>
@@ -226,19 +250,75 @@ function EnvironmentEditor() {
   )
 }
 
+/** Per-effector expected magazine use from the attrition sweep. */
+function EffectorSummary({ report }: { report: AttritionReport }) {
+  const scenario = useStore((s) => s.scenario)
+  if (report.effectors.length === 0 || report.totals.raidSize === 0) return null
+  return (
+    <div className="subsection">
+      <div className="panel-subtitle">Effector magazines</div>
+      <table className="threat-table">
+        <tbody>
+          {report.effectors.map((e) => {
+            const ent = scenario.entities.find((x) => x.id === e.effectorId)
+            const spec = scenario.library.find((m) => m.id === ent?.specId)?.effector
+            const remaining =
+              e.expectedRoundsRemaining != null
+                ? `${e.expectedRoundsRemaining}${
+                    spec?.magazineSize != null ? ` of ${spec.magazineSize}` : ''
+                  } left${e.expectedRoundsRemaining <= 0 ? ' · empty' : ''}`
+                : 'unlimited'
+            return (
+              <tr key={e.effectorId}>
+                <td>{ent?.name ?? '—'}</td>
+                <td>
+                  {e.shotsFired} fired · {remaining}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <p className="muted small">
+        Expected raid outcome: {report.totals.expectedKills.toFixed(1)} of{' '}
+        {report.totals.raidSize} ships killed, {report.totals.expectedLeakers.toFixed(1)} leak
+        through, {report.totals.shotsFired} shots.
+      </p>
+    </div>
+  )
+}
+
 const WEIGHT_LABELS: Array<{ key: keyof McdaVector; label: string }> = [
   { key: 'warning', label: 'Warning time' },
   { key: 'coverage', label: 'Detection coverage' },
   { key: 'confirm', label: 'Confirmed tracks' },
   { key: 'engage', label: 'Engageable threats' },
+  { key: 'attrition', label: 'Attrition (expected kills)' },
 ]
 
+/** Old saves have no attrition weight; default it without touching the save. */
+function fullWeights(w?: McdaVector): Required<McdaVector> {
+  return {
+    warning: w?.warning ?? 3,
+    coverage: w?.coverage ?? 3,
+    confirm: w?.confirm ?? 2,
+    engage: w?.engage ?? 3,
+    attrition: w?.attrition ?? 3,
+  }
+}
+
 /** Weighted configuration score (COURAGEOUS eq. 1) with pinned comparisons. */
-function Scorecard({ assessments }: { assessments: ThreatAssessment[] }) {
+function Scorecard({
+  assessments,
+  report,
+}: {
+  assessments: ThreatAssessment[]
+  report: AttritionReport
+}) {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
-  const weights = scenario.mcdaWeights ?? { warning: 3, coverage: 3, confirm: 2, engage: 3 }
-  const parts = useMemo(() => mcdaParts(assessments), [assessments])
+  const weights = fullWeights(scenario.mcdaWeights)
+  const parts = useMemo(() => mcdaParts(assessments, report), [assessments, report])
   const pinned = scenario.scorecards ?? []
 
   if (!parts && pinned.length === 0) return null
@@ -260,7 +340,9 @@ function Scorecard({ assessments }: { assessments: ThreatAssessment[] }) {
               }
             />
           </Field>
-          <div className="score-part">{parts ? Math.round(parts[key] * 100) : '—'}</div>
+          <div className="score-part">
+            {parts?.[key] != null ? Math.round(parts[key]! * 100) : '—'}
+          </div>
         </div>
       ))}
       {score != null && (
@@ -319,6 +401,7 @@ export function AnalysisPanel() {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
   const assessments = useMemo(() => assessAllThreats(scenario), [scenario])
+  const report = useMemo(() => resolveEngagements(scenario), [scenario])
   const threats = assessments.filter((a) => a.status !== 'no-path')
   const noPath = assessments.length - threats.length
 
@@ -340,14 +423,15 @@ export function AnalysisPanel() {
         <p className="muted">Place a UAS threat on the canvas to analyze it.</p>
       )}
       {threats.map((a) => (
-        <ThreatRow key={a.uasId} a={a} />
+        <ThreatRow key={a.uasId} a={a} att={report.threats.find((t) => t.uasId === a.uasId)} />
       ))}
+      {threats.length > 0 && <EffectorSummary report={report} />}
       {noPath > 0 && (
         <p className="muted">
           {noPath} UAS without a flight path. Draw a path with the Path tool to include them.
         </p>
       )}
-      <Scorecard assessments={assessments} />
+      <Scorecard assessments={assessments} report={report} />
       <p className="muted small">
         Warning time = arrival at the defended asset minus first detection. Windows start when the
         selected track quality is met. RF sensors do not see RF-silent threats; EO/IR needs a cue
