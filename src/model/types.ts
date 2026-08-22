@@ -61,6 +61,9 @@ export function defaultSensorRole(spec: SensorSpec): SensorRole {
 
 export type UasGroup = 1 | 2 | 3 | 4 | 5
 
+/** How a threat responds to a successful jam (EW soft kill). */
+export type JamBehavior = 'drift' | 'return-home' | 'continue'
+
 export interface UasSpec {
   group: UasGroup
   airframe: 'quad' | 'fixed-wing' | 'vtol' | 'one-way-attack' | 'fpv'
@@ -81,6 +84,18 @@ export interface UasSpec {
   oneWay?: boolean
   /** Observed range-affecting combat modifications (batteries, relays, fiber spools). */
   rangeNote?: string
+  /** Response to a successful jam. Absent on old saves; defaultJamBehavior fills in. */
+  jamBehavior?: JamBehavior
+}
+
+/**
+ * Jam response when the spec does not set one. Mixed-nav threats fall back to
+ * an unjammed mode and press on; GNSS- or link-reliant threats lose guidance
+ * and drift off the approach. Only meaningful for jammable nav modes.
+ */
+export function defaultJamBehavior(uas: UasSpec): JamBehavior {
+  if (uas.jamBehavior) return uas.jamBehavior
+  return uas.navMode === 'mixed' ? 'continue' : 'drift'
 }
 
 export interface EffectorSpec {

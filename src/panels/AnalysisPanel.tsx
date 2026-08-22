@@ -89,8 +89,32 @@ function ThreatRow({ a, att }: { a: ThreatAssessment; att?: ThreatAttrition }) {
                 {att && att.shotsFired > 0
                   ? `${att.shotsFired}${
                       att.firstShotS != null ? ` · first at ${formatTime(att.firstShotS)}` : ''
-                    }${att.killedByEffectorId ? ` · ${name(att.killedByEffectorId)}` : ''}`
+                    }${
+                      att.killedByEffectorId
+                        ? ` · ${name(att.killedByEffectorId)}${att.killedBySoft ? ' (jam)' : ''}`
+                        : ''
+                    }`
                   : 'none'}
+              </td>
+            </tr>
+            <tr>
+              <td>Outcome</td>
+              <td>
+                {att &&
+                (att.expectedHardKills > 0.0005 ||
+                  att.expectedSoftKills > 0.0005 ||
+                  att.continueJamProb > 0.0005)
+                  ? [
+                      att.shipCount > 1
+                        ? `${att.expectedHardKills.toFixed(1)} hard kill · ${att.expectedSoftKills.toFixed(1)} soft kill (jam)`
+                        : `hard kill ${Math.round(att.expectedHardKills * 100)}% · soft kill (jam) ${Math.round(att.expectedSoftKills * 100)}%`,
+                      att.continueJamProb > 0.0005
+                        ? `arrives jam-degraded ${Math.round(att.continueJamProb * 100)}%`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : '—'}
               </td>
             </tr>
             <tr>
@@ -281,8 +305,9 @@ function EffectorSummary({ report }: { report: AttritionReport }) {
       </table>
       <p className="muted small">
         Expected raid outcome: {report.totals.expectedKills.toFixed(1)} of{' '}
-        {report.totals.raidSize} ships killed, {report.totals.expectedLeakers.toFixed(1)} leak
-        through, {report.totals.shotsFired} shots.
+        {report.totals.raidSize} ships killed ({report.totals.expectedHardKills.toFixed(1)} hard,{' '}
+        {report.totals.expectedSoftKills.toFixed(1)} soft),{' '}
+        {report.totals.expectedLeakers.toFixed(1)} leak through, {report.totals.shotsFired} shots.
       </p>
     </div>
   )

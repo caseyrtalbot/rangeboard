@@ -2,12 +2,13 @@ import type {
   EffectorSpec,
   Entity,
   FlightPath,
+  JamBehavior,
   Scenario,
   SpecModel,
   UasGroup,
   UasSpec,
 } from '../model/types'
-import { entityActive } from '../model/types'
+import { defaultJamBehavior, entityActive } from '../model/types'
 import { dist, posAtTime } from '../geometry/geo'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats, connectedEffectorIds, memberPositions } from './sim'
@@ -22,6 +23,12 @@ import { effectivePathDelayS } from './raid'
  * Pk model and baselines follow the PicoGrid drone-swarm engagement
  * calculator (dormant core/ path): per-shot
  * Pk = basePk * distanceFalloff * sizePenalty * evasionPenalty.
+ *
+ * Outcomes split into two channels. Hard kills (interceptor, gun, net, DE,
+ * HPM) destroy the airframe. Soft kills (jammer) apply the threat's
+ * JamBehavior: 'drift' and 'return-home' end the approach — a mission kill
+ * flagged soft — while 'continue' leaves the threat inbound with a degraded
+ * track, so it still leaks.
  */
 
 const DT = 0.5
@@ -59,18 +66,38 @@ export function distanceFalloff(distM: number, maxRangeM: number): number {
   return Math.max(0, 1 - 0.3 * (distM / maxRangeM))
 }
 
+/**
+ * Kill-shot Pk penalty against a ship inbound under a 'continue' jam: the
+ * denied GNSS/RF link silences emissions and degrades the track, so the
+ * firing solution suffers. Planning factor on the source's 30% falloff scale.
+ */
+export const CONTINUE_TRACK_DEGRADE = 0.3
+
+/** Effector types whose success destroys the airframe (vs a jammer soft kill). */
+export function isHardKill(effectorType: EffectorSpec['effectorType']): boolean {
+  return effectorType !== 'jammer'
+}
+
 export interface ThreatAttrition {
   uasId: string
   /** Ships in the formation; 1 when the entity flies alone. */
   shipCount: number
-  /** Sum over ships of (1 - survival probability). */
+  /** Sum over ships of (1 - survival probability): hard plus soft kills. */
   expectedKills: number
+  /** Expected ships destroyed by hard-kill effectors. */
+  expectedHardKills: number
+  /** Expected mission kills through the soft channel (jam ends the approach). */
+  expectedSoftKills: number
   /** Mean per-ship survival probability; 1 = certain leaker. */
   leakProbability: number
+  /** Mean probability a ship's track is jam-degraded on arrival ('continue'). */
+  continueJamProb: number
   firstShotS: number | null
   shotsFired: number
   /** Effector with the largest expected-kill contribution; null when no shots. */
   killedByEffectorId: string | null
+  /** True when killedByEffectorId is a jammer: the dominant kill is soft. */
+  killedBySoft: boolean
 }
 
 export interface EffectorAttrition {
@@ -83,7 +110,10 @@ export interface EffectorAttrition {
 export interface AttritionTotals {
   /** Total ships across all threats with flight paths. */
   raidSize: number
+  /** Hard plus soft kills. */
   expectedKills: number
+  expectedHardKills: number
+  expectedSoftKills: number
   expectedLeakers: number
   shotsFired: number
 }
@@ -106,14 +136,27 @@ function speedFor(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
+interface ShipState {
+  /** Probability the ship is still inbound (not hard- or mission-killed). */
+  alive: number
+  /** Accumulated expected hard kills of this ship. */
+  hard: number
+  /** Accumulated expected soft (mission) kills of this ship. */
+  soft: number
+  /** Probability a 'continue' jam degrades this ship's track. */
+  jammed: number
+}
+
 interface ThreatState {
   a: ThreatAssessment
   entity: Entity
   uasSpec: UasSpec | undefined
   path: FlightPath | undefined
   speedMps: number
-  /** Survival probability per ship, all starting at 1. */
-  ships: number[]
+  /** One expected-value state per ship in the formation. */
+  ships: ShipState[]
+  /** Response to a successful jam; spec value or nav-mode default. */
+  jamBehavior: JamBehavior
   /** In-range intervals per connected effector; empty unless engageable. */
   windows: Map<string, Array<[number, number]>>
   /** Time the required track quality was met; shots start no earlier. */
@@ -166,7 +209,8 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
       uasSpec,
       path,
       speedMps: path ? speedFor(scenario, path) : 15,
-      ships: Array.from({ length: count }, () => 1),
+      ships: Array.from({ length: count }, () => ({ alive: 1, hard: 0, soft: 0, jammed: 0 })),
+      jamBehavior: uasSpec ? defaultJamBehavior(uasSpec) : 'drift',
       windows,
       gateS: policy === 'confirmed' ? a.firstConfirmS : a.firstDetectS,
       shotsFired: 0,
@@ -217,10 +261,16 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
       }
       if (!target) continue
 
-      // Aim at the ship most likely to still be alive (formations split shots).
+      const softShot = !isHardKill(es.spec.effectorType)
+      const continueJam = softShot && target.jamBehavior === 'continue'
+
+      // Aim where the shot still matters (formations split shots): killing
+      // shots at the ship most likely alive; 'continue' jams at the ship most
+      // likely alive and not yet jammed.
+      const weight = (s: ShipState) => (continueJam ? s.alive * (1 - s.jammed) : s.alive)
       let shipIdx = 0
       for (let i = 1; i < target.ships.length; i++) {
-        if (target.ships[i] > target.ships[shipIdx] + EPS) shipIdx = i
+        if (weight(target.ships[i]) > weight(target.ships[shipIdx]) + EPS) shipIdx = i
       }
       const sample = posAtTime(target.path!.points, target.speedMps, effectivePathDelayS(scenario, target.path!), t)
       const members = memberPositions(target.entity, sample.pos, sample.headingDeg)
@@ -231,11 +281,20 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
       const evasion = target.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
       const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
 
-      const before = target.ships[shipIdx]
-      target.ships[shipIdx] = before * (1 - pk)
+      const ship = target.ships[shipIdx]
+      if (continueJam) {
+        // Jam holds but the threat presses on: no kill, the track degrades.
+        ship.jammed += (1 - ship.jammed) * pk
+      } else {
+        // Kill shot; a jam-degraded track worsens the firing solution.
+        const kill = ship.alive * pk * (1 - CONTINUE_TRACK_DEGRADE * ship.jammed)
+        ship.alive -= kill
+        if (softShot) ship.soft += kill
+        else ship.hard += kill
+        target.killContrib.set(es.entity.id, (target.killContrib.get(es.entity.id) ?? 0) + kill)
+      }
       target.shotsFired += 1
       if (target.firstShotS == null) target.firstShotS = t
-      target.killContrib.set(es.entity.id, (target.killContrib.get(es.entity.id) ?? 0) + before * pk)
 
       es.shotsFired += 1
       if (es.rounds != null) es.rounds -= 1
@@ -244,7 +303,10 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
   }
 
   const threatRows: ThreatAttrition[] = threats.map((ts) => {
-    const survival = ts.ships.reduce((s, v) => s + v, 0)
+    const survival = ts.ships.reduce((s, v) => s + v.alive, 0)
+    const hardKills = ts.ships.reduce((s, v) => s + v.hard, 0)
+    const softKills = ts.ships.reduce((s, v) => s + v.soft, 0)
+    const jammed = ts.ships.reduce((s, v) => s + v.jammed, 0)
     let killedBy: string | null = null
     let best = 0
     for (const [id, v] of ts.killContrib) {
@@ -253,14 +315,19 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
         killedBy = id
       }
     }
+    const killedBySpec = killedBy ? effectors.get(killedBy)?.spec : undefined
     return {
       uasId: ts.a.uasId,
       shipCount: ts.ships.length,
-      expectedKills: ts.ships.length - survival,
+      expectedKills: hardKills + softKills,
+      expectedHardKills: hardKills,
+      expectedSoftKills: softKills,
       leakProbability: ts.ships.length > 0 ? survival / ts.ships.length : 1,
+      continueJamProb: ts.ships.length > 0 ? jammed / ts.ships.length : 0,
       firstShotS: ts.firstShotS,
       shotsFired: ts.shotsFired,
       killedByEffectorId: killedBy,
+      killedBySoft: killedBySpec != null && !isHardKill(killedBySpec.effectorType),
     }
   })
 
@@ -271,13 +338,17 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
   }))
 
   const raidSize = threatRows.reduce((s, t) => s + t.shipCount, 0)
-  const expectedKills = threatRows.reduce((s, t) => s + t.expectedKills, 0)
+  const expectedHardKills = threatRows.reduce((s, t) => s + t.expectedHardKills, 0)
+  const expectedSoftKills = threatRows.reduce((s, t) => s + t.expectedSoftKills, 0)
+  const expectedKills = expectedHardKills + expectedSoftKills
   return {
     threats: threatRows,
     effectors: effectorRows,
     totals: {
       raidSize,
       expectedKills,
+      expectedHardKills,
+      expectedSoftKills,
       expectedLeakers: raidSize - expectedKills,
       shotsFired: threatRows.reduce((s, t) => s + t.shotsFired, 0),
     },
