@@ -86,6 +86,30 @@ export interface UasSpec {
   rangeNote?: string
   /** Response to a successful jam. Absent on old saves; defaultJamBehavior fills in. */
   jamBehavior?: JamBehavior
+  /**
+   * Warhead mass, kg, from the threat study (docs/threat). Null when the study
+   * gives no public figure. Never invented to fill the blank.
+   */
+  warheadKg?: number | null
+  /**
+   * PLANNING FACTOR effect radius, meters, for T&E laydown work. The study
+   * explicitly declines to compute lethal blast radii or fragmentation fans
+   * (section 18.1), so this is a representative tier value from
+   * weaponFactors.ts, not study-derived lethality data. Null when unknown.
+   */
+  effectRadiusM?: number | null
+  /**
+   * Munition-release standoff from the target, meters, for platforms that
+   * release weapons and return (UCAV, bomber). Null when no number is
+   * supported.
+   */
+  standoffRangeM?: number | null
+  /**
+   * Drives the WEZ kind: 'impact' = OWA/kamikaze effect circle at the impact
+   * point, 'standoff' = release ring around the platform, 'none' = ISR/decoy
+   * (no weapon zone). Absent on old saves; defaultWeaponProfile fills in.
+   */
+  weaponProfile?: 'impact' | 'standoff' | 'none'
 }
 
 /**

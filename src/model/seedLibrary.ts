@@ -603,6 +603,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 8000,
       oneWay: false,
       rangeNote: 'Combat recon radius 5-10 km under EW; repeaters and directional antennas push toward 10-15 km.',
+      // Threat study: ISR/dropper class, dropped munition mass small and variable, so no weapon numbers.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
+      jamBehavior: 'return-home', // study-derived for the DJI class; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G1-Q-01',
@@ -634,6 +640,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 4000,
       oneWay: false,
       rangeNote: 'Practical radius 3-5 km under EW; occasionally paired with repeaters.',
+      // Threat study: recce only in this class; no weapon numbers.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
+      jamBehavior: 'return-home', // study-derived for the DJI class; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G1-Q-02',
@@ -665,6 +677,11 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 10000,
       oneWay: true,
       rangeNote: 'Strikes 5-15 km; relay drones and high-gain video links push 20-30 km. Extended packs and wing kits reported.',
+      // Threat study [R13]: Bumerang-E class benchmark, up to 4 kg target load; class match, typical fills lighter.
+      warheadKg: 4,
+      effectRadiusM: 30, // = defaultEffectRadiusM(4); planning factor, not study-derived lethality (study 18.1)
+      standoffRangeM: null,
+      weaponProfile: 'impact',
     },
     threatProfile: {
       designator: 'THR-G1-FPV-01',
@@ -696,6 +713,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 15000,
       oneWay: true,
       rangeNote: 'Fielded fiber spools of 10, 15, and 20 km confirmed in combat; 41-50 km spools demonstrated on larger frames.',
+      // Threat study: payload model-dependent and not quantified, so no warhead mass or effect radius.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'impact',
+      jamBehavior: 'continue', // fiber control is immune to RF jamming (study RUS-TAC-03); default for fiber would be 'drift'
     },
     threatProfile: {
       designator: 'THR-G1-FPV-02',
@@ -727,6 +750,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 10000,
       oneWay: false,
       rangeNote: 'Employed 8-12 km where EW permits; repeaters and elevated antennas hold the link.',
+      // Threat study: DJI-class ISR/dropper archetype; dropped munition mass small and variable.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
+      jamBehavior: 'return-home', // study-derived for the DJI class; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G2-Q-01',
@@ -758,6 +787,13 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 10000,
       oneWay: false,
       rangeNote: 'Night sorties 10-20 km with ~15 kg payload; Starlink-relay control reported on some airframes.',
+      // Threat study (UKR-TAC-03): drops up to 40 kg of ordnance overhead, but fixes no single warhead
+      // mass or release standoff, so no WEZ is drawn for the class.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
+      jamBehavior: 'return-home', // study-derived for the heavy-bomber family; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G2-HB-01',
@@ -789,6 +825,11 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 50000,
       oneWay: false,
       rangeNote: 'Legs beyond 100 km reported for the class; combat ISR bounded by ~50 km datalink.',
+      // ISR only; no weapon numbers in the threat study.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
     },
     threatProfile: {
       designator: 'THR-G2-V-01',
@@ -820,6 +861,11 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 40000,
       oneWay: true,
       rangeNote: 'Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.',
+      // Threat study [R08][R17]: 5 kg fragmentation/cumulative warhead.
+      warheadKg: 5,
+      effectRadiusM: 30, // = defaultEffectRadiusM(5); planning factor, not study-derived lethality (study 18.1)
+      standoffRangeM: null,
+      weaponProfile: 'impact',
     },
     threatProfile: {
       designator: 'THR-G2-LM-01',
@@ -851,6 +897,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 120000,
       oneWay: false,
       rangeNote: 'Routinely operates 110-150 km from its ground station on 14-16 hour sorties.',
+      // ISR only; cues fires but does not itself strike (threat study [R11]).
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
+      jamBehavior: 'return-home', // study-derived [R11]; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G3-ISR-01',
@@ -882,6 +934,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 900000,
       oneWay: true,
       rangeNote: 'Strike routes 600-900+ km with evasive doglegs; Kometa anti-jam GNSS and jet-powered variants reported.',
+      // Threat study 5.2.1 [R15][R16]: ~40 kg warhead per UN technical report; variants differ.
+      warheadKg: 40,
+      effectRadiusM: 80, // = defaultEffectRadiusM(40); planning factor, not study-derived lethality (study 18.1)
+      standoffRangeM: null,
+      weaponProfile: 'impact',
+      jamBehavior: 'continue', // hardened GNSS-INS / anti-jam variants press on (study 5.2.1); default for inertial is 'drift'
     },
     threatProfile: {
       designator: 'THR-G3-OWA-01',
@@ -913,6 +971,12 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 300000,
       oneWay: true,
       rangeNote: 'About 300 km with a combat payload; unarmed decoy flights reported to 600 km.',
+      // Threat study [R02]: cataloged as false target / barrage / recon; warhead role not fixed, so decoy WEZ is null.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'none',
+      jamBehavior: 'continue', // GNSS/IMU nav recovered in exploitation (study [R02]); default for gps is 'drift'
     },
     threatProfile: {
       designator: 'THR-G2-DEC-01',
@@ -944,6 +1008,11 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 400000,
       oneWay: true,
       rangeNote: 'Early conversions flew about 500 km with 25 kg of explosives; MICH 2000 derivative extends the class.',
+      // Threat study 15A gives no warhead mass for the improvised class, so no effect radius is drawn.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: null,
+      weaponProfile: 'impact',
     },
     threatProfile: {
       designator: 'THR-G3-OWA-02',
@@ -975,12 +1044,93 @@ const THREATS: SpecModel[] = [
       combatRadiusM: 200000,
       oneWay: false,
       rangeNote: 'Bounded by line-of-sight datalink, about 200 km from the control station; up to 500 km claimed.',
+      // Threat study [I02]: PGM release platform, but munition-release range and warhead are not published.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: 8000, // PLANNING FACTOR for T&E laydown: the study gives no release range; not study data
+      weaponProfile: 'standoff',
+      jamBehavior: 'return-home', // study-derived for the UCAV class; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G4-MALE-01',
       routeIntent: 'High ISR orbit with PGM release',
       altitudeFt: 14000,
       speedMps: 40,
+      count: 1,
+    },
+  },
+  {
+    id: 'lib-geran4',
+    name: 'Red air: Geran-4 jet OWA (G3)',
+    kind: 'uas',
+    description:
+      'Turbojet one-way-attack from the Geran-3/4/5 jet family, per threat study 5.2.1 [R03]: 450 kg MTOW, 320 km/h cruise, 770 km range, thermobaric or HE-frag warhead types identified. The study fixes no Geran-3 numbers, so the exploited Geran-4 carries the jet-OWA class.',
+    color: '#9c3f31',
+    builtin: true,
+    uas: {
+      group: 3,
+      airframe: 'one-way-attack',
+      cruiseSpeedMps: 89,
+      maxSpeedMps: 97,
+      // Planning derivation: 770 km declared range at 320 km/h cruise, ~144 min. Not a published figure.
+      enduranceMin: 144,
+      altBandFt: [500, 13123],
+      navMode: 'mixed',
+      emissionsNote: 'SADRA INS + 16-element CRPA anti-jam satnav, camera, mesh modem (study [R03])',
+      controlLinkRangeM: null,
+      operatingRadiusM: 770000,
+      combatRadiusM: null,
+      oneWay: true,
+      rangeNote: 'Declared range 770 km, ceiling 4000 m (study 5.2.1 [R03]).',
+      // Threat study 5.2.1 [R03]: 50 kg warhead.
+      warheadKg: 50,
+      effectRadiusM: 80, // = defaultEffectRadiusM(50); planning factor, not study-derived lethality (study 18.1)
+      standoffRangeM: null,
+      weaponProfile: 'impact',
+      jamBehavior: 'continue', // anti-jam satnav plus INS presses on (study [R03])
+    },
+    threatProfile: {
+      designator: 'THR-G3-JET-01',
+      routeIntent: 'High-speed deep strike; compressed detect-to-engage timeline',
+      altitudeFt: 6000,
+      speedMps: 89,
+      count: 1,
+    },
+  },
+  {
+    id: 'lib-tb2',
+    name: 'Red air: Bayraktar TB2 UCAV (G4)',
+    kind: 'uas',
+    description:
+      'MALE UCAV per threat study 15B [TUR02]: 700 kg MTOW, 150 kg payload, 90 KTAS cruise, 16000 ft operational altitude, 20+ h endurance. Releases laser-, INS/GPS-, or IR-guided munitions and mini cruise missiles at standoff; the study publishes no release range, so the standoff value is a planning factor.',
+    color: '#93483f',
+    builtin: true,
+    uas: {
+      group: 4,
+      airframe: 'fixed-wing',
+      cruiseSpeedMps: 46,
+      maxSpeedMps: 57,
+      enduranceMin: 1200,
+      altBandFt: [16000, 22000],
+      navMode: 'mixed',
+      emissionsNote: 'LOS and BLOS datalinks; EO/IR/laser designator or surveillance radar (study [TUR02])',
+      controlLinkRangeM: null,
+      operatingRadiusM: null,
+      combatRadiusM: null,
+      oneWay: false,
+      rangeNote: 'LOS and BLOS communications per the 2026 Baykar sheet; no public radius figure used.',
+      // Threat study 15B [TUR02]: munition-release range and warhead mass not published.
+      warheadKg: null,
+      effectRadiusM: null,
+      standoffRangeM: 8000, // PLANNING FACTOR for T&E laydown: the study gives no release range; not study data
+      weaponProfile: 'standoff',
+      jamBehavior: 'return-home',
+    },
+    threatProfile: {
+      designator: 'THR-G4-UCAV-01',
+      routeIntent: 'Persistent medium-altitude ISR/strike orbit with standoff munition release',
+      altitudeFt: 16000,
+      speedMps: 46,
       count: 1,
     },
   },
