@@ -608,7 +608,7 @@ const THREATS: SpecModel[] = [
       effectRadiusM: null,
       standoffRangeM: null,
       weaponProfile: 'none',
-      jamBehavior: 'return-home', // study-derived for the DJI class; default for mixed nav is 'continue'
+      jamBehavior: 'return-home', // planning assumption for reusable COTS class (study silent on lost-link behavior); default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G1-Q-01',
@@ -645,7 +645,7 @@ const THREATS: SpecModel[] = [
       effectRadiusM: null,
       standoffRangeM: null,
       weaponProfile: 'none',
-      jamBehavior: 'return-home', // study-derived for the DJI class; default for mixed nav is 'continue'
+      jamBehavior: 'return-home', // planning assumption for reusable COTS class (study silent on lost-link behavior); default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G1-Q-02',
@@ -755,7 +755,7 @@ const THREATS: SpecModel[] = [
       effectRadiusM: null,
       standoffRangeM: null,
       weaponProfile: 'none',
-      jamBehavior: 'return-home', // study-derived for the DJI class; default for mixed nav is 'continue'
+      jamBehavior: 'return-home', // planning assumption for reusable COTS class (study silent on lost-link behavior); default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G2-Q-01',
@@ -793,7 +793,7 @@ const THREATS: SpecModel[] = [
       effectRadiusM: null,
       standoffRangeM: null,
       weaponProfile: 'none',
-      jamBehavior: 'return-home', // study-derived for the heavy-bomber family; default for mixed nav is 'continue'
+      jamBehavior: 'return-home', // planning assumption for the reusable heavy-bomber family (study silent); default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G2-HB-01',
@@ -902,7 +902,7 @@ const THREATS: SpecModel[] = [
       effectRadiusM: null,
       standoffRangeM: null,
       weaponProfile: 'none',
-      jamBehavior: 'return-home', // study-derived [R11]; default for mixed nav is 'continue'
+      jamBehavior: 'return-home', // planning assumption for reusable ISR class (study silent) [R11 profile]; default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G3-ISR-01',
@@ -1049,7 +1049,7 @@ const THREATS: SpecModel[] = [
       effectRadiusM: null,
       standoffRangeM: 8000, // PLANNING FACTOR for T&E laydown: the study gives no release range; not study data
       weaponProfile: 'standoff',
-      jamBehavior: 'return-home', // study-derived for the UCAV class; default for mixed nav is 'continue'
+      jamBehavior: 'return-home', // planning assumption for the recoverable UCAV class (study silent); default for mixed nav is 'continue'
     },
     threatProfile: {
       designator: 'THR-G4-MALE-01',
@@ -1072,8 +1072,8 @@ const THREATS: SpecModel[] = [
       airframe: 'one-way-attack',
       cruiseSpeedMps: 89,
       maxSpeedMps: 97,
-      // Planning derivation: 770 km declared range at 320 km/h cruise, ~144 min. Not a published figure.
-      enduranceMin: 144,
+      // Study 5.2.1 [R03]: published endurance 2.2 h.
+      enduranceMin: 132,
       altBandFt: [500, 13123],
       navMode: 'mixed',
       emissionsNote: 'SADRA INS + 16-element CRPA anti-jam satnav, camera, mesh modem (study [R03])',

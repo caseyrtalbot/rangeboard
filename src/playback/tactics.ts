@@ -8,6 +8,10 @@
  * - defaultShipCount: total UAS ship entities the tactic places by default.
  * - shipsPerWave: ships per launch wave; extra ships open follow-on waves.
  * - waveSpacingS: seconds between wave launches (0 = one simultaneous wave).
+ * - defaultShipCount / shipsPerWave / waveSpacingS carry study numbers only
+ *   where the study reports a raid composition (e.g. HOU-TAC-01, IRN-TAC-01,
+ *   SYR-TAC-01); elsewhere they are representative planning values. The study
+ *   warns against deriving one permanent raid size (17.1).
  * - axes / axisSpreadDeg: ingress axes fanned across the total spread around
  *   defaultBearingDeg (spread 0 when axes = 1). Use fanAxes to expand.
  * - standoffM: planning-factor spawn distance from the defended point. The
@@ -58,7 +62,7 @@ const BOMBER = 'Red air: heavy multirotor bomber (G2)'
 const MAVIC = 'Red air: DJI Mavic 3 (G1 quad)'
 const MINI = 'Red air: DJI Mini class (G1 sub-250 g)'
 const MUGIN = 'Red air: Mugin-5 converted strike (G3)'
-const MOHAJER = 'Red air: Mohajer-6 ISR/strike (G4)'
+const TB2 = 'Red air: Bayraktar TB2 UCAV (G4)'
 
 export const THREAT_TACTICS: ThreatTactic[] = [
   // ---- Russia, long-range strike campaign (study 5.3) ----
@@ -357,7 +361,7 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     description:
       'Medium-altitude UCAVs integrate with electronic warfare and surface fires to suppress air defenses, as in Operation Spring Shield. Test the aircraft as part of a system of systems, not as an isolated track.',
     sourceRef: '15B / TC-17',
-    platforms: [{ designator: MOHAJER }],
+    platforms: [{ designator: TB2 }],
     defaultShipCount: 2,
     shipsPerWave: 2,
     waveSpacingS: 600,
