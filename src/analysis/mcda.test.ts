@@ -17,6 +17,8 @@ function threat(patch: Partial<ThreatAssessment>): ThreatAssessment {
     warningS: null,
     windowS: null,
     windowEffectorId: null,
+    classificationAtS: { unknownAtS: null, suspectedAtS: null, hostileAtS: null },
+    engageGateS: null,
     detectingSensorIds: [],
     effectorWindows: [],
     ...patch,

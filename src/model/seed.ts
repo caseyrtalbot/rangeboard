@@ -30,7 +30,7 @@ export function emptyScenario(): Scenario {
     library: SEED_LIBRARY.map((m) => ({ ...m })),
     systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
     environment: defaultEnvironment(),
-    engageOn: 'detected',
+    roe: 'tight',
     mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3, attrition: 3 },
     scorecards: [],
     raid: { waves: [] },
