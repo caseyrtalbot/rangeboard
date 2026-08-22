@@ -19,6 +19,7 @@ import { newId } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { standardCovariates } from '../model/seedCards'
 import { pathLength, rotatePoint } from '../geometry/geo'
+import { effectivePathDelayS } from '../playback/raid'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -121,6 +122,10 @@ export interface Store {
   updateBoundary: (id: string, patch: Partial<Boundary>) => void
   updatePath: (id: string, patch: Partial<FlightPath>) => void
   deletePathForEntity: (entityId: string) => void
+
+  // Raid waves
+  assignToWave: (entityId: string, waveIndex: number | null) => void
+  setWaveDelay: (waveIndex: number, s: number) => void
 
   // Environment
   updateEnvironment: (patch: Partial<Scenario['environment']>) => void
@@ -301,6 +306,12 @@ export const useStore = create<Store>()((set, get) => {
               ...tc,
               linkedEntityIds: tc.linkedEntityIds.filter((eid) => !ids.has(eid)),
             })),
+            raid: next.raid && {
+              waves: next.raid.waves.map((w) => ({
+                ...w,
+                entityIds: w.entityIds.filter((eid) => !ids.has(eid)),
+              })),
+            },
           }
         }
         if (boundaryId) {
@@ -514,6 +525,38 @@ export const useStore = create<Store>()((set, get) => {
 
     deletePathForEntity: (entityId) =>
       mutate((s) => ({ ...s, paths: s.paths.filter((p) => p.entityId !== entityId) })),
+
+    assignToWave: (entityId, waveIndex) =>
+      mutate((s) => {
+        const waves = (s.raid?.waves ?? []).map((w) => ({
+          ...w,
+          entityIds: w.entityIds.filter((id) => id !== entityId),
+        }))
+        if (waveIndex != null && waveIndex >= 0) {
+          // A brand-new wave staggers 60 s behind the previous one.
+          while (waves.length <= waveIndex) {
+            const prev = waves[waves.length - 1]
+            waves.push({ startDelayS: prev ? prev.startDelayS + 60 : 0, entityIds: [] })
+          }
+          const w = waves[waveIndex]
+          waves[waveIndex] = { ...w, entityIds: [...w.entityIds, entityId] }
+        }
+        return { ...s, raid: { waves } }
+      }),
+
+    setWaveDelay: (waveIndex, delayS) =>
+      mutate((s) => {
+        const waves = s.raid?.waves ?? []
+        if (waveIndex < 0 || waveIndex >= waves.length) return s
+        return {
+          ...s,
+          raid: {
+            waves: waves.map((w, i) =>
+              i === waveIndex ? { ...w, startDelayS: Math.max(0, delayS) } : w,
+            ),
+          },
+        }
+      }),
 
     updateEnvironment: (patch) =>
       mutate((s) => ({ ...s, environment: { ...s.environment, ...patch } })),
@@ -785,11 +828,11 @@ export function pathSpeed(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
-/** Scenario duration: longest path flight time plus delays, minimum 60 s. */
+/** Scenario duration: longest path flight time plus path and wave delays, minimum 60 s. */
 export function scenarioDurationS(scenario: Scenario): number {
   let max = 60
   for (const p of scenario.paths) {
-    const t = p.startDelayS + pathLength(p.points) / pathSpeed(scenario, p)
+    const t = effectivePathDelayS(scenario, p) + pathLength(p.points) / pathSpeed(scenario, p)
     if (t > max) max = t
   }
   return Math.ceil(max)
