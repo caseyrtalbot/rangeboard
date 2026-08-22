@@ -225,6 +225,35 @@ describe('threatWezList', () => {
     expect(wez.hasPath).toBe(false)
   })
 
+  it('merges coincident impact WEZs into one drawable with a ship count', () => {
+    const { scenario, uasId } = scenarioWith(impactModel, null)
+    // Two more ships aimed at the same impact point, as the tactic builder
+    // creates them; plus one aimed 500 m away, which must stay separate.
+    const clones = [1, 2].map((i) => ent('uas', impactModel.id, { x: -1000, y: 200 * i }))
+    const offAim = ent('uas', impactModel.id, { x: -1000, y: 900 })
+    scenario.entities = [...scenario.entities, ...clones, offAim]
+    scenario.paths = [
+      ...scenario.paths,
+      ...clones.map((c) =>
+        flight(c.id, [
+          { x: -1000, y: c.pos.y },
+          { x: 0, y: 0 },
+        ]),
+      ),
+      flight(offAim.id, [
+        { x: -1000, y: 900 },
+        { x: 500, y: 0 },
+      ]),
+    ]
+    const list = threatWezList(scenario)
+    expect(list).toHaveLength(2)
+    const merged = list.find((w) => w.uasId === uasId)!
+    expect(merged.count).toBe(3)
+    expect(merged.planCenter).toEqual({ x: 0, y: 0 })
+    const single = list.find((w) => w.uasId === offAim.id)!
+    expect(single.count).toBe(1)
+  })
+
   it('centers a standoff ring on the platform rest position', () => {
     const m = uasModel({ weaponProfile: 'standoff', standoffRangeM: 8000 })
     const { scenario } = scenarioWith(m, null)

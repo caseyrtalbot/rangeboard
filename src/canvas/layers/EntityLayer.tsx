@@ -160,6 +160,10 @@ function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity }
     }
     // Boundary and calibrate clicks bubble to the stage as draw points.
     if (tool !== 'select') return
+    // An armed raid draft owns the next canvas click: let it bubble to the
+    // stage so the ingress axis places even when the click lands on an entity
+    // (clicking the target asset is the natural aim gesture).
+    if (useStore.getState().ui.raidDraft) return
     e.cancelBubble = true
     select({ entityIds: [entity.id] }, e.evt.shiftKey)
   }

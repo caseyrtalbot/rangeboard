@@ -52,9 +52,9 @@ const EMPTY_SELECTION: Selection = {
 const HISTORY_LIMIT = 100
 
 /**
- * Spawn clamp for the tactic builder: raid origins sit beyond the longest
- * enabled sensor detection ring by this factor, so first detection happens
- * inside the play, never at T0.
+ * Spawn clamp for the tactic builder: raid origins sit beyond every enabled
+ * sensor's detection ring (measured from each sensor position) by this
+ * factor, so first detection happens inside the play, never at T0.
  */
 const STANDOFF_CLEAR_FACTOR = 1.1
 /** In-trail spacing for raid ships when the tactic carries no formation, meters. */
@@ -693,7 +693,9 @@ export const useStore = create<Store>()((set, get) => {
       // stays armed so the builder card can complete it.
       if (!tactic || !platform?.uas || !target) return
 
-      const shipCount = Math.max(1, Math.floor(draft.shipCount))
+      const shipCount = Number.isFinite(draft.shipCount)
+        ? Math.min(60, Math.max(1, Math.floor(draft.shipCount)))
+        : 1
       // Ingress bearing: click point toward the target; no anchor (or a click
       // on the target itself) uses the tactic default.
       const ingressDeg =
@@ -702,9 +704,11 @@ export const useStore = create<Store>()((set, get) => {
           : tactic.defaultBearingDeg
       const axes = fanAxes(ingressDeg, tactic.axes, tactic.axisSpreadDeg)
 
-      // Clamp the spawn standoff beyond the longest enabled sensor detection
-      // ring against this platform's group.
-      let maxDetectM = 0
+      // Clamp each axis's spawn standoff so the origin sits outside every
+      // enabled sensor's detection ring against this platform's group,
+      // measured from the sensor position: a forward-deployed sensor along the
+      // ingress axis must not hold the origin at T0.
+      const rings: Array<{ pos: Vec2; rM: number }> = []
       for (const e of scenario.entities) {
         if (e.kind !== 'sensor' || !entityActive(e)) continue
         const spec = e.specId
@@ -712,9 +716,25 @@ export const useStore = create<Store>()((set, get) => {
           : undefined
         if (!spec) continue
         const r = effectiveDetectRangeM(spec, scenario.environment, platform.uas.group)
-        if (r > maxDetectM) maxDetectM = r
+        if (r > 0) rings.push({ pos: e.pos, rM: r * STANDOFF_CLEAR_FACTOR })
       }
-      const standoffM = Math.max(tactic.standoffM, maxDetectM * STANDOFF_CLEAR_FACTOR)
+      // Distance d along the spawn ray (target -> reciprocal of the axis) so
+      // that target + d*u clears ring i: d >= u.v + sqrt((u.v)^2 + R^2 - |v|^2)
+      // whenever the ray enters the ring (world frame: +x east, +y south,
+      // bearing 0 = north, so north is -y).
+      const standoffFor = (headingDeg: number): number => {
+        const rad = ((headingDeg + 180) * Math.PI) / 180
+        const u = { x: Math.sin(rad), y: -Math.cos(rad) }
+        let d = tactic.standoffM
+        for (const ring of rings) {
+          const v = { x: ring.pos.x - target.pos.x, y: ring.pos.y - target.pos.y }
+          const along = u.x * v.x + u.y * v.y
+          const disc = along * along + ring.rM * ring.rM - (v.x * v.x + v.y * v.y)
+          if (disc <= 0) continue
+          d = Math.max(d, along + Math.sqrt(disc))
+        }
+        return d
+      }
 
       // Decoy platform, resolved like a one-designator tactic. Unresolvable
       // decoys degrade to an all-strike raid rather than blocking.
@@ -741,7 +761,7 @@ export const useStore = create<Store>()((set, get) => {
       for (const [key, members] of groups) {
         const heading = axes[Number(key.split(':')[1])]
         // Origin: target displaced along the reciprocal of the ingress axis.
-        const origin = destination(target.pos, heading + 180, standoffM)
+        const origin = destination(target.pos, heading + 180, standoffFor(heading))
         const f = tactic.formation
         const offsets = f
           ? formationOffsets(f.shape, members.length, f.spacingM, heading)

@@ -19,8 +19,9 @@ import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 import { buildAarSummary } from '../analysis/aar'
 import type { LeakerImpact } from '../analysis/impact'
 import { engagementPicture, SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../analysis/impact'
-import { LeakerWarningStrip, TIER_CLS } from './LeakerWarningStrip'
+import { LeakerWarningStrip } from './LeakerWarningStrip'
 import {
+  TIER_CLS,
   aarHeadline,
   environmentHeadline,
   magazinesHeadline,
@@ -318,8 +319,11 @@ function ThreatRowCompact({
   )
   const severity = imp?.severity ?? null
   const showIw = (att != null && att.leakProbability >= 0.5) || severity != null
+  // "Reaches" only when the target sits inside the WEZ; a leaker whose closest
+  // approach stays outside the WEZ passes, it does not reach.
+  const iwVerb = imp?.assetInWez ? 'Reaches' : 'Passes'
   const iwText = imp?.assetName
-    ? `Reaches ${imp.assetName}${imp.arrivalS != null ? ` T+${formatTime(imp.arrivalS)}` : ''}`
+    ? `${iwVerb} ${imp.assetName}${imp.arrivalS != null ? ` T+${formatTime(imp.arrivalS)}` : ''}`
     : 'High leak probability'
 
   return (
@@ -842,6 +846,8 @@ function ScorecardBody({
 export function AnalysisPanel() {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
+  const showThreatWez = useStore((s) => s.ui.showThreatWez)
+  const setShowThreatWez = useStore((s) => s.setShowThreatWez)
   const [advanced, setAdvanced] = useState(false)
   // One shared computation per scenario with the canvas WEZ layer
   // (module-level WeakMap in impact.ts), so the sweep never runs twice.
@@ -872,6 +878,14 @@ export function AnalysisPanel() {
           ]}
           onChange={(v) => patchScenario({ roe: v })}
         />
+        <label className="adv-toggle" title="Draw threat weapon engagement zones on the canvas">
+          <input
+            type="checkbox"
+            checked={showThreatWez}
+            onChange={(e) => setShowThreatWez(e.target.checked)}
+          />
+          WEZ
+        </label>
         <label className="adv-toggle" title="Reveal the deep telemetry rows in expanded threats">
           <input
             type="checkbox"
@@ -932,6 +946,10 @@ export function AnalysisPanel() {
           the ROE gate is met. RF sensors do not see RF-silent threats; EO/IR needs a cue from
           another technology; radar sees bigger airframes farther than the drawn Group 1 ring.
           Computed at 0.5 s steps; planning figures, not test evidence.
+        </p>
+        <p className="muted small">
+          PF = planning factor. WEZ effect radii and standoff ranges marked PF are laydown
+          planning values tiered by warhead class, not study-derived lethality data.
         </p>
       </Section>
     </div>

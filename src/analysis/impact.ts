@@ -59,6 +59,8 @@ export interface ThreatWez {
   /** Impact point (path end) for 'impact'; rest position for 'standoff'. */
   planCenter: Vec2
   hasPath: boolean
+  /** Coincident impact WEZs merged into one drawable (ships aimed at one point). */
+  count: number
 }
 
 /**
@@ -83,9 +85,30 @@ export function threatWezList(scenario: Scenario): ThreatWez[] {
     const hasPath = !!path && path.points.length >= 2
     const planCenter =
       kind === 'impact' && hasPath ? path!.points[path!.points.length - 1] : e.pos
-    out.push({ uasId: e.id, kind, radiusM, planCenter, hasPath })
+    out.push({ uasId: e.id, kind, radiusM, planCenter, hasPath, count: 1 })
   }
-  return out
+  // Raids built toward one target end every path at the same point; coincident
+  // impact circles stack fills into an unreadable disc. Merge them (1 m grid)
+  // into one drawable with a ship count. Standoff rings ride live positions
+  // and stay per-entity.
+  const merged = new Map<string, ThreatWez>()
+  const result: ThreatWez[] = []
+  for (const wez of out) {
+    if (wez.kind !== 'impact') {
+      result.push(wez)
+      continue
+    }
+    const key = `${wez.radiusM}|${Math.round(wez.planCenter.x)}|${Math.round(wez.planCenter.y)}`
+    const hit = merged.get(key)
+    if (hit) {
+      hit.count += 1
+      hit.hasPath = hit.hasPath || wez.hasPath
+    } else {
+      merged.set(key, wez)
+      result.push(wez)
+    }
+  }
+  return result
 }
 
 export interface LeakerImpact {

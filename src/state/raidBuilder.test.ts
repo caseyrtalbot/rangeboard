@@ -162,9 +162,9 @@ describe('tactic raid builder: commitRaid', () => {
   it('interleaves the decoy platform as every Nth ship', () => {
     placeAsset()
     useStore.getState().armRaidDraft('RUS-LR-04')
-    // The tactic's headline platform list resolves to the decoy first; the
-    // test flies the strike stream as Shahed with Gerbera interleaved.
-    useStore.getState().patchRaidDraft({ platformSpecId: 'lib-shahed136' })
+    // The tactic lists the strike platform first, so the armed default is the
+    // Shahed; the Gerbera enters only through the decoy interleave.
+    expect(useStore.getState().ui.raidDraft?.platformSpecId).toBe('lib-shahed136')
     useStore.getState().commitRaid(null)
     const ships = useStore.getState().scenario.entities.filter((e) => e.kind === 'uas')
     expect(ships).toHaveLength(10)
@@ -196,6 +196,28 @@ describe('tactic raid builder: commitRaid', () => {
     // Tactic standoff is 8 km; every origin must clear the 100 km ring.
     for (const s of ships) {
       expect(dist(target.pos, s.pos)).toBeGreaterThan(100000)
+    }
+  })
+
+  it('clamps the standoff against a forward-deployed sensor along the ingress axis', () => {
+    placeAsset()
+    // The same 100 km radar displaced 50 km north of the target, toward the
+    // default (northern) ingress axis: origins must clear the ring measured
+    // from the SENSOR, not the target.
+    const radarId = useStore.getState().addModel('sensor')
+    useStore.getState().updateModel(radarId, {
+      sensor: { sensorType: 'radar', detectRangeM: 100000, classifyRangeM: 50000, sectorDeg: 360 },
+    })
+    useStore.getState().addEntityFromModel(radarId, { x: 0, y: -50000 })
+    const sensor = useStore
+      .getState()
+      .scenario.entities.find((e) => e.kind === 'sensor')!
+    useStore.getState().armRaidDraft('RUS-TAC-02')
+    useStore.getState().commitRaid(null)
+    const ships = useStore.getState().scenario.entities.filter((e) => e.kind === 'uas')
+    expect(ships).toHaveLength(8)
+    for (const s of ships) {
+      expect(dist(sensor.pos, s.pos)).toBeGreaterThan(100000)
     }
   })
 

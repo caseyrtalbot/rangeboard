@@ -1064,7 +1064,7 @@ const THREATS: SpecModel[] = [
     name: 'Red air: Geran-4 jet OWA (G3)',
     kind: 'uas',
     description:
-      'Turbojet one-way-attack from the Geran-3/4/5 jet family, per threat study 5.2.1 [R03]: 450 kg MTOW, 320 km/h cruise, 770 km range, thermobaric or HE-frag warhead types identified. The study fixes no Geran-3 numbers, so the exploited Geran-4 carries the jet-OWA class.',
+      'Turbojet one-way-attack from the Geran-3/4/5 jet family, per threat study 5.2.1 [R03]: 450 kg MTOW, 89 m/s (320 km/h) cruise, 770 km range, thermobaric or HE-frag warhead types identified. The study fixes no Geran-3 numbers, so the exploited Geran-4 carries the jet-OWA class.',
     color: '#9c3f31',
     builtin: true,
     uas: {
@@ -1102,7 +1102,7 @@ const THREATS: SpecModel[] = [
     name: 'Red air: Bayraktar TB2 UCAV (G4)',
     kind: 'uas',
     description:
-      'MALE UCAV per threat study 15B [TUR02]: 700 kg MTOW, 150 kg payload, 90 KTAS cruise, 16000 ft operational altitude, 20+ h endurance. Releases laser-, INS/GPS-, or IR-guided munitions and mini cruise missiles at standoff; the study publishes no release range, so the standoff value is a planning factor.',
+      'MALE UCAV per threat study 15B [TUR02]: 700 kg MTOW, 150 kg payload, 46 m/s (90 kt) cruise, 16000 ft operational altitude, 20+ h endurance. Releases laser-, INS/GPS-, or IR-guided munitions and mini cruise missiles at standoff; the study publishes no release range, so the standoff value is a planning factor.',
     color: '#93483f',
     builtin: true,
     uas: {

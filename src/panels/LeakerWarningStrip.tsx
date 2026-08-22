@@ -1,14 +1,8 @@
 import { useStore } from '../state/store'
 import type { ImpactSeverity, LeakerImpact } from '../analysis/impact'
 import { SEVERITY_LABEL, SEVERITY_RANK, wezKindFor } from '../analysis/impact'
+import { TIER_CLS } from './headlines'
 import { formatTime } from '../geometry/geo'
-
-/** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
-export const TIER_CLS: Record<ImpactSeverity, string> = {
-  severe: 'bad',
-  moderate: 'warn',
-  low: 'neutral',
-}
 
 const TIERS: ImpactSeverity[] = ['severe', 'moderate', 'low']
 

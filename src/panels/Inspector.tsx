@@ -55,12 +55,13 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
       </div>
       <p className="muted small">{tactic.description}</p>
       <div className="spec-summary">
-        {shipCount} ships · {waveCount} {waveCount === 1 ? 'wave' : 'waves'} of up to {perWave} ·{' '}
-        {tactic.waveSpacingS} s between waves
+        {shipCount} {shipCount === 1 ? 'ship' : 'ships'} · {waveCount}{' '}
+        {waveCount === 1 ? 'wave' : 'waves'} of up to {perWave}
+        {waveCount > 1 ? ` · ${tactic.waveSpacingS} s between waves` : ''}
         <br />
         {tactic.axes} {tactic.axes === 1 ? 'ingress axis' : 'ingress axes'}
         {tactic.axes > 1 ? ` across ${tactic.axisSpreadDeg} deg` : ''} · standoff{' '}
-        {formatDistance(tactic.standoffM)} or beyond the largest sensor detection ring
+        {formatDistance(tactic.standoffM)} or beyond every sensor detection ring
         {tactic.decoy && (
           <>
             <br />
@@ -70,8 +71,9 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
         {existingWaves > 0 && (
           <>
             <br />
-            New waves append after the {existingWaves} existing{' '}
-            {existingWaves === 1 ? 'wave' : 'waves'}.
+            New waves add alongside the {existingWaves} existing{' '}
+            {existingWaves === 1 ? 'wave' : 'waves'}; delays restart at 0. Adjust wave delays in
+            the timeline strip to sequence them.
           </>
         )}
       </div>
@@ -116,7 +118,10 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
           min={1}
           max={60}
           value={draft.shipCount}
-          onChange={(e) => patchRaidDraft({ shipCount: Math.max(1, Number(e.target.value)) })}
+          onChange={(e) => {
+            const n = Number(e.target.value)
+            if (Number.isFinite(n)) patchRaidDraft({ shipCount: Math.min(60, Math.max(1, n)) })
+          }}
         />
       </Field>
 

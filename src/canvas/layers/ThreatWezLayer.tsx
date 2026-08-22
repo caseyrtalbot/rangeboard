@@ -106,11 +106,15 @@ export function ThreatWezLayer({
     id == null ? undefined : scenario.entities.find((e) => e.id === id)
 
   function wezLabel(wez: ThreatWez): string {
-    if (wez.kind === 'standoff') return `WEZ · standoff ${formatDistance(wez.radiusM)}`
+    // 'PF' = planning factor (expanded in the Analysis panel's About section):
+    // both the impact radii and the stored standoff ranges are planning
+    // factors, not study-derived lethality data.
+    if (wez.kind === 'standoff') return `WEZ · standoff ${formatDistance(wez.radiusM)} · PF`
     const uas = scenario.library.find((m) => m.id === entityById(wez.uasId)?.specId)?.uas
     const parts = [`WEZ · r ${formatDistance(wez.radiusM)}`]
     if (uas?.warheadKg != null) parts.push(`${uas.warheadKg} kg`)
     parts.push('PF')
+    if (wez.count > 1) parts.push(`×${wez.count}`)
     return parts.join(' · ')
   }
 

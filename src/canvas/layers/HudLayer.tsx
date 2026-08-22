@@ -12,6 +12,13 @@ export function HudLayer({ mouseWorld }: Props) {
   const tool = useStore((s) => s.ui.tool)
   const draftCount = useStore((s) => s.ui.draftPoints.length)
   const pathEntityId = useStore((s) => s.ui.pathEntityId)
+  const raidDraft = useStore((s) => s.ui.raidDraft)
+  const raidReady = useStore(
+    (s) =>
+      s.ui.raidDraft != null &&
+      s.ui.raidDraft.platformSpecId != null &&
+      s.ui.raidDraft.targetEntityId != null,
+  )
 
   const stepM = gridStepM(camera.scale, 120)
   const barPx = stepM * camera.scale
@@ -30,7 +37,15 @@ export function HudLayer({ mouseWorld }: Props) {
 
   return (
     <div className="hud">
-      {tool !== 'select' && <div className="hud-hint">{hints[tool]}</div>}
+      {raidDraft ? (
+        <div className="hud-hint">
+          {raidReady
+            ? `Tactic ${raidDraft.tacticId} armed: click the canvas to place the ingress axis. Esc cancels.`
+            : `Tactic ${raidDraft.tacticId} armed: choose a platform and target in the Inspect tab. Esc cancels.`}
+        </div>
+      ) : (
+        tool !== 'select' && <div className="hud-hint">{hints[tool]}</div>
+      )}
       <div className="hud-bottom">
         <span className="hud-cursor">
           {mouseWorld

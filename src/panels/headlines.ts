@@ -1,7 +1,15 @@
 import type { AarSummary, EnvironmentSpec } from '../model/types'
+import type { ImpactSeverity } from '../analysis/impact'
 import type { ThreatAssessment } from '../playback/sim'
 import type { ThreatAttrition } from '../playback/attrition'
 import { formatTime } from '../geometry/geo'
+
+/** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
+export const TIER_CLS: Record<ImpactSeverity, string> = {
+  severe: 'bad',
+  moderate: 'warn',
+  low: 'neutral',
+}
 
 /**
  * Collapsed-header summary of the active covariates: "Rain · Night · Urban EM
