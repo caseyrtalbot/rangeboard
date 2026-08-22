@@ -11,6 +11,7 @@ import { entityActive } from '../model/types'
 import { dist, posAtTime } from '../geometry/geo'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats, connectedEffectorIds, memberPositions } from './sim'
+import { effectivePathDelayS } from './raid'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls: each
@@ -221,7 +222,7 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
       for (let i = 1; i < target.ships.length; i++) {
         if (target.ships[i] > target.ships[shipIdx] + EPS) shipIdx = i
       }
-      const sample = posAtTime(target.path!.points, target.speedMps, target.path!.startDelayS, t)
+      const sample = posAtTime(target.path!.points, target.speedMps, effectivePathDelayS(scenario, target.path!), t)
       const members = memberPositions(target.entity, sample.pos, sample.headingDeg)
       const shipPos = members[Math.min(shipIdx, members.length - 1)]
 
