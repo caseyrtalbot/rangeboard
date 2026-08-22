@@ -2,6 +2,7 @@ import type { Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '..
 import { entityActive } from '../model/types'
 import { dist, formationOffsets, pointInSector, posAtTime } from '../geometry/geo'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
+import { effectivePathDelayS } from './raid'
 import {
   effectiveClassifyRangeM,
   effectiveDetectRangeM,
@@ -33,12 +34,13 @@ export function liveTracks(scenario: Scenario, tS: number): Map<string, LiveTrac
   const out = new Map<string, LiveTrack>()
   for (const path of scenario.paths) {
     const speed = pathSpeed(scenario, path)
-    const s = posAtTime(path.points, speed, path.startDelayS, tS)
+    const delayS = effectivePathDelayS(scenario, path)
+    const s = posAtTime(path.points, speed, delayS, tS)
     out.set(path.entityId, {
       entityId: path.entityId,
       pos: s.pos,
       headingDeg: s.headingDeg,
-      flying: tS >= path.startDelayS && !s.done,
+      flying: tS >= delayS && !s.done,
       done: s.done,
     })
   }
@@ -216,8 +218,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     distM: Number.POSITIVE_INFINITY,
   }
 
-  for (let t = path.startDelayS; t <= duration; t += DT) {
-    const sample = posAtTime(path.points, speed, path.startDelayS, t)
+  const delayS = effectivePathDelayS(scenario, path)
+  for (let t = delayS; t <= duration; t += DT) {
+    const sample = posAtTime(path.points, speed, delayS, t)
     const pos = sample.pos
     const members = memberPositions(uas, pos, sample.headingDeg)
 

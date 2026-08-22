@@ -289,6 +289,17 @@ export interface McdaVector {
   engage: number
 }
 
+/** One raid wave: UAS entities that launch together after a shared delay. */
+export interface RaidWave {
+  startDelayS: number
+  entityIds: string[]
+}
+
+/** Raid schedule: ordered waves with per-wave launch delays. */
+export interface RaidPlan {
+  waves: RaidWave[]
+}
+
 /** A pinned scorecard result for comparing IADS configurations. */
 export interface ScorecardSnap {
   id: string
@@ -310,6 +321,8 @@ export interface Scenario {
   mcdaWeights?: McdaVector
   /** Pinned scorecard results. Absent on old saves. */
   scorecards?: ScorecardSnap[]
+  /** Raid wave schedule. Absent on old saves; treat as no waves. */
+  raid?: RaidPlan
   entities: Entity[]
   connections: Connection[]
   boundaries: Boundary[]

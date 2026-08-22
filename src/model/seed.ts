@@ -33,6 +33,7 @@ export function emptyScenario(): Scenario {
     engageOn: 'detected',
     mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3 },
     scorecards: [],
+    raid: { waves: [] },
     entities: [],
     connections: [],
     boundaries: [],

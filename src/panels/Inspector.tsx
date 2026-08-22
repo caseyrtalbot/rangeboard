@@ -5,6 +5,7 @@ import { useStore, modelFor } from '../state/store'
 import { formatDistance, pathLength } from '../geometry/geo'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
+import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
 
@@ -27,6 +28,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
     updatePath,
     deletePathForEntity,
     selectSystem,
+    assignToWave,
   } = useStore.getState()
   const model = modelFor(scenario, entity)
   const sameKindModels = scenario.library.filter((m) => m.kind === entity.kind)
@@ -310,6 +312,42 @@ function EntityInspector({ entity }: { entity: Entity }) {
           ) : (
             <button onClick={() => beginPath(entity.id)}>Draw flight path</button>
           )}
+        </div>
+      )}
+
+      {entity.kind === 'uas' && (
+        <div className="subsection">
+          <div className="panel-subtitle">Raid wave</div>
+          {(() => {
+            const waves = scenario.raid?.waves ?? []
+            const waveIndex = waveIndexFor(scenario.raid, entity.id)
+            return (
+              <>
+                <Field label="Wave">
+                  <select
+                    value={waveIndex ?? ''}
+                    onChange={(e) =>
+                      assignToWave(entity.id, e.target.value === '' ? null : Number(e.target.value))
+                    }
+                  >
+                    <option value="">none</option>
+                    {waves.map((w, i) => (
+                      <option key={i} value={i}>
+                        Wave {i + 1} (T+{w.startDelayS} s)
+                      </option>
+                    ))}
+                    <option value={waves.length}>new wave</option>
+                  </select>
+                </Field>
+                {path && waveIndex != null && (
+                  <div className="spec-summary">
+                    Effective start delay: {effectivePathDelayS(scenario, path)} s (path{' '}
+                    {path.startDelayS} s + wave {waves[waveIndex].startDelayS} s)
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </div>
       )}
 
