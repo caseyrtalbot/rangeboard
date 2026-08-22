@@ -16,16 +16,9 @@ import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
 import { formatDistance, formatTime } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 import { buildAarSummary } from '../analysis/aar'
-import type { ImpactSeverity, LeakerImpact } from '../analysis/impact'
+import type { LeakerImpact } from '../analysis/impact'
 import { engagementPicture, SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../analysis/impact'
-import { LeakerWarningStrip } from './LeakerWarningStrip'
-
-/** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
-const TIER_CLS: Record<ImpactSeverity, string> = {
-  severe: 'bad',
-  moderate: 'warn',
-  low: 'neutral',
-}
+import { LeakerWarningStrip, TIER_CLS } from './LeakerWarningStrip'
 import { exportAar } from '../io/persist'
 
 const STATUS_TEXT: Record<ThreatStatus, { label: string; cls: string }> = {

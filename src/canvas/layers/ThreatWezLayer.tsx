@@ -9,10 +9,12 @@ import { formatDistance } from '../../geometry/geo'
 const RED = '#c4564a'
 const MONO = 'IBM Plex Mono'
 
-/** Badge copy: `I&W SEVERE · 1.6 ships · 64 kg`; kg omitted when unknown (0). */
-function badgeText(severity: ImpactSeverity, ships: number, kg: number): string {
+/** Badge copy: `I&W SEVERE · 1.6 ships · 64 kg`. Unknown warheads (kg 0) must
+ *  stay visible: partial sums show `>= n kg`, fully unknown shows the words. */
+function badgeText(severity: ImpactSeverity, ships: number, kg: number, unknown = false): string {
   const parts = [`I&W ${SEVERITY_LABEL[severity]}`, `${ships.toFixed(1)} ships`]
-  if (kg > 0) parts.push(`${Math.round(kg)} kg`)
+  if (kg > 0) parts.push(unknown ? `>= ${Math.round(kg)} kg` : `${Math.round(kg)} kg`)
+  else parts.push('warhead unknown')
   return parts.join(' · ')
 }
 
@@ -116,7 +118,7 @@ export function ThreatWezLayer({
   const planBadges = useMemo(() => {
     const byAsset = new Map<
       string,
-      { severity: ImpactSeverity; count: number; ships: number; kg: number }
+      { severity: ImpactSeverity; count: number; ships: number; kg: number; unknown: boolean }
     >()
     for (const i of impacts) {
       if (i.assetId == null || i.severity == null || i.severity === 'low') continue
@@ -129,6 +131,7 @@ export function ThreatWezLayer({
         count: (cur?.count ?? 0) + 1,
         ships: (cur?.ships ?? 0) + i.expectedShipsArriving,
         kg: (cur?.kg ?? 0) + i.expectedWarheadKg,
+        unknown: (cur?.unknown ?? false) || i.expectedWarheadKg <= 0,
       })
     }
     return byAsset
@@ -207,7 +210,7 @@ export function ThreatWezLayer({
               opacity={1}
               severity={b.severity}
               count={b.count}
-              label={badgeText(b.severity, b.ships, b.kg)}
+              label={badgeText(b.severity, b.ships, b.kg, b.unknown)}
               pulse={null}
             />
           )

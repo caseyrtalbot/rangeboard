@@ -122,7 +122,7 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     description:
       'Gerbera false targets are interleaved inside the strike stream to soak classification and interceptor allocation. Not every track in the wave carries the same lethality.',
     sourceRef: '5.3 RUS-LR-04',
-    platforms: [{ designator: GERBERA }, { designator: SHAHED }],
+    platforms: [{ designator: SHAHED }, { designator: GERBERA }],
     defaultShipCount: 10,
     shipsPerWave: 10,
     waveSpacingS: 300,

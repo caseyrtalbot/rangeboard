@@ -4,7 +4,7 @@ import { SEVERITY_LABEL, SEVERITY_RANK, wezKindFor } from '../analysis/impact'
 import { formatTime } from '../geometry/geo'
 
 /** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
-const TIER_CLS: Record<ImpactSeverity, string> = {
+export const TIER_CLS: Record<ImpactSeverity, string> = {
   severe: 'bad',
   moderate: 'warn',
   low: 'neutral',

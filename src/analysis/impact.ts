@@ -217,7 +217,7 @@ export function engagementPicture(scenario: Scenario): EngagementPicture {
   const hit = pictureCache.get(scenario)
   if (hit) return hit
   const assessments = assessAllThreats(scenario)
-  const report = resolveEngagements(scenario)
+  const report = resolveEngagements(scenario, assessments)
   const impacts = assessLeakerImpacts(scenario, assessments, report)
   const picture: EngagementPicture = { assessments, report, impacts }
   pictureCache.set(scenario, picture)

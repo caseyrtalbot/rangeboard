@@ -187,8 +187,13 @@ const EPS = 1e-9
  * targeting the ship with the highest survival probability, until the window
  * closes or the magazine is empty.
  */
-export function resolveEngagements(scenario: Scenario): AttritionReport {
-  const assessments = assessAllThreats(scenario).filter((a) => a.status !== 'no-path')
+export function resolveEngagements(
+  scenario: Scenario,
+  precomputed?: ThreatAssessment[],
+): AttritionReport {
+  const assessments = (precomputed ?? assessAllThreats(scenario)).filter(
+    (a) => a.status !== 'no-path',
+  )
 
   const threats: ThreatState[] = assessments.map((a) => {
     const entity = scenario.entities.find((e) => e.id === a.uasId)!

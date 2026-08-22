@@ -311,13 +311,14 @@ export const useStore = create<Store>()((set, get) => {
     },
 
     replaceScenario: (s) =>
-      set({
+      set((st) => ({
         scenario: s,
         past: [],
         future: [],
         selection: EMPTY_SELECTION,
         playback: { playing: false, simTimeS: 0, speedMult: 1 },
-      }),
+        ui: st.ui.raidDraft ? { ...st.ui, raidDraft: null } : st.ui,
+      })),
 
     setScenarioName: (name) => mutate((s) => ({ ...s, name })),
 

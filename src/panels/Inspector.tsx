@@ -64,7 +64,7 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
         {tactic.decoy && (
           <>
             <br />
-            Every {tactic.decoy.everyNth}th ship is a decoy.
+            1 of every {tactic.decoy.everyNth} ships is a decoy.
           </>
         )}
         {existingWaves > 0 && (

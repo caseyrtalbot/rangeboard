@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import type { EntityKind } from '../model/types'
 import { useStore } from '../state/store'
 import { exportLibrary, importLibraryFile } from '../io/persist'
@@ -94,7 +94,6 @@ export function Palette() {
     <aside className="palette" style={{ width }}>
       <div className="panel-title">Library</div>
       <div className="palette-scroll">
-        <TacticsSection />
         <div className="palette-section">
           <div className="palette-heading">Integrated systems</div>
           {systemPresets.map((p) => (
@@ -131,7 +130,9 @@ export function Palette() {
         {SECTIONS.map((section) => {
           const models = library.filter((m) => m.kind === section.kind)
           return (
-            <div key={section.kind} className="palette-section">
+            <Fragment key={section.kind}>
+              {section.kind === 'uas' && <TacticsSection />}
+              <div className="palette-section">
               <div className="palette-heading">
                 {section.title}
                 <button
@@ -168,7 +169,8 @@ export function Palette() {
                   <span className="palette-name">{m.name}</span>
                 </div>
               ))}
-            </div>
+              </div>
+            </Fragment>
           )
         })}
       </div>
