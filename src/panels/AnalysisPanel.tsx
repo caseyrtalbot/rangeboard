@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type {
   AarOutcome,
   AarSummary,
@@ -10,6 +10,7 @@ import type {
   Roe,
 } from '../model/types'
 import { newId } from '../model/types'
+import type { SpecModel } from '../model/types'
 import { useStore } from '../state/store'
 import type { ClassificationTimes, ThreatAssessment, ThreatStatus } from '../playback/sim'
 import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
@@ -19,17 +20,32 @@ import { buildAarSummary } from '../analysis/aar'
 import type { LeakerImpact } from '../analysis/impact'
 import { engagementPicture, SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../analysis/impact'
 import { LeakerWarningStrip, TIER_CLS } from './LeakerWarningStrip'
+import {
+  aarHeadline,
+  environmentHeadline,
+  magazinesHeadline,
+  scoreHeadline,
+  threatCompactStats,
+} from './headlines'
 import { exportAar } from '../io/persist'
 
-const STATUS_TEXT: Record<ThreatStatus, { label: string; cls: string }> = {
-  'no-path': { label: 'No flight path', cls: 'neutral' },
-  'never-detected': { label: 'Never detected', cls: 'bad' },
-  'not-confirmed': { label: 'Detected, never classified hostile', cls: 'warn' },
-  'detect-only': { label: 'Detected, no usable effector', cls: 'warn' },
-  'no-kill-chain': { label: 'Detected, kill chain not connected', cls: 'warn' },
-  'weapons-hold': { label: 'Weapons hold (ROE)', cls: 'neutral' },
-  'window-too-short': { label: 'Engagement window too short', cls: 'warn' },
-  engageable: { label: 'Engageable', cls: 'good' },
+const STATUS_TEXT: Record<ThreatStatus, { label: string; short: string; cls: string }> = {
+  'no-path': { label: 'No flight path', short: 'No path', cls: 'neutral' },
+  'never-detected': { label: 'Never detected', short: 'Undetected', cls: 'bad' },
+  'not-confirmed': {
+    label: 'Detected, never classified hostile',
+    short: 'Never hostile',
+    cls: 'warn',
+  },
+  'detect-only': { label: 'Detected, no usable effector', short: 'Detect only', cls: 'warn' },
+  'no-kill-chain': {
+    label: 'Detected, kill chain not connected',
+    short: 'No kill chain',
+    cls: 'warn',
+  },
+  'weapons-hold': { label: 'Weapons hold (ROE)', short: 'Hold', cls: 'neutral' },
+  'window-too-short': { label: 'Engagement window too short', short: 'Short window', cls: 'warn' },
+  engageable: { label: 'Engageable', short: 'Engageable', cls: 'good' },
 }
 
 const TECH_LABEL: Record<string, string> = {
@@ -37,6 +53,45 @@ const TECH_LABEL: Record<string, string> = {
   'eo-ir': 'EO/IR',
   acoustic: 'acoustic',
   rf: 'RF',
+}
+
+/**
+ * Collapsible disclosure in the .subsection / .panel-subtitle idiom. Open
+ * state is local UI state only; it resets on mount and is never written to
+ * the scenario. `headerExtra` renders always-visible controls on the header
+ * row without toggling the section.
+ */
+function Section({
+  title,
+  headline,
+  defaultOpen = false,
+  headerExtra,
+  children,
+}: {
+  title: string
+  headline?: string
+  defaultOpen?: boolean
+  headerExtra?: React.ReactNode
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="subsection">
+      <div className="panel-subtitle section-head" onClick={() => setOpen((v) => !v)}>
+        <span className={`chevron${open ? ' open' : ''}`}>▸</span>
+        <span>{title}</span>
+        <span className="section-right">
+          {!open && headline ? <span className="section-headline">{headline}</span> : null}
+          {headerExtra ? (
+            <span className="section-extra" onClick={(e) => e.stopPropagation()}>
+              {headerExtra}
+            </span>
+          ) : null}
+        </span>
+      </div>
+      {open && children}
+    </div>
+  )
 }
 
 /** One-line derived classification history: unknown -> suspected -> hostile with times. */
@@ -83,44 +138,88 @@ function engagementPotentialText(
   return parts.join(' · ')
 }
 
-function ThreatRow({
+/** Per-channel kill split for the advanced view: hard, soft (jam), jam-degraded arrival. */
+function killSplitText(att: ThreatAttrition | undefined, name: (id: string | null) => string) {
+  if (
+    !att ||
+    (att.expectedHardKills <= 0.0005 &&
+      att.expectedSoftKills <= 0.0005 &&
+      att.continueJamProb <= 0.0005)
+  ) {
+    return '—'
+  }
+  return [
+    att.shipCount > 1
+      ? `${att.expectedHardKills.toFixed(1)} hard kill · ${att.expectedSoftKills.toFixed(1)} soft kill (jam)`
+      : `hard kill ${Math.round(att.expectedHardKills * 100)}% · soft kill (jam) ${Math.round(att.expectedSoftKills * 100)}%`,
+    att.killedByEffectorId
+      ? `dominant ${name(att.killedByEffectorId)}${att.killedBySoft ? ' (jam)' : ''}`
+      : null,
+    att.continueJamProb > 0.0005
+      ? `arrives jam-degraded ${Math.round(att.continueJamProb * 100)}%`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** Expanded telemetry table. Advanced adds the deep rows the old cards showed. */
+function ThreatDetail({
   a,
   att,
   imp,
+  advanced,
+  name,
+  threatModel,
 }: {
   a: ThreatAssessment
   att?: ThreatAttrition
   imp?: LeakerImpact
+  advanced: boolean
+  name: (id: string | null) => string
+  threatModel?: SpecModel
 }) {
-  const scenario = useStore((s) => s.scenario)
-  const name = (id: string | null) => scenario.entities.find((e) => e.id === id)?.name ?? '—'
   const status = STATUS_TEXT[a.status]
-  const winLen = a.windowS ? a.windowS[1] - a.windowS[0] : null
-  const threatModel = scenario.library.find(
-    (m) => m.id === scenario.entities.find((e) => e.id === a.uasId)?.specId,
-  )
-
+  const outcome = att
+    ? att.shipCount > 1
+      ? `${att.expectedKills.toFixed(1)} of ${att.shipCount} ships expected killed · ${Math.round(
+          att.leakProbability * 100,
+        )}% leak`
+      : `expected kill ${Math.round(att.expectedKills * 100)}% · leak ${Math.round(
+          att.leakProbability * 100,
+        )}%`
+    : '—'
   return (
-    <div className="threat-row">
-      <div className="threat-head">
-        <span className="threat-name">{name(a.uasId)}</span>
-        <span className={`status ${status.cls}`}>{status.label}</span>
-      </div>
-      {a.status !== 'no-path' && (
-        <table className="threat-table">
-          <tbody>
+    <>
+      <table className="threat-table">
+        <tbody>
+          <tr>
+            <td>Status</td>
+            <td>{status.label}</td>
+          </tr>
+          <tr>
+            <td>First detection</td>
+            <td>
+              {a.firstDetectS != null
+                ? `${formatTime(a.firstDetectS)} by ${name(a.firstDetectSensorId)}`
+                : 'none'}
+            </td>
+          </tr>
+          {advanced && (
             <tr>
-              <td>First detection</td>
+              <td>Detecting sensors</td>
               <td>
-                {a.firstDetectS != null
-                  ? `${formatTime(a.firstDetectS)} by ${name(a.firstDetectSensorId)}`
+                {a.detectingSensorIds.length > 0
+                  ? a.detectingSensorIds.map((id) => name(id)).join(', ')
                   : 'none'}
               </td>
             </tr>
-            <tr>
-              <td>Classification</td>
-              <td>{classificationTimeline(a.classificationAtS)}</td>
-            </tr>
+          )}
+          <tr>
+            <td>Classification</td>
+            <td>{classificationTimeline(a.classificationAtS)}</td>
+          </tr>
+          {advanced && (
             <tr>
               <td>Confirmed (2 techs)</td>
               <td>
@@ -131,90 +230,127 @@ function ThreatRow({
                     : 'never'}
               </td>
             </tr>
-            <tr>
-              <td>Arrival at asset</td>
-              <td>
-                {a.arrivalS != null
-                  ? `${formatTime(a.arrivalS)} · ${name(a.assetId)} · CPA ${formatDistance(
-                      a.closestApproachM ?? 0,
-                    )}`
-                  : 'no asset placed'}
-              </td>
-            </tr>
-            <tr>
-              <td>Warning time</td>
-              <td>{a.warningS != null ? formatTime(a.warningS) : '—'}</td>
-            </tr>
-            <tr>
-              <td>Best window</td>
-              <td>
-                {a.windowS
-                  ? `${formatTime(a.windowS[0])} – ${formatTime(a.windowS[1])} (${Math.round(
-                      winLen ?? 0,
-                    )} s) · ${name(a.windowEffectorId)}`
-                  : 'none after track quality is met'}
-              </td>
-            </tr>
+          )}
+          <tr>
+            <td>Arrival at asset</td>
+            <td>
+              {a.arrivalS != null
+                ? `${formatTime(a.arrivalS)} · ${name(a.assetId)} · CPA ${formatDistance(
+                    a.closestApproachM ?? 0,
+                  )}`
+                : 'no asset placed'}
+            </td>
+          </tr>
+          <tr>
+            <td>Best window</td>
+            <td>
+              {a.windowS
+                ? `${formatTime(a.windowS[0])} – ${formatTime(a.windowS[1])} (${Math.round(
+                    a.windowS[1] - a.windowS[0],
+                  )} s) · ${name(a.windowEffectorId)}`
+                : 'none after track quality is met'}
+            </td>
+          </tr>
+          {advanced && (
             <tr>
               <td>Shots fired</td>
               <td>
                 {att && att.shotsFired > 0
                   ? `${att.shotsFired}${
                       att.firstShotS != null ? ` · first at ${formatTime(att.firstShotS)}` : ''
-                    }${
-                      att.killedByEffectorId
-                        ? ` · ${name(att.killedByEffectorId)}${att.killedBySoft ? ' (jam)' : ''}`
-                        : ''
                     }`
                   : 'none'}
               </td>
             </tr>
+          )}
+          <tr>
+            <td>Outcome</td>
+            <td>{outcome}</td>
+          </tr>
+          {advanced && (
             <tr>
-              <td>Outcome</td>
-              <td>
-                {att &&
-                (att.expectedHardKills > 0.0005 ||
-                  att.expectedSoftKills > 0.0005 ||
-                  att.continueJamProb > 0.0005)
-                  ? [
-                      att.shipCount > 1
-                        ? `${att.expectedHardKills.toFixed(1)} hard kill · ${att.expectedSoftKills.toFixed(1)} soft kill (jam)`
-                        : `hard kill ${Math.round(att.expectedHardKills * 100)}% · soft kill (jam) ${Math.round(att.expectedSoftKills * 100)}%`,
-                      att.continueJamProb > 0.0005
-                        ? `arrives jam-degraded ${Math.round(att.continueJamProb * 100)}%`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')
-                  : '—'}
-              </td>
+              <td>Kill split</td>
+              <td>{killSplitText(att, name)}</td>
             </tr>
-            <tr>
-              <td>Leak probability</td>
-              <td>
-                {att
-                  ? `${Math.round(att.leakProbability * 100)}%${
-                      att.shipCount > 1
-                        ? ` · ${att.expectedKills.toFixed(1)} of ${att.shipCount} ships expected killed`
-                        : ''
-                    }`
-                  : '—'}
-              </td>
-            </tr>
-            <tr>
-              <td>Engagement potential</td>
-              <td>
-                {engagementPotentialText(a, imp, wezKindFor(threatModel), wezRadiusM(threatModel))}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      )}
-      {a.swarmMerged && (
+          )}
+          <tr>
+            <td>Engagement potential</td>
+            <td>
+              {engagementPotentialText(a, imp, wezKindFor(threatModel), wezRadiusM(threatModel))}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {advanced && a.swarmMerged && (
         <p className="muted small">
           Formation merges into one track: no detecting sensor can split ships at this spacing.
           The defense does not know the count.
         </p>
+      )}
+    </>
+  )
+}
+
+/**
+ * One compact line per threat: name · status chip · warning · window · leak.
+ * Click toggles the detail table; the amber I&W line shows whenever leak
+ * probability reaches 0.5 or an impact severity is set. Expansion is local
+ * state, reset per mount.
+ */
+function ThreatRowCompact({
+  a,
+  att,
+  imp,
+  advanced,
+}: {
+  a: ThreatAssessment
+  att?: ThreatAttrition
+  imp?: LeakerImpact
+  advanced: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const scenario = useStore((s) => s.scenario)
+  const name = (id: string | null) => scenario.entities.find((e) => e.id === id)?.name ?? '—'
+  const status = STATUS_TEXT[a.status]
+  const stats = threatCompactStats(a, att)
+  const threatModel = scenario.library.find(
+    (m) => m.id === scenario.entities.find((e) => e.id === a.uasId)?.specId,
+  )
+  const severity = imp?.severity ?? null
+  const showIw = (att != null && att.leakProbability >= 0.5) || severity != null
+  const iwText = imp?.assetName
+    ? `Reaches ${imp.assetName}${imp.arrivalS != null ? ` T+${formatTime(imp.arrivalS)}` : ''}`
+    : 'High leak probability'
+
+  return (
+    <div className="threat-row compact">
+      <div className="threat-compact" onClick={() => setOpen((v) => !v)}>
+        <span className={`chevron${open ? ' open' : ''}`}>▸</span>
+        <span className="threat-name">{name(a.uasId)}</span>
+        <span className={`status ${status.cls}`} title={status.label}>
+          {status.short}
+        </span>
+        <span className="threat-stats" title="warning time · engagement window · leak probability">
+          warn {stats.warning} · win {stats.window} · leak {stats.leak}
+        </span>
+      </div>
+      {showIw && (
+        <div className="iw-line">
+          <span className={`status ${severity != null ? TIER_CLS[severity] : 'warn'}`}>
+            I&W{severity != null ? ` ${SEVERITY_LABEL[severity]}` : ''}
+          </span>
+          {iwText}
+        </div>
+      )}
+      {open && (
+        <ThreatDetail
+          a={a}
+          att={att}
+          imp={imp}
+          advanced={advanced}
+          name={name}
+          threatModel={threatModel}
+        />
       )}
     </div>
   )
@@ -256,21 +392,29 @@ function Seg<T extends string>({
 
 const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
 
+/** Applies-effects checkbox, always visible on the Environment header row. */
+function ApplyEffectsCheck() {
+  const apply = useStore((s) => s.scenario.environment.apply)
+  const updateEnvironment = useStore((s) => s.updateEnvironment)
+  return (
+    <label className="apply-check" title="Apply environment effects to sensors and threats">
+      <input
+        type="checkbox"
+        checked={apply}
+        onChange={(e) => updateEnvironment({ apply: e.target.checked })}
+      />
+      apply
+    </label>
+  )
+}
+
 /** Scenario covariates. Feed UAS range rings and sensor footprints. */
-function EnvironmentEditor() {
+function EnvironmentBody() {
   const env = useStore((s) => s.scenario.environment)
   const updateEnvironment = useStore((s) => s.updateEnvironment)
   const cardinal = CARDINALS[Math.round(env.windFromDeg / 45) % 8]
   return (
-    <div className="subsection">
-      <div className="panel-subtitle">Environment (covariates)</div>
-      <Field label="Apply environment effects">
-        <input
-          type="checkbox"
-          checked={env.apply}
-          onChange={(e) => updateEnvironment({ apply: e.target.checked })}
-        />
-      </Field>
+    <>
       <div className="field-row">
         <Field label="Sky">
           <Seg
@@ -348,17 +492,15 @@ function EnvironmentEditor() {
         Rain, fog, night, and EM clutter shrink sensor rings by technology. Cold, altitude, and
         wind reshape drone reach. Factors follow the COURAGEOUS C-UAS study; planning values.
       </p>
-    </div>
+    </>
   )
 }
 
 /** Per-effector expected magazine use from the attrition sweep. */
-function EffectorSummary({ report }: { report: AttritionReport }) {
+function EffectorBody({ report }: { report: AttritionReport }) {
   const scenario = useStore((s) => s.scenario)
-  if (report.effectors.length === 0 || report.totals.raidSize === 0) return null
   return (
-    <div className="subsection">
-      <div className="panel-subtitle">Effector magazines</div>
+    <>
       <table className="threat-table">
         <tbody>
           {report.effectors.map((e) => {
@@ -387,7 +529,7 @@ function EffectorSummary({ report }: { report: AttritionReport }) {
         {report.totals.expectedSoftKills.toFixed(1)} soft),{' '}
         {report.totals.expectedLeakers.toFixed(1)} leak through, {report.totals.shotsFired} shots.
       </p>
-    </div>
+    </>
   )
 }
 
@@ -514,12 +656,10 @@ function AarThreatLines({ aar }: { aar: AarSummary }) {
 }
 
 /** After-action report: totals, magazines, and the per-threat timeline. */
-function AarSection({ aar }: { aar: AarSummary }) {
+function AarBody({ aar }: { aar: AarSummary }) {
   const name = useStore((s) => s.scenario.name)
-  if (aar.threats.length === 0) return null
   return (
-    <div className="subsection">
-      <div className="panel-subtitle">After-action report</div>
+    <>
       <AarTotals aar={aar} />
       <table className="aar-threat-table">
         <thead>
@@ -558,7 +698,7 @@ function AarSection({ aar }: { aar: AarSummary }) {
       <div className="inspector-actions">
         <button onClick={() => exportAar(name, aar)}>Export AAR JSON</button>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -582,27 +722,23 @@ function fullWeights(w?: McdaVector): Required<McdaVector> {
 }
 
 /** Weighted configuration score (COURAGEOUS eq. 1) with pinned comparisons. */
-function Scorecard({
-  assessments,
-  report,
+function ScorecardBody({
+  parts,
+  score,
+  weights,
   aar,
 }: {
-  assessments: ThreatAssessment[]
-  report: AttritionReport
+  parts: ReturnType<typeof mcdaParts>
+  score: number | null
+  weights: Required<McdaVector>
   aar: AarSummary
 }) {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
-  const weights = fullWeights(scenario.mcdaWeights)
-  const parts = useMemo(() => mcdaParts(assessments, report), [assessments, report])
   const pinned = scenario.scorecards ?? []
 
-  if (!parts && pinned.length === 0) return null
-  const score = parts ? mcdaScore(parts, weights) : null
-
   return (
-    <div className="subsection">
-      <div className="panel-subtitle">Configuration score</div>
+    <>
       {WEIGHT_LABELS.map(({ key, label }) => (
         <div className="field-row" key={key}>
           <Field label={`${label} · weight ${weights[key]}`}>
@@ -692,14 +828,21 @@ function Scorecard({
         Pin the score, change the laydown or environment, and compare. Pins made here carry the
         full AAR summary and compare side by side above.
       </p>
-    </div>
+    </>
   )
 }
 
-/** Computed engagement picture for every threat with a flight path. */
+/**
+ * Computed engagement picture for every threat with a flight path. Compact by
+ * default: one line per threat, collapsed sections with headline numbers.
+ * Every datum the full cards showed stays reachable within two clicks (expand
+ * a row or section; flip Advanced telemetry for the deep rows). All
+ * expansion state is local and resets per mount.
+ */
 export function AnalysisPanel() {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
+  const [advanced, setAdvanced] = useState(false)
   // One shared computation per scenario with the canvas WEZ layer
   // (module-level WeakMap in impact.ts), so the sweep never runs twice.
   const { assessments, report, impacts } = useMemo(() => engagementPicture(scenario), [scenario])
@@ -709,12 +852,17 @@ export function AnalysisPanel() {
   )
   const threats = assessments.filter((a) => a.status !== 'no-path')
   const noPath = assessments.length - threats.length
+  const weights = fullWeights(scenario.mcdaWeights)
+  const parts = useMemo(() => mcdaParts(assessments, report), [assessments, report])
+  const score = parts ? mcdaScore(parts, weights) : null
+  const pinned = scenario.scorecards ?? []
+  const showMagazines =
+    threats.length > 0 && report.effectors.length > 0 && report.totals.raidSize > 0
 
   return (
     <div className="inspector-body">
-      <EnvironmentEditor />
-      <div className="panel-subtitle">Engagement analysis</div>
-      <Field label="ROE">
+      <div className="analysis-header">
+        <span className="roe-label">ROE</span>
         <Seg
           value={scenario.roe ?? 'tight'}
           options={[
@@ -724,37 +872,68 @@ export function AnalysisPanel() {
           ]}
           onChange={(v) => patchScenario({ roe: v })}
         />
-      </Field>
-      <p className="muted small">
-        Hold = analyze only, no engagement. Tight = engage tracks classified hostile. Free = engage
-        on first detection.
-      </p>
+        <label className="adv-toggle" title="Reveal the deep telemetry rows in expanded threats">
+          <input
+            type="checkbox"
+            checked={advanced}
+            onChange={(e) => setAdvanced(e.target.checked)}
+          />
+          Advanced telemetry
+        </label>
+      </div>
+      <Section
+        title="Environment"
+        headline={environmentHeadline(scenario.environment)}
+        headerExtra={<ApplyEffectsCheck />}
+      >
+        <EnvironmentBody />
+      </Section>
       {assessments.length === 0 && (
         <p className="muted">Place a UAS threat on the canvas to analyze it.</p>
       )}
       <LeakerWarningStrip impacts={impacts} />
+      {threats.length > 0 && <div className="panel-subtitle">Threats · {threats.length}</div>}
       {threats.map((a) => (
-        <ThreatRow
+        <ThreatRowCompact
           key={a.uasId}
           a={a}
           att={report.threats.find((t) => t.uasId === a.uasId)}
           imp={impacts.find((i) => i.uasId === a.uasId)}
+          advanced={advanced}
         />
       ))}
-      {threats.length > 0 && <EffectorSummary report={report} />}
-      <AarSection aar={aar} />
+      {showMagazines && (
+        <Section title="Effector magazines" headline={magazinesHeadline(aar)}>
+          <EffectorBody report={report} />
+        </Section>
+      )}
+      {aar.threats.length > 0 && (
+        <Section title="After-action report" headline={aarHeadline(aar)}>
+          <AarBody aar={aar} />
+        </Section>
+      )}
       {noPath > 0 && (
         <p className="muted">
           {noPath} UAS without a flight path. Draw a path with the Path tool to include them.
         </p>
       )}
-      <Scorecard assessments={assessments} report={report} aar={aar} />
-      <p className="muted small">
-        Warning time = arrival at the defended asset minus first detection. Windows start when the
-        ROE gate is met. RF sensors do not see RF-silent threats; EO/IR needs a cue
-        from another technology; radar sees bigger airframes farther than the drawn Group 1 ring.
-        Computed at 0.5 s steps; planning figures, not test evidence.
-      </p>
+      {(parts != null || pinned.length > 0) && (
+        <Section title="Configuration score" headline={scoreHeadline(score)}>
+          <ScorecardBody parts={parts} score={score} weights={weights} aar={aar} />
+        </Section>
+      )}
+      <Section title="About these numbers">
+        <p className="muted small">
+          ROE: Hold = analyze only, no engagement. Tight = engage tracks classified hostile. Free =
+          engage on first detection.
+        </p>
+        <p className="muted small">
+          Warning time = arrival at the defended asset minus first detection. Windows start when
+          the ROE gate is met. RF sensors do not see RF-silent threats; EO/IR needs a cue from
+          another technology; radar sees bigger airframes farther than the drawn Group 1 ring.
+          Computed at 0.5 s steps; planning figures, not test evidence.
+        </p>
+      </Section>
     </div>
   )
 }
