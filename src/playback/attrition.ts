@@ -145,7 +145,6 @@ const EPS = 1e-9
  * closes or the magazine is empty.
  */
 export function resolveEngagements(scenario: Scenario): AttritionReport {
-  const policy = scenario.engageOn ?? 'detected'
   const assessments = assessAllThreats(scenario).filter((a) => a.status !== 'no-path')
 
   const threats: ThreatState[] = assessments.map((a) => {
@@ -168,7 +167,7 @@ export function resolveEngagements(scenario: Scenario): AttritionReport {
       speedMps: path ? speedFor(scenario, path) : 15,
       ships: Array.from({ length: count }, () => 1),
       windows,
-      gateS: policy === 'confirmed' ? a.firstConfirmS : a.firstDetectS,
+      gateS: a.engageGateS,
       shotsFired: 0,
       firstShotS: null,
       killContrib: new Map(),

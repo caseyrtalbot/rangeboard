@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
+import type { Roe, Scenario, SensorRole } from '../model/types'
+import { newId } from '../model/types'
 import { assessThreat, detectionsAt, memberPositions } from './sim'
 
 function reset() {
@@ -158,26 +160,44 @@ describe('environment effects on sensors', () => {
   })
 })
 
-describe('engagement policy and jammer limits', () => {
+describe('ROE gates and jammer limits', () => {
   beforeEach(reset)
 
-  it('confirmed policy blocks a single-technology chain', () => {
+  it('default ROE is tight: the track goes hostile and gates the window there', () => {
     placeKillChain()
     const uasId = placeThreat()
-    useStore.getState().patchScenario({ engageOn: 'confirmed' })
+    expect(useStore.getState().scenario.roe).toBe('tight')
     const a = assessThreat(useStore.getState().scenario, uasId)
-    expect(a.status).toBe('not-confirmed')
-    expect(a.firstConfirmS).toBeNull()
+    expect(a.classificationAtS.hostileAtS).not.toBeNull()
+    expect(a.engageGateS).toBe(a.classificationAtS.hostileAtS)
+    expect(a.status).toBe('engageable')
   })
 
-  it('a second technology confirms the track and restores engageability', () => {
+  it('weapons hold removes every engagement window', () => {
+    placeKillChain()
+    const uasId = placeThreat()
+    useStore.getState().patchScenario({ roe: 'hold' })
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    expect(a.status).toBe('weapons-hold')
+    expect(a.windowS).toBeNull()
+    expect(a.engageGateS).toBeNull()
+  })
+
+  it('weapons free gates the window at first detection', () => {
+    placeKillChain()
+    const uasId = placeThreat()
+    useStore.getState().patchScenario({ roe: 'free' })
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    expect(a.engageGateS).toBe(a.firstDetectS)
+    expect(a.status).toBe('engageable')
+  })
+
+  it('a second detection technology still sets firstConfirmS', () => {
     placeKillChain()
     const uasId = placeThreat()
     useStore.getState().addEntityFromModel('lib-rf360', { x: 0, y: 0 }) // omni RF, 2 km
-    useStore.getState().patchScenario({ engageOn: 'confirmed' })
     const a = assessThreat(useStore.getState().scenario, uasId)
     expect(a.firstConfirmS).not.toBeNull()
-    expect(a.status).toBe('engageable')
   })
 
   it('a jammer is no effector against a fiber-guided threat', () => {
@@ -224,5 +244,280 @@ describe('swarm track resolution', () => {
       formation: { count: 5, shape: 'wedge', spacingM: 600 },
     })
     expect(assessThreat(useStore.getState().scenario, uasId).swarmMerged).toBe(false)
+  })
+})
+
+/**
+ * Hand-built scenario on the x axis: one omni radar, an optional effector
+ * (gun, min range 0, engage time 0), and one UAS flying pathFromX -> pathToX
+ * at speedMps with no start delay. All positions sit on y = 0.
+ */
+function ladderScenario(o: {
+  speedMps: number
+  routeIntent?: string
+  sensor: { x: number; detectRangeM: number; classifyRangeM?: number | null; role?: SensorRole }
+  effector?: { x: number; maxRangeM: number }
+  /** Connect sensor -> effector. Default true. */
+  connect?: boolean
+  pathFromX: number
+  pathToX: number
+  roe?: Roe
+}): { scenario: Scenario; uasId: string } {
+  const s = emptyScenario()
+  if (o.roe) s.roe = o.roe
+  const uasModelId = newId('m-uas')
+  const sensorModelId = newId('m-sen')
+  s.library.push(
+    {
+      id: uasModelId,
+      name: 'Test UAS',
+      kind: 'uas',
+      description: '',
+      color: '#f00',
+      builtin: false,
+      uas: {
+        group: 1,
+        airframe: 'quad',
+        cruiseSpeedMps: o.speedMps,
+        maxSpeedMps: o.speedMps,
+        enduranceMin: 60,
+        altBandFt: [0, 400],
+        navMode: 'gps',
+        emissionsNote: '',
+      },
+      threatProfile: o.routeIntent
+        ? {
+            designator: 'TST-1',
+            routeIntent: o.routeIntent,
+            altitudeFt: 400,
+            speedMps: o.speedMps,
+            count: 1,
+          }
+        : undefined,
+    },
+    {
+      id: sensorModelId,
+      name: 'Test radar',
+      kind: 'sensor',
+      description: '',
+      color: '#0f0',
+      builtin: false,
+      sensor: {
+        sensorType: 'radar',
+        role: o.sensor.role ?? 'early-warning',
+        detectRangeM: o.sensor.detectRangeM,
+        classifyRangeM: o.sensor.classifyRangeM ?? null,
+        sectorDeg: 360,
+      },
+    },
+  )
+  const uasId = newId('e-uas')
+  const sensorId = newId('e-sen')
+  s.entities.push(
+    {
+      id: sensorId,
+      name: 'S1',
+      kind: 'sensor',
+      specId: sensorModelId,
+      pos: { x: o.sensor.x, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    },
+    {
+      id: uasId,
+      name: 'T1',
+      kind: 'uas',
+      specId: uasModelId,
+      pos: { x: o.pathFromX, y: 0 },
+      headingDeg: 90,
+      color: null,
+      notes: '',
+    },
+  )
+  if (o.effector) {
+    const effModelId = newId('m-eff')
+    s.library.push({
+      id: effModelId,
+      name: 'Test gun',
+      kind: 'effector',
+      description: '',
+      color: '#00f',
+      builtin: false,
+      effector: {
+        effectorType: 'gun',
+        minRangeM: 0,
+        maxRangeM: o.effector.maxRangeM,
+        engageTimeS: 0,
+      },
+    })
+    const effId = newId('e-eff')
+    s.entities.push({
+      id: effId,
+      name: 'E1',
+      kind: 'effector',
+      specId: effModelId,
+      pos: { x: o.effector.x, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    })
+    if (o.connect !== false) {
+      s.connections.push({ id: newId('c'), fromId: sensorId, toId: effId, label: '' })
+    }
+  }
+  s.paths.push({
+    id: newId('p'),
+    entityId: uasId,
+    points: [
+      { x: o.pathFromX, y: 0 },
+      { x: o.pathToX, y: 0 },
+    ],
+    speedMps: o.speedMps,
+    startDelayS: 0,
+  })
+  return { scenario: s, uasId }
+}
+
+/** The sweep samples at 0.5 s; a boundary crossing lands within one step. */
+function near(v: number | null, expectedS: number) {
+  expect(v).not.toBeNull()
+  expect(v!).toBeGreaterThanOrEqual(expectedS - 1e-6)
+  expect(v!).toBeLessThanOrEqual(expectedS + 0.5)
+}
+
+describe('classification ladder promotions', () => {
+  it('first detection promotes pending to unknown; slow benign traffic stays there', () => {
+    // 10 m/s = 36 kph, no attack intent, no effector anywhere.
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 10,
+      sensor: { x: 0, detectRangeM: 1000 },
+      pathFromX: -2000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.firstDetectS).not.toBeNull()
+    expect(a.classificationAtS.unknownAtS).toBe(a.firstDetectS)
+    expect(a.classificationAtS.suspectedAtS).toBeNull()
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+  })
+
+  it('estimated speed above 50 kph promotes unknown to suspected at once', () => {
+    // 20 m/s = 72 kph.
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 20,
+      sensor: { x: 0, detectRangeM: 1000 },
+      pathFromX: -2000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.classificationAtS.suspectedAtS).toBe(a.classificationAtS.unknownAtS)
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+  })
+
+  it('an attack route intent promotes a slow track to suspected', () => {
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 10,
+      routeIntent: 'One-way attack along the river corridor',
+      sensor: { x: 0, detectRangeM: 1000 },
+      pathFromX: -2000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.classificationAtS.suspectedAtS).toBe(a.classificationAtS.unknownAtS)
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+  })
+
+  it('proximity ladder: suspected inside 1.5x and hostile inside a connected effector range', () => {
+    // Radar holds the whole path; the gun (1000 m) sits at the origin.
+    // 1500 m boundary at t = 150 s, 1000 m boundary at t = 200 s.
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 10,
+      sensor: { x: 0, detectRangeM: 5000 },
+      effector: { x: 0, maxRangeM: 1000 },
+      pathFromX: -3000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.classificationAtS.unknownAtS).toBe(0)
+    near(a.classificationAtS.suspectedAtS, 150)
+    near(a.classificationAtS.hostileAtS, 200)
+  })
+
+  it('an unconnected effector drives no proximity promotions', () => {
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 10,
+      sensor: { x: 0, detectRangeM: 5000 },
+      effector: { x: 0, maxRangeM: 1000 },
+      connect: false,
+      pathFromX: -3000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.classificationAtS.suspectedAtS).toBeNull()
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+  })
+
+  it('a classification sensor inside classify range promotes suspected to hostile', () => {
+    // Fast threat is suspected at first detection; classify range 2000 m is
+    // crossed at t = 100 s. No effector in the scenario at all.
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 20,
+      sensor: { x: 0, detectRangeM: 4000, classifyRangeM: 2000, role: 'classification' },
+      pathFromX: -4000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    near(a.classificationAtS.hostileAtS, 100)
+  })
+
+  it('the same classified hit from an early-warning sensor does not go hostile', () => {
+    const { scenario, uasId } = ladderScenario({
+      speedMps: 20,
+      sensor: { x: 0, detectRangeM: 4000, classifyRangeM: 2000, role: 'early-warning' },
+      pathFromX: -4000,
+      pathToX: 0,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.classificationAtS.suspectedAtS).not.toBeNull()
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+  })
+})
+
+describe('ROE window gating on a track that never goes hostile', () => {
+  // The radar only covers the early path (x in [-3500, -2500], t in [50, 150]);
+  // the gun sits downstream at the origin. Promotions need concurrent
+  // detection, so the slow benign track never passes unknown.
+  const laydown = {
+    speedMps: 10,
+    sensor: { x: -3000, detectRangeM: 500 },
+    effector: { x: 0, maxRangeM: 1000 },
+    pathFromX: -4000,
+    pathToX: 0,
+  }
+
+  it('tight: no hostile classification means no window', () => {
+    const { scenario, uasId } = ladderScenario(laydown)
+    const a = assessThreat(scenario, uasId)
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+    expect(a.status).toBe('not-confirmed')
+    expect(a.windowS).toBeNull()
+    expect(a.engageGateS).toBeNull()
+  })
+
+  it('free: the same laydown engages from first detection', () => {
+    const { scenario, uasId } = ladderScenario({ ...laydown, roe: 'free' })
+    const a = assessThreat(scenario, uasId)
+    expect(a.engageGateS).toBe(a.firstDetectS)
+    expect(a.status).toBe('engageable')
+    near(a.windowS![0], 300) // enters the 1000 m gun ring at t = 300 s
+  })
+
+  it('hold: analysis only, no windows', () => {
+    const { scenario, uasId } = ladderScenario({ ...laydown, roe: 'hold' })
+    const a = assessThreat(scenario, uasId)
+    expect(a.status).toBe('weapons-hold')
+    expect(a.windowS).toBeNull()
+    expect(a.engageGateS).toBeNull()
   })
 })

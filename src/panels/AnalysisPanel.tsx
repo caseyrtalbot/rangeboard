@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
-import type { EmBackground, LightLevel, McdaVector, Precipitation } from '../model/types'
+import type { EmBackground, LightLevel, McdaVector, Precipitation, Roe } from '../model/types'
 import { newId } from '../model/types'
 import { useStore } from '../state/store'
 import { assessAllThreats } from '../playback/sim'
-import type { ThreatAssessment, ThreatStatus } from '../playback/sim'
+import type { ClassificationTimes, ThreatAssessment, ThreatStatus } from '../playback/sim'
 import { resolveEngagements } from '../playback/attrition'
 import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
 import { formatDistance, formatTime } from '../geometry/geo'
@@ -12,9 +12,10 @@ import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 const STATUS_TEXT: Record<ThreatStatus, { label: string; cls: string }> = {
   'no-path': { label: 'No flight path', cls: 'neutral' },
   'never-detected': { label: 'Never detected', cls: 'bad' },
-  'not-confirmed': { label: 'Detected, never confirmed by a 2nd technology', cls: 'warn' },
+  'not-confirmed': { label: 'Detected, never classified hostile', cls: 'warn' },
   'detect-only': { label: 'Detected, no usable effector', cls: 'warn' },
   'no-kill-chain': { label: 'Detected, kill chain not connected', cls: 'warn' },
+  'weapons-hold': { label: 'Weapons hold (ROE)', cls: 'neutral' },
   'window-too-short': { label: 'Engagement window too short', cls: 'warn' },
   engageable: { label: 'Engageable', cls: 'good' },
 }
@@ -24,6 +25,17 @@ const TECH_LABEL: Record<string, string> = {
   'eo-ir': 'EO/IR',
   acoustic: 'acoustic',
   rf: 'RF',
+}
+
+/** One-line derived classification history: unknown -> suspected -> hostile with times. */
+function classificationTimeline(c: ClassificationTimes): string {
+  if (c.unknownAtS == null) return 'pending · never detected'
+  const steps = [`unknown ${formatTime(c.unknownAtS)}`]
+  if (c.suspectedAtS != null) steps.push(`suspected ${formatTime(c.suspectedAtS)}`)
+  if (c.hostileAtS != null) steps.push(`hostile ${formatTime(c.hostileAtS)}`)
+  const tail =
+    c.hostileAtS != null ? '' : c.suspectedAtS != null ? ' · never hostile' : ' · never suspected'
+  return steps.join(' → ') + tail
 }
 
 function ThreatRow({ a, att }: { a: ThreatAssessment; att?: ThreatAttrition }) {
@@ -48,6 +60,10 @@ function ThreatRow({ a, att }: { a: ThreatAssessment; att?: ThreatAttrition }) {
                   ? `${formatTime(a.firstDetectS)} by ${name(a.firstDetectSensorId)}`
                   : 'none'}
               </td>
+            </tr>
+            <tr>
+              <td>Classification</td>
+              <td>{classificationTimeline(a.classificationAtS)}</td>
             </tr>
             <tr>
               <td>Confirmed (2 techs)</td>
@@ -409,16 +425,21 @@ export function AnalysisPanel() {
     <div className="inspector-body">
       <EnvironmentEditor />
       <div className="panel-subtitle">Engagement analysis</div>
-      <Field label="Engage on">
+      <Field label="ROE">
         <Seg
-          value={scenario.engageOn ?? 'detected'}
+          value={scenario.roe ?? 'tight'}
           options={[
-            { v: 'detected' as const, label: 'Detected track' },
-            { v: 'confirmed' as const, label: 'Confirmed (2 techs)' },
+            { v: 'hold' as Roe, label: 'Hold' },
+            { v: 'tight' as Roe, label: 'Tight' },
+            { v: 'free' as Roe, label: 'Free' },
           ]}
-          onChange={(v) => patchScenario({ engageOn: v })}
+          onChange={(v) => patchScenario({ roe: v })}
         />
       </Field>
+      <p className="muted small">
+        Hold = analyze only, no engagement. Tight = engage tracks classified hostile. Free = engage
+        on first detection.
+      </p>
       {assessments.length === 0 && (
         <p className="muted">Place a UAS threat on the canvas to analyze it.</p>
       )}
@@ -434,7 +455,7 @@ export function AnalysisPanel() {
       <Scorecard assessments={assessments} report={report} />
       <p className="muted small">
         Warning time = arrival at the defended asset minus first detection. Windows start when the
-        selected track quality is met. RF sensors do not see RF-silent threats; EO/IR needs a cue
+        ROE gate is met. RF sensors do not see RF-silent threats; EO/IR needs a cue
         from another technology; radar sees bigger airframes farther than the drawn Group 1 ring.
         Computed at 0.5 s steps; planning figures, not test evidence.
       </p>

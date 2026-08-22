@@ -284,8 +284,19 @@ export interface EnvironmentSpec {
   apply: boolean
 }
 
-/** Track quality a kill chain needs before an engagement may start. */
+/**
+ * Legacy track-quality gate, replaced by `Roe`. Kept only so old saves parse;
+ * persist migration maps 'detected' -> 'free' and 'confirmed' -> 'tight'.
+ */
 export type EngagePolicy = 'detected' | 'confirmed'
+
+/**
+ * Rules of engagement posture.
+ * 'hold' = analysis only, no engagement windows.
+ * 'tight' = engage tracks classified hostile.
+ * 'free' = engage on first detection.
+ */
+export type Roe = 'hold' | 'tight' | 'free'
 
 /** Weights (0-5) and normalized scores (0-1) share this shape. */
 export interface McdaVector {
@@ -323,8 +334,10 @@ export interface Scenario {
   library: SpecModel[]
   systemPresets: SystemPreset[]
   environment: EnvironmentSpec
-  /** Absent on old saves; treat as 'detected'. */
+  /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
   engageOn?: EngagePolicy
+  /** Absent on old saves; migrated from engageOn on load, default 'tight'. */
+  roe?: Roe
   /** MCDA scorecard weights, 0-5 each. Absent on old saves. */
   mcdaWeights?: McdaVector
   /** Pinned scorecard results. Absent on old saves. */

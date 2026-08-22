@@ -4,13 +4,21 @@ import { useStore } from '../state/store'
 
 const STORAGE_KEY = 'rangeboard.scenario.v1'
 
-/** Fill fields added after a save was written, including nested environment fields. */
-function fillScenario(parsed: Scenario): Scenario {
+/**
+ * Fill fields added after a save was written, including nested environment
+ * fields, and migrate the legacy engageOn policy to an ROE posture
+ * ('detected' -> 'free', 'confirmed' -> 'tight'). Exported for tests.
+ */
+export function fillScenario(parsed: Scenario): Scenario {
   const empty = emptyScenario()
+  const roe =
+    parsed.roe ??
+    (parsed.engageOn === 'detected' ? 'free' : parsed.engageOn === 'confirmed' ? 'tight' : empty.roe)
   return {
     ...empty,
     ...parsed,
     environment: { ...empty.environment, ...parsed.environment },
+    roe,
   }
 }
 

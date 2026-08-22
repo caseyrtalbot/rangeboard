@@ -1,5 +1,5 @@
 import type { Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { entityActive } from '../model/types'
+import { defaultSensorRole, entityActive } from '../model/types'
 import { dist, formationOffsets, pointInSector, posAtTime } from '../geometry/geo'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
 import { effectivePathDelayS } from './raid'
@@ -126,11 +126,44 @@ export function detectionsAt(scenario: Scenario, tS: number): Map<string, Detect
 export type ThreatStatus =
   | 'no-path'
   | 'never-detected'
+  /** ROE 'tight' and the track never reached hostile classification. */
   | 'not-confirmed'
   | 'detect-only'
   | 'no-kill-chain'
+  /** ROE 'hold': analysis-only posture, no engagement windows. */
+  | 'weapons-hold'
   | 'window-too-short'
   | 'engageable'
+
+/**
+ * Derived track classification ladder, ported from the PicoGrid drone-swarm
+ * track statuses (pending -> unknown -> suspected -> hostile). Never stored;
+ * recomputed from the scenario.
+ */
+export type ThreatClassification = 'pending' | 'unknown' | 'suspected' | 'hostile'
+
+/** Sim time each classification level was first reached; null = never. */
+export interface ClassificationTimes {
+  unknownAtS: number | null
+  suspectedAtS: number | null
+  hostileAtS: number | null
+}
+
+/** Estimated speed above which an unknown track becomes suspected, kph (source: 50). */
+export const SUSPECT_SPEED_KPH = 50
+
+/** Proximity multiple of a connected effector's max range that makes a track suspected. */
+export const SUSPECT_RANGE_FACTOR = 1.5
+
+/** Route-intent wording that marks a threat profile as an attack profile. */
+export const ATTACK_INTENT_KEYWORDS = ['attack', 'strike', 'raid', 'one-way', 'pgm']
+
+/** True when the model's route intent reads as an attack profile. */
+export function isAttackIntent(routeIntent: string | undefined): boolean {
+  if (!routeIntent) return false
+  const s = routeIntent.toLowerCase()
+  return ATTACK_INTENT_KEYWORDS.some((k) => s.includes(k))
+}
 
 export interface ThreatAssessment {
   uasId: string
@@ -152,6 +185,10 @@ export interface ThreatAssessment {
   /** Longest usable engagement interval [start, end] against any effector. */
   windowS: [number, number] | null
   windowEffectorId: string | null
+  /** Time each classification level was reached on the derived ladder. */
+  classificationAtS: ClassificationTimes
+  /** ROE-gated earliest engagement time: free = first detection, tight = hostile, hold = null. */
+  engageGateS: number | null
   /** Sensors that detected the threat at any time during the sweep. */
   detectingSensorIds: string[]
   /** Raw in-range intervals per effector (DT-sampled, before the track-quality gate). */
@@ -198,6 +235,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     warningS: null,
     windowS: null,
     windowEffectorId: null,
+    classificationAtS: { unknownAtS: null, suspectedAtS: null, hostileAtS: null },
+    engageGateS: null,
     detectingSensorIds: [],
     effectorWindows: [],
   }
@@ -222,6 +261,11 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const detectingSensors = new Set<string>()
   const techsSeen = new Set<SensorType>()
   const effectorInRange = new Map<string, Array<[number, number]>>()
+  // Classification ladder state (PicoGrid executeDetection promotion rules).
+  let classification: ThreatClassification = 'pending'
+  const clsAt = base.classificationAtS
+  const speedKph = speed * 3.6
+  const attackIntent = isAttackIntent(modelFor(scenario, uas)?.threatProfile?.routeIntent)
   const hasFormation = !!uas.formation && uas.formation.count > 1
   let anyResolved = false
   let closest: { assetId: string | null; tS: number | null; distM: number } = {
@@ -237,6 +281,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     const members = memberPositions(uas, pos, sample.headingDeg)
 
     const stepTechs = new Set<SensorType>()
+    let fcClassifiedNow = false
     for (const pass of ['search', 'cued'] as const) {
       for (const sensor of sensors) {
         const spec = modelFor(scenario, sensor)?.sensor
@@ -248,6 +293,10 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
         stepTechs.add(hit.sensorType)
         detectingSensors.add(sensor.id)
         if (hit.resolved) anyResolved = true
+        const role = defaultSensorRole(spec)
+        if (hit.classified && (role === 'fire-control' || role === 'classification')) {
+          fcClassifiedNow = true
+        }
         if (base.firstDetectS == null) {
           base.firstDetectS = t
           base.firstDetectSensorId = sensor.id
@@ -256,6 +305,37 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     }
     for (const tech of stepTechs) techsSeen.add(tech)
     if (base.firstConfirmS == null && stepTechs.size >= 2) base.firstConfirmS = t
+
+    // Promotion rules run only while some sensor holds the track. A track can
+    // climb several rungs in one step (e.g. first detected already in range).
+    if (stepTechs.size > 0 && classification !== 'hostile') {
+      if (classification === 'pending') {
+        classification = 'unknown'
+        clsAt.unknownAtS = t
+      }
+      // Proximity is measured to effectors reachable from the sensors that
+      // have held the track so far (plain distance, matching the source).
+      let nearestRatio = Number.POSITIVE_INFINITY
+      const connected = connectedEffectorIds(scenario, detectingSensors)
+      for (const eff of effectors) {
+        if (!connected.has(eff.id)) continue
+        const spec = modelFor(scenario, eff)?.effector
+        if (!spec || spec.maxRangeM <= 0) continue
+        const ratio = dist(pos, eff.pos) / spec.maxRangeM
+        if (ratio < nearestRatio) nearestRatio = ratio
+      }
+      if (
+        classification === 'unknown' &&
+        (speedKph > SUSPECT_SPEED_KPH || attackIntent || nearestRatio <= SUSPECT_RANGE_FACTOR)
+      ) {
+        classification = 'suspected'
+        clsAt.suspectedAtS = t
+      }
+      if (classification === 'suspected' && (nearestRatio <= 1 || fcClassifiedNow)) {
+        classification = 'hostile'
+        clsAt.hostileAtS = t
+      }
+    }
 
     for (const asset of assets) {
       const d = dist(pos, asset.pos)
@@ -297,9 +377,12 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     base.warningS = base.arrivalS - base.firstDetectS
   }
 
-  // Engagements start no earlier than the required track quality.
-  const policy = scenario.engageOn ?? 'detected'
-  const gateS = policy === 'confirmed' ? base.firstConfirmS : base.firstDetectS
+  // ROE gates the engagement window start: free = first detection,
+  // tight = hostile classification, hold = no engagement at all.
+  const roe = scenario.roe ?? 'tight'
+  const gateS =
+    roe === 'hold' ? null : roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
+  base.engageGateS = gateS
   if (gateS != null) {
     let bestLen = 0
     for (const eff of effectors) {
@@ -323,7 +406,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     base.status = 'detect-only'
   } else if (!killChainConnected(scenario, detectingSensors)) {
     base.status = 'no-kill-chain'
-  } else if (policy === 'confirmed' && base.firstConfirmS == null) {
+  } else if (roe === 'hold') {
+    base.status = 'weapons-hold'
+  } else if (roe === 'tight' && base.classificationAtS.hostileAtS == null) {
     base.status = 'not-confirmed'
   } else {
     const eff = base.windowEffectorId
