@@ -1,4 +1,4 @@
-import type { Scenario, SpecModel } from '../model/types'
+import type { AarSummary, Scenario, SpecModel } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 
@@ -70,6 +70,22 @@ export function exportScenario(scenario: Scenario): void {
 
 export function exportLibrary(library: SpecModel[]): void {
   downloadJson({ rangeboardLibrary: 1, models: library }, 'rangeboard-library.json')
+}
+
+/** AAR export file shape. */
+export interface AarExport {
+  rangeboardAar: 1
+  scenario: string
+  summary: AarSummary
+}
+
+/** Pure builder for the AAR export payload; exported for tests. */
+export function aarExportObject(scenarioName: string, summary: AarSummary): AarExport {
+  return { rangeboardAar: 1, scenario: scenarioName, summary }
+}
+
+export function exportAar(scenarioName: string, summary: AarSummary): void {
+  downloadJson(aarExportObject(scenarioName, summary), `${safeName(scenarioName)}.aar.json`)
 }
 
 /** Open a file picker and parse the chosen JSON file. */

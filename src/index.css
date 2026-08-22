@@ -490,6 +490,56 @@ label.inline input[type='range'] {
   font-family: var(--font-mono);
 }
 
+/* ---------- After-action report ---------- */
+
+.aar-threat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.aar-threat-table th {
+  text-align: left;
+  font-weight: 400;
+  color: var(--text-dim);
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.aar-threat-table td {
+  padding: 2px 4px;
+  vertical-align: top;
+}
+
+.aar-compare {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  overflow-x: auto;
+}
+
+.aar-col {
+  flex: 1;
+  min-width: 160px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aar-col-title {
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.aar-threat-line {
+  font-size: 11px;
+}
+
 /* ---------- Test cards ---------- */
 
 .cards-panel {

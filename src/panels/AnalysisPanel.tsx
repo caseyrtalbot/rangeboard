@@ -1,5 +1,14 @@
 import { useMemo } from 'react'
-import type { EmBackground, LightLevel, McdaVector, Precipitation, Roe } from '../model/types'
+import type {
+  AarOutcome,
+  AarSummary,
+  AarThreatRow as AarThreatRowData,
+  EmBackground,
+  LightLevel,
+  McdaVector,
+  Precipitation,
+  Roe,
+} from '../model/types'
 import { newId } from '../model/types'
 import { useStore } from '../state/store'
 import { assessAllThreats } from '../playback/sim'
@@ -8,6 +17,8 @@ import { resolveEngagements } from '../playback/attrition'
 import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
 import { formatDistance, formatTime } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
+import { buildAarSummary } from '../analysis/aar'
+import { exportAar } from '../io/persist'
 
 const STATUS_TEXT: Record<ThreatStatus, { label: string; cls: string }> = {
   'no-path': { label: 'No flight path', cls: 'neutral' },
@@ -329,6 +340,152 @@ function EffectorSummary({ report }: { report: AttritionReport }) {
   )
 }
 
+const OUTCOME_TEXT: Record<AarOutcome, { label: string; cls: string }> = {
+  'hard-kill': { label: 'hard kill', cls: 'good' },
+  'soft-kill': { label: 'soft kill (jam)', cls: 'good' },
+  leaker: { label: 'leaker', cls: 'bad' },
+  'not-engaged': { label: 'not engaged', cls: 'warn' },
+}
+
+/** Compact classification cell: highest rung reached and when. */
+function classifyCell(t: AarThreatRowData): string {
+  if (t.hostileAtS != null) return `hostile ${formatTime(t.hostileAtS)}`
+  if (t.suspectedAtS != null) return `suspect ${formatTime(t.suspectedAtS)}`
+  if (t.unknownAtS != null) return `unknown ${formatTime(t.unknownAtS)}`
+  return 'never'
+}
+
+const aarTime = (v: number | null) => (v == null ? '—' : formatTime(v))
+const aarPct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`)
+
+/** AAR totals and per-effector shot ledger. Renders from the summary alone. */
+function AarTotals({ aar }: { aar: AarSummary }) {
+  return (
+    <>
+      <table className="threat-table">
+        <tbody>
+          <tr>
+            <td>Raid size</td>
+            <td>
+              {aar.raidSize} ships · ROE {aar.roe}
+            </td>
+          </tr>
+          <tr>
+            <td>Hard kills</td>
+            <td>{aar.expectedHardKills.toFixed(1)}</td>
+          </tr>
+          <tr>
+            <td>Soft kills (jam)</td>
+            <td>{aar.expectedSoftKills.toFixed(1)}</td>
+          </tr>
+          <tr>
+            <td>Leakers</td>
+            <td>
+              {aar.expectedLeakers.toFixed(1)} · {aarPct(aar.leakProbability)}
+            </td>
+          </tr>
+          <tr>
+            <td>First detection</td>
+            <td>{aarTime(aar.firstDetectS)}</td>
+          </tr>
+          <tr>
+            <td>First shot</td>
+            <td>{aarTime(aar.firstShotS)}</td>
+          </tr>
+          <tr>
+            <td>Shots fired</td>
+            <td>{aar.shotsFired}</td>
+          </tr>
+        </tbody>
+      </table>
+      {aar.effectors.length > 0 && (
+        <table className="threat-table">
+          <tbody>
+            {aar.effectors.map((e) => (
+              <tr key={e.effectorId}>
+                <td>{e.name}</td>
+                <td>
+                  {e.shotsFired} fired ·{' '}
+                  {e.expectedRoundsRemaining != null
+                    ? `${e.expectedRoundsRemaining}${
+                        e.magazineSize != null ? ` of ${e.magazineSize}` : ''
+                      } left`
+                    : 'unlimited'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  )
+}
+
+/** One compact line per threat, for narrow pinned-comparison columns. */
+function AarThreatLines({ aar }: { aar: AarSummary }) {
+  return (
+    <>
+      {aar.threats.map((t) => (
+        <div className="aar-threat-line" key={t.uasId}>
+          <strong>{t.name}</strong>
+          {t.shipCount > 1 ? ` ×${t.shipCount}` : ''} · det {aarTime(t.detectS)} ·{' '}
+          {classifyCell(t)} · shot {aarTime(t.engageS)} ·{' '}
+          <span className={`status ${OUTCOME_TEXT[t.outcome].cls}`}>
+            {OUTCOME_TEXT[t.outcome].label}
+          </span>
+        </div>
+      ))}
+    </>
+  )
+}
+
+/** After-action report: totals, magazines, and the per-threat timeline. */
+function AarSection({ aar }: { aar: AarSummary }) {
+  const name = useStore((s) => s.scenario.name)
+  if (aar.threats.length === 0) return null
+  return (
+    <div className="subsection">
+      <div className="panel-subtitle">After-action report</div>
+      <AarTotals aar={aar} />
+      <table className="aar-threat-table">
+        <thead>
+          <tr>
+            <th>Threat</th>
+            <th>Detect</th>
+            <th>Classify</th>
+            <th>Engage</th>
+            <th>Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          {aar.threats.map((t) => (
+            <tr key={t.uasId}>
+              <td>
+                {t.name}
+                {t.shipCount > 1 ? ` ×${t.shipCount}` : ''}
+              </td>
+              <td>{aarTime(t.detectS)}</td>
+              <td>{classifyCell(t)}</td>
+              <td>{aarTime(t.engageS)}</td>
+              <td>
+                <span className={`status ${OUTCOME_TEXT[t.outcome].cls}`}>
+                  {OUTCOME_TEXT[t.outcome].label}
+                </span>
+                {t.leakProbability > 0.0005 && t.leakProbability < 0.9995
+                  ? ` ${aarPct(t.leakProbability)} leak`
+                  : ''}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="inspector-actions">
+        <button onClick={() => exportAar(name, aar)}>Export AAR JSON</button>
+      </div>
+    </div>
+  )
+}
+
 const WEIGHT_LABELS: Array<{ key: keyof McdaVector; label: string }> = [
   { key: 'warning', label: 'Warning time' },
   { key: 'coverage', label: 'Detection coverage' },
@@ -352,9 +509,11 @@ function fullWeights(w?: McdaVector): Required<McdaVector> {
 function Scorecard({
   assessments,
   report,
+  aar,
 }: {
   assessments: ThreatAssessment[]
   report: AttritionReport
+  aar: AarSummary
 }) {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
@@ -401,6 +560,7 @@ function Scorecard({
                     name: `Config ${pinned.length + 1}`,
                     score,
                     parts: parts!,
+                    aar,
                   },
                 ],
               })
@@ -429,9 +589,32 @@ function Scorecard({
           </button>
         </div>
       ))}
+      {pinned.some((p) => p.aar) && (
+        <div className="aar-compare">
+          {pinned
+            .filter((p) => p.aar)
+            .map((p) => (
+              <div className="aar-col" key={p.id}>
+                <div className="aar-col-title">
+                  {p.name} · {p.score}
+                </div>
+                <AarTotals aar={p.aar!} />
+                <AarThreatLines aar={p.aar!} />
+              </div>
+            ))}
+          {aar.threats.length > 0 && (
+            <div className="aar-col">
+              <div className="aar-col-title">Current{score != null ? ` · ${score}` : ''}</div>
+              <AarTotals aar={aar} />
+              <AarThreatLines aar={aar} />
+            </div>
+          )}
+        </div>
+      )}
       <p className="muted small">
         Parts are 0-100 over threats with paths; warning time scores full at {WARNING_FULL_S} s.
-        Pin the score, change the laydown or environment, and compare.
+        Pin the score, change the laydown or environment, and compare. Pins made here carry the
+        full AAR summary and compare side by side above.
       </p>
     </div>
   )
@@ -443,6 +626,10 @@ export function AnalysisPanel() {
   const patchScenario = useStore((s) => s.patchScenario)
   const assessments = useMemo(() => assessAllThreats(scenario), [scenario])
   const report = useMemo(() => resolveEngagements(scenario), [scenario])
+  const aar = useMemo(
+    () => buildAarSummary(scenario, assessments, report),
+    [scenario, assessments, report],
+  )
   const threats = assessments.filter((a) => a.status !== 'no-path')
   const noPath = assessments.length - threats.length
 
@@ -472,12 +659,13 @@ export function AnalysisPanel() {
         <ThreatRow key={a.uasId} a={a} att={report.threats.find((t) => t.uasId === a.uasId)} />
       ))}
       {threats.length > 0 && <EffectorSummary report={report} />}
+      <AarSection aar={aar} />
       {noPath > 0 && (
         <p className="muted">
           {noPath} UAS without a flight path. Draw a path with the Path tool to include them.
         </p>
       )}
-      <Scorecard assessments={assessments} report={report} />
+      <Scorecard assessments={assessments} report={report} aar={aar} />
       <p className="muted small">
         Warning time = arrival at the defended asset minus first detection. Windows start when the
         ROE gate is met. RF sensors do not see RF-silent threats; EO/IR needs a cue

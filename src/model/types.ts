@@ -334,6 +334,70 @@ export interface RaidPlan {
   waves: RaidWave[]
 }
 
+/**
+ * Compact per-threat AAR outcome label, derived from the expected-value math:
+ * 'not-engaged' = zero shots; 'leaker' = engaged but more likely than not to
+ * arrive; otherwise the dominant kill channel ('hard-kill' vs 'soft-kill').
+ */
+export type AarOutcome = 'hard-kill' | 'soft-kill' | 'leaker' | 'not-engaged'
+
+/** One threat's timeline row in the AAR: detect, classify, engage, outcome. */
+export interface AarThreatRow {
+  uasId: string
+  /** Name at summary time; the entity may be gone when a pin is compared. */
+  name: string
+  shipCount: number
+  detectS: number | null
+  detectSensorName: string | null
+  /** Derived classification ladder timestamps (null = never reached). */
+  unknownAtS: number | null
+  suspectedAtS: number | null
+  hostileAtS: number | null
+  /** First shot at this threat; null when never engaged. */
+  engageS: number | null
+  shotsFired: number
+  expectedHardKills: number
+  expectedSoftKills: number
+  leakProbability: number
+  outcome: AarOutcome
+  /** Dominant killer's name at summary time; null when no kills. */
+  killedByName: string | null
+}
+
+/** One effector's shot ledger in the AAR. */
+export interface AarEffectorShots {
+  effectorId: string
+  name: string
+  effectorType: EffectorSpec['effectorType'] | null
+  shotsFired: number
+  /** Null = unlimited magazine (jammers, DE, HPM). */
+  expectedRoundsRemaining: number | null
+  magazineSize: number | null
+}
+
+/**
+ * Derived after-action summary of one configuration against the raid.
+ * Self-contained (names captured, no entity references needed) and small, so
+ * a pinned scorecard can store it and render it after the laydown changes.
+ */
+export interface AarSummary {
+  roe: Roe
+  raidSize: number
+  expectedHardKills: number
+  expectedSoftKills: number
+  expectedKills: number
+  expectedLeakers: number
+  /** Mean per-ship leak probability over the raid; null when the raid is empty. */
+  leakProbability: number | null
+  /** Earliest detection of any threat, sim seconds; null = never. */
+  firstDetectS: number | null
+  /** Earliest shot at any threat, sim seconds; null = never. */
+  firstShotS: number | null
+  shotsFired: number
+  effectors: AarEffectorShots[]
+  threats: AarThreatRow[]
+}
+
 /** A pinned scorecard result for comparing IADS configurations. */
 export interface ScorecardSnap {
   id: string
@@ -341,6 +405,8 @@ export interface ScorecardSnap {
   /** Weighted 0-100 total at pin time. */
   score: number
   parts: McdaVector
+  /** Full AAR summary at pin time. Absent on pins made before WS5. */
+  aar?: AarSummary
 }
 
 export interface Scenario {
