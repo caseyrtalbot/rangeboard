@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore, scenarioDurationS } from '../state/store'
 import { formatTime } from '../geometry/geo'
-import { buildRaidPlan, RAID_BUILDERS } from '../playback/raid'
 
 const SPEEDS = [1, 2, 5, 10, 30]
 
@@ -77,23 +76,6 @@ export function TimelineBar() {
       </select>
 
       <div className="frames-strip" title="Raid waves: shared launch delays added to each member's path delay">
-        <select
-          value=""
-          onChange={(e) => {
-            const b = RAID_BUILDERS.find((x) => x.name === e.target.value)
-            if (!b) return
-            const uasIds = scenario.entities.filter((en) => en.kind === 'uas').map((en) => en.id)
-            patchScenario({ raid: buildRaidPlan(b, uasIds) })
-          }}
-          title="Build a raid schedule from all UAS on the canvas"
-        >
-          <option value="">build raid…</option>
-          {RAID_BUILDERS.map((b) => (
-            <option key={b.name} value={b.name} title={b.description}>
-              {b.name}
-            </option>
-          ))}
-        </select>
         {waves.map((w, i) => (
           <span
             key={i}

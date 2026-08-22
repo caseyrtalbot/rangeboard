@@ -25,68 +25,27 @@ export function effectivePathDelayS(scenario: Scenario, path: FlightPath): numbe
 }
 
 /**
- * One-click raid construct: how a reported employment pattern maps onto waves.
- * Ported from the SEED_FORMATIONS constructs; wave spacing is derived from the
- * reported in-trail spacing at typical cruise speed.
+ * Wave timing for a raid build. THREAT_TACTICS (playback/tactics.ts, the
+ * successor of the retired RAID_BUILDERS patterns) carries these numbers; the
+ * tactic builder in the store turns them into a RaidPlan through buildRaidPlan.
  */
-export interface RaidBuilder {
-  name: string
-  description: string
+export interface RaidTiming {
   /** UAS entities per wave; extra entities open follow-on waves. */
   shipsPerWave: number
   /** Seconds between consecutive wave launches. */
   waveSpacingS: number
 }
 
-export const RAID_BUILDERS: RaidBuilder[] = [
-  {
-    name: 'Shahed stream raid (single axis)',
-    description: 'One ship per wave in trail; 3000 m spacing at ~50 m/s cruise.',
-    shipsPerWave: 1,
-    waveSpacingS: 60,
-  },
-  {
-    name: 'Shahed multi-axis raid',
-    description: 'Pulses of three ships, one per corridor, converging on one target.',
-    shipsPerWave: 3,
-    waveSpacingS: 60,
-  },
-  {
-    name: 'Decoy-mixed OWA package',
-    description: 'Single-ship stream with decoys interleaved; 2000 m spacing at ~50 m/s.',
-    shipsPerWave: 1,
-    waveSpacingS: 40,
-  },
-  {
-    name: 'FPV swarm wave (Group 1)',
-    description: 'Pairs of FPV quads attacking a position in short succession.',
-    shipsPerWave: 2,
-    waveSpacingS: 10,
-  },
-  {
-    name: 'FPV multi-axis simultaneous attack',
-    description: 'All ships launch together from different bearings to beat directional jamming.',
-    shipsPerWave: 5,
-    waveSpacingS: 0,
-  },
-  {
-    name: 'Recon-cued strike pair (Group 1/2)',
-    description: 'ISR spotter launches first; strike ships follow at long trail spacing.',
-    shipsPerWave: 1,
-    waveSpacingS: 90,
-  },
-]
-
 /**
  * Build a raid plan: entities fill waves of shipsPerWave in the given order;
  * wave i launches at i * waveSpacingS.
  */
-export function buildRaidPlan(builder: RaidBuilder, entityIds: string[]): RaidPlan {
-  const perWave = Math.max(1, Math.floor(builder.shipsPerWave))
+export function buildRaidPlan(timing: RaidTiming, entityIds: string[]): RaidPlan {
+  const perWave = Math.max(1, Math.floor(timing.shipsPerWave))
   const waves: RaidPlan['waves'] = []
   for (let i = 0; i < entityIds.length; i += perWave) {
     waves.push({
-      startDelayS: waves.length * builder.waveSpacingS,
+      startDelayS: waves.length * timing.waveSpacingS,
       entityIds: entityIds.slice(i, i + perWave),
     })
   }

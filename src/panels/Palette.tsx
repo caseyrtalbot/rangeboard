@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { EntityKind } from '../model/types'
 import { useStore } from '../state/store'
 import { exportLibrary, importLibraryFile } from '../io/persist'
+import { THREAT_TACTICS } from '../playback/tactics'
 
 const WIDTH_KEY = 'rangeboard.palette.width'
 const MIN_W = 180
@@ -21,6 +22,42 @@ const SECTIONS: { kind: EntityKind; title: string }[] = [
   { kind: 'marker', title: 'Markers' },
 ]
 
+/**
+ * Threat-tactics group: click a tactic to arm the raid builder. The builder
+ * card opens in the Inspect tab; the next canvas click places the ingress axis.
+ */
+function TacticsSection() {
+  const armedTacticId = useStore((s) => s.ui.raidDraft?.tacticId ?? null)
+  const { armRaidDraft, cancelRaidDraft, setRightTab } = useStore.getState()
+  return (
+    <div className="palette-section">
+      <div className="palette-heading">Threat tactics</div>
+      {THREAT_TACTICS.map((t) => (
+        <div
+          key={t.id}
+          className={`palette-item ${armedTacticId === t.id ? 'selected' : ''}`}
+          onClick={() => {
+            // Clicking the armed tactic again disarms it; any other click
+            // re-arms with that tactic's defaults.
+            if (armedTacticId === t.id) {
+              cancelRaidDraft()
+              return
+            }
+            armRaidDraft(t.id)
+            setRightTab('inspect')
+          }}
+          title={`${t.name}: ${t.description} (study ${t.sourceRef})`}
+        >
+          <span className="dot" style={{ background: '#c46a5a' }} />
+          <span className="palette-name">
+            {t.id} · {t.name}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** Left panel: drag a model or a whole system onto the canvas to place it. */
 export function Palette() {
   const library = useStore((s) => s.scenario.library)
@@ -30,6 +67,7 @@ export function Palette() {
   const setRightTab = useStore((s) => s.setRightTab)
   const addModel = useStore((s) => s.addModel)
   const deleteSystemPreset = useStore((s) => s.deleteSystemPreset)
+  const cancelRaidDraft = useStore((s) => s.cancelRaidDraft)
   const [width, setWidth] = useState(savedWidth)
   const dragFrom = useRef<{ x: number; w: number } | null>(null)
 
@@ -56,6 +94,7 @@ export function Palette() {
     <aside className="palette" style={{ width }}>
       <div className="panel-title">Library</div>
       <div className="palette-scroll">
+        <TacticsSection />
         <div className="palette-section">
           <div className="palette-heading">Integrated systems</div>
           {systemPresets.map((p) => (
@@ -64,6 +103,7 @@ export function Palette() {
               className="palette-item"
               draggable
               onDragStart={(e) => {
+                cancelRaidDraft()
                 e.dataTransfer.setData('text/rangeboard-system', p.id)
                 e.dataTransfer.effectAllowed = 'copy'
               }}
@@ -98,6 +138,7 @@ export function Palette() {
                   className="mini"
                   title={`New ${section.title} model`}
                   onClick={() => {
+                    cancelRaidDraft()
                     const id = addModel(section.kind)
                     select({ libraryId: id })
                     setRightTab('library')
@@ -112,10 +153,12 @@ export function Palette() {
                   className={`palette-item ${selectedId === m.id ? 'selected' : ''}`}
                   draggable
                   onDragStart={(e) => {
+                    cancelRaidDraft()
                     e.dataTransfer.setData('text/rangeboard-model', m.id)
                     e.dataTransfer.effectAllowed = 'copy'
                   }}
                   onClick={() => {
+                    cancelRaidDraft()
                     select({ libraryId: m.id })
                     setRightTab('library')
                   }}

@@ -62,6 +62,7 @@ export function CanvasStage() {
   const clearSelection = useStore((s) => s.clearSelection)
   const select = useStore((s) => s.select)
   const addEntityFromModel = useStore((s) => s.addEntityFromModel)
+  const commitRaid = useStore((s) => s.commitRaid)
   const addDraftPoint = useStore((s) => s.addDraftPoint)
   const finishBoundary = useStore((s) => s.finishBoundary)
   const finishPath = useStore((s) => s.finishPath)
@@ -219,6 +220,13 @@ export function CanvasStage() {
     const pointer = stageRef.current?.getPointerPosition()
     if (pointer) {
       lastClicks.current = [...lastClicks.current.slice(-1), { ...pointer, t: performance.now() }]
+    }
+    // The armed raid draft owns the next canvas click: it places the ingress
+    // axis and commits the raid. This branch must stay ahead of the draw
+    // tools or the click would land as a stray vertex.
+    if (ui.raidDraft) {
+      commitRaid(world)
+      return
     }
     if (ui.tool === 'boundary' || ui.tool === 'path') {
       // The 2nd click of an in-place double-click is not a new vertex; the

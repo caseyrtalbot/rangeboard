@@ -15,11 +15,13 @@ import type {
   TestCard,
   Vec2,
 } from '../model/types'
-import { newId } from '../model/types'
+import { entityActive, newId } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { standardCovariates } from '../model/seedCards'
-import { pathLength, rotatePoint } from '../geometry/geo'
-import { effectivePathDelayS } from '../playback/raid'
+import { bearingDeg, destination, dist, formationOffsets, pathLength, rotatePoint } from '../geometry/geo'
+import { buildRaidPlan, effectivePathDelayS } from '../playback/raid'
+import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
+import { effectiveDetectRangeM } from '../analysis/sensorEnv'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -49,6 +51,29 @@ const EMPTY_SELECTION: Selection = {
 
 const HISTORY_LIMIT = 100
 
+/**
+ * Spawn clamp for the tactic builder: raid origins sit beyond the longest
+ * enabled sensor detection ring by this factor, so first detection happens
+ * inside the play, never at T0.
+ */
+const STANDOFF_CLEAR_FACTOR = 1.1
+/** In-trail spacing for raid ships when the tactic carries no formation, meters. */
+const RAID_TRAIL_SPACING_M = 300
+/** Camera scale bounds, pixels per meter (mirrors CanvasStage zoom limits). */
+const FIT_MIN_SCALE = 0.0005
+const FIT_MAX_SCALE = 20
+
+/**
+ * Armed tactic-builder state. UI only, never part of the scenario and never
+ * undoable; commitRaid turns it into scenario changes in one mutate().
+ */
+export interface RaidDraft {
+  tacticId: string
+  platformSpecId: string | null
+  targetEntityId: string | null
+  shipCount: number
+}
+
 interface UiState {
   basemap: BasemapMode
   tool: Tool
@@ -65,6 +90,8 @@ interface UiState {
   moveUnderlay: boolean
   /** Open right-click menu; screen px within the canvas host, world meters. */
   contextMenu: { screen: Vec2; world: Vec2; entityId: string | null } | null
+  /** Armed tactic builder; the next canvas click commits the raid. */
+  raidDraft: RaidDraft | null
 }
 
 interface PlaybackState {
@@ -127,6 +154,13 @@ export interface Store {
   assignToWave: (entityId: string, waveIndex: number | null) => void
   setWaveDelay: (waveIndex: number, s: number) => void
 
+  // Tactic raid builder (draft is ui state; only commitRaid touches the scenario)
+  armRaidDraft: (tacticId: string) => void
+  patchRaidDraft: (p: Partial<RaidDraft>) => void
+  /** One mutate() builds the whole raid; null anchor = tactic default bearing. */
+  commitRaid: (axisAnchor: Vec2 | null) => void
+  cancelRaidDraft: () => void
+
   // Environment
   updateEnvironment: (patch: Partial<Scenario['environment']>) => void
 
@@ -184,6 +218,37 @@ const KIND_NAMES: Record<EntityKind, string> = {
   marker: 'Marker',
 }
 
+/**
+ * Camera that fits the given world points in the canvas viewport. Reads the
+ * mounted canvas host for its pixel size and falls back to a representative
+ * viewport when none is mounted (tests, T&E workspace).
+ */
+function fitCameraTo(points: Vec2[]): Camera | null {
+  if (points.length === 0) return null
+  let vw = 1000
+  let vh = 700
+  if (typeof document !== 'undefined') {
+    const host = document.querySelector('[data-testid="canvas-host"]')
+    if (host instanceof HTMLElement && host.clientWidth > 50 && host.clientHeight > 50) {
+      vw = host.clientWidth
+      vh = host.clientHeight
+    }
+  }
+  const xs = points.map((p) => p.x)
+  const ys = points.map((p) => p.y)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  // 15% margin around the raid extent.
+  const w = Math.max(1, (maxX - minX) * 1.15)
+  const h = Math.max(1, (maxY - minY) * 1.15)
+  const scale = Math.min(FIT_MAX_SCALE, Math.max(FIT_MIN_SCALE, Math.min(vw / w, vh / h)))
+  const cx = (minX + maxX) / 2
+  const cy = (minY + maxY) / 2
+  return { scale, x: vw / 2 - cx * scale, y: vh / 2 - cy * scale }
+}
+
 export const useStore = create<Store>()((set, get) => {
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
@@ -215,6 +280,7 @@ export const useStore = create<Store>()((set, get) => {
       rightTab: 'inspect',
       moveUnderlay: false,
       contextMenu: null,
+      raidDraft: null,
     },
     playback: { playing: false, simTimeS: 0, speedMult: 1 },
 
@@ -508,6 +574,7 @@ export const useStore = create<Store>()((set, get) => {
           connectFromId: null,
           calibrateA: null,
           calibrateB: null,
+          raidDraft: null,
         },
       })),
 
@@ -557,6 +624,173 @@ export const useStore = create<Store>()((set, get) => {
           },
         }
       }),
+
+    armRaidDraft: (tacticId) => {
+      const { scenario } = get()
+      const tactic = THREAT_TACTICS.find((t) => t.id === tacticId)
+      if (!tactic) return
+      // Seed-id-first designator match; generic tactics fall back to the most
+      // recently placed UAS model and stay editable in the builder card.
+      let platformSpecId = resolvePlatform(tactic, scenario.library)?.id ?? null
+      if (!platformSpecId) {
+        for (let i = scenario.entities.length - 1; i >= 0; i--) {
+          const e = scenario.entities[i]
+          if (e.kind !== 'uas' || !e.specId) continue
+          const m = scenario.library.find((x) => x.id === e.specId)
+          if (m?.uas) {
+            platformSpecId = m.id
+            break
+          }
+        }
+      }
+      const assets = scenario.entities.filter((e) => e.kind === 'asset')
+      // Arming replaces any in-progress draw draft so the next canvas click
+      // can only mean "place the raid axis".
+      set((st) => ({
+        ui: {
+          ...st.ui,
+          tool: 'select',
+          draftPoints: [],
+          pathEntityId: null,
+          connectFromId: null,
+          calibrateA: null,
+          calibrateB: null,
+          raidDraft: {
+            tacticId,
+            platformSpecId,
+            targetEntityId: assets.length === 1 ? assets[0].id : null,
+            shipCount: tactic.defaultShipCount,
+          },
+        },
+      }))
+    },
+
+    patchRaidDraft: (p) =>
+      set((st) =>
+        st.ui.raidDraft ? { ui: { ...st.ui, raidDraft: { ...st.ui.raidDraft, ...p } } } : st,
+      ),
+
+    cancelRaidDraft: () =>
+      set((st) => (st.ui.raidDraft ? { ui: { ...st.ui, raidDraft: null } } : st)),
+
+    commitRaid: (axisAnchor) => {
+      const { ui, scenario } = get()
+      const draft = ui.raidDraft
+      if (!draft) return
+      const tactic = THREAT_TACTICS.find((t) => t.id === draft.tacticId)
+      const platform = draft.platformSpecId
+        ? scenario.library.find((m) => m.id === draft.platformSpecId)
+        : undefined
+      const target = draft.targetEntityId
+        ? scenario.entities.find((e) => e.id === draft.targetEntityId)
+        : undefined
+      // Blocked until a UAS platform and a target asset are chosen; the draft
+      // stays armed so the builder card can complete it.
+      if (!tactic || !platform?.uas || !target) return
+
+      const shipCount = Math.max(1, Math.floor(draft.shipCount))
+      // Ingress bearing: click point toward the target; no anchor (or a click
+      // on the target itself) uses the tactic default.
+      const ingressDeg =
+        axisAnchor && dist(axisAnchor, target.pos) > 1
+          ? bearingDeg(axisAnchor, target.pos)
+          : tactic.defaultBearingDeg
+      const axes = fanAxes(ingressDeg, tactic.axes, tactic.axisSpreadDeg)
+
+      // Clamp the spawn standoff beyond the longest enabled sensor detection
+      // ring against this platform's group.
+      let maxDetectM = 0
+      for (const e of scenario.entities) {
+        if (e.kind !== 'sensor' || !entityActive(e)) continue
+        const spec = e.specId
+          ? scenario.library.find((m) => m.id === e.specId)?.sensor
+          : undefined
+        if (!spec) continue
+        const r = effectiveDetectRangeM(spec, scenario.environment, platform.uas.group)
+        if (r > maxDetectM) maxDetectM = r
+      }
+      const standoffM = Math.max(tactic.standoffM, maxDetectM * STANDOFF_CLEAR_FACTOR)
+
+      // Decoy platform, resolved like a one-designator tactic. Unresolvable
+      // decoys degrade to an all-strike raid rather than blocking.
+      const decoySpec = tactic.decoy
+        ? resolvePlatform(
+            { ...tactic, platforms: [{ designator: tactic.decoy.designator }] },
+            scenario.library,
+          )
+        : null
+
+      // Ship i flies wave floor(i / shipsPerWave) on axis i % axes, so every
+      // wave draws from every ingress axis. Each wave-axis group is laid out
+      // with the tactic formation (in-trail column when the tactic has none).
+      const perWave = Math.max(1, Math.floor(tactic.shipsPerWave))
+      const groups = new Map<string, number[]>()
+      for (let i = 0; i < shipCount; i++) {
+        const key = `${Math.floor(i / perWave)}:${i % axes.length}`
+        const members = groups.get(key)
+        if (members) members.push(i)
+        else groups.set(key, [i])
+      }
+      const starts: Vec2[] = new Array(shipCount)
+      const headings: number[] = new Array(shipCount)
+      for (const [key, members] of groups) {
+        const heading = axes[Number(key.split(':')[1])]
+        // Origin: target displaced along the reciprocal of the ingress axis.
+        const origin = destination(target.pos, heading + 180, standoffM)
+        const f = tactic.formation
+        const offsets = f
+          ? formationOffsets(f.shape, members.length, f.spacingM, heading)
+          : formationOffsets('column', members.length, RAID_TRAIL_SPACING_M, heading)
+        members.forEach((shipIdx, j) => {
+          starts[shipIdx] = { x: origin.x + offsets[j].x, y: origin.y + offsets[j].y }
+          headings[shipIdx] = heading
+        })
+      }
+
+      const entities: Entity[] = []
+      const paths: FlightPath[] = []
+      for (let i = 0; i < shipCount; i++) {
+        const isDecoy =
+          tactic.decoy != null && decoySpec != null && (i + 1) % tactic.decoy.everyNth === 0
+        const spec = isDecoy ? decoySpec : platform
+        const designator =
+          spec.threatProfile?.designator ?? spec.name.split(':').pop()?.trim() ?? spec.name
+        const id = newId('ent')
+        entities.push({
+          id,
+          name: `${designator} ${i + 1}`,
+          kind: 'uas',
+          specId: spec.id,
+          pos: starts[i],
+          headingDeg: headings[i],
+          color: null,
+          notes: `${tactic.id} ship ${i + 1} of ${shipCount}`,
+        })
+        paths.push({
+          id: newId('pth'),
+          entityId: id,
+          points: [starts[i], { ...target.pos }],
+          speedMps: null,
+          startDelayS: 0,
+        })
+      }
+      const plan = buildRaidPlan(
+        { shipsPerWave: perWave, waveSpacingS: tactic.waveSpacingS },
+        entities.map((e) => e.id),
+      )
+
+      // ONE mutate: a single Cmd+Z removes the entire raid.
+      mutate((s) => ({
+        ...s,
+        entities: [...s.entities, ...entities],
+        paths: [...s.paths, ...paths],
+        raid: { waves: [...(s.raid?.waves ?? []), ...plan.waves] },
+      }))
+      set((st) => ({ ui: { ...st.ui, raidDraft: null } }))
+      // Bring the raid origins and the target into view (camera is not undoable).
+      const cam = fitCameraTo([target.pos, ...starts])
+      if (cam) set({ camera: cam })
+    },
 
     updateEnvironment: (patch) =>
       mutate((s) => ({ ...s, environment: { ...s.environment, ...patch } })),
@@ -802,6 +1036,7 @@ export const useStore = create<Store>()((set, get) => {
           connectFromId: null,
           calibrateA: null,
           calibrateB: null,
+          raidDraft: null,
         },
       })),
     setBasemap: (b) => set((st) => ({ ui: { ...st.ui, basemap: b } })),

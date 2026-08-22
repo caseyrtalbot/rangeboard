@@ -25,7 +25,7 @@
  *   decoy-to-strike ratios are a study data gap (section 25, gap #7), so
  *   everyNth is a stated representative value, not study-derived.
  *
- * This library supersedes the six RAID_BUILDERS patterns in raid.ts:
+ * This library supersedes the six retired RAID_BUILDERS patterns (raid.ts):
  * stream -> RUS-LR-01, multi-axis -> RUS-LR-02, decoy mix -> RUS-LR-04,
  * FPV wave -> RUS-TAC-02 / UKR-TAC-01, FPV multi-axis -> UKR-TAC-05,
  * recon-cued pair -> UKR-TAC-04.

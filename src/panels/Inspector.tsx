@@ -2,10 +2,12 @@ import type { Boundary, BoundaryType, Entity, FormationShape } from '../model/ty
 import { entityActive } from '../model/types'
 import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
+import type { RaidDraft } from '../state/store'
 import { formatDistance, pathLength } from '../geometry/geo'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
+import { THREAT_TACTICS } from '../playback/tactics'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
 
@@ -15,6 +17,121 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span>{label}</span>
       {children}
     </label>
+  )
+}
+
+/**
+ * Tactic raid builder, shown in place of the normal Inspector body while a
+ * raid draft is armed. Commit happens on the next canvas click (sets the
+ * ingress axis) or through "Use default axis".
+ */
+function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
+  const scenario = useStore((s) => s.scenario)
+  const { patchRaidDraft, commitRaid, cancelRaidDraft } = useStore.getState()
+  const tactic = THREAT_TACTICS.find((t) => t.id === draft.tacticId)
+  if (!tactic) return null
+
+  const uasModels = scenario.library.filter((m) => m.kind === 'uas' && m.uas)
+  const assets = scenario.entities.filter((e) => e.kind === 'asset')
+  const platform = draft.platformSpecId
+    ? scenario.library.find((m) => m.id === draft.platformSpecId)
+    : undefined
+  const target = draft.targetEntityId
+    ? scenario.entities.find((e) => e.id === draft.targetEntityId)
+    : undefined
+  const shipCount = Math.max(1, Math.floor(draft.shipCount))
+  const perWave = Math.max(1, Math.floor(tactic.shipsPerWave))
+  const waveCount = Math.ceil(shipCount / perWave)
+  const existingWaves = scenario.raid?.waves.length ?? 0
+  const ready = !!platform?.uas && !!target
+
+  return (
+    <div className="inspector-body">
+      <div className="panel-subtitle">THREAT TACTIC · {tactic.id}</div>
+      <div className="spec-summary">
+        {tactic.name}
+        <br />
+        Study {tactic.sourceRef}
+      </div>
+      <p className="muted small">{tactic.description}</p>
+      <div className="spec-summary">
+        {shipCount} ships · {waveCount} {waveCount === 1 ? 'wave' : 'waves'} of up to {perWave} ·{' '}
+        {tactic.waveSpacingS} s between waves
+        <br />
+        {tactic.axes} {tactic.axes === 1 ? 'ingress axis' : 'ingress axes'}
+        {tactic.axes > 1 ? ` across ${tactic.axisSpreadDeg} deg` : ''} · standoff{' '}
+        {formatDistance(tactic.standoffM)} or beyond the largest sensor detection ring
+        {tactic.decoy && (
+          <>
+            <br />
+            Every {tactic.decoy.everyNth}th ship is a decoy.
+          </>
+        )}
+        {existingWaves > 0 && (
+          <>
+            <br />
+            New waves append after the {existingWaves} existing{' '}
+            {existingWaves === 1 ? 'wave' : 'waves'}.
+          </>
+        )}
+      </div>
+
+      <Field label="Platform">
+        <select
+          value={draft.platformSpecId ?? ''}
+          onChange={(e) => patchRaidDraft({ platformSpecId: e.target.value || null })}
+        >
+          <option value="">choose a platform…</option>
+          {uasModels.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {!platform?.uas && (
+        <p className="muted small">No platform matched in the library. Choose one to continue.</p>
+      )}
+
+      <Field label="Target asset">
+        <select
+          value={draft.targetEntityId ?? ''}
+          onChange={(e) => patchRaidDraft({ targetEntityId: e.target.value || null })}
+        >
+          <option value="">choose a target…</option>
+          {assets.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {assets.length === 0 && (
+        <p className="muted small">No asset on the canvas. Place an asset entity as the target.</p>
+      )}
+
+      <Field label="Ships">
+        <input
+          type="number"
+          min={1}
+          max={60}
+          value={draft.shipCount}
+          onChange={(e) => patchRaidDraft({ shipCount: Math.max(1, Number(e.target.value)) })}
+        />
+      </Field>
+
+      <div className="spec-summary">
+        {ready
+          ? 'Click the canvas to place the ingress axis. The raid flies from the click point toward the target.'
+          : 'Choose a platform and a target asset to enable commit.'}
+      </div>
+      <div className="inspector-actions">
+        <button className="primary" disabled={!ready} onClick={() => commitRaid(null)}>
+          Use default axis
+        </button>
+        <button onClick={cancelRaidDraft}>Cancel</button>
+      </div>
+    </div>
   )
 }
 
@@ -418,6 +535,10 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
 export function Inspector() {
   const scenario = useStore((s) => s.scenario)
   const selection = useStore((s) => s.selection)
+  const raidDraft = useStore((s) => s.ui.raidDraft)
+
+  // The armed raid builder replaces the whole Inspector body.
+  if (raidDraft) return <RaidBuilderCard draft={raidDraft} />
 
   const entity =
     selection.entityIds.length === 1

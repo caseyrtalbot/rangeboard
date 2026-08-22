@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore, scenarioDurationS } from '../state/store'
 import { emptyScenario } from '../model/seed'
 import type { FlightPath, Scenario } from '../model/types'
-import { buildRaidPlan, effectivePathDelayS, RAID_BUILDERS, waveDelayS, waveIndexFor } from './raid'
+import { buildRaidPlan, effectivePathDelayS, waveDelayS, waveIndexFor } from './raid'
 import { liveTracks } from './sim'
 
 function reset() {
@@ -61,26 +61,28 @@ describe('effective path delay helper', () => {
   })
 })
 
-describe('raid builders', () => {
-  it('ports all six seed formation constructs', () => {
-    expect(RAID_BUILDERS).toHaveLength(6)
-  })
-
-  it('a stream raid puts one ship per wave at fixed spacing', () => {
-    const stream = RAID_BUILDERS.find((b) => b.name.includes('stream'))!
-    const plan = buildRaidPlan(stream, ['a', 'b', 'c'])
+describe('buildRaidPlan', () => {
+  it('a stream timing puts one ship per wave at fixed spacing', () => {
+    const plan = buildRaidPlan({ shipsPerWave: 1, waveSpacingS: 60 }, ['a', 'b', 'c'])
     expect(plan.waves).toHaveLength(3)
     expect(plan.waves.map((w) => w.startDelayS)).toEqual([0, 60, 120])
     expect(plan.waves.map((w) => w.entityIds)).toEqual([['a'], ['b'], ['c']])
   })
 
-  it('a simultaneous attack launches every wave at T+0', () => {
-    const simu = RAID_BUILDERS.find((b) => b.name.includes('simultaneous'))!
-    const plan = buildRaidPlan(simu, ['a', 'b', 'c', 'd', 'e', 'f', 'g'])
+  it('a simultaneous timing launches every wave at T+0', () => {
+    const plan = buildRaidPlan({ shipsPerWave: 5, waveSpacingS: 0 }, [
+      'a', 'b', 'c', 'd', 'e', 'f', 'g',
+    ])
     expect(plan.waves).toHaveLength(2)
     expect(plan.waves.every((w) => w.startDelayS === 0)).toBe(true)
     expect(plan.waves[0].entityIds).toHaveLength(5)
     expect(plan.waves[1].entityIds).toHaveLength(2)
+  })
+
+  it('clamps a fractional or zero shipsPerWave to whole waves of at least one ship', () => {
+    const plan = buildRaidPlan({ shipsPerWave: 0, waveSpacingS: 30 }, ['a', 'b'])
+    expect(plan.waves).toHaveLength(2)
+    expect(plan.waves.map((w) => w.startDelayS)).toEqual([0, 30])
   })
 })
 
