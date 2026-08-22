@@ -632,6 +632,15 @@ label.inline input[type='range'] {
   color: var(--text-dim);
 }
 
+.leaker-strip summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.leaker-strip summary .status {
+  margin-right: 4px;
+}
+
 .threat-table {
   width: 100%;
   border-collapse: collapse;

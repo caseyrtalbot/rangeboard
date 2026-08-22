@@ -41,6 +41,7 @@ export function Toolbar() {
     replaceScenario,
     updateUnderlay,
     setMoveUnderlay,
+    setShowThreatWez,
   } = useStore.getState()
 
   const workspace = useTeStore((s) => s.ui.workspace)
@@ -127,6 +128,16 @@ export function Toolbar() {
             {b.label}
           </button>
         ))}
+      </div>
+
+      <div className="tool-group" aria-label="Overlays">
+        <button
+          className={ui.showThreatWez ? 'active' : ''}
+          title="Show threat weapon engagement zones"
+          onClick={() => setShowThreatWez(!ui.showThreatWez)}
+        >
+          WEZ
+        </button>
       </div>
 
       {ui.basemap === 'sat' && (

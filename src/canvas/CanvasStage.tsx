@@ -6,10 +6,12 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../model/types'
 import { useStore } from '../state/store'
 import { detectionsAt, liveTracks } from '../playback/sim'
+import { engagementPicture } from '../analysis/impact'
 import { GridLayer } from './layers/GridLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
 import { BoundaryLayer } from './layers/BoundaryLayer'
 import { FootprintLayer } from './layers/FootprintLayer'
+import { ThreatWezLayer } from './layers/ThreatWezLayer'
 import { RangeLayer } from './layers/RangeLayer'
 import { PathLayer } from './layers/PathLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
@@ -96,6 +98,9 @@ export function CanvasStage() {
 
   const tracks = useMemo(() => liveTracks(scenario, simTimeS), [scenario, simTimeS])
   const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
+  // Attrition is time-independent; engagementPicture shares one computation
+  // per scenario object with AnalysisPanel (module-level WeakMap in impact.ts).
+  const impacts = useMemo(() => engagementPicture(scenario).impacts, [scenario])
   const prevSpokeIds = useRef<Set<string>>(new Set())
   const labelPlacements = useMemo(
     () =>
@@ -307,6 +312,7 @@ export function CanvasStage() {
         <Layer>
           <BoundaryLayer />
           <FootprintLayer detections={detections} />
+          <ThreatWezLayer tracks={tracks} impacts={impacts} />
           <RangeLayer />
           <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
           <ConnectionLayer />

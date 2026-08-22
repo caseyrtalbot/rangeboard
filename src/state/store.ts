@@ -88,6 +88,8 @@ interface UiState {
   rightTab: RightTab
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
+  /** Draw threat WEZ circles on the canvas. Render toggle only: ui state, not undoable, not autosaved. */
+  showThreatWez: boolean
   /** Open right-click menu; screen px within the canvas host, world meters. */
   contextMenu: { screen: Vec2; world: Vec2; entityId: string | null } | null
   /** Armed tactic builder; the next canvas click commits the raid. */
@@ -202,6 +204,7 @@ export interface Store {
   setBoundaryType: (t: BoundaryType) => void
   setRightTab: (t: RightTab) => void
   setMoveUnderlay: (v: boolean) => void
+  setShowThreatWez: (v: boolean) => void
 
   // Playback
   setPlaying: (p: boolean) => void
@@ -279,6 +282,7 @@ export const useStore = create<Store>()((set, get) => {
       calibrateB: null,
       rightTab: 'inspect',
       moveUnderlay: false,
+      showThreatWez: false,
       contextMenu: null,
       raidDraft: null,
     },
@@ -1043,6 +1047,7 @@ export const useStore = create<Store>()((set, get) => {
     setBoundaryType: (t) => set((st) => ({ ui: { ...st.ui, boundaryType: t } })),
     setRightTab: (t) => set((st) => ({ ui: { ...st.ui, rightTab: t } })),
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
+    setShowThreatWez: (v) => set((st) => ({ ui: { ...st.ui, showThreatWez: v } })),
 
     setPlaying: (p) => set((st) => ({ playback: { ...st.playback, playing: p } })),
     setSimTime: (t) => set((st) => ({ playback: { ...st.playback, simTimeS: Math.max(0, t) } })),
