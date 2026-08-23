@@ -1,76 +1,62 @@
-import { useStore } from '../state/store'
-import type { ImpactSeverity, LeakerImpact } from '../analysis/impact'
-import { SEVERITY_LABEL, SEVERITY_RANK, wezKindFor } from '../analysis/impact'
+import type { LeakerImpact } from '../analysis/impact'
+import { SEVERITY_LABEL, SEVERITY_RANK } from '../analysis/impact'
 import { TIER_CLS } from './headlines'
 import { formatTime } from '../geometry/geo'
 
-const TIERS: ImpactSeverity[] = ['severe', 'moderate', 'low']
-
-/** Expected leaked warhead cell; 0 kg with ships arriving means unknown mass. */
-function kgText(i: LeakerImpact): string {
-  return i.expectedWarheadKg > 0 ? `${Math.round(i.expectedWarheadKg)} kg` : 'warhead unknown'
-}
-
 /**
- * Compact I&W strip above the threat rows: one line of tier-count chips,
- * expandable to one row per warned leaker. Renders nothing when no leaker
+ * Asset-level I&W alerts: warned leakers grouped by defended asset, one line
+ * per asset with the worst tier and the summed arrival expectation. Per-threat
+ * detail stays in the expanded threat rows. Renders nothing when no leaker
  * carries a severity.
  */
 export function LeakerWarningStrip({ impacts }: { impacts: LeakerImpact[] }) {
-  const scenario = useStore((s) => s.scenario)
-  const warned = impacts
-    .filter((i) => i.severity != null)
-    .sort((a, b) => SEVERITY_RANK[b.severity!] - SEVERITY_RANK[a.severity!])
+  const warned = impacts.filter((i) => i.severity != null)
   if (warned.length === 0) return null
 
-  const counts = TIERS.map((tier) => ({
-    tier,
-    n: warned.filter((i) => i.severity === tier).length,
-  })).filter((c) => c.n > 0)
-
-  const kindOf = (uasId: string) => {
-    const entity = scenario.entities.find((e) => e.id === uasId)
-    return wezKindFor(scenario.library.find((m) => m.id === entity?.specId))
+  const byAsset = new Map<string, LeakerImpact[]>()
+  for (const i of warned) {
+    const key = i.assetId ?? '—'
+    const group = byAsset.get(key)
+    if (group) group.push(i)
+    else byAsset.set(key, [i])
   }
 
+  const lines = [...byAsset.entries()]
+    .map(([assetKey, group]) => {
+      const worst = group.reduce((a, b) =>
+        SEVERITY_RANK[b.severity!] > SEVERITY_RANK[a.severity!] ? b : a,
+      )
+      const arrivals = group.filter((i) => i.arrivalS != null).map((i) => i.arrivalS!)
+      return {
+        assetKey,
+        assetName: group[0].assetName ?? '—',
+        tier: worst.severity!,
+        n: group.length,
+        firstArrivalS: arrivals.length > 0 ? Math.min(...arrivals) : null,
+        ships: group.reduce((s, i) => s + i.expectedShipsArriving, 0),
+        kg: group.reduce((s, i) => s + i.expectedWarheadKg, 0),
+      }
+    })
+    .sort((a, b) => SEVERITY_RANK[b.tier] - SEVERITY_RANK[a.tier])
+
   return (
-    <details className="subsection leaker-strip">
-      <summary>
-        I&W:{' '}
-        {counts.map((c) => (
-          <span key={c.tier} className={`status ${TIER_CLS[c.tier]}`}>
-            {c.n} {SEVERITY_LABEL[c.tier]}
+    <div className="iw-strip">
+      {lines.map((l) => (
+        <div className="iw-asset" key={l.assetKey}>
+          <span className={`status ${TIER_CLS[l.tier]}`}>I&W {SEVERITY_LABEL[l.tier]}</span>
+          <span className="iw-asset-name">{l.assetName}</span>
+          <span className="iw-asset-stats">
+            {[
+              `${l.n} threat${l.n === 1 ? '' : 's'}`,
+              l.firstArrivalS != null ? `first arrival T+${formatTime(l.firstArrivalS)}` : null,
+              `${l.ships.toFixed(1)} ships`,
+              l.kg > 0 ? `${Math.round(l.kg)} kg expected` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </span>
-        ))}
-      </summary>
-      <table className="threat-table">
-        <tbody>
-          {warned.map((i) => (
-            <tr key={i.uasId}>
-              <td>
-                <span className={`status ${TIER_CLS[i.severity!]}`}>
-                  {SEVERITY_LABEL[i.severity!]}
-                </span>{' '}
-                {i.name}
-              </td>
-              <td>
-                {[
-                  `target ${i.assetName ?? '—'}`,
-                  i.arrivalS != null ? `arrives ${formatTime(i.arrivalS)}` : null,
-                  `${i.expectedShipsArriving.toFixed(1)} ships`,
-                  kgText(i),
-                  `${kindOf(i.uasId)} WEZ`,
-                  i.jamDegradedProb > 0.005
-                    ? `arrives jam-degraded ${Math.round(i.jamDegradedProb * 100)}%`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </details>
+        </div>
+      ))}
+    </div>
   )
 }

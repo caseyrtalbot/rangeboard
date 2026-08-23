@@ -11,8 +11,18 @@ import { Inspector } from './panels/Inspector'
 import { LibraryEditor } from './panels/LibraryEditor'
 import { TestCardsPanel } from './panels/TestCardsPanel'
 import { AnalysisPanel } from './panels/AnalysisPanel'
+import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
 import { CommandPalette } from './panels/CommandPalette'
+
+const RIGHT_W_KEY = 'rangeboard.rightpanel.width'
+const RIGHT_MIN_W = 280
+const RIGHT_MAX_W = 560
+
+function savedRightWidth(): number {
+  const n = Number(localStorage.getItem(RIGHT_W_KEY))
+  return n >= RIGHT_MIN_W && n <= RIGHT_MAX_W ? n : 320
+}
 
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'inspect', label: 'Inspect' },
@@ -194,6 +204,23 @@ export default function App() {
   const setRightTab = useStore((s) => s.setRightTab)
   const workspace = useTeStore((s) => s.ui.workspace)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [rightW, setRightW] = useState(savedRightWidth)
+
+  function startRightResize(e: React.MouseEvent) {
+    e.preventDefault()
+    const from = { x: e.clientX, w: rightW }
+    function onMove(ev: MouseEvent) {
+      const w = Math.min(RIGHT_MAX_W, Math.max(RIGHT_MIN_W, from.w - (ev.clientX - from.x)))
+      setRightW(w)
+      localStorage.setItem(RIGHT_W_KEY, String(w))
+    }
+    function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -263,9 +290,11 @@ export default function App() {
         <Palette />
         <div className="center">
           <CanvasStage />
+          <EngagementStrip />
           <TimelineBar />
         </div>
-        <aside className="right-panel">
+        <aside className="right-panel" style={{ width: rightW }}>
+          <div className="right-resizer" title="Drag to resize" onMouseDown={startRightResize} />
           <div className="tabs">
             {TABS.map((t) => (
               <button

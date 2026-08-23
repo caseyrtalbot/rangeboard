@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
 import type {
-  AarOutcome,
   AarSummary,
-  AarThreatRow as AarThreatRowData,
   EmBackground,
   LightLevel,
   McdaVector,
@@ -10,52 +8,23 @@ import type {
   Roe,
 } from '../model/types'
 import { newId } from '../model/types'
-import type { SpecModel } from '../model/types'
 import { useStore } from '../state/store'
-import type { ClassificationTimes, ThreatAssessment, ThreatStatus } from '../playback/sim'
-import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
-import { formatDistance, formatSpeed, formatTime } from '../geometry/geo'
-import type { DisplayUnits } from '../geometry/geo'
+import type { AttritionReport } from '../playback/attrition'
+import { formatSpeed } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 import { buildAarSummary } from '../analysis/aar'
-import type { LeakerImpact } from '../analysis/impact'
-import { engagementPicture, SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../analysis/impact'
+import { engagementPicture } from '../analysis/impact'
 import { LeakerWarningStrip } from './LeakerWarningStrip'
 import {
-  TIER_CLS,
   aarHeadline,
   environmentHeadline,
   magazinesHeadline,
   scoreHeadline,
-  threatCompactStats,
 } from './headlines'
-import { exportAar } from '../io/persist'
-
-const STATUS_TEXT: Record<ThreatStatus, { label: string; short: string; cls: string }> = {
-  'no-path': { label: 'No flight path', short: 'No path', cls: 'neutral' },
-  'never-detected': { label: 'Never detected', short: 'Undetected', cls: 'bad' },
-  'not-confirmed': {
-    label: 'Detected, never classified hostile',
-    short: 'Never hostile',
-    cls: 'warn',
-  },
-  'detect-only': { label: 'Detected, no usable effector', short: 'Detect only', cls: 'warn' },
-  'no-kill-chain': {
-    label: 'Detected, kill chain not connected',
-    short: 'No kill chain',
-    cls: 'warn',
-  },
-  'weapons-hold': { label: 'Weapons hold (ROE)', short: 'Hold', cls: 'neutral' },
-  'window-too-short': { label: 'Engagement window too short', short: 'Short window', cls: 'warn' },
-  engageable: { label: 'Engageable', short: 'Engageable', cls: 'good' },
-}
-
-const TECH_LABEL: Record<string, string> = {
-  radar: 'radar',
-  'eo-ir': 'EO/IR',
-  acoustic: 'acoustic',
-  rf: 'RF',
-}
+import { AarBody, AarThreatLines, AarTotals } from './analysis/AarSection'
+import { KpiTiles } from './analysis/KpiTiles'
+import { LiveStrip } from './analysis/LiveStrip'
+import { ThreatGroupList } from './analysis/ThreatList'
 
 /**
  * Collapsible disclosure in the .subsection / .panel-subtitle idiom. Open
@@ -92,275 +61,6 @@ function Section({
         </span>
       </div>
       {open && children}
-    </div>
-  )
-}
-
-/** One-line derived classification history: unknown -> suspected -> hostile with times. */
-function classificationTimeline(c: ClassificationTimes): string {
-  if (c.unknownAtS == null) return 'pending · never detected'
-  const steps = [`unknown ${formatTime(c.unknownAtS)}`]
-  if (c.suspectedAtS != null) steps.push(`suspected ${formatTime(c.suspectedAtS)}`)
-  if (c.hostileAtS != null) steps.push(`hostile ${formatTime(c.hostileAtS)}`)
-  const tail =
-    c.hostileAtS != null ? '' : c.suspectedAtS != null ? ' · never hostile' : ' · never suspected'
-  return steps.join(' → ') + tail
-}
-
-/**
- * Engagement-potential line copy: WEZ membership at arrival, expected ships
- * and leaked warhead, severity tier, and any jam degrade. Honest blanks:
- * unknown radius reads "r unknown" (asset assumed inside, conservative) and
- * an unknown warhead reads "warhead unknown", never 0.
- */
-function engagementPotentialText(
-  a: ThreatAssessment,
-  imp: LeakerImpact | undefined,
-  kind: ReturnType<typeof wezKindFor>,
-  radiusM: number | null,
-  units: DisplayUnits,
-): string {
-  if (kind === 'none') return 'no weapon zone (ISR or decoy platform)'
-  if (!imp) return '—'
-  if (imp.assetId == null) return 'no asset placed'
-  if (!imp.assetInWez) {
-    return `target outside WEZ (CPA ${formatDistance(a.closestApproachM ?? 0, units)} > r ${formatDistance(
-      radiusM ?? 0,
-      units,
-    )})`
-  }
-  const inside = radiusM == null ? 'target assumed inside WEZ (r unknown)' : 'target inside WEZ'
-  const parts = [
-    imp.arrivalS != null ? `${inside} at ${formatTime(imp.arrivalS)}` : inside,
-    `${imp.expectedShipsArriving.toFixed(1)} ships`,
-    imp.expectedWarheadKg > 0 ? `${Math.round(imp.expectedWarheadKg)} kg` : 'warhead unknown',
-    imp.severity != null ? SEVERITY_LABEL[imp.severity] : 'below warning floor',
-  ]
-  if (imp.jamDegradedProb > 0.005) {
-    parts.push(`arrives jam-degraded ${Math.round(imp.jamDegradedProb * 100)}%`)
-  }
-  return parts.join(' · ')
-}
-
-/** Per-channel kill split for the advanced view: hard, soft (jam), jam-degraded arrival. */
-function killSplitText(att: ThreatAttrition | undefined, name: (id: string | null) => string) {
-  if (
-    !att ||
-    (att.expectedHardKills <= 0.0005 &&
-      att.expectedSoftKills <= 0.0005 &&
-      att.continueJamProb <= 0.0005)
-  ) {
-    return '—'
-  }
-  return [
-    att.shipCount > 1
-      ? `${att.expectedHardKills.toFixed(1)} hard kill · ${att.expectedSoftKills.toFixed(1)} soft kill (jam)`
-      : `hard kill ${Math.round(att.expectedHardKills * 100)}% · soft kill (jam) ${Math.round(att.expectedSoftKills * 100)}%`,
-    att.killedByEffectorId
-      ? `dominant ${name(att.killedByEffectorId)}${att.killedBySoft ? ' (jam)' : ''}`
-      : null,
-    att.continueJamProb > 0.0005
-      ? `arrives jam-degraded ${Math.round(att.continueJamProb * 100)}%`
-      : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
-
-/** Expanded telemetry table. Advanced adds the deep rows the old cards showed. */
-function ThreatDetail({
-  a,
-  att,
-  imp,
-  advanced,
-  name,
-  threatModel,
-}: {
-  a: ThreatAssessment
-  att?: ThreatAttrition
-  imp?: LeakerImpact
-  advanced: boolean
-  name: (id: string | null) => string
-  threatModel?: SpecModel
-}) {
-  const units = useStore((s) => s.ui.units)
-  const status = STATUS_TEXT[a.status]
-  const outcome = att
-    ? att.shipCount > 1
-      ? `${att.expectedKills.toFixed(1)} of ${att.shipCount} ships expected killed · ${Math.round(
-          att.leakProbability * 100,
-        )}% leak`
-      : `expected kill ${Math.round(att.expectedKills * 100)}% · leak ${Math.round(
-          att.leakProbability * 100,
-        )}%`
-    : '—'
-  return (
-    <>
-      <table className="threat-table">
-        <tbody>
-          <tr>
-            <td>Status</td>
-            <td>{status.label}</td>
-          </tr>
-          <tr>
-            <td>First detection</td>
-            <td>
-              {a.firstDetectS != null
-                ? `${formatTime(a.firstDetectS)} by ${name(a.firstDetectSensorId)}`
-                : 'none'}
-            </td>
-          </tr>
-          {advanced && (
-            <tr>
-              <td>Detecting sensors</td>
-              <td>
-                {a.detectingSensorIds.length > 0
-                  ? a.detectingSensorIds.map((id) => name(id)).join(', ')
-                  : 'none'}
-              </td>
-            </tr>
-          )}
-          <tr>
-            <td>Classification</td>
-            <td>{classificationTimeline(a.classificationAtS)}</td>
-          </tr>
-          {advanced && (
-            <tr>
-              <td>Confirmed (2 techs)</td>
-              <td>
-                {a.firstConfirmS != null
-                  ? `${formatTime(a.firstConfirmS)} · ${a.techs.map((t) => TECH_LABEL[t]).join(' + ')}`
-                  : a.techs.length === 1
-                    ? `never · ${TECH_LABEL[a.techs[0]]} only`
-                    : 'never'}
-              </td>
-            </tr>
-          )}
-          <tr>
-            <td>Arrival at asset</td>
-            <td>
-              {a.arrivalS != null
-                ? `${formatTime(a.arrivalS)} · ${name(a.assetId)} · CPA ${formatDistance(
-                    a.closestApproachM ?? 0,
-                    units,
-                  )}`
-                : 'no asset placed'}
-            </td>
-          </tr>
-          <tr>
-            <td>Best window</td>
-            <td>
-              {a.windowS
-                ? `${formatTime(a.windowS[0])} – ${formatTime(a.windowS[1])} (${Math.round(
-                    a.windowS[1] - a.windowS[0],
-                  )} s) · ${name(a.windowEffectorId)}`
-                : 'none after track quality is met'}
-            </td>
-          </tr>
-          {advanced && (
-            <tr>
-              <td>Shots fired</td>
-              <td>
-                {att && att.shotsFired > 0
-                  ? `${att.shotsFired}${
-                      att.firstShotS != null ? ` · first at ${formatTime(att.firstShotS)}` : ''
-                    }`
-                  : 'none'}
-              </td>
-            </tr>
-          )}
-          <tr>
-            <td>Outcome</td>
-            <td>{outcome}</td>
-          </tr>
-          {advanced && (
-            <tr>
-              <td>Kill split</td>
-              <td>{killSplitText(att, name)}</td>
-            </tr>
-          )}
-          <tr>
-            <td>Engagement potential</td>
-            <td>
-              {engagementPotentialText(a, imp, wezKindFor(threatModel), wezRadiusM(threatModel), units)}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      {advanced && a.swarmMerged && (
-        <p className="muted small">
-          Formation merges into one track: no detecting sensor can split ships at this spacing.
-          The defense does not know the count.
-        </p>
-      )}
-    </>
-  )
-}
-
-/**
- * One compact line per threat: name · status chip · warning · window · leak.
- * Click toggles the detail table; the amber I&W line shows whenever leak
- * probability reaches 0.5 or an impact severity is set. Expansion is local
- * state, reset per mount.
- */
-function ThreatRowCompact({
-  a,
-  att,
-  imp,
-  advanced,
-}: {
-  a: ThreatAssessment
-  att?: ThreatAttrition
-  imp?: LeakerImpact
-  advanced: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const scenario = useStore((s) => s.scenario)
-  const name = (id: string | null) => scenario.entities.find((e) => e.id === id)?.name ?? '—'
-  const status = STATUS_TEXT[a.status]
-  const stats = threatCompactStats(a, att)
-  const threatModel = scenario.library.find(
-    (m) => m.id === scenario.entities.find((e) => e.id === a.uasId)?.specId,
-  )
-  const severity = imp?.severity ?? null
-  const showIw = (att != null && att.leakProbability >= 0.5) || severity != null
-  // "Reaches" only when the target sits inside the WEZ; a leaker whose closest
-  // approach stays outside the WEZ passes, it does not reach.
-  const iwVerb = imp?.assetInWez ? 'Reaches' : 'Passes'
-  const iwText = imp?.assetName
-    ? `${iwVerb} ${imp.assetName}${imp.arrivalS != null ? ` T+${formatTime(imp.arrivalS)}` : ''}`
-    : 'High leak probability'
-
-  return (
-    <div className="threat-row compact">
-      <div className="threat-compact" onClick={() => setOpen((v) => !v)}>
-        <span className={`chevron${open ? ' open' : ''}`}>▸</span>
-        <span className="threat-name">{name(a.uasId)}</span>
-        <span className={`status ${status.cls}`} title={status.label}>
-          {status.short}
-        </span>
-        <span className="threat-stats" title="warning time · engagement window · leak probability">
-          warn {stats.warning} · win {stats.window} · leak {stats.leak}
-        </span>
-      </div>
-      {showIw && (
-        <div className="iw-line">
-          <span className={`status ${severity != null ? TIER_CLS[severity] : 'warn'}`}>
-            I&W{severity != null ? ` ${SEVERITY_LABEL[severity]}` : ''}
-          </span>
-          {iwText}
-        </div>
-      )}
-      {open && (
-        <ThreatDetail
-          a={a}
-          att={att}
-          imp={imp}
-          advanced={advanced}
-          name={name}
-          threatModel={threatModel}
-        />
-      )}
     </div>
   )
 }
@@ -543,175 +243,6 @@ function EffectorBody({ report }: { report: AttritionReport }) {
   )
 }
 
-const OUTCOME_TEXT: Record<AarOutcome, { label: string; cls: string }> = {
-  'hard-kill': { label: 'hard kill', cls: 'good' },
-  'soft-kill': { label: 'soft kill (jam)', cls: 'good' },
-  leaker: { label: 'leaker', cls: 'bad' },
-  'not-engaged': { label: 'not engaged', cls: 'warn' },
-}
-
-/** Compact classification cell: highest rung reached and when. */
-function classifyCell(t: AarThreatRowData): string {
-  if (t.hostileAtS != null) return `hostile ${formatTime(t.hostileAtS)}`
-  if (t.suspectedAtS != null) return `suspect ${formatTime(t.suspectedAtS)}`
-  if (t.unknownAtS != null) return `unknown ${formatTime(t.unknownAtS)}`
-  return 'never'
-}
-
-const aarTime = (v: number | null) => (v == null ? '—' : formatTime(v))
-const aarPct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`)
-
-/**
- * Impact cell from the optional I&W row fields. Three states: a severity
- * tier with the expected arriving mass, 'none' when the row was assessed and
- * nothing warns (severity present but null), and '—' for pins made before
- * the fields existed.
- */
-function aarImpactCell(t: AarThreatRowData): string {
-  if (t.impactSeverity != null) {
-    const kg =
-      (t.expectedWarheadKg ?? 0) > 0 ? ` · ${Math.round(t.expectedWarheadKg!)} kg` : ''
-    return `${SEVERITY_LABEL[t.impactSeverity]} · ${(t.expectedShipsArriving ?? 0).toFixed(1)} ships${kg}`
-  }
-  return t.impactSeverity === null ? 'none' : '—'
-}
-
-/** AAR totals and per-effector shot ledger. Renders from the summary alone. */
-function AarTotals({ aar }: { aar: AarSummary }) {
-  return (
-    <>
-      <table className="threat-table">
-        <tbody>
-          <tr>
-            <td>Raid size</td>
-            <td>
-              {aar.raidSize} ships · ROE {aar.roe}
-            </td>
-          </tr>
-          <tr>
-            <td>Hard kills</td>
-            <td>{aar.expectedHardKills.toFixed(1)}</td>
-          </tr>
-          <tr>
-            <td>Soft kills (jam)</td>
-            <td>{aar.expectedSoftKills.toFixed(1)}</td>
-          </tr>
-          <tr>
-            <td>Leakers</td>
-            <td>
-              {aar.expectedLeakers.toFixed(1)} · {aarPct(aar.leakProbability)}
-            </td>
-          </tr>
-          <tr>
-            <td>First detection</td>
-            <td>{aarTime(aar.firstDetectS)}</td>
-          </tr>
-          <tr>
-            <td>First shot</td>
-            <td>{aarTime(aar.firstShotS)}</td>
-          </tr>
-          <tr>
-            <td>Shots fired</td>
-            <td>{aar.shotsFired}</td>
-          </tr>
-        </tbody>
-      </table>
-      {aar.effectors.length > 0 && (
-        <table className="threat-table">
-          <tbody>
-            {aar.effectors.map((e) => (
-              <tr key={e.effectorId}>
-                <td>{e.name}</td>
-                <td>
-                  {e.shotsFired} fired ·{' '}
-                  {e.expectedRoundsRemaining != null
-                    ? `${e.expectedRoundsRemaining}${
-                        e.magazineSize != null ? ` of ${e.magazineSize}` : ''
-                      } left`
-                    : 'unlimited'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </>
-  )
-}
-
-/** One compact line per threat, for narrow pinned-comparison columns. */
-function AarThreatLines({ aar }: { aar: AarSummary }) {
-  return (
-    <>
-      {aar.threats.map((t) => (
-        <div className="aar-threat-line" key={t.uasId}>
-          <strong>{t.name}</strong>
-          {t.shipCount > 1 ? ` ×${t.shipCount}` : ''} · det {aarTime(t.detectS)} ·{' '}
-          {classifyCell(t)} · shot {aarTime(t.engageS)} ·{' '}
-          <span className={`status ${OUTCOME_TEXT[t.outcome].cls}`}>
-            {OUTCOME_TEXT[t.outcome].label}
-          </span>
-          {t.impactSeverity != null && (
-            <>
-              {' · '}
-              <span className={`status ${TIER_CLS[t.impactSeverity]}`}>
-                I&W {SEVERITY_LABEL[t.impactSeverity]}
-              </span>
-            </>
-          )}
-        </div>
-      ))}
-    </>
-  )
-}
-
-/** After-action report: totals, magazines, and the per-threat timeline. */
-function AarBody({ aar }: { aar: AarSummary }) {
-  const name = useStore((s) => s.scenario.name)
-  return (
-    <>
-      <AarTotals aar={aar} />
-      <table className="aar-threat-table">
-        <thead>
-          <tr>
-            <th>Threat</th>
-            <th>Detect</th>
-            <th>Classify</th>
-            <th>Engage</th>
-            <th>Outcome</th>
-            <th>Impact</th>
-          </tr>
-        </thead>
-        <tbody>
-          {aar.threats.map((t) => (
-            <tr key={t.uasId}>
-              <td>
-                {t.name}
-                {t.shipCount > 1 ? ` ×${t.shipCount}` : ''}
-              </td>
-              <td>{aarTime(t.detectS)}</td>
-              <td>{classifyCell(t)}</td>
-              <td>{aarTime(t.engageS)}</td>
-              <td>
-                <span className={`status ${OUTCOME_TEXT[t.outcome].cls}`}>
-                  {OUTCOME_TEXT[t.outcome].label}
-                </span>
-                {t.leakProbability > 0.0005 && t.leakProbability < 0.9995
-                  ? ` ${aarPct(t.leakProbability)} leak`
-                  : ''}
-              </td>
-              <td>{aarImpactCell(t)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="inspector-actions">
-        <button onClick={() => exportAar(name, aar)}>Export AAR JSON</button>
-      </div>
-    </>
-  )
-}
-
 const WEIGHT_LABELS: Array<{ key: keyof McdaVector; label: string }> = [
   { key: 'warning', label: 'Warning time' },
   { key: 'coverage', label: 'Detection coverage' },
@@ -845,7 +376,8 @@ function ScorecardBody({
 
 /**
  * Computed engagement picture for every threat with a flight path. Compact by
- * default: one line per threat, collapsed sections with headline numbers.
+ * default: KPI tiles, one line per threat group, collapsed sections with
+ * headline numbers.
  * Every datum the full cards showed stays reachable within two clicks (expand
  * a row or section; flip Advanced telemetry for the deep rows). All
  * expansion state is local and resets per mount.
@@ -903,6 +435,9 @@ export function AnalysisPanel() {
           Advanced telemetry
         </label>
       </div>
+      {threats.length > 0 && <KpiTiles threats={threats} report={report} score={score} />}
+      {/* Live-telemetry strip: all playback subscriptions live inside LiveStrip. */}
+      <LiveStrip />
       <Section
         title="Environment"
         headline={environmentHeadline(scenario.environment, displayUnits)}
@@ -915,15 +450,7 @@ export function AnalysisPanel() {
       )}
       <LeakerWarningStrip impacts={impacts} />
       {threats.length > 0 && <div className="panel-subtitle">Threats · {threats.length}</div>}
-      {threats.map((a) => (
-        <ThreatRowCompact
-          key={a.uasId}
-          a={a}
-          att={report.threats.find((t) => t.uasId === a.uasId)}
-          imp={impacts.find((i) => i.uasId === a.uasId)}
-          advanced={advanced}
-        />
-      ))}
+      <ThreatGroupList threats={threats} report={report} impacts={impacts} advanced={advanced} />
       {showMagazines && (
         <Section title="Effector magazines" headline={magazinesHeadline(aar)}>
           <EffectorBody report={report} />
