@@ -663,13 +663,22 @@ label.inline input[type='range'] {
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-dim);
-  padding: 2px 4px;
+  padding: 3px 6px;
   border-bottom: 1px solid var(--border);
 }
 
 .aar-threat-table td {
-  padding: 2px 4px;
-  vertical-align: top;
+  padding: 3px 6px;
+  vertical-align: middle;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.aar-threat-table tr.aar-group td {
+  background: color-mix(in srgb, var(--bg-input) 55%, transparent);
+}
+
+.aar-threat-table tr.aar-group:hover td {
+  background: var(--hover);
 }
 
 .aar-compare {
@@ -770,27 +779,41 @@ label.inline input[type='range'] {
 }
 
 .status {
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 10px;
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  line-height: 15px;
+  padding: 0 5px;
+  border-radius: 3px;
   border: 1px solid;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .status.good {
   color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 45%, transparent);
+  background: color-mix(in srgb, var(--good) 10%, transparent);
 }
 
 .status.warn {
   color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
 }
 
 .status.bad {
   color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .status.neutral {
   color: var(--text-dim);
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--border) 22%, transparent);
 }
 
 .leaker-strip summary {
@@ -1151,7 +1174,7 @@ label.inline input[type='range'] {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
   gap: 6px;
 }
 
@@ -1382,6 +1405,10 @@ label.inline input[type='range'] {
 
 .aar-threat-table td.num {
   font-variant-numeric: tabular-nums;
+}
+
+.aar-threat-table .status {
+  margin-right: 3px;
 }
 
 .aar-threat-table tr.aar-group {

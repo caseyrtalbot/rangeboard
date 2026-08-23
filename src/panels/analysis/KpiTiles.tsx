@@ -10,14 +10,16 @@ function Tile({
   value,
   sub,
   cls,
+  title,
 }: {
   label: string
   value: string
   sub?: string
   cls?: string
+  title?: string
 }) {
   return (
-    <div className="kpi-tile">
+    <div className="kpi-tile" title={title}>
       <span className="kpi-label">{label}</span>
       <span className={`kpi-value${cls ? ` ${cls}` : ''}`}>{value}</span>
       {sub ? <span className="kpi-sub">{sub}</span> : null}
@@ -50,7 +52,12 @@ export function KpiTiles({
       <Tile
         label="Expected kills"
         value={t.expectedKills.toFixed(1)}
-        sub={`${t.expectedHardKills.toFixed(1)} hard · ${t.expectedSoftKills.toFixed(1)} soft`}
+        sub={
+          t.expectedSoftKills > 0.05
+            ? `${t.expectedHardKills.toFixed(1)} hard · ${t.expectedSoftKills.toFixed(1)} soft`
+            : `${t.expectedHardKills.toFixed(1)} hard`
+        }
+        title={`${t.expectedHardKills.toFixed(1)} hard kills · ${t.expectedSoftKills.toFixed(1)} soft kills (jam)`}
       />
       <Tile
         label="Leakers"
