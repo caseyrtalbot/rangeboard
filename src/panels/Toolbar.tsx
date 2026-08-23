@@ -1,8 +1,9 @@
 import { defaultFrameName, useStore } from '../state/store'
+import { Tip } from './Tooltip'
 import { useTeStore } from '../te/state/teStore'
 import type { Workspace } from '../te/state/teStore'
 import { captureFrameToCampaign } from '../te/io/frameCapture'
-import type { BasemapMode, BoundaryType } from '../model/types'
+import type { BasemapMode, BoundaryType, EnvironmentSpec, Roe } from '../model/types'
 import type { DisplayUnits } from '../geometry/geo'
 import { emptyScenario } from '../model/seed'
 import {
@@ -32,6 +33,30 @@ const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
   { id: 'metric', label: 'm km', hint: 'Metric units: m/s and km. Altitude is always feet.' },
 ]
 
+const ROE_PILLS: Record<Roe, { label: string; cls: string; hint: string }> = {
+  free: { label: 'ROE Free', cls: 'pill-good', hint: 'ROE free: engage on first detection' },
+  tight: { label: 'ROE Tight', cls: 'pill-dim', hint: 'ROE tight: engage tracks classified hostile' },
+  hold: { label: 'ROE Hold', cls: 'pill-warn', hint: 'ROE hold: no engagements' },
+}
+
+/** Local wall-clock HH:MM, 24-hour. */
+function clockHHMM(epochMs: number): string {
+  const d = new Date(epochMs)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+/** Active derating conditions, matching sensorEnvFactor exactly. Empty = no derate. */
+function activeDerates(env: EnvironmentSpec): string[] {
+  if (!env.apply) return []
+  const out: string[] = []
+  const precip = env.precipitation ?? 'clear'
+  if (precip !== 'clear') out.push(precip)
+  if ((env.light ?? 'day') === 'night') out.push('night')
+  if ((env.emBackground ?? 'rural') === 'urban') out.push('urban EM')
+  if (env.windSpeedMps > 0) out.push(`wind ${env.windSpeedMps} m/s`)
+  return out
+}
+
 export function Toolbar() {
   const scenario = useStore((s) => s.scenario)
   const ui = useStore((s) => s.ui)
@@ -60,11 +85,14 @@ export function Toolbar() {
     { id: 'ops', label: 'T&E Ops' },
   ]
 
+  const roe = scenario.roe ?? 'tight'
+  const derates = activeDerates(scenario.environment)
+
   if (workspace === 'ops') {
     return (
       <header className="toolbar">
         <div className="brand">RANGEBOARD</div>
-        <div className="tool-group" aria-label="Workspace">
+        <div className="seg" aria-label="Workspace">
           {workspaces.map((w) => (
             <button
               key={w.id}
@@ -82,7 +110,7 @@ export function Toolbar() {
   return (
     <header className="toolbar">
       <div className="brand">RANGEBOARD</div>
-      <div className="tool-group" aria-label="Workspace">
+      <div className="seg" aria-label="Workspace">
         {workspaces.map((w) => (
           <button
             key={w.id}
@@ -100,16 +128,13 @@ export function Toolbar() {
         title="Scenario name"
       />
 
-      <div className="tool-group" role="toolbar" aria-label="Tools">
+      <div className="seg" role="toolbar" aria-label="Tools">
         {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            className={ui.tool === t.id ? 'active' : ''}
-            title={t.hint}
-            onClick={() => setTool(t.id)}
-          >
-            {t.label}
-          </button>
+          <Tip key={t.id} label={t.hint}>
+            <button className={ui.tool === t.id ? 'active' : ''} onClick={() => setTool(t.id)}>
+              {t.label}
+            </button>
+          </Tip>
         ))}
         {ui.tool === 'boundary' && (
           <select
@@ -126,7 +151,7 @@ export function Toolbar() {
         )}
       </div>
 
-      <div className="tool-group" aria-label="Basemap">
+      <div className="seg" aria-label="Basemap">
         {BASEMAPS.map((b) => (
           <button
             key={b.id}
@@ -138,31 +163,29 @@ export function Toolbar() {
         ))}
       </div>
 
-      <div className="tool-group" aria-label="Units">
+      <div className="seg" aria-label="Units">
         {UNITS.map((u) => (
-          <button
-            key={u.id}
-            className={ui.units === u.id ? 'active' : ''}
-            title={u.hint}
-            onClick={() => setUnits(u.id)}
-          >
-            {u.label}
-          </button>
+          <Tip key={u.id} label={u.hint}>
+            <button className={ui.units === u.id ? 'active' : ''} onClick={() => setUnits(u.id)}>
+              {u.label}
+            </button>
+          </Tip>
         ))}
       </div>
 
-      <div className="tool-group" aria-label="Overlays">
-        <button
-          className={ui.showThreatWez ? 'active' : ''}
-          title="Show threat weapon engagement zones"
-          onClick={() => setShowThreatWez(!ui.showThreatWez)}
-        >
-          WEZ
-        </button>
+      <div className="seg" aria-label="Overlays">
+        <Tip label="Show threat weapon engagement zones">
+          <button
+            className={ui.showThreatWez ? 'active' : ''}
+            onClick={() => setShowThreatWez(!ui.showThreatWez)}
+          >
+            WEZ
+          </button>
+        </Tip>
       </div>
 
       {ui.basemap === 'sat' && (
-        <div className="tool-group sat-controls">
+        <div className="seg sat-controls">
           <button onClick={() => setLocationDialogOpen(true)}>Location…</button>
           <button onClick={importUnderlayImage}>Image…</button>
           <label className="inline">
@@ -189,15 +212,40 @@ export function Toolbar() {
 
       <div className="spacer" />
 
-      <div className="tool-group">
-        <button onClick={undo} disabled={!canUndo} title="Undo (Cmd+Z)">
-          Undo
-        </button>
-        <button onClick={redo} disabled={!canRedo} title="Redo (Shift+Cmd+Z)">
-          Redo
-        </button>
+      <div className="status-pills" aria-label="Status">
+        <span className={`pill ${ROE_PILLS[roe].cls}`} title={ROE_PILLS[roe].hint}>
+          {ROE_PILLS[roe].label}
+        </span>
+        {ui.showThreatWez && (
+          <span className="pill pill-danger" title="Threat weapon engagement zones are drawn on the canvas">
+            WEZ On
+          </span>
+        )}
+        {derates.length > 0 && (
+          <span className="pill pill-warn" title={`Sensor ranges derated: ${derates.join(', ')}`}>
+            Env Derate
+          </span>
+        )}
+        {ui.lastAutosaveAt != null && (
+          <span className="pill pill-dim" title="Last autosave to browser storage">
+            Saved {clockHHMM(ui.lastAutosaveAt)}
+          </span>
+        )}
       </div>
-      <div className="tool-group">
+
+      <div className="seg">
+        <Tip label="Undo" shortcut="⌘Z">
+          <button onClick={undo} disabled={!canUndo}>
+            Undo
+          </button>
+        </Tip>
+        <Tip label="Redo" shortcut="⇧⌘Z">
+          <button onClick={redo} disabled={!canRedo}>
+            Redo
+          </button>
+        </Tip>
+      </div>
+      <div className="seg">
         <button
           onClick={() => {
             if (window.confirm('Start a new empty scenario? Unsaved work is replaced.')) {
@@ -210,22 +258,23 @@ export function Toolbar() {
         <button onClick={importScenarioFile}>Import</button>
         <button onClick={() => exportScenario(scenario)}>Export</button>
         {hasCampaign && (
-          <button
-            title="Save the current board view as a PNG frame on the active T&E campaign"
-            onClick={() => {
-              const st = useStore.getState()
-              const frameName = defaultFrameName(
-                st.scenario.name,
-                st.playback.simTimeS,
-                st.ui.basemap,
-              )
-              if (!captureFrameToCampaign(frameName)) {
-                window.alert('Could not capture: no active campaign or canvas.')
-              }
-            }}
-          >
-            Capture frame
-          </button>
+          <Tip label="Save the current board view as a PNG frame on the active T&E campaign">
+            <button
+              onClick={() => {
+                const st = useStore.getState()
+                const frameName = defaultFrameName(
+                  st.scenario.name,
+                  st.playback.simTimeS,
+                  st.ui.basemap,
+                )
+                if (!captureFrameToCampaign(frameName)) {
+                  window.alert('Could not capture: no active campaign or canvas.')
+                }
+              }}
+            >
+              Capture frame
+            </button>
+          </Tip>
         )}
       </div>
     </header>

@@ -43,6 +43,7 @@ export function startAutosave(): void {
     timer = window.setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state.scenario))
+        useStore.getState().setLastAutosaveAt(Date.now())
       } catch {
         // Storage full (large underlay image): skip autosave, export still works.
       }

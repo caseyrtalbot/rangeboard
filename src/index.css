@@ -11,6 +11,7 @@
   --danger: #c4564a;
   --good: #8fae7a;
   --warn: #d98f41;
+  --radius: 4px;
   --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 13px;
@@ -40,7 +41,7 @@ body,
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 ::-webkit-scrollbar-track {
@@ -88,15 +89,6 @@ body,
   width: 180px;
 }
 
-.tool-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-}
-
 .spacer {
   flex: 1;
 }
@@ -105,10 +97,12 @@ button {
   background: transparent;
   color: var(--text);
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 4px 9px;
   cursor: pointer;
   font: inherit;
+  font-size: 12px;
+  font-weight: 500;
   transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
@@ -158,7 +152,7 @@ select {
   background: var(--bg-input);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 4px 6px;
   font: inherit;
   width: 100%;
@@ -226,7 +220,7 @@ label.inline input[type='range'] {
   border: 1px solid var(--border);
   color: var(--text-dim);
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   white-space: nowrap;
 }
 
@@ -239,6 +233,7 @@ label.inline input[type='range'] {
   justify-content: space-between;
   align-items: flex-end;
   color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
 .hud-scale {
@@ -246,6 +241,7 @@ label.inline input[type='range'] {
   flex-direction: column;
   align-items: flex-end;
   gap: 3px;
+  font-variant-numeric: tabular-nums;
 }
 
 .hud-scale-bar {
@@ -291,6 +287,17 @@ label.inline input[type='range'] {
   padding: 4px 0;
 }
 
+.palette-filter {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.palette-filter input {
+  width: 100%;
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
 .palette-heading {
   display: flex;
   align-items: center;
@@ -300,6 +307,51 @@ label.inline input[type='range'] {
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 1px;
+}
+
+.palette-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+}
+
+.palette-toggle:hover {
+  background: none;
+  color: var(--text);
+}
+
+.palette-toggle .caret {
+  width: 10px;
+  flex-shrink: 0;
+}
+
+.palette-toggle-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-count {
+  flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.palette-subhead {
+  padding: 5px 10px 2px 26px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.75;
 }
 
 .palette-item {
@@ -346,6 +398,48 @@ label.inline input[type='range'] {
   border: 1px solid var(--border);
   font-size: 12px;
   padding: 4px 2px;
+}
+
+/* ---------- Status pills ---------- */
+
+.status-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.pill-good {
+  border: 1px solid color-mix(in srgb, var(--good) 55%, transparent);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+  color: var(--good);
+}
+
+.pill-warn {
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--warn);
+}
+
+.pill-danger {
+  border: 1px solid color-mix(in srgb, var(--danger) 55%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.pill-dim {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-dim) 12%, transparent);
+  color: var(--text-dim);
 }
 
 /* ---------- Right panel ---------- */
@@ -414,7 +508,10 @@ label.inline input[type='range'] {
 
 .field > span {
   color: var(--text-dim);
-  font-size: 11px;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  line-height: 1.5;
 }
 
 .field-row {
@@ -426,7 +523,7 @@ label.inline input[type='range'] {
   color: var(--text-dim);
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 6px 8px;
   font-size: 12px;
 }
@@ -461,24 +558,47 @@ label.inline input[type='range'] {
 
 .seg {
   display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: var(--radius);
   width: 100%;
 }
 
 .seg button {
   flex: 1;
-  border-radius: 0;
+  background: transparent;
+  border-radius: calc(var(--radius) - 1px);
   padding: 4px 2px;
   color: var(--text-dim);
   white-space: nowrap;
+}
+
+.seg button:hover {
+  background: var(--hover);
 }
 
 .seg button.active {
   background: var(--accent);
   color: #121415;
   font-weight: 600;
+}
+
+.seg button.danger {
+  color: var(--danger);
+}
+
+.toolbar .seg,
+.te-header .seg {
+  width: auto;
+}
+
+.toolbar .seg button,
+.te-header .seg button {
+  flex: 0 0 auto;
+  padding: 4px 9px;
 }
 
 /* ---------- Scorecard ---------- */
@@ -498,7 +618,7 @@ label.inline input[type='range'] {
   gap: 8px;
   padding: 6px 8px;
   border: 1px solid var(--accent);
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .score-total span {
@@ -557,7 +677,7 @@ label.inline input[type='range'] {
   flex: 1;
   min-width: 160px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -614,7 +734,7 @@ label.inline input[type='range'] {
 
 .run-row {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -625,7 +745,7 @@ label.inline input[type='range'] {
 
 .threat-row {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -838,6 +958,7 @@ label.inline input[type='range'] {
   color: var(--text-dim);
   white-space: nowrap;
   min-width: 130px;
+  font-variant-numeric: tabular-nums;
 }
 
 .scrub {
@@ -859,7 +980,7 @@ label.inline input[type='range'] {
 .frame-chip {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 .frame-chip button {
@@ -909,7 +1030,7 @@ label.inline input[type='range'] {
   overflow-y: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 4px;
   z-index: 30;
   display: flex;
@@ -934,7 +1055,7 @@ label.inline input[type='range'] {
   text-align: left;
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   color: var(--text);
   font: inherit;
@@ -962,6 +1083,85 @@ label.inline input[type='range'] {
   top: -4px;
 }
 
+/* ---------- Tooltips & empty states ---------- */
+
+.tooltip {
+  position: fixed;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  color: var(--text-dim);
+}
+
+.empty-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.empty-state p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.empty-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+}
+
+.empty-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.empty-row .kbd {
+  flex: 0 0 auto;
+}
+
+/* Overlay, not host styles: the Konva canvases would paint over an inset
+   shadow on the host itself. */
+.canvas-host.drop-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: rgba(169, 180, 189, 0.04);
+  pointer-events: none;
+  z-index: 5;
+}
+
 /* ---------- Typography ---------- */
 
 .brand,
@@ -976,6 +1176,10 @@ label.inline input[type='range'] {
 .scenario-name,
 input[type='number'] {
   font-family: var(--font-mono);
+}
+
+input[type='number'] {
+  font-variant-numeric: tabular-nums;
 }
 
 .palette-resizer {
@@ -1036,7 +1240,7 @@ input[type='number'] {
   text-align: left;
   padding: 8px 10px;
   color: var(--text-dim);
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 .te-nav button.active {
@@ -1083,7 +1287,7 @@ input[type='number'] {
   padding: 24px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .te-table-row {
@@ -1320,7 +1524,7 @@ input[type='number'] {
   padding: 6px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 .te-frame img {
@@ -1357,6 +1561,8 @@ input[type='number'] {
   color: var(--text-dim);
   font-size: 9px;
   line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
   vertical-align: middle;
   cursor: help;
   position: relative;
@@ -1374,7 +1580,7 @@ input[type='number'] {
   padding: 6px 9px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
   color: var(--text);
   font-size: 11px;
   font-weight: 400;
@@ -1397,7 +1603,7 @@ input[type='number'] {
   margin-bottom: 8px;
   background: var(--bg-panel);
   border-left: 3px solid var(--accent);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius) var(--radius) 0;
   font-size: 12px;
 }
 
@@ -1429,4 +1635,76 @@ input[type='number'] {
 
 .step-dot.neutral {
   background: var(--border);
+}
+
+/* ---------- Command palette ---------- */
+
+.cmdk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.cmdk-panel {
+  position: absolute;
+  top: 18vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.cmdk-input {
+  padding: 9px 12px;
+  background: var(--bg-input);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.cmdk-list {
+  max-height: 290px;
+  padding: 4px 0;
+  overflow-y: auto;
+}
+
+.cmdk-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cmdk-item.selected {
+  background: var(--hover);
+  border-left-color: var(--accent);
+}
+
+.cmdk-cat {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.cmdk-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmdk-empty {
+  padding: 8px 10px;
+  color: var(--text-dim);
 }

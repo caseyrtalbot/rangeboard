@@ -56,6 +56,10 @@ export function CanvasStage() {
   const suppressClick = useRef(false)
   // Held modifier keys disable stage panning so the same drag can box-select.
   const [modKey, setModKey] = useState(false)
+  // Palette drag-over cue. Enter/leave depth counter: child elements fire
+  // their own enter/leave pairs, so only depth 0 means the drag truly left.
+  const [dropActive, setDropActive] = useState(false)
+  const dragDepth = useRef(0)
 
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
@@ -256,16 +260,45 @@ export function CanvasStage() {
     if (ui.tool === 'path') finishPath()
   }
 
+  // A cancelled drag (Esc) may end without a leave; dragend on the source
+  // window clears the cue regardless.
+  useEffect(() => {
+    if (!dropActive) return
+    const end = () => {
+      dragDepth.current = 0
+      setDropActive(false)
+    }
+    window.addEventListener('dragend', end)
+    return () => window.removeEventListener('dragend', end)
+  }, [dropActive])
+
+  function isPaletteDrag(e: React.DragEvent): boolean {
+    const types = e.dataTransfer.types
+    return types.includes('text/rangeboard-model') || types.includes('text/rangeboard-system')
+  }
+
   const drawing = ui.tool !== 'select'
 
   return (
     <div
       ref={containerRef}
-      className={`canvas-host ${ui.basemap} ${drawing ? 'drawing' : ''}`}
+      className={`canvas-host ${ui.basemap} ${drawing ? 'drawing' : ''} ${dropActive ? 'drop-active' : ''}`}
       data-testid="canvas-host"
       onDragOver={(e) => e.preventDefault()}
+      onDragEnter={(e) => {
+        if (!isPaletteDrag(e)) return
+        dragDepth.current += 1
+        setDropActive(true)
+      }}
+      onDragLeave={(e) => {
+        if (!isPaletteDrag(e)) return
+        dragDepth.current = Math.max(0, dragDepth.current - 1)
+        if (dragDepth.current === 0) setDropActive(false)
+      }}
       onDrop={(e) => {
         e.preventDefault()
+        dragDepth.current = 0
+        setDropActive(false)
         if (!containerRef.current) return
         const rect = containerRef.current.getBoundingClientRect()
         const world = toWorld({ x: e.clientX - rect.left, y: e.clientY - rect.top })

@@ -12,6 +12,7 @@ import { LibraryEditor } from './panels/LibraryEditor'
 import { TestCardsPanel } from './panels/TestCardsPanel'
 import { AnalysisPanel } from './panels/AnalysisPanel'
 import { TimelineBar } from './panels/TimelineBar'
+import { CommandPalette } from './panels/CommandPalette'
 
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'inspect', label: 'Inspect' },
@@ -192,14 +193,24 @@ export default function App() {
   const rightTab = useStore((s) => s.ui.rightTab)
   const setRightTab = useStore((s) => s.setRightTab)
   const workspace = useTeStore((s) => s.ui.workspace)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey
+      // Cmd+K toggles the command palette. Deliberately ahead of the typing
+      // suppression so it opens from inside an input; Board workspace only
+      // because every palette command is scenario-scoped.
+      if (mod && e.key.toLowerCase() === 'k') {
+        if (useTeStore.getState().ui.workspace === 'ops') return
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+        return
+      }
       const st = useStore.getState()
       if (isTypingTarget(e.target)) return
       // Canvas shortcuts stay off inside the T&E workspace.
       if (useTeStore.getState().ui.workspace === 'ops') return
-      const mod = e.metaKey || e.ctrlKey
       if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         if (e.shiftKey) st.redo()
@@ -274,6 +285,7 @@ export default function App() {
       </div>
       <CalibrateDialog />
       <LocationDialog />
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   )
 }

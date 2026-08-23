@@ -743,17 +743,31 @@ export function Inspector() {
     )
   }
   return (
-    <div className="inspector-body muted">
-      <p>Nothing selected.</p>
-      <p>Drag a model from the library onto the canvas. Click an entity to edit it here.</p>
-      <p>
-        Scroll to zoom. Drag empty space to pan. Shift-click adds to the selection. Delete removes
-        the selection.
-      </p>
-      <p>
-        Cmd-drag (or Ctrl-drag) on empty space box-selects. Shift-drag adds a box to the current
-        selection.
-      </p>
+    <div className="inspector-body">
+      <div className="empty-state">
+        <div className="empty-title">Nothing selected</div>
+        <p>Drag a model from the library onto the canvas, or click an entity to edit it.</p>
+        <div className="empty-shortcuts">
+          {EMPTY_SHORTCUTS.map(([key, action]) => (
+            <div key={key + action} className="empty-row">
+              <span className="kbd">{key}</span>
+              <span>{action}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
+
+/** Matches the keyboard map in App.tsx and the CanvasStage gestures. */
+const EMPTY_SHORTCUTS: Array<[string, string]> = [
+  ['⌘Z', 'undo'],
+  ['Space', 'play/pause'],
+  ['Esc', 'cancel draft'],
+  ['Enter', 'finish path'],
+  ['⌘drag', 'box-select'],
+  ['⇧click', 'add to selection'],
+  ['scroll', 'zoom'],
+  ['drag', 'pan'],
+]

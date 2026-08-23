@@ -100,6 +100,8 @@ interface UiState {
   raidDraft: RaidDraft | null
   /** Sat basemap location dialog visibility. */
   locationDialogOpen: boolean
+  /** Epoch ms of the last successful autosave write; null before the first. Set by persist, never undoable. */
+  lastAutosaveAt: number | null
 }
 
 interface PlaybackState {
@@ -219,6 +221,7 @@ export interface Store {
   setShowThreatWez: (v: boolean) => void
   setLocationDialogOpen: (v: boolean) => void
   setUnits: (v: DisplayUnits) => void
+  setLastAutosaveAt: (t: number) => void
 
   // Playback
   setPlaying: (p: boolean) => void
@@ -332,6 +335,7 @@ export const useStore = create<Store>()((set, get) => {
       contextMenu: null,
       raidDraft: null,
       locationDialogOpen: false,
+      lastAutosaveAt: null,
     },
     playback: { playing: false, simTimeS: 0, speedMult: 1 },
 
@@ -1161,6 +1165,7 @@ export const useStore = create<Store>()((set, get) => {
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
     setShowThreatWez: (v) => set((st) => ({ ui: { ...st.ui, showThreatWez: v } })),
     setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
+    setLastAutosaveAt: (t) => set((st) => ({ ui: { ...st.ui, lastAutosaveAt: t } })),
     setUnits: (v) => {
       if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
       set((st) => ({ ui: { ...st.ui, units: v } }))

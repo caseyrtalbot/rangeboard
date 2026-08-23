@@ -159,7 +159,7 @@ export function OpsWorkspace() {
           </span>
         )}
         <div className="spacer" />
-        <div className="tool-group">
+        <div className="seg">
           <button onClick={() => exportCampaignJson(campaign)}>Export JSON</button>
           <button onClick={importCampaignFile}>Import</button>
           <button

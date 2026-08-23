@@ -1,4 +1,4 @@
-import { Circle, Group, Line, Rect, RegularPolygon, Star, Text } from 'react-konva'
+import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Entity } from '../../model/types'
 import { entityActive } from '../../model/types'
@@ -23,39 +23,43 @@ const FALLBACK: Record<Entity['kind'], string> = {
   marker: '#b7bdb2',
 }
 
+/** Subtle darker edge that reads over any fill color. */
+const EDGE = 'rgba(0, 0, 0, 0.35)'
+
+/**
+ * MIL-STD-2525-inspired affiliation frames, matching panels/Glyph.tsx:
+ * rectangle = sensor/effector, circle = c2/asset, diamond = uas, square = marker.
+ * Heading ticks draw under the frame so only the protruding tip shows.
+ */
 function Glyph({ entity, color }: { entity: Entity; color: string }) {
   switch (entity.kind) {
     case 'sensor':
       return (
         <>
-          <Circle radius={9} stroke={color} strokeWidth={2} />
-          <Circle radius={2.5} fill={color} />
-          <Line points={[0, -9, 0, -15]} stroke={color} strokeWidth={2} rotation={entity.headingDeg} />
+          <Line points={[0, 0, 0, -16]} stroke={color} strokeWidth={2} rotation={entity.headingDeg} />
+          <Rect x={-10.5} y={-7} width={21} height={14} fill={color} stroke={EDGE} strokeWidth={1} />
         </>
       )
     case 'effector':
-      return <RegularPolygon sides={4} radius={10} stroke={color} strokeWidth={2} />
+      return <Rect x={-10.5} y={-7} width={21} height={14} fill={color} stroke={EDGE} strokeWidth={1} />
     case 'c2':
       return (
         <>
-          <Rect x={-8} y={-8} width={16} height={16} stroke={color} strokeWidth={2} />
-          <Text fontFamily="IBM Plex Mono" x={-8} y={-5} width={16} text="C2" fontSize={9} fill={color} align="center" />
+          <Circle radius={9} fill={color} stroke={EDGE} strokeWidth={1} />
+          <Text fontFamily="IBM Plex Mono" x={-8} y={-4} width={16} text="C2" fontSize={9} fill="#121415" align="center" />
         </>
       )
     case 'uas':
       return (
-        <RegularPolygon
-          sides={3}
-          radius={9}
-          fill={color}
-          rotation={entity.headingDeg}
-          scaleY={1.4}
-        />
+        <>
+          <Line points={[0, 0, 0, -16]} stroke={color} strokeWidth={2} rotation={entity.headingDeg} />
+          <RegularPolygon sides={4} radius={11} fill={color} stroke={EDGE} strokeWidth={1} />
+        </>
       )
     case 'asset':
-      return <Star numPoints={5} innerRadius={4.5} outerRadius={10} fill={color} />
+      return <Circle radius={9} fill={color} stroke={EDGE} strokeWidth={1} />
     case 'marker':
-      return <Circle radius={5} fill={color} />
+      return <Rect x={-5} y={-5} width={10} height={10} fill={color} stroke={EDGE} strokeWidth={1} />
   }
 }
 
@@ -184,7 +188,7 @@ function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity }
     <>
       {members.slice(1).map((m, i) => (
         <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
-          <RegularPolygon sides={3} radius={6} fill={color} rotation={headingDeg} scaleY={1.4} />
+          <RegularPolygon sides={4} radius={7} fill={color} stroke={EDGE} strokeWidth={1} />
         </Group>
       ))}
       <Group
