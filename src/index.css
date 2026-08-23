@@ -1082,12 +1082,12 @@ label.inline input[type='range'] {
 
 /* ---------- Context menu ---------- */
 
+/* No overflow here: a scrollable menu box would clip the absolutely
+   positioned submenu flyout to a sliver. The flyout carries the scroll cap. */
 .ctx-menu {
   position: absolute;
   min-width: 200px;
   max-width: 280px;
-  max-height: 60vh;
-  overflow-y: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1141,6 +1141,65 @@ label.inline input[type='range'] {
   position: absolute;
   left: calc(100% - 4px);
   top: -4px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Connect-suggestion popup (ConnectSuggestPopup.tsx) shares the ctx-menu shell. */
+
+.connect-suggest {
+  min-width: 240px;
+}
+
+.suggest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.suggest-x {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font: inherit;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.suggest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+}
+
+.suggest-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.suggest-badge {
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.suggest-empty {
+  padding: 5px 10px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+/* Documented pairs wire themselves; this badge confirms it happened. */
+.suggest-auto {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ---------- Live telemetry strip ---------- */

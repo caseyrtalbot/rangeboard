@@ -24,6 +24,8 @@ import type { DisplayUnits } from '../geometry/geo'
 import { buildRaidPlan, effectivePathDelayS } from '../playback/raid'
 import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
 import { effectiveDetectRangeM } from '../analysis/sensorEnv'
+import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
+import type { SuggestedLink } from '../model/integration'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -96,6 +98,17 @@ interface UiState {
   units: DisplayUnits
   /** Open right-click menu; screen px within the canvas host, world meters. */
   contextMenu: { screen: Vec2; world: Vec2; entityId: string | null } | null
+  /**
+   * Connect offers after placing or dragging a linkable entity; screen px
+   * within the canvas host. `autoConnected` links were already created
+   * (documented pairs in range wire themselves); `candidates` await a click.
+   */
+  connectSuggestion: {
+    entityId: string
+    screen: Vec2
+    candidates: SuggestedLink[]
+    autoConnected: SuggestedLink[]
+  } | null
   /** Armed tactic builder; the next canvas click commits the raid. */
   raidDraft: RaidDraft | null
   /** Sat basemap location dialog visibility. */
@@ -128,7 +141,7 @@ export interface Store {
   setScenarioName: (name: string) => void
 
   // Entities
-  addEntityFromModel: (modelId: string, pos: Vec2) => void
+  addEntityFromModel: (modelId: string, pos: Vec2, screen?: Vec2) => void
   updateEntity: (id: string, patch: Partial<Entity>) => void
   moveEntity: (id: string, pos: Vec2) => void
   duplicateEntity: (id: string) => void
@@ -149,6 +162,11 @@ export interface Store {
   beginConnect: (fromId: string) => void
   completeConnect: (toId: string) => void
   updateConnection: (id: string, patch: Partial<Connection>) => void
+  /** `always` opens the popup even with zero candidates (informational mode). */
+  openConnectSuggestion: (entityId: string, screen: Vec2, opts?: { always?: boolean }) => void
+  dismissConnectSuggestion: () => void
+  /** ONE mutate creating the chosen candidate connections; duplicates skipped. */
+  applyConnectSuggestion: (indexes: number[]) => void
 
   // Boundaries and paths
   addDraftPoint: (p: Vec2) => void
@@ -253,6 +271,26 @@ export function defaultConnectionLabel(fromKind: EntityKind, toKind: EntityKind)
   return ''
 }
 
+/** Typed connections for accepted or auto-applied suggestions; skips existing pairs. */
+function typedConnections(s: Scenario, links: SuggestedLink[]): Connection[] {
+  const added: Connection[] = []
+  for (const { fromId, toId, verdict } of links) {
+    const dupe = (c: Connection) => c.fromId === fromId && c.toId === toId
+    if (s.connections.some(dupe) || added.some(dupe)) continue
+    added.push({
+      id: newId('con'),
+      fromId,
+      toId,
+      label: verdict.label,
+      medium: verdict.medium,
+      confidence: verdict.confidence,
+      note: verdict.note,
+      latencyS: verdict.latencyS,
+    })
+  }
+  return added
+}
+
 /** Default frame name: scenario, sim time, and basemap. */
 export function defaultFrameName(
   scenarioName: string,
@@ -333,6 +371,7 @@ export const useStore = create<Store>()((set, get) => {
       showThreatWez: false,
       units: savedUnits(),
       contextMenu: null,
+      connectSuggestion: null,
       raidDraft: null,
       locationDialogOpen: false,
       lastAutosaveAt: null,
@@ -340,24 +379,27 @@ export const useStore = create<Store>()((set, get) => {
     playback: { playing: false, simTimeS: 0, speedMult: 1 },
 
     undo: () => {
-      const { past, future, scenario } = get()
+      const { past, future, scenario, ui } = get()
       if (past.length === 0) return
       set({
         scenario: past[past.length - 1],
         past: past.slice(0, -1),
         future: [scenario, ...future],
         selection: EMPTY_SELECTION,
+        // A restored scenario invalidates any open connect offer.
+        ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
 
     redo: () => {
-      const { past, future, scenario } = get()
+      const { past, future, scenario, ui } = get()
       if (future.length === 0) return
       set({
         scenario: future[0],
         past: [...past, scenario],
         future: future.slice(1),
         selection: EMPTY_SELECTION,
+        ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
 
@@ -368,18 +410,22 @@ export const useStore = create<Store>()((set, get) => {
         future: [],
         selection: EMPTY_SELECTION,
         playback: { playing: false, simTimeS: 0, speedMult: 1 },
-        ui: st.ui.raidDraft ? { ...st.ui, raidDraft: null } : st.ui,
+        ui:
+          st.ui.raidDraft || st.ui.connectSuggestion
+            ? { ...st.ui, raidDraft: null, connectSuggestion: null }
+            : st.ui,
       })),
 
     setScenarioName: (name) => mutate((s) => ({ ...s, name })),
 
-    addEntityFromModel: (modelId, pos) =>
+    addEntityFromModel: (modelId, pos, screen) => {
+      const id = newId('ent')
       mutate((s) => {
         const model = s.library.find((m) => m.id === modelId)
         if (!model) return s
         const count = s.entities.filter((e) => e.specId === modelId).length
         const entity: Entity = {
-          id: newId('ent'),
+          id,
           name: `${model.name.split(':').pop()?.trim() ?? KIND_NAMES[model.kind]} ${count + 1}`,
           kind: model.kind,
           specId: modelId,
@@ -389,7 +435,15 @@ export const useStore = create<Store>()((set, get) => {
           notes: '',
         }
         return { ...s, entities: [...s.entities, entity] }
-      }),
+      })
+      if (!screen) return
+      const kind = get().scenario.entities.find((e) => e.id === id)?.kind
+      if (kind === 'sensor' || kind === 'effector' || kind === 'c2') {
+        // Always: a fresh drop should tell the user what this system CAN
+        // integrate with even when nothing compatible is in range yet.
+        get().openConnectSuggestion(id, screen, { always: true })
+      }
+    },
 
     updateEntity: (id, patch) =>
       mutate((s) => ({
@@ -442,7 +496,12 @@ export const useStore = create<Store>()((set, get) => {
         if (connectionId) {
           next = { ...next, connections: next.connections.filter((c) => c.id !== connectionId) }
         }
-        if (next !== s) set({ selection: EMPTY_SELECTION })
+        if (next !== s)
+          set((st) => ({
+            selection: EMPTY_SELECTION,
+            // Deleted endpoints invalidate any open connect offer.
+            ui: st.ui.connectSuggestion ? { ...st.ui, connectSuggestion: null } : st.ui,
+          }))
         return next
       }),
 
@@ -455,11 +514,77 @@ export const useStore = create<Store>()((set, get) => {
       if (!fromId || fromId === toId) return
       mutate((s) => {
         if (s.connections.some((c) => c.fromId === fromId && c.toId === toId)) return s
-        const fromKind = s.entities.find((e) => e.id === fromId)?.kind
-        const toKind = s.entities.find((e) => e.id === toId)?.kind
-        const label = fromKind && toKind ? defaultConnectionLabel(fromKind, toKind) : ''
-        const conn: Connection = { id: newId('con'), fromId, toId, label }
+        const from = s.entities.find((e) => e.id === fromId)
+        const to = s.entities.find((e) => e.id === toId)
+        const fromSpec = from?.specId ? s.library.find((m) => m.id === from.specId) : undefined
+        const toSpec = to?.specId ? s.library.find((m) => m.id === to.specId) : undefined
+        // A researched pairing types the hand-drawn link; anything else keeps
+        // the plain kind-default label.
+        const verdict = fromSpec && toSpec ? evaluateIntegration(fromSpec, toSpec) : null
+        const conn: Connection = verdict?.ok
+          ? {
+              id: newId('con'),
+              fromId,
+              toId,
+              label: verdict.label,
+              medium: verdict.medium,
+              confidence: verdict.confidence,
+              note: verdict.note,
+              latencyS: verdict.latencyS,
+            }
+          : {
+              id: newId('con'),
+              fromId,
+              toId,
+              label: from && to ? defaultConnectionLabel(from.kind, to.kind) : '',
+            }
         return { ...s, connections: [...s.connections, conn] }
+      })
+    },
+
+    openConnectSuggestion: (entityId, screen, opts) => {
+      const all = suggestLinksFor(get().scenario, entityId)
+      // Documented pairings inside their medium range wire themselves in one
+      // undoable step; the popup confirms them and only the probable/inferred
+      // remainder still needs a click.
+      const autoConnected = all.filter((c) => c.verdict.confidence === 'documented')
+      const candidates = all.filter((c) => c.verdict.confidence !== 'documented')
+      if (autoConnected.length > 0) {
+        mutate((s) => {
+          const added = typedConnections(s, autoConnected)
+          return added.length > 0 ? { ...s, connections: [...s.connections, ...added] } : s
+        })
+      }
+      // Informational mode needs integration facts to show; skip unprofiled
+      // (custom) models so the popup is never an empty box.
+      const specId = get().scenario.entities.find((e) => e.id === entityId)?.specId ?? null
+      const show =
+        candidates.length > 0 ||
+        autoConnected.length > 0 ||
+        (opts?.always === true && profileFor(specId) != null)
+      set((st) => ({
+        ui: {
+          ...st.ui,
+          connectSuggestion: show ? { entityId, screen, candidates, autoConnected } : null,
+        },
+      }))
+    },
+
+    dismissConnectSuggestion: () =>
+      set((st) => (st.ui.connectSuggestion ? { ui: { ...st.ui, connectSuggestion: null } } : st)),
+
+    applyConnectSuggestion: (indexes) => {
+      const suggestion = get().ui.connectSuggestion
+      get().dismissConnectSuggestion()
+      if (!suggestion) return
+      const chosen = indexes
+        .map((i) => suggestion.candidates[i])
+        .filter((c): c is SuggestedLink => c != null)
+      if (chosen.length === 0) return
+      mutate((s) => {
+        const added = typedConnections(s, chosen)
+        if (added.length === 0) return s
+        return { ...s, connections: [...s.connections, ...added] }
       })
     },
 
@@ -635,6 +760,7 @@ export const useStore = create<Store>()((set, get) => {
           calibrateA: null,
           calibrateB: null,
           raidDraft: null,
+          connectSuggestion: null,
         },
       })),
 

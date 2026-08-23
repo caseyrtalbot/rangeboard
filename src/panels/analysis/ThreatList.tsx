@@ -24,6 +24,11 @@ const STATUS_TEXT: Record<ThreatStatus, { label: string; short: string; cls: str
     cls: 'warn',
   },
   'weapons-hold': { label: 'Weapons hold (ROE)', short: 'Hold', cls: 'neutral' },
+  'no-fc-uplink': {
+    label: 'Interceptor needs its fire-control radar connected',
+    short: 'NO FC UPLINK',
+    cls: 'warn',
+  },
   'window-too-short': { label: 'Engagement window too short', short: 'Short window', cls: 'warn' },
   engageable: { label: 'Engageable', short: 'Engageable', cls: 'good' },
 }

@@ -4,6 +4,8 @@
  * Headings are degrees clockwise from north (up).
  */
 
+import type { IntegrationConfidence, LinkMedium } from './integration'
+
 export interface Vec2 {
   x: number
   y: number
@@ -201,6 +203,12 @@ export interface Connection {
   fromId: string
   toId: string
   label: string
+  // Typed-integration fields. All absent on old saves and hand-drawn links.
+  medium?: LinkMedium | null
+  confidence?: IntegrationConfidence | null
+  note?: string
+  /** Per-hop latency planning factor, seconds. Absent means 0. */
+  latencyS?: number
 }
 
 export type BoundaryType = 'range' | 'restricted' | 'asset' | 'corridor'

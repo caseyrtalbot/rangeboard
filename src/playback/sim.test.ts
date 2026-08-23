@@ -1,18 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
-import type { Roe, Scenario, SensorRole } from '../model/types'
+import type { EntityKind, Roe, Scenario, SensorRole } from '../model/types'
 import { newId } from '../model/types'
+import type { LinkMedium } from '../model/integration'
+import { MEDIUM_LATENCY_S } from '../model/integration'
 import { assessThreat, detectionsAt, memberPositions } from './sim'
 
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())
 }
 
-/** Radar + C2 + interceptor at the origin, connected sensor -> c2 -> effector. */
+/**
+ * Radar + C2 + interceptor at the origin, connected sensor -> c2 -> effector.
+ * The radar must be KuRFS: completeConnect types the links from the research
+ * data, and a typed chain to Coyote needs a fire-control source to close.
+ */
 function placeKillChain() {
   const st = useStore.getState()
-  st.addEntityFromModel('lib-lstar', { x: 0, y: 0 })
+  st.addEntityFromModel('lib-kurfs', { x: 0, y: 0 })
   st.addEntityFromModel('lib-faadc2', { x: 500, y: 0 })
   st.addEntityFromModel('lib-coyote', { x: 1000, y: 0 })
   const [radar, c2, eff] = useStore.getState().scenario.entities
@@ -654,5 +660,202 @@ describe('windows come only from effectors the detecting sensors can reach', () 
     const a = assessThreat(scenario, uasId)
     expect(a.status).toBe('no-kill-chain')
     expect(a.windowS).toBeNull()
+  })
+})
+
+/**
+ * Typed integration semantics: routes over researched links carry latency and
+ * the fc-uplink / requiredC2 / standalone rules. Scenarios are hand-built on
+ * the x axis (ROE free so the gate is first detection); connections carry the
+ * fields applyConnectSuggestion would set. Untyped links must keep today's
+ * behavior, which the rest of this file proves.
+ */
+describe('typed kill-chain routing', () => {
+  const common = { headingDeg: 0, color: null, notes: '' }
+
+  function ent(s: Scenario, kind: EntityKind, specId: string | null, x: number, headingDeg = 0): string {
+    const id = newId('e')
+    s.entities.push({ id, name: specId ?? kind, kind, specId, pos: { x, y: 0 }, ...common, headingDeg })
+    return id
+  }
+
+  function typedLink(s: Scenario, fromId: string, toId: string, medium: LinkMedium = 'cable') {
+    s.connections.push({
+      id: newId('c'),
+      fromId,
+      toId,
+      label: 'track data',
+      medium,
+      confidence: 'documented',
+      latencyS: MEDIUM_LATENCY_S[medium],
+    })
+  }
+
+  /** One Mavic overflying the origin west to east at 20 m/s. */
+  function overflight(s: Scenario, fromX: number, toX: number): string {
+    const uasId = ent(s, 'uas', 'lib-mavic3', fromX)
+    s.paths.push({
+      id: newId('p'),
+      entityId: uasId,
+      points: [
+        { x: fromX, y: 0 },
+        { x: toX, y: 0 },
+      ],
+      speedMps: 20,
+      startDelayS: 0,
+    })
+    return uasId
+  }
+
+  /**
+   * EchoShield -> FAAD C2 -> Coyote over typed links; KuRFS optional. The
+   * research denies EchoShield as a Coyote fire-control source, so without
+   * KuRFS the chain has track data but no Ku-band uplink. EchoShield's 130 deg
+   * wedge faces west, into the inbound leg.
+   */
+  function coyoteLaydown(withKurfs: boolean): { s: Scenario; uasId: string } {
+    const s = emptyScenario()
+    s.roe = 'free'
+    const radar = ent(s, 'sensor', 'lib-echoshield', 0, 270)
+    const c2 = ent(s, 'c2', 'lib-faadc2', 500)
+    const coyote = ent(s, 'effector', 'lib-coyote', 1000)
+    typedLink(s, radar, c2)
+    typedLink(s, c2, coyote)
+    if (withKurfs) typedLink(s, ent(s, 'sensor', 'lib-kurfs', 0), c2)
+    const uasId = overflight(s, -12000, 12000)
+    return { s, uasId }
+  }
+
+  it('Coyote routed only via C2 without its fire-control radar is no-fc-uplink', () => {
+    const { s, uasId } = coyoteLaydown(false)
+    const a = assessThreat(s, uasId)
+    expect(a.status).toBe('no-fc-uplink')
+    // The blocked window stays visible as geometry.
+    expect(a.windowS).not.toBeNull()
+    expect(a.effectorWindows.length).toBeGreaterThan(0)
+  })
+
+  it('KuRFS connected into the same C2 satisfies the fc uplink', () => {
+    const { s, uasId } = coyoteLaydown(true)
+    expect(assessThreat(s, uasId).status).toBe('engageable')
+  })
+
+  it('a cue-role pairing is not fire control: TPQ-50 cannot close a Coyote engagement', () => {
+    // lib-lstar carries a documented 'cue' pair with Coyote (FS-LIDS
+    // surveillance cueing); only fcSources / fc-uplink pairs may close it.
+    const s = emptyScenario()
+    s.roe = 'free'
+    const lstar = ent(s, 'sensor', 'lib-lstar', 0)
+    const c2 = ent(s, 'c2', 'lib-faadc2', 500)
+    const coyote = ent(s, 'effector', 'lib-coyote', 1000)
+    typedLink(s, lstar, c2)
+    typedLink(s, c2, coyote)
+    const uasId = overflight(s, -12000, 12000)
+    expect(assessThreat(s, uasId).status).toBe('no-fc-uplink')
+  })
+
+  it('Lattice satisfies the Coyote requiredC2 gate like FAAD C2 does', () => {
+    const s = emptyScenario()
+    s.roe = 'free'
+    const kurfs = ent(s, 'sensor', 'lib-kurfs', 0)
+    const lattice = ent(s, 'c2', 'lib-lattice', 500)
+    const coyote = ent(s, 'effector', 'lib-coyote', 1000)
+    typedLink(s, kurfs, lattice)
+    typedLink(s, lattice, coyote)
+    const uasId = overflight(s, -12000, 12000)
+    const a = assessThreat(s, uasId)
+    expect(a.status).toBe('engageable')
+    expect(a.windowEffectorId).toBe(coyote)
+  })
+
+  it('a standalone LPWS with no connections still completes the kill chain', () => {
+    const s = emptyScenario()
+    s.roe = 'free'
+    ent(s, 'sensor', 'lib-lstar', 0)
+    const lpws = ent(s, 'effector', 'lib-lpws', 0)
+    const uasId = overflight(s, -3000, 3000)
+    const a = assessThreat(s, uasId)
+    expect(a.status).toBe('engageable')
+    expect(a.windowEffectorId).toBe(lpws)
+  })
+
+  /** Unprofiled test gun (1000 m, engage time 0) so no researched gate applies. */
+  function pushGunModel(s: Scenario, engageTimeS = 0): string {
+    const id = newId('m-gun')
+    s.library.push({
+      id,
+      name: 'Test gun',
+      kind: 'effector',
+      description: '',
+      color: '#00f',
+      builtin: false,
+      effector: { effectorType: 'gun', minRangeM: 0, maxRangeM: 1000, engageTimeS },
+    })
+    return id
+  }
+
+  it('routes sensor -> Lattice -> FAAD C2 -> effector across the c2-c2 link', () => {
+    const s = emptyScenario()
+    s.roe = 'free'
+    const lstar = ent(s, 'sensor', 'lib-lstar', 0)
+    const lattice = ent(s, 'c2', 'lib-lattice', 500)
+    const faad = ent(s, 'c2', 'lib-faadc2', 600)
+    const gun = ent(s, 'effector', pushGunModel(s), 0)
+    typedLink(s, lstar, lattice)
+    typedLink(s, faad, gun)
+    const uasId = overflight(s, -3000, 3000)
+    // The chain is split in two until the c2-c2 interop link exists.
+    expect(assessThreat(s, uasId).status).toBe('no-kill-chain')
+    typedLink(s, lattice, faad)
+    const a = assessThreat(s, uasId)
+    expect(a.status).toBe('engageable')
+    expect(a.windowEffectorId).toBe(gun)
+  })
+
+  it('the c2-c2 link routes against its stored direction (interop is mutual)', () => {
+    const s = emptyScenario()
+    s.roe = 'free'
+    const lstar = ent(s, 'sensor', 'lib-lstar', 0)
+    const lattice = ent(s, 'c2', 'lib-lattice', 500)
+    const faad = ent(s, 'c2', 'lib-faadc2', 600)
+    ent(s, 'effector', pushGunModel(s), 0)
+    typedLink(s, lstar, lattice)
+    typedLink(s, faad, s.entities[3].id)
+    typedLink(s, faad, lattice) // stored opposite to the track flow
+    const uasId = overflight(s, -3000, 3000)
+    expect(assessThreat(s, uasId).status).toBe('engageable')
+  })
+
+  it('mesh-radio hop latency shrinks the usable window', () => {
+    // The gun ring crossing yields a ~99.5 s gated window: engage time 99
+    // fits it bare (99.5 >= 99) but not plus two mesh-radio hops (99.5 < 101).
+    const s = emptyScenario()
+    s.roe = 'free'
+    const radarModelId = newId('m-sen')
+    s.library.push({
+      id: radarModelId,
+      name: 'Test radar',
+      kind: 'sensor',
+      description: '',
+      color: '#0f0',
+      builtin: false,
+      sensor: {
+        sensorType: 'radar',
+        role: 'early-warning',
+        detectRangeM: 5000,
+        classifyRangeM: null,
+        sectorDeg: 360,
+      },
+    })
+    const radar = ent(s, 'sensor', radarModelId, 0)
+    const c2 = ent(s, 'c2', null, 500)
+    const gun = ent(s, 'effector', pushGunModel(s, 99), 0)
+    typedLink(s, radar, c2, 'mesh-radio')
+    typedLink(s, c2, gun, 'mesh-radio')
+    const uasId = overflight(s, -3007, 3007)
+    expect(assessThreat(s, uasId).status).toBe('window-too-short')
+    // The same laydown over untyped links keeps its legacy zero latency.
+    for (const c of s.connections) Object.assign(c, { confidence: null, latencyS: 0 })
+    expect(assessThreat(s, uasId).status).toBe('engageable')
   })
 })

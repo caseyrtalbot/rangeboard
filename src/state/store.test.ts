@@ -270,3 +270,175 @@ describe('store scenario actions', () => {
     expect(f.name).toBe('Untitled scenario T+1:30 canvas')
   })
 })
+
+describe('connect suggestions', () => {
+  beforeEach(reset)
+
+  /** RPS-42 radar 200 m from FAAD C2: a documented pair over cable (1500 m radius). */
+  function placePair() {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-faadc2', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-rps42', { x: 200, y: 0 })
+    const [c2, radar] = useStore.getState().scenario.entities
+    return { c2, radar }
+  }
+
+  /** RfOne 200 m from Lattice: probable (shared cot-tak), never auto-connected. */
+  function placeProbablePair() {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lattice', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-rfone', { x: 200, y: 0 })
+    const [c2, rf] = useStore.getState().scenario.entities
+    return { c2, rf }
+  }
+
+  it('a documented pair in range auto-connects; the popup confirms it', () => {
+    const { c2, radar } = placePair()
+    useStore.getState().openConnectSuggestion(radar.id, { x: 10, y: 20 })
+    const st = useStore.getState()
+    const conn = st.scenario.connections.find((c) => c.fromId === radar.id && c.toId === c2.id)
+    expect(conn).toBeDefined()
+    expect(conn!.confidence).toBe('documented')
+    expect(conn!.medium).toBe('cable')
+    expect(conn!.label).toBe('track data')
+    const sug = st.ui.connectSuggestion
+    expect(sug).not.toBeNull()
+    expect(sug!.entityId).toBe(radar.id)
+    expect(sug!.screen).toEqual({ x: 10, y: 20 })
+    expect(sug!.autoConnected.map((a) => a.toId)).toContain(c2.id)
+    expect(sug!.candidates.map((a) => a.toId)).not.toContain(c2.id)
+    // One undo removes the auto-created links.
+    useStore.getState().undo()
+    expect(useStore.getState().scenario.connections).toHaveLength(0)
+  })
+
+  it('a probable pair is offered, never auto-connected', () => {
+    const { c2, rf } = placeProbablePair()
+    useStore.getState().openConnectSuggestion(rf.id, { x: 0, y: 0 })
+    const st = useStore.getState()
+    expect(st.scenario.connections).toHaveLength(0)
+    const cand = st.ui.connectSuggestion?.candidates.find((c) => c.toId === c2.id)
+    expect(cand).toBeDefined()
+    expect(cand!.verdict.confidence).toBe('probable')
+  })
+
+  it('reopening after auto-connect offers nothing again', () => {
+    const { radar } = placePair()
+    useStore.getState().openConnectSuggestion(radar.id, { x: 0, y: 0 })
+    expect(useStore.getState().scenario.connections).toHaveLength(1)
+    useStore.getState().dismissConnectSuggestion()
+    useStore.getState().openConnectSuggestion(radar.id, { x: 0, y: 0 })
+    expect(useStore.getState().scenario.connections).toHaveLength(1)
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+  })
+
+  it('always:true opens the informational popup with zero candidates', () => {
+    const st = useStore.getState()
+    // Two radars never pair, but KuRFS has a researched profile to show.
+    st.addEntityFromModel('lib-kurfs', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-echoshield', { x: 100, y: 0 })
+    const kurfs = useStore.getState().scenario.entities[0]
+    useStore.getState().openConnectSuggestion(kurfs.id, { x: 0, y: 0 }, { always: true })
+    const sug = useStore.getState().ui.connectSuggestion
+    expect(sug).not.toBeNull()
+    expect(sug!.candidates).toHaveLength(0)
+  })
+
+  it('always:true stays null for unprofiled custom models', () => {
+    const st = useStore.getState()
+    const modelId = st.addModel('sensor')
+    st.addEntityFromModel(modelId, { x: 0, y: 0 })
+    const ent = useStore.getState().scenario.entities[0]
+    useStore.getState().openConnectSuggestion(ent.id, { x: 0, y: 0 }, { always: true })
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+  })
+
+  it('openConnectSuggestion sets null when nothing is in medium range', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-faadc2', { x: 0, y: 0 })
+    // Beyond the 1500 m cable suggest radius.
+    st.addEntityFromModel('lib-rps42', { x: 2000, y: 0 })
+    const radar = useStore.getState().scenario.entities[1]
+    useStore.getState().openConnectSuggestion(radar.id, { x: 0, y: 0 })
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+    expect(useStore.getState().scenario.connections).toHaveLength(0)
+  })
+
+  it('applyConnectSuggestion creates a typed connection in one undo step', () => {
+    const { c2, rf } = placeProbablePair()
+    useStore.getState().openConnectSuggestion(rf.id, { x: 0, y: 0 })
+    useStore.getState().applyConnectSuggestion([0])
+    const s = useStore.getState().scenario
+    expect(s.connections).toHaveLength(1)
+    const conn = s.connections[0]
+    expect(conn.fromId).toBe(rf.id)
+    expect(conn.toId).toBe(c2.id)
+    expect(conn.label).toBe('track data')
+    expect(conn.confidence).toBe('probable')
+    expect(conn.latencyS).toBe(0.5)
+    expect(conn.note).toBeTruthy()
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+    useStore.getState().undo()
+    expect(useStore.getState().scenario.connections).toHaveLength(0)
+  })
+
+  it('applyConnectSuggestion skips pairs connected after the offer opened', () => {
+    const { c2, rf } = placeProbablePair()
+    useStore.getState().openConnectSuggestion(rf.id, { x: 0, y: 0 })
+    useStore.getState().beginConnect(rf.id)
+    useStore.getState().completeConnect(c2.id)
+    useStore.getState().applyConnectSuggestion([0])
+    expect(useStore.getState().scenario.connections).toHaveLength(1)
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+  })
+
+  it('addEntityFromModel with a screen point opens the suggestion and auto-connects', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-faadc2', { x: 0, y: 0 })
+    useStore.getState().addEntityFromModel('lib-rps42', { x: 200, y: 0 }, { x: 40, y: 60 })
+    const sug = useStore.getState().ui.connectSuggestion
+    const radar = useStore.getState().scenario.entities[1]
+    expect(sug).not.toBeNull()
+    expect(sug!.entityId).toBe(radar.id)
+    expect(sug!.screen).toEqual({ x: 40, y: 60 })
+    expect(sug!.autoConnected).toHaveLength(1)
+    expect(useStore.getState().scenario.connections).toHaveLength(1)
+  })
+
+  it('undo and deleteSelection clear an open suggestion', () => {
+    const { radar } = placePair()
+    useStore.getState().openConnectSuggestion(radar.id, { x: 0, y: 0 })
+    expect(useStore.getState().ui.connectSuggestion).not.toBeNull()
+    useStore.getState().undo()
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+    useStore.getState().redo()
+    useStore.getState().openConnectSuggestion(radar.id, { x: 0, y: 0 })
+    useStore.getState().select({ entityIds: [radar.id] })
+    useStore.getState().deleteSelection()
+    expect(useStore.getState().ui.connectSuggestion).toBeNull()
+  })
+
+  it('completeConnect types a researched hand-drawn link', () => {
+    const { c2, radar } = placePair()
+    useStore.getState().beginConnect(radar.id)
+    useStore.getState().completeConnect(c2.id)
+    const conn = useStore.getState().scenario.connections[0]
+    expect(conn.label).toBe('track data')
+    expect(conn.medium).toBe('cable')
+    expect(conn.confidence).toBe('documented')
+    expect(conn.latencyS).toBe(0.5)
+  })
+
+  it('completeConnect keeps a denied pair untyped with the kind-default label', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-coyote', { x: 200, y: 0 })
+    const [radar, eff] = useStore.getState().scenario.entities
+    useStore.getState().beginConnect(radar.id)
+    useStore.getState().completeConnect(eff.id)
+    const conn = useStore.getState().scenario.connections[0]
+    expect(conn.label).toBe('direct cue')
+    expect(conn.confidence).toBeUndefined()
+    expect(conn.medium).toBeUndefined()
+  })
+})

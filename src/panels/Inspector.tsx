@@ -5,6 +5,8 @@ import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
 import type { RaidDraft } from '../state/store'
 import { formatDistance, formatSpeed, pathLength } from '../geometry/geo'
+import { evaluateIntegration, integrationSummary } from '../model/integration'
+import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
@@ -232,6 +234,79 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
         </button>
         <button onClick={cancelRaidDraft}>Cancel</button>
       </div>
+    </div>
+  )
+}
+
+const INTEGRATION_BADGE: Record<IntegrationConfidence, string> = {
+  documented: 'DOC',
+  probable: 'PROB',
+  inferred: 'INF',
+}
+
+/**
+ * What this system is known to integrate with (research-sourced), independent
+ * of what is currently on the canvas. Answers "what connects to this?" even
+ * when nothing compatible is placed yet.
+ */
+function IntegrationSection({ entity }: { entity: Entity }) {
+  const scenario = useStore((s) => s.scenario)
+  const camera = useStore((s) => s.camera)
+  const openConnectSuggestion = useStore((s) => s.openConnectSuggestion)
+  const [showAll, setShowAll] = useState(false)
+  const summary = integrationSummary(entity.specId, scenario.library)
+  if (!summary) return null
+  const shown = showAll ? summary.partners : summary.partners.slice(0, 6)
+
+  function suggest() {
+    // Popup coordinates are canvas-host px; clamp so it stays in view even
+    // when the entity sits off-screen.
+    const host = document.querySelector('[data-testid="canvas-host"]')
+    const w = host instanceof HTMLElement ? host.clientWidth : 800
+    const h = host instanceof HTMLElement ? host.clientHeight : 600
+    const x = Math.min(Math.max(entity.pos.x * camera.scale + camera.x + 16, 8), w - 280)
+    const y = Math.min(Math.max(entity.pos.y * camera.scale + camera.y + 16, 8), Math.max(h - 260, 8))
+    openConnectSuggestion(entity.id, { x, y }, { always: true })
+  }
+
+  return (
+    <div>
+      <div className="panel-subtitle">INTEGRATIONS</div>
+      {summary.program && <div className="spec-summary">{summary.program}</div>}
+      {summary.guidance && <div className="spec-summary">{summary.guidance}</div>}
+      {summary.partners.length === 0 && (
+        <div className="spec-summary">No known network integrations.</div>
+      )}
+      {shown.map((p) => (
+        <div key={p.specId} className="suggest-row" title={p.source ? `${p.note} [${p.source}]` : p.note}>
+          <div className="suggest-info">
+            <div>{p.name}</div>
+            <div className="suggest-meta">
+              <span className="suggest-badge">{INTEGRATION_BADGE[p.confidence]}</span>
+              {p.role.replace('-', ' ')}
+            </div>
+          </div>
+        </div>
+      ))}
+      {!showAll && summary.partners.length > 6 && (
+        <button className="mini" onClick={() => setShowAll(true)}>
+          Show all {summary.partners.length}
+        </button>
+      )}
+      {summary.denied.length > 0 && (
+        <div className="spec-summary">
+          No link:{' '}
+          {summary.denied.map((d, i) => (
+            <span key={d.specId} title={d.reason}>
+              {i > 0 ? ', ' : ''}
+              {d.name}
+            </span>
+          ))}
+        </div>
+      )}
+      <button className="mini" onClick={suggest}>
+        Suggest connections
+      </button>
     </div>
   )
 }
@@ -596,6 +671,8 @@ function EntityInspector({ entity }: { entity: Entity }) {
         </div>
       )}
 
+      {blue && <IntegrationSection entity={entity} />}
+
       <div className="inspector-actions">
         <button onClick={() => setTool('connect')}>Connect from here</button>
         <button className="danger" onClick={deleteSelection}>
@@ -690,6 +767,11 @@ export function Inspector() {
     const { updateConnection, deleteSelection } = useStore.getState()
     const from = scenario.entities.find((e) => e.id === connection.fromId)
     const to = scenario.entities.find((e) => e.id === connection.toId)
+    // The source citation is not stored on the connection; re-judge the pair.
+    const fromSpec = from?.specId ? scenario.library.find((m) => m.id === from.specId) : undefined
+    const toSpec = to?.specId ? scenario.library.find((m) => m.id === to.specId) : undefined
+    const verdict = fromSpec && toSpec ? evaluateIntegration(fromSpec, toSpec) : null
+    const source = connection.confidence != null && verdict?.ok ? verdict.source : undefined
     return (
       <div className="inspector-body">
         <div className="panel-subtitle">CONNECTION</div>
@@ -707,6 +789,14 @@ export function Inspector() {
           id="connection-label-options"
           values={[...new Set(scenario.connections.map((c) => c.label).filter(Boolean))]}
         />
+        {connection.confidence != null && (
+          <div className="spec-summary">
+            {connection.medium ?? 'unspecified medium'} · {connection.confidence} · latency{' '}
+            {connection.latencyS ?? 0} s
+          </div>
+        )}
+        {connection.note && <div className="spec-summary">{connection.note}</div>}
+        {source && <div className="spec-summary">Source: {source}</div>}
         <button className="danger" onClick={deleteSelection}>
           Delete
         </button>

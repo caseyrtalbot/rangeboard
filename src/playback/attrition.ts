@@ -12,8 +12,9 @@ import type {
 import { defaultJamBehavior, entityActive } from '../model/types'
 import { dist, pointInSector, posAtTime } from '../geometry/geo'
 import type { ThreatAssessment } from './sim'
-import { assessAllThreats, connectedEffectorIds, memberPositions } from './sim'
+import { assessAllThreats, killChainRoutes, memberPositions } from './sim'
 import { effectivePathDelayS } from './raid'
+import { profileFor } from '../model/integration'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls: each
@@ -332,6 +333,9 @@ export function resolveEngagements(
     (a) => a.status !== 'no-path',
   )
 
+  // Earliest track-arrival latency per effector: its first salvo waits for it.
+  const routeDelayS = new Map<string, number>()
+
   const threats: ThreatState[] = assessments.map((a) => {
     const entity = scenario.entities.find((e) => e.id === a.uasId)!
     const uasSpec = specFor(scenario, entity)?.uas
@@ -339,9 +343,19 @@ export function resolveEngagements(
     const count = entity.formation && entity.formation.count > 1 ? entity.formation.count : 1
     const windows = new Map<string, Array<[number, number]>>()
     if (a.status === 'engageable') {
-      const connected = connectedEffectorIds(scenario, new Set(a.detectingSensorIds))
+      const routes = killChainRoutes(scenario, new Set(a.detectingSensorIds))
       for (const w of a.effectorWindows) {
-        if (connected.has(w.effectorId)) windows.set(w.effectorId, w.intervals)
+        const route = routes.get(w.effectorId)
+        if (!route) continue
+        // Same fc-uplink gate as assessThreat: a fully typed route without a
+        // fire-control source cannot fire.
+        if (route.typed && route.fcSourceIds.length === 0) {
+          const eff = scenario.entities.find((e) => e.id === w.effectorId)
+          if (profileFor(eff?.specId ?? null)?.guidance === 'fc-uplink') continue
+        }
+        windows.set(w.effectorId, w.intervals)
+        const d = routeDelayS.get(w.effectorId)
+        if (d == null || route.latencyS < d) routeDelayS.set(w.effectorId, route.latencyS)
       }
     }
     return {
@@ -382,7 +396,7 @@ export function resolveEngagements(
       cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], DT),
       engageTimeS: spec.engageTimeS ?? 0,
       rounds: spec.magazineSize ?? null,
-      nextReadyS: 0,
+      nextReadyS: routeDelayS.get(e.id) ?? 0,
       shotsFired: 0,
       jamSalvos: 0,
     })

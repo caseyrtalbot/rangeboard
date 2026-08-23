@@ -22,6 +22,7 @@ import { layoutLabels } from './labelLayout'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 import { HudLayer } from './layers/HudLayer'
 import { ContextMenu } from './ContextMenu'
+import { ConnectSuggestPopup } from './ConnectSuggestPopup'
 
 const MIN_SCALE = 0.0005
 const MAX_SCALE = 20
@@ -301,10 +302,11 @@ export function CanvasStage() {
         setDropActive(false)
         if (!containerRef.current) return
         const rect = containerRef.current.getBoundingClientRect()
-        const world = toWorld({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+        const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+        const world = toWorld(screen)
         const modelId = e.dataTransfer.getData('text/rangeboard-model')
         const systemId = e.dataTransfer.getData('text/rangeboard-system')
-        if (modelId) addEntityFromModel(modelId, world)
+        if (modelId) addEntityFromModel(modelId, world, screen)
         else if (systemId) addSystemFromPreset(systemId, world)
       }}
     >
@@ -379,6 +381,7 @@ export function CanvasStage() {
       )}
       <HudLayer mouseWorld={mouseWorld} />
       <ContextMenu />
+      <ConnectSuggestPopup />
     </div>
   )
 }

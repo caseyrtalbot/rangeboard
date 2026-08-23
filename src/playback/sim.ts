@@ -1,5 +1,6 @@
 import type { Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
 import { defaultSensorRole, entityActive } from '../model/types'
+import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInSector, posAtTime } from '../geometry/geo'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
 import { effectivePathDelayS } from './raid'
@@ -182,6 +183,8 @@ export type ThreatStatus =
   | 'no-kill-chain'
   /** ROE 'hold': analysis-only posture, no engagement windows. */
   | 'weapons-hold'
+  /** Routes exist but every routed fc-uplink effector lacks its fire-control sensor. */
+  | 'no-fc-uplink'
   | 'window-too-short'
   | 'engageable'
 
@@ -256,24 +259,181 @@ export interface ThreatAssessment {
 
 const DT = 0.5
 
-/** Effector ids reachable from the given sensors, directly or through one C2 hop. */
-export function connectedEffectorIds(scenario: Scenario, sensorIds: Set<string>): Set<string> {
-  // Disabled entities drop out of the chain entirely.
-  const kinds = new Map(scenario.entities.filter(entityActive).map((e) => [e.id, e.kind]))
-  const c2FromSensor = new Set<string>()
-  for (const c of scenario.connections) {
-    if (sensorIds.has(c.fromId) && kinds.get(c.toId) === 'c2') c2FromSensor.add(c.toId)
-  }
-  // Allow direct sensor -> effector links for architectures without a C2 hop.
-  const out = new Set<string>()
-  for (const c of scenario.connections) {
-    if (kinds.get(c.toId) !== 'effector') continue
-    if (sensorIds.has(c.fromId) || c2FromSensor.has(c.fromId)) out.add(c.toId)
-  }
-  return out
+/**
+ * One effector's best kill-chain route from the detecting sensors.
+ * latencyS is the minimum summed edge latency over every valid path.
+ */
+export interface KillChainRoute {
+  effectorId: string
+  latencyS: number
+  /** C2 entities on the min-latency path, in hop order (empty for direct/standalone). */
+  viaC2Ids: string[]
+  /**
+   * Detecting sensors on any valid path that satisfy the effector's
+   * fire-control uplink: profile fcSources, or a researched fc-uplink pairing
+   * with the effector. A cue-role pairing is NOT fire control (TPQ-50 cues
+   * Coyote inside FS-LIDS but cannot close the engagement).
+   */
+  fcSourceIds: string[]
+  /**
+   * True when every valid path is fully typed (researched links only): the
+   * profile's fc-uplink gate binds. Any untyped hand-drawn edge — or a
+   * standalone effector's own-radar path — keeps legacy semantics.
+   */
+  typed: boolean
 }
 
-/** True when some detecting sensor routes through a C2 node to some effector. */
+/** C2-to-C2 interop hops a route may traverse (interop is mutual: both directions). */
+const MAX_C2_HOPS = 2
+
+
+/**
+ * Kill-chain routing graph over active entities. Paths run sensor -> effector
+ * direct, or sensor -> c2 (-> c2, up to MAX_C2_HOPS interop hops) -> effector;
+ * sensor->c2 and c2->effector edges keep their stored direction, c2-c2 edges
+ * traverse both ways. Edge latency is the connection's latencyS (absent = 0).
+ * A fully typed path to an effector whose profile sets requiredC2 only counts
+ * when a qualifying C2 sits on it — a failing path is no path at all.
+ * Standalone effectors (own radar / operator-aimed) always get a zero-latency
+ * route with no via.
+ */
+export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map<string, KillChainRoute> {
+  // Disabled entities drop out of the chain entirely.
+  const active = scenario.entities.filter(entityActive)
+  const byId = new Map(active.map((e) => [e.id, e]))
+
+  interface Edge {
+    toId: string
+    latencyS: number
+    typed: boolean
+  }
+  const out = new Map<string, Edge[]>()
+  const c2Adj = new Map<string, Edge[]>()
+  const push = (m: Map<string, Edge[]>, key: string, e: Edge) => {
+    const list = m.get(key)
+    if (list) list.push(e)
+    else m.set(key, [e])
+  }
+  for (const c of scenario.connections) {
+    const from = byId.get(c.fromId)
+    const to = byId.get(c.toId)
+    if (!from || !to) continue
+    const latencyS = c.latencyS ?? 0
+    const typed = c.confidence != null
+    if (from.kind === 'c2' && to.kind === 'c2') {
+      push(c2Adj, c.fromId, { toId: c.toId, latencyS, typed })
+      push(c2Adj, c.toId, { toId: c.fromId, latencyS, typed })
+    } else {
+      push(out, c.fromId, { toId: c.toId, latencyS, typed })
+    }
+  }
+
+  interface Scratch {
+    latencyS: number
+    viaC2Ids: string[]
+    fcSourceIds: Set<string>
+    /** Stays true only while EVERY recorded path is fully typed. */
+    typed: boolean
+  }
+  const best = new Map<string, Scratch>()
+
+  const record = (
+    sensor: Entity,
+    effectorId: string,
+    latencyS: number,
+    viaC2Ids: string[],
+    pathTyped: boolean,
+  ) => {
+    const effSpecId = byId.get(effectorId)?.specId ?? null
+    const profile = profileFor(effSpecId)
+    // requiredC2 gate binds on fully typed paths only.
+    if (pathTyped && profile?.requiredC2?.length) {
+      const satisfied = viaC2Ids.some((id) => {
+        const specId = byId.get(id)?.specId
+        return specId != null && profile.requiredC2!.includes(specId)
+      })
+      if (!satisfied) return
+    }
+    let s = best.get(effectorId)
+    if (!s) {
+      s = { latencyS, viaC2Ids, fcSourceIds: new Set(), typed: pathTyped }
+      best.set(effectorId, s)
+    } else {
+      if (latencyS < s.latencyS) {
+        s.latencyS = latencyS
+        s.viaC2Ids = viaC2Ids
+      }
+      s.typed = s.typed && pathTyped
+    }
+    const fcMatch =
+      sensor.specId != null &&
+      (profile?.fcSources?.includes(sensor.specId) ||
+        profile?.pairs.some(
+          (p) => p.withSpecId === sensor.specId && p.role === 'fc-uplink',
+        ) ||
+        profileFor(sensor.specId)?.pairs.some(
+          (p) => p.withSpecId === effSpecId && p.role === 'fc-uplink',
+        ))
+    if (fcMatch) s.fcSourceIds.add(sensor.id)
+  }
+
+  const walkC2 = (sensor: Entity, chain: string[], latencyS: number, typed: boolean) => {
+    const last = chain[chain.length - 1]
+    for (const e of out.get(last) ?? []) {
+      if (byId.get(e.toId)?.kind === 'effector') {
+        record(sensor, e.toId, latencyS + e.latencyS, chain, typed && e.typed)
+      }
+    }
+    if (chain.length > MAX_C2_HOPS) return
+    for (const e of c2Adj.get(last) ?? []) {
+      if (chain.includes(e.toId)) continue
+      walkC2(sensor, [...chain, e.toId], latencyS + e.latencyS, typed && e.typed)
+    }
+  }
+
+  for (const sensorId of sensorIds) {
+    const sensor = byId.get(sensorId)
+    if (!sensor || sensor.kind !== 'sensor') continue
+    for (const e of out.get(sensorId) ?? []) {
+      const next = byId.get(e.toId)
+      if (next?.kind === 'effector') record(sensor, e.toId, e.latencyS, [], e.typed)
+      else if (next?.kind === 'c2') walkC2(sensor, [e.toId], e.latencyS, e.typed)
+    }
+  }
+
+  // Standalone effectors complete their role with zero connections: their
+  // own-radar path is a zero-latency legacy route that wins any latency race.
+  for (const e of active) {
+    if (e.kind !== 'effector' || !profileFor(e.specId)?.standalone) continue
+    const s = best.get(e.id)
+    if (s) {
+      s.latencyS = 0
+      s.viaC2Ids = []
+      s.typed = false
+    } else {
+      best.set(e.id, { latencyS: 0, viaC2Ids: [], fcSourceIds: new Set(), typed: false })
+    }
+  }
+
+  const routes = new Map<string, KillChainRoute>()
+  for (const [effectorId, s] of best) {
+    routes.set(effectorId, {
+      effectorId,
+      latencyS: s.latencyS,
+      viaC2Ids: s.viaC2Ids,
+      fcSourceIds: [...s.fcSourceIds],
+      typed: s.typed,
+    })
+  }
+  return routes
+}
+
+/** Effector ids with a kill-chain route from the given sensors (incl. standalone). */
+export function connectedEffectorIds(scenario: Scenario, sensorIds: Set<string>): Set<string> {
+  return new Set(killChainRoutes(scenario, sensorIds).keys())
+}
+
+/** True when some effector has a kill-chain route (or completes one standalone). */
 function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean {
   return connectedEffectorIds(scenario, sensorIds).size > 0
 }
@@ -333,6 +493,10 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     distM: Number.POSITIVE_INFINITY,
   }
 
+  // Classification-loop route cache; see the rebuild rule at the use site.
+  let connectedCache: Set<string> | null = null
+  let connectedCacheSize = -1
+
   const delayS = effectivePathDelayS(scenario, path)
   for (let t = delayS; t <= duration; t += DT) {
     const sample = posAtTime(path.points, speed, delayS, t)
@@ -366,8 +530,14 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       }
       // Proximity is measured to effectors reachable from the sensors that
       // have held the track so far (plain distance, matching the source).
+      // detectingSensors only grows, so the route set is rebuilt on a new
+      // sensor joining, not every 0.5 s sample.
       let nearestRatio = Number.POSITIVE_INFINITY
-      const connected = connectedEffectorIds(scenario, detectingSensors)
+      if (connectedCache == null || connectedCacheSize !== detectingSensors.size) {
+        connectedCache = connectedEffectorIds(scenario, detectingSensors)
+        connectedCacheSize = detectingSensors.size
+      }
+      const connected = connectedCache
       for (const eff of effectors) {
         if (!connected.has(eff.id)) continue
         const spec = modelFor(scenario, eff)?.effector
@@ -440,33 +610,46 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     roe === 'hold' ? null : roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
   base.engageGateS = gateS
   // A gated interval is USABLE for an effector when its gated length covers
-  // that effector's OWN engage time. The longest usable interval wins the
-  // windowS slot (ties: first in entity order). When no interval is usable
-  // but gated geometry exists, windowS carries the longest gated interval as
-  // informative geometry and the status below is window-too-short.
+  // that effector's OWN engage time plus the route latency. The longest usable
+  // interval wins the windowS slot (ties: first in entity order). When no
+  // interval is usable but gated geometry exists, windowS carries the longest
+  // gated interval as informative geometry and the status below is
+  // window-too-short (or no-fc-uplink when the fc gate alone blocked it).
   let anyUsable = false
+  let fcBlockedUsable = false
   if (gateS != null) {
-    // Only effectors that can receive a track from the detecting sensors can
-    // fire (resolveEngagements uses the same connected set). Unconnected
-    // geometry stays available in effectorWindows.
-    const connected = connectedEffectorIds(scenario, detectingSensors)
+    // Only effectors with a route from the detecting sensors can fire
+    // (resolveEngagements uses the same route set). Unrouted geometry stays
+    // available in effectorWindows.
+    const routes = killChainRoutes(scenario, detectingSensors)
     let bestUsableLen = -1
     let bestGatedLen = 0
     let gatedWindow: [number, number] | null = null
     let gatedEffectorId: string | null = null
     for (const eff of effectors) {
-      if (!connected.has(eff.id)) continue
+      const route = routes.get(eff.id)
+      if (!route) continue
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
-      const engageTimeS = spec.engageTimeS ?? 0
+      const needS = (spec.engageTimeS ?? 0) + route.latencyS
+      // A fully typed route to an fc-uplink effector needs a researched
+      // fire-control sensor on the chain; without one its windows stay
+      // geometry only.
+      const fcBlocked =
+        route.typed &&
+        profileFor(eff.specId)?.guidance === 'fc-uplink' &&
+        route.fcSourceIds.length === 0
       for (const [s0, s1] of effectorInRange.get(eff.id) ?? []) {
         const start = Math.max(s0, gateS)
         const len = s1 - start
         if (len < 0) continue
-        if (len >= engageTimeS && len > bestUsableLen) {
-          bestUsableLen = len
-          base.windowS = [start, s1]
-          base.windowEffectorId = eff.id
+        if (len >= needS) {
+          if (fcBlocked) fcBlockedUsable = true
+          else if (len > bestUsableLen) {
+            bestUsableLen = len
+            base.windowS = [start, s1]
+            base.windowEffectorId = eff.id
+          }
         }
         if (len > bestGatedLen) {
           bestGatedLen = len
@@ -493,10 +676,11 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   } else if (roe === 'tight' && base.classificationAtS.hostileAtS == null) {
     base.status = 'not-confirmed'
   } else {
-    // Engageable when ANY connected effector has a usable interval; a long
+    // Engageable when ANY routed effector has a usable interval; a long
     // window that only fits another effector's engage time must not shadow a
-    // shorter window some effector can actually use.
-    base.status = anyUsable ? 'engageable' : 'window-too-short'
+    // shorter window some effector can actually use. When the fc-uplink gate
+    // is the ONLY thing blocking a usable window, say so.
+    base.status = anyUsable ? 'engageable' : fcBlockedUsable ? 'no-fc-uplink' : 'window-too-short'
   }
   return base
 }

@@ -24,6 +24,13 @@ export function ConnectionLayer() {
         const ux = (to.pos.x - from.pos.x) / d
         const uy = (to.pos.y - from.pos.y) / d
         const selected = selectedId === c.id
+        // Medium shows how the link physically closes: wired solid, radio
+        // dashed, operator-manual dotted; untyped links keep the legacy dash.
+        const wired = c.medium === 'cable' || c.medium === 'fiber' || c.medium === 'serial'
+        const dash = wired ? undefined : c.medium === 'operator-manual' ? [1, 4] : [3, 4]
+        // Unproven evidence reads dimmer than documented or hand-drawn links.
+        const dim = c.confidence === 'probable' || c.confidence === 'inferred'
+        const color = selected ? '#ffffff' : dim ? '#6a7178' : '#8a9199'
         return (
           <Arrow
             key={c.id}
@@ -33,10 +40,10 @@ export function ConnectionLayer() {
               to.pos.x - ux * trim,
               to.pos.y - uy * trim,
             ]}
-            stroke={selected ? '#ffffff' : '#8a9199'}
-            fill={selected ? '#ffffff' : '#8a9199'}
+            stroke={color}
+            fill={color}
             strokeWidth={1.5}
-            dash={[3, 4]}
+            dash={dash}
             strokeScaleEnabled={false}
             pointerLength={9 / k}
             pointerWidth={7 / k}

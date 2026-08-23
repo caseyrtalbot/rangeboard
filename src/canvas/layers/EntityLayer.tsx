@@ -124,6 +124,7 @@ function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity }
   const completeConnect = useStore((s) => s.completeConnect)
   const beginPath = useStore((s) => s.beginPath)
   const openContextMenu = useStore((s) => s.openContextMenu)
+  const openConnectSuggestion = useStore((s) => s.openConnectSuggestion)
 
   const k = camera.scale
   const track = tracks.get(entity.id)
@@ -201,7 +202,13 @@ function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity }
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         onDragStart={() => select({ entityIds: [entity.id] })}
-        onDragEnd={(e) => moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })}
+        onDragEnd={(e) => {
+          moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })
+          // A repositioned blue-force system gets fresh connect offers.
+          if (entity.kind !== 'sensor' && entity.kind !== 'effector' && entity.kind !== 'c2') return
+          const pointer = e.target.getStage()?.getPointerPosition()
+          if (pointer) openConnectSuggestion(entity.id, pointer)
+        }}
       >
         {/* Invisible hit disc: stroke-only glyphs are otherwise hard to click. */}
         <Circle radius={13} fill="#000" opacity={0} />

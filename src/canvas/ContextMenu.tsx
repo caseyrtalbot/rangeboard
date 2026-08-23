@@ -111,6 +111,12 @@ export function ContextMenu() {
           st.setTool('connect')
           st.beginConnect(entity.id)
         }} />
+        {blue && (
+          <Item
+            label="Suggest connections"
+            onPick={() => st.openConnectSuggestion(entity.id, menu!.screen, { always: true })}
+          />
+        )}
         <Item label="Duplicate" onPick={() => st.duplicateEntity(entity.id)} />
         {entity.systemId && (
           <>
