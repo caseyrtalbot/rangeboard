@@ -174,18 +174,26 @@ describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () =>
     const int = aar.effectors.find((e) => e.effectorId === intId)!
     expect(int.name).toBe('Interceptor Alpha')
     expect(int.effectorType).toBe('interceptor')
-    expect(int.shotsFired).toBe(5)
+    // Doctrine: fire stops once the target is expected dead. Three salvos
+    // at pk 0.9 (Pk 0.6327/0.6543/0.6759 by falloff) leave survival
+    // 0.041 < SHIP_DEAD_BELOW, so the last two rounds are held.
+    expect(int.shotsFired).toBe(3)
+    expect(int.jamSalvos).toBe(0)
     expect(int.magazineSize).toBe(5)
-    expect(int.expectedRoundsRemaining).toBe(0)
+    expect(int.expectedRoundsRemaining).toBe(2)
 
     const jam = aar.effectors.find((e) => e.effectorId === jamId)!
     expect(jam.name).toBe('Jammer Bravo')
     expect(jam.effectorType).toBe('jammer')
-    expect(jam.shotsFired).toBeGreaterThan(0)
+    // Jammer expenditure is jam salvos, never kinetic shots. Five soft-kill
+    // salvos (cooldown 5 s) push survival below the cutoff; then it holds.
+    expect(jam.shotsFired).toBe(0)
+    expect(jam.jamSalvos).toBe(5)
     expect(jam.expectedRoundsRemaining).toBeNull()
     expect(jam.magazineSize).toBeNull()
 
-    expect(aar.shotsFired).toBe(int.shotsFired + jam.shotsFired)
+    expect(aar.shotsFired).toBe(int.shotsFired) // kinetic only
+    expect(aar.jamSalvos).toBe(jam.jamSalvos)
   })
 
   it('builds per-threat timeline rows: detect, classify, engage, outcome', () => {

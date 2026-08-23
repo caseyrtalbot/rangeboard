@@ -463,7 +463,8 @@ describe('CLAIM 1 refutation (d) - buffered jam lands between assignment and eff
     const t = r.threats[0]
     const pkI = 0.5 * (1 - 0.3 * (1590 / 4000)) // 0.440375
     const pkJ = 0.5 * (1 - 0.3 * (3590 / 4000)) // 0.365375
-    expect(t.shotsFired).toBe(2)
+    expect(t.shotsFired).toBe(1) // kinetic (interceptor) only
+    expect(t.jamSalvos).toBe(1) // jammer expenditure splits out
     expect(t.continueJamProb).toBeCloseTo(pkJ, 6)
     expect(t.expectedHardKills).toBeCloseTo(pkI * (1 - 0.3 * pkJ), 6) // 0.392104
     expect(t.expectedSoftKills).toBe(0) // 'continue' jams are not mission kills

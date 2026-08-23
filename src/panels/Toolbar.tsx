@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import { defaultFrameName, useStore } from '../state/store'
+import { spawnInRingViolations } from '../playback/sim'
 import { Tip } from './Tooltip'
 import { useTeStore } from '../te/state/teStore'
 import type { Workspace } from '../te/state/teStore'
@@ -87,6 +89,27 @@ export function Toolbar() {
 
   const roe = scenario.roe ?? 'tight'
   const derates = activeDerates(scenario.environment)
+
+  // Derived live from the scenario (never stored): threats whose paths start
+  // inside a sensor's effective detect ring are detected at T0.
+  const spawnWarning = useMemo(() => {
+    const violations = spawnInRingViolations(scenario)
+    if (violations.length === 0) return null
+    const nameOf = (id: string) => scenario.entities.find((e) => e.id === id)?.name ?? id
+    const sensorsByUas = new Map<string, string[]>()
+    for (const v of violations) {
+      const names = sensorsByUas.get(v.uasId) ?? []
+      names.push(nameOf(v.sensorId))
+      sensorsByUas.set(v.uasId, names)
+    }
+    const lines = [...sensorsByUas.entries()].map(
+      ([uasId, sensors]) => `${nameOf(uasId)} held by ${sensors.join(', ')}`,
+    )
+    return {
+      count: sensorsByUas.size,
+      hint: `Flight paths start inside a detect ring (detected at T0): ${lines.join('; ')}`,
+    }
+  }, [scenario])
 
   if (workspace === 'ops') {
     return (
@@ -224,6 +247,11 @@ export function Toolbar() {
         {derates.length > 0 && (
           <span className="pill pill-warn" title={`Sensor ranges derated: ${derates.join(', ')}`}>
             Env Derate
+          </span>
+        )}
+        {spawnWarning && (
+          <span className="pill pill-warn" title={spawnWarning.hint}>
+            Spawn In Ring {spawnWarning.count}
           </span>
         )}
         {ui.lastAutosaveAt != null && (

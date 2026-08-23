@@ -113,6 +113,7 @@ function reportWith(uasId: string, patch: Partial<ThreatAttrition>): AttritionRe
     continueJamProb: 0,
     firstShotS: null,
     shotsFired: 0,
+    jamSalvos: 0,
     killedByEffectorId: null,
     killedBySoft: false,
     ...patch,
@@ -127,7 +128,9 @@ function reportWith(uasId: string, patch: Partial<ThreatAttrition>): AttritionRe
       expectedSoftKills: row.expectedSoftKills,
       expectedLeakers: row.shipCount - row.expectedKills,
       shotsFired: row.shotsFired,
+      jamSalvos: row.jamSalvos,
     },
+    events: [],
   }
 }
 
@@ -344,7 +347,9 @@ describe('assessLeakerImpacts', () => {
         expectedSoftKills: 0,
         expectedLeakers: 0,
         shotsFired: 0,
+        jamSalvos: 0,
       },
+      events: [],
     }
     scenario.entities = scenario.entities.map((e) =>
       e.id === uasId ? { ...e, formation: { count: 3, shape: 'line' as const, spacingM: 30 } } : e,

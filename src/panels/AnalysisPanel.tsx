@@ -17,13 +17,16 @@ import { engagementPicture } from '../analysis/impact'
 import { LeakerWarningStrip } from './LeakerWarningStrip'
 import {
   aarHeadline,
+  effectorExpenditureLine,
   environmentHeadline,
   magazinesHeadline,
   scoreHeadline,
 } from './headlines'
-import { AarBody, AarThreatLines, AarTotals } from './analysis/AarSection'
+import { AarBody } from './analysis/AarSection'
+import { Info } from './analysis/Info'
 import { KpiTiles } from './analysis/KpiTiles'
 import { LiveStrip } from './analysis/LiveStrip'
+import { PinCompare } from './analysis/PinCompare'
 import { ThreatGroupList } from './analysis/ThreatList'
 
 /**
@@ -198,11 +201,18 @@ function EnvironmentBody() {
           />
         </Field>
       </div>
-      <p className="muted small">
-        Rain, fog, night, and EM clutter shrink sensor rings by technology. Cold, altitude, and
-        wind reshape drone reach. Factors follow the COURAGEOUS C-UAS study; planning values.
-      </p>
     </>
+  )
+}
+
+/** Environment methodology note, out of the flow. */
+function EnvironmentInfo() {
+  return (
+    <Info label="About environment effects">
+      <p>Rain, fog, night, and EM clutter shrink sensor rings by technology.</p>
+      <p>Cold, altitude, and wind reshape UAS reach.</p>
+      <p>Factors follow the COURAGEOUS C-UAS study. Planning values.</p>
+    </Info>
   )
 }
 
@@ -210,36 +220,33 @@ function EnvironmentBody() {
 function EffectorBody({ report }: { report: AttritionReport }) {
   const scenario = useStore((s) => s.scenario)
   return (
-    <>
-      <table className="threat-table">
-        <tbody>
-          {report.effectors.map((e) => {
-            const ent = scenario.entities.find((x) => x.id === e.effectorId)
-            const spec = scenario.library.find((m) => m.id === ent?.specId)?.effector
-            const remaining =
-              e.expectedRoundsRemaining != null
-                ? `${e.expectedRoundsRemaining}${
-                    spec?.magazineSize != null ? ` of ${spec.magazineSize}` : ''
-                  } left${e.expectedRoundsRemaining <= 0 ? ' · empty' : ''}`
-                : 'unlimited'
-            return (
-              <tr key={e.effectorId}>
-                <td>{ent?.name ?? '—'}</td>
-                <td>
-                  {e.shotsFired} fired · {remaining}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-      <p className="muted small">
-        Expected raid outcome: {report.totals.expectedKills.toFixed(1)} of{' '}
-        {report.totals.raidSize} ships killed ({report.totals.expectedHardKills.toFixed(1)} hard,{' '}
-        {report.totals.expectedSoftKills.toFixed(1)} soft),{' '}
-        {report.totals.expectedLeakers.toFixed(1)} leak through, {report.totals.shotsFired} shots.
-      </p>
-    </>
+    <table className="threat-table">
+      <tbody>
+        {report.effectors.map((e) => {
+          const ent = scenario.entities.find((x) => x.id === e.effectorId)
+          const spec = scenario.library.find((m) => m.id === ent?.specId)?.effector
+          const remaining =
+            e.expectedRoundsRemaining != null
+              ? `${e.expectedRoundsRemaining}${
+                  spec?.magazineSize != null ? ` of ${spec.magazineSize}` : ''
+                } left${e.expectedRoundsRemaining <= 0 ? ' · empty' : ''}`
+              : 'unlimited'
+          const fired = effectorExpenditureLine({
+            effectorType: spec?.effectorType ?? null,
+            shotsFired: e.shotsFired,
+            jamSalvos: e.jamSalvos,
+          })
+          return (
+            <tr key={e.effectorId}>
+              <td>{ent?.name ?? '—'}</td>
+              <td>
+                {fired} · {remaining}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }
 
@@ -343,34 +350,19 @@ function ScorecardBody({
           </button>
         </div>
       ))}
-      {pinned.some((p) => p.aar) && (
-        <div className="aar-compare">
-          {pinned
-            .filter((p) => p.aar)
-            .map((p) => (
-              <div className="aar-col" key={p.id}>
-                <div className="aar-col-title">
-                  {p.name} · {p.score}
-                </div>
-                <AarTotals aar={p.aar!} />
-                <AarThreatLines aar={p.aar!} />
-              </div>
-            ))}
-          {aar.threats.length > 0 && (
-            <div className="aar-col">
-              <div className="aar-col-title">Current{score != null ? ` · ${score}` : ''}</div>
-              <AarTotals aar={aar} />
-              <AarThreatLines aar={aar} />
-            </div>
-          )}
-        </div>
-      )}
-      <p className="muted small">
-        Parts are 0-100 over threats with paths; warning time scores full at {WARNING_FULL_S} s.
-        Pin the score, change the laydown or environment, and compare. Pins made here carry the
-        full AAR summary and compare side by side above.
-      </p>
+      <PinCompare pins={pinned} current={aar} currentScore={score} />
     </>
+  )
+}
+
+/** Scorecard methodology note, out of the flow. */
+function ScoreInfo() {
+  return (
+    <Info label="About the configuration score">
+      <p>Each part scores 0-100 over threats with paths.</p>
+      <p>Warning time scores full at {WARNING_FULL_S} s.</p>
+      <p>Pin the score, change the laydown or environment, and compare pins row by row.</p>
+    </Info>
   )
 }
 
@@ -435,13 +427,28 @@ export function AnalysisPanel() {
           Advanced telemetry
         </label>
       </div>
-      {threats.length > 0 && <KpiTiles threats={threats} report={report} score={score} />}
-      {/* Live-telemetry strip: all playback subscriptions live inside LiveStrip. */}
+      {/* LIVE: battle state at the playback instant. All simTimeS subscriptions
+          stay inside LiveStrip so playback re-renders only this subtree. */}
       <LiveStrip />
+      {/* FORECAST: the whole-run outcome, constant during playback. The head
+          (and its methodology popover) mounts in every scenario state so the
+          planning-figures disclaimer stays reachable even with zero threats. */}
+      <div className="panel-subtitle forecast-head">
+        <span>Forecast · full run</span>
+        <span className="section-right">
+          <AboutInfo />
+        </span>
+      </div>
+      {threats.length > 0 && <KpiTiles threats={threats} report={report} score={score} />}
       <Section
         title="Environment"
         headline={environmentHeadline(scenario.environment, displayUnits)}
-        headerExtra={<ApplyEffectsCheck />}
+        headerExtra={
+          <>
+            <ApplyEffectsCheck />
+            <EnvironmentInfo />
+          </>
+        }
       >
         <EnvironmentBody />
       </Section>
@@ -452,12 +459,12 @@ export function AnalysisPanel() {
       {threats.length > 0 && <div className="panel-subtitle">Threats · {threats.length}</div>}
       <ThreatGroupList threats={threats} report={report} impacts={impacts} advanced={advanced} />
       {showMagazines && (
-        <Section title="Effector magazines" headline={magazinesHeadline(aar)}>
+        <Section title="Magazines" headline={magazinesHeadline(aar)}>
           <EffectorBody report={report} />
         </Section>
       )}
       {aar.threats.length > 0 && (
-        <Section title="After-action report" headline={aarHeadline(aar)}>
+        <Section title="AAR" headline={aarHeadline(aar)}>
           <AarBody aar={aar} />
         </Section>
       )}
@@ -467,26 +474,42 @@ export function AnalysisPanel() {
         </p>
       )}
       {(parts != null || pinned.length > 0) && (
-        <Section title="Configuration score" headline={scoreHeadline(score)}>
+        <Section
+          title="Configuration score"
+          headline={scoreHeadline(score)}
+          headerExtra={<ScoreInfo />}
+        >
           <ScorecardBody parts={parts} score={score} weights={weights} aar={aar} />
         </Section>
       )}
-      <Section title="About these numbers">
-        <p className="muted small">
-          ROE: Hold = analyze only, no engagement. Tight = engage tracks classified hostile. Free =
-          engage on first detection.
-        </p>
-        <p className="muted small">
-          Warning time = arrival at the defended asset minus first detection. Windows start when
-          the ROE gate is met. RF sensors do not see RF-silent threats; EO/IR needs a cue from
-          another technology; radar sees bigger airframes farther than the drawn Group 1 ring.
-          Computed at 0.5 s steps; planning figures, not test evidence.
-        </p>
-        <p className="muted small">
-          PF = planning factor. WEZ effect radii and standoff ranges marked PF are laydown
-          planning values tiered by warhead class, not study-derived lethality data.
-        </p>
-      </Section>
     </div>
+  )
+}
+
+/**
+ * Panel-level methodology popover on the Forecast head row. Replaces the old
+ * inline "About these numbers" section.
+ */
+function AboutInfo() {
+  return (
+    <Info label="About these numbers">
+      <p>
+        ROE · Hold: analyze only, no engagement. Tight: engage tracks classified hostile. Free:
+        engage on first detection.
+      </p>
+      <p>
+        Warning time = arrival at the defended asset minus first detection. Engagement windows
+        open when the ROE gate is met.
+      </p>
+      <p>
+        RF sensors do not hear RF-silent threats. EO/IR needs a cue from another technology.
+        Radar sees larger airframes farther than the drawn Group 1 ring.
+      </p>
+      <p>
+        PF = planning factor. WEZ effect radii and standoff ranges marked PF are tiered by
+        warhead class, not measured lethality.
+      </p>
+      <p>Computed at 0.5 s steps. Planning figures, not test evidence.</p>
+    </Info>
   )
 }

@@ -28,9 +28,10 @@ function Tile({
 }
 
 /**
- * Six raid-level headline numbers above the analysis sections. Color is
- * semantic and lands on the value only: leakers go amber above the severity
- * floor and red at one expected ship; warning goes amber under two minutes.
+ * Six whole-run forecast numbers, rendered under the FORECAST head row.
+ * Color is semantic and lands on the value only: leakers go amber above the
+ * severity floor and red at one expected ship; warning goes amber under two
+ * minutes.
  */
 export function KpiTiles({
   threats,
@@ -48,9 +49,9 @@ export function KpiTiles({
   const minWarn = warnings.length > 0 ? Math.min(...warnings) : null
   return (
     <div className="kpi-grid">
-      <Tile label="Raid size" value={`${t.raidSize}`} sub="ships" />
+      <Tile label="Raid" value={`${t.raidSize}`} sub="ships" />
       <Tile
-        label="Expected kills"
+        label="Exp kills"
         value={t.expectedKills.toFixed(1)}
         sub={
           t.expectedSoftKills > 0.05
@@ -66,12 +67,18 @@ export function KpiTiles({
         cls={leakCls}
       />
       <Tile
-        label="Min warning"
+        label="Min warn"
         value={minWarn != null ? formatTime(minWarn) : '—'}
         cls={minWarn != null && minWarn < MIN_WARNING_WARN_S ? 'warn' : ''}
+        title="Shortest warning time: arrival at the defended asset minus first detection"
       />
-      <Tile label="Shots fired" value={`${t.shotsFired}`} />
-      <Tile label="Score" value={score != null ? `${score}` : '—'} />
+      <Tile
+        label="Shots"
+        value={`${t.shotsFired}`}
+        sub={t.jamSalvos > 0 ? `kin · ${t.jamSalvos} jam` : 'kinetic'}
+        title={`${t.shotsFired} kinetic shots${t.jamSalvos > 0 ? ` · ${t.jamSalvos} jam salvos` : ''}`}
+      />
+      <Tile label="Score" value={score != null ? `${score}` : '—'} title="Weighted configuration score, 0-100" />
     </div>
   )
 }

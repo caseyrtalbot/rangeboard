@@ -164,14 +164,16 @@ describe('jammer vs jam-immune threat', () => {
 
 describe('soft kill ends the approach (drift, return-home)', () => {
   it('soft-kills a GPS threat: flagged soft, not hard', () => {
-    // One jam at t = 5.5, d = 990: Pk = 0.5 * 0.703 = 0.3515.
+    // One jam at t = 5.5, d = 990: Pk = 0.5 * 0.703 = 0.3515. Jammer
+    // expenditure lands in jamSalvos, never in the kinetic shotsFired.
     const { scenario, effIds, uasId } = scenarioWith(target({ navMode: 'gps' }), [
       effectorModel('tst-jam', 'jammer', { pk: 0.5, salvoCooldownS: 1000 }),
     ])
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
     expect(t.uasId).toBe(uasId)
-    expect(t.shotsFired).toBe(1)
+    expect(t.shotsFired).toBe(0)
+    expect(t.jamSalvos).toBe(1)
     expect(t.firstShotS).toBeCloseTo(5.5, 6)
     expect(t.expectedSoftKills).toBeCloseTo(0.3515, 6)
     expect(t.expectedHardKills).toBe(0)
@@ -204,7 +206,8 @@ describe('continue behavior still leaks', () => {
     ])
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
-    expect(t.shotsFired).toBe(1)
+    expect(t.shotsFired).toBe(0)
+    expect(t.jamSalvos).toBe(1)
     expect(t.expectedHardKills).toBe(0)
     expect(t.expectedSoftKills).toBe(0)
     expect(t.expectedKills).toBe(0)
@@ -223,7 +226,8 @@ describe('continue behavior still leaks', () => {
     ])
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
-    expect(t.shotsFired).toBe(2)
+    expect(t.shotsFired).toBe(1) // the interceptor's kill shot
+    expect(t.jamSalvos).toBe(1) // the jammer's salvo, split out
     expect(t.expectedHardKills).toBeCloseTo(0.3515 * (1 - 0.3 * 0.3515), 6)
     expect(t.expectedSoftKills).toBe(0)
     expect(t.leakProbability).toBeCloseTo(1 - 0.3515 * (1 - 0.3 * 0.3515), 6)

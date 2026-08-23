@@ -8,7 +8,7 @@ import type {
 import { useStore } from '../../state/store'
 import { formatTime } from '../../geometry/geo'
 import { SEVERITY_LABEL } from '../../analysis/impact'
-import { TIER_CLS } from '../headlines'
+import { effectorExpenditureLine, TIER_CLS } from '../headlines'
 import { exportAar } from '../../io/persist'
 
 const OUTCOME_TEXT: Record<AarOutcome, { label: string; cls: string }> = {
@@ -196,6 +196,12 @@ export function AarTotals({ aar }: { aar: AarSummary }) {
               <td>Shots fired</td>
               <td>{aar.shotsFired}</td>
             </tr>
+            {(aar.jamSalvos ?? 0) > 0 && (
+              <tr>
+                <td>Jam salvos</td>
+                <td>{aar.jamSalvos}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -207,7 +213,7 @@ export function AarTotals({ aar }: { aar: AarSummary }) {
                 <tr key={e.effectorId}>
                   <td>{e.name}</td>
                   <td>
-                    {e.shotsFired} fired ·{' '}
+                    {effectorExpenditureLine(e)} ·{' '}
                     {e.expectedRoundsRemaining != null
                       ? `${e.expectedRoundsRemaining}${
                           e.magazineSize != null ? ` of ${e.magazineSize}` : ''
@@ -221,44 +227,6 @@ export function AarTotals({ aar }: { aar: AarSummary }) {
         </div>
       )}
     </>
-  )
-}
-
-/** One compact line per threat group, for narrow pinned-comparison columns. */
-export function AarThreatLines({ aar }: { aar: AarSummary }) {
-  return (
-    <>
-      {groupThreats(aar.threats).map((g) =>
-        g.rows.length > 1 ? (
-          <div className="aar-threat-line" key={g.key}>
-            <strong>{g.key}</strong> ×{g.ships} · <OutcomeCounts rows={g.rows} />
-          </div>
-        ) : (
-          <SingleThreatLine key={g.rows[0].uasId} t={g.rows[0]} />
-        ),
-      )}
-    </>
-  )
-}
-
-function SingleThreatLine({ t }: { t: AarThreatRowData }) {
-  return (
-    <div className="aar-threat-line">
-      <strong>{t.name}</strong>
-      {t.shipCount > 1 ? ` ×${t.shipCount}` : ''} · det {aarTime(t.detectS)} ·{' '}
-      {classifyCell(t)} · shot {aarTime(t.engageS)} ·{' '}
-      <span className={`status ${OUTCOME_TEXT[t.outcome].cls}`}>
-        {OUTCOME_TEXT[t.outcome].label}
-      </span>
-      {t.impactSeverity != null && (
-        <>
-          {' · '}
-          <span className={`status ${TIER_CLS[t.impactSeverity]}`}>
-            I&W {SEVERITY_LABEL[t.impactSeverity]}
-          </span>
-        </>
-      )}
-    </div>
   )
 }
 

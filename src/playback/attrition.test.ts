@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
-import { distanceFalloff, resolveEngagements } from './attrition'
+import { distanceFalloff, resolveEngagements, SHIP_DEAD_BELOW } from './attrition'
 
 /**
  * Hand-built scenarios with controlled specs so per-shot Pk is exactly
@@ -255,9 +255,11 @@ describe('out-of-window threats', () => {
  * same-tick jam-then-kill coupling. The 'degrades a delayed kill shot' test
  * below locks in the effect-order behavior.
  *
- * Ship selection in formations reads the state applied so far: outcomes of
- * salvos still in flight are unknown at assignment time, so aiming is not
- * clairvoyant about them.
+ * Ship selection reads the applied state discounted by salvos still in
+ * flight: outcomes of pending salvos are unknown at assignment time, so
+ * aiming is not clairvoyant about them — it multiplies survival by their
+ * expected (1 - Pk) instead, which spreads simultaneous volleys across
+ * ships (see the fire-distribution suite below).
  */
 
 /** Group 4 fixed-wing on mixed nav: jams 'continue' (degraded track, still inbound). */
@@ -424,7 +426,8 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
     const t = r.threats[0]
     const jam = 0.5 * (1 - 0.3 * (3990 / 4000))
     const pkEff = 0.5 * (1 - 0.3 * (810 / 4000))
-    expect(t.shotsFired).toBe(2)
+    expect(t.shotsFired).toBe(1) // kinetic channel: the interceptor
+    expect(t.jamSalvos).toBe(1) // jammer expenditure splits out
     expect(t.continueJamProb).toBeCloseTo(jam, 6)
     expect(t.expectedHardKills).toBeCloseTo(pkEff * (1 - 0.3 * jam), 6)
     expect(t.expectedSoftKills).toBe(0)
@@ -436,13 +439,15 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
 describe('jammer latency', () => {
   it('keeps engageTimeS 0 jammer behavior identical to the pre-latency model', () => {
     // Same numbers as the ew suite: one jam at t = 5.5, d = 990,
-    // soft kill = 0.5 * (1 - 0.3 * 0.99) = 0.3515 against a GPS (drift) target.
+    // soft kill = 0.5 * (1 - 0.3 * 0.99) = 0.3515 against a GPS (drift)
+    // target. Jammer expenditure counts in jamSalvos, not shotsFired.
     const { scenario, effId } = singleThreatScenario(
       jammer({ pk: 0.5, salvoCooldownS: 1000 }),
     )
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
-    expect(t.shotsFired).toBe(1)
+    expect(t.shotsFired).toBe(0)
+    expect(t.jamSalvos).toBe(1)
     expect(t.firstShotS).toBeCloseTo(5.5, 6)
     expect(t.expectedSoftKills).toBeCloseTo(0.3515, 6)
     expect(t.expectedHardKills).toBe(0)
@@ -458,10 +463,168 @@ describe('jammer latency', () => {
     )
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
-    expect(t.shotsFired).toBe(1)
+    expect(t.shotsFired).toBe(0)
+    expect(t.jamSalvos).toBe(1)
     expect(t.firstShotS).toBeCloseTo(5.5, 6)
     expect(t.expectedSoftKills).toBeCloseTo(0.5 * (1 - 0.3 * (790 / 1000)), 6)
     expect(t.expectedHardKills).toBe(0)
     expect(t.killedBySoft).toBe(true)
+  })
+})
+
+describe('fire distribution: survival cutoff', () => {
+  it('shifts to the next threat once the first is expected dead, with bounded shots', () => {
+    // Two identical threats on the same lane; B launches 60 s after A, so
+    // A's window [5.5, 55.0] closes before B's [65.5, 115.0] opens.
+    // Interceptor: pk 0.9, cooldown 2, magazine 10.
+    //   A: shots at t = 5.5 (d 990, Pk 0.6327), 7.5 (910, 0.6543),
+    //      9.5 (830, 0.6759). Survival 0.3673*0.3457*0.3241 = 0.0412 <
+    //      SHIP_DEAD_BELOW -> the fourth opportunity (t = 11.5) and every
+    //      later one HOLDS: ~22 window opportunities go unused.
+    //   B: same three shots at 65.5/67.5/69.5 from the held rounds.
+    // The pre-cutoff engine spent all 10 rounds on A and starved B.
+    const scenario = emptyScenario()
+    const model = interceptor({ pk: 0.9, magazineSize: 10, salvoCooldownS: 2 })
+    scenario.library = [...scenario.library, SENSOR, TARGET, model]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const eff = ent('effector', model.id, { x: 0, y: 0 })
+    const uasA = ent('uas', TARGET.id, { x: -1210, y: 0 })
+    const uasB = ent('uas', TARGET.id, { x: -1210, y: 0 })
+    scenario.entities = [sensor, eff, uasA, uasB]
+    scenario.connections = [link(sensor.id, eff.id)]
+    const pathA = flight(uasA.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])
+    const pathB = flight(uasB.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])
+    pathB.startDelayS = 60
+    scenario.paths = [pathA, pathB]
+
+    const r = resolveEngagements(scenario)
+    const pk1 = 0.9 * (1 - 0.3 * (990 / 1000))
+    const pk2 = 0.9 * (1 - 0.3 * (910 / 1000))
+    const pk3 = 0.9 * (1 - 0.3 * (830 / 1000))
+    const survival = (1 - pk1) * (1 - pk2) * (1 - pk3)
+    // The bound the doctrine guarantees: three salvos cross the cutoff.
+    expect(survival).toBeLessThan(SHIP_DEAD_BELOW)
+
+    const a = r.threats.find((t) => t.uasId === uasA.id)!
+    const b = r.threats.find((t) => t.uasId === uasB.id)!
+    expect(a.shotsFired).toBe(3) // no salvo ever lands on an expected-dead ship
+    expect(a.expectedKills).toBeCloseTo(1 - survival, 6)
+    expect(b.shotsFired).toBe(3) // rounds held for the follow-on threat
+    expect(b.firstShotS).toBeCloseTo(65.5, 6)
+    expect(b.expectedKills).toBeCloseTo(1 - survival, 6)
+    expect(r.effectors[0].expectedRoundsRemaining).toBe(4)
+  })
+})
+
+describe('fire distribution: in-flight discounting', () => {
+  it('spreads a same-tick volley from two effectors across two ships', () => {
+    // 2-ship line formation (spacing 20: both deep inside the 4000 m
+    // envelope), two identical interceptors with engageTimeS 10 so the
+    // first salvo is still IN FLIGHT when the second effector assigns in
+    // the same sweep step. Effective survival discounts the pending salvo:
+    // effector 1 aims at ship 0 (exact tie -> lower index), which drops
+    // ship 0's effective survival to 1 - Pk, so effector 2 aims at ship 1.
+    // Without the discount both salvos would stack on ship 0.
+    // Both effects land at tEffect = 15.5 (x = -3590):
+    // Pk ~ 0.5 * (1 - 0.3 * 3590/4000) = 0.365375 per ship (the wingman
+    // sits ~20 m off the lane; its Pk differs only in the 6th decimal).
+    const modelA = interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 10, magazineSize: 1, salvoCooldownS: 1000 })
+    const modelB = {
+      ...interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 10, magazineSize: 1, salvoCooldownS: 1000 }),
+      id: 'tst-int-b2',
+      name: 'test interceptor b2',
+    }
+    const { scenario, uasId } = longScenario([modelA, modelB])
+    const uas = scenario.entities.find((e) => e.id === uasId)!
+    uas.formation = { count: 2, shape: 'line', spacingM: 20 }
+
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.shipCount).toBe(2)
+    expect(t.shotsFired).toBe(2)
+    // Both assignments happen at the same tick and hit DIFFERENT ships.
+    expect(r.events).toHaveLength(2)
+    expect(r.events[0].tS).toBeCloseTo(5.5, 6)
+    expect(r.events[1].tS).toBeCloseTo(5.5, 6)
+    expect([r.events[0].shipIdx, r.events[1].shipIdx].sort()).toEqual([0, 1])
+    // Independent ships: kills add, instead of the second salvo grinding
+    // the first ship's residual.
+    const pk = 0.5 * (1 - 0.3 * (3590 / 4000))
+    expect(t.expectedKills).toBeCloseTo(2 * pk, 4)
+  })
+})
+
+describe('fire distribution: continue-jam saturation', () => {
+  it('stops jam salvos once the track is saturated', () => {
+    // Mixed-nav target ('continue'): jamming degrades the track but never
+    // kills, so without a saturation stop the jammer would salvo every
+    // 2 s cooldown for the whole ~50 s window (~25 salvos). Three jams
+    // at t = 5.5/7.5/9.5 (Pk 0.6327/0.6543/0.6759) leave un-jammed
+    // probability 0.0412 < SHIP_DEAD_BELOW: the track is saturated and
+    // every later opportunity holds.
+    const jamModel = jammer({ pk: 0.9, salvoCooldownS: 2 })
+    const scenario = emptyScenario()
+    scenario.library = [...scenario.library, SENSOR, TARGET_MIXED, jamModel]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const eff = ent('effector', jamModel.id, { x: 0, y: 0 })
+    const uas = ent('uas', TARGET_MIXED.id, { x: -1210, y: 0 })
+    scenario.entities = [sensor, eff, uas]
+    scenario.connections = [link(sensor.id, eff.id)]
+    scenario.paths = [flight(uas.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])]
+
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    const pk1 = 0.9 * (1 - 0.3 * (990 / 1000))
+    const pk2 = 0.9 * (1 - 0.3 * (910 / 1000))
+    const pk3 = 0.9 * (1 - 0.3 * (830 / 1000))
+    const unjammed = (1 - pk1) * (1 - pk2) * (1 - pk3)
+    expect(unjammed).toBeLessThan(SHIP_DEAD_BELOW) // saturation in 3 salvos
+    expect(t.jamSalvos).toBe(3)
+    expect(t.shotsFired).toBe(0)
+    expect(t.continueJamProb).toBeCloseTo(1 - unjammed, 6)
+    expect(t.expectedKills).toBe(0) // 'continue' still leaks
+    expect(t.leakProbability).toBe(1)
+  })
+})
+
+describe('expenditure split: kinetic vs jam', () => {
+  it('counts kinetic and jammer salvos in separate ledgers, events included', () => {
+    // Interceptor (entity order first) and jammer, one salvo each at
+    // t = 5.5, d = 990, both zero latency. The interceptor's kill applies
+    // before the jam this tick: kill = 0.5 * 0.703 = 0.3515.
+    const jamModel = jammer({ pk: 0.5, salvoCooldownS: 1000 })
+    const intModel = interceptor({ pk: 0.5, salvoCooldownS: 1000 })
+    const scenario = emptyScenario()
+    scenario.library = [...scenario.library, SENSOR, TARGET_MIXED, intModel, jamModel]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const int = ent('effector', intModel.id, { x: 0, y: 0 })
+    const jam = ent('effector', jamModel.id, { x: 0, y: 0 })
+    const uas = ent('uas', TARGET_MIXED.id, { x: -1210, y: 0 })
+    scenario.entities = [sensor, int, jam, uas]
+    scenario.connections = [link(sensor.id, int.id), link(sensor.id, jam.id)]
+    scenario.paths = [flight(uas.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])]
+
+    const r = resolveEngagements(scenario)
+    expect(r.totals.shotsFired).toBe(1)
+    expect(r.totals.jamSalvos).toBe(1)
+    const intRow = r.effectors.find((e) => e.effectorId === int.id)!
+    expect(intRow.shotsFired).toBe(1)
+    expect(intRow.jamSalvos).toBe(0)
+    const jamRow = r.effectors.find((e) => e.effectorId === jam.id)!
+    expect(jamRow.shotsFired).toBe(0)
+    expect(jamRow.jamSalvos).toBe(1)
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(1)
+    expect(t.jamSalvos).toBe(1)
+    // Ledger: one event per channel; only the kill removes survival mass.
+    const killEvents = r.events.filter((e) => e.channel === 'kill')
+    const jamEvents = r.events.filter((e) => e.channel === 'jam')
+    expect(killEvents).toHaveLength(1)
+    expect(jamEvents).toHaveLength(1)
+    expect(killEvents[0].softShot).toBe(false)
+    expect(jamEvents[0].softShot).toBe(true)
+    expect(jamEvents[0].killDelta).toBe(0)
+    expect(killEvents[0].killDelta).toBeCloseTo(0.3515, 6)
+    expect(killEvents[0].killDelta).toBeCloseTo(t.expectedHardKills, 9)
   })
 })

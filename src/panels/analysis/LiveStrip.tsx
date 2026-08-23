@@ -1,92 +1,75 @@
 import { useMemo } from 'react'
 import { scenarioDurationS, useStore } from '../../state/store'
-import { detectionsAt, liveTracks } from '../../playback/sim'
-import { engagementPicture, SEVERITY_RANK } from '../../analysis/impact'
-import { entityActive } from '../../model/types'
+import { engagementPicture } from '../../analysis/impact'
+import { buildLiveTimeline, liveKpisAt } from '../../analysis/liveStats'
 import { formatTime } from '../../geometry/geo'
 
 /**
- * Board state at the current playback instant. Every count derives from what
- * the engine computes per time t (liveTracks, detectionsAt, the cached sweep
- * timeline). Attrition kills are run-total expected values with no per-t
- * timeline, so this strip never shows "kills so far".
+ * Battle state at the current playback instant, from prefix aggregation over
+ * the engagement ledger (see analysis/liveStats.ts). Expenditure counts at
+ * assignment time; kills at effect time; leakers as tracks past arrival with
+ * their surviving expected mass. This subtree is the only part of the panel
+ * that subscribes to simTimeS; the subscription is quantized to the engine's
+ * 0.5 s sample step so 60 fps playback re-renders it at most twice per sim
+ * second.
  */
 export function LiveStrip() {
   const scenario = useStore((s) => s.scenario)
   const playing = useStore((s) => s.playback.playing)
-  // Quantized to the engine's 0.5 s sample step, so 60 fps playback
-  // re-renders this strip at most twice per sim second.
   const qt = useStore((s) => Math.round(s.playback.simTimeS * 2) / 2)
 
-  const live = useMemo(() => {
-    const t = Math.min(qt, scenarioDurationS(scenario))
-    const { assessments, impacts } = engagementPicture(scenario)
-    const uasIds = new Set(
-      scenario.entities.filter((e) => e.kind === 'uas' && entityActive(e)).map((e) => e.id),
-    )
-    let airborne = 0
-    for (const tr of liveTracks(scenario, t).values()) {
-      if (tr.flying && uasIds.has(tr.entityId)) airborne++
-    }
-    const detected = detectionsAt(scenario, t).size
-    let hostile = 0
-    let windows = 0
-    const arrivedIds = new Set<string>()
-    for (const a of assessments) {
-      if (a.status === 'no-path') continue
-      const h = a.classificationAtS.hostileAtS
-      if (h != null && h <= t) hostile++
-      if (a.windowS && a.windowS[0] <= t && t <= a.windowS[1]) windows++
-      if (a.arrivalS != null && a.arrivalS <= t) arrivedIds.add(a.uasId)
-    }
-    let worstArrived = 0
-    for (const imp of impacts) {
-      if (imp.severity != null && arrivedIds.has(imp.uasId)) {
-        worstArrived = Math.max(worstArrived, SEVERITY_RANK[imp.severity])
-      }
-    }
-    return { t, airborne, detected, hostile, windows, arrived: arrivedIds.size, worstArrived }
-  }, [scenario, qt])
+  // Sorted prefix structures, once per scenario object. engagementPicture is
+  // itself WeakMap-cached, so this never re-runs the sweep.
+  const tl = useMemo(() => {
+    const { assessments, report } = engagementPicture(scenario)
+    return buildLiveTimeline(assessments, report)
+  }, [scenario])
+  const durationS = useMemo(() => scenarioDurationS(scenario), [scenario])
 
-  if (qt === 0 && !playing) return null
+  if (tl.trackCount === 0) return null
 
-  const arrivedCls =
-    live.arrived > 0 && live.worstArrived >= SEVERITY_RANK.severe
-      ? ' danger'
-      : live.arrived > 0 && live.worstArrived > 0
-        ? ' warn'
-        : ''
+  const t = Math.min(qt, durationS)
+  const k = liveKpisAt(tl, t)
+  const atLaunch = t === 0 && !playing
+  const leakCls = k.leakerShips >= 1 ? ' bad' : k.leakerShips > 0.05 ? ' warn' : ''
+
   return (
     <div className="live-strip">
       <div className="live-head">
-        LIVE · T+{formatTime(live.t)}
-        {!playing && <span className="live-sweep">planning sweep</span>}
+        <span className="live-tag">Live</span>
+        <span className="live-time">{atLaunch ? 'At launch' : `T+${formatTime(t)}`}</span>
+        {!atLaunch && !playing && <span className="live-state">paused</span>}
+        {atLaunch && <span className="live-state">press play or scrub</span>}
       </div>
-      <div className="live-chips">
-        <span className="live-chip" title="Threats launched (past start delay) and not yet at path end at this time">
-          {live.airborne} airborne
-        </span>
-        <span className="live-chip" title="Threats held by at least one sensor at this time">
-          {live.detected} detected
-        </span>
-        <span
-          className={`live-chip${live.hostile > 0 ? ' warn' : ''}`}
-          title="Tracks that reached hostile classification by this time"
+      <div className="live-cells">
+        <div className="live-cell" title="Threat tracks first detected by now">
+          <span className="live-label">Detected</span>
+          <span className="live-value">
+            {k.detected}
+            <span className="live-of">/{tl.trackCount}</span>
+          </span>
+        </div>
+        <div
+          className="live-cell"
+          title="Kinetic shots and jam salvos committed by now (assignment time)"
         >
-          {live.hostile} hostile
-        </span>
-        <span
-          className="live-chip"
-          title="Threats inside their usable engagement window at this time"
+          <span className="live-label">Shots</span>
+          <span className="live-value">
+            {k.kineticShots}
+            {k.jamSalvos > 0 && <span className="live-jam"> · {k.jamSalvos}j</span>}
+          </span>
+        </div>
+        <div className="live-cell" title="Expected kills applied by now (effect time)">
+          <span className="live-label">Exp kills</span>
+          <span className="live-value">{k.expectedKills.toFixed(1)}</span>
+        </div>
+        <div
+          className="live-cell"
+          title="Surviving expected ships past the defended asset by now"
         >
-          {live.windows} windows open
-        </span>
-        <span
-          className={`live-chip${arrivedCls}`}
-          title="Threats past closest approach to the defended asset by this time; color is the worst arrived leaker impact severity"
-        >
-          {live.arrived} arrived
-        </span>
+          <span className="live-label">Leakers</span>
+          <span className={`live-value${leakCls}`}>{k.leakerShips.toFixed(1)}</span>
+        </div>
       </div>
     </div>
   )

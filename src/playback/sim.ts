@@ -91,10 +91,38 @@ function sensorHit(
 }
 
 /**
+ * Two-pass sensor sweep over one threat position set: search sensors
+ * (everything but EO/IR) first, then cued EO/IR, which only hold when an
+ * earlier hit in the same sweep provides the cue (COURAGEOUS: narrow-FOV
+ * cameras verify and track cued targets, they do not search). One place owns
+ * the pass order and the cued flag; detectionsAt, assessThreat, and
+ * spawnInRingViolations all sweep through here.
+ */
+function sweepSensorHits(
+  scenario: Scenario,
+  sensors: Entity[],
+  uas: Entity,
+  uasSpec: UasSpec | undefined,
+  members: Vec2[],
+): Array<{ spec: SensorSpec; hit: DetectionHit }> {
+  const out: Array<{ spec: SensorSpec; hit: DetectionHit }> = []
+  for (const pass of ['search', 'cued'] as const) {
+    for (const sensor of sensors) {
+      const spec = modelFor(scenario, sensor)?.sensor
+      if (!spec) continue
+      const isEo = spec.sensorType === 'eo-ir'
+      if (pass === 'search' ? isEo : !isEo) continue
+      const hit = sensorHit(sensor, spec, scenario, uas, uasSpec, members, out.length > 0)
+      if (hit) out.push({ spec, hit })
+    }
+  }
+  return out
+}
+
+/**
  * Sensors currently holding each UAS: uasId -> hits.
- * EO/IR cameras only hold targets another technology already holds
- * (COURAGEOUS: narrow-FOV cameras verify and track cued targets, they do not
- * search).
+ * EO/IR cameras only hold targets another technology already holds (the
+ * sweepSensorHits cue rule).
  */
 export function detectionsAt(scenario: Scenario, tS: number): Map<string, DetectionHit[]> {
   const tracks = liveTracks(scenario, tS)
@@ -107,18 +135,40 @@ export function detectionsAt(scenario: Scenario, tS: number): Map<string, Detect
     const heading = track?.headingDeg ?? uas.headingDeg
     const members = memberPositions(uas, pos, heading)
     const uasSpec = modelFor(scenario, uas)?.uas
-    const hits: DetectionHit[] = []
-    for (const pass of ['search', 'cued'] as const) {
-      for (const sensor of sensors) {
-        const spec = modelFor(scenario, sensor)?.sensor
-        if (!spec) continue
-        const isEo = spec.sensorType === 'eo-ir'
-        if (pass === 'search' ? isEo : !isEo) continue
-        const hit = sensorHit(sensor, spec, scenario, uas, uasSpec, members, hits.length > 0)
-        if (hit) hits.push(hit)
-      }
-    }
+    const hits = sweepSensorHits(scenario, sensors, uas, uasSpec, members).map((s) => s.hit)
     if (hits.length > 0) out.set(uas.id, hits)
+  }
+  return out
+}
+
+/** One threat whose path starts inside one sensor's effective detect ring. */
+export interface SpawnViolation {
+  uasId: string
+  sensorId: string
+}
+
+/**
+ * Threats whose flight path STARTS inside a sensor's effective detect ring:
+ * the track is held at T0, so under ROE free it is engaged at T0 and the run
+ * never exercises the search problem. The raid builder clears spawn points at
+ * commit time, but sensors move or get added afterward, delays change, and
+ * hand-drawn paths get no standoff at all, so this is derived live from the
+ * scenario and never stored. Uses the same per-sensor rules as sensorHit at
+ * path.points[0] (lead position; formation offsets are ignored): environment
+ * derates, radar target-size scaling, sector wedges, RF silence, and the
+ * EO/IR cue rule (an EO/IR-only hold is not a violation).
+ */
+export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
+  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
+  const out: SpawnViolation[] = []
+  for (const uas of scenario.entities) {
+    if (uas.kind !== 'uas' || !entityActive(uas)) continue
+    const start = scenario.paths.find((p) => p.entityId === uas.id)?.points[0]
+    if (!start) continue
+    const uasSpec = modelFor(scenario, uas)?.uas
+    for (const { hit } of sweepSensorHits(scenario, sensors, uas, uasSpec, [start])) {
+      out.push({ uasId: uas.id, sensorId: hit.sensorId })
+    }
   }
   return out
 }
@@ -291,25 +341,17 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
     const stepTechs = new Set<SensorType>()
     let fcClassifiedNow = false
-    for (const pass of ['search', 'cued'] as const) {
-      for (const sensor of sensors) {
-        const spec = modelFor(scenario, sensor)?.sensor
-        if (!spec) continue
-        const isEo = spec.sensorType === 'eo-ir'
-        if (pass === 'search' ? isEo : !isEo) continue
-        const hit = sensorHit(sensor, spec, scenario, uas, uasSpec, members, stepTechs.size > 0)
-        if (!hit) continue
-        stepTechs.add(hit.sensorType)
-        detectingSensors.add(sensor.id)
-        if (hit.resolved) anyResolved = true
-        const role = defaultSensorRole(spec)
-        if (hit.classified && (role === 'fire-control' || role === 'classification')) {
-          fcClassifiedNow = true
-        }
-        if (base.firstDetectS == null) {
-          base.firstDetectS = t
-          base.firstDetectSensorId = sensor.id
-        }
+    for (const { spec, hit } of sweepSensorHits(scenario, sensors, uas, uasSpec, members)) {
+      stepTechs.add(hit.sensorType)
+      detectingSensors.add(hit.sensorId)
+      if (hit.resolved) anyResolved = true
+      const role = defaultSensorRole(spec)
+      if (hit.classified && (role === 'fire-control' || role === 'classification')) {
+        fcClassifiedNow = true
+      }
+      if (base.firstDetectS == null) {
+        base.firstDetectS = t
+        base.firstDetectSensorId = hit.sensorId
       }
     }
     for (const tech of stepTechs) techsSeen.add(tech)

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   aarHeadline,
+  effectorExpenditureLine,
   environmentHeadline,
   magazinesHeadline,
   scoreHeadline,
   threatCompactStats,
+  threatShotLine,
 } from './headlines'
 import type { EnvironmentSpec } from '../model/types'
 
@@ -106,6 +108,40 @@ describe('magazinesHeadline', () => {
   })
 })
 
+describe('effectorExpenditureLine', () => {
+  it('reads jam salvos for a jammer by type, including an idle one', () => {
+    expect(
+      effectorExpenditureLine({ effectorType: 'jammer', shotsFired: 0, jamSalvos: 0 }),
+    ).toBe('0 jam salvos')
+    expect(
+      effectorExpenditureLine({ effectorType: 'jammer', shotsFired: 0, jamSalvos: 9 }),
+    ).toBe('9 jam salvos')
+  })
+
+  it('uses the singular for one jam salvo', () => {
+    expect(
+      effectorExpenditureLine({ effectorType: 'jammer', shotsFired: 0, jamSalvos: 1 }),
+    ).toBe('1 jam salvo')
+  })
+
+  it('reads fired for kinetic types, even at zero', () => {
+    expect(
+      effectorExpenditureLine({ effectorType: 'interceptor', shotsFired: 4, jamSalvos: 0 }),
+    ).toBe('4 fired')
+    expect(effectorExpenditureLine({ effectorType: 'gun', shotsFired: 0, jamSalvos: 0 })).toBe(
+      '0 fired',
+    )
+  })
+
+  it('falls back on the counts when the type is unknown (legacy pins)', () => {
+    expect(effectorExpenditureLine({ effectorType: null, shotsFired: 5 })).toBe('5 fired')
+    expect(effectorExpenditureLine({ effectorType: null, shotsFired: 0, jamSalvos: 3 })).toBe(
+      '3 jam salvos',
+    )
+    expect(effectorExpenditureLine({ shotsFired: 2 })).toBe('2 fired')
+  })
+})
+
 describe('aarHeadline', () => {
   it('formats expected kills and leakers to one decimal', () => {
     expect(aarHeadline({ expectedKills: 3.24, expectedLeakers: 0.76 })).toBe(
@@ -123,6 +159,58 @@ describe('scoreHeadline', () => {
 
   it('dashes when no score computes', () => {
     expect(scoreHeadline(null)).toBe('—')
+  })
+})
+
+describe('threatShotLine', () => {
+  const att = (over: Record<string, number>) => ({
+    shipCount: 1,
+    shotsFired: 0,
+    jamSalvos: 0,
+    expectedKills: 0,
+    leakProbability: 1,
+    ...over,
+  })
+
+  it('reads probabilities for a single ship', () => {
+    expect(
+      threatShotLine(att({ shotsFired: 2, expectedKills: 0.9, leakProbability: 0.1 })),
+    ).toBe('2 kin · kill 90% · leak 10%')
+  })
+
+  it('adds the jam salvo count when jam salvos were emitted', () => {
+    expect(
+      threatShotLine(
+        att({ shotsFired: 2, jamSalvos: 1, expectedKills: 0.92, leakProbability: 0.08 }),
+      ),
+    ).toBe('2 kin · 1 jam · kill 92% · leak 8%')
+  })
+
+  it('reads expected ship counts for a formation', () => {
+    expect(
+      threatShotLine(
+        att({ shipCount: 6, shotsFired: 9, expectedKills: 5.4, leakProbability: 0.1 }),
+      ),
+    ).toBe('9 kin · kill 5.4 · leak 0.6')
+  })
+
+  it('reads jam-only expenditure without a kinetic part', () => {
+    expect(
+      threatShotLine(att({ jamSalvos: 3, expectedKills: 0.6, leakProbability: 0.4 })),
+    ).toBe('3 jam · kill 60% · leak 40%')
+  })
+
+  it('reads no shots when never engaged, and dashes without an attrition row', () => {
+    expect(threatShotLine(att({}))).toBe('no shots')
+    expect(threatShotLine(undefined)).toBe('—')
+  })
+
+  it('derives the leak percent from the rounded kill percent so the pair sums to 100', () => {
+    // Both halves round up independently (12.5 -> 13, 87.5 -> 88): naive
+    // rounding would print 13% + 88% = 101%.
+    expect(
+      threatShotLine(att({ shotsFired: 1, expectedKills: 0.125, leakProbability: 0.875 })),
+    ).toBe('1 kin · kill 13% · leak 87%')
   })
 })
 

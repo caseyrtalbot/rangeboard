@@ -1,4 +1,4 @@
-import type { AarSummary, EnvironmentSpec } from '../model/types'
+import type { AarEffectorShots, AarSummary, EnvironmentSpec } from '../model/types'
 import type { ImpactSeverity } from '../analysis/impact'
 import type { ThreatAssessment } from '../playback/sim'
 import type { ThreatAttrition } from '../playback/attrition'
@@ -30,15 +30,20 @@ export function environmentHeadline(env: EnvironmentSpec, units: DisplayUnits = 
 }
 
 /**
- * Magazine headline: "12 shots · 3 of 20 remaining". Finite magazines sum
- * across effectors; when every effector is unlimited (jammers, DE) the tail
- * reads "unlimited". A tracked remainder without a known magazine size drops
- * the "of N" part rather than inventing one.
+ * Magazine headline: "12 shots · 3 of 20 remaining". Shots are kinetic
+ * (non-jammer) salvos; jam salvos join as their own part when any were
+ * emitted ("12 shots · 9 jam salvos · ..."). Finite magazines sum across
+ * effectors; when every effector is unlimited (jammers, DE) the tail reads
+ * "unlimited". A tracked remainder without a known magazine size drops the
+ * "of N" part rather than inventing one.
  */
 export function magazinesHeadline(
-  aar: Pick<AarSummary, 'shotsFired' | 'effectors'>,
+  aar: Pick<AarSummary, 'shotsFired' | 'jamSalvos' | 'effectors'>,
 ): string {
-  const shots = `${aar.shotsFired} shot${aar.shotsFired === 1 ? '' : 's'}`
+  const jam = aar.jamSalvos ?? 0
+  const shots =
+    `${aar.shotsFired} shot${aar.shotsFired === 1 ? '' : 's'}` +
+    (jam > 0 ? ` · ${jam} jam salvo${jam === 1 ? '' : 's'}` : '')
   const finite = aar.effectors.filter((e) => e.expectedRoundsRemaining != null)
   if (finite.length === 0) return `${shots} · unlimited`
   const left = finite.reduce((s, e) => s + (e.expectedRoundsRemaining ?? 0), 0)
@@ -47,6 +52,25 @@ export function magazinesHeadline(
   return sized
     ? `${shots} · ${left} of ${size} remaining`
     : `${shots} · ${left} remaining`
+}
+
+/**
+ * One effector's expenditure phrase, branching on effector TYPE, not on
+ * whether salvos happened: a jammer's expenditure is jam salvos even when
+ * idle ("0 jam salvos", never "0 fired"); every other type reads "N fired".
+ * When the type is unknown (legacy pins), fall back to whichever count the
+ * row carries: jam salvos when any were emitted, otherwise shots.
+ */
+export function effectorExpenditureLine(
+  e: Pick<AarEffectorShots, 'shotsFired' | 'jamSalvos'> & {
+    effectorType?: AarEffectorShots['effectorType']
+  },
+): string {
+  const jam = e.jamSalvos ?? 0
+  const jamText = `${jam} jam salvo${jam === 1 ? '' : 's'}`
+  if (e.effectorType === 'jammer') return jamText
+  if (e.effectorType != null) return `${e.shotsFired} fired`
+  return jam > 0 ? jamText : `${e.shotsFired} fired`
 }
 
 /** AAR headline: "3.2 kills · 0.8 leakers". */
@@ -59,6 +83,35 @@ export function aarHeadline(
 /** Score headline: "72 / 100"; a dash when no score computes. */
 export function scoreHeadline(score: number | null): string {
   return score != null ? `${score} / 100` : '—'
+}
+
+/**
+ * Compact threat-row expenditure and outcome string: "2 kin · 1 jam · kill
+ * 90% · leak 10%". Single ships read as probabilities; formations read as
+ * expected ship counts. The leak percent is 100 minus the rounded kill
+ * percent so the pair always sums to 100. "no shots" when the threat drew no
+ * salvo of either channel; a dash when no attrition row exists.
+ */
+export function threatShotLine(
+  att:
+    | Pick<
+        ThreatAttrition,
+        'shipCount' | 'shotsFired' | 'jamSalvos' | 'expectedKills' | 'leakProbability'
+      >
+    | undefined,
+): string {
+  if (!att) return '—'
+  if (att.shotsFired === 0 && att.jamSalvos === 0) return 'no shots'
+  const shots = [
+    att.shotsFired > 0 ? `${att.shotsFired} kin` : null,
+    att.jamSalvos > 0 ? `${att.jamSalvos} jam` : null,
+  ].filter(Boolean)
+  const killPct = Math.round(att.expectedKills * 100)
+  const outcome =
+    att.shipCount > 1
+      ? `kill ${att.expectedKills.toFixed(1)} · leak ${(att.shipCount * att.leakProbability).toFixed(1)}`
+      : `kill ${killPct}% · leak ${100 - killPct}%`
+  return [...shots, outcome].join(' · ')
 }
 
 /**

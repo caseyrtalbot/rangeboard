@@ -7,7 +7,7 @@ import { formatDistance, formatTime } from '../../geometry/geo'
 import type { DisplayUnits } from '../../geometry/geo'
 import type { LeakerImpact } from '../../analysis/impact'
 import { SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../../analysis/impact'
-import { TIER_CLS, threatCompactStats } from '../headlines'
+import { TIER_CLS, threatCompactStats, threatShotLine } from '../headlines'
 
 const STATUS_TEXT: Record<ThreatStatus, { label: string; short: string; cls: string }> = {
   'no-path': { label: 'No flight path', short: 'No path', cls: 'neutral' },
@@ -200,10 +200,14 @@ export function ThreatDetail({
             <tr>
               <td>Shots fired</td>
               <td>
-                {att && att.shotsFired > 0
-                  ? `${att.shotsFired}${
-                      att.firstShotS != null ? ` · first at ${formatTime(att.firstShotS)}` : ''
-                    }`
+                {att && (att.shotsFired > 0 || att.jamSalvos > 0)
+                  ? [
+                      att.shotsFired > 0 ? `${att.shotsFired} kinetic` : null,
+                      att.jamSalvos > 0 ? `${att.jamSalvos} jam` : null,
+                      att.firstShotS != null ? `first at ${formatTime(att.firstShotS)}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
                   : 'none'}
               </td>
             </tr>
@@ -237,7 +241,10 @@ export function ThreatDetail({
 }
 
 /**
- * One compact line per threat: name · status chip · warning · window · leak.
+ * Compact threat row: designator and status chip on the head line, shots and
+ * kill/leak on the stat line under it (a 320px panel cannot hold both on one
+ * line without losing the designator).
+ * Warning and window times live in the hover title and the expanded table.
  * Click toggles the detail table; the amber I&W line renders inside the
  * expansion whenever leak probability reaches 0.5 or an impact severity is
  * set (the collapsed asset-level alert lives in LeakerWarningStrip).
@@ -271,17 +278,22 @@ export function ThreatRowCompact({
     ? `${iwVerb} ${imp.assetName}${imp.arrivalS != null ? ` T+${formatTime(imp.arrivalS)}` : ''}`
     : 'High leak probability'
 
+  const toggle = () => setOpen((v) => !v)
   return (
     <div className="threat-row compact">
-      <div className="threat-compact" onClick={() => setOpen((v) => !v)}>
+      <div className="threat-compact" onClick={toggle}>
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
         <span className="threat-name">{name(a.uasId)}</span>
         <span className={`status ${status.cls}`} title={status.label}>
           {status.short}
         </span>
-        <span className="threat-stats" title="warning time · engagement window · leak probability">
-          warn {stats.warning} · win {stats.window} · leak {stats.leak}
-        </span>
+      </div>
+      <div
+        className="threat-substats"
+        onClick={toggle}
+        title={`kinetic shots · jam salvos · kill/leak · warning ${stats.warning} · window ${stats.window}`}
+      >
+        {threatShotLine(att)}
       </div>
       {open && showIw && (
         <div className="iw-line">
@@ -289,6 +301,14 @@ export function ThreatRowCompact({
             I&W{severity != null ? ` ${SEVERITY_LABEL[severity]}` : ''}
           </span>
           {iwText}
+          {imp != null && imp.jamDegradedProb > 0.005 && (
+            <span
+              className="status jam"
+              title={`Track arrives jam-degraded with probability ${Math.round(imp.jamDegradedProb * 100)}%`}
+            >
+              JAM DEG {Math.round(imp.jamDegradedProb * 100)}%
+            </span>
+          )}
         </div>
       )}
       {open && (
@@ -315,6 +335,10 @@ interface GroupAgg {
   kills: number
   hardKills: number
   softKills: number
+  /** Kinetic salvos fired at the group's members. */
+  kineticShots: number
+  /** Jam salvos directed at the group's members. */
+  jamSalvos: number
   /** Ships in members that never drew a shot (microbar gray segment). */
   notEngaged: number
   /** Expected surviving ships among engaged members (microbar red segment). */
@@ -330,6 +354,8 @@ function aggregate(members: ThreatAssessment[], report: AttritionReport): GroupA
     kills: 0,
     hardKills: 0,
     softKills: 0,
+    kineticShots: 0,
+    jamSalvos: 0,
     notEngaged: 0,
     engagedLeak: 0,
     leak: 0,
@@ -342,7 +368,9 @@ function aggregate(members: ThreatAssessment[], report: AttritionReport): GroupA
     agg.kills += att?.expectedKills ?? 0
     agg.hardKills += att?.expectedHardKills ?? 0
     agg.softKills += att?.expectedSoftKills ?? 0
-    if (!att || att.shotsFired === 0) agg.notEngaged += ships
+    agg.kineticShots += att?.shotsFired ?? 0
+    agg.jamSalvos += att?.jamSalvos ?? 0
+    if (!att || (att.shotsFired === 0 && att.jamSalvos === 0)) agg.notEngaged += ships
     else agg.engagedLeak += ships * att.leakProbability
     if (a.warningS != null && (agg.minWarnS == null || a.warningS < agg.minWarnS)) {
       agg.minWarnS = a.warningS
@@ -350,6 +378,25 @@ function aggregate(members: ThreatAssessment[], report: AttritionReport): GroupA
   }
   agg.leak = agg.notEngaged + agg.engagedLeak
   return agg
+}
+
+/** Chip severity order for picking a group's headline status. */
+const STATUS_CLS_RANK: Record<string, number> = { bad: 3, warn: 2, neutral: 1, good: 0 }
+
+/** Worst member status (by chip severity) plus a per-status count title. */
+function groupStatus(members: ThreatAssessment[]): { status: ThreatStatus; title: string } {
+  let worst: ThreatStatus = members[0].status
+  const counts = new Map<ThreatStatus, number>()
+  for (const a of members) {
+    counts.set(a.status, (counts.get(a.status) ?? 0) + 1)
+    if (STATUS_CLS_RANK[STATUS_TEXT[a.status].cls] > STATUS_CLS_RANK[STATUS_TEXT[worst].cls]) {
+      worst = a.status
+    }
+  }
+  const title = [...counts.entries()]
+    .map(([s, n]) => `${n} ${STATUS_TEXT[s].label.toLowerCase()}`)
+    .join(' · ')
+  return { status: worst, title }
 }
 
 /**
@@ -394,18 +441,36 @@ function ThreatGroupRow({
 }) {
   const [open, setOpen] = useState(false)
   const agg = aggregate(members, report)
+  const gs = groupStatus(members)
+  const shots = [
+    agg.kineticShots > 0 ? `${agg.kineticShots} kin` : null,
+    agg.jamSalvos > 0 ? `${agg.jamSalvos} jam` : null,
+  ].filter(Boolean)
+  const statsText =
+    shots.length > 0
+      ? `${shots.join(' · ')} · kill ${agg.kills.toFixed(1)} · leak ${agg.leak.toFixed(1)}`
+      : 'no shots'
+  const toggle = () => setOpen((v) => !v)
   return (
     <div className="threat-row compact">
-      <div className="threat-group-head" onClick={() => setOpen((v) => !v)}>
+      <div className="threat-group-head" onClick={toggle}>
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
         <span className="threat-name">
           {label} ×{members.length}
         </span>
-        <GroupMicrobar agg={agg} />
-        <span className="threat-stats">
-          kills {agg.kills.toFixed(1)} · leak {agg.leak.toFixed(1)} · warn{' '}
-          {agg.minWarnS != null ? `${formatTime(agg.minWarnS)} min` : '—'}
+        <span className={`status ${STATUS_TEXT[gs.status].cls}`} title={gs.title}>
+          {STATUS_TEXT[gs.status].short}
         </span>
+        <GroupMicrobar agg={agg} />
+      </div>
+      <div
+        className="threat-substats"
+        onClick={toggle}
+        title={`kinetic shots · jam salvos · kill/leak · min warning ${
+          agg.minWarnS != null ? formatTime(agg.minWarnS) : 'none'
+        }`}
+      >
+        {statsText}
       </div>
       {open && (
         <div className="threat-group-members">

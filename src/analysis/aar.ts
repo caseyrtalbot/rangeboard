@@ -19,7 +19,7 @@ import type { LeakerImpact } from './impact'
 
 /** Compact outcome label from the expected-value numbers. */
 export function aarOutcome(att: ThreatAttrition | undefined): AarOutcome {
-  if (!att || att.shotsFired === 0) return 'not-engaged'
+  if (!att || (att.shotsFired === 0 && att.jamSalvos === 0)) return 'not-engaged'
   if (att.leakProbability > 0.5) return 'leaker'
   return att.expectedHardKills >= att.expectedSoftKills ? 'hard-kill' : 'soft-kill'
 }
@@ -49,6 +49,7 @@ export function buildAarSummary(
         hostileAtS: a.classificationAtS.hostileAtS,
         engageS: att?.firstShotS ?? null,
         shotsFired: att?.shotsFired ?? 0,
+        jamSalvos: att?.jamSalvos ?? 0,
         expectedHardKills: att?.expectedHardKills ?? 0,
         expectedSoftKills: att?.expectedSoftKills ?? 0,
         leakProbability: att?.leakProbability ?? 1,
@@ -77,6 +78,7 @@ export function buildAarSummary(
       name: ent?.name ?? e.effectorId,
       effectorType: spec?.effectorType ?? null,
       shotsFired: e.shotsFired,
+      jamSalvos: e.jamSalvos,
       expectedRoundsRemaining: e.expectedRoundsRemaining,
       magazineSize: spec?.magazineSize ?? null,
     }
@@ -97,6 +99,7 @@ export function buildAarSummary(
     firstDetectS: minOf(threats.map((t) => t.detectS)),
     firstShotS: minOf(threats.map((t) => t.engageS)),
     shotsFired: totals.shotsFired,
+    jamSalvos: totals.jamSalvos,
     effectors,
     threats,
   }

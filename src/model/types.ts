@@ -389,9 +389,12 @@ export interface AarThreatRow {
   unknownAtS: number | null
   suspectedAtS: number | null
   hostileAtS: number | null
-  /** First shot at this threat; null when never engaged. */
+  /** First salvo of either channel at this threat; null when never engaged. */
   engageS: number | null
+  /** Kinetic (non-jammer) salvos at this threat. */
   shotsFired: number
+  /** Jammer salvos at this threat. Absent on pins made before the split. */
+  jamSalvos?: number
   expectedHardKills: number
   expectedSoftKills: number
   leakProbability: number
@@ -419,7 +422,10 @@ export interface AarEffectorShots {
   effectorId: string
   name: string
   effectorType: EffectorSpec['effectorType'] | null
+  /** Kinetic salvos; 0 for jammers (their expenditure is jamSalvos). */
   shotsFired: number
+  /** Jammer salvos. Absent on pins made before the expenditure split. */
+  jamSalvos?: number
   /** Null = unlimited magazine (jammers, DE, HPM). */
   expectedRoundsRemaining: number | null
   magazineSize: number | null
@@ -443,7 +449,10 @@ export interface AarSummary {
   firstDetectS: number | null
   /** Earliest shot at any threat, sim seconds; null = never. */
   firstShotS: number | null
+  /** Kinetic (non-jammer) salvos only. */
   shotsFired: number
+  /** Jammer salvos. Absent on pins made before the expenditure split. */
+  jamSalvos?: number
   effectors: AarEffectorShots[]
   threats: AarThreatRow[]
 }
