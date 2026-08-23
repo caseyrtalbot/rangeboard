@@ -34,7 +34,7 @@ export function UnderlayLayer() {
       opacity={underlay.opacity}
       draggable={moveUnderlay}
       listening={moveUnderlay}
-      stroke={moveUnderlay ? '#d9a441' : undefined}
+      stroke={moveUnderlay ? '#a9b4bd' : undefined}
       strokeWidth={2}
       strokeScaleEnabled={false}
       onDragEnd={(e) => updateUnderlay({ pos: { x: e.target.x(), y: e.target.y() } })}

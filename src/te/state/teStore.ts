@@ -6,10 +6,12 @@
 
 import { create } from 'zustand'
 import type {
+  CampaignPhase,
   ChecklistTemplate,
   DebriefKind,
   GoNoGo,
   GoNoGoScope,
+  TeAction,
   TeCampaign,
   TeCard,
   TeChecklist,
@@ -18,7 +20,7 @@ import type {
   TeState,
 } from '../model/types'
 import type { TypeCode } from '../model/ids'
-import { bumpMajor, nextId } from '../model/ids'
+import { bumpMajor, bumpMinor, nextId } from '../model/ids'
 import {
   emptyAnomaly,
   emptyCampaign,
@@ -104,6 +106,20 @@ export interface TeStore {
   addCard: (patch?: Partial<TeCard>) => string
   addFinding: () => string
   addChange: () => string
+  /** New draft card prelinked to a matrix cell, with linked-record text filled. */
+  createCardFromMatrixCell: (cellId: string) => string | null
+  /** New draft diagnostic card titled from the anomaly; the card code writes back to verificationTest. */
+  createDiagnosticCard: (anomalyId: string) => string | null
+  /** New open action linked to the finding, with requiredWork from recommendedAction. */
+  createActionFromFinding: (findingId: string) => string | null
+  /** Clones a config baseline's text fields, bumps the minor version, and clears the freeze. */
+  duplicateConfig: (configId: string) => string | null
+  /** Minor version bump on a versioned record. Frozen records stay locked. */
+  bumpRecordVersion: <K extends TeListKey>(key: K, id: string) => void
+
+  // Gate decisions
+  passQualificationGate: () => void
+  approveDesign: () => void
 
   // Card lifecycle
   /** Issue is blocked while cardIssueBlockers returns any blocker. */
@@ -115,6 +131,8 @@ export interface TeStore {
   createRunFromCard: (cardId: string) => string | null
   markRunEvent: (runId: string, mark: string, note?: string) => void
   adjudicateRun: (runId: string, validity: TeRunValidity, by: string, reason: string) => void
+  /** Removes the run and strips its id from every finding's run links. */
+  discardRun: (runId: string) => void
   addDeviation: (runId: string) => string | null
   addAnomaly: (runId: string | null) => string
   startChecklist: (template: ChecklistTemplate, runId?: string | null) => string
@@ -125,10 +143,138 @@ export interface TeStore {
     note?: string,
   ) => string
   addDebrief: (kind: DebriefKind, runId?: string | null) => string
+
+  // Delivery
+  markPackageDelivered: () => void
 }
 
 function requireCampaign(s: { campaigns: TeCampaign[]; activeCampaignId: string | null }) {
   return s.campaigns.find((c) => c.id === s.activeCampaignId) ?? null
+}
+
+const PHASE_ORDER: CampaignPhase[] = [
+  'candidate',
+  'qualified',
+  'defined',
+  'designed',
+  'integrated',
+  'ready',
+  'executing',
+  'analyzing',
+  'decision-ready',
+  'closed',
+]
+
+/** Forward-only phase advance; a campaign never moves backward. */
+function advance(c: TeCampaign, phase: CampaignPhase): TeCampaign {
+  if (PHASE_ORDER.indexOf(phase) <= PHASE_ORDER.indexOf(c.phase)) return c
+  return { ...c, phase }
+}
+
+/**
+ * Card text derived from the records the card links to.
+ * With `all` false only empty fields fill; `all` true overwrites every
+ * derived field (the explicit refill path).
+ */
+export function linkedRecordFill(c: TeCampaign, card: TeCard, all = false): Partial<TeCard> {
+  const patch: Partial<TeCard> = {}
+  const put = (key: keyof TeCard & string, current: string, next: string) => {
+    if (next.trim() === '') return
+    if (!all && current.trim() !== '') return
+    ;(patch as Record<string, unknown>)[key] = next
+  }
+  const config = c.configs.find((x) => x.id === card.configId)
+  if (config) {
+    put(
+      'systemStateNote',
+      card.systemStateNote,
+      [config.name && `${config.name} ${config.version}`, config.settingsAndModes]
+        .filter((t) => t && t.trim() !== '')
+        .join('; '),
+    )
+    put('trainingState', card.trainingState, config.operatorsAndTraining)
+  }
+  const threat = c.threats.find((x) => x.id === card.threatId)
+  if (threat) {
+    put('redControlled', card.redControlled, threat.redControlledVariables)
+    put('redFixed', card.redFixed, threat.redFixedVariables)
+    put('blinding', card.blinding, threat.blinding)
+  }
+  const cond = c.conditions.find((x) => x.id === card.conditionId)
+  if (cond) {
+    put(
+      'conditionNote',
+      card.conditionNote,
+      [cond.name, cond.weatherAndIllumination, cond.emEnvironment]
+        .filter((t) => t.trim() !== '')
+        .join('; '),
+    )
+  }
+  put(
+    'operatingLimits',
+    card.operatingLimits,
+    c.authorities
+      .filter((a) => a.status === 'active' && a.operatingLimits.trim() !== '')
+      .map((a) => a.operatingLimits)
+      .join('; '),
+  )
+  const measures = card.measureIds
+    .map((id) => c.measures.find((m) => m.id === id))
+    .filter((m) => m !== undefined)
+  if (measures.length > 0) {
+    put(
+      'dataSources',
+      card.dataSources,
+      [
+        ...new Set(
+          measures.flatMap((m) => [m.truth.primarySource, m.truth.backupSource]).filter((t) => t.trim() !== ''),
+        ),
+      ].join('\n'),
+    )
+    put(
+      'groundTruth',
+      card.groundTruth,
+      [
+        ...new Set(
+          measures
+            .map((m) =>
+              [m.truth.primarySource, m.truth.independenceFromSut].filter((t) => t.trim() !== '').join('; '),
+            )
+            .filter((t) => t !== ''),
+        ),
+      ].join('\n'),
+    )
+    const tolerances = measures
+      .map((m) => m.truth.timeToleranceS)
+      .filter((t): t is number => t !== null)
+    if (tolerances.length > 0) {
+      put(
+        'commonTimeAndTolerance',
+        card.commonTimeAndTolerance,
+        `Common time base; tightest tolerance ${Math.min(...tolerances)} s`,
+      )
+    }
+  }
+  const cell = c.matrix.find((x) => x.id === card.matrixCellId)
+  if (cell) put('orderAndBlocking', card.orderAndBlocking, cell.orderOrBlock)
+  put(
+    'resultThatCouldChangeDecision',
+    card.resultThatCouldChangeDecision,
+    c.decision.resultThatChangesChoice,
+  )
+  const q = card.questionIds.map((id) => c.questions.find((x) => x.id === id)).find((x) => x !== undefined)
+  if (q) put('purpose', card.purpose, q.wording)
+  const hyp = card.hypothesisIds
+    .map((id) => c.hypotheses.find((h) => h.id === id))
+    .find((h) => h !== undefined)
+  if (hyp) {
+    put(
+      'prediction',
+      card.prediction,
+      [hyp.predictedValue, hyp.producesBehavior].filter((t) => t.trim() !== '').join('; '),
+    )
+  }
+  return patch
 }
 
 export const useTeStore = create<TeStore>()((set, get) => {
@@ -227,15 +373,118 @@ export const useTeStore = create<TeStore>()((set, get) => {
       let internalId = ''
       allocate('TC', (c, code) => {
         internalId = newId('tec')
-        const card = { ...emptyCard(internalId, code), ...patch }
+        const defaults: Partial<TeCard> = {}
+        const conductor = c.roles.find((r) => r.role === 'test-conductor')
+        if (conductor && conductor.primary.trim() !== '') defaults.owner = conductor.primary
+        const last = c.cards[c.cards.length - 1]
+        if (last) {
+          if (last.storagePath.trim() !== '') defaults.storagePath = last.storagePath
+          defaults.siteCalls = { ...last.siteCalls }
+        }
+        const card = { ...emptyCard(internalId, code), ...defaults, ...patch }
         return push(c, 'cards', card)
       })
       return internalId
     },
 
+    createCardFromMatrixCell: (cellId) => {
+      const c = requireCampaign(get())
+      const cell = c?.matrix.find((x) => x.id === cellId)
+      if (!c || !cell) return null
+      const id = get().addCard({
+        matrixCellId: cell.id,
+        questionIds: cell.questionId ? [cell.questionId] : [],
+        hypothesisIds: cell.hypothesisId ? [cell.hypothesisId] : [],
+        configId: cell.configId || null,
+        threatId: cell.threatId || null,
+        conditionId: cell.conditionId || null,
+        measureIds: [...cell.measureIds],
+      })
+      const camp = requireCampaign(get())
+      const card = camp?.cards.find((x) => x.id === id)
+      if (camp && card) {
+        const fill = linkedRecordFill(camp, card)
+        if (Object.keys(fill).length > 0) get().patchItem('cards', id, fill)
+      }
+      return id
+    },
+
+    createDiagnosticCard: (anomalyId) => {
+      const c = requireCampaign(get())
+      const anomaly = c?.anomalies.find((a) => a.id === anomalyId)
+      if (!c || !anomaly) return null
+      const summary = anomaly.observation.trim().slice(0, 60)
+      const id = get().addCard({
+        title: `Diagnostic: ${summary || anomaly.id}`,
+        purpose: summary ? `Isolate the cause of: ${summary}` : `Isolate the cause of anomaly ${anomaly.id}.`,
+      })
+      const card = requireCampaign(get())?.cards.find((x) => x.id === id)
+      if (card) get().patchItem('anomalies', anomalyId, { verificationTest: card.cardCode })
+      return id
+    },
+
+    createActionFromFinding: (findingId) => {
+      const c = requireCampaign(get())
+      const finding = c?.findings.find((f) => f.id === findingId)
+      if (!c || !finding) return null
+      const decisionOwner =
+        c.decisionRights.find((r) => r.decisionType === 'customer action')?.accountableAuthority ?? ''
+      const action: TeAction = {
+        id: newId('act'),
+        findingId,
+        decisionOwner,
+        executionOwner: '',
+        dueDate: '',
+        requiredWork: finding.recommendedAction,
+        evidenceForClosure: '',
+        riskIfLate: '',
+        status: 'open',
+        communicationRequired: '',
+      }
+      get().addItem('actions', action)
+      return action.id
+    },
+
     addFinding: () => allocate('FIND', (c, id) => push(c, 'findings', emptyFinding(id))),
 
     addChange: () => allocate('CHG', (c, id) => push(c, 'changes', emptyChange(id))),
+
+    duplicateConfig: (configId) => {
+      const c = requireCampaign(get())
+      const src = c?.configs.find((x) => x.id === configId)
+      if (!c || !src) return null
+      let cloneId: string | null = null
+      allocate('CFG', (camp, id) => {
+        cloneId = id
+        return push(camp, 'configs', {
+          ...src,
+          id,
+          version: bumpMinor(src.version),
+          frozen: false,
+          freezeTime: '',
+          scenarioSnapshot: null,
+          driftLog: [],
+        })
+      })
+      return cloneId
+    },
+
+    bumpRecordVersion: (key, id) =>
+      mutate((c) => ({
+        ...c,
+        [key]: c[key].map((r) => {
+          if (r.id !== id) return r
+          const rec = r as { version?: string; frozen?: boolean }
+          if (typeof rec.version !== 'string' || rec.frozen) return r
+          return { ...r, version: bumpMinor(rec.version) }
+        }),
+      })),
+
+    passQualificationGate: () =>
+      mutate((c) => advance({ ...c, qualificationPassedAt: nowIso() }, 'qualified')),
+
+    approveDesign: () =>
+      mutate((c) => advance({ ...c, designApprovedAt: nowIso() }, 'designed')),
 
     issueCard: (cardId) => {
       const c = requireCampaign(get())
@@ -243,12 +492,17 @@ export const useTeStore = create<TeStore>()((set, get) => {
       if (!c || !card) return ['Card not found.']
       const blockers = cardIssueBlockers(c, card)
       if (blockers.length > 0) return blockers
-      mutate((camp) => ({
-        ...camp,
-        cards: camp.cards.map((x) =>
-          x.id === cardId ? { ...x, status: 'issued' as const, effectiveAt: nowIso() } : x,
+      mutate((camp) =>
+        advance(
+          {
+            ...camp,
+            cards: camp.cards.map((x) =>
+              x.id === cardId ? { ...x, status: 'issued' as const, effectiveAt: nowIso() } : x,
+            ),
+          },
+          'ready',
         ),
-      }))
+      )
       return []
     },
 
@@ -286,7 +540,7 @@ export const useTeStore = create<TeStore>()((set, get) => {
       allocate('RUN', (camp, id) => {
         runId = id
         const run: TeRun = { ...emptyRun(id, card), startAt: nowIso() }
-        return push(camp, 'runs', run)
+        return advance(push(camp, 'runs', run), 'executing')
       })
       return runId
     },
@@ -302,19 +556,39 @@ export const useTeStore = create<TeStore>()((set, get) => {
       })),
 
     adjudicateRun: (runId, validity, by, reason) =>
+      mutate((c) =>
+        advance(
+          {
+            ...c,
+            runs: c.runs.map((r) =>
+              r.id === runId
+                ? {
+                    ...r,
+                    validity,
+                    adjudications: [
+                      ...r.adjudications,
+                      { version: r.adjudications.length + 1, at: nowIso(), by, validity, reason },
+                    ],
+                  }
+                : r,
+            ),
+          },
+          'analyzing',
+        ),
+      ),
+
+    discardRun: (runId) =>
       mutate((c) => ({
         ...c,
-        runs: c.runs.map((r) =>
-          r.id === runId
+        runs: c.runs.filter((r) => r.id !== runId),
+        findings: c.findings.map((f) =>
+          f.supportingRunIds.includes(runId) || f.contradictingRunIds.includes(runId)
             ? {
-                ...r,
-                validity,
-                adjudications: [
-                  ...r.adjudications,
-                  { version: r.adjudications.length + 1, at: nowIso(), by, validity, reason },
-                ],
+                ...f,
+                supportingRunIds: f.supportingRunIds.filter((x) => x !== runId),
+                contradictingRunIds: f.contradictingRunIds.filter((x) => x !== runId),
               }
-            : r,
+            : f,
         ),
       })),
 
@@ -398,6 +672,14 @@ export const useTeStore = create<TeStore>()((set, get) => {
           answers: [],
           improvements: [],
         }),
+      ),
+
+    markPackageDelivered: () =>
+      mutate((c) =>
+        advance(
+          { ...c, evidencePackage: { ...c.evidencePackage, deliveredAt: nowIso() } },
+          'decision-ready',
+        ),
       ),
   }
 })

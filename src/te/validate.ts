@@ -33,7 +33,9 @@ export function cardIssueBlockers(c: TeCampaign, card: TeCard): string[] {
       out.push(`Step "${step.action.slice(0, 40)}" has no observable completion criterion.`)
   }
   if (!card.coldReaderAt) out.push('Cold-reader check is not recorded.')
+  if (card.coldReaderAt && !card.coldReaderBy.trim()) out.push('Cold-reader name is missing.')
   if (!card.dryRunAt) out.push('Dry-run check is not recorded.')
+  if (card.dryRunAt && !card.dryRunBy.trim()) out.push('Dry-run lead name is missing.')
   const placeholderFields: Array<[string, string]> = [
     ['purpose', card.purpose],
     ['prediction', card.prediction],
@@ -86,7 +88,7 @@ export function closeoutBlockers(c: TeCampaign): string[] {
   }
   const openActions = c.actions.filter((a) => a.status === 'open')
   if (openActions.length > 0)
-    out.push(`${openActions.length} action(s) remain open without transfer.`)
+    out.push(`${openActions.length} action(s) remain open without transfer. Fix in Deliver, Actions tab.`)
   return out
 }
 

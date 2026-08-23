@@ -2,7 +2,8 @@ import type { AarSummary, EnvironmentSpec } from '../model/types'
 import type { ImpactSeverity } from '../analysis/impact'
 import type { ThreatAssessment } from '../playback/sim'
 import type { ThreatAttrition } from '../playback/attrition'
-import { formatTime } from '../geometry/geo'
+import { formatSpeed, formatTime } from '../geometry/geo'
+import type { DisplayUnits } from '../geometry/geo'
 
 /** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
 export const TIER_CLS: Record<ImpactSeverity, string> = {
@@ -17,14 +18,14 @@ export const TIER_CLS: Record<ImpactSeverity, string> = {
  * change sensor or threat performance appear; temperature and elevation stay
  * inside the section body.
  */
-export function environmentHeadline(env: EnvironmentSpec): string {
+export function environmentHeadline(env: EnvironmentSpec, units: DisplayUnits = 'metric'): string {
   const parts: string[] = []
   const precip = env.precipitation ?? 'clear'
   if (precip === 'rain') parts.push('Rain')
   if (precip === 'fog') parts.push('Fog')
   if ((env.light ?? 'day') === 'night') parts.push('Night')
   if ((env.emBackground ?? 'rural') === 'urban') parts.push('Urban EM')
-  if (env.windSpeedMps > 0) parts.push(`${env.windSpeedMps} m/s`)
+  if (env.windSpeedMps > 0) parts.push(formatSpeed(env.windSpeedMps, units))
   return parts.length > 0 ? parts.join(' · ') : 'Standard day'
 }
 

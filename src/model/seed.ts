@@ -41,5 +41,6 @@ export function emptyScenario(): Scenario {
     testCards: [],
     frames: [],
     underlay: emptyUnderlay(),
+    geoRef: null,
   }
 }

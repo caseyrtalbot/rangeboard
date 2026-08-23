@@ -42,12 +42,12 @@ export function SystemHandleLayer() {
 
   return (
     <Group x={cx} y={cy} scaleX={1 / k} scaleY={1 / k}>
-      <Circle radius={RING_PX} stroke="#d9a441" strokeWidth={1} dash={[3, 4]} listening={false} />
-      <Line points={[0, -RING_PX, 0, -HANDLE_PX]} stroke="#d9a441" strokeWidth={1} dash={[2, 3]} listening={false} />
+      <Circle radius={RING_PX} stroke="#a9b4bd" strokeWidth={1} dash={[3, 4]} listening={false} />
+      <Line points={[0, -RING_PX, 0, -HANDLE_PX]} stroke="#a9b4bd" strokeWidth={1} dash={[2, 3]} listening={false} />
       <Circle
         y={-HANDLE_PX}
         radius={7}
-        fill="#d9a441"
+        fill="#a9b4bd"
         stroke="#121415"
         strokeWidth={1.5}
         draggable

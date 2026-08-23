@@ -98,6 +98,7 @@ export function ThreatWezLayer({
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
   const show = useStore((s) => s.ui.showThreatWez)
+  const units = useStore((s) => s.ui.units)
   const simTimeS = useStore((s) => s.playback.simTimeS)
   const k = camera.scale
 
@@ -109,9 +110,9 @@ export function ThreatWezLayer({
     // 'PF' = planning factor (expanded in the Analysis panel's About section):
     // both the impact radii and the stored standoff ranges are planning
     // factors, not study-derived lethality data.
-    if (wez.kind === 'standoff') return `WEZ · standoff ${formatDistance(wez.radiusM)} · PF`
+    if (wez.kind === 'standoff') return `WEZ · standoff ${formatDistance(wez.radiusM, units)} · PF`
     const uas = scenario.library.find((m) => m.id === entityById(wez.uasId)?.specId)?.uas
-    const parts = [`WEZ · r ${formatDistance(wez.radiusM)}`]
+    const parts = [`WEZ · r ${formatDistance(wez.radiusM, units)}`]
     if (uas?.warheadKg != null) parts.push(`${uas.warheadKg} kg`)
     parts.push('PF')
     if (wez.count > 1) parts.push(`×${wez.count}`)

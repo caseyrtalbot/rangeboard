@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type {
   AuthorityStatus,
   CampaignCharter,
+  CampaignRole,
   DecisionCharter,
   EngagementType,
   RegisterKind,
@@ -12,16 +13,21 @@ import { CAMPAIGN_ROLES, DECISION_TYPES } from '../model/types'
 import { useTeStore } from '../state/teStore'
 import { newId } from '../../model/types'
 import { qualificationBlockers } from '../validate'
-import { nowIso } from '../model/empty'
+import { AUTHORITY_LEAD_TIMES, SCHEDULE_MILESTONES } from '../seed/constants'
+import { HELP, allPeople } from './help'
 import {
   CheckField,
   ChipList,
+  DateField,
   Field,
   GateList,
+  PersonField,
+  PhaseIntro,
   Pill,
   SelectField,
   Seg,
   SubTitle,
+  SuggestField,
   TextField,
 } from './kit'
 
@@ -43,25 +49,99 @@ const TASKINGS: ValkrynTasking[] = [
   'support-an-authority',
 ]
 
+const SECURITY_CLASSES = ['Unclassified', 'CUI', 'Secret']
+
+/** Distinct organization strings stored anywhere in the T&E store. */
+function allOrganizations(campaigns: TeCampaign[]): string[] {
+  const out = new Set<string>()
+  for (const c of campaigns) {
+    for (const s of [
+      c.charter.requestingOrganization,
+      c.charter.acceptance.relyingOrganization,
+      c.charter.sponsor,
+    ]) {
+      if (s.trim() !== '') out.add(s.trim())
+    }
+  }
+  return [...out].sort((a, b) => a.localeCompare(b))
+}
+
 function CharterTab({ campaign }: { campaign: TeCampaign }) {
-  const { patchCampaign } = useTeStore.getState()
+  const { patchCampaign, addItem } = useTeStore.getState()
+  const campaigns = useTeStore((s) => s.campaigns)
   const ch = campaign.charter
+  const people = allPeople(campaign)
+  const orgs = allOrganizations(campaigns)
+  const securityOptions = (
+    ch.dataSecurityReleaseClass && !SECURITY_CLASSES.includes(ch.dataSecurityReleaseClass)
+      ? [ch.dataSecurityReleaseClass, ...SECURITY_CLASSES]
+      : SECURITY_CLASSES
+  ).map((v) => ({ v, label: v }))
   const set = (patch: Partial<CampaignCharter>) =>
     patchCampaign({ charter: { ...ch, ...patch } })
   const setAcceptance = (patch: Partial<CampaignCharter['acceptance']>) =>
     set({ acceptance: { ...ch.acceptance, ...patch } })
+
+  /**
+   * Charter people sync one way into the roles table: the first non-empty
+   * value creates the matching roles row, and later typing fills it while its
+   * primary tracks the charter. Roles edits never write back, and a deleted
+   * row stays deleted.
+   */
+  const setCharterPerson = (
+    field: 'customerDecisionOwner' | 'evidenceAcceptanceAuthority' | 'deploymentStrategist',
+    role: CampaignRole,
+    v: string,
+  ) => {
+    const prev = ch[field]
+    const wasEmpty = prev.trim() === ''
+    const row = campaign.roles.find((r) => r.role === role)
+    let roles = campaign.roles
+    if (!row) {
+      if (wasEmpty && v.trim() !== '')
+        roles = [...roles, { id: newId('role'), role, primary: v, backup: '' }]
+    } else if (row.primary.trim() === '' || row.primary === prev) {
+      roles = roles.map((r) => (r.id === row.id ? { ...r, primary: v } : r))
+    }
+    patchCampaign({ charter: { ...ch, [field]: v }, roles })
+  }
+
+  const assumptionLines = ch.majorAssumptions
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l !== '')
+
+  const seedAssumptionRegisters = () => {
+    const existing = new Set(
+      campaign.registers.filter((r) => r.kind === 'assumption').map((r) => r.statement.trim()),
+    )
+    for (const line of assumptionLines) {
+      if (existing.has(line)) continue
+      addItem('registers', {
+        id: newId('reg'),
+        kind: 'assumption',
+        statement: line,
+        sourceAndDate: '',
+        relevance: '',
+        rank: null,
+        disposition: null,
+        dispositionNote: '',
+        notes: '',
+      })
+    }
+  }
 
   return (
     <div className="inspector-body">
       <SubTitle>Request</SubTitle>
       <TextField label="Customer's exact request (their own words)" rows={2} value={ch.exactRequest} onChange={(v) => set({ exactRequest: v })} />
       <div className="field-row">
-        <TextField label="Requesting organization" value={ch.requestingOrganization} onChange={(v) => set({ requestingOrganization: v })} />
-        <TextField label="Sponsor" value={ch.sponsor} onChange={(v) => set({ sponsor: v })} />
+        <SuggestField label="Requesting organization" value={ch.requestingOrganization} onChange={(v) => set({ requestingOrganization: v })} suggestions={orgs} />
+        <SuggestField label="Sponsor" value={ch.sponsor} onChange={(v) => set({ sponsor: v })} suggestions={[...orgs, ...people]} />
       </div>
       <div className="field-row">
-        <TextField label="Date received" value={ch.dateReceived} onChange={(v) => set({ dateReceived: v })} placeholder="2026-08-19" />
-        <TextField label="Requested decision date" value={ch.requestedDecisionDate} onChange={(v) => set({ requestedDecisionDate: v })} />
+        <DateField label="Date received" value={ch.dateReceived} onChange={(v) => set({ dateReceived: v ?? '' })} />
+        <DateField label="Requested decision date" value={ch.requestedDecisionDate} onChange={(v) => set({ requestedDecisionDate: v ?? '' })} />
       </div>
       <div className="field-row">
         <SelectField label="Engagement type" value={ch.engagementType} options={ENGAGEMENT_TYPES.map((v) => ({ v, label: v }))} onChange={(v) => v && set({ engagementType: v })} />
@@ -70,18 +150,24 @@ function CharterTab({ campaign }: { campaign: TeCampaign }) {
 
       <SubTitle>People</SubTitle>
       <div className="field-row">
-        <TextField label="Customer decision owner" value={ch.customerDecisionOwner} onChange={(v) => set({ customerDecisionOwner: v })} />
-        <TextField label="Evidence acceptance authority" value={ch.evidenceAcceptanceAuthority} onChange={(v) => set({ evidenceAcceptanceAuthority: v })} />
+        <PersonField label="Customer decision owner" value={ch.customerDecisionOwner} onChange={(v) => setCharterPerson('customerDecisionOwner', 'customer-decision-owner', v)} people={people} help={HELP['qualification-gate']} />
+        <PersonField label="Evidence acceptance authority" value={ch.evidenceAcceptanceAuthority} onChange={(v) => setCharterPerson('evidenceAcceptanceAuthority', 'evidence-acceptance-authority', v)} people={people} />
       </div>
-      <TextField label="Deployment strategist" value={ch.deploymentStrategist} onChange={(v) => set({ deploymentStrategist: v })} />
+      <PersonField label="Deployment strategist" value={ch.deploymentStrategist} onChange={(v) => setCharterPerson('deploymentStrategist', 'deployment-strategist', v)} people={people} />
+      <p className="muted small">Names typed here fill the matching roles row on the People tab.</p>
 
       <SubTitle>Scope</SubTitle>
       <TextField label="Mission and protected outcome" rows={2} value={ch.missionAndProtectedOutcome} onChange={(v) => set({ missionAndProtectedOutcome: v })} />
       <TextField label="Included scope" rows={2} value={ch.includedScope} onChange={(v) => set({ includedScope: v })} />
       <TextField label="Excluded scope and its effect on conclusions" rows={2} value={ch.excludedScope} onChange={(v) => set({ excludedScope: v })} />
       <div className="field-row">
-        <TextField label="Major assumptions" rows={2} value={ch.majorAssumptions} onChange={(v) => set({ majorAssumptions: v })} />
+        <TextField label="Major assumptions (one per line)" rows={2} value={ch.majorAssumptions} onChange={(v) => set({ majorAssumptions: v })} />
         <TextField label="Major risks" rows={2} value={ch.majorRisks} onChange={(v) => set({ majorRisks: v })} />
+      </div>
+      <div className="inspector-actions">
+        <button className="mini" disabled={assumptionLines.length === 0} onClick={seedAssumptionRegisters}>
+          Create register assumptions
+        </button>
       </div>
       <TextField label="Minimum viable campaign" rows={2} value={ch.minimumViableCampaign} onChange={(v) => set({ minimumViableCampaign: v })} />
       <TextField label="Success criteria" rows={2} value={ch.successCriteria} onChange={(v) => set({ successCriteria: v })} />
@@ -89,11 +175,11 @@ function CharterTab({ campaign }: { campaign: TeCampaign }) {
       <SubTitle>Logistics and limits</SubTitle>
       <div className="field-row">
         <TextField label="Planned sites and dates" value={ch.plannedSitesAndDates} onChange={(v) => set({ plannedSitesAndDates: v })} />
-        <TextField label="Deliverables date" value={ch.deliverablesDate} onChange={(v) => set({ deliverablesDate: v })} />
+        <DateField label="Deliverables date" value={ch.deliverablesDate} onChange={(v) => set({ deliverablesDate: v ?? '' })} />
       </div>
       <div className="field-row">
-        <TextField label="Data security release class" value={ch.dataSecurityReleaseClass} onChange={(v) => set({ dataSecurityReleaseClass: v })} />
-        <TextField label="Contract and funding owner" value={ch.contractAndFundingOwner} onChange={(v) => set({ contractAndFundingOwner: v })} />
+        <SelectField label="Data security release class" value={ch.dataSecurityReleaseClass || null} allowEmpty="not set" options={securityOptions} onChange={(v) => set({ dataSecurityReleaseClass: v ?? '' })} help={HELP['security-class']} />
+        <SuggestField label="Contract and funding owner" value={ch.contractAndFundingOwner} onChange={(v) => set({ contractAndFundingOwner: v })} suggestions={[...people, ...orgs]} />
       </div>
       <TextField label="Known limits (contract, budget, security, data, range, schedule)" rows={2} value={ch.knownLimits} onChange={(v) => set({ knownLimits: v })} />
       <TextField label="Source documents and prior evidence" rows={2} value={ch.sourceDocumentsAndPriorEvidence} onChange={(v) => set({ sourceDocumentsAndPriorEvidence: v })} />
@@ -121,8 +207,8 @@ function CharterTab({ campaign }: { campaign: TeCampaign }) {
         <div key={i} className="run-row">
           <TextField label="Commitment" value={cm.item} onChange={(v) => set({ commitments: ch.commitments.map((x, j) => (j === i ? { ...x, item: v } : x)) })} />
           <div className="field-row">
-            <TextField label="Owner" value={cm.owner} onChange={(v) => set({ commitments: ch.commitments.map((x, j) => (j === i ? { ...x, owner: v } : x)) })} />
-            <TextField label="Due date" value={cm.dueDate} onChange={(v) => set({ commitments: ch.commitments.map((x, j) => (j === i ? { ...x, dueDate: v } : x)) })} />
+            <PersonField label="Owner" value={cm.owner} onChange={(v) => set({ commitments: ch.commitments.map((x, j) => (j === i ? { ...x, owner: v } : x)) })} people={people} />
+            <DateField label="Due date" value={cm.dueDate} onChange={(v) => set({ commitments: ch.commitments.map((x, j) => (j === i ? { ...x, dueDate: v ?? '' } : x)) })} />
           </div>
           <TextField label="Consequence of failure" value={cm.consequenceOfFailure} onChange={(v) => set({ commitments: ch.commitments.map((x, j) => (j === i ? { ...x, consequenceOfFailure: v } : x)) })} />
           <div className="inspector-actions">
@@ -135,10 +221,20 @@ function CharterTab({ campaign }: { campaign: TeCampaign }) {
 
       <SubTitle>Evidence acceptance path</SubTitle>
       <div className="field-row">
-        <TextField label="Relying organization" value={ch.acceptance.relyingOrganization} onChange={(v) => setAcceptance({ relyingOrganization: v })} />
-        <TextField label="Method approval authority" value={ch.acceptance.methodApprovalAuthority} onChange={(v) => setAcceptance({ methodApprovalAuthority: v })} />
+        <SuggestField
+          label="Relying organization"
+          value={ch.acceptance.relyingOrganization}
+          onChange={(v) => setAcceptance({ relyingOrganization: v })}
+          suggestions={orgs}
+          placeholder={ch.requestingOrganization || undefined}
+          onBlur={() => {
+            if (ch.acceptance.relyingOrganization.trim() === '' && ch.requestingOrganization.trim() !== '')
+              setAcceptance({ relyingOrganization: ch.requestingOrganization })
+          }}
+        />
+        <PersonField label="Method approval authority" value={ch.acceptance.methodApprovalAuthority} onChange={(v) => setAcceptance({ methodApprovalAuthority: v })} people={people} />
       </div>
-      <TextField label="Required witnesses and reviewers" value={ch.acceptance.requiredWitnesses} onChange={(v) => setAcceptance({ requiredWitnesses: v })} />
+      <PersonField label="Required witnesses and reviewers" value={ch.acceptance.requiredWitnesses} onChange={(v) => setAcceptance({ requiredWitnesses: v })} people={people} />
       <TextField label="Evidence standard (measures, repetitions, confidence, fidelity)" rows={2} value={ch.acceptance.evidenceStandard} onChange={(v) => setAcceptance({ evidenceStandard: v })} />
       <TextField label="Rejection conditions" rows={2} value={ch.acceptance.rejectionConditions} onChange={(v) => setAcceptance({ rejectionConditions: v })} />
       <p className="muted small">
@@ -151,6 +247,7 @@ function CharterTab({ campaign }: { campaign: TeCampaign }) {
 function DecisionTab({ campaign }: { campaign: TeCampaign }) {
   const { patchCampaign } = useTeStore.getState()
   const d = campaign.decision
+  const people = allPeople(campaign)
   const set = (patch: Partial<DecisionCharter>) =>
     patchCampaign({ decision: { ...d, ...patch } })
 
@@ -164,8 +261,19 @@ function DecisionTab({ campaign }: { campaign: TeCampaign }) {
     <div className="inspector-body">
       <div className="spec-summary">{statement}</div>
       <div className="field-row">
-        <TextField label="Decision date" value={d.decisionDate} onChange={(v) => set({ decisionDate: v })} placeholder="2026-10-01" />
-        <TextField label="Authorized decision owner" value={d.authorizedDecisionOwner} onChange={(v) => set({ authorizedDecisionOwner: v })} />
+        <DateField label="Decision date" value={d.decisionDate} onChange={(v) => set({ decisionDate: v ?? '' })} />
+        <SuggestField
+          label="Authorized decision owner"
+          value={d.authorizedDecisionOwner}
+          onChange={(v) => set({ authorizedDecisionOwner: v })}
+          suggestions={people}
+          placeholder={campaign.charter.customerDecisionOwner || undefined}
+          help={HELP['qualification-gate']}
+          onBlur={() => {
+            if (d.authorizedDecisionOwner.trim() === '' && campaign.charter.customerDecisionOwner.trim() !== '')
+              set({ authorizedDecisionOwner: campaign.charter.customerDecisionOwner })
+          }}
+        />
       </div>
       <TextField label="Bounded choice" rows={2} value={d.boundedChoice} onChange={(v) => set({ boundedChoice: v })} />
       <TextField label="Alternatives (include delay and no action)" rows={2} value={d.alternatives} onChange={(v) => set({ alternatives: v })} />
@@ -173,7 +281,7 @@ function DecisionTab({ campaign }: { campaign: TeCampaign }) {
       <TextField label="Acceptance conditions" rows={2} value={d.acceptanceConditions} onChange={(v) => set({ acceptanceConditions: v })} />
       <div className="field-row">
         <TextField label="Post-test action" value={d.postTestAction} onChange={(v) => set({ postTestAction: v })} />
-        <TextField label="Action authority" value={d.actionAuthority} onChange={(v) => set({ actionAuthority: v })} />
+        <PersonField label="Action authority" value={d.actionAuthority} onChange={(v) => set({ actionAuthority: v })} people={people} />
       </div>
       <TextField label="Consequence of no action" value={d.consequenceOfNoAction} onChange={(v) => set({ consequenceOfNoAction: v })} />
       <div className="field-row">
@@ -181,7 +289,7 @@ function DecisionTab({ campaign }: { campaign: TeCampaign }) {
         <TextField label="Result that does not" value={d.resultThatDoesNot} onChange={(v) => set({ resultThatDoesNot: v })} />
       </div>
       <div className="field-row">
-        <TextField label="Latest accepted-evidence date" value={d.latestAcceptedEvidenceDate} onChange={(v) => set({ latestAcceptedEvidenceDate: v })} />
+        <DateField label="Latest accepted-evidence date" value={d.latestAcceptedEvidenceDate} onChange={(v) => set({ latestAcceptedEvidenceDate: v ?? '' })} />
         <CheckField label="Customer can accept unfavorable evidence" value={d.canAcceptUnfavorableEvidence} onChange={(v) => set({ canAcceptUnfavorableEvidence: v })} />
       </div>
       <SubTitle>Decision arithmetic</SubTitle>
@@ -205,6 +313,18 @@ function DecisionTab({ campaign }: { campaign: TeCampaign }) {
 
 function PeopleTab({ campaign }: { campaign: TeCampaign }) {
   const { addItem, patchItem, removeItem } = useTeStore.getState()
+  const people = allPeople(campaign)
+  const [editLeadTime, setEditLeadTime] = useState<string | null>(null)
+  const authorityOptions = (type: string) =>
+    (type && !AUTHORITY_LEAD_TIMES.some((x) => x.authorityType === type)
+      ? [{ authorityType: type }, ...AUTHORITY_LEAD_TIMES]
+      : AUTHORITY_LEAD_TIMES
+    ).map((x) => ({ v: x.authorityType, label: x.authorityType }))
+  const decisionOptions = (type: string) =>
+    (type && !DECISION_TYPES.some((x) => x === type)
+      ? [type, ...DECISION_TYPES]
+      : [...DECISION_TYPES]
+    ).map((v) => ({ v, label: v }))
   return (
     <div className="inspector-body">
       <SubTitle
@@ -224,8 +344,8 @@ function PeopleTab({ campaign }: { campaign: TeCampaign }) {
       {campaign.roles.map((r) => (
         <div key={r.id} className="field-row te-table-row">
           <SelectField label="Role" value={r.role} options={CAMPAIGN_ROLES.map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('roles', r.id, { role: v })} />
-          <TextField label="Primary" value={r.primary} onChange={(v) => patchItem('roles', r.id, { primary: v })} />
-          <TextField label="Backup" value={r.backup} onChange={(v) => patchItem('roles', r.id, { backup: v })} />
+          <PersonField label="Primary" value={r.primary} onChange={(v) => patchItem('roles', r.id, { primary: v })} people={people} />
+          <PersonField label="Backup" value={r.backup} onChange={(v) => patchItem('roles', r.id, { backup: v })} people={people} />
           <button className="mini danger" onClick={() => removeItem('roles', r.id)}>×</button>
         </div>
       ))}
@@ -256,14 +376,30 @@ function PeopleTab({ campaign }: { campaign: TeCampaign }) {
       {campaign.authorities.map((a) => (
         <div key={a.id} className="run-row">
           <div className="field-row">
-            <TextField label="Authority" value={a.authorityType} onChange={(v) => patchItem('authorities', a.id, { authorityType: v })} placeholder="Airspace NOTAM" />
-            <TextField label="Owner" value={a.owner} onChange={(v) => patchItem('authorities', a.id, { owner: v })} />
-            <TextField label="Due" value={a.dueDate} onChange={(v) => patchItem('authorities', a.id, { dueDate: v })} />
+            <SelectField
+              label="Authority"
+              value={a.authorityType || null}
+              allowEmpty="pick an authority"
+              options={authorityOptions(a.authorityType)}
+              help={HELP['authority-lead-time']}
+              onChange={(v) => {
+                const entry = AUTHORITY_LEAD_TIMES.find((x) => x.authorityType === v)
+                const patch: Partial<typeof a> = { authorityType: v ?? '' }
+                if (entry && !a.leadTimeNote.trim())
+                  patch.leadTimeNote = `${entry.leadTime} (${entry.note})`
+                patchItem('authorities', a.id, patch)
+              }}
+            />
+            <PersonField label="Owner" value={a.owner} onChange={(v) => patchItem('authorities', a.id, { owner: v })} people={people} />
+            <DateField label="Due" value={a.dueDate} onChange={(v) => patchItem('authorities', a.id, { dueDate: v ?? '' })} />
             <SelectField label="Status" value={a.status} options={(['pending', 'active', 'expired', 'denied'] as AuthorityStatus[]).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('authorities', a.id, { status: v })} />
           </div>
           <div className="field-row">
             <TextField label="Operating limits" value={a.operatingLimits} onChange={(v) => patchItem('authorities', a.id, { operatingLimits: v })} />
-            <TextField label="Lead time note" value={a.leadTimeNote} onChange={(v) => patchItem('authorities', a.id, { leadTimeNote: v })} />
+            <TextField label="Lead time note (from the authority pick)" value={a.leadTimeNote} disabled={editLeadTime !== a.id} onChange={(v) => patchItem('authorities', a.id, { leadTimeNote: v })} />
+            {editLeadTime !== a.id && (
+              <button className="mini" onClick={() => setEditLeadTime(a.id)}>edit</button>
+            )}
           </div>
           <div className="inspector-actions">
             <button className="mini danger" onClick={() => removeItem('authorities', a.id)}>remove</button>
@@ -301,10 +437,10 @@ function PeopleTab({ campaign }: { campaign: TeCampaign }) {
       </SubTitle>
       {campaign.decisionRights.map((d) => (
         <div key={d.id} className="field-row te-table-row">
-          <TextField label="Decision" value={d.decisionType} onChange={(v) => patchItem('decisionRights', d.id, { decisionType: v })} />
-          <TextField label="Accountable" value={d.accountableAuthority} onChange={(v) => patchItem('decisionRights', d.id, { accountableAuthority: v })} />
-          <TextField label="Performer" value={d.performer} onChange={(v) => patchItem('decisionRights', d.id, { performer: v })} />
-          <TextField label="Escalation" value={d.escalationPath} onChange={(v) => patchItem('decisionRights', d.id, { escalationPath: v })} />
+          <SelectField label="Decision" value={d.decisionType || null} allowEmpty="pick a decision" options={decisionOptions(d.decisionType)} onChange={(v) => patchItem('decisionRights', d.id, { decisionType: v ?? '' })} />
+          <PersonField label="Accountable" value={d.accountableAuthority} onChange={(v) => patchItem('decisionRights', d.id, { accountableAuthority: v })} people={people} />
+          <PersonField label="Performer" value={d.performer} onChange={(v) => patchItem('decisionRights', d.id, { performer: v })} people={people} />
+          <PersonField label="Escalation" value={d.escalationPath} onChange={(v) => patchItem('decisionRights', d.id, { escalationPath: v })} people={people} />
           <button className="mini danger" onClick={() => removeItem('decisionRights', d.id)}>×</button>
         </div>
       ))}
@@ -325,6 +461,10 @@ function RegistersTab({ campaign }: { campaign: TeCampaign }) {
   const selected = useTeStore((s) => s.ui.selected.registers ?? null)
   const entries = campaign.registers.filter((r) => r.kind === kind)
   const entry = campaign.registers.find((r) => r.id === selected && r.kind === kind)
+  const sourceSuggestions = [
+    ...campaign.registers.map((r) => r.sourceAndDate),
+    ...campaign.charter.sourceDocumentsAndPriorEvidence.split('\n'),
+  ]
 
   return (
     <div className="inspector-body">
@@ -357,11 +497,19 @@ function RegistersTab({ campaign }: { campaign: TeCampaign }) {
         <div className="run-row">
           <TextField label="Statement (exact wording)" rows={2} value={entry.statement} onChange={(v) => patchItem('registers', entry.id, { statement: v })} />
           <div className="field-row">
-            <TextField label="Source and date" value={entry.sourceAndDate} onChange={(v) => patchItem('registers', entry.id, { sourceAndDate: v })} />
+            <SuggestField label="Source and date" value={entry.sourceAndDate} onChange={(v) => patchItem('registers', entry.id, { sourceAndDate: v })} suggestions={sourceSuggestions} />
             <TextField label="Decision relevance" value={entry.relevance} onChange={(v) => patchItem('registers', entry.id, { relevance: v })} />
           </div>
           {kind === 'unknown' && (
-            <TextField label="Rank (lower resolves first)" value={entry.rank == null ? '' : String(entry.rank)} onChange={(v) => patchItem('registers', entry.id, { rank: v === '' ? null : Number(v) })} />
+            <Field label="Rank (lower resolves first)">
+              <input
+                type="number"
+                min={1}
+                max={Math.max(1, entries.length)}
+                value={entry.rank ?? ''}
+                onChange={(e) => patchItem('registers', entry.id, { rank: e.target.value === '' ? null : Number(e.target.value) })}
+              />
+            </Field>
           )}
           {kind === 'claim' && (
             <SelectField
@@ -388,30 +536,48 @@ function RegistersTab({ campaign }: { campaign: TeCampaign }) {
 
 function ScheduleTab({ campaign }: { campaign: TeCampaign }) {
   const { addItem, patchItem, removeItem } = useTeStore.getState()
+  const people = allPeople(campaign)
   const items = [...campaign.schedule].sort((a, b) => b.tMinusDays - a.tMinusDays)
+  const seedTrack = () => {
+    const existing = new Set(campaign.schedule.map((s) => s.name.trim()))
+    SCHEDULE_MILESTONES.forEach((m) => {
+      if (existing.has(m.name)) return
+      addItem('schedule', {
+        id: newId('sch'),
+        tMinusDays: m.tMinusDays,
+        name: m.name,
+        owner: '',
+        done: false,
+        notes: '',
+      })
+    })
+  }
   return (
     <div className="inspector-body">
       <SubTitle
         action={
-          <button
-            className="mini"
-            onClick={() =>
-              addItem('schedule', { id: newId('sch'), tMinusDays: 30, name: '', owner: '', done: false, notes: '' })
-            }
-          >
-            + item
-          </button>
+          <>
+            <button className="mini" onClick={seedTrack}>Seed standard track</button>
+            <button
+              className="mini"
+              onClick={() =>
+                addItem('schedule', { id: newId('sch'), tMinusDays: 30, name: '', owner: '', done: false, notes: '' })
+              }
+            >
+              + item
+            </button>
+          </>
         }
       >
         Countdown schedule (working days before first live run)
       </SubTitle>
       {items.map((s) => (
         <div key={s.id} className="field-row te-table-row">
-          <Field label="T-">
+          <Field label="T-minus days" help="Negative counts after the first live run.">
             <input type="number" value={s.tMinusDays} onChange={(e) => patchItem('schedule', s.id, { tMinusDays: Number(e.target.value) })} />
           </Field>
-          <TextField label="Milestone" value={s.name} onChange={(v) => patchItem('schedule', s.id, { name: v })} />
-          <TextField label="Owner" value={s.owner} onChange={(v) => patchItem('schedule', s.id, { owner: v })} />
+          <SuggestField label="Milestone" value={s.name} onChange={(v) => patchItem('schedule', s.id, { name: v })} suggestions={SCHEDULE_MILESTONES.map((m) => m.name)} />
+          <PersonField label="Owner" value={s.owner} onChange={(v) => patchItem('schedule', s.id, { owner: v })} people={people} />
           <CheckField label="Done" value={s.done} onChange={(v) => patchItem('schedule', s.id, { done: v })} />
           <button className="mini danger" onClick={() => removeItem('schedule', s.id)}>×</button>
         </div>
@@ -425,12 +591,21 @@ function ScheduleTab({ campaign }: { campaign: TeCampaign }) {
 }
 
 function GateTab({ campaign }: { campaign: TeCampaign }) {
-  const { addItem, patchItem, removeItem, patchCampaign } = useTeStore.getState()
+  const { addItem, patchItem, removeItem, passQualificationGate } = useTeStore.getState()
+  const people = allPeople(campaign)
   const blockers = qualificationBlockers(campaign)
   const passed = campaign.qualificationPassedAt != null
   return (
     <div className="inspector-body">
-      <SubTitle>Qualification gate</SubTitle>
+      <SubTitle
+        action={
+          <span className="help-dot" tabIndex={0} data-help={HELP['qualification-gate']}>
+            ?
+          </span>
+        }
+      >
+        Qualification gate
+      </SubTitle>
       {passed ? (
         <Pill kind="good" text={`passed ${campaign.qualificationPassedAt!.slice(0, 10)}`} />
       ) : (
@@ -441,7 +616,7 @@ function GateTab({ campaign }: { campaign: TeCampaign }) {
         <button
           className="primary"
           disabled={blockers.length > 0 || passed}
-          onClick={() => patchCampaign({ qualificationPassedAt: nowIso(), phase: 'qualified' })}
+          onClick={passQualificationGate}
         >
           Pass qualification gate
         </button>
@@ -474,7 +649,7 @@ function GateTab({ campaign }: { campaign: TeCampaign }) {
           </div>
           {f.score !== 'feasible' && (
             <div className="field-row">
-              <TextField label="Owner" value={f.owner} onChange={(v) => patchItem('feasibility', f.id, { owner: v })} />
+              <PersonField label="Owner" value={f.owner} onChange={(v) => patchItem('feasibility', f.id, { owner: v })} people={people} />
               <TextField label="Fallback" value={f.fallback} onChange={(v) => patchItem('feasibility', f.id, { fallback: v })} />
               <TextField label="Effect on conclusions" value={f.effectOnConclusions} onChange={(v) => patchItem('feasibility', f.id, { effectOnConclusions: v })} />
             </div>
@@ -499,8 +674,16 @@ const TABS: Array<{ v: Tab; label: string }> = [
 
 export function CampaignPanel({ campaign }: { campaign: TeCampaign }) {
   const [tab, setTab] = useState<Tab>('charter')
+  const blockers = qualificationBlockers(campaign)
+  const passed = campaign.qualificationPassedAt != null
+  const gate = passed
+    ? { kind: 'good' as const, text: 'gate passed' }
+    : blockers.length
+      ? { kind: 'warn' as const, text: `${blockers.length} blocker(s)` }
+      : { kind: 'neutral' as const, text: 'gate ready' }
   return (
     <div className="te-panel">
+      <PhaseIntro phase="campaign" gate={gate} />
       <Seg value={tab} options={TABS} onChange={setTab} />
       {tab === 'charter' && <CharterTab campaign={campaign} />}
       {tab === 'decision' && <DecisionTab campaign={campaign} />}

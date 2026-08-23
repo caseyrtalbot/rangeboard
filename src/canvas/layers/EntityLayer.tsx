@@ -203,7 +203,7 @@ function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity }
         <Circle radius={13} fill="#000" opacity={0} />
         {selected && <Circle radius={16} stroke="#ffffff" strokeWidth={1.5} dash={[4, 3]} />}
         {cardLinked && <Circle radius={19} stroke="#7da7c4" strokeWidth={1.5} dash={[2, 3]} />}
-        {connectFromId === entity.id && <Circle radius={16} stroke="#d9a441" strokeWidth={2} />}
+        {connectFromId === entity.id && <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} />}
         {detected && entity.kind === 'uas' && (
           <Circle radius={13} stroke={classified ? '#c4564a' : '#d9a441'} strokeWidth={2} />
         )}
@@ -240,8 +240,8 @@ function EntityNode({ entity, tracks, detections, spokeIds }: { entity: Entity }
               width={68}
               height={16}
               cornerRadius={8}
-              fill={entity.showRange ? '#d9a441' : '#1d2023'}
-              stroke={entity.showRange ? '#d9a441' : '#82887e'}
+              fill={entity.showRange ? '#a9b4bd' : '#1d2023'}
+              stroke={entity.showRange ? '#a9b4bd' : '#82887e'}
               strokeWidth={1}
             />
             <Text

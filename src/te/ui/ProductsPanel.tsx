@@ -21,7 +21,7 @@ import {
   exportRunsCsv,
 } from '../io/exportCsv'
 import { exportCampaignJson } from '../io/persistTe'
-import { Field, SubTitle, TextField } from './kit'
+import { Field, PhaseIntro, SubTitle, TextField } from './kit'
 
 type Artifact =
   | { kind: 'card'; id: string }
@@ -126,6 +126,7 @@ export function ProductsPanel({ campaign }: { campaign: TeCampaign }) {
 
   return (
     <div className="te-panel">
+      <PhaseIntro phase="products" />
       <div className="inspector-body">
         <SubTitle>Print and tablet products</SubTitle>
         <p className="muted small">

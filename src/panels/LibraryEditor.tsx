@@ -1,6 +1,8 @@
-import type { SensorRole, SpecModel } from '../model/types'
+import { useState } from 'react'
+import type { SensorRole, SpecModel, UasSpec } from '../model/types'
 import { SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
 import { useStore } from '../state/store'
+import { formatDistance } from '../geometry/geo'
 
 const SENSOR_ROLES: SensorRole[] = [
   'early-warning',
@@ -10,6 +12,92 @@ const SENSOR_ROLES: SensorRole[] = [
   'fire-control',
   'classification',
 ]
+
+/** Standard sector widths used across the seed library, degrees. */
+const STANDARD_SECTORS = [60, 90, 120, 180, 270, 360]
+
+/** Designator airframe codes following the seed THR-G<group>-<code>-<seq> pattern. */
+const AIRFRAME_CODE: Record<UasSpec['airframe'], string> = {
+  quad: 'Q',
+  'fixed-wing': 'FW',
+  vtol: 'V',
+  'one-way-attack': 'OWA',
+  fpv: 'FPV',
+}
+
+/**
+ * Next free designator in the seed pattern for this model's group and
+ * airframe. The sequence climbs past designators taken by other models, so
+ * THREAT_TACTICS designator pairing stays intact.
+ */
+function autoDesignator(model: SpecModel, library: SpecModel[]): string {
+  const group = model.uas?.group ?? 1
+  const code = AIRFRAME_CODE[model.uas?.airframe ?? 'quad']
+  const taken = new Set(
+    library
+      .filter((m) => m.id !== model.id)
+      .map((m) => m.threatProfile?.designator)
+      .filter(Boolean),
+  )
+  let seq = 1
+  let candidate = `THR-G${group}-${code}-${String(seq).padStart(2, '0')}`
+  while (taken.has(candidate)) {
+    seq += 1
+    candidate = `THR-G${group}-${code}-${String(seq).padStart(2, '0')}`
+  }
+  return candidate
+}
+
+/** Datalist options for a plain input. Suggestions only; typing stays free. */
+function Options({ id, values }: { id: string; values: Array<string | number> }) {
+  return (
+    <datalist id={id}>
+      {values.map((v) => (
+        <option key={v} value={v} />
+      ))}
+    </datalist>
+  )
+}
+
+/** Sector select over the standard widths, with the stored value kept and a custom escape. */
+function SectorField({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [custom, setCustom] = useState(false)
+  const options = STANDARD_SECTORS.includes(value)
+    ? STANDARD_SECTORS
+    : [value, ...STANDARD_SECTORS]
+  return (
+    <Field label="Sector (deg, 360 = omni)">
+      <select
+        value={custom ? 'custom' : String(value)}
+        onChange={(e) => {
+          if (e.target.value === 'custom') {
+            setCustom(true)
+          } else {
+            setCustom(false)
+            onChange(Number(e.target.value))
+          }
+        }}
+      >
+        {options.map((s) => (
+          <option key={s} value={String(s)}>
+            {s}
+          </option>
+        ))}
+        <option value="custom">custom…</option>
+      </select>
+      {custom && (
+        <input
+          type="number"
+          min={5}
+          max={360}
+          step={5}
+          value={value}
+          onChange={(e) => onChange(Math.min(360, Math.max(5, Number(e.target.value))))}
+        />
+      )}
+    </Field>
+  )
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -25,15 +113,29 @@ function Num({
   value,
   onChange,
   step = 1,
+  min,
+  max,
+  list,
 }: {
   label: string
   value: number
   onChange: (n: number) => void
   step?: number
+  min?: number
+  max?: number
+  list?: string
 }) {
   return (
     <Field label={label}>
-      <input type="number" step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <input
+        type="number"
+        step={step}
+        min={min}
+        max={max}
+        list={list}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
     </Field>
   )
 }
@@ -41,6 +143,7 @@ function Num({
 /** Right-panel editor for the selected library model. All capability fields are editable. */
 export function LibraryEditor() {
   const scenario = useStore((s) => s.scenario)
+  const units = useStore((s) => s.ui.units)
   const libraryId = useStore((s) => s.selection.libraryId)
   const { updateModel, duplicateModel, deleteModel, select } = useStore.getState()
 
@@ -105,7 +208,7 @@ export function LibraryEditor() {
               <option value="">unset</option>
               {SENSOR_ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {r} (default {SENSOR_ROLE_DEFAULT_RANGE_M[r] / 1000} km)
+                  {r} (default {formatDistance(SENSOR_ROLE_DEFAULT_RANGE_M[r], units)})
                 </option>
               ))}
             </select>
@@ -114,7 +217,12 @@ export function LibraryEditor() {
             label="Detect range (m)"
             value={sensor.detectRangeM}
             step={100}
+            list="detect-range-options"
             onChange={(n) => patch({ sensor: { ...sensor, detectRangeM: n } })}
+          />
+          <Options
+            id="detect-range-options"
+            values={[...new Set(Object.values(SENSOR_ROLE_DEFAULT_RANGE_M))]}
           />
           {sensor.role && (
             <button
@@ -132,16 +240,16 @@ export function LibraryEditor() {
             step={100}
             onChange={(n) => patch({ sensor: { ...sensor, classifyRangeM: n > 0 ? n : null } })}
           />
-          <Num
-            label="Sector (deg, 360 = omni)"
+          <SectorField
             value={sensor.sectorDeg}
-            step={5}
             onChange={(n) => patch({ sensor: { ...sensor, sectorDeg: Math.min(360, Math.max(5, n)) } })}
           />
           <div className="field-row">
             <Num
               label="Elev min (deg)"
               value={sensor.elevationDeg?.[0] ?? 0}
+              min={-10}
+              max={90}
               onChange={(n) =>
                 patch({ sensor: { ...sensor, elevationDeg: [n, sensor.elevationDeg?.[1] ?? 90] } })
               }
@@ -149,6 +257,8 @@ export function LibraryEditor() {
             <Num
               label="Elev max (deg)"
               value={sensor.elevationDeg?.[1] ?? 90}
+              min={0}
+              max={90}
               onChange={(n) =>
                 patch({ sensor: { ...sensor, elevationDeg: [sensor.elevationDeg?.[0] ?? 0, n] } })
               }
@@ -206,10 +316,8 @@ export function LibraryEditor() {
             value={effector.engageTimeS}
             onChange={(n) => patch({ effector: { ...effector, engageTimeS: n } })}
           />
-          <Num
-            label="Sector (deg, 360 = omni)"
+          <SectorField
             value={effector.sectorDeg ?? 360}
-            step={5}
             onChange={(n) =>
               patch({ effector: { ...effector, sectorDeg: Math.min(360, Math.max(5, n)) } })
             }
@@ -347,10 +455,19 @@ export function LibraryEditor() {
           </Field>
           <Field label="Emissions">
             <input
+              list="emissions-options"
               value={uas.emissionsNote}
               onChange={(e) => patch({ uas: { ...uas, emissionsNote: e.target.value } })}
             />
           </Field>
+          <Options
+            id="emissions-options"
+            values={[
+              ...new Set(
+                scenario.library.map((m) => m.uas?.emissionsNote ?? '').filter(Boolean),
+              ),
+            ]}
+          />
         </div>
       )}
 
@@ -359,16 +476,43 @@ export function LibraryEditor() {
           <div className="panel-subtitle">Threat profile</div>
           <Field label="Designator">
             <input
+              list="designator-options"
               value={tp.designator}
               onChange={(e) => patch({ threatProfile: { ...tp, designator: e.target.value } })}
             />
           </Field>
+          <Options
+            id="designator-options"
+            values={[
+              ...new Set(
+                scenario.library.map((m) => m.threatProfile?.designator ?? '').filter(Boolean),
+              ),
+            ]}
+          />
+          <button
+            className="mini"
+            title="Generate the next free THR-G<group>-<code>-<seq> designator"
+            onClick={() =>
+              patch({ threatProfile: { ...tp, designator: autoDesignator(model, scenario.library) } })
+            }
+          >
+            Auto
+          </button>
           <Field label="Route intent">
             <input
+              list="route-intent-options"
               value={tp.routeIntent}
               onChange={(e) => patch({ threatProfile: { ...tp, routeIntent: e.target.value } })}
             />
           </Field>
+          <Options
+            id="route-intent-options"
+            values={[
+              ...new Set(
+                scenario.library.map((m) => m.threatProfile?.routeIntent ?? '').filter(Boolean),
+              ),
+            ]}
+          />
           <div className="field-row">
             <Num
               label="Altitude (ft)"
@@ -382,6 +526,14 @@ export function LibraryEditor() {
               onChange={(n) => patch({ threatProfile: { ...tp, speedMps: n } })}
             />
           </div>
+          {uas && tp.speedMps !== uas.cruiseSpeedMps && (
+            <button
+              className="mini"
+              onClick={() => patch({ threatProfile: { ...tp, speedMps: uas.cruiseSpeedMps } })}
+            >
+              Use cruise speed ({uas.cruiseSpeedMps} m/s)
+            </button>
+          )}
           <Num
             label="Count"
             value={tp.count}

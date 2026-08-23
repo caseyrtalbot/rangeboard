@@ -10,6 +10,7 @@ import { formatDistance } from '../../geometry/geo'
 export function RangeLayer() {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
+  const units = useStore((s) => s.ui.units)
   const env = scenario.environment
 
   return (
@@ -60,7 +61,7 @@ export function RangeLayer() {
                   fontFamily="IBM Plex Mono"
                   x={12}
                   y={-5}
-                  text={`endurance limit · ${formatDistance(exhaust.distM)}`}
+                  text={`endurance limit · ${formatDistance(exhaust.distM, units)}`}
                   fontSize={10}
                   fill="#c4564a"
                 />

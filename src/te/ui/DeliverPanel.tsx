@@ -2,22 +2,28 @@ import { useState } from 'react'
 import type { PackageSection, TeCampaign, TeEvidencePackage, TeFinding } from '../model/types'
 import { newId } from '../../model/types'
 import { useTeStore } from '../state/teStore'
-import { closeoutBlockers, findingBlockers } from '../validate'
+import { closeoutBlockers, findingBlockers, runIncludable } from '../validate'
 import { computeMeasure } from '../calc/measures'
 import type { MeasureComputation } from '../calc/measures'
 import { runAccounting } from '../calc/accounting'
-import { nowIso } from '../model/empty'
+import { REFUTED_CLAIMS } from '../seed/constants'
 import {
   ChipList,
+  DateField,
   GateList,
   MultiPicker,
+  PersonField,
+  PhaseIntro,
   Pill,
   SelectField,
   Seg,
   SubTitle,
+  SuggestField,
   TextField,
+  VersionField,
   fmtDate,
 } from './kit'
+import { allPeople, decisionRightHolder } from './help'
 
 type Tab = 'findings' | 'actions' | 'debriefs' | 'package' | 'closeout'
 
@@ -37,14 +43,144 @@ function fmtNum(n: number): number {
   return Math.round(n * 1000) / 1000
 }
 
+/** Distinctive lowercase phrase per REFUTED_CLAIMS entry. */
+const REFUTED_PHRASES = [
+  'destroyed russian tanks',
+  'democratized air power',
+  'depends less on technology',
+  'ew-immune',
+  '40-70 km of front',
+  '10% of targets',
+  '50-60% targeting efficiency',
+  '70% of russian gerans',
+]
+
+function refutedClaimMatches(text: string): string[] {
+  const lower = text.toLowerCase()
+  return REFUTED_CLAIMS.filter((claim) => {
+    const phrase = REFUTED_PHRASES.find((p) => claim.toLowerCase().includes(p))
+    return phrase !== undefined && lower.includes(phrase)
+  })
+}
+
 function measureSummary(c: MeasureComputation): string {
   const estimate = c.estimate === null ? 'no estimate' : `${fmtNum(c.estimate)}${c.unit ? ` ${c.unit}` : ''}`
   const interval = c.interval ? ` [${fmtNum(c.interval.lo)}, ${fmtNum(c.interval.hi)}] (${c.interval.method})` : ''
   return `${c.measureId} ${c.name || 'unnamed'}: ${estimate}${interval}, n=${c.nIncluded}`
 }
 
+/** Evidence text derived from the finding's links; fills only empty fields. */
+function generatedEvidence(campaign: TeCampaign, f: TeFinding): Partial<TeFinding> {
+  const patch: Partial<TeFinding> = {}
+  const put = (key: keyof TeFinding & string, current: string, next: string) => {
+    if (next.trim() === '' || current.trim() !== '') return
+    ;(patch as Record<string, unknown>)[key] = next
+  }
+  const comps = f.measureIds
+    .map((id) => computeMeasure(campaign, id))
+    .filter((c): c is MeasureComputation => c !== null)
+  put('quantifiedResult', f.quantifiedResult, comps.map(measureSummary).join('\n'))
+  put(
+    'thresholdComparison',
+    f.thresholdComparison,
+    comps
+      .filter((c) => c.estimate !== null)
+      .map((c) => {
+        const m = campaign.measures.find((x) => x.id === c.measureId)
+        if (!m) return ''
+        if (!c.thresholdShown || m.threshold === null) {
+          return `${c.measureId}: characterization only; no customer-approved threshold`
+        }
+        return `${c.measureId}: estimate ${fmtNum(c.estimate!)} vs threshold ${m.threshold}${m.unit ? ` ${m.unit}` : ''} (${c.label})`
+      })
+      .filter((t) => t !== '')
+      .join('\n'),
+  )
+  put(
+    'sampleAndIndependence',
+    f.sampleAndIndependence,
+    comps
+      .map((c) => {
+        const m = campaign.measures.find((x) => x.id === c.measureId)
+        const unitText = m && m.experimentalUnit.trim() !== '' ? `; unit: ${m.experimentalUnit}` : ''
+        return `${c.measureId}: ${c.nIncluded} included of ${c.nAttempted} attempted${unitText}`
+      })
+      .join('\n'),
+  )
+  put(
+    'uncertaintyNote',
+    f.uncertaintyNote,
+    comps
+      .filter((c) => c.interval !== null)
+      .map((c) => `${c.measureId}: [${fmtNum(c.interval!.lo)}, ${fmtNum(c.interval!.hi)}] (${c.interval!.method})`)
+      .join('\n'),
+  )
+  const linkedRuns = [...new Set([...f.supportingRunIds, ...f.contradictingRunIds])]
+    .map((id) => campaign.runs.find((r) => r.id === id))
+    .filter((r) => r !== undefined)
+  if (linkedRuns.length > 0) {
+    let missing = 0
+    let invalid = 0
+    let censored = 0
+    for (const r of linkedRuns) {
+      for (const o of r.observations) {
+        if (f.measureIds.length > 0 && !f.measureIds.includes(o.measureId)) continue
+        if (o.status === 'missing') missing++
+        if (o.status === 'invalid') invalid++
+        if (o.status === 'censored') censored++
+      }
+    }
+    const excluded = linkedRuns.filter((r) => r.excluded).length
+    put(
+      'missingAndExcludedData',
+      f.missingAndExcludedData,
+      `Across ${linkedRuns.length} linked run(s): ${missing} missing, ${invalid} invalid, ${censored} censored observation(s); ${excluded} excluded run(s).`,
+    )
+  }
+  const config = campaign.configs.find((x) => x.id === f.configId)
+  const threats = f.threatIds
+    .map((id) => campaign.threats.find((t) => t.id === id))
+    .filter((t) => t !== undefined)
+  const conds = f.conditionIds
+    .map((id) => campaign.conditions.find((x) => x.id === id))
+    .filter((x) => x !== undefined)
+  put(
+    'appliesTo',
+    f.appliesTo,
+    [
+      config ? `configuration ${config.name || config.id} ${config.version}` : '',
+      ...threats.map((t) => t.name || t.id),
+      ...conds.map((x) => x.name || x.id),
+      ...threats.map((t) => t.permittedGeneralization),
+      ...conds.map((x) => x.permittedGeneralization),
+    ]
+      .filter((t) => t.trim() !== '')
+      .join('; '),
+  )
+  put(
+    'doesNotApplyTo',
+    f.doesNotApplyTo,
+    [...threats.map((t) => t.prohibitedGeneralization), ...conds.map((x) => x.prohibitedGeneralization)]
+      .filter((t) => t.trim() !== '')
+      .join('; '),
+  )
+  const hyp = campaign.hypotheses.find((h) => h.id === f.hypothesisId)
+  if (hyp) {
+    const observed = comps
+      .filter((c) => c.estimate !== null)
+      .map((c) => `${c.measureId} ${fmtNum(c.estimate!)}${c.unit ? ` ${c.unit}` : ''}`)
+      .join(', ')
+    put(
+      'comparisonWithPrediction',
+      f.comparisonWithPrediction,
+      `Predicted: ${hyp.predictedValue || 'no prediction recorded'}. Observed: ${observed || 'no estimate'}.`,
+    )
+  }
+  return patch
+}
+
 function FindingsTab({ campaign }: { campaign: TeCampaign }) {
-  const { addFinding, patchItem, removeItem, selectRecord } = useTeStore.getState()
+  const { addFinding, patchItem, removeItem, selectRecord, bumpRecordVersion, createActionFromFinding } = useTeStore.getState()
   const selected = useTeStore((s) => s.ui.selected.findings ?? null)
   const [helperMeasureId, setHelperMeasureId] = useState('')
   const f = campaign.findings.find((x) => x.id === selected)
@@ -53,6 +189,50 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
   const claims = campaign.registers.filter((r) => r.kind === 'claim')
   const helper = helperMeasureId ? computeMeasure(campaign, helperMeasureId) : null
   const blockers = f ? findingBlockers(f) : []
+  const people = allPeople(campaign)
+  const refuted = f ? refutedClaimMatches(f.statement) : []
+  const linkedRunIds = f ? [...new Set([...f.supportingRunIds, ...f.contradictingRunIds])] : []
+  const linkedActions = f ? campaign.actions.filter((a) => a.findingId === f.id) : []
+  const nonIncludable = linkedRunIds.filter((id) => {
+    const r = campaign.runs.find((x) => x.id === id)
+    return r !== undefined && !runIncludable(r)
+  }).length
+
+  /** Question pick fills the chained records when exactly one candidate exists. */
+  const pickQuestion = (v: string | null) => {
+    if (!f) return
+    const patch: Partial<TeFinding> = { questionId: v ?? '' }
+    if (v) {
+      const hyps = campaign.hypotheses.filter((h) => h.questionId === v)
+      if (hyps.length === 1 && !f.hypothesisId) patch.hypothesisId = hyps[0].id
+      const claimIds = [...new Set(hyps.map((h) => h.claimId).filter((x): x is string => x !== null))]
+      if (claimIds.length === 1 && !f.claimId) patch.claimId = claimIds[0]
+      const ms = campaign.measures.filter((m) => m.questionId === v)
+      if (ms.length === 1 && f.measureIds.length === 0) patch.measureIds = [ms[0].id]
+    }
+    set(patch)
+  }
+
+  /** Supporting-run pick fills configId from the runs' cards when unambiguous. */
+  const pickSupportingRuns = (v: string[]) => {
+    if (!f) return
+    const patch: Partial<TeFinding> = { supportingRunIds: v }
+    if (!f.configId) {
+      const configIds = [
+        ...new Set(
+          v
+            .map((id) => {
+              const r = campaign.runs.find((x) => x.id === id)
+              if (!r) return null
+              return r.actualConfigId ?? campaign.cards.find((c) => c.id === r.cardId)?.configId ?? null
+            })
+            .filter((x): x is string => x !== null),
+        ),
+      ]
+      if (configIds.length === 1) patch.configId = configIds[0]
+    }
+    set(patch)
+  }
 
   return (
     <div className="inspector-body">
@@ -60,7 +240,12 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
         items={campaign.findings.map((x) => ({ id: x.id, label: `${x.id}: ${x.statement.slice(0, 32) || 'new'}` }))}
         selectedId={selected}
         onSelect={(id) => selectRecord('findings', id)}
-        onAdd={() => { const id = addFinding(); selectRecord('findings', id) }}
+        onAdd={() => {
+          const id = addFinding()
+          const approvers = decisionRightHolder(campaign, 'findings')
+          if (approvers !== '') patchItem('findings', id, { approvers })
+          selectRecord('findings', id)
+        }}
         addLabel="+ finding"
       />
       {f && (
@@ -72,6 +257,7 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
           {blockers.length > 0 && <p className="muted small">A finding with blockers is not releasable.</p>}
 
           <TextField label="Finding statement" rows={2} value={f.statement} onChange={(v) => set({ statement: v })} />
+          <GateList items={refuted.map((c) => `This wording matches a refuted claim: ${c}. Check the evidence.`)} kind="warn" />
           <TextField label="Quantified result" rows={2} value={f.quantifiedResult} onChange={(v) => set({ quantifiedResult: v })} />
           <div className="field-row">
             <SelectField label="Quantified-result helper" value={helperMeasureId || null} allowEmpty="pick a measure" options={campaign.measures.map((m) => ({ v: m.id, label: `${m.id}: ${m.name || 'unnamed'}` }))} onChange={(v) => setHelperMeasureId(v ?? '')} />
@@ -88,15 +274,21 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
 
           <SubTitle>Traceability links</SubTitle>
           <div className="field-row">
-            <SelectField label="Question" value={f.questionId || null} allowEmpty="none" options={campaign.questions.map((q) => ({ v: q.id, label: `${q.id}: ${q.wording.slice(0, 32)}` }))} onChange={(v) => set({ questionId: v ?? '' })} />
+            <SelectField label="Question" value={f.questionId || null} allowEmpty="none" options={campaign.questions.map((q) => ({ v: q.id, label: `${q.id}: ${q.wording.slice(0, 32)}` }))} onChange={pickQuestion} />
             <SelectField label="Claim" value={f.claimId} allowEmpty="none" options={claims.map((r) => ({ v: r.id, label: r.statement.slice(0, 40) || r.id }))} onChange={(v) => set({ claimId: v })} />
           </div>
           <div className="field-row">
             <SelectField label="Hypothesis" value={f.hypothesisId} allowEmpty="none" options={campaign.hypotheses.map((h) => ({ v: h.id, label: h.id }))} onChange={(v) => set({ hypothesisId: v })} />
             <SelectField label="Configuration" value={f.configId} allowEmpty="none" options={campaign.configs.map((c) => ({ v: c.id, label: `${c.name || c.id} ${c.version}` }))} onChange={(v) => set({ configId: v })} />
           </div>
-          <MultiPicker label="Supporting runs" options={runOptions} value={f.supportingRunIds} onChange={(v) => set({ supportingRunIds: v })} />
+          <MultiPicker label="Supporting runs" options={runOptions} value={f.supportingRunIds} onChange={pickSupportingRuns} />
           <MultiPicker label="Contradicting runs" options={runOptions} value={f.contradictingRunIds} onChange={(v) => set({ contradictingRunIds: v })} />
+          {nonIncludable > 0 && (
+            <div className="field-row">
+              <Pill kind="warn" text="check linked runs" />
+              <div className="muted small">{nonIncludable} linked run(s) are not includable (pending or excluded).</div>
+            </div>
+          )}
           <MultiPicker label="Threats" options={campaign.threats.map((t) => ({ id: t.id, label: t.name || t.id }))} value={f.threatIds} onChange={(v) => set({ threatIds: v })} />
           <MultiPicker label="Conditions" options={campaign.conditions.map((c) => ({ id: c.id, label: c.name || c.id }))} value={f.conditionIds} onChange={(v) => set({ conditionIds: v })} />
           <MultiPicker label="Measures" options={campaign.measures.map((m) => ({ id: m.id, label: `${m.id}: ${m.name || 'unnamed'}` }))} value={f.measureIds} onChange={(v) => set({ measureIds: v })} />
@@ -112,7 +304,16 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
           </div>
           <p className="muted small">Never merge levels in one statement.</p>
 
-          <SubTitle>Evidence detail</SubTitle>
+          <SubTitle
+            action={
+              <button className="mini" onClick={() => set(generatedEvidence(campaign, f))}>
+                Generate evidence text
+              </button>
+            }
+          >
+            Evidence detail
+          </SubTitle>
+          <p className="muted small">Generation fills only empty fields from the linked records.</p>
           <TextField label="Threshold comparison" value={f.thresholdComparison} onChange={(v) => set({ thresholdComparison: v })} />
           <div className="field-row">
             <TextField label="Sample and independence" value={f.sampleAndIndependence} onChange={(v) => set({ sampleAndIndependence: v })} />
@@ -141,13 +342,25 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
           </div>
           <TextField label="Comparison with the prediction" value={f.comparisonWithPrediction} onChange={(v) => set({ comparisonWithPrediction: v })} />
           <div className="field-row">
-            <TextField label="Version" value={f.version} onChange={(v) => set({ version: v })} />
-            <TextField label="Approvers" value={f.approvers} onChange={(v) => set({ approvers: v })} />
+            <VersionField label="Version" value={f.version} onBump={() => bumpRecordVersion('findings', f.id)} />
+            <PersonField label="Approvers" value={f.approvers} onChange={(v) => set({ approvers: v })} people={people} />
             <TextField label="Dissent" value={f.dissent} onChange={(v) => set({ dissent: v })} />
           </div>
           <div className="inspector-actions">
+            <button
+              className="mini"
+              onClick={() => {
+                const id = createActionFromFinding(f.id)
+                if (id) selectRecord('actions', id)
+              }}
+            >
+              Create action from finding
+            </button>
             <button className="mini danger" onClick={() => { removeItem('findings', f.id); selectRecord('findings', null) }}>remove</button>
           </div>
+          {linkedActions.length > 0 && (
+            <p className="muted small">Linked actions: {linkedActions.map((a) => a.id).join(', ')}</p>
+          )}
         </div>
       )}
     </div>
@@ -156,6 +369,7 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
 
 function ActionsTab({ campaign }: { campaign: TeCampaign }) {
   const { addItem, patchItem, removeItem } = useTeStore.getState()
+  const people = allPeople(campaign)
   return (
     <div className="inspector-body">
       <SubTitle
@@ -166,7 +380,7 @@ function ActionsTab({ campaign }: { campaign: TeCampaign }) {
               addItem('actions', {
                 id: newId('act'),
                 findingId: null,
-                decisionOwner: '',
+                decisionOwner: decisionRightHolder(campaign, 'customer action'),
                 executionOwner: '',
                 dueDate: '',
                 requiredWork: '',
@@ -188,9 +402,9 @@ function ActionsTab({ campaign }: { campaign: TeCampaign }) {
         <div key={a.id} className="run-row">
           <div className="field-row">
             <SelectField label="Finding" value={a.findingId} allowEmpty="none" options={campaign.findings.map((x) => ({ v: x.id, label: x.id }))} onChange={(v) => patchItem('actions', a.id, { findingId: v })} />
-            <TextField label="Decision owner" value={a.decisionOwner} onChange={(v) => patchItem('actions', a.id, { decisionOwner: v })} />
-            <TextField label="Execution owner" value={a.executionOwner} onChange={(v) => patchItem('actions', a.id, { executionOwner: v })} />
-            <TextField label="Due date" value={a.dueDate} onChange={(v) => patchItem('actions', a.id, { dueDate: v })} />
+            <PersonField label="Decision owner" value={a.decisionOwner} onChange={(v) => patchItem('actions', a.id, { decisionOwner: v })} people={people} />
+            <PersonField label="Execution owner" value={a.executionOwner} onChange={(v) => patchItem('actions', a.id, { executionOwner: v })} people={people} />
+            <DateField label="Due date" value={a.dueDate || null} onChange={(v) => patchItem('actions', a.id, { dueDate: v ?? '' })} />
           </div>
           <TextField label="Required work" rows={2} value={a.requiredWork} onChange={(v) => patchItem('actions', a.id, { requiredWork: v })} />
           <div className="field-row">
@@ -249,8 +463,8 @@ function DebriefsTab({ campaign }: { campaign: TeCampaign }) {
           {d.improvements.map((imp) => (
             <div key={imp.id} className="field-row te-table-row">
               <TextField label="Improvement" value={imp.text} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, text: v } : x)) })} />
-              <TextField label="Owner" value={imp.owner} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, owner: v } : x)) })} />
-              <TextField label="Due date" value={imp.dueDate} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, dueDate: v } : x)) })} />
+              <PersonField label="Owner" value={imp.owner} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, owner: v } : x)) })} people={allPeople(campaign)} />
+              <DateField label="Due date" value={imp.dueDate || null} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, dueDate: v ?? '' } : x)) })} />
               <div className="field">
                 <span>Destination</span>
                 <Seg value={imp.destination} options={(['standard-work', 'product-backlog'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, destination: v } : x)) })} />
@@ -352,7 +566,7 @@ function generatedContent(c: TeCampaign, s: PackageSection): string {
 }
 
 function PackageTab({ campaign }: { campaign: TeCampaign }) {
-  const { patchCampaign } = useTeStore.getState()
+  const { patchCampaign, markPackageDelivered } = useTeStore.getState()
   const pkg = campaign.evidencePackage
   const setPkg = (patch: Partial<TeEvidencePackage>) => patchCampaign({ evidencePackage: { ...pkg, ...patch } })
   const setSection = (n: number, content: string) =>
@@ -375,12 +589,12 @@ function PackageTab({ campaign }: { campaign: TeCampaign }) {
 
       <SubTitle>Acceptance</SubTitle>
       <div className="field-row">
-        <TextField label="Method acceptance" value={pkg.methodAcceptance} onChange={(v) => setPkg({ methodAcceptance: v })} />
-        <TextField label="Evidence acceptance" value={pkg.evidenceAcceptance} onChange={(v) => setPkg({ evidenceAcceptance: v })} />
+        <SuggestField label="Method acceptance" value={pkg.methodAcceptance} onChange={(v) => setPkg({ methodAcceptance: v })} suggestions={[campaign.charter.acceptance.methodApprovalAuthority, campaign.charter.evidenceAcceptanceAuthority, campaign.charter.customerDecisionOwner]} />
+        <SuggestField label="Evidence acceptance" value={pkg.evidenceAcceptance} onChange={(v) => setPkg({ evidenceAcceptance: v })} suggestions={[campaign.charter.evidenceAcceptanceAuthority, campaign.charter.acceptance.methodApprovalAuthority, campaign.charter.customerDecisionOwner]} />
       </div>
-      <TextField label="Final approving authority and date" value={pkg.finalAuthorityAndDate} onChange={(v) => setPkg({ finalAuthorityAndDate: v })} />
+      <SuggestField label="Final approving authority and date" value={pkg.finalAuthorityAndDate} onChange={(v) => setPkg({ finalAuthorityAndDate: v })} suggestions={[campaign.charter.evidenceAcceptanceAuthority, campaign.charter.acceptance.methodApprovalAuthority, campaign.charter.customerDecisionOwner]} />
       <div className="inspector-actions">
-        <button className="primary" disabled={pkg.deliveredAt !== null} onClick={() => setPkg({ deliveredAt: nowIso() })}>Mark delivered</button>
+        <button className="primary" disabled={pkg.deliveredAt !== null} onClick={() => markPackageDelivered()}>Mark delivered</button>
       </div>
     </div>
   )
@@ -445,6 +659,7 @@ export function DeliverPanel({ campaign }: { campaign: TeCampaign }) {
   const [tab, setTab] = useState<Tab>('findings')
   return (
     <div className="te-panel">
+      <PhaseIntro phase="deliver" />
       <Seg value={tab} options={TABS} onChange={setTab} />
       {tab === 'findings' && <FindingsTab campaign={campaign} />}
       {tab === 'actions' && <ActionsTab campaign={campaign} />}

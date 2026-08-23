@@ -8,6 +8,7 @@ import type {
   EntityKind,
   FlightPath,
   FrameSnap,
+  GeoRef,
   RunLogEntry,
   Scenario,
   SpecModel,
@@ -17,8 +18,9 @@ import type {
 } from '../model/types'
 import { entityActive, newId } from '../model/types'
 import { emptyScenario } from '../model/seed'
-import { standardCovariates } from '../model/seedCards'
-import { bearingDeg, destination, dist, formationOffsets, pathLength, rotatePoint } from '../geometry/geo'
+import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
+import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength, rotatePoint } from '../geometry/geo'
+import type { DisplayUnits } from '../geometry/geo'
 import { buildRaidPlan, effectivePathDelayS } from '../playback/raid'
 import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
 import { effectiveDetectRangeM } from '../analysis/sensorEnv'
@@ -90,10 +92,14 @@ interface UiState {
   moveUnderlay: boolean
   /** Draw threat WEZ circles on the canvas. Render toggle only: ui state, not undoable, not autosaved. */
   showThreatWez: boolean
+  /** Display units for distances and speeds. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  units: DisplayUnits
   /** Open right-click menu; screen px within the canvas host, world meters. */
   contextMenu: { screen: Vec2; world: Vec2; entityId: string | null } | null
   /** Armed tactic builder; the next canvas click commits the raid. */
   raidDraft: RaidDraft | null
+  /** Sat basemap location dialog visibility. */
+  locationDialogOpen: boolean
 }
 
 interface PlaybackState {
@@ -174,6 +180,8 @@ export interface Store {
   updateUnderlay: (patch: Partial<Scenario['underlay']>) => void
   setCalibratePoint: (p: Vec2) => void
   applyCalibration: (trueDistM: number) => void
+  setGeoRef: (g: GeoRef | null) => void
+  applyLocation: (g: GeoRef, fieldElevationFt: number | null) => void
 
   // Library
   addModel: (kind: EntityKind) => string
@@ -184,6 +192,10 @@ export interface Store {
 
   // Test cards
   addCard: (patch?: Partial<TestCard>) => string
+  /** New card linked to the selected entities, with configuration and threat text generated from the canvas. */
+  addCardFromSelection: () => string
+  /** Duplicate a card as the next version: same cardId, minor bump, empty run log. */
+  newCardVersion: (id: string) => string
   updateCard: (id: string, patch: Partial<TestCard>) => void
   deleteCard: (id: string) => void
   toggleCardEntity: (cardId: string, entityId: string) => void
@@ -205,11 +217,20 @@ export interface Store {
   setRightTab: (t: RightTab) => void
   setMoveUnderlay: (v: boolean) => void
   setShowThreatWez: (v: boolean) => void
+  setLocationDialogOpen: (v: boolean) => void
+  setUnits: (v: DisplayUnits) => void
 
   // Playback
   setPlaying: (p: boolean) => void
   setSimTime: (t: number) => void
   setSpeedMult: (m: number) => void
+}
+
+const UNITS_KEY = 'rangeboard.units.v1'
+
+function savedUnits(): DisplayUnits {
+  if (typeof localStorage === 'undefined') return 'aviation'
+  return localStorage.getItem(UNITS_KEY) === 'metric' ? 'metric' : 'aviation'
 }
 
 const KIND_NAMES: Record<EntityKind, string> = {
@@ -219,6 +240,23 @@ const KIND_NAMES: Record<EntityKind, string> = {
   uas: 'UAS',
   asset: 'Asset',
   marker: 'Marker',
+}
+
+/** Default kill-chain label from the endpoint kinds; empty when the pair implies none. */
+export function defaultConnectionLabel(fromKind: EntityKind, toKind: EntityKind): string {
+  if (fromKind === 'sensor' && toKind === 'c2') return 'track data'
+  if (fromKind === 'c2' && toKind === 'effector') return 'engage order'
+  if (fromKind === 'sensor' && toKind === 'effector') return 'direct cue'
+  return ''
+}
+
+/** Default frame name: scenario, sim time, and basemap. */
+export function defaultFrameName(
+  scenarioName: string,
+  simTimeS: number,
+  basemap: BasemapMode,
+): string {
+  return `${scenarioName} T+${formatTime(simTimeS)} ${basemap}`
 }
 
 /**
@@ -252,6 +290,13 @@ function fitCameraTo(points: Vec2[]): Camera | null {
   return { scale, x: vw / 2 - cx * scale, y: vh / 2 - cy * scale }
 }
 
+/** Minor version bump: '1.0' -> '1.1'. Non-standard strings get a '.1' suffix. */
+export function bumpCardVersion(v: string): string {
+  const m = /^(\d+)\.(\d+)$/.exec(v.trim())
+  if (m) return `${m[1]}.${Number(m[2]) + 1}`
+  return `${v.trim() || '1'}.1`
+}
+
 export const useStore = create<Store>()((set, get) => {
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
@@ -283,8 +328,10 @@ export const useStore = create<Store>()((set, get) => {
       rightTab: 'inspect',
       moveUnderlay: false,
       showThreatWez: false,
+      units: savedUnits(),
       contextMenu: null,
       raidDraft: null,
+      locationDialogOpen: false,
     },
     playback: { playing: false, simTimeS: 0, speedMult: 1 },
 
@@ -404,7 +451,10 @@ export const useStore = create<Store>()((set, get) => {
       if (!fromId || fromId === toId) return
       mutate((s) => {
         if (s.connections.some((c) => c.fromId === fromId && c.toId === toId)) return s
-        const conn: Connection = { id: newId('con'), fromId, toId, label: '' }
+        const fromKind = s.entities.find((e) => e.id === fromId)?.kind
+        const toKind = s.entities.find((e) => e.id === toId)?.kind
+        const label = fromKind && toKind ? defaultConnectionLabel(fromKind, toKind) : ''
+        const conn: Connection = { id: newId('con'), fromId, toId, label }
         return { ...s, connections: [...s.connections, conn] }
       })
     },
@@ -534,9 +584,10 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, draftPoints: [] } }))
       if (points.length < 2) return
       mutate((s) => {
+        const typeName = ui.boundaryType.charAt(0).toUpperCase() + ui.boundaryType.slice(1)
         const boundary: Boundary = {
           id: newId('bnd'),
-          name: `${ui.boundaryType} ${s.boundaries.length + 1}`,
+          name: `${typeName} ${s.boundaries.length + 1}`,
           type: ui.boundaryType,
           points,
           closed: closed && points.length >= 3,
@@ -858,6 +909,18 @@ export const useStore = create<Store>()((set, get) => {
       }))
     },
 
+    setGeoRef: (g) => mutate((s) => ({ ...s, geoRef: g })),
+
+    applyLocation: (g, fieldElevationFt) =>
+      mutate((s) => ({
+        ...s,
+        geoRef: g,
+        environment:
+          fieldElevationFt == null
+            ? s.environment
+            : { ...s.environment, fieldElevationFt },
+      })),
+
     addModel: (kind) => {
       const id = newId('lib')
       mutate((s) => {
@@ -964,6 +1027,34 @@ export const useStore = create<Store>()((set, get) => {
       return id
     },
 
+    addCardFromSelection: () => {
+      const { scenario, selection } = get()
+      return get().addCard({
+        linkedEntityIds: [...selection.entityIds],
+        configuration: describeConfiguration(scenario),
+        threatProfile: describeThreats(scenario),
+      })
+    },
+
+    newCardVersion: (id) => {
+      const nid = newId('tc')
+      mutate((s) => {
+        const src = s.testCards.find((c) => c.id === id)
+        if (!src) return s
+        const copy: TestCard = {
+          ...src,
+          id: nid,
+          version: bumpCardVersion(src.version),
+          measures: [...src.measures],
+          procedure: [...src.procedure],
+          linkedEntityIds: [...src.linkedEntityIds],
+          runs: [],
+        }
+        return { ...s, testCards: [...s.testCards, copy] }
+      })
+      return nid
+    },
+
     updateCard: (id, patch) =>
       mutate((s) => ({
         ...s,
@@ -1018,7 +1109,7 @@ export const useStore = create<Store>()((set, get) => {
       mutate((s) => {
         const frame: FrameSnap = {
           id: newId('frm'),
-          name: name || `Frame ${s.frames.length + 1}`,
+          name: name || defaultFrameName(s.name, playback.simTimeS, ui.basemap),
           camera: { ...camera },
           simTimeS: playback.simTimeS,
           basemap: ui.basemap,
@@ -1069,6 +1160,11 @@ export const useStore = create<Store>()((set, get) => {
     setRightTab: (t) => set((st) => ({ ui: { ...st.ui, rightTab: t } })),
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
     setShowThreatWez: (v) => set((st) => ({ ui: { ...st.ui, showThreatWez: v } })),
+    setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
+    setUnits: (v) => {
+      if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
+      set((st) => ({ ui: { ...st.ui, units: v } }))
+    },
 
     setPlaying: (p) => set((st) => ({ playback: { ...st.playback, playing: p } })),
     setSimTime: (t) => set((st) => ({ playback: { ...st.playback, simTimeS: Math.max(0, t) } })),

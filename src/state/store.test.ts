@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useStore, scenarioDurationS } from './store'
+import { bumpCardVersion, useStore, scenarioDurationS } from './store'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
 
@@ -28,6 +28,28 @@ describe('store scenario actions', () => {
     expect(useStore.getState().scenario.entities).toHaveLength(1)
     useStore.getState().redo()
     expect(useStore.getState().scenario.entities).toHaveLength(2)
+  })
+
+  it('applyLocation sets geoRef and elevation in one undo step', () => {
+    const st = useStore.getState()
+    const before = useStore.getState().scenario.environment.fieldElevationFt
+    st.applyLocation({ lat: 32.38, lon: -106.48 }, 4000)
+    let s = useStore.getState().scenario
+    expect(s.geoRef).toEqual({ lat: 32.38, lon: -106.48 })
+    expect(s.environment.fieldElevationFt).toBe(4000)
+    useStore.getState().undo()
+    s = useStore.getState().scenario
+    expect(s.geoRef).toBeNull()
+    expect(s.environment.fieldElevationFt).toBe(before)
+  })
+
+  it('applyLocation without an elevation keeps the current one', () => {
+    const st = useStore.getState()
+    const before = useStore.getState().scenario.environment.fieldElevationFt
+    st.applyLocation({ lat: 32.38, lon: -106.48 }, null)
+    const s = useStore.getState().scenario
+    expect(s.geoRef).toEqual({ lat: 32.38, lon: -106.48 })
+    expect(s.environment.fieldElevationFt).toBe(before)
   })
 
   it('deleting an entity cascades to connections, paths, and card links', () => {
@@ -173,5 +195,78 @@ describe('store scenario actions', () => {
     useStore.getState().finishPath()
     // 10 km at 50 m/s cruise = 200 s.
     expect(scenarioDurationS(useStore.getState().scenario)).toBe(200)
+  })
+
+  it('defaults connection labels from endpoint kinds', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-faadc2', { x: 1000, y: 0 })
+    st.addEntityFromModel('lib-coyote', { x: 2000, y: 0 })
+    const [radar, c2, eff] = useStore.getState().scenario.entities
+    st.beginConnect(radar.id)
+    st.completeConnect(c2.id)
+    useStore.getState().beginConnect(c2.id)
+    useStore.getState().completeConnect(eff.id)
+    useStore.getState().beginConnect(radar.id)
+    useStore.getState().completeConnect(eff.id)
+    const labels = useStore.getState().scenario.connections.map((c) => c.label)
+    expect(labels).toEqual(['track data', 'engage order', 'direct cue'])
+  })
+
+  it('names a new boundary from its type', () => {
+    const st = useStore.getState()
+    st.setBoundaryType('restricted')
+    useStore.getState().addDraftPoint({ x: 0, y: 0 })
+    useStore.getState().addDraftPoint({ x: 1000, y: 0 })
+    useStore.getState().addDraftPoint({ x: 1000, y: 1000 })
+    useStore.getState().finishBoundary(true)
+    const b = useStore.getState().scenario.boundaries[0]
+    expect(b.name).toBe('Restricted 1')
+  })
+
+  it('creates a new card version with the same cardId, a minor bump, and no runs', () => {
+    const st = useStore.getState()
+    const id = st.addCard()
+    useStore.getState().updateCard(id, { purpose: 'Baseline DTI', version: '1.0' })
+    useStore.getState().addRun(id)
+    const nid = useStore.getState().newCardVersion(id)
+    const s = useStore.getState().scenario
+    const src = s.testCards.find((c) => c.id === id)!
+    const copy = s.testCards.find((c) => c.id === nid)!
+    expect(copy.cardId).toBe(src.cardId)
+    expect(copy.version).toBe('1.1')
+    expect(copy.purpose).toBe('Baseline DTI')
+    expect(copy.runs).toHaveLength(0)
+    expect(src.runs).toHaveLength(1)
+  })
+
+  it('bumps card versions and keeps legacy strings recognizable', () => {
+    expect(bumpCardVersion('1.0')).toBe('1.1')
+    expect(bumpCardVersion('2.9')).toBe('2.10')
+    expect(bumpCardVersion('draft')).toBe('draft.1')
+    expect(bumpCardVersion('')).toBe('1.1')
+  })
+
+  it('creates a card from the entity selection with generated text', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-faadc2', { x: 500, y: 0 })
+    st.addEntityFromModel('lib-mavic3', { x: 5000, y: 0 })
+    const [radar, c2] = useStore.getState().scenario.entities
+    useStore.getState().select({ entityIds: [radar.id, c2.id] })
+    const id = useStore.getState().addCardFromSelection()
+    const card = useStore.getState().scenario.testCards.find((c) => c.id === id)!
+    expect(card.linkedEntityIds).toEqual([radar.id, c2.id])
+    expect(card.configuration).toContain('RPS-42')
+    expect(card.configuration).toContain('ROE tight')
+    expect(card.threatProfile).toContain('THR-G1-Q-01')
+  })
+
+  it('composes the default frame name from scenario, time, and basemap', () => {
+    const st = useStore.getState()
+    st.setSimTime(90)
+    useStore.getState().saveFrame('')
+    const f = useStore.getState().scenario.frames[0]
+    expect(f.name).toBe('Untitled scenario T+1:30 canvas')
   })
 })

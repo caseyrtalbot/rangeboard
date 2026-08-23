@@ -14,7 +14,8 @@ import type { SpecModel } from '../model/types'
 import { useStore } from '../state/store'
 import type { ClassificationTimes, ThreatAssessment, ThreatStatus } from '../playback/sim'
 import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
-import { formatDistance, formatTime } from '../geometry/geo'
+import { formatDistance, formatSpeed, formatTime } from '../geometry/geo'
+import type { DisplayUnits } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 import { buildAarSummary } from '../analysis/aar'
 import type { LeakerImpact } from '../analysis/impact'
@@ -117,13 +118,15 @@ function engagementPotentialText(
   imp: LeakerImpact | undefined,
   kind: ReturnType<typeof wezKindFor>,
   radiusM: number | null,
+  units: DisplayUnits,
 ): string {
   if (kind === 'none') return 'no weapon zone (ISR or decoy platform)'
   if (!imp) return '—'
   if (imp.assetId == null) return 'no asset placed'
   if (!imp.assetInWez) {
-    return `target outside WEZ (CPA ${formatDistance(a.closestApproachM ?? 0)} > r ${formatDistance(
+    return `target outside WEZ (CPA ${formatDistance(a.closestApproachM ?? 0, units)} > r ${formatDistance(
       radiusM ?? 0,
+      units,
     )})`
   }
   const inside = radiusM == null ? 'target assumed inside WEZ (r unknown)' : 'target inside WEZ'
@@ -180,6 +183,7 @@ function ThreatDetail({
   name: (id: string | null) => string
   threatModel?: SpecModel
 }) {
+  const units = useStore((s) => s.ui.units)
   const status = STATUS_TEXT[a.status]
   const outcome = att
     ? att.shipCount > 1
@@ -238,6 +242,7 @@ function ThreatDetail({
               {a.arrivalS != null
                 ? `${formatTime(a.arrivalS)} · ${name(a.assetId)} · CPA ${formatDistance(
                     a.closestApproachM ?? 0,
+                    units,
                   )}`
                 : 'no asset placed'}
             </td>
@@ -277,7 +282,7 @@ function ThreatDetail({
           <tr>
             <td>Engagement potential</td>
             <td>
-              {engagementPotentialText(a, imp, wezKindFor(threatModel), wezRadiusM(threatModel))}
+              {engagementPotentialText(a, imp, wezKindFor(threatModel), wezRadiusM(threatModel), units)}
             </td>
           </tr>
         </tbody>
@@ -415,6 +420,7 @@ function ApplyEffectsCheck() {
 /** Scenario covariates. Feed UAS range rings and sensor footprints. */
 function EnvironmentBody() {
   const env = useStore((s) => s.scenario.environment)
+  const units = useStore((s) => s.ui.units)
   const updateEnvironment = useStore((s) => s.updateEnvironment)
   const cardinal = CARDINALS[Math.round(env.windFromDeg / 45) % 8]
   return (
@@ -453,7 +459,7 @@ function EnvironmentBody() {
         />
       </Field>
       <div className="field-row">
-        <Field label={`Wind ${env.windSpeedMps} m/s`}>
+        <Field label={`Wind ${formatSpeed(env.windSpeedMps, units)}`}>
           <input
             type="range"
             min={0}
@@ -739,6 +745,7 @@ function ScorecardBody({
 }) {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
+  const units = useStore((s) => s.ui.units)
   const pinned = scenario.scorecards ?? []
 
   return (
@@ -773,7 +780,7 @@ function ScorecardBody({
                   ...pinned,
                   {
                     id: newId('scc'),
-                    name: `Config ${pinned.length + 1}`,
+                    name: `${scenario.roe ?? 'tight'} · ${environmentHeadline(scenario.environment, units)} · ${score}`,
                     score,
                     parts: parts!,
                     aar,
@@ -848,6 +855,7 @@ export function AnalysisPanel() {
   const patchScenario = useStore((s) => s.patchScenario)
   const showThreatWez = useStore((s) => s.ui.showThreatWez)
   const setShowThreatWez = useStore((s) => s.setShowThreatWez)
+  const displayUnits = useStore((s) => s.ui.units)
   const [advanced, setAdvanced] = useState(false)
   // One shared computation per scenario with the canvas WEZ layer
   // (module-level WeakMap in impact.ts), so the sweep never runs twice.
@@ -897,7 +905,7 @@ export function AnalysisPanel() {
       </div>
       <Section
         title="Environment"
-        headline={environmentHeadline(scenario.environment)}
+        headline={environmentHeadline(scenario.environment, displayUnits)}
         headerExtra={<ApplyEffectsCheck />}
       >
         <EnvironmentBody />

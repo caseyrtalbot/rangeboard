@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore, scenarioDurationS } from '../state/store'
+import { defaultFrameName, useStore, scenarioDurationS } from '../state/store'
 import { formatTime } from '../geometry/geo'
 
 const SPEEDS = [1, 2, 5, 10, 30]
@@ -9,6 +9,7 @@ export function TimelineBar() {
   const playback = useStore((s) => s.playback)
   const scenario = useStore((s) => s.scenario)
   const frames = useStore((s) => s.scenario.frames)
+  const basemap = useStore((s) => s.ui.basemap)
   const { setPlaying, setSimTime, setSpeedMult, saveFrame, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
     useStore.getState()
   const waves = scenario.raid?.waves ?? []
@@ -116,7 +117,7 @@ export function TimelineBar() {
         ))}
         <input
           className="frame-name"
-          placeholder="Frame name"
+          placeholder={defaultFrameName(scenario.name, playback.simTimeS, basemap)}
           value={frameName}
           onChange={(e) => setFrameName(e.target.value)}
           onKeyDown={(e) => {

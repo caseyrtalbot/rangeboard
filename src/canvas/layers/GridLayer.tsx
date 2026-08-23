@@ -6,15 +6,17 @@ interface Props {
   size: { w: number; h: number }
 }
 
-/** Adaptive world grid. Hidden in sat mode when an image is loaded. */
+/** Adaptive world grid. Hidden in sat mode when an image or geo reference is set. */
 export function GridLayer({ size }: Props) {
   const camera = useStore((s) => s.camera)
+  const units = useStore((s) => s.ui.units)
   const basemap = useStore((s) => s.ui.basemap)
   const hasImage = useStore((s) => Boolean(s.scenario.underlay.dataUrl))
+  const hasGeoRef = useStore((s) => Boolean(s.scenario.geoRef))
 
-  if (basemap === 'sat' && hasImage) return null
+  if (basemap === 'sat' && (hasImage || hasGeoRef)) return null
 
-  const step = gridStepM(camera.scale)
+  const step = gridStepM(camera.scale, 90, units)
   const left = -camera.x / camera.scale
   const top = -camera.y / camera.scale
   const right = left + size.w / camera.scale

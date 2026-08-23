@@ -1,15 +1,27 @@
-import type { Boundary, BoundaryType, Entity, FormationShape } from '../model/types'
+import { useState } from 'react'
+import type { Boundary, BoundaryType, Entity, FlightPath, FormationShape } from '../model/types'
 import { entityActive } from '../model/types'
 import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
 import type { RaidDraft } from '../state/store'
-import { formatDistance, pathLength } from '../geometry/geo'
+import { formatDistance, formatSpeed, pathLength } from '../geometry/geo'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
 import { THREAT_TACTICS } from '../playback/tactics'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
+
+/** Common C-UAS airspace names offered on the boundary Name field. Typing stays free. */
+const BOUNDARY_NAME_SUGGESTIONS: Record<BoundaryType, string[]> = {
+  range: ['Range boundary', 'Test range', 'Danger area', 'Land range fan'],
+  restricted: ['ROZ', 'Restricted area', 'NFA', 'TFR'],
+  asset: ['Defended asset area', 'Base boundary', 'Critical asset zone'],
+  corridor: ['Ingress corridor', 'Air corridor', 'Transit corridor'],
+}
+
+/** Standard airspace band values from the seed library boundaries, feet. */
+const BOUNDARY_ALT_SUGGESTIONS_FT = [0, 100, 400, 1200, 3000, 5000]
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -20,6 +32,89 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
+/** Datalist options for a plain input. Suggestions only; typing stays free. */
+function Options({ id, values }: { id: string; values: Array<string | number> }) {
+  return (
+    <datalist id={id}>
+      {values.map((v) => (
+        <option key={v} value={v} />
+      ))}
+    </datalist>
+  )
+}
+
+/** Segmented control: one active option, no typing. */
+function Seg<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T
+  options: Array<{ v: T; label: string }>
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="seg">
+      {options.map((o) => (
+        <button key={o.v} className={value === o.v ? 'active' : ''} onClick={() => onChange(o.v)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Path speed picker for a model with known cruise and max speeds. */
+function PathSpeedField({ path, cruise, max }: { path: FlightPath; cruise: number; max: number }) {
+  const { updatePath } = useStore.getState()
+  const [customDraft, setCustomDraft] = useState(false)
+  const stored =
+    path.speedMps == null
+      ? 'cruise'
+      : path.speedMps === max && max !== cruise
+        ? 'max'
+        : 'custom'
+  const mode = customDraft ? 'custom' : stored
+  return (
+    <div className="field">
+      <span>Speed (m/s)</span>
+      <Seg
+        value={mode}
+        options={[
+          { v: 'cruise', label: `Cruise ${cruise}` },
+          { v: 'max', label: `Max ${max}` },
+          { v: 'custom', label: 'Custom' },
+        ]}
+        onChange={(v) => {
+          if (v === 'cruise') {
+            setCustomDraft(false)
+            updatePath(path.id, { speedMps: null })
+          } else if (v === 'max') {
+            setCustomDraft(false)
+            updatePath(path.id, { speedMps: max })
+          } else {
+            setCustomDraft(true)
+            updatePath(path.id, { speedMps: path.speedMps ?? cruise })
+          }
+        }}
+      />
+      {mode === 'custom' && (
+        <input
+          type="number"
+          min={1}
+          value={path.speedMps ?? ''}
+          onChange={(e) => {
+            setCustomDraft(true)
+            updatePath(path.id, {
+              speedMps: e.target.value === '' ? null : Number(e.target.value),
+            })
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
 /**
  * Tactic raid builder, shown in place of the normal Inspector body while a
  * raid draft is armed. Commit happens on the next canvas click (sets the
@@ -27,6 +122,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  */
 function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
   const scenario = useStore((s) => s.scenario)
+  const units = useStore((s) => s.ui.units)
   const { patchRaidDraft, commitRaid, cancelRaidDraft } = useStore.getState()
   const tactic = THREAT_TACTICS.find((t) => t.id === draft.tacticId)
   if (!tactic) return null
@@ -61,7 +157,7 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
         <br />
         {tactic.axes} {tactic.axes === 1 ? 'ingress axis' : 'ingress axes'}
         {tactic.axes > 1 ? ` across ${tactic.axisSpreadDeg} deg` : ''} · standoff{' '}
-        {formatDistance(tactic.standoffM)} or beyond every sensor detection ring
+        {formatDistance(tactic.standoffM, units)} or beyond every sensor detection ring
         {tactic.decoy && (
           <>
             <br />
@@ -142,6 +238,7 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
 
 function EntityInspector({ entity }: { entity: Entity }) {
   const scenario = useStore((s) => s.scenario)
+  const units = useStore((s) => s.ui.units)
   const {
     updateEntity,
     deleteSelection,
@@ -164,8 +261,25 @@ function EntityInspector({ entity }: { entity: Entity }) {
         {entity.kind.toUpperCase()} · {model?.name ?? 'no model'}
       </div>
       <Field label="Name">
-        <input value={entity.name} onChange={(e) => updateEntity(entity.id, { name: e.target.value })} />
+        <input
+          list="entity-name-options"
+          value={entity.name}
+          onChange={(e) => updateEntity(entity.id, { name: e.target.value })}
+        />
       </Field>
+      <Options id="entity-name-options" values={sameKindModels.map((m) => m.name)} />
+      {(() => {
+        if (!model) return null
+        const base = model.name.split(':').pop()?.trim() ?? model.name
+        const peers = scenario.entities.filter((e) => e.specId === entity.specId)
+        const suggested = `${base} ${peers.findIndex((e) => e.id === entity.id) + 1}`
+        if (entity.name === suggested) return null
+        return (
+          <button className="mini" onClick={() => updateEntity(entity.id, { name: suggested })}>
+            Rename to {suggested}
+          </button>
+        )
+      })()}
       <Field label="Model">
         <select
           value={entity.specId ?? ''}
@@ -251,8 +365,8 @@ function EntityInspector({ entity }: { entity: Entity }) {
       {model?.sensor && (
         <div className="spec-summary">
           {model.sensor.role ? `${model.sensor.role} · ` : ''}
-          Detect {formatDistance(model.sensor.detectRangeM)} · sector {model.sensor.sectorDeg} deg
-          {model.sensor.classifyRangeM ? ` · classify ${formatDistance(model.sensor.classifyRangeM)}` : ''}
+          Detect {formatDistance(model.sensor.detectRangeM, units)} · sector {model.sensor.sectorDeg} deg
+          {model.sensor.classifyRangeM ? ` · classify ${formatDistance(model.sensor.classifyRangeM, units)}` : ''}
           {model.sensor.elevationDeg
             ? ` · elev ${model.sensor.elevationDeg[0]} to ${model.sensor.elevationDeg[1]} deg`
             : ''}
@@ -261,14 +375,14 @@ function EntityInspector({ entity }: { entity: Entity }) {
             <>
               <br />
               In this environment: detect{' '}
-              {formatDistance(effectiveDetectRangeM(model.sensor, scenario.environment))}
+              {formatDistance(effectiveDetectRangeM(model.sensor, scenario.environment), units)}
             </>
           )}
         </div>
       )}
       {model?.effector && (
         <div className="spec-summary">
-          WEZ {formatDistance(model.effector.minRangeM)} – {formatDistance(model.effector.maxRangeM)} ·
+          WEZ {formatDistance(model.effector.minRangeM, units)} – {formatDistance(model.effector.maxRangeM, units)} ·
           engage {model.effector.engageTimeS} s
           {(model.effector.sectorDeg ?? 360) < 360 ? ` · sector ${model.effector.sectorDeg} deg` : ''}
           {model.effector.maxAltitudeFt ? ` · to ${model.effector.maxAltitudeFt} ft` : ''}
@@ -276,7 +390,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
       )}
       {model?.uas && (
         <div className="spec-summary">
-          Group {model.uas.group} · cruise {model.uas.cruiseSpeedMps} m/s · {model.uas.navMode}
+          Group {model.uas.group} · cruise {formatSpeed(model.uas.cruiseSpeedMps, units)} · {model.uas.navMode}
         </div>
       )}
 
@@ -300,10 +414,10 @@ function EntityInspector({ entity }: { entity: Entity }) {
             return (
               <>
                 <div className="spec-summary">
-                  Basis: {basis.source} · {formatDistance(basis.radiusM)} calm ·{' '}
+                  Basis: {basis.source} · {formatDistance(basis.radiusM, units)} calm ·{' '}
                   {basis.oneWay ? 'one-way' : 'return-to-home'}
                   <br />
-                  With environment: {formatDistance(down)} downwind · {formatDistance(up)} upwind
+                  With environment: {formatDistance(down, units)} downwind · {formatDistance(up, units)} upwind
                 </div>
                 {basis.source === 'estimated' && (
                   <p className="muted small">
@@ -405,21 +519,30 @@ function EntityInspector({ entity }: { entity: Entity }) {
           {path ? (
             <>
               <div className="spec-summary">
-                {path.points.length} waypoints · {formatDistance(pathLength(path.points))}
+                {path.points.length} waypoints · {formatDistance(pathLength(path.points), units)}
               </div>
               <div className="field-row">
-                <Field label="Speed (m/s)">
-                  <input
-                    type="number"
-                    placeholder={String(model?.uas?.cruiseSpeedMps ?? 15)}
-                    value={path.speedMps ?? ''}
-                    onChange={(e) =>
-                      updatePath(path.id, {
-                        speedMps: e.target.value === '' ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                </Field>
+                {(() => {
+                  const cruise = model?.uas?.cruiseSpeedMps
+                  const max = model?.uas?.maxSpeedMps
+                  if (cruise == null || max == null) {
+                    return (
+                      <Field label="Speed (m/s)">
+                        <input
+                          type="number"
+                          placeholder="15"
+                          value={path.speedMps ?? ''}
+                          onChange={(e) =>
+                            updatePath(path.id, {
+                              speedMps: e.target.value === '' ? null : Number(e.target.value),
+                            })
+                          }
+                        />
+                      </Field>
+                    )
+                  }
+                  return <PathSpeedField key={path.id} path={path} cruise={cruise} max={max} />
+                })()}
                 <Field label="Start delay (s)">
                   <input
                     type="number"
@@ -490,10 +613,12 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
       <div className="panel-subtitle">BOUNDARY</div>
       <Field label="Name">
         <input
+          list="boundary-name-options"
           value={boundary.name}
           onChange={(e) => updateBoundary(boundary.id, { name: e.target.value })}
         />
       </Field>
+      <Options id="boundary-name-options" values={BOUNDARY_NAME_SUGGESTIONS[boundary.type]} />
       <Field label="Type">
         <select
           value={boundary.type}
@@ -509,6 +634,7 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
         <Field label="Floor (ft)">
           <input
             type="number"
+            list="boundary-alt-options"
             value={boundary.altBandFt?.[0] ?? ''}
             onChange={(e) =>
               updateBoundary(boundary.id, {
@@ -520,6 +646,7 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
         <Field label="Ceiling (ft)">
           <input
             type="number"
+            list="boundary-alt-options"
             value={boundary.altBandFt?.[1] ?? ''}
             onChange={(e) =>
               updateBoundary(boundary.id, {
@@ -529,6 +656,7 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
           />
         </Field>
       </div>
+      <Options id="boundary-alt-options" values={BOUNDARY_ALT_SUGGESTIONS_FT} />
       <div className="spec-summary">{boundary.points.length} vertices</div>
       <button className="danger" onClick={deleteSelection}>
         Delete
@@ -570,10 +698,15 @@ export function Inspector() {
         </div>
         <Field label="Label">
           <input
+            list="connection-label-options"
             value={connection.label}
             onChange={(e) => updateConnection(connection.id, { label: e.target.value })}
           />
         </Field>
+        <Options
+          id="connection-label-options"
+          values={[...new Set(scenario.connections.map((c) => c.label).filter(Boolean))]}
+        />
         <button className="danger" onClick={deleteSelection}>
           Delete
         </button>

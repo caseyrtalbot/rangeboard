@@ -195,9 +195,26 @@ export function closestApproach(
   return best
 }
 
+/** Display-only unit convention: aviation (kt, nm, ft) or metric (m/s, km). */
+export type DisplayUnits = 'aviation' | 'metric'
+
+export const NM_M = 1852
+export const MPS_PER_KT = 0.514444
+
+/** Aviation grid steps: nice nm fractions, with metric values at fine zoom. */
+const AVIATION_STEPS_M = [
+  25, 50, 100, 200, 500, 926, 1852, 3704, 9260, 18520, 46300, 92600, 185200,
+]
+
 /** Grid step in meters that keeps grid lines a readable distance apart on screen. */
-export function gridStepM(pxPerMeter: number, targetPx = 90): number {
+export function gridStepM(pxPerMeter: number, targetPx = 90, units: DisplayUnits = 'metric'): number {
   const raw = targetPx / pxPerMeter
+  if (units === 'aviation' && raw >= 25) {
+    for (const step of AVIATION_STEPS_M) {
+      if (step >= raw) return step
+    }
+    return AVIATION_STEPS_M[AVIATION_STEPS_M.length - 1]
+  }
   const pow = Math.pow(10, Math.floor(Math.log10(raw)))
   for (const mult of [1, 2, 5, 10]) {
     if (pow * mult >= raw) return pow * mult
@@ -205,10 +222,20 @@ export function gridStepM(pxPerMeter: number, targetPx = 90): number {
   return pow * 10
 }
 
-export function formatDistance(m: number): string {
+export function formatDistance(m: number, units: DisplayUnits = 'metric'): string {
+  if (units === 'aviation') {
+    if (m < NM_M / 2) return `${Math.round(m)} m`
+    const nm = m / NM_M
+    return nm < 10 ? `${nm.toFixed(1)} nm` : `${Math.round(nm * 10) / 10} nm`
+  }
   if (m >= 10000) return `${(m / 1000).toFixed(0)} km`
   if (m >= 1000) return `${(m / 1000).toFixed(1)} km`
   return `${Math.round(m)} m`
+}
+
+export function formatSpeed(mps: number, units: DisplayUnits = 'metric'): string {
+  if (units === 'aviation') return `${Math.round(mps / MPS_PER_KT)} kt`
+  return `${Math.round(mps)} m/s`
 }
 
 export function formatTime(s: number): string {

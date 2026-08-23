@@ -1,6 +1,6 @@
 import type { Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
-import { formatDistance, gridStepM } from '../../geometry/geo'
+import { formatDistance, gridStepM, NM_M } from '../../geometry/geo'
 
 interface Props {
   mouseWorld: Vec2 | null
@@ -9,10 +9,14 @@ interface Props {
 /** DOM overlay: scale bar, cursor readout, and active-tool hint. */
 export function HudLayer({ mouseWorld }: Props) {
   const camera = useStore((s) => s.camera)
+  const units = useStore((s) => s.ui.units)
   const tool = useStore((s) => s.ui.tool)
   const draftCount = useStore((s) => s.ui.draftPoints.length)
   const pathEntityId = useStore((s) => s.ui.pathEntityId)
   const raidDraft = useStore((s) => s.ui.raidDraft)
+  const satUnanchored = useStore(
+    (s) => s.ui.basemap === 'sat' && !s.scenario.geoRef && !s.scenario.underlay.dataUrl,
+  )
   const raidReady = useStore(
     (s) =>
       s.ui.raidDraft != null &&
@@ -20,7 +24,7 @@ export function HudLayer({ mouseWorld }: Props) {
       s.ui.raidDraft.targetEntityId != null,
   )
 
-  const stepM = gridStepM(camera.scale, 120)
+  const stepM = gridStepM(camera.scale, 120, units)
   const barPx = stepM * camera.scale
 
   const hints: Record<string, string> = {
@@ -43,18 +47,22 @@ export function HudLayer({ mouseWorld }: Props) {
             ? `Tactic ${raidDraft.tacticId} armed: click the canvas to place the ingress axis. Esc cancels.`
             : `Tactic ${raidDraft.tacticId} armed: choose a platform and target in the Inspect tab. Esc cancels.`}
         </div>
-      ) : (
-        tool !== 'select' && <div className="hud-hint">{hints[tool]}</div>
-      )}
+      ) : tool !== 'select' ? (
+        <div className="hud-hint">{hints[tool]}</div>
+      ) : satUnanchored ? (
+        <div className="hud-hint">Sat basemap: choose Location or import an image.</div>
+      ) : null}
       <div className="hud-bottom">
         <span className="hud-cursor">
           {mouseWorld
-            ? `E ${(mouseWorld.x / 1000).toFixed(2)} km, N ${(-mouseWorld.y / 1000).toFixed(2)} km`
+            ? units === 'aviation'
+              ? `E ${(mouseWorld.x / NM_M).toFixed(2)} nm, N ${(-mouseWorld.y / NM_M).toFixed(2)} nm`
+              : `E ${(mouseWorld.x / 1000).toFixed(2)} km, N ${(-mouseWorld.y / 1000).toFixed(2)} km`
             : ''}
         </span>
         <span className="hud-scale">
           <span className="hud-scale-bar" style={{ width: `${barPx}px` }} />
-          {formatDistance(stepM)}
+          {formatDistance(stepM, units)}
         </span>
       </div>
     </div>

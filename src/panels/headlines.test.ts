@@ -52,6 +52,10 @@ describe('environmentHeadline', () => {
     expect(environmentHeadline({ ...calm, windSpeedMps: 5 })).toBe('5 m/s')
   })
 
+  it('shows wind in knots for aviation units', () => {
+    expect(environmentHeadline({ ...calm, windSpeedMps: 5 }, 'aviation')).toBe('10 kt')
+  })
+
   it('ignores the apply flag: the checkbox shows that state', () => {
     expect(environmentHeadline({ ...calm, apply: false })).toBe('Standard day')
   })

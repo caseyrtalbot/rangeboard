@@ -1,8 +1,9 @@
-import { useStore } from '../state/store'
+import { defaultFrameName, useStore } from '../state/store'
 import { useTeStore } from '../te/state/teStore'
 import type { Workspace } from '../te/state/teStore'
 import { captureFrameToCampaign } from '../te/io/frameCapture'
 import type { BasemapMode, BoundaryType } from '../model/types'
+import type { DisplayUnits } from '../geometry/geo'
 import { emptyScenario } from '../model/seed'
 import {
   exportScenario,
@@ -26,6 +27,11 @@ const BASEMAPS: { id: BasemapMode; label: string }[] = [
 
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
 
+const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
+  { id: 'aviation', label: 'kt nm', hint: 'Aviation units: knots and nautical miles. Altitude is always feet.' },
+  { id: 'metric', label: 'm km', hint: 'Metric units: m/s and km. Altitude is always feet.' },
+]
+
 export function Toolbar() {
   const scenario = useStore((s) => s.scenario)
   const ui = useStore((s) => s.ui)
@@ -42,6 +48,8 @@ export function Toolbar() {
     updateUnderlay,
     setMoveUnderlay,
     setShowThreatWez,
+    setUnits,
+    setLocationDialogOpen,
   } = useStore.getState()
 
   const workspace = useTeStore((s) => s.ui.workspace)
@@ -130,6 +138,19 @@ export function Toolbar() {
         ))}
       </div>
 
+      <div className="tool-group" aria-label="Units">
+        {UNITS.map((u) => (
+          <button
+            key={u.id}
+            className={ui.units === u.id ? 'active' : ''}
+            title={u.hint}
+            onClick={() => setUnits(u.id)}
+          >
+            {u.label}
+          </button>
+        ))}
+      </div>
+
       <div className="tool-group" aria-label="Overlays">
         <button
           className={ui.showThreatWez ? 'active' : ''}
@@ -142,6 +163,7 @@ export function Toolbar() {
 
       {ui.basemap === 'sat' && (
         <div className="tool-group sat-controls">
+          <button onClick={() => setLocationDialogOpen(true)}>Location…</button>
           <button onClick={importUnderlayImage}>Image…</button>
           <label className="inline">
             <input
@@ -191,8 +213,12 @@ export function Toolbar() {
           <button
             title="Save the current board view as a PNG frame on the active T&E campaign"
             onClick={() => {
-              const frameName = window.prompt('Frame name (attached to the active campaign)?')
-              if (frameName === null) return
+              const st = useStore.getState()
+              const frameName = defaultFrameName(
+                st.scenario.name,
+                st.playback.simTimeS,
+                st.ui.basemap,
+              )
               if (!captureFrameToCampaign(frameName)) {
                 window.alert('Could not capture: no active campaign or canvas.')
               }

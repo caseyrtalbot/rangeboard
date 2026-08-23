@@ -6,6 +6,7 @@ import {
   destination,
   dist,
   formatDistance,
+  formatSpeed,
   formationOffsets,
   gridStepM,
   pathLength,
@@ -185,5 +186,25 @@ describe('grid and formatting', () => {
     expect(formatDistance(950)).toBe('950 m')
     expect(formatDistance(1500)).toBe('1.5 km')
     expect(formatDistance(25000)).toBe('25 km')
+  })
+
+  it('formats aviation distances', () => {
+    expect(formatDistance(450, 'aviation')).toBe('450 m')
+    expect(formatDistance(926, 'aviation')).toBe('0.5 nm')
+    expect(formatDistance(25000, 'aviation')).toBe('13.5 nm')
+    expect(formatDistance(37040, 'aviation')).toBe('20 nm')
+  })
+
+  it('formats speeds', () => {
+    expect(formatSpeed(10)).toBe('10 m/s')
+    expect(formatSpeed(10, 'aviation')).toBe('19 kt')
+  })
+
+  it('picks nm-friendly aviation grid steps', () => {
+    expect(gridStepM(0.1, 90, 'aviation')).toBe(926)
+    expect(gridStepM(0.05, 90, 'aviation')).toBe(1852)
+    expect(gridStepM(0.225, 90, 'aviation')).toBe(500)
+    expect(gridStepM(0.6, 90, 'aviation')).toBe(200)
+    expect(gridStepM(10, 90, 'aviation')).toBe(10)
   })
 })

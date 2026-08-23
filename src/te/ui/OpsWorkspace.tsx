@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import type { TeCampaign } from '../model/types'
 import { activeCampaign, useTeStore } from '../state/teStore'
 import type { TePhaseTab } from '../state/teStore'
+import { chainHealth, designLint, qualificationBlockers } from '../validate'
 import { exportCampaignJson, importCampaignFile } from '../io/persistTe'
 import { CampaignPanel } from './CampaignPanel'
 import { DesignPanel } from './DesignPanel'
@@ -22,10 +24,60 @@ const PHASES: Array<{ id: TePhaseTab; label: string }> = [
   { id: 'products', label: 'Products' },
 ]
 
+type StepStatus = 'good' | 'warn' | 'neutral'
+
+/** Presentational progress dots for the stepper; navigation stays free. */
+function stepStatus(c: TeCampaign, id: TePhaseTab): StepStatus | null {
+  const qualified = qualificationBlockers(c).length === 0
+  switch (id) {
+    case 'campaign':
+      return qualified ? 'good' : 'neutral'
+    case 'design': {
+      const passed = c.qualificationPassedAt != null
+      if (
+        passed &&
+        c.questions.length > 0 &&
+        c.measures.length > 0 &&
+        designLint(c).length === 0
+      )
+        return 'good'
+      return passed && c.questions.length > 0 ? 'warn' : 'neutral'
+    }
+    case 'cards':
+      return c.cards.some((card) => card.status === 'issued') ? 'good' : 'neutral'
+    case 'execute':
+      if (c.runs.length === 0) return 'neutral'
+      return c.runs.every((r) => r.validity !== 'pending') ? 'good' : 'warn'
+    case 'analyze': {
+      const clean = Object.values(chainHealth(c)).every((n) => n === 0)
+      const adjudicated = c.runs.some((r) => r.validity !== 'pending')
+      if (adjudicated && clean) return 'good'
+      if (c.runs.length > 0 && !clean) return 'warn'
+      return 'neutral'
+    }
+    case 'deliver':
+      return c.evidencePackage.deliveredAt != null ? 'good' : 'neutral'
+    case 'products':
+      return null
+  }
+}
+
+/** Campaign code suggestion: word initials plus digit groups, id-grammar charset. */
+function suggestCode(name: string): string {
+  return name
+    .split(/[^A-Za-z0-9]+/)
+    .filter((w) => w !== '')
+    .map((w) => (/^\d+$/.test(w) ? w : w[0]))
+    .join('')
+    .toUpperCase()
+    .slice(0, 6)
+}
+
 function StartScreen() {
   const createCampaign = useTeStore((s) => s.createCampaign)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [codeTouched, setCodeTouched] = useState(false)
   return (
     <div className="te-start">
       <div className="te-start-box">
@@ -38,14 +90,21 @@ function StartScreen() {
           <input
             value={name}
             placeholder="Early-warning architecture evaluation"
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value)
+              if (!codeTouched) setCode(suggestCode(e.target.value))
+            }}
           />
         </Field>
         <Field label="Campaign code (short, used in record IDs)">
           <input
             value={code}
             placeholder="J401"
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+              setCode(clean)
+              setCodeTouched(clean !== '')
+            }}
           />
         </Field>
         <div className="inspector-actions">
@@ -117,24 +176,28 @@ export function OpsWorkspace() {
       </div>
       <div className="te-body">
         <nav className="te-nav">
-          {PHASES.map((p) => (
-            <button
-              key={p.id}
-              className={phase === p.id ? 'active' : ''}
-              onClick={() => setPhase(p.id)}
-            >
-              {p.label}
-            </button>
-          ))}
+          {PHASES.map((p) => {
+            const status = stepStatus(campaign, p.id)
+            return (
+              <button
+                key={p.id}
+                className={phase === p.id ? 'active' : ''}
+                onClick={() => setPhase(p.id)}
+              >
+                {status && <span className={`step-dot ${status}`} />}
+                {p.label}
+              </button>
+            )
+          })}
         </nav>
         <main className="te-main">
-          {phase === 'campaign' && <CampaignPanel campaign={campaign} />}
-          {phase === 'design' && <DesignPanel campaign={campaign} />}
-          {phase === 'cards' && <CardsPanel campaign={campaign} />}
-          {phase === 'execute' && <ExecutePanel campaign={campaign} />}
-          {phase === 'analyze' && <AnalyzePanel campaign={campaign} />}
-          {phase === 'deliver' && <DeliverPanel campaign={campaign} />}
-          {phase === 'products' && <ProductsPanel campaign={campaign} />}
+          {phase === 'campaign' && <CampaignPanel key={campaign.id} campaign={campaign} />}
+          {phase === 'design' && <DesignPanel key={campaign.id} campaign={campaign} />}
+          {phase === 'cards' && <CardsPanel key={campaign.id} campaign={campaign} />}
+          {phase === 'execute' && <ExecutePanel key={campaign.id} campaign={campaign} />}
+          {phase === 'analyze' && <AnalyzePanel key={campaign.id} campaign={campaign} />}
+          {phase === 'deliver' && <DeliverPanel key={campaign.id} campaign={campaign} />}
+          {phase === 'products' && <ProductsPanel key={campaign.id} campaign={campaign} />}
         </main>
       </div>
     </div>

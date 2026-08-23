@@ -14,6 +14,7 @@ export function PathLayer({ mouseWorld }: Props) {
   const scenario = useStore((s) => s.scenario)
   const ui = useStore((s) => s.ui)
   const camera = useStore((s) => s.camera)
+  const units = useStore((s) => s.ui.units)
   const k = camera.scale
 
   const paths = scenario.paths.map((p) => {
@@ -42,7 +43,7 @@ export function PathLayer({ mouseWorld }: Props) {
         <Text fontFamily="IBM Plex Mono"
           x={last.x + 8 / k}
           y={last.y}
-          text={`${formatDistance(lengthM)} · ${Math.round(etaS)} s`}
+          text={`${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`}
           fontSize={11 / k}
           fill={color}
         />
@@ -88,16 +89,16 @@ export function PathLayer({ mouseWorld }: Props) {
           <>
             <Line
               points={[a.x, a.y, b.x, b.y]}
-              stroke="#d9a441"
+              stroke="#a9b4bd"
               strokeWidth={1.5}
               strokeScaleEnabled={false}
             />
             <Text fontFamily="IBM Plex Mono"
               x={(a.x + b.x) / 2}
               y={(a.y + b.y) / 2 - 16 / k}
-              text={formatDistance(dist(a, b))}
+              text={formatDistance(dist(a, b), units)}
               fontSize={12 / k}
-              fill="#d9a441"
+              fill="#a9b4bd"
             />
           </>
         )}
@@ -119,9 +120,9 @@ function CalMark({ p, k, label }: { p: Vec2; k: number; label: string }) {
   const r = 8 / k
   return (
     <Group listening={false}>
-      <Line points={[p.x - r, p.y, p.x + r, p.y]} stroke="#d9a441" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Line points={[p.x, p.y - r, p.x, p.y + r]} stroke="#d9a441" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Text fontFamily="IBM Plex Mono" x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#d9a441" />
+      <Line points={[p.x - r, p.y, p.x + r, p.y]} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Line points={[p.x, p.y - r, p.x, p.y + r]} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Text fontFamily="IBM Plex Mono" x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#a9b4bd" />
     </Group>
   )
 }

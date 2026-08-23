@@ -332,3 +332,37 @@ export const DECISION_READY_TRACK: string[] = [
   'Position-quality state within the customer criterion.',
   'C2 track persistence for at least three consecutive updates.',
 ]
+
+/**
+ * Standard campaign schedule milestones, in working days before the
+ * first live run (negative counts after start). Seed defaults; edit per campaign.
+ */
+export const SCHEDULE_MILESTONES: Array<{ name: string; tMinusDays: number }> = [
+  { name: 'Qualification gate passed', tMinusDays: 45 },
+  { name: 'Design approved and thresholds frozen', tMinusDays: 30 },
+  { name: 'Authorities in hand (range, airspace, spectrum)', tMinusDays: 20 },
+  { name: 'Integration rehearsal complete', tMinusDays: 15 },
+  { name: 'Instrumentation and time sync verified', tMinusDays: 10 },
+  { name: 'Test readiness review', tMinusDays: 5 },
+  { name: 'Cards issued, cold reads and dry runs done', tMinusDays: 2 },
+  { name: 'First live run', tMinusDays: 0 },
+  { name: 'Analysis complete', tMinusDays: -10 },
+  { name: 'Decision evidence package delivered', tMinusDays: -20 },
+  { name: 'Campaign closeout', tMinusDays: -30 },
+]
+
+/** Generic run event-mark vocabulary offered on every run console. */
+export const GENERIC_MARKS: string[] = [
+  'start recording',
+  'start run',
+  'mark event',
+  'mark phase transition',
+  'record operator action',
+  'record system response',
+  'add observation',
+  'mark deviation',
+  'mark anomaly',
+  'pause',
+  'stop',
+  'complete run',
+]

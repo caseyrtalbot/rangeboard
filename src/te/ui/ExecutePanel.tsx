@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { GENERIC_MARKS } from '../seed/constants'
 import type {
   ChecklistInstanceItem,
   ChecklistPhase,
@@ -10,40 +11,31 @@ import type {
   TeRun,
   TeRunValidity,
 } from '../model/types'
+import { RUN_ROLES } from '../model/types'
 import { useTeStore } from '../state/teStore'
 import { canStartRun } from '../validate'
 import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
 import { templateByKey, templatesForPhase } from '../seed/checklistTemplates'
 import { nowIso } from '../model/empty'
+import { HELP, allPeople, decisionRightHolder } from './help'
 import {
   CheckField,
   MultiPicker,
   NumberField,
+  PersonField,
+  PhaseIntro,
   Pill,
   SelectField,
   Seg,
   SubTitle,
+  SuggestField,
   TextField,
   fmtDate,
 } from './kit'
 
 type Tab = 'day' | 'run' | 'checklists' | 'adjudication'
 
-const GENERIC_MARKS = [
-  'start recording',
-  'start run',
-  'mark event',
-  'mark phase transition',
-  'record operator action',
-  'record system response',
-  'add observation',
-  'mark deviation',
-  'mark anomaly',
-  'pause',
-  'stop',
-  'complete run',
-]
 
 const GO_NO_GO_OPTIONS = (['go', 'conditional-go', 'hold', 'no-go'] as GoNoGo[]).map((v) => ({ v, label: v }))
 
@@ -56,6 +48,29 @@ const VALIDITY_KIND: Record<TeRunValidity, 'good' | 'warn' | 'bad' | 'neutral'> 
   valid: 'good',
   invalid: 'bad',
   'conditionally-valid': 'neutral',
+}
+
+/** Yes/no question over a stored string; a legacy value renders as a prepended option. */
+function YesNoSeg({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const base = ['yes', 'no']
+  const options = (value !== '' && !base.includes(value) ? [value, ...base] : base).map((v) => ({
+    v,
+    label: v,
+  }))
+  return (
+    <div className="field">
+      <span>{label}</span>
+      <Seg value={value} options={options} onChange={onChange} />
+    </div>
+  )
 }
 
 function AccountingLine({ campaign }: { campaign: TeCampaign }) {
@@ -72,8 +87,10 @@ function DayTab({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenCh
   const { recordGoNoGo, startChecklist } = useTeStore.getState()
   const [scope, setScope] = useState<GoNoGoScope>('daily')
   const [decision, setDecision] = useState<GoNoGo>('go')
-  const [approvers, setApprovers] = useState('')
+  const defaultApprovers = decisionRightHolder(campaign, 'daily go/no-go')
+  const [approvers, setApprovers] = useState(defaultApprovers)
   const [note, setNote] = useState('')
+  const people = allPeople(campaign)
   const cov = coverage(campaign)
   const counts = { empty: 0, thin: 0, met: 0, redundant: 0 }
   for (const c of cov) counts[c.state]++
@@ -129,11 +146,11 @@ function DayTab({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenCh
         <Seg value={decision} options={GO_NO_GO_OPTIONS} onChange={setDecision} />
       </div>
       <div className="field-row">
-        <TextField label="Approvers" value={approvers} onChange={setApprovers} />
+        <PersonField label="Approvers" value={approvers} onChange={setApprovers} people={people} />
         <TextField label="Note" value={note} onChange={setNote} />
       </div>
       <div className="inspector-actions">
-        <button className="primary" onClick={() => { recordGoNoGo(scope, decision, approvers, note); setApprovers(''); setNote('') }}>Record</button>
+        <button className="primary" onClick={() => { recordGoNoGo(scope, decision, approvers, note); setApprovers(defaultApprovers); setNote('') }}>Record</button>
         <button onClick={() => { startChecklist(templateByKey('day-start')!); onOpenChecklists() }}>Start day-start checklist</button>
       </div>
     </div>
@@ -188,21 +205,33 @@ function RunDebriefForm({ run, onClose }: { run: TeRun; onClose: () => void }) {
       </SubTitle>
       <TextField label="What was planned and what occurred in time order" rows={2} value={run.debrief.plannedVsOccurred} onChange={(v) => set({ plannedVsOccurred: v })} />
       <TextField label="What differed" rows={2} value={run.debrief.differences} onChange={(v) => set({ differences: v })} />
-      <TextField label="Were all sources recorded" value={run.debrief.sourcesRecorded} onChange={(v) => set({ sourcesRecorded: v })} />
+      <YesNoSeg label="Were all sources recorded" value={run.debrief.sourcesRecorded} onChange={(v) => set({ sourcesRecorded: v })} />
       <TextField label="Warnings or failures" value={run.debrief.warningsOrFailures} onChange={(v) => set({ warningsOrFailures: v })} />
       <TextField label="Which result was unexpected" value={run.debrief.unexpectedResult} onChange={(v) => set({ unexpectedResult: v })} />
-      <TextField label="Repeat needed" value={run.debrief.repeatNeeded} onChange={(v) => set({ repeatNeeded: v })} />
+      <YesNoSeg label="Repeat needed" value={run.debrief.repeatNeeded} onChange={(v) => set({ repeatNeeded: v })} />
       <div className="field">
         <span>Preliminary use</span>
-        <Seg value={(run.preliminaryUse ?? '') as NonNullable<TeRun['preliminaryUse']>} options={(['usable', 'limited', 'repeat', 'valid-failure'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('runs', run.id, { preliminaryUse: v })} />
+        <Seg
+          value={(run.preliminaryUse ?? '') as NonNullable<TeRun['preliminaryUse']>}
+          options={(['usable', 'limited', 'repeat', 'valid-failure'] as const).map((v) => ({ v, label: v }))}
+          onChange={(v) =>
+            patchItem('runs', run.id, {
+              preliminaryUse: v,
+              ...(v === 'repeat' && run.debrief.repeatNeeded.trim() === ''
+                ? { debrief: { ...run.debrief, repeatNeeded: 'yes' } }
+                : {}),
+            })
+          }
+        />
       </div>
     </div>
   )
 }
 
 function RunConsoleTab({ campaign }: { campaign: TeCampaign }) {
-  const { createRunFromCard, markRunEvent, addDeviation, addAnomaly, patchItem } = useTeStore.getState()
+  const { createRunFromCard, markRunEvent, addDeviation, addAnomaly, patchItem, discardRun, createDiagnosticCard, selectRecord } = useTeStore.getState()
   const [cardId, setCardId] = useState('')
+  const people = allPeople(campaign)
   const [debriefRunId, setDebriefRunId] = useState<string | null>(null)
   const issued = campaign.cards.filter((c) => c.status === 'issued')
   const selectedCard = issued.find((c) => c.id === cardId)
@@ -217,10 +246,31 @@ function RunConsoleTab({ campaign }: { campaign: TeCampaign }) {
   const runDeviations = active ? campaign.deviations.filter((d) => d.runId === active.id) : []
   const runAnomalies = active ? campaign.anomalies.filter((a) => a.runId === active?.id) : []
 
+  const validityHolder = decisionRightHolder(campaign, 'run validity')
+  const priorRolesRun = active
+    ? [...campaign.runs]
+        .reverse()
+        .find((r) => r.cardId === active.cardId && r.id !== active.id && r.roles.length > 0)
+    : undefined
+  const truthSources = campaign.measures
+    .flatMap((m) => [m.truth.primarySource, m.truth.backupSource])
+    .filter((t) => t.trim() !== '')
+  const anomalySourceSuggestions = [...truthSources, activeCard?.dataSources ?? '']
+  const plannedStateSuggestions = activeCard
+    ? [activeCard.redInitialState, activeCard.conditionNote, ...activeCard.procedure.map((s) => s.action)]
+    : []
+  const affectedSuggestions = [
+    ...campaign.factors.map((x) => x.name),
+    ...campaign.measures.map((x) => x.name),
+  ]
+
   const tap = (mark: string) => {
     if (!active) return
     markRunEvent(active.id, mark)
-    if (mark === 'mark deviation') addDeviation(active.id)
+    if (mark === 'mark deviation') {
+      const id = addDeviation(active.id)
+      if (id && validityHolder !== '') patchItem('deviations', id, { approver: validityHolder })
+    }
     if (mark === 'mark anomaly') addAnomaly(active.id)
   }
 
@@ -242,6 +292,39 @@ function RunConsoleTab({ campaign }: { campaign: TeCampaign }) {
           <div className="spec-summary">
             Purpose: {activeCard.purpose || 'not stated'} · Prediction: {activeCard.prediction || 'not stated'} · Changed factor: {activeCard.changedFactor || 'not stated'}
           </div>
+
+          <SubTitle
+            action={
+              <>
+                <button
+                  className="mini"
+                  disabled={!priorRolesRun}
+                  onClick={() => {
+                    if (!priorRolesRun) return
+                    patchItem('runs', active.id, { roles: priorRolesRun.roles.map((r) => ({ ...r })) })
+                  }}
+                >
+                  Copy roles from last run of this card
+                </button>
+                <button
+                  className="mini"
+                  onClick={() => patchItem('runs', active.id, { roles: [...active.roles, { role: RUN_ROLES[0], person: '' }] })}
+                >
+                  + role
+                </button>
+              </>
+            }
+          >
+            Run roles
+          </SubTitle>
+          {active.roles.length === 0 && <p className="muted small">No roles assigned yet.</p>}
+          {active.roles.map((r, i) => (
+            <div key={i} className="field-row te-table-row">
+              <SelectField label="Role" value={r.role} options={RUN_ROLES.map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('runs', active.id, { roles: active.roles.map((x, j) => (j === i ? { ...x, role: v } : x)) })} />
+              <PersonField label="Person" value={r.person} onChange={(v) => patchItem('runs', active.id, { roles: active.roles.map((x, j) => (j === i ? { ...x, person: v } : x)) })} people={people} />
+              <button className="mini danger" onClick={() => patchItem('runs', active.id, { roles: active.roles.filter((_, j) => j !== i) })}>×</button>
+            </div>
+          ))}
 
           <SubTitle>Procedure</SubTitle>
           <ol className="muted small">
@@ -276,17 +359,29 @@ function RunConsoleTab({ campaign }: { campaign: TeCampaign }) {
           {runDeviations.map((d) => (
             <div key={d.id} className="run-row">
               <div className="field-row">
-                <TextField label="Planned state" value={d.plannedState} onChange={(v) => patchItem('deviations', d.id, { plannedState: v })} />
+                <SuggestField label="Planned state" value={d.plannedState} onChange={(v) => patchItem('deviations', d.id, { plannedState: v })} suggestions={plannedStateSuggestions} />
                 <TextField label="Actual state" value={d.actualState} onChange={(v) => patchItem('deviations', d.id, { actualState: v })} />
               </div>
               <div className="field-row">
                 <TextField label="Direct observation" value={d.directObservation} onChange={(v) => patchItem('deviations', d.id, { directObservation: v })} />
-                <TextField label="Affected variable, control, measure, or rule" value={d.affected} onChange={(v) => patchItem('deviations', d.id, { affected: v })} />
+                <SuggestField label="Affected variable, control, measure, or rule" value={d.affected} onChange={(v) => patchItem('deviations', d.id, { affected: v })} suggestions={affectedSuggestions} />
               </div>
               <div className="field-row">
                 <TextField label="Immediate action" value={d.immediateAction} onChange={(v) => patchItem('deviations', d.id, { immediateAction: v })} />
                 <SelectField label="Effect" value={d.effect} options={(['none', 'bounded', 'material', 'unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('deviations', d.id, { effect: v })} />
                 <SelectField label="Disposition" value={d.disposition} options={(['repeat', 'analyze-with-limits', 'exclude'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('deviations', d.id, { disposition: v })} />
+              </div>
+              <div className="field-row">
+                <div className="field">
+                  <span>Easier or harder</span>
+                  <Seg value={(d.easierOrHarder ?? '') as 'easier' | 'harder' | 'neutral-unknown'} options={(['easier', 'harder', 'neutral-unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('deviations', d.id, { easierOrHarder: v })} />
+                </div>
+                <TextField label="Validity effect" value={d.validityEffect} onChange={(v) => patchItem('deviations', d.id, { validityEffect: v })} />
+                <CheckField label="Data preserved" value={d.dataPreserved} onChange={(v) => patchItem('deviations', d.id, { dataPreserved: v })} />
+              </div>
+              <div className="field-row">
+                <TextField label="Generalization limit" value={d.generalizationLimit} onChange={(v) => patchItem('deviations', d.id, { generalizationLimit: v })} />
+                <PersonField label="Approver" value={d.approver} onChange={(v) => patchItem('deviations', d.id, { approver: v })} people={people} />
               </div>
             </div>
           ))}
@@ -297,16 +392,57 @@ function RunConsoleTab({ campaign }: { campaign: TeCampaign }) {
             <div key={a.id} className="run-row">
               <TextField label="Observation (record before discussing causes)" rows={2} value={a.observation} onChange={(v) => patchItem('anomalies', a.id, { observation: v })} />
               <div className="field-row">
-                <TextField label="Source" value={a.source} onChange={(v) => patchItem('anomalies', a.id, { source: v })} />
+                <SuggestField label="Source" value={a.source} onChange={(v) => patchItem('anomalies', a.id, { source: v })} suggestions={anomalySourceSuggestions} />
                 <SelectField label="Classification" value={a.classification} options={(['system-behavior', 'test-infrastructure', 'threat-deviation', 'operator-action', 'data-artifact', 'unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('anomalies', a.id, { classification: v })} />
                 <TextField label="Mission effect" value={a.missionEffect} onChange={(v) => patchItem('anomalies', a.id, { missionEffect: v })} />
               </div>
               <TextField label="Preservation action" value={a.preservationAction} onChange={(v) => patchItem('anomalies', a.id, { preservationAction: v })} />
+              <SubTitle
+                action={
+                  <span className="help-dot" tabIndex={0} data-help={HELP.anomaly}>
+                    ?
+                  </span>
+                }
+              >
+                Closure
+              </SubTitle>
+              <div className="field-row">
+                <SelectField label="Root cause status" value={a.rootCauseStatus} options={(['confirmed', 'supported', 'plausible', 'contradicted', 'unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('anomalies', a.id, { rootCauseStatus: v })} />
+                <TextField label="Candidate causes" value={a.candidateCauses} onChange={(v) => patchItem('anomalies', a.id, { candidateCauses: v })} />
+                <TextField label="Corrective action" value={a.correctiveAction} onChange={(v) => patchItem('anomalies', a.id, { correctiveAction: v })} />
+              </div>
+              <div className="field-row">
+                <SuggestField label="Verification test" value={a.verificationTest} onChange={(v) => patchItem('anomalies', a.id, { verificationTest: v })} suggestions={campaign.cards.map((c) => c.cardCode)} />
+                <div className="field">
+                  <span>&nbsp;</span>
+                  <button
+                    className="mini"
+                    onClick={() => {
+                      const id = createDiagnosticCard(a.id)
+                      if (id) selectRecord('cards', id)
+                    }}
+                  >
+                    Create diagnostic card
+                  </button>
+                </div>
+                <PersonField label="Owner" value={a.owner} onChange={(v) => patchItem('anomalies', a.id, { owner: v })} people={people} />
+                <CheckField label="Open" value={a.open} onChange={(v) => patchItem('anomalies', a.id, { open: v })} />
+              </div>
             </div>
           ))}
 
           <div className="inspector-actions">
             <button className="primary" onClick={() => { patchItem('runs', active.id, { endAt: nowIso() }); setDebriefRunId(active.id) }}>Complete run</button>
+            {active.events.length === 0 && active.deviationIds.length === 0 && active.anomalyIds.length === 0 && active.adjudications.length === 0 && active.observations.length === 0 && active.operatorObservations.trim() === '' && (
+              <button
+                className="mini danger"
+                onClick={() => {
+                  if (window.confirm('Discard this run? This run has no recorded evidence.')) discardRun(active.id)
+                }}
+              >
+                Discard run (no evidence)
+              </button>
+            )}
           </div>
         </>
       )}
@@ -339,8 +475,18 @@ const CHECKLIST_PHASES: ChecklistPhase[] = [
   'closeout',
 ]
 
+/** The most recent earlier item's completer; one person usually runs a checklist. */
+function previousCompleter(inst: TeChecklist, index: number): string {
+  for (let i = index - 1; i >= 0; i--) {
+    const it = inst.items[i]
+    if (it.state !== 'unchecked' && it.completer.trim() !== '') return it.completer
+  }
+  return ''
+}
+
 function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
   const { startChecklist, patchItem } = useTeStore.getState()
+  const people = allPeople(campaign)
   const open = campaign.checklists.filter((c) => c.completedAt === null)
   const done = campaign.checklists
     .filter((c) => c.completedAt !== null)
@@ -381,14 +527,33 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
               return (
                 <div key={i}>
                   <label className="check-row">
-                    <input type="checkbox" checked={it.state === 'checked'} disabled={it.state === 'na'} onChange={(e) => setItem(inst, i, e.target.checked ? { state: 'checked', at: nowIso() } : { state: 'unchecked', at: null })} />
+                    <input
+                      type="checkbox"
+                      checked={it.state === 'checked'}
+                      disabled={it.state === 'na'}
+                      onChange={(e) =>
+                        setItem(
+                          inst,
+                          i,
+                          e.target.checked
+                            ? {
+                                state: 'checked',
+                                at: nowIso(),
+                                ...(it.completer.trim() === ''
+                                  ? { completer: previousCompleter(inst, i) }
+                                  : {}),
+                              }
+                            : { state: 'unchecked', at: null },
+                        )
+                      }
+                    />
                     <span>{it.text}</span>
                     {it.state === 'na' && <Pill kind="neutral" text="n/a" />}
                     {hold && <Pill kind="warn" text="hold" />}
                   </label>
                   <div className="field-row">
                     {it.type === 'value' && <TextField label="Value" value={it.value} onChange={(v) => setItem(inst, i, { value: v })} />}
-                    <TextField label="Completer" value={it.completer} onChange={(v) => setItem(inst, i, { completer: v })} />
+                    <PersonField label="Completer" value={it.completer} onChange={(v) => setItem(inst, i, { completer: v })} people={people} />
                     <CheckField label="n/a" value={it.state === 'na'} onChange={(v) => setItem(inst, i, v ? { state: 'na' } : { state: 'unchecked' })} />
                     {it.state === 'na' && <TextField label="n/a reason" value={it.naReason} onChange={(v) => setItem(inst, i, { naReason: v })} />}
                   </div>
@@ -425,16 +590,33 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
 function RunAdjudication({ campaign, run }: { campaign: TeCampaign; run: TeRun }) {
   const { adjudicateRun, patchItem } = useTeStore.getState()
   const [validity, setValidity] = useState<TeRunValidity>(run.validity)
-  const [by, setBy] = useState('')
+  const [by, setBy] = useState(decisionRightHolder(campaign, 'run validity'))
   const [reason, setReason] = useState('')
   const card = campaign.cards.find((c) => c.id === run.cardId)
+  const people = allPeople(campaign)
+  const qualitySuggestions = [
+    ...campaign.runs.map((r) => r.initialDataQuality),
+    'complete',
+    'gaps noted',
+    'truth dropout',
+  ]
   return (
     <div className="run-row">
       <SubTitle action={<Pill kind={VALIDITY_KIND[run.validity]} text={run.validity} />}>{run.id}</SubTitle>
       <div className="muted small">
         card: {card?.title || run.cardId} {run.cardVersion} · start {fmtDate(run.startAt)} · end {fmtDate(run.endAt)} · {run.events.length} event(s) · {run.deviationIds.length} deviation(s) · {run.anomalyIds.length} anomaly record(s)
       </div>
-      <TextField label="Initial data quality" value={run.initialDataQuality} onChange={(v) => patchItem('runs', run.id, { initialDataQuality: v })} />
+      <SubTitle>As-run records</SubTitle>
+      <div className="field-row">
+        <SelectField label="Actual configuration" value={run.actualConfigId} allowEmpty="same as planned" options={campaign.configs.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => patchItem('runs', run.id, { actualConfigId: v })} help="Record what actually ran when it differs from the plan." />
+        <SelectField label="Actual threat" value={run.actualThreatId} allowEmpty="same as planned" options={campaign.threats.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => patchItem('runs', run.id, { actualThreatId: v })} />
+        <SelectField label="Actual condition" value={run.actualConditionId} allowEmpty="same as planned" options={campaign.conditions.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => patchItem('runs', run.id, { actualConditionId: v })} />
+      </div>
+      <div className="field-row">
+        <TextField label="As-run note" value={run.actualsNote} onChange={(v) => patchItem('runs', run.id, { actualsNote: v })} />
+        <TextField label="Data files note" value={run.dataFilesNote} onChange={(v) => patchItem('runs', run.id, { dataFilesNote: v })} />
+      </div>
+      <SuggestField label="Initial data quality" value={run.initialDataQuality} onChange={(v) => patchItem('runs', run.id, { initialDataQuality: v })} suggestions={qualitySuggestions} />
       <div className="field">
         <span>Validity</span>
         <Seg value={validity} options={(['pending', 'valid', 'conditionally-valid', 'invalid'] as TeRunValidity[]).map((v) => ({ v, label: v }))} onChange={setValidity} />
@@ -447,7 +629,7 @@ function RunAdjudication({ campaign, run }: { campaign: TeCampaign; run: TeRun }
         </>
       )}
       <div className="field-row">
-        <TextField label="Adjudicator" value={by} onChange={setBy} />
+        <PersonField label="Adjudicator" value={by} onChange={setBy} people={people} />
         <TextField label="Reason" value={reason} onChange={setReason} />
       </div>
       <div className="inspector-actions">
@@ -495,8 +677,15 @@ const TABS: Array<{ v: Tab; label: string }> = [
 
 export function ExecutePanel({ campaign }: { campaign: TeCampaign }) {
   const [tab, setTab] = useState<Tab>('day')
+  const pending = campaign.runs.filter((r) => r.validity === 'pending').length
+  const gate = pending
+    ? { kind: 'warn' as const, text: `${pending} run(s) pending adjudication` }
+    : campaign.runs.length
+      ? { kind: 'good' as const, text: 'runs adjudicated' }
+      : { kind: 'neutral' as const, text: 'no runs yet' }
   return (
     <div className="te-panel">
+      <PhaseIntro phase="execute" gate={gate} />
       <Seg value={tab} options={TABS} onChange={setTab} />
       {tab === 'day' && <DayTab campaign={campaign} onOpenChecklists={() => setTab('checklists')} />}
       {tab === 'run' && <RunConsoleTab campaign={campaign} />}

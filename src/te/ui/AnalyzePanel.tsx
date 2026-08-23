@@ -7,7 +7,8 @@ import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
 import { adaptivePriority } from '../calc/priority'
 import { templateByKey } from '../seed/checklistTemplates'
-import { Pill, SelectField, Seg, SubTitle, TextField, fmtDate } from './kit'
+import { allPeople, decisionRightHolder } from './help'
+import { PersonField, PhaseIntro, Pill, SelectField, Seg, SubTitle, SuggestField, TextField, fmtDate } from './kit'
 
 type Tab = 'results' | 'coverage' | 'daily'
 
@@ -174,7 +175,9 @@ function DailyReviewTab({ campaign }: { campaign: TeCampaign }) {
   const [varsChanged, setVarsChanged] = useState('')
   const [varsHeld, setVarsHeld] = useState('')
   const [comparability, setComparability] = useState('')
-  const [approvals, setApprovals] = useState('')
+  const defaultApprovals = decisionRightHolder(campaign, 'card change')
+  const [approvals, setApprovals] = useState(defaultApprovals)
+  const factorNames = campaign.factors.map((x) => x.name)
   const [importance, setImportance] = useState(2)
   const [uncertainty, setUncertainty] = useState(2)
   const [likelihood, setLikelihood] = useState(2)
@@ -197,12 +200,12 @@ function DailyReviewTab({ campaign }: { campaign: TeCampaign }) {
       </div>
       <TextField label="Selected change and reason" rows={2} value={selectedChange} onChange={setSelectedChange} />
       <div className="field-row">
-        <TextField label="Variables changed" value={varsChanged} onChange={setVarsChanged} />
-        <TextField label="Variables held" value={varsHeld} onChange={setVarsHeld} />
+        <SuggestField label="Variables changed" value={varsChanged} onChange={setVarsChanged} suggestions={factorNames} />
+        <SuggestField label="Variables held" value={varsHeld} onChange={setVarsHeld} suggestions={factorNames} />
       </div>
       <div className="field-row">
         <TextField label="Comparability effect" value={comparability} onChange={setComparability} />
-        <TextField label="Approvals" value={approvals} onChange={setApprovals} />
+        <PersonField label="Approvals" value={approvals} onChange={setApprovals} people={allPeople(campaign)} />
       </div>
       <div className="inspector-actions">
         <button
@@ -225,7 +228,7 @@ function DailyReviewTab({ campaign }: { campaign: TeCampaign }) {
             setVarsChanged('')
             setVarsHeld('')
             setComparability('')
-            setApprovals('')
+            setApprovals(defaultApprovals)
           }}
         >
           Record adaptation
@@ -263,6 +266,7 @@ export function AnalyzePanel({ campaign }: { campaign: TeCampaign }) {
   const [tab, setTab] = useState<Tab>('results')
   return (
     <div className="te-panel">
+      <PhaseIntro phase="analyze" />
       <Seg value={tab} options={TABS} onChange={setTab} />
       {tab === 'results' && <ResultsTab campaign={campaign} />}
       {tab === 'coverage' && <CoverageTab campaign={campaign} />}

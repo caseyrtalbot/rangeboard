@@ -267,6 +267,12 @@ export interface FrameSnap {
   basemap: BasemapMode
 }
 
+/** Geographic anchor of the world origin for the satellite tile basemap. */
+export interface GeoRef {
+  lat: number
+  lon: number
+}
+
 export interface Underlay {
   dataUrl: string | null
   /** World position of the image top-left corner, meters. */
@@ -476,6 +482,8 @@ export interface Scenario {
   testCards: TestCard[]
   frames: FrameSnap[]
   underlay: Underlay
+  /** Lat/lon of world (0,0) for satellite tiles. Null until the user sets one. */
+  geoRef: GeoRef | null
 }
 
 let counter = 0

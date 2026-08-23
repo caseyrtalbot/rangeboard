@@ -3,10 +3,29 @@
  * (field, field-row, subsection, seg, card-chip) so panels look native.
  */
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+import { useId } from 'react'
+import type { TePhaseTab } from '../state/teStore'
+import { PHASE_INTRO } from './help'
+
+export function Field({
+  label,
+  help,
+  children,
+}: {
+  label: string
+  help?: string
+  children: React.ReactNode
+}) {
   return (
     <label className="field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {help && (
+          <span className="help-dot" tabIndex={0} data-help={help}>
+            ?
+          </span>
+        )}
+      </span>
       {children}
     </label>
   )
@@ -18,6 +37,7 @@ export function TextField({
   onChange,
   rows,
   placeholder,
+  help,
   disabled,
 }: {
   label: string
@@ -25,10 +45,11 @@ export function TextField({
   onChange: (v: string) => void
   rows?: number
   placeholder?: string
+  help?: string
   disabled?: boolean
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} help={help}>
       {rows ? (
         <textarea
           rows={rows}
@@ -54,16 +75,18 @@ export function NumberField({
   value,
   onChange,
   step,
+  help,
   disabled,
 }: {
   label: string
   value: number | null
   onChange: (v: number | null) => void
   step?: number
+  help?: string
   disabled?: boolean
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} help={help}>
       <input
         type="number"
         step={step}
@@ -79,15 +102,17 @@ export function CheckField({
   label,
   value,
   onChange,
+  help,
   disabled,
 }: {
   label: string
   value: boolean
   onChange: (v: boolean) => void
+  help?: string
   disabled?: boolean
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} help={help}>
       <input
         type="checkbox"
         checked={value}
@@ -104,6 +129,7 @@ export function SelectField<T extends string>({
   options,
   onChange,
   allowEmpty,
+  help,
   disabled,
 }: {
   label: string
@@ -111,10 +137,11 @@ export function SelectField<T extends string>({
   options: Array<{ v: T; label: string }>
   onChange: (v: T | null) => void
   allowEmpty?: string
+  help?: string
   disabled?: boolean
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} help={help}>
       <select
         value={value ?? ''}
         disabled={disabled}
@@ -159,22 +186,200 @@ export function Seg<T extends string>({
   )
 }
 
+/** ISO date input; emits 'YYYY-MM-DD' or null. Non-date legacy values stay editable as text. */
+export function DateField({
+  label,
+  value,
+  onChange,
+  help,
+  disabled,
+}: {
+  label: string
+  value: string | null
+  onChange: (v: string | null) => void
+  help?: string
+  disabled?: boolean
+}) {
+  const freeText = value != null && value !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  return (
+    <Field label={label} help={help}>
+      {freeText ? (
+        <input
+          value={value}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value || null)}
+        />
+      ) : (
+        <input
+          type="date"
+          value={value ?? ''}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value || null)}
+        />
+      )}
+    </Field>
+  )
+}
+
+/** Text input with a datalist of known people; free text stays allowed. */
+export function PersonField({
+  label,
+  value,
+  onChange,
+  people,
+  help,
+  placeholder,
+  disabled,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  people: string[]
+  help?: string
+  placeholder?: string
+  disabled?: boolean
+}) {
+  const listId = useId()
+  const names = [...new Set(people.map((p) => p.trim()).filter((p) => p !== ''))]
+  return (
+    <Field label={label} help={help}>
+      <input
+        value={value}
+        list={listId}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <datalist id={listId}>
+        {names.map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
+    </Field>
+  )
+}
+
+/**
+ * Text input (or textarea when rows is set) with typed suggestions.
+ * Inputs get a datalist; textareas show click-to-insert chips (max 6).
+ * Free text always stays allowed.
+ */
+export function SuggestField({
+  label,
+  value,
+  onChange,
+  suggestions,
+  help,
+  placeholder,
+  rows,
+  disabled,
+  onBlur,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  suggestions: string[]
+  help?: string
+  placeholder?: string
+  rows?: number
+  disabled?: boolean
+  onBlur?: () => void
+}) {
+  const listId = useId()
+  const items = [...new Set(suggestions.map((s) => s.trim()).filter((s) => s !== ''))]
+  if (rows) {
+    return (
+      <Field label={label} help={help}>
+        <textarea
+          rows={rows}
+          value={value}
+          placeholder={placeholder}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+        />
+        {items.length > 0 && !disabled && (
+          <div className="cards-list">
+            {items.slice(0, 6).map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="card-chip"
+                onClick={() => onChange(value.trim() === '' ? s : `${value}\n${s}`)}
+              >
+                {s.length > 48 ? `${s.slice(0, 48)}…` : s}
+              </button>
+            ))}
+          </div>
+        )}
+      </Field>
+    )
+  }
+  return (
+    <Field label={label} help={help}>
+      <input
+        value={value}
+        list={items.length > 0 ? listId : undefined}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+      />
+      {items.length > 0 && (
+        <datalist id={listId}>
+          {items.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+      )}
+    </Field>
+  )
+}
+
+/** Read-only version display with an optional minor-bump button. */
+export function VersionField({
+  label,
+  value,
+  onBump,
+  disabled,
+}: {
+  label: string
+  value: string
+  onBump?: () => void
+  disabled?: boolean
+}) {
+  return (
+    <Field label={label}>
+      <div className="field-row">
+        <input value={value} disabled />
+        {onBump && (
+          <button type="button" className="mini" disabled={disabled} onClick={onBump}>
+            Bump minor
+          </button>
+        )}
+      </div>
+    </Field>
+  )
+}
+
 /** One item per line; edits round-trip through a textarea. */
 export function LinesField({
   label,
   value,
   onChange,
   rows,
+  help,
   disabled,
 }: {
   label: string
   value: string[]
   onChange: (v: string[]) => void
   rows?: number
+  help?: string
   disabled?: boolean
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} help={help}>
       <textarea
         rows={rows ?? 4}
         value={value.join('\n')}
@@ -193,17 +398,26 @@ export function MultiPicker({
   options,
   value,
   onChange,
+  help,
   disabled,
 }: {
   label: string
   options: Array<{ id: string; label: string }>
   value: string[]
   onChange: (v: string[]) => void
+  help?: string
   disabled?: boolean
 }) {
   return (
     <div className="subsection">
-      <div className="panel-subtitle">{label}</div>
+      <div className="panel-subtitle">
+        {label}
+        {help && (
+          <span className="help-dot" tabIndex={0} data-help={help}>
+            ?
+          </span>
+        )}
+      </div>
       {options.length === 0 && <div className="muted small">None defined yet.</div>}
       {options.map((o) => (
         <label key={o.id} className="check-row">
@@ -288,6 +502,24 @@ export function GateList({ items, kind }: { items: string[]; kind: 'bad' | 'warn
           {t}
         </div>
       ))}
+    </div>
+  )
+}
+
+/** Compact phase banner with an optional gate status pill. */
+export function PhaseIntro({
+  phase,
+  gate,
+}: {
+  phase: TePhaseTab
+  gate?: { kind: 'good' | 'warn' | 'bad' | 'neutral'; text: string }
+}) {
+  const intro = PHASE_INTRO[phase]
+  return (
+    <div className="phase-intro">
+      <strong>{intro.title}</strong>
+      <span className="intro-text">{intro.text}</span>
+      {gate && <Pill kind={gate.kind} text={gate.text} />}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './state/store'
 import type { RightTab } from './state/store'
+import type { GeoRef } from './model/types'
 import { useTeStore } from './te/state/teStore'
 import { OpsWorkspace } from './te/ui/OpsWorkspace'
 import { CanvasStage } from './canvas/CanvasStage'
@@ -77,6 +78,116 @@ function CalibrateDialog() {
   )
 }
 
+const LOCATION_PRESETS: { label: string; lat: number; lon: number; elevationFt: number }[] = [
+  { label: 'Yuma Proving Ground AZ', lat: 32.9866, lon: -114.3355, elevationFt: 350 },
+  { label: 'White Sands Missile Range NM', lat: 32.3826, lon: -106.4926, elevationFt: 4000 },
+  { label: 'Dugway Proving Ground UT', lat: 40.1919, lon: -112.9358, elevationFt: 4350 },
+  { label: 'China Lake NAWS CA', lat: 35.6853, lon: -117.69, elevationFt: 2250 },
+  { label: 'Eglin AFB FL', lat: 30.4633, lon: -86.5498, elevationFt: 85 },
+  { label: 'Fort Sill OK', lat: 34.651, lon: -98.402, elevationFt: 1200 },
+  { label: 'Camp Grayling MI', lat: 44.6803, lon: -84.7292, elevationFt: 1170 },
+  { label: 'Creech AFB NV', lat: 36.5872, lon: -115.6733, elevationFt: 3130 },
+  { label: 'Aberdeen Proving Ground MD', lat: 39.4667, lon: -76.13, elevationFt: 20 },
+  { label: 'Fort Huachuca AZ', lat: 31.555, lon: -110.3503, elevationFt: 4620 },
+  { label: 'Camp Roberts CA', lat: 35.7897, lon: -120.746, elevationFt: 620 },
+  { label: 'Twentynine Palms MCAGCC CA', lat: 34.236, lon: -116.057, elevationFt: 2000 },
+]
+
+/** Modal for the satellite basemap geo reference. */
+function LocationDialog() {
+  const open = useStore((s) => s.ui.locationDialogOpen)
+  const geoRef = useStore((s) => s.scenario.geoRef)
+  if (!open) return null
+  return <LocationDialogForm geoRef={geoRef} />
+}
+
+function LocationDialogForm({ geoRef }: { geoRef: GeoRef | null }) {
+  const { setGeoRef, setLocationDialogOpen, applyLocation } = useStore.getState()
+  const [preset, setPreset] = useState('')
+  const [lat, setLat] = useState(geoRef ? String(geoRef.lat) : '')
+  const [lon, setLon] = useState(geoRef ? String(geoRef.lon) : '')
+
+  const latN = Number(lat)
+  const lonN = Number(lon)
+  const valid = lat !== '' && lon !== '' && latN >= -85 && latN <= 85 && lonN >= -180 && lonN <= 180
+
+  function apply() {
+    if (!valid) return
+    // A chosen preset site also sets the field elevation; the number input in
+    // the Analysis environment section stays the override.
+    const p = LOCATION_PRESETS.find((l) => l.label === preset)
+    const fromPreset = p && p.lat === latN && p.lon === lonN
+    applyLocation({ lat: latN, lon: lonN }, fromPreset ? p.elevationFt : null)
+    setLocationDialogOpen(false)
+  }
+
+  return (
+    <div className="dialog">
+      <div className="dialog-title">Map location</div>
+      <label className="field">
+        <span>Preset test location</span>
+        <select
+          value={preset}
+          onChange={(e) => {
+            const p = LOCATION_PRESETS.find((l) => l.label === e.target.value)
+            setPreset(e.target.value)
+            if (p) {
+              setLat(String(p.lat))
+              setLon(String(p.lon))
+            }
+          }}
+        >
+          <option value="">Choose a location</option>
+          {LOCATION_PRESETS.map((l) => (
+            <option key={l.label} value={l.label}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span>Latitude (-85 to 85)</span>
+        <input
+          type="number"
+          step="any"
+          min={-85}
+          max={85}
+          value={lat}
+          onChange={(e) => setLat(e.target.value)}
+        />
+      </label>
+      <label className="field">
+        <span>Longitude (-180 to 180)</span>
+        <input
+          type="number"
+          step="any"
+          min={-180}
+          max={180}
+          value={lon}
+          onChange={(e) => setLon(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') apply()
+          }}
+        />
+      </label>
+      <div className="inspector-actions">
+        <button onClick={() => setLocationDialogOpen(false)}>Cancel</button>
+        <button
+          onClick={() => {
+            setGeoRef(null)
+            setLocationDialogOpen(false)
+          }}
+        >
+          Clear location
+        </button>
+        <button className="primary" disabled={!valid} onClick={apply}>
+          Apply
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const rightTab = useStore((s) => s.ui.rightTab)
   const setRightTab = useStore((s) => s.setRightTab)
@@ -101,6 +212,10 @@ export default function App() {
         return
       }
       if (e.key === 'Escape') {
+        if (st.ui.locationDialogOpen) {
+          st.setLocationDialogOpen(false)
+          return
+        }
         st.closeContextMenu()
         st.cancelDraft()
         st.setTool('select')
@@ -158,6 +273,7 @@ export default function App() {
         </aside>
       </div>
       <CalibrateDialog />
+      <LocationDialog />
     </div>
   )
 }

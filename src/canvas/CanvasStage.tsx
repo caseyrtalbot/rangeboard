@@ -8,6 +8,7 @@ import { useStore } from '../state/store'
 import { detectionsAt, liveTracks } from '../playback/sim'
 import { engagementPicture } from '../analysis/impact'
 import { GridLayer } from './layers/GridLayer'
+import { TileLayer } from './layers/TileLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
 import { BoundaryLayer } from './layers/BoundaryLayer'
 import { FootprintLayer } from './layers/FootprintLayer'
@@ -303,6 +304,9 @@ export function CanvasStage() {
           }
         }}
       >
+        <Layer listening={false}>
+          <TileLayer size={size} />
+        </Layer>
         <Layer listening={ui.moveUnderlay}>
           <UnderlayLayer />
         </Layer>
@@ -325,16 +329,21 @@ export function CanvasStage() {
               y={Math.min(marquee.a.y, marquee.b.y)}
               width={Math.abs(marquee.b.x - marquee.a.x)}
               height={Math.abs(marquee.b.y - marquee.a.y)}
-              stroke="#d9a441"
+              stroke="#a9b4bd"
               strokeWidth={1}
               dash={[4, 4]}
               strokeScaleEnabled={false}
-              fill="rgba(217, 164, 65, 0.08)"
+              fill="rgba(169, 180, 189, 0.08)"
               listening={false}
             />
           )}
         </Layer>
       </Stage>
+      {ui.basemap === 'sat' && scenario.geoRef && (
+        <div className="tile-attribution">
+          Imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics)
+        </div>
+      )}
       <HudLayer mouseWorld={mouseWorld} />
       <ContextMenu />
     </div>

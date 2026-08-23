@@ -38,6 +38,22 @@ describe('engageOn -> roe load migration', () => {
   })
 })
 
+describe('geoRef load fill', () => {
+  it('loads a save made before geoRef existed with null', () => {
+    const s = emptyScenario()
+    delete (s as { geoRef?: unknown }).geoRef
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(out.geoRef).toBeNull()
+  })
+
+  it('keeps a saved geoRef', () => {
+    const s = emptyScenario()
+    s.geoRef = { lat: 32.9866, lon: -114.3355 }
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(out.geoRef).toEqual({ lat: 32.9866, lon: -114.3355 })
+  })
+})
+
 /** A summary the size a real pin stores; every field JSON-safe. */
 function sampleSummary(): AarSummary {
   return {
