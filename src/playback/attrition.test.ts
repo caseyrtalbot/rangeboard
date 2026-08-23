@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
-import { resolveEngagements } from './attrition'
+import { distanceFalloff, resolveEngagements } from './attrition'
 
 /**
  * Hand-built scenarios with controlled specs so per-shot Pk is exactly
@@ -224,5 +224,244 @@ describe('out-of-window threats', () => {
     const r = resolveEngagements(scenario)
     expect(r.threats[0].shotsFired).toBe(0)
     expect(r.threats[0].leakProbability).toBe(1)
+  })
+})
+
+/*
+ * Ordering-correctness note for the assignment-to-effect latency model.
+ *
+ * A salvo assigned at t takes effect at tEffect = t + engageTimeS. The
+ * question: may attrition.ts apply ship-state mutations immediately at
+ * assignment time, or must it buffer them until tEffect?
+ *
+ * Double-killing probability mass is impossible under EITHER ordering.
+ * Every kill shot multiplies ship.alive by (1 - pk'), so final survival is
+ * the product of (1 - pk') over all shots — a product commutes, the same
+ * mass is never subtracted twice, and total expected kills = 1 - product no
+ * matter how assignments interleave with effects. A single effector also
+ * cannot re-fire before its own effect lands in any case that changes state
+ * twice ambiguously (interceptor cooldowns are >= 30 s).
+ *
+ * Ordering DOES matter for the jam coupling term, so effects are buffered.
+ * A kill shot's magnitude is alive * pk * (1 - 0.3 * jammed), and jammed
+ * enters non-multiplicatively. Jammer engage times are 0-20 s while
+ * interceptor engage times are 45-120 s, so assignment order and effect
+ * order diverge: an interceptor assigned BEFORE a jam takes hold can strike
+ * AFTER it, and its firing solution must be degraded. Applying mutations at
+ * assignment time would read `jammed` at the wrong time. attrition.ts
+ * therefore queues every nonzero-latency effect and applies the queue in
+ * tEffect order ahead of each sweep step (flushing leftovers after the
+ * sweep); zero-latency effects apply inline, preserving the pre-latency
+ * same-tick jam-then-kill coupling. The 'degrades a delayed kill shot' test
+ * below locks in the effect-order behavior.
+ *
+ * Ship selection in formations reads the state applied so far: outcomes of
+ * salvos still in flight are unknown at assignment time, so aiming is not
+ * clairvoyant about them.
+ */
+
+/** Group 4 fixed-wing on mixed nav: jams 'continue' (degraded track, still inbound). */
+const TARGET_MIXED: SpecModel = {
+  ...TARGET,
+  id: 'tst-uas-mixed',
+  uas: { ...TARGET.uas!, navMode: 'mixed' },
+}
+
+function jammer(patch: Partial<NonNullable<SpecModel['effector']>>): SpecModel {
+  return {
+    id: 'tst-jam',
+    name: 'test jammer',
+    kind: 'effector',
+    description: '',
+    color: '#fff',
+    builtin: false,
+    effector: {
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 1000,
+      engageTimeS: 0,
+      ...patch,
+    },
+  }
+}
+
+/**
+ * Long-envelope variant of singleThreatScenario: sensor plus every effector
+ * at the origin, one threat from x = -4210 flying east at 40 m/s to endX.
+ * A 4000 m envelope opens at t = 5.25 (first DT-grid shot t = 5.5 at 3990 m)
+ * and, with endX = 4000, holds for ~200 s — long enough for 120 s engage
+ * times to resolve inside the window.
+ */
+function longScenario(
+  effectorModels: SpecModel[],
+  endX = 4000,
+  targetModel: SpecModel = TARGET,
+): { scenario: Scenario; effIds: string[]; uasId: string } {
+  const scenario = emptyScenario()
+  scenario.library = [...scenario.library, SENSOR, targetModel, ...effectorModels]
+  const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+  const effs = effectorModels.map((m) => ent('effector', m.id, { x: 0, y: 0 }))
+  const uas = ent('uas', targetModel.id, { x: -4210, y: 0 })
+  scenario.entities = [sensor, ...effs, uas]
+  scenario.connections = effs.map((e) => link(sensor.id, e.id))
+  scenario.paths = [
+    flight(uas.id, [
+      { x: -4210, y: 0 },
+      { x: endX, y: 0 },
+    ]),
+  ]
+  return { scenario, effIds: effs.map((e) => e.id), uasId: uas.id }
+}
+
+describe('distanceFalloff envelope honesty', () => {
+  it('is zero beyond max range, 0.7 at max range, 1 at the muzzle', () => {
+    expect(distanceFalloff(1000.1, 1000)).toBe(0)
+    expect(distanceFalloff(3000, 1000)).toBe(0)
+    expect(distanceFalloff(1000, 1000)).toBeCloseTo(0.7, 9)
+    expect(distanceFalloff(0, 1000)).toBe(1)
+  })
+  it('is zero for a degenerate max range', () => {
+    expect(distanceFalloff(500, 0)).toBe(0)
+  })
+})
+
+describe('assignment-to-effect latency (engageTimeS)', () => {
+  it('fires at window open but credits the kill with tEffect geometry', () => {
+    // 4000 m envelope, engage time 120 s. Window opens at W = 5.25 (grid
+    // 5.5); path ends at x = 990 so the envelope holds through t = 130.
+    // One assignment at t = 5.5 (firstShotS = W grid); the intercept lands
+    // at tEffect = 125.5 where x = -4210 + 40 * 125.5 = 810, so
+    // falloff = 1 - 0.3 * 810/4000 = 0.93925 and kill = 0.5 * 0.93925.
+    // No kill can exist before W + 120: the companion test below shows an
+    // envelope that ends before W + 120 yields zero kills.
+    const { scenario, effIds: [effId] } = longScenario(
+      [interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, magazineSize: 4, salvoCooldownS: 1000 })],
+      990,
+    )
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.firstShotS).toBeCloseTo(5.5, 6) // assignment time, at/after W
+    expect(t.shotsFired).toBe(1)
+    expect(t.expectedKills).toBeCloseTo(0.5 * (1 - 0.3 * (810 / 4000)), 6)
+    expect(t.killedByEffectorId).toBe(effId)
+    const e = r.effectors.find((x) => x.effectorId === effId)!
+    expect(e.expectedRoundsRemaining).toBe(3) // magazine spent at assignment
+  })
+
+  it('takes zero shots when the window is shorter than engageTimeS', () => {
+    // Same geometry but the path ends at x = 590: the envelope holds only
+    // ~115 s < 120 s, so no assignment can take effect inside it. This is
+    // the attrition-side twin of the sim.ts 'window-too-short' status.
+    const { scenario, effIds: [effId] } = longScenario(
+      [interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, magazineSize: 4, salvoCooldownS: 1000 })],
+      590,
+    )
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(0)
+    expect(t.firstShotS).toBeNull()
+    expect(t.expectedKills).toBe(0)
+    expect(t.leakProbability).toBe(1)
+    expect(r.effectors.find((x) => x.effectorId === effId)!.expectedRoundsRemaining).toBe(4)
+  })
+
+  it('holds one effector whose own window is too short while another fires', () => {
+    // A (4000 m, engage 0) makes the threat engageable with a ~200 s window
+    // and kills at t = 5.5, d = 3990. B (1000 m, engage 120) only holds the
+    // target for ~50 s — its intercept could never land inside its own
+    // envelope, so it must not fire even though the threat is engageable.
+    const modelA = interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 0, salvoCooldownS: 1000 })
+    const modelB = {
+      ...interceptor({ pk: 0.9, maxRangeM: 1000, engageTimeS: 120, magazineSize: 10, salvoCooldownS: 2 }),
+      id: 'tst-int-b',
+      name: 'test interceptor b',
+    }
+    const { scenario, effIds } = longScenario([modelA, modelB])
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(1)
+    expect(t.expectedKills).toBeCloseTo(0.5 * (1 - 0.3 * (3990 / 4000)), 6)
+    expect(t.killedByEffectorId).toBe(effIds[0])
+    expect(r.effectors.find((x) => x.effectorId === effIds[1])!.shotsFired).toBe(0)
+    expect(r.effectors.find((x) => x.effectorId === effIds[1])!.expectedRoundsRemaining).toBe(10)
+  })
+
+  it('never exceeds the magazine regardless of window length', () => {
+    // ~200 s window, 2 s cooldown, 30 s engage time, 2 rounds: assignments
+    // at t = 5.5 and 7.5 empty the magazine; effects land at 35.5 and 37.5
+    // (x = -2790 and -2710), each on the same lone ship.
+    const { scenario, effIds: [effId] } = longScenario([
+      interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 30, magazineSize: 2, salvoCooldownS: 2 }),
+    ])
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(2)
+    const pk1 = 0.5 * (1 - 0.3 * (2790 / 4000))
+    const pk2 = 0.5 * (1 - 0.3 * (2710 / 4000))
+    expect(t.expectedKills).toBeCloseTo(1 - (1 - pk1) * (1 - pk2), 6)
+    const e = r.effectors.find((x) => x.effectorId === effId)!
+    expect(e.shotsFired).toBe(2)
+    expect(e.expectedRoundsRemaining).toBe(0)
+  })
+
+  it('degrades a delayed kill shot with the jam state at tEffect', () => {
+    // Interceptor (entity order first) is ASSIGNED at t = 5.5, before the
+    // jam exists, but its intercept lands at 125.5, long after the 'continue'
+    // jam takes hold at 5.5 (jam Pk = 0.5 * (1 - 0.3 * 3990/4000)).
+    // Effect-order bookkeeping must degrade the kill by the jammed track:
+    // kill = pkEff * (1 - 0.3 * jam) with pkEff = 0.5 * (1 - 0.3 * 810/4000).
+    // Assignment-order bookkeeping would leave the kill undegraded.
+    const jamModel = jammer({ pk: 0.5, maxRangeM: 4000, engageTimeS: 0, salvoCooldownS: 1000 })
+    const { scenario, effIds } = longScenario(
+      [
+        interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, salvoCooldownS: 1000 }),
+        jamModel,
+      ],
+      4000,
+      TARGET_MIXED,
+    )
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    const jam = 0.5 * (1 - 0.3 * (3990 / 4000))
+    const pkEff = 0.5 * (1 - 0.3 * (810 / 4000))
+    expect(t.shotsFired).toBe(2)
+    expect(t.continueJamProb).toBeCloseTo(jam, 6)
+    expect(t.expectedHardKills).toBeCloseTo(pkEff * (1 - 0.3 * jam), 6)
+    expect(t.expectedSoftKills).toBe(0)
+    expect(t.killedByEffectorId).toBe(effIds[0])
+    expect(t.killedBySoft).toBe(false)
+  })
+})
+
+describe('jammer latency', () => {
+  it('keeps engageTimeS 0 jammer behavior identical to the pre-latency model', () => {
+    // Same numbers as the ew suite: one jam at t = 5.5, d = 990,
+    // soft kill = 0.5 * (1 - 0.3 * 0.99) = 0.3515 against a GPS (drift) target.
+    const { scenario, effId } = singleThreatScenario(
+      jammer({ pk: 0.5, salvoCooldownS: 1000 }),
+    )
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(1)
+    expect(t.firstShotS).toBeCloseTo(5.5, 6)
+    expect(t.expectedSoftKills).toBeCloseTo(0.3515, 6)
+    expect(t.expectedHardKills).toBe(0)
+    expect(t.killedByEffectorId).toBe(effId)
+    expect(t.killedBySoft).toBe(true)
+  })
+
+  it('applies a small engage time at tEffect and still soft-kills', () => {
+    // Assigned at t = 5.5, jam holds at 10.5 where x = -790:
+    // soft kill = 0.5 * (1 - 0.3 * 790/1000) = 0.3815.
+    const { scenario } = singleThreatScenario(
+      jammer({ pk: 0.5, engageTimeS: 5, salvoCooldownS: 1000 }),
+    )
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(1)
+    expect(t.firstShotS).toBeCloseTo(5.5, 6)
+    expect(t.expectedSoftKills).toBeCloseTo(0.5 * (1 - 0.3 * (790 / 1000)), 6)
+    expect(t.expectedHardKills).toBe(0)
+    expect(t.killedBySoft).toBe(true)
   })
 })

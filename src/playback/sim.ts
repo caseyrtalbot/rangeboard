@@ -182,7 +182,12 @@ export interface ThreatAssessment {
   closestApproachM: number | null
   /** arrival minus first detection; the early-warning buffer. */
   warningS: number | null
-  /** Longest usable engagement interval [start, end] against any effector. */
+  /**
+   * Longest usable interval [start, end] against any connected effector
+   * (usable = gated length covers that effector's own engage time). When no
+   * interval is usable (window-too-short), carries the longest gated
+   * interval as informative geometry.
+   */
   windowS: [number, number] | null
   windowEffectorId: string | null
   /** Time each classification level was reached on the derived ladder. */
@@ -191,7 +196,11 @@ export interface ThreatAssessment {
   engageGateS: number | null
   /** Sensors that detected the threat at any time during the sweep. */
   detectingSensorIds: string[]
-  /** Raw in-range intervals per effector (DT-sampled, before the track-quality gate). */
+  /**
+   * Raw in-range intervals per effector, connected or not (DT-sampled,
+   * before the track-quality gate). In-range = ANY formation member inside
+   * the envelope (min range, max range, sector).
+   */
   effectorWindows: Array<{ effectorId: string; intervals: Array<[number, number]> }>
 }
 
@@ -342,13 +351,18 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       if (d < closest.distM) closest = { assetId: asset.id, tS: t, distM: d }
     }
 
+    // A threat is in-range of an effector when ANY formation member is inside
+    // the envelope (min range, max range, sector). Effector reach is physical
+    // geometry per ship; whether sensors can split the formation
+    // (swarmMerged) is a separate track-resolution question.
     for (const eff of effectors) {
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
-      const d = dist(pos, eff.pos)
-      const inRange =
-        d >= spec.minRangeM &&
-        pointInSector(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, spec.maxRangeM, pos)
+      const inRange = members.some(
+        (m) =>
+          dist(m, eff.pos) >= spec.minRangeM &&
+          pointInSector(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, spec.maxRangeM, m),
+      )
       const intervals = effectorInRange.get(eff.id) ?? []
       const last = intervals[intervals.length - 1]
       if (inRange) {
@@ -383,20 +397,46 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const gateS =
     roe === 'hold' ? null : roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
   base.engageGateS = gateS
+  // A gated interval is USABLE for an effector when its gated length covers
+  // that effector's OWN engage time. The longest usable interval wins the
+  // windowS slot (ties: first in entity order). When no interval is usable
+  // but gated geometry exists, windowS carries the longest gated interval as
+  // informative geometry and the status below is window-too-short.
+  let anyUsable = false
   if (gateS != null) {
-    let bestLen = 0
+    // Only effectors that can receive a track from the detecting sensors can
+    // fire (resolveEngagements uses the same connected set). Unconnected
+    // geometry stays available in effectorWindows.
+    const connected = connectedEffectorIds(scenario, detectingSensors)
+    let bestUsableLen = -1
+    let bestGatedLen = 0
+    let gatedWindow: [number, number] | null = null
+    let gatedEffectorId: string | null = null
     for (const eff of effectors) {
+      if (!connected.has(eff.id)) continue
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
+      const engageTimeS = spec.engageTimeS ?? 0
       for (const [s0, s1] of effectorInRange.get(eff.id) ?? []) {
         const start = Math.max(s0, gateS)
         const len = s1 - start
-        if (len > bestLen) {
-          bestLen = len
+        if (len < 0) continue
+        if (len >= engageTimeS && len > bestUsableLen) {
+          bestUsableLen = len
           base.windowS = [start, s1]
           base.windowEffectorId = eff.id
         }
+        if (len > bestGatedLen) {
+          bestGatedLen = len
+          gatedWindow = [start, s1]
+          gatedEffectorId = eff.id
+        }
       }
+    }
+    anyUsable = bestUsableLen >= 0
+    if (!anyUsable) {
+      base.windowS = gatedWindow
+      base.windowEffectorId = gatedEffectorId
     }
   }
 
@@ -411,12 +451,10 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   } else if (roe === 'tight' && base.classificationAtS.hostileAtS == null) {
     base.status = 'not-confirmed'
   } else {
-    const eff = base.windowEffectorId
-      ? scenario.entities.find((e) => e.id === base.windowEffectorId)
-      : null
-    const engageTime = (eff && modelFor(scenario, eff)?.effector?.engageTimeS) ?? 0
-    const winLen = base.windowS ? base.windowS[1] - base.windowS[0] : 0
-    base.status = base.windowS && winLen >= engageTime ? 'engageable' : 'window-too-short'
+    // Engageable when ANY connected effector has a usable interval; a long
+    // window that only fits another effector's engage time must not shadow a
+    // shorter window some effector can actually use.
+    base.status = anyUsable ? 'engageable' : 'window-too-short'
   }
   return base
 }

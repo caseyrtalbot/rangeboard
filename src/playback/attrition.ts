@@ -7,9 +7,10 @@ import type {
   SpecModel,
   UasGroup,
   UasSpec,
+  Vec2,
 } from '../model/types'
 import { defaultJamBehavior, entityActive } from '../model/types'
-import { dist, posAtTime } from '../geometry/geo'
+import { dist, pointInSector, posAtTime } from '../geometry/geo'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats, connectedEffectorIds, memberPositions } from './sim'
 import { effectivePathDelayS } from './raid'
@@ -23,6 +24,16 @@ import { effectivePathDelayS } from './raid'
  * Pk model and baselines follow the PicoGrid drone-swarm engagement
  * calculator (dormant core/ path): per-shot
  * Pk = basePk * distanceFalloff * sizePenalty * evasionPenalty.
+ *
+ * Assignment-to-effect latency: a salvo assigned (fired) at t takes effect at
+ * tEffect = t + engageTimeS. The shot is only valid when some in-range
+ * interval of the same effector still contains tEffect — a target that exits
+ * the envelope before the effect arrives cannot be engaged by that
+ * assignment, so the salvo is never fired. Kill math (target position,
+ * distance falloff, jam-state coupling) is evaluated at tEffect; magazine
+ * decrement, cooldown, firstShotS, and shotsFired stay at assignment time.
+ * Nonzero-latency effects are buffered and applied in tEffect order (see the
+ * ordering note in attrition.test.ts); zero-latency effects apply inline.
  *
  * Outcomes split into two channels. Hard kills (interceptor, gun, net, DE,
  * HPM) destroy the airframe. Soft kills (jammer) apply the threat's
@@ -60,10 +71,11 @@ export const SIZE_PENALTY: Record<UasGroup, number> = { 1: 0.7, 2: 0.8, 3: 0.9, 
  *  hand-flown and jink; every other airframe flies waypoints. */
 export const EVASION_PENALTY = 0.7
 
-/** Distance falloff: 30% Pk reduction at max range (source formula). */
+/** Distance falloff: 30% Pk reduction at max range (source formula). Zero
+ *  beyond max range: no envelope means no kill probability at all. */
 export function distanceFalloff(distM: number, maxRangeM: number): number {
-  if (maxRangeM <= 0) return 0
-  return Math.max(0, 1 - 0.3 * (distM / maxRangeM))
+  if (maxRangeM <= 0 || distM > maxRangeM) return 0
+  return 1 - 0.3 * (distM / maxRangeM)
 }
 
 /**
@@ -172,10 +184,24 @@ interface EffectorState {
   spec: EffectorSpec
   pk: number
   cooldownS: number
+  /** Seconds from assignment to effect; 0 for pre-latency saves. */
+  engageTimeS: number
   /** Null = unlimited. */
   rounds: number | null
   nextReadyS: number
   shotsFired: number
+}
+
+/** A salvo in flight: assigned, magazine spent, effect not yet applied. */
+interface PendingEffect {
+  tEffectS: number
+  effectorId: string
+  target: ThreatState
+  shipIdx: number
+  /** Geometry Pk evaluated at tEffect (position, falloff, size, evasion). */
+  pk: number
+  softShot: boolean
+  continueJam: boolean
 }
 
 const EPS = 1e-9
@@ -183,9 +209,13 @@ const EPS = 1e-9
 /**
  * Resolve every engagement window into expected kills, leakers, and magazine
  * use. Sweeps the timeline at DT = 0.5 s; each ready effector fires one salvo
- * per salvoCooldownS at the first engageable threat whose window contains t,
- * targeting the ship with the highest survival probability, until the window
- * closes or the magazine is empty.
+ * per salvoCooldownS at the first engageable threat whose window contains
+ * both t and tEffect = t + engageTimeS, targeting the highest-survival ship
+ * that is inside the effector's envelope at tEffect (no eligible ship = hold
+ * fire: no magazine spend, no cooldown), until the window closes or the
+ * magazine is empty. The salvo's effect (kill or jam) lands at tEffect with
+ * kill math evaluated there; effects still pending when the sweep ends are
+ * flushed in tEffect order.
  */
 export function resolveEngagements(
   scenario: Scenario,
@@ -233,6 +263,7 @@ export function resolveEngagements(
       spec,
       pk: spec.pk ?? DEFAULT_PK[spec.effectorType],
       cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], DT),
+      engageTimeS: spec.engageTimeS ?? 0,
       rounds: spec.magazineSize ?? null,
       nextReadyS: 0,
       shotsFired: 0,
@@ -247,18 +278,55 @@ export function resolveEngagements(
     }
   }
 
+  // Salvos in flight. Applied in tEffect order so a jam that takes hold
+  // before a kill shot arrives degrades that kill (see attrition.test.ts).
+  const pending: PendingEffect[] = []
+
+  const applyEffect = (fx: PendingEffect) => {
+    const ship = fx.target.ships[fx.shipIdx]
+    if (fx.continueJam) {
+      // Jam holds but the threat presses on: no kill, the track degrades.
+      ship.jammed += (1 - ship.jammed) * fx.pk
+    } else {
+      // Kill shot; a jam-degraded track worsens the firing solution.
+      const kill = ship.alive * fx.pk * (1 - CONTINUE_TRACK_DEGRADE * ship.jammed)
+      ship.alive -= kill
+      if (fx.softShot) ship.soft += kill
+      else ship.hard += kill
+      fx.target.killContrib.set(
+        fx.effectorId,
+        (fx.target.killContrib.get(fx.effectorId) ?? 0) + kill,
+      )
+    }
+  }
+
+  const applyDueEffects = (upToS: number) => {
+    if (pending.length === 0) return
+    pending.sort((a, b) => a.tEffectS - b.tEffectS)
+    while (pending.length > 0 && pending[0].tEffectS <= upToS + EPS) {
+      applyEffect(pending.shift()!)
+    }
+  }
+
   for (let t = 0; t <= tEnd + EPS; t += DT) {
+    // Effects due by now land before this step's assignments.
+    applyDueEffects(t)
+
     for (const es of effectors.values()) {
       if (t + EPS < es.nextReadyS) continue
       if (es.rounds != null && es.rounds <= 0) continue
+      const tEffect = t + es.engageTimeS
 
-      // First threat (scenario order) with gate met and this effector in window.
+      // First threat (scenario order) with gate met, this effector in window
+      // at assignment, and the target still in this effector's envelope when
+      // the effect arrives. A window shorter than engageTimeS never fires.
       let target: ThreatState | null = null
       for (const ts of threats) {
         if (ts.gateS == null || t + EPS < ts.gateS || !ts.path) continue
         const intervals = ts.windows.get(es.entity.id)
         if (!intervals) continue
-        if (intervals.some(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)) {
+        const contains = (x: number) => intervals.some(([s0, s1]) => x >= s0 - EPS && x <= s1 + EPS)
+        if (contains(t) && contains(tEffect)) {
           target = ts
           break
         }
@@ -268,16 +336,29 @@ export function resolveEngagements(
       const softShot = !isHardKill(es.spec.effectorType)
       const continueJam = softShot && target.jamBehavior === 'continue'
 
-      // Aim where the shot still matters (formations split shots): killing
-      // shots at the ship most likely alive; 'continue' jams at the ship most
-      // likely alive and not yet jammed.
-      const weight = (s: ShipState) => (continueJam ? s.alive * (1 - s.jammed) : s.alive)
-      let shipIdx = 0
-      for (let i = 1; i < target.ships.length; i++) {
-        if (weight(target.ships[i]) > weight(target.ships[shipIdx]) + EPS) shipIdx = i
-      }
-      const sample = posAtTime(target.path!.points, target.speedMps, effectivePathDelayS(scenario, target.path!), t)
+      // Geometry is evaluated where the effect lands, not where it is fired.
+      const sample = posAtTime(target.path!.points, target.speedMps, effectivePathDelayS(scenario, target.path!), tEffect)
       const members = memberPositions(target.entity, sample.pos, sample.headingDeg)
+
+      // Aim where the shot still matters (formations split shots), and only
+      // at ships physically inside this effector's envelope at tEffect — the
+      // in-range intervals are member-union geometry, so this re-verifies
+      // the same min/max/sector test per ship. Among eligible ships: killing
+      // shots pick the ship most likely alive; 'continue' jams the ship most
+      // likely alive and not yet jammed. Aiming reads the state applied so
+      // far — outcomes of salvos still in flight are unknown at assignment.
+      const inEnvelope = (p: Vec2) =>
+        dist(es.entity.pos, p) >= es.spec.minRangeM &&
+        pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
+      const weight = (s: ShipState) => (continueJam ? s.alive * (1 - s.jammed) : s.alive)
+      let shipIdx = -1
+      for (let i = 0; i < target.ships.length; i++) {
+        if (!inEnvelope(members[Math.min(i, members.length - 1)])) continue
+        if (shipIdx < 0 || weight(target.ships[i]) > weight(target.ships[shipIdx]) + EPS) shipIdx = i
+      }
+      // No ship inside the envelope when the effect would land: hold fire —
+      // no magazine spend, no cooldown.
+      if (shipIdx < 0) continue
       const shipPos = members[Math.min(shipIdx, members.length - 1)]
 
       const falloff = distanceFalloff(dist(es.entity.pos, shipPos), es.spec.maxRangeM)
@@ -285,18 +366,20 @@ export function resolveEngagements(
       const evasion = target.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
       const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
 
-      const ship = target.ships[shipIdx]
-      if (continueJam) {
-        // Jam holds but the threat presses on: no kill, the track degrades.
-        ship.jammed += (1 - ship.jammed) * pk
-      } else {
-        // Kill shot; a jam-degraded track worsens the firing solution.
-        const kill = ship.alive * pk * (1 - CONTINUE_TRACK_DEGRADE * ship.jammed)
-        ship.alive -= kill
-        if (softShot) ship.soft += kill
-        else ship.hard += kill
-        target.killContrib.set(es.entity.id, (target.killContrib.get(es.entity.id) ?? 0) + kill)
+      const fx: PendingEffect = {
+        tEffectS: tEffect,
+        effectorId: es.entity.id,
+        target,
+        shipIdx,
+        pk,
+        softShot,
+        continueJam,
       }
+      // Zero-latency effects land inside the same step (preserves the
+      // pre-latency same-tick jam-then-kill coupling); the rest wait.
+      if (es.engageTimeS <= 0) applyEffect(fx)
+      else pending.push(fx)
+
       target.shotsFired += 1
       if (target.firstShotS == null) target.firstShotS = t
 
@@ -305,6 +388,9 @@ export function resolveEngagements(
       es.nextReadyS = t + es.cooldownS
     }
   }
+
+  // Salvos assigned late in a window take effect after the last window ends.
+  applyDueEffects(Number.POSITIVE_INFINITY)
 
   const threatRows: ThreatAttrition[] = threats.map((ts) => {
     const survival = ts.ships.reduce((s, v) => s + v.alive, 0)

@@ -521,3 +521,138 @@ describe('ROE window gating on a track that never goes hostile', () => {
     expect(a.engageGateS).toBeNull()
   })
 })
+
+describe('windows come only from effectors the detecting sensors can reach', () => {
+  /**
+   * Omni radar at the origin holds the whole path (5 km). Two identical guns
+   * (1000 m, engage time 0): 'near' sits on the path and is in range over the
+   * last 100 s; 'far' sits 20 km off axis and never gets the threat in range.
+   * ROE free, so the gate is first detection (t = 0). Each test wires the
+   * connections itself.
+   */
+  function twoGunScenario(): {
+    scenario: Scenario
+    uasId: string
+    sensorId: string
+    nearId: string
+    farId: string
+  } {
+    const s = emptyScenario()
+    s.roe = 'free'
+    const uasModelId = newId('m-uas')
+    const sensorModelId = newId('m-sen')
+    const gunModelId = newId('m-gun')
+    s.library.push(
+      {
+        id: uasModelId,
+        name: 'Test UAS',
+        kind: 'uas',
+        description: '',
+        color: '#f00',
+        builtin: false,
+        uas: {
+          group: 1,
+          airframe: 'quad',
+          cruiseSpeedMps: 10,
+          maxSpeedMps: 10,
+          enduranceMin: 60,
+          altBandFt: [0, 400],
+          navMode: 'gps',
+          emissionsNote: '',
+        },
+      },
+      {
+        id: sensorModelId,
+        name: 'Test radar',
+        kind: 'sensor',
+        description: '',
+        color: '#0f0',
+        builtin: false,
+        sensor: {
+          sensorType: 'radar',
+          role: 'early-warning',
+          detectRangeM: 5000,
+          classifyRangeM: null,
+          sectorDeg: 360,
+        },
+      },
+      {
+        id: gunModelId,
+        name: 'Test gun',
+        kind: 'effector',
+        description: '',
+        color: '#00f',
+        builtin: false,
+        effector: { effectorType: 'gun', minRangeM: 0, maxRangeM: 1000, engageTimeS: 0 },
+      },
+    )
+    const sensorId = newId('e-sen')
+    const uasId = newId('e-uas')
+    const nearId = newId('e-near')
+    const farId = newId('e-far')
+    const common = { headingDeg: 0, color: null, notes: '' }
+    s.entities.push(
+      { id: sensorId, name: 'S1', kind: 'sensor', specId: sensorModelId, pos: { x: 0, y: 0 }, ...common },
+      { id: nearId, name: 'E-near', kind: 'effector', specId: gunModelId, pos: { x: 0, y: 0 }, ...common },
+      { id: farId, name: 'E-far', kind: 'effector', specId: gunModelId, pos: { x: 20000, y: 0 }, ...common },
+      { id: uasId, name: 'T1', kind: 'uas', specId: uasModelId, pos: { x: -4000, y: 0 }, ...common, headingDeg: 90 },
+    )
+    s.paths.push({
+      id: newId('p'),
+      entityId: uasId,
+      points: [
+        { x: -4000, y: 0 },
+        { x: 0, y: 0 },
+      ],
+      speedMps: 10,
+      startDelayS: 0,
+    })
+    return { scenario: s, uasId, sensorId, nearId, farId }
+  }
+
+  it('an unconnected in-range effector yields no window and no engageable status', () => {
+    const { scenario, uasId, sensorId, nearId, farId } = twoGunScenario()
+    // Only the out-of-range gun is connected; the in-range gun has no link.
+    scenario.connections.push({ id: newId('c'), fromId: sensorId, toId: farId, label: '' })
+    const a = assessThreat(scenario, uasId)
+    expect(a.status).toBe('window-too-short')
+    expect(a.windowS).toBeNull()
+    expect(a.windowEffectorId).toBeNull()
+    // The raw geometry stays available: effectorWindows keeps the unconnected
+    // gun's in-range interval (attrition filters it against the connected set).
+    const raw = a.effectorWindows.find((w) => w.effectorId === nearId)
+    expect(raw).toBeDefined()
+    expect(raw!.intervals.length).toBeGreaterThan(0)
+  })
+
+  it('connecting the in-range effector through C2 makes the threat engageable on it', () => {
+    const { scenario, uasId, sensorId, nearId } = twoGunScenario()
+    const c2Id = newId('e-c2')
+    scenario.entities.push({
+      id: c2Id,
+      name: 'C2',
+      kind: 'c2',
+      specId: null,
+      pos: { x: 500, y: 500 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    })
+    scenario.connections.push(
+      { id: newId('c'), fromId: sensorId, toId: c2Id, label: '' },
+      { id: newId('c'), fromId: c2Id, toId: nearId, label: '' },
+    )
+    const a = assessThreat(scenario, uasId)
+    expect(a.status).toBe('engageable')
+    expect(a.windowEffectorId).toBe(nearId)
+    near(a.windowS![0], 300) // enters the 1000 m ring at t = 300 s
+    near(a.windowS![1], 400) // path ends over the gun at t = 400 s
+  })
+
+  it('no connected effector at all is no-kill-chain', () => {
+    const { scenario, uasId } = twoGunScenario()
+    const a = assessThreat(scenario, uasId)
+    expect(a.status).toBe('no-kill-chain')
+    expect(a.windowS).toBeNull()
+  })
+})
