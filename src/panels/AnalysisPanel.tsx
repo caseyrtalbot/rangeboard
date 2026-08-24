@@ -8,7 +8,7 @@ import type {
   Roe,
 } from '../model/types'
 import { newId } from '../model/types'
-import { useStore } from '../state/store'
+import { scenarioDurationS, useStore } from '../state/store'
 import type { AttritionReport } from '../playback/attrition'
 import { formatSpeed } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
@@ -65,6 +65,23 @@ function Section({
       </div>
       {open && children}
     </div>
+  )
+}
+
+/**
+ * Explicit boundary around all full-run model output. It is closed by
+ * default so future events cannot read as observations at the current play
+ * head; opening it is an intentional request to inspect the projection.
+ */
+export function FullRunProjection({ children }: { children: React.ReactNode }) {
+  return (
+    <Section
+      title="Full-run projection"
+      headline="not live"
+      headerExtra={<AboutInfo />}
+    >
+      {children}
+    </Section>
   )
 }
 
@@ -217,8 +234,15 @@ function EnvironmentInfo() {
 }
 
 /** Per-effector expected magazine use from the attrition sweep. */
-function EffectorBody({ report }: { report: AttritionReport }) {
+function EffectorBody({
+  report,
+  mode = 'actual',
+}: {
+  report: AttritionReport
+  mode?: 'actual' | 'projected'
+}) {
   const scenario = useStore((s) => s.scenario)
+  const projected = mode === 'projected'
   return (
     <table className="threat-table">
       <tbody>
@@ -227,15 +251,24 @@ function EffectorBody({ report }: { report: AttritionReport }) {
           const spec = scenario.library.find((m) => m.id === ent?.specId)?.effector
           const remaining =
             e.expectedRoundsRemaining != null
-              ? `${e.expectedRoundsRemaining}${
-                  spec?.magazineSize != null ? ` of ${spec.magazineSize}` : ''
-                } left${e.expectedRoundsRemaining <= 0 ? ' · empty' : ''}`
-              : 'unlimited'
-          const fired = effectorExpenditureLine({
-            effectorType: spec?.effectorType ?? null,
-            shotsFired: e.shotsFired,
-            jamSalvos: e.jamSalvos,
-          })
+              ? projected
+                ? `${e.expectedRoundsRemaining}${
+                    spec?.magazineSize != null ? ` of ${spec.magazineSize}` : ''
+                  } after run${e.expectedRoundsRemaining <= 0 ? ' · empty' : ''}`
+                : `${e.expectedRoundsRemaining}${
+                    spec?.magazineSize != null ? ` of ${spec.magazineSize}` : ''
+                  } left${e.expectedRoundsRemaining <= 0 ? ' · empty' : ''}`
+              : projected
+                ? 'unlimited capacity'
+                : 'unlimited'
+          const fired = effectorExpenditureLine(
+            {
+              effectorType: spec?.effectorType ?? null,
+              shotsFired: e.shotsFired,
+              jamSalvos: e.jamSalvos,
+            },
+            mode,
+          )
           return (
             <tr key={e.effectorId}>
               <td>{ent?.name ?? '—'}</td>
@@ -247,6 +280,17 @@ function EffectorBody({ report }: { report: AttritionReport }) {
         })}
       </tbody>
     </table>
+  )
+}
+
+/** AAR is an observation only once playback reaches the end of the run. */
+function CompletedAar({ aar, durationS }: { aar: AarSummary; durationS: number }) {
+  const qt = useStore((s) => Math.round(s.playback.simTimeS * 2) / 2)
+  if (durationS <= 0 || qt < durationS) return null
+  return (
+    <Section title="AAR · completed run" headline={aarHeadline(aar)}>
+      <AarBody aar={aar} />
+    </Section>
   )
 }
 
@@ -394,6 +438,7 @@ export function AnalysisPanel() {
   const parts = useMemo(() => mcdaParts(assessments, report), [assessments, report])
   const score = parts ? mcdaScore(parts, weights) : null
   const pinned = scenario.scorecards ?? []
+  const durationS = useMemo(() => scenarioDurationS(scenario), [scenario])
   const showMagazines =
     threats.length > 0 && report.effectors.length > 0 && report.totals.raidSize > 0
 
@@ -430,16 +475,6 @@ export function AnalysisPanel() {
       {/* LIVE: battle state at the playback instant. All simTimeS subscriptions
           stay inside LiveStrip so playback re-renders only this subtree. */}
       <LiveStrip />
-      {/* FORECAST: the whole-run outcome, constant during playback. The head
-          (and its methodology popover) mounts in every scenario state so the
-          planning-figures disclaimer stays reachable even with zero threats. */}
-      <div className="panel-subtitle forecast-head">
-        <span>Forecast · full run</span>
-        <span className="section-right">
-          <AboutInfo />
-        </span>
-      </div>
-      {threats.length > 0 && <KpiTiles threats={threats} report={report} score={score} />}
       <Section
         title="Environment"
         headline={environmentHeadline(scenario.environment, displayUnits)}
@@ -455,33 +490,50 @@ export function AnalysisPanel() {
       {assessments.length === 0 && (
         <p className="muted">Place a UAS threat on the canvas to analyze it.</p>
       )}
-      <LeakerWarningStrip impacts={impacts} />
-      {threats.length > 0 && <div className="panel-subtitle">Threats · {threats.length}</div>}
-      <ThreatGroupList threats={threats} report={report} impacts={impacts} advanced={advanced} />
-      {showMagazines && (
-        <Section title="Magazines" headline={magazinesHeadline(aar)}>
-          <EffectorBody report={report} />
-        </Section>
-      )}
-      {aar.threats.length > 0 && (
-        <Section title="AAR" headline={aarHeadline(aar)}>
-          <AarBody aar={aar} />
-        </Section>
-      )}
       {noPath > 0 && (
         <p className="muted">
           {noPath} UAS without a flight path. Draw a path with the Path tool to include them.
         </p>
       )}
-      {(parts != null || pinned.length > 0) && (
-        <Section
-          title="Configuration score"
-          headline={scoreHeadline(score)}
-          headerExtra={<ScoreInfo />}
-        >
-          <ScorecardBody parts={parts} score={score} weights={weights} aar={aar} />
-        </Section>
-      )}
+      {/* Every datum below is a modeled full-run result, not current telemetry.
+          Keep it behind an explicit, closed-by-default horizon boundary. */}
+      <FullRunProjection>
+        {threats.length > 0 && <KpiTiles threats={threats} report={report} score={score} />}
+        <LeakerWarningStrip impacts={impacts} />
+        {threats.length > 0 && (
+          <div className="panel-subtitle">Projected threats · {threats.length}</div>
+        )}
+        <ThreatGroupList
+          threats={threats}
+          report={report}
+          impacts={impacts}
+          advanced={advanced}
+          mode="projected"
+        />
+        {showMagazines && (
+          <Section
+            title="Projected expenditure"
+            headline={magazinesHeadline(aar, 'projected')}
+          >
+            <EffectorBody report={report} mode="projected" />
+          </Section>
+        )}
+        {aar.threats.length > 0 && (
+          <Section title="Projected outcome" headline={aarHeadline(aar)}>
+            <AarBody aar={aar} mode="projected" />
+          </Section>
+        )}
+        {(parts != null || pinned.length > 0) && (
+          <Section
+            title="Projected configuration score"
+            headline={scoreHeadline(score)}
+            headerExtra={<ScoreInfo />}
+          >
+            <ScorecardBody parts={parts} score={score} weights={weights} aar={aar} />
+          </Section>
+        )}
+      </FullRunProjection>
+      <CompletedAar aar={aar} durationS={durationS} />
     </div>
   )
 }
@@ -493,6 +545,11 @@ export function AnalysisPanel() {
 function AboutInfo() {
   return (
     <Info label="About these numbers">
+      <p>
+        This section is a deterministic full-run projection. It can include future detections,
+        engagements, expenditure, and outcomes; it is not live telemetry. The live strip above
+        reports only events at or before the play head.
+      </p>
       <p>
         ROE · Hold: analyze only, no engagement. Tight: engage tracks classified hostile. Free:
         engage on first detection.

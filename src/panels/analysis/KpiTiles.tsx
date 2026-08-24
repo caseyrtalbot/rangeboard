@@ -51,34 +51,39 @@ export function KpiTiles({
     <div className="kpi-grid">
       <Tile label="Raid" value={`${t.raidSize}`} sub="ships" />
       <Tile
-        label="Exp kills"
+        label="Proj kills"
         value={t.expectedKills.toFixed(1)}
         sub={
           t.expectedSoftKills > 0.05
             ? `${t.expectedHardKills.toFixed(1)} hard · ${t.expectedSoftKills.toFixed(1)} soft`
             : `${t.expectedHardKills.toFixed(1)} hard`
         }
-        title={`${t.expectedHardKills.toFixed(1)} hard kills · ${t.expectedSoftKills.toFixed(1)} soft kills (jam)`}
+        title={`Full-run model: ${t.expectedHardKills.toFixed(1)} hard kills · ${t.expectedSoftKills.toFixed(1)} soft kills (jam)`}
       />
       <Tile
-        label="Leakers"
+        label="Proj leakers"
         value={t.expectedLeakers.toFixed(1)}
         sub={`${leakPct}% of raid`}
         cls={leakCls}
+        title="Expected surviving ships at the end of the modeled full run"
       />
       <Tile
-        label="Min warn"
+        label="Proj min warn"
         value={minWarn != null ? formatTime(minWarn) : '—'}
         cls={minWarn != null && minWarn < MIN_WARNING_WARN_S ? 'warn' : ''}
-        title="Shortest warning time: arrival at the defended asset minus first detection"
+        title="Full-run model: shortest warning time from first detection to defended-asset arrival"
       />
       <Tile
-        label="Shots"
+        label="Proj shots"
         value={`${t.shotsFired}`}
         sub={t.jamSalvos > 0 ? `kin · ${t.jamSalvos} jam` : 'kinetic'}
-        title={`${t.shotsFired} kinetic shots${t.jamSalvos > 0 ? ` · ${t.jamSalvos} jam salvos` : ''}`}
+        title={`Full-run model projects ${t.shotsFired} kinetic shots${t.jamSalvos > 0 ? ` · ${t.jamSalvos} jam salvos` : ''}`}
       />
-      <Tile label="Score" value={score != null ? `${score}` : '—'} title="Weighted configuration score, 0-100" />
+      <Tile
+        label="Config score"
+        value={score != null ? `${score}` : '—'}
+        title="Weighted full-run configuration score, 0-100"
+      />
     </div>
   )
 }

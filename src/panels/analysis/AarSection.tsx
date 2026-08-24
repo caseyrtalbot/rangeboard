@@ -139,7 +139,13 @@ function OutcomeCounts({ rows }: { rows: AarThreatRowData[] }) {
  * and a one-line total under it. Segment palette is validated for color
  * vision; the 2px gaps read as panel background. No text inside the bar.
  */
-function AarOutcomeBar({ aar }: { aar: AarSummary }) {
+function AarOutcomeBar({
+  aar,
+  mode = 'actual',
+}: {
+  aar: AarSummary
+  mode?: 'actual' | 'projected'
+}) {
   const killed = aar.expectedHardKills + aar.expectedSoftKills
   const notEngaged = aar.threats
     .filter((t) => t.outcome === 'not-engaged')
@@ -152,7 +158,7 @@ function AarOutcomeBar({ aar }: { aar: AarSummary }) {
     { v: notEngaged, color: 'var(--border)' },
     { v: engagedLeak, color: '#c4564a' },
   ].filter((s) => s.v > 0.05)
-  const barTitle = `${killed.toFixed(1)} killed · ${notEngaged} not engaged (leak through) · ${engagedLeak.toFixed(1)} leak through engaged`
+  const barTitle = `${mode === 'projected' ? 'Full-run model: ' : ''}${killed.toFixed(1)} killed · ${notEngaged} not engaged (leak through) · ${engagedLeak.toFixed(1)} leak through engaged`
   return (
     <div className="aar-headline">
       {segments.length > 0 && (
@@ -163,6 +169,7 @@ function AarOutcomeBar({ aar }: { aar: AarSummary }) {
         </div>
       )}
       <div>
+        {mode === 'projected' ? 'Projected: ' : ''}
         {killed.toFixed(1)} killed ({aar.expectedHardKills.toFixed(1)} hard ·{' '}
         {aar.expectedSoftKills.toFixed(1)} soft) · {aar.expectedLeakers.toFixed(1)} leak
         through · {aarPct(aar.leakProbability)}
@@ -172,7 +179,14 @@ function AarOutcomeBar({ aar }: { aar: AarSummary }) {
 }
 
 /** AAR totals and per-effector shot ledger. Renders from the summary alone. */
-export function AarTotals({ aar }: { aar: AarSummary }) {
+export function AarTotals({
+  aar,
+  mode = 'actual',
+}: {
+  aar: AarSummary
+  mode?: 'actual' | 'projected'
+}) {
+  const projected = mode === 'projected'
   return (
     <>
       <div className="aar-table-wrap">
@@ -185,20 +199,20 @@ export function AarTotals({ aar }: { aar: AarSummary }) {
               </td>
             </tr>
             <tr>
-              <td>First detection</td>
+              <td>{projected ? 'Projected first detection' : 'First detection'}</td>
               <td>{aarTime(aar.firstDetectS)}</td>
             </tr>
             <tr>
-              <td>First shot</td>
+              <td>{projected ? 'Projected first shot' : 'First shot'}</td>
               <td>{aarTime(aar.firstShotS)}</td>
             </tr>
             <tr>
-              <td>Shots fired</td>
+              <td>{projected ? 'Projected kinetic shots' : 'Shots fired'}</td>
               <td>{aar.shotsFired}</td>
             </tr>
             {(aar.jamSalvos ?? 0) > 0 && (
               <tr>
-                <td>Jam salvos</td>
+                <td>{projected ? 'Projected jam salvos' : 'Jam salvos'}</td>
                 <td>{aar.jamSalvos}</td>
               </tr>
             )}
@@ -213,12 +227,18 @@ export function AarTotals({ aar }: { aar: AarSummary }) {
                 <tr key={e.effectorId}>
                   <td>{e.name}</td>
                   <td>
-                    {effectorExpenditureLine(e)} ·{' '}
+                    {effectorExpenditureLine(e, mode)} ·{' '}
                     {e.expectedRoundsRemaining != null
-                      ? `${e.expectedRoundsRemaining}${
-                          e.magazineSize != null ? ` of ${e.magazineSize}` : ''
-                        } left`
-                      : 'unlimited'}
+                      ? projected
+                        ? `${e.expectedRoundsRemaining}${
+                            e.magazineSize != null ? ` of ${e.magazineSize}` : ''
+                          } after run`
+                        : `${e.expectedRoundsRemaining}${
+                            e.magazineSize != null ? ` of ${e.magazineSize}` : ''
+                          } left`
+                      : projected
+                        ? 'unlimited capacity'
+                        : 'unlimited'}
                   </td>
                 </tr>
               ))}
@@ -283,13 +303,19 @@ function AarGroupRows({ group }: { group: AarGroup }) {
   )
 }
 
-/** After-action report: outcome bar, totals, magazines, per-threat timeline. */
-export function AarBody({ aar }: { aar: AarSummary }) {
+/** Actual after-action report or explicitly labeled full-run projection. */
+export function AarBody({
+  aar,
+  mode = 'actual',
+}: {
+  aar: AarSummary
+  mode?: 'actual' | 'projected'
+}) {
   const name = useStore((s) => s.scenario.name)
   return (
     <>
-      <AarOutcomeBar aar={aar} />
-      <AarTotals aar={aar} />
+      <AarOutcomeBar aar={aar} mode={mode} />
+      <AarTotals aar={aar} mode={mode} />
       <div className="aar-table-wrap">
         <table className="aar-threat-table">
           <thead>
@@ -314,7 +340,9 @@ export function AarBody({ aar }: { aar: AarSummary }) {
         </table>
       </div>
       <div className="inspector-actions">
-        <button onClick={() => exportAar(name, aar)}>Export AAR JSON</button>
+        <button onClick={() => exportAar(name, aar)}>
+          {mode === 'projected' ? 'Export projection JSON' : 'Export AAR JSON'}
+        </button>
       </div>
     </>
   )

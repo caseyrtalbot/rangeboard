@@ -119,6 +119,7 @@ export function ThreatDetail({
   advanced,
   name,
   threatModel,
+  mode = 'actual',
 }: {
   a: ThreatAssessment
   att?: ThreatAttrition
@@ -126,8 +127,10 @@ export function ThreatDetail({
   advanced: boolean
   name: (id: string | null) => string
   threatModel?: SpecModel
+  mode?: 'actual' | 'projected'
 }) {
   const units = useStore((s) => s.ui.units)
+  const projected = mode === 'projected'
   const status = STATUS_TEXT[a.status]
   const outcome = att
     ? att.shipCount > 1
@@ -143,11 +146,11 @@ export function ThreatDetail({
       <table className="threat-table">
         <tbody>
           <tr>
-            <td>Status</td>
+            <td>{projected ? 'Projected full-run status' : 'Status'}</td>
             <td>{status.label}</td>
           </tr>
           <tr>
-            <td>First detection</td>
+            <td>{projected ? 'Projected detection' : 'First detection'}</td>
             <td>
               {a.firstDetectS != null
                 ? `${formatTime(a.firstDetectS)} by ${name(a.firstDetectSensorId)}`
@@ -181,7 +184,7 @@ export function ThreatDetail({
             </tr>
           )}
           <tr>
-            <td>Arrival at asset</td>
+            <td>{projected ? 'Projected arrival at asset' : 'Arrival at asset'}</td>
             <td>
               {a.arrivalS != null
                 ? `${formatTime(a.arrivalS)} · ${name(a.assetId)} · CPA ${formatDistance(
@@ -192,7 +195,7 @@ export function ThreatDetail({
             </td>
           </tr>
           <tr>
-            <td>Best window</td>
+            <td>{projected ? 'Projected best window' : 'Best window'}</td>
             <td>
               {a.windowS
                 ? `${formatTime(a.windowS[0])} – ${formatTime(a.windowS[1])} (${Math.round(
@@ -203,7 +206,7 @@ export function ThreatDetail({
           </tr>
           {advanced && (
             <tr>
-              <td>Shots fired</td>
+              <td>{projected ? 'Projected expenditure' : 'Shots fired'}</td>
               <td>
                 {att && (att.shotsFired > 0 || att.jamSalvos > 0)
                   ? [
@@ -218,7 +221,7 @@ export function ThreatDetail({
             </tr>
           )}
           <tr>
-            <td>Outcome</td>
+            <td>{projected ? 'Projected outcome' : 'Outcome'}</td>
             <td>{outcome}</td>
           </tr>
           {advanced && (
@@ -260,11 +263,13 @@ export function ThreatRowCompact({
   att,
   imp,
   advanced,
+  mode = 'actual',
 }: {
   a: ThreatAssessment
   att?: ThreatAttrition
   imp?: LeakerImpact
   advanced: boolean
+  mode?: 'actual' | 'projected'
 }) {
   const [open, setOpen] = useState(false)
   const scenario = useStore((s) => s.scenario)
@@ -296,7 +301,7 @@ export function ThreatRowCompact({
       <div
         className="threat-substats"
         onClick={toggle}
-        title={`kinetic shots · jam salvos · kill/leak · warning ${stats.warning} · window ${stats.window}`}
+        title={`${mode === 'projected' ? 'full-run projection · ' : ''}kinetic shots · jam salvos · kill/leak · warning ${stats.warning} · window ${stats.window}`}
       >
         {threatShotLine(att)}
       </div>
@@ -324,6 +329,7 @@ export function ThreatRowCompact({
           advanced={advanced}
           name={name}
           threatModel={threatModel}
+          mode={mode}
         />
       )}
     </div>
@@ -437,12 +443,14 @@ function ThreatGroupRow({
   report,
   impacts,
   advanced,
+  mode,
 }: {
   label: string
   members: ThreatAssessment[]
   report: AttritionReport
   impacts: LeakerImpact[]
   advanced: boolean
+  mode: 'actual' | 'projected'
 }) {
   const [open, setOpen] = useState(false)
   const agg = aggregate(members, report)
@@ -486,6 +494,7 @@ function ThreatGroupRow({
               att={report.threats.find((t) => t.uasId === a.uasId)}
               imp={impacts.find((i) => i.uasId === a.uasId)}
               advanced={advanced}
+              mode={mode}
             />
           ))}
         </div>
@@ -505,11 +514,13 @@ export function ThreatGroupList({
   report,
   impacts,
   advanced,
+  mode = 'actual',
 }: {
   threats: ThreatAssessment[]
   report: AttritionReport
   impacts: LeakerImpact[]
   advanced: boolean
+  mode?: 'actual' | 'projected'
 }) {
   const scenario = useStore((s) => s.scenario)
   const groups = new Map<string, { label: string; members: ThreatAssessment[] }>()
@@ -531,6 +542,7 @@ export function ThreatGroupList({
             att={report.threats.find((t) => t.uasId === g.members[0].uasId)}
             imp={impacts.find((i) => i.uasId === g.members[0].uasId)}
             advanced={advanced}
+            mode={mode}
           />
         ) : (
           <ThreatGroupRow
@@ -540,6 +552,7 @@ export function ThreatGroupList({
             report={report}
             impacts={impacts}
             advanced={advanced}
+            mode={mode}
           />
         ),
       )}

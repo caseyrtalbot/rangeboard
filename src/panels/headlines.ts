@@ -39,8 +39,20 @@ export function environmentHeadline(env: EnvironmentSpec, units: DisplayUnits = 
  */
 export function magazinesHeadline(
   aar: Pick<AarSummary, 'shotsFired' | 'jamSalvos' | 'effectors'>,
+  mode: 'actual' | 'projected' = 'actual',
 ): string {
   const jam = aar.jamSalvos ?? 0
+  if (mode === 'projected') {
+    const shots =
+      `${aar.shotsFired} projected shot${aar.shotsFired === 1 ? '' : 's'}` +
+      (jam > 0 ? ` · ${jam} projected jam salvo${jam === 1 ? '' : 's'}` : '')
+    const finite = aar.effectors.filter((e) => e.expectedRoundsRemaining != null)
+    if (finite.length === 0) return `${shots} · unlimited capacity`
+    const left = finite.reduce((s, e) => s + (e.expectedRoundsRemaining ?? 0), 0)
+    const sized = finite.every((e) => e.magazineSize != null)
+    const size = finite.reduce((s, e) => s + (e.magazineSize ?? 0), 0)
+    return sized ? `${shots} · ${left} of ${size} after run` : `${shots} · ${left} after run`
+  }
   const shots =
     `${aar.shotsFired} shot${aar.shotsFired === 1 ? '' : 's'}` +
     (jam > 0 ? ` · ${jam} jam salvo${jam === 1 ? '' : 's'}` : '')
@@ -65,9 +77,19 @@ export function effectorExpenditureLine(
   e: Pick<AarEffectorShots, 'shotsFired' | 'jamSalvos'> & {
     effectorType?: AarEffectorShots['effectorType']
   },
+  mode: 'actual' | 'projected' = 'actual',
 ): string {
   const jam = e.jamSalvos ?? 0
   const jamText = `${jam} jam salvo${jam === 1 ? '' : 's'}`
+  if (mode === 'projected') {
+    if (e.effectorType === 'jammer') return `${jam} projected jam salvo${jam === 1 ? '' : 's'}`
+    if (e.effectorType != null) {
+      return `${e.shotsFired} projected shot${e.shotsFired === 1 ? '' : 's'}`
+    }
+    return jam > 0
+      ? `${jam} projected jam salvo${jam === 1 ? '' : 's'}`
+      : `${e.shotsFired} projected shot${e.shotsFired === 1 ? '' : 's'}`
+  }
   if (e.effectorType === 'jammer') return jamText
   if (e.effectorType != null) return `${e.shotsFired} fired`
   return jam > 0 ? jamText : `${e.shotsFired} fired`

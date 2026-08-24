@@ -106,6 +106,15 @@ describe('magazinesHeadline', () => {
   it('uses the singular for one shot', () => {
     expect(magazinesHeadline({ shotsFired: 1, effectors: [] })).toBe('1 shot · unlimited')
   })
+
+  it('labels modeled expenditure as projected rather than fired', () => {
+    expect(
+      magazinesHeadline(
+        { shotsFired: 4, effectors: [eff(4, 6, 10)] },
+        'projected',
+      ),
+    ).toBe('4 projected shots · 6 of 10 after run')
+  })
 })
 
 describe('effectorExpenditureLine', () => {
@@ -139,6 +148,21 @@ describe('effectorExpenditureLine', () => {
       '3 jam salvos',
     )
     expect(effectorExpenditureLine({ shotsFired: 2 })).toBe('2 fired')
+  })
+
+  it('uses future tense for modeled effector expenditure', () => {
+    expect(
+      effectorExpenditureLine(
+        { effectorType: 'gun', shotsFired: 4, jamSalvos: 0 },
+        'projected',
+      ),
+    ).toBe('4 projected shots')
+    expect(
+      effectorExpenditureLine(
+        { effectorType: 'jammer', shotsFired: 0, jamSalvos: 1 },
+        'projected',
+      ),
+    ).toBe('1 projected jam salvo')
   })
 })
 
