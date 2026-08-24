@@ -605,50 +605,6 @@ label.inline input[type='range'] {
   padding: 4px 9px;
 }
 
-/* ---------- Scorecard ---------- */
-
-.score-part {
-  width: 34px;
-  text-align: right;
-  align-self: flex-end;
-  padding-bottom: 4px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-}
-
-.score-total {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-}
-
-.score-total span {
-  flex: 1;
-  color: var(--text-dim);
-}
-
-.score-total strong {
-  color: var(--accent);
-  font-family: var(--font-mono);
-}
-
-.score-pin {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.score-pin input {
-  flex: 1;
-}
-
-.score-pin strong {
-  font-family: var(--font-mono);
-}
-
 /* ---------- After-action report ---------- */
 
 .aar-threat-table {
@@ -681,51 +637,6 @@ label.inline input[type='range'] {
 
 .aar-threat-table tr.aar-group:hover td {
   background: var(--hover);
-}
-
-/* Pinned-scorecard comparison: one metric per row, one column per pin. */
-.pin-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-
-.pin-table th {
-  text-align: right;
-  font-weight: 400;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--text-dim);
-  padding: 3px 6px;
-  border-bottom: 1px solid var(--border);
-  max-width: 72px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pin-table td {
-  padding: 3px 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
-}
-
-.pin-table td:first-child {
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-
-.pin-table td.num {
-  text-align: right;
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.pin-table tr:first-child td.num {
-  color: var(--accent);
-  font-weight: 600;
 }
 
 /* ---------- Test cards ---------- */
@@ -2409,4 +2320,625 @@ input[type='number'] {
 
 .engstrip-tip .name {
   color: var(--text);
+}
+
+/* ---------- Analysis operational picture and run evidence ---------- */
+
+.analysis-empty {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.operational-picture {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-horizon-label,
+.debrief-kicker {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+/* Outcome is a transparent set of measures, never a rolled-up score. */
+.outcome-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.outcome-metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.outcome-metric > span,
+.outcome-metric small {
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outcome-metric > span {
+  font-family: var(--font-mono);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.outcome-metric strong {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.outcome-metric strong.good {
+  color: var(--good);
+}
+
+.outcome-metric strong.bad {
+  color: var(--danger);
+}
+
+.capacity-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.capacity-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 8px;
+  padding: 4px 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  font-size: 10px;
+}
+
+.capacity-row:last-child {
+  border-bottom: 0;
+}
+
+.capacity-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capacity-row strong {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.capacity-row small {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+}
+
+/* Requirement gates do not compensate for one another. */
+.requirements-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.requirements-verdict {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--text-dim);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.requirements-verdict strong {
+  font-size: 13px;
+}
+
+.requirements-verdict.verdict-pass {
+  border-left-color: var(--good);
+}
+
+.requirements-verdict.verdict-fail {
+  border-left-color: var(--danger);
+}
+
+.requirement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.requirement-gate {
+  min-width: 0;
+  padding: 6px;
+  background: color-mix(in srgb, var(--bg-input) 78%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.requirement-gate.gate-pass {
+  border-top-color: color-mix(in srgb, var(--good) 70%, var(--border));
+}
+
+.requirement-gate.gate-fail {
+  border-top-color: color-mix(in srgb, var(--danger) 80%, var(--border));
+}
+
+.gate-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.gate-head strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gate-count,
+.gate-metric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.gate-count {
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+.gate-metric {
+  margin-top: 5px;
+  font-size: 11px;
+}
+
+.gate-detail,
+.gate-failures {
+  margin-top: 2px;
+  color: var(--text-dim);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.gate-failures summary {
+  color: var(--danger);
+  cursor: pointer;
+}
+
+.gate-failures div {
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Systems retain component-level data while the summary stays scannable. */
+.system-telemetry-list,
+.component-telemetry-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.system-telemetry-list {
+  gap: 5px;
+}
+
+.system-telemetry-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-input) 58%, transparent);
+}
+
+.system-telemetry-head,
+.threat-data-group-head {
+  display: grid;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+}
+
+.system-telemetry-head {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+}
+
+.system-name,
+.system-live-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-name {
+  font-weight: 600;
+}
+
+.system-live-summary {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.component-telemetry-list {
+  border-top: 1px solid var(--border);
+}
+
+.component-telemetry-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.component-telemetry-row:last-child {
+  border-bottom: 0;
+}
+
+.component-kind {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.component-kind.kind-sensor {
+  color: var(--good);
+}
+
+.component-kind.kind-c2 {
+  color: var(--accent);
+}
+
+.component-kind.kind-effector {
+  color: var(--warn);
+}
+
+.component-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.component-copy strong,
+.component-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.component-copy strong {
+  font-size: 10px;
+}
+
+.component-copy small {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+/* Threats scale by tactic, wave, and platform without dropping track rows. */
+.threat-picture,
+.threat-data-members {
+  display: flex;
+  flex-direction: column;
+}
+
+.threat-picture {
+  gap: 5px;
+}
+
+.scale-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-input));
+  font-size: 10px;
+}
+
+.scale-note span {
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+.threat-data-group {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-input) 55%, transparent);
+}
+
+.threat-data-group-head {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px 3px;
+}
+
+.threat-data-title,
+.threat-data-count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threat-data-title {
+  font-weight: 600;
+}
+
+.threat-data-count {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+.threat-stage-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px 7px 5px 24px;
+}
+
+.threat-stage {
+  overflow: hidden;
+  padding: 2px 1px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threat-stage.complete {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 45%, var(--border));
+}
+
+.threat-stage.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.threat-group-outcome {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 7px 4px 24px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+.threat-group-outcome strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.threat-outcome-bar {
+  display: flex;
+  height: 2px;
+  background: var(--border);
+}
+
+.threat-outcome-bar .defeat {
+  min-width: 0;
+  background: var(--good);
+}
+
+.threat-outcome-bar .residual {
+  min-width: 0;
+  background: var(--danger);
+}
+
+.threat-data-members {
+  border-top: 1px solid var(--border);
+}
+
+.threat-data-row {
+  padding: 5px 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.threat-data-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.threat-data-head strong {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threat-data-stages {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.threat-data-stages span {
+  padding: 1px 0;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  text-align: center;
+}
+
+.threat-data-stages span.met {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 45%, var(--border));
+}
+
+.threat-data-stages span.live {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.threat-data-detail {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.load-more {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+/* Completed mode is a sealed, run-labeled debrief record. */
+.debrief-record {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--good) 50%, var(--border));
+  border-left: 2px solid var(--good);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--good) 4%, var(--bg-panel));
+}
+
+.debrief-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.debrief-header > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.debrief-header strong {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debrief-meta {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.debrief-actions {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 5px;
+}
+
+.debrief-actions button {
+  padding: 4px 3px;
+  border: 1px solid var(--border);
+  font-size: 9px;
+}
+
+.debrief-actions button.primary {
+  border-color: var(--accent);
+}
+
+.event-ledger {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.event-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.event-time,
+.event-effect {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+.event-route,
+.event-effect {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.event-route strong,
+.event-route small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-route strong {
+  font-size: 10px;
+}
+
+.event-route small,
+.event-effect small {
+  color: var(--text-dim);
+  font-size: 8px;
 }

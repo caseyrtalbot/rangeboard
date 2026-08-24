@@ -1,6 +1,8 @@
 import type { AarSummary, Scenario, SpecModel } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attrition'
+import type { RequirementGateReport } from '../analysis/requirements'
+import { buildRequirementGateReport } from '../analysis/requirements'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 
@@ -114,6 +116,7 @@ export interface RunExport {
   scenario: Scenario
   assessments: ThreatAssessment[]
   attrition: AttritionReport
+  requirements: RequirementGateReport
   summary: AarSummary
 }
 
@@ -137,6 +140,7 @@ export function runExportObject(
     scenario,
     assessments,
     attrition,
+    requirements: buildRequirementGateReport(scenario, assessments, attrition),
     summary,
   }
 }

@@ -202,6 +202,28 @@ export interface ClassificationTimes {
   hostileAtS: number | null
 }
 
+/** One sensor's complete hold history against one threat. */
+export interface SensorObservation {
+  sensorId: string
+  sensorType: SensorType
+  firstDetectS: number
+  lastDetectS: number
+  firstClassifyS: number | null
+  heldSamples: number
+  resolvedEver: boolean
+  /** Inclusive 0.5 s hold intervals, split whenever the sensor loses the track. */
+  intervals: Array<[number, number]>
+}
+
+/** Track continuity from first detection through closest approach/path end. */
+export interface TrackQualitySummary {
+  heldSamples: number
+  totalSamples: number
+  continuity: number
+  longestGapS: number
+  lastTrackS: number | null
+}
+
 /** Estimated speed above which an unknown track becomes suspected, kph (source: 50). */
 export const SUSPECT_SPEED_KPH = 50
 
@@ -249,6 +271,10 @@ export interface ThreatAssessment {
   engageGateS: number | null
   /** Sensors that detected the threat at any time during the sweep. */
   detectingSensorIds: string[]
+  /** Per-sensor detection/classification intervals retained for operator telemetry. */
+  sensorObservations?: SensorObservation[]
+  /** Union-of-sensors hold quality from first detection to the decision horizon. */
+  trackQuality?: TrackQualitySummary | null
   /**
    * Raw in-range intervals per effector, connected or not (DT-sampled,
    * before the track-quality gate). In-range = ANY formation member inside
@@ -457,6 +483,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     classificationAtS: { unknownAtS: null, suspectedAtS: null, hostileAtS: null },
     engageGateS: null,
     detectingSensorIds: [],
+    sensorObservations: [],
+    trackQuality: null,
     effectorWindows: [],
   }
   const path = scenario.paths.find((p) => p.entityId === uasId)
@@ -479,6 +507,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
   const detectingSensors = new Set<string>()
   const techsSeen = new Set<SensorType>()
+  const sensorObservations = new Map<string, SensorObservation>()
+  const trackSamples: Array<{ tS: number; held: boolean }> = []
   const effectorInRange = new Map<string, Array<[number, number]>>()
   // Classification ladder state (PicoGrid executeDetection promotion rules).
   let classification: ThreatClassification = 'pending'
@@ -509,6 +539,27 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       stepTechs.add(hit.sensorType)
       detectingSensors.add(hit.sensorId)
       if (hit.resolved) anyResolved = true
+      let observation = sensorObservations.get(hit.sensorId)
+      if (!observation) {
+        observation = {
+          sensorId: hit.sensorId,
+          sensorType: hit.sensorType,
+          firstDetectS: t,
+          lastDetectS: t,
+          firstClassifyS: hit.classified ? t : null,
+          heldSamples: 0,
+          resolvedEver: false,
+          intervals: [],
+        }
+        sensorObservations.set(hit.sensorId, observation)
+      }
+      observation.lastDetectS = t
+      observation.heldSamples += 1
+      observation.resolvedEver = observation.resolvedEver || hit.resolved
+      if (hit.classified && observation.firstClassifyS == null) observation.firstClassifyS = t
+      const interval = observation.intervals[observation.intervals.length - 1]
+      if (interval && Math.abs(interval[1] - (t - DT)) < DT / 2) interval[1] = t
+      else observation.intervals.push([t, t])
       const role = defaultSensorRole(spec)
       if (hit.classified && (role === 'fire-control' || role === 'classification')) {
         fcClassifiedNow = true
@@ -518,6 +569,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
         base.firstDetectSensorId = hit.sensorId
       }
     }
+    trackSamples.push({ tS: t, held: stepTechs.size > 0 })
     for (const tech of stepTechs) techsSeen.add(tech)
     if (base.firstConfirmS == null && stepTechs.size >= 2) base.firstConfirmS = t
 
@@ -589,6 +641,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
   base.techs = [...techsSeen]
   base.detectingSensorIds = [...detectingSensors]
+  base.sensorObservations = [...sensorObservations.values()]
   base.effectorWindows = [...effectorInRange.entries()].map(([effectorId, intervals]) => ({
     effectorId,
     intervals,
@@ -601,6 +654,33 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   }
   if (base.firstDetectS != null && base.arrivalS != null) {
     base.warningS = base.arrivalS - base.firstDetectS
+  }
+  if (base.firstDetectS != null) {
+    const horizonS = base.arrivalS ?? trackSamples[trackSamples.length - 1]?.tS ?? base.firstDetectS
+    const samples = trackSamples.filter(
+      (sample) => sample.tS >= base.firstDetectS! - DT / 2 && sample.tS <= horizonS + DT / 2,
+    )
+    let heldSamples = 0
+    let gapSamples = 0
+    let longestGapSamples = 0
+    let lastTrackS: number | null = null
+    for (const sample of samples) {
+      if (sample.held) {
+        heldSamples += 1
+        gapSamples = 0
+        lastTrackS = sample.tS
+      } else {
+        gapSamples += 1
+        longestGapSamples = Math.max(longestGapSamples, gapSamples)
+      }
+    }
+    base.trackQuality = {
+      heldSamples,
+      totalSamples: samples.length,
+      continuity: samples.length > 0 ? heldSamples / samples.length : 0,
+      longestGapS: longestGapSamples * DT,
+      lastTrackS,
+    }
   }
 
   // ROE gates the engagement window start: free = first detection,

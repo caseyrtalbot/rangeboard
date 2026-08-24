@@ -4,7 +4,6 @@ import {
   effectorExpenditureLine,
   environmentHeadline,
   magazinesHeadline,
-  scoreHeadline,
   threatCompactStats,
   threatShotLine,
 } from './headlines'
@@ -172,17 +171,6 @@ describe('aarHeadline', () => {
       '3.2 kills · 0.8 leakers',
     )
     expect(aarHeadline({ expectedKills: 0, expectedLeakers: 0 })).toBe('0.0 kills · 0.0 leakers')
-  })
-})
-
-describe('scoreHeadline', () => {
-  it('formats a score out of 100', () => {
-    expect(scoreHeadline(72)).toBe('72 / 100')
-    expect(scoreHeadline(0)).toBe('0 / 100')
-  })
-
-  it('dashes when no score computes', () => {
-    expect(scoreHeadline(null)).toBe('—')
   })
 })
 

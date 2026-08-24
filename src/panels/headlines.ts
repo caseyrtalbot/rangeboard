@@ -102,11 +102,6 @@ export function aarHeadline(
   return `${aar.expectedKills.toFixed(1)} kills · ${aar.expectedLeakers.toFixed(1)} leakers`
 }
 
-/** Score headline: "72 / 100"; a dash when no score computes. */
-export function scoreHeadline(score: number | null): string {
-  return score != null ? `${score} / 100` : '—'
-}
-
 /**
  * Compact threat-row expenditure and outcome string: "2 kin · 1 jam · kill
  * 90% · leak 10%". Single ships read as probabilities; formations read as

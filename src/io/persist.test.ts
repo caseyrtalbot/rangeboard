@@ -185,6 +185,8 @@ describe('AAR export payload', () => {
     })
     expect(out.run.label).toBe('RUN-0001')
     expect(out.scenario.name).toBe('Clean run demo')
+    expect(out.requirements.overall).toBe('not-evaluated')
+    expect(out.requirements.gates).toHaveLength(6)
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 })
