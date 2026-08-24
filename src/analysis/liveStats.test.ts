@@ -91,6 +91,9 @@ describe('buildLiveTimeline / liveKpisAt', () => {
     )
     expect(liveKpisAt(tl, 0)).toEqual({
       detected: 0,
+      classified: 0,
+      targetable: 0,
+      engaged: 0,
       kineticShots: 0,
       jamSalvos: 0,
       expectedKills: 0,
@@ -108,6 +111,26 @@ describe('buildLiveTimeline / liveKpisAt', () => {
     expect(liveKpisAt(tl, 40).kineticShots).toBe(1)
     expect(liveKpisAt(tl, 44.9).expectedKills).toBe(0)
     expect(liveKpisAt(tl, 45).expectedKills).toBeCloseTo(0.6)
+  })
+
+  it('tracks classify, targetable-now, and first-engagement stages separately', () => {
+    const tl = buildLiveTimeline(
+      [
+        assessment({
+          classificationAtS: { unknownAtS: 10, suspectedAtS: 15, hostileAtS: 20 },
+          windowS: [25, 40],
+        }),
+      ],
+      reportOf([event({ tS: 30, tEffectS: 35, killDelta: 0.4 })]),
+    )
+    expect(liveKpisAt(tl, 19).classified).toBe(0)
+    expect(liveKpisAt(tl, 20).classified).toBe(1)
+    expect(liveKpisAt(tl, 24.5).targetable).toBe(0)
+    expect(liveKpisAt(tl, 25).targetable).toBe(1)
+    expect(liveKpisAt(tl, 40).targetable).toBe(1)
+    expect(liveKpisAt(tl, 40.5).targetable).toBe(0)
+    expect(liveKpisAt(tl, 29.5).engaged).toBe(0)
+    expect(liveKpisAt(tl, 30).engaged).toBe(1)
   })
 
   it('splits kinetic shots from jam salvos', () => {

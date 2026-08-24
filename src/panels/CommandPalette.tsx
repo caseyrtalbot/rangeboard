@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { scenarioDurationS, useStore } from '../state/store'
+import { useStore } from '../state/store'
+import { toggleAnalysisRun } from '../playback/runSession'
 import type { Tool } from '../state/store'
 import type { BasemapMode } from '../model/types'
 import { emptyScenario } from '../model/seed'
@@ -69,14 +70,7 @@ const ACTIONS: Command[] = [
     id: 'play-pause',
     category: 'Playback',
     label: 'Play / pause',
-    run: () => {
-      const st = useStore.getState()
-      // Same restart-at-end behavior as the TimelineBar play button.
-      if (!st.playback.playing && st.playback.simTimeS >= scenarioDurationS(st.scenario)) {
-        st.setSimTime(0)
-      }
-      st.setPlaying(!st.playback.playing)
-    },
+    run: toggleAnalysisRun,
   },
   { id: 'undo', category: 'Edit', label: 'Undo', run: () => useStore.getState().undo() },
   { id: 'redo', category: 'Edit', label: 'Redo', run: () => useStore.getState().redo() },

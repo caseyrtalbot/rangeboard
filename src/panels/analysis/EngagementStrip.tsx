@@ -373,10 +373,10 @@ export function EngagementStrip() {
               onPointerDown={(e) => {
                 e.currentTarget.setPointerCapture(e.pointerId)
                 dragRef.current = true
-                useStore.getState().setSimTime(timeFromEvent(e))
+                useStore.getState().scrubTo(timeFromEvent(e))
               }}
               onPointerMove={(e) => {
-                if (dragRef.current) useStore.getState().setSimTime(timeFromEvent(e))
+                if (dragRef.current) useStore.getState().scrubTo(timeFromEvent(e))
                 updateHover(e)
               }}
               onPointerUp={() => {

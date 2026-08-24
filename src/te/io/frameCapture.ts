@@ -21,6 +21,21 @@ export function canCaptureFrame(): boolean {
   return stage != null && useTeStore.getState().activeCampaignId != null
 }
 
+function safeName(name: string): string {
+  return name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'rangeboard-frame'
+}
+
+/** Download the current board canvas as a PNG without requiring a campaign. */
+export function downloadBoardFrame(name: string): boolean {
+  if (!stage) return false
+  const pixelRatio = Math.min(2, 1600 / Math.max(1, stage.width()))
+  const a = document.createElement('a')
+  a.href = stage.toDataURL({ pixelRatio })
+  a.download = `${safeName(name)}.png`
+  a.click()
+  return true
+}
+
 /**
  * Capture the current board view as a PNG frame on the active campaign.
  * Returns the frame id, or null when no stage or campaign is available.

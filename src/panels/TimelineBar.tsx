@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { defaultFrameName, useStore, scenarioDurationS } from '../state/store'
+import {
+  defaultFrameName,
+  formatRunLabel,
+  useStore,
+  scenarioDurationS,
+} from '../state/store'
 import { formatTime } from '../geometry/geo'
+import { resetAnalysisRun, toggleAnalysisRun } from '../playback/runSession'
 
 const SPEEDS = [1, 2, 5, 10, 30]
 
@@ -10,8 +16,15 @@ export function TimelineBar() {
   const scenario = useStore((s) => s.scenario)
   const frames = useStore((s) => s.scenario.frames)
   const basemap = useStore((s) => s.ui.basemap)
-  const { setPlaying, setSimTime, setSpeedMult, saveFrame, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
-    useStore.getState()
+  const {
+    scrubTo,
+    setSpeedMult,
+    saveFrame,
+    applyFrame,
+    deleteFrame,
+    setWaveDelay,
+    patchScenario,
+  } = useStore.getState()
   const waves = scenario.raid?.waves ?? []
   const durationS = scenarioDurationS(scenario)
   const [frameName, setFrameName] = useState('')
@@ -26,11 +39,11 @@ export function TimelineBar() {
       const st = useStore.getState()
       const next = st.playback.simTimeS + dt * st.playback.speedMult
       if (next >= durationS) {
-        st.setSimTime(durationS)
-        st.setPlaying(false)
+        st.advanceRun(durationS)
+        st.completeRun(durationS)
         return
       }
-      st.setSimTime(next)
+      st.advanceRun(next)
       raf.current = requestAnimationFrame(tick)
     }
     raf.current = requestAnimationFrame(tick)
@@ -41,19 +54,16 @@ export function TimelineBar() {
     <div className="timeline">
       <button
         className="play"
-        onClick={() => {
-          if (!playback.playing && playback.simTimeS >= durationS) setSimTime(0)
-          setPlaying(!playback.playing)
-        }}
-        title="Play / pause"
+        onClick={toggleAnalysisRun}
+        title={playback.completedAtMs != null ? 'Start a new clean run' : 'Play / pause run'}
       >
         {playback.playing ? '❚❚' : '▶'}
       </button>
-      <button onClick={() => setSimTime(0)} title="Reset to T0">
-        ⏮
+      <button onClick={() => resetAnalysisRun('manual')} title="New run id; clear all live telemetry and return to T0">
+        ⏮ Reset run
       </button>
       <span className="time-readout">
-        T+{formatTime(playback.simTimeS)} / {formatTime(durationS)}
+        {formatRunLabel(playback.runSeq)} · T+{formatTime(playback.simTimeS)} / {formatTime(durationS)}
       </span>
       <input
         className="scrub"
@@ -62,7 +72,7 @@ export function TimelineBar() {
         max={durationS}
         step={0.5}
         value={playback.simTimeS}
-        onChange={(e) => setSimTime(Number(e.target.value))}
+        onChange={(e) => scrubTo(Number(e.target.value))}
       />
       <select
         value={playback.speedMult}

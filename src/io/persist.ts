@@ -1,4 +1,6 @@
 import type { AarSummary, Scenario, SpecModel } from '../model/types'
+import type { ThreatAssessment } from '../playback/sim'
+import type { AttritionReport } from '../playback/attrition'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 
@@ -87,6 +89,69 @@ export function aarExportObject(scenarioName: string, summary: AarSummary): AarE
 
 export function exportAar(scenarioName: string, summary: AarSummary): void {
   downloadJson(aarExportObject(scenarioName, summary), `${safeName(scenarioName)}.aar.json`)
+}
+
+export interface RunRecordMeta {
+  id: string
+  label: string
+  sequence: number
+  startedAt: string
+  completedAt: string
+  durationS: number
+  observedThroughS: number
+}
+
+/** Full, reproducible completed-run package rather than summary-only AAR. */
+export interface RunExport {
+  rangeboardRun: 1
+  dataBasis: {
+    kind: 'deterministic-planning-model'
+    sampleStepS: 0.5
+    independentlyInstrumented: false
+    runScoped: true
+  }
+  run: RunRecordMeta
+  scenario: Scenario
+  assessments: ThreatAssessment[]
+  attrition: AttritionReport
+  summary: AarSummary
+}
+
+/** Pure builder for tests and alternate storage targets. */
+export function runExportObject(
+  scenario: Scenario,
+  run: RunRecordMeta,
+  assessments: ThreatAssessment[],
+  attrition: AttritionReport,
+  summary: AarSummary,
+): RunExport {
+  return {
+    rangeboardRun: 1,
+    dataBasis: {
+      kind: 'deterministic-planning-model',
+      sampleStepS: 0.5,
+      independentlyInstrumented: false,
+      runScoped: true,
+    },
+    run,
+    scenario,
+    assessments,
+    attrition,
+    summary,
+  }
+}
+
+export function exportRunRecord(
+  scenario: Scenario,
+  run: RunRecordMeta,
+  assessments: ThreatAssessment[],
+  attrition: AttritionReport,
+  summary: AarSummary,
+): void {
+  downloadJson(
+    runExportObject(scenario, run, assessments, attrition, summary),
+    `${safeName(scenario.name)}.${run.label.toLowerCase()}.run.json`,
+  )
 }
 
 /** Open a file picker and parse the chosen JSON file. */

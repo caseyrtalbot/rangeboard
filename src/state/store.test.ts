@@ -271,6 +271,95 @@ describe('store scenario actions', () => {
   })
 })
 
+describe('run-scoped playback lifecycle', () => {
+  beforeEach(reset)
+
+  it('separates observed playback from scrubbed preview time', () => {
+    const st = useStore.getState()
+    st.startRun()
+    st.advanceRun(12.5)
+    st.pauseRun()
+    useStore.getState().scrubTo(50)
+
+    let p = useStore.getState().playback
+    expect(p.phase).toBe('review')
+    expect(p.simTimeS).toBe(50)
+    expect(p.observedThroughS).toBe(12.5)
+    expect(p.completedAtMs).toBeNull()
+
+    // Resume clamps back to the observed horizon; the preview gap is never
+    // silently accepted as observed run data.
+    useStore.getState().startRun()
+    p = useStore.getState().playback
+    expect(p.phase).toBe('running')
+    expect(p.simTimeS).toBe(12.5)
+  })
+
+  it('does not complete from a scrub to the end', () => {
+    useStore.getState().scrubTo(60)
+    const p = useStore.getState().playback
+    expect(p.phase).toBe('review')
+    expect(p.observedThroughS).toBe(0)
+    expect(p.completedAtMs).toBeNull()
+  })
+
+  it('seals a completed run only after playback advances through the duration', () => {
+    const st = useStore.getState()
+    st.startRun()
+    st.advanceRun(60)
+    st.completeRun(60)
+    const p = useStore.getState().playback
+    expect(p.phase).toBe('complete')
+    expect(p.playing).toBe(false)
+    expect(p.observedThroughS).toBe(60)
+    expect(p.startedAtMs).not.toBeNull()
+    expect(p.completedAtMs).not.toBeNull()
+    expect(p.basisSignature).not.toBeNull()
+  })
+
+  it('gives a clean reset a new id and clears every run-scoped field', () => {
+    const st = useStore.getState()
+    const before = st.playback
+    st.startRun()
+    st.advanceRun(18)
+    useStore.getState().resetRun('manual')
+    const after = useStore.getState().playback
+    expect(after.runId).not.toBe(before.runId)
+    expect(after.runSeq).toBe(before.runSeq + 1)
+    expect(after.phase).toBe('ready')
+    expect(after.simTimeS).toBe(0)
+    expect(after.observedThroughS).toBe(0)
+    expect(after.startedAtMs).toBeNull()
+    expect(after.completedAtMs).toBeNull()
+    expect(after.basisSignature).toBeNull()
+  })
+
+  it('invalidates an active run when an analysis input changes', () => {
+    const st = useStore.getState()
+    st.startRun()
+    st.advanceRun(8)
+    const before = useStore.getState().playback
+    useStore.getState().updateEnvironment({ windSpeedMps: 17 })
+    const after = useStore.getState().playback
+    expect(after.runId).not.toBe(before.runId)
+    expect(after.phase).toBe('ready')
+    expect(after.resetReason).toBe('configuration-changed')
+    expect(after.observedThroughS).toBe(0)
+  })
+
+  it('does not invalidate a completed run when saving a presentation frame', () => {
+    const st = useStore.getState()
+    st.startRun()
+    st.advanceRun(60)
+    st.completeRun(60)
+    const before = useStore.getState().playback
+    useStore.getState().saveFrame('post-run evidence')
+    const after = useStore.getState().playback
+    expect(after.runId).toBe(before.runId)
+    expect(after.completedAtMs).toBe(before.completedAtMs)
+  })
+})
+
 describe('connect suggestions', () => {
   beforeEach(reset)
 

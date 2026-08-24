@@ -14,6 +14,7 @@ import { AnalysisPanel } from './panels/AnalysisPanel'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
 import { CommandPalette } from './panels/CommandPalette'
+import { toggleAnalysisRun } from './playback/runSession'
 
 const RIGHT_W_KEY = 'rangeboard.rightpanel.width'
 const RIGHT_MIN_W = 280
@@ -267,7 +268,7 @@ export default function App() {
       }
       if (e.key === ' ') {
         e.preventDefault()
-        st.setPlaying(!st.playback.playing)
+        toggleAnalysisRun()
       }
     }
     window.addEventListener('keydown', onKey)

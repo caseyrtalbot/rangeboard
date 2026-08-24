@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { AarSummary, EngagePolicy, Scenario, ScorecardSnap } from '../model/types'
-import { aarExportObject, fillScenario } from './persist'
+import type { AttritionReport } from '../playback/attrition'
+import { aarExportObject, fillScenario, runExportObject } from './persist'
 
 /** A save written before the roe field existed. */
 function legacySave(engageOn?: EngagePolicy): Scenario {
@@ -141,5 +142,49 @@ describe('AAR export payload', () => {
     expect(round.summary.raidSize).toBe(2)
     expect(round.summary.threats[0].outcome).toBe('hard-kill')
     expect(round.summary.effectors[0].expectedRoundsRemaining).toBe(4)
+  })
+
+  it('builds a run-scoped package with configuration, ledger, and model-basis labels', () => {
+    const scenario = emptyScenario()
+    scenario.name = 'Clean run demo'
+    const attrition: AttritionReport = {
+      threats: [],
+      effectors: [],
+      totals: {
+        raidSize: 0,
+        expectedKills: 0,
+        expectedHardKills: 0,
+        expectedSoftKills: 0,
+        expectedLeakers: 0,
+        shotsFired: 0,
+        jamSalvos: 0,
+      },
+      events: [],
+    }
+    const out = runExportObject(
+      scenario,
+      {
+        id: 'simrun-1',
+        label: 'RUN-0001',
+        sequence: 1,
+        startedAt: '2026-08-24T19:00:00.000Z',
+        completedAt: '2026-08-24T19:01:00.000Z',
+        durationS: 60,
+        observedThroughS: 60,
+      },
+      [],
+      attrition,
+      sampleSummary(),
+    )
+    expect(out.rangeboardRun).toBe(1)
+    expect(out.dataBasis).toEqual({
+      kind: 'deterministic-planning-model',
+      sampleStepS: 0.5,
+      independentlyInstrumented: false,
+      runScoped: true,
+    })
+    expect(out.run.label).toBe('RUN-0001')
+    expect(out.scenario.name).toBe('Clean run demo')
+    expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 })

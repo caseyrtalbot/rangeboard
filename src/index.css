@@ -1017,7 +1017,7 @@ label.inline input[type='range'] {
 .time-readout {
   color: var(--text-dim);
   white-space: nowrap;
-  min-width: 130px;
+  min-width: 245px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1219,8 +1219,9 @@ label.inline input[type='range'] {
 
 .live-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .live-tag {
@@ -1243,6 +1244,24 @@ label.inline input[type='range'] {
   color: var(--text-dim);
   font-size: 10px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.run-reset {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  font-size: 9.5px;
+}
+
+.run-ready .live-tag,
+.run-preview .live-tag,
+.run-replay .live-tag {
+  color: var(--text-dim);
+}
+
+.run-complete .live-tag {
+  color: var(--good);
 }
 
 .live-cells {
@@ -1293,6 +1312,47 @@ label.inline input[type='range'] {
 .live-jam {
   color: var(--ew);
   font-size: 12px;
+}
+
+.live-basis {
+  display: flex;
+  gap: 5px 10px;
+  flex-wrap: wrap;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.live-basis span:first-child {
+  color: var(--warn);
+}
+
+.run-complete-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--good) 55%, var(--border));
+  border-left: 2px solid var(--good);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--good) 6%, var(--bg-input));
+  color: var(--text);
+  font-size: 11px;
+}
+
+.run-complete-card p {
+  margin: 0;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+.run-complete-card .inspector-actions {
+  margin-top: 0;
+  flex-wrap: wrap;
 }
 
 /* ---------- Analysis KPI tiles, I&W strip, threat groups ---------- */

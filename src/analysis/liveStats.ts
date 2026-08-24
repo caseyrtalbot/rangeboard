@@ -38,11 +38,18 @@ export interface LiveTimeline {
   effectKillPrefix: number[]
   /** First-detection times over threats with paths, ascending. */
   detectTS: number[]
+  /** Hostile-classification times, ascending (the engine's identification proxy). */
+  classifyTS: number[]
+  /** First salvo assignment per engaged threat, ascending. */
+  engageTS: number[]
+  /** ROE-gated usable target windows. */
+  targetWindows: Array<[number, number]>
   /** Arrival times ascending; arrivalTracks[i] is the threat arriving at arrivalTS[i]. */
   arrivalTS: number[]
   arrivalTracks: ArrivalTrack[]
   /** Threat tracks in play (assessments with a flight path). */
   trackCount: number
+  trackIds: string[]
   /** Total ships across those tracks. */
   raidSize: number
 }
@@ -101,12 +108,18 @@ export function buildLiveTimeline(
   }
 
   const detectTS: number[] = []
+  const classifyTS: number[] = []
+  const targetWindows: Array<[number, number]> = []
+  const trackIds: string[] = []
   const arrivals: Array<{ t: number; track: ArrivalTrack }> = []
   let trackCount = 0
   for (const a of assessments) {
     if (a.status === 'no-path') continue
     trackCount++
+    trackIds.push(a.uasId)
     if (a.firstDetectS != null) detectTS.push(a.firstDetectS)
+    if (a.classificationAtS.hostileAtS != null) classifyTS.push(a.classificationAtS.hostileAtS)
+    if (a.status === 'engageable' && a.windowS != null) targetWindows.push(a.windowS)
     if (a.arrivalS != null) {
       const att = report.threats.find((x) => x.uasId === a.uasId)
       const track = perThreat.get(a.uasId) ?? { shipCount: 1, effectTS: [], killPrefix: [] }
@@ -116,7 +129,13 @@ export function buildLiveTimeline(
     }
   }
   detectTS.sort((a, b) => a - b)
+  classifyTS.sort((a, b) => a - b)
   arrivals.sort((a, b) => a.t - b.t)
+  const firstEngageByThreat = new Map<string, number>()
+  for (const ev of report.events) {
+    if (!firstEngageByThreat.has(ev.uasId)) firstEngageByThreat.set(ev.uasId, ev.tS)
+  }
+  const engageTS = [...firstEngageByThreat.values()].sort((a, b) => a - b)
 
   return {
     kineticTS,
@@ -124,9 +143,13 @@ export function buildLiveTimeline(
     effectTS,
     effectKillPrefix,
     detectTS,
+    classifyTS,
+    engageTS,
+    targetWindows,
     arrivalTS: arrivals.map((x) => x.t),
     arrivalTracks: arrivals.map((x) => x.track),
     trackCount,
+    trackIds,
     raidSize: report.totals.raidSize,
   }
 }
@@ -134,6 +157,12 @@ export function buildLiveTimeline(
 export interface LiveKpis {
   /** Threat tracks first detected by t. */
   detected: number
+  /** Threat tracks promoted to hostile classification by t. */
+  classified: number
+  /** Threat tracks inside a currently usable, ROE-gated effector window. */
+  targetable: number
+  /** Threat tracks with at least one salvo assigned by t. */
+  engaged: number
   /** Kinetic salvos assigned by t. */
   kineticShots: number
   /** Jam salvos assigned by t. */
@@ -159,6 +188,9 @@ export function liveKpisAt(tl: LiveTimeline, tS: number): LiveKpis {
   }
   return {
     detected: countAtMost(tl.detectTS, tS),
+    classified: countAtMost(tl.classifyTS, tS),
+    targetable: tl.targetWindows.filter(([start, end]) => tS >= start && tS <= end).length,
+    engaged: countAtMost(tl.engageTS, tS),
     kineticShots: countAtMost(tl.kineticTS, tS),
     jamSalvos: countAtMost(tl.jamTS, tS),
     expectedKills: prefixAt(tl.effectKillPrefix, countAtMost(tl.effectTS, tS)),

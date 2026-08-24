@@ -117,10 +117,25 @@ interface UiState {
   lastAutosaveAt: number | null
 }
 
-interface PlaybackState {
+export type RunPhase = 'ready' | 'running' | 'paused' | 'complete' | 'review'
+export type RunResetReason = 'manual' | 'configuration-changed' | 'scenario-loaded' | 'initial'
+
+export interface PlaybackState {
   playing: boolean
   simTimeS: number
   speedMult: number
+  /** Unique, non-persisted identity for this clean playback run. */
+  runId: string
+  /** Human-scale sequence shown as RUN-0001, RUN-0002, ... */
+  runSeq: number
+  phase: RunPhase
+  /** Highest time actually traversed by playback; scrubbing never advances it. */
+  observedThroughS: number
+  startedAtMs: number | null
+  completedAtMs: number | null
+  /** Analysis-only configuration snapshot used to detect mid-run changes. */
+  basisSignature: string | null
+  resetReason: RunResetReason
 }
 
 export interface Store {
@@ -245,9 +260,88 @@ export interface Store {
   setPlaying: (p: boolean) => void
   setSimTime: (t: number) => void
   setSpeedMult: (m: number) => void
+  startRun: () => void
+  pauseRun: () => void
+  advanceRun: (t: number) => void
+  completeRun: (durationS: number) => void
+  scrubTo: (t: number) => void
+  resetRun: (reason?: RunResetReason) => void
 }
 
 const UNITS_KEY = 'rangeboard.units.v1'
+
+export function formatRunLabel(seq: number): string {
+  return `RUN-${String(seq).padStart(4, '0')}`
+}
+
+function freshPlayback(
+  runSeq: number,
+  speedMult = 1,
+  resetReason: RunResetReason = 'initial',
+): PlaybackState {
+  return {
+    playing: false,
+    simTimeS: 0,
+    speedMult,
+    runId: newId('simrun'),
+    runSeq,
+    phase: 'ready',
+    observedThroughS: 0,
+    startedAtMs: null,
+    completedAtMs: null,
+    basisSignature: null,
+    resetReason,
+  }
+}
+
+/**
+ * Stable signature of inputs that can change detection, classification,
+ * routing, engagement, or impact. Presentation and recordkeeping fields
+ * (name, frames, cards, pins, underlay, MCDA weights) are intentionally out:
+ * saving evidence after a run must not invalidate the run it records.
+ */
+export function analysisBasisSignature(s: Scenario): string {
+  return JSON.stringify({
+    environment: s.environment,
+    roe: s.roe,
+    raid: s.raid,
+    library: s.library.map((m) => ({
+      id: m.id,
+      kind: m.kind,
+      sensor: m.sensor,
+      effector: m.effector,
+      uas: m.uas,
+      threatProfile: m.threatProfile,
+    })),
+    entities: s.entities.map((e) => ({
+      id: e.id,
+      kind: e.kind,
+      specId: e.specId,
+      pos: e.pos,
+      headingDeg: e.headingDeg,
+      enabled: e.enabled,
+      formation: e.formation,
+    })),
+    connections: s.connections.map((c) => ({
+      fromId: c.fromId,
+      toId: c.toId,
+      medium: c.medium,
+      confidence: c.confidence,
+      latencyS: c.latencyS,
+    })),
+    paths: s.paths,
+  })
+}
+
+function playbackForScenarioChange(playback: PlaybackState, next: Scenario): PlaybackState {
+  if (
+    playback.basisSignature == null ||
+    playback.basisSignature === analysisBasisSignature(next)
+  ) {
+    return playback
+  }
+  return freshPlayback(playback.runSeq + 1, playback.speedMult, 'configuration-changed')
+}
 
 function savedUnits(): DisplayUnits {
   if (typeof localStorage === 'undefined') return 'aviation'
@@ -341,13 +435,14 @@ export function bumpCardVersion(v: string): string {
 export const useStore = create<Store>()((set, get) => {
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
-    const { scenario, past } = get()
+    const { scenario, past, playback } = get()
     const next = fn(scenario)
     if (next === scenario) return
     set({
       scenario: next,
       past: [...past.slice(-HISTORY_LIMIT + 1), scenario],
       future: [],
+      playback: playbackForScenarioChange(playback, next),
     })
   }
 
@@ -376,29 +471,33 @@ export const useStore = create<Store>()((set, get) => {
       locationDialogOpen: false,
       lastAutosaveAt: null,
     },
-    playback: { playing: false, simTimeS: 0, speedMult: 1 },
+    playback: freshPlayback(1),
 
     undo: () => {
-      const { past, future, scenario, ui } = get()
+      const { past, future, scenario, ui, playback } = get()
       if (past.length === 0) return
+      const restored = past[past.length - 1]
       set({
-        scenario: past[past.length - 1],
+        scenario: restored,
         past: past.slice(0, -1),
         future: [scenario, ...future],
         selection: EMPTY_SELECTION,
+        playback: playbackForScenarioChange(playback, restored),
         // A restored scenario invalidates any open connect offer.
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
 
     redo: () => {
-      const { past, future, scenario, ui } = get()
+      const { past, future, scenario, ui, playback } = get()
       if (future.length === 0) return
+      const restored = future[0]
       set({
-        scenario: future[0],
+        scenario: restored,
         past: [...past, scenario],
         future: future.slice(1),
         selection: EMPTY_SELECTION,
+        playback: playbackForScenarioChange(playback, restored),
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
@@ -409,7 +508,11 @@ export const useStore = create<Store>()((set, get) => {
         past: [],
         future: [],
         selection: EMPTY_SELECTION,
-        playback: { playing: false, simTimeS: 0, speedMult: 1 },
+        playback: freshPlayback(
+          st.playback.runSeq + 1,
+          st.playback.speedMult,
+          'scenario-loaded',
+        ),
         ui:
           st.ui.raidDraft || st.ui.connectSuggestion
             ? { ...st.ui, raidDraft: null, connectSuggestion: null }
@@ -1253,7 +1356,13 @@ export const useStore = create<Store>()((set, get) => {
       if (!frame) return
       set((st) => ({
         camera: { ...frame.camera },
-        playback: { ...st.playback, playing: false, simTimeS: frame.simTimeS },
+        playback: {
+          ...st.playback,
+          playing: false,
+          simTimeS: frame.simTimeS,
+          phase:
+            frame.simTimeS === 0 && st.playback.startedAtMs == null ? 'ready' : 'review',
+        },
         ui: { ...st.ui, basemap: frame.basemap },
       }))
     },
@@ -1297,9 +1406,93 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, units: v } }))
     },
 
-    setPlaying: (p) => set((st) => ({ playback: { ...st.playback, playing: p } })),
-    setSimTime: (t) => set((st) => ({ playback: { ...st.playback, simTimeS: Math.max(0, t) } })),
+    // Compatibility wrappers for dev-console callers. UI code uses the
+    // explicit lifecycle actions below so scrub and observation never mix.
+    setPlaying: (p) => {
+      if (p) get().startRun()
+      else get().pauseRun()
+    },
+    setSimTime: (t) => get().scrubTo(t),
     setSpeedMult: (m) => set((st) => ({ playback: { ...st.playback, speedMult: m } })),
+
+    startRun: () =>
+      set((st) => {
+        if (st.playback.completedAtMs != null) return st
+        // A preview beyond the observed horizon is never silently promoted
+        // to live data. Resume from the last actually observed instant.
+        const simTimeS = Math.min(st.playback.simTimeS, st.playback.observedThroughS)
+        return {
+          playback: {
+            ...st.playback,
+            playing: true,
+            simTimeS,
+            phase: 'running',
+            startedAtMs: st.playback.startedAtMs ?? Date.now(),
+            basisSignature:
+              st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
+          },
+        }
+      }),
+
+    pauseRun: () =>
+      set((st) => ({
+        playback: {
+          ...st.playback,
+          playing: false,
+          phase: st.playback.startedAtMs == null ? 'ready' : 'paused',
+        },
+      })),
+
+    advanceRun: (t) =>
+      set((st) => {
+        const simTimeS = Math.max(0, t)
+        return {
+          playback: {
+            ...st.playback,
+            playing: true,
+            phase: 'running',
+            simTimeS,
+            observedThroughS: Math.max(st.playback.observedThroughS, simTimeS),
+            startedAtMs: st.playback.startedAtMs ?? Date.now(),
+            basisSignature:
+              st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
+          },
+        }
+      }),
+
+    completeRun: (durationS) =>
+      set((st) => ({
+        playback: {
+          ...st.playback,
+          playing: false,
+          simTimeS: durationS,
+          observedThroughS: Math.max(st.playback.observedThroughS, durationS),
+          phase: 'complete',
+          startedAtMs: st.playback.startedAtMs ?? Date.now(),
+          completedAtMs: Date.now(),
+          basisSignature:
+            st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
+        },
+      })),
+
+    scrubTo: (t) =>
+      set((st) => {
+        const simTimeS = Math.max(0, t)
+        const ready = simTimeS === 0 && st.playback.startedAtMs == null
+        return {
+          playback: {
+            ...st.playback,
+            playing: false,
+            simTimeS,
+            phase: ready ? 'ready' : 'review',
+          },
+        }
+      }),
+
+    resetRun: (reason = 'manual') =>
+      set((st) => ({
+        playback: freshPlayback(st.playback.runSeq + 1, st.playback.speedMult, reason),
+      })),
   }
 })
 

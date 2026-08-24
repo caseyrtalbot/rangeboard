@@ -8,8 +8,9 @@ import type {
   Roe,
 } from '../model/types'
 import { newId } from '../model/types'
-import { scenarioDurationS, useStore } from '../state/store'
+import { formatRunLabel, scenarioDurationS, useStore } from '../state/store'
 import type { AttritionReport } from '../playback/attrition'
+import type { ThreatAssessment } from '../playback/sim'
 import { formatSpeed } from '../geometry/geo'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from '../analysis/mcda'
 import { buildAarSummary } from '../analysis/aar'
@@ -28,6 +29,9 @@ import { KpiTiles } from './analysis/KpiTiles'
 import { LiveStrip } from './analysis/LiveStrip'
 import { PinCompare } from './analysis/PinCompare'
 import { ThreatGroupList } from './analysis/ThreatList'
+import { exportRunRecord } from '../io/persist'
+import { downloadBoardFrame } from '../te/io/frameCapture'
+import { resetAnalysisRun } from '../playback/runSession'
 
 /**
  * Collapsible disclosure in the .subsection / .panel-subtitle idiom. Open
@@ -283,14 +287,88 @@ function EffectorBody({
   )
 }
 
-/** AAR is an observation only once playback reaches the end of the run. */
+/** A scrub to the end is not completion: the observed horizon must reach it. */
 function CompletedAar({ aar, durationS }: { aar: AarSummary; durationS: number }) {
-  const qt = useStore((s) => Math.round(s.playback.simTimeS * 2) / 2)
-  if (durationS <= 0 || qt < durationS) return null
+  const completedAtMs = useStore((s) => s.playback.completedAtMs)
+  const observedThroughS = useStore.getState().playback.observedThroughS
+  if (durationS <= 0 || completedAtMs == null || observedThroughS < durationS) return null
   return (
-    <Section title="AAR · completed run" headline={aarHeadline(aar)}>
+    <Section title="AAR · completed simulation run" headline={aarHeadline(aar)}>
       <AarBody aar={aar} />
     </Section>
+  )
+}
+
+/** Post-run offer: save the complete event/configuration package or capture the final board. */
+function CompletedRunActions({
+  assessments,
+  report,
+  aar,
+  durationS,
+}: {
+  assessments: ThreatAssessment[]
+  report: AttritionReport
+  aar: AarSummary
+  durationS: number
+}) {
+  const scenario = useStore((s) => s.scenario)
+  const completedAtMs = useStore((s) => s.playback.completedAtMs)
+  const startedAtMs = useStore((s) => s.playback.startedAtMs)
+  const runId = useStore((s) => s.playback.runId)
+  const runSeq = useStore((s) => s.playback.runSeq)
+  const playback = useStore.getState().playback
+  if (
+    durationS <= 0 ||
+    completedAtMs == null ||
+    startedAtMs == null ||
+    playback.observedThroughS < durationS
+  ) {
+    return null
+  }
+  const label = formatRunLabel(runSeq)
+  const runMeta = {
+    id: runId,
+    label,
+    sequence: runSeq,
+    startedAt: new Date(startedAtMs).toISOString(),
+    completedAt: new Date(completedAtMs).toISOString(),
+    durationS,
+    observedThroughS: playback.observedThroughS,
+  }
+
+  function captureFinal() {
+    useStore.getState().scrubTo(durationS)
+    // Let React and Konva render the final playhead before reading the stage.
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() => {
+        if (!downloadBoardFrame(`${scenario.name}-${label}-final`)) {
+          window.alert('Could not capture the board canvas.')
+        }
+      }),
+    )
+  }
+
+  return (
+    <div className="run-complete-card" role="status">
+      <div>
+        <strong>{label} complete</strong>
+        <span> · {durationS.toFixed(0)} s observed · run buffer sealed</span>
+      </div>
+      <p>
+        Save now: the run package includes configuration, stage times, salvo/effect ledger, and
+        AAR.
+      </p>
+      <div className="inspector-actions">
+        <button
+          className="primary"
+          onClick={() => exportRunRecord(scenario, runMeta, assessments, report, aar)}
+        >
+          Export run data
+        </button>
+        <button onClick={captureFinal}>Capture final PNG</button>
+        <button onClick={() => resetAnalysisRun('manual')}>New clean run</button>
+      </div>
+    </div>
   )
 }
 
@@ -420,6 +498,7 @@ function ScoreInfo() {
  */
 export function AnalysisPanel() {
   const scenario = useStore((s) => s.scenario)
+  const runId = useStore((s) => s.playback.runId)
   const patchScenario = useStore((s) => s.patchScenario)
   const showThreatWez = useStore((s) => s.ui.showThreatWez)
   const setShowThreatWez = useStore((s) => s.setShowThreatWez)
@@ -427,7 +506,13 @@ export function AnalysisPanel() {
   const [advanced, setAdvanced] = useState(false)
   // One shared computation per scenario with the canvas WEZ layer
   // (module-level WeakMap in impact.ts), so the sweep never runs twice.
-  const { assessments, report, impacts } = useMemo(() => engagementPicture(scenario), [scenario])
+  const { assessments, report, impacts } = useMemo(
+    () => {
+      void runId
+      return engagementPicture(scenario)
+    },
+    [scenario, runId],
+  )
   const aar = useMemo(
     () => buildAarSummary(scenario, assessments, report, impacts),
     [scenario, assessments, report, impacts],
@@ -533,6 +618,12 @@ export function AnalysisPanel() {
           </Section>
         )}
       </FullRunProjection>
+      <CompletedRunActions
+        assessments={assessments}
+        report={report}
+        aar={aar}
+        durationS={durationS}
+      />
       <CompletedAar aar={aar} durationS={durationS} />
     </div>
   )
