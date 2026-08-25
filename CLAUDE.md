@@ -88,6 +88,15 @@ Data flow for a click/drag: Konva event → store action → new scenario → Re
 - Print artifacts `src/te/print/` render into `PrintOverlay` (portals to body; `@media print` hides `.app`); CSV exports in `src/te/io/exportCsv.ts`. The Products phase tab is the deliverables hub.
 - Board frame capture: `src/te/io/frameCapture.ts` (stage registered by CanvasStage; capture only works from the Board workspace).
 
+## Design system (src/index.css)
+
+- **Tokens, not literals.** `:root` holds two layers: a graphite ramp (`--surface-*`, `--border-*`, `--text-*`, `--status-*`) and short aliases (`--bg`, `--text`, `--border`, `--accent`, …) that the older rules in the sheet already use. New rules read the semantic names. Spacing comes from `--space-1`…`--space-6` plus `--panel-pad` (14 px, the right panel's horizontal padding line); motion from `--dur-fast` / `--dur`. `--border-control` (0.34 alpha) is the boundary of an interactive control and exists because WCAG 1.4.11 needs 3:1 there; `--border-default` and `--border-subtle` are for decorative hairlines and must not be used on an input.
+- **Monospace is machine data only:** ids, coordinates, timestamps, units, keyboard keys, numeric readouts, and fixed abbreviation codes (DOC/PROB, the D/TRK/ID/TGT/ENG/FX stage ladder). Interface chrome (tabs, section labels, field labels, buttons, prose) is `--font-ui`. Prose that happens to carry a number is sans; mark the number with `.num` for tabular figures.
+- **Type floor is 10 px.** One exception: `.threat-stage` / `.threat-data-stages span` at 7.5 px, because a 6-column ladder in a 320 px panel truncates operational data at any larger size.
+- **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px rule and interaction state. `--radius` is 3 px and nothing exceeds it. The only drop shadows are `--shadow-float` (menus, dialogs, the command palette), `--shadow-pop` (tooltips, popovers) and the one directional wash on `.right-panel`.
+- **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`, `Status`, `EmptyState`, `Kbd`, `ShortcutList`, `Actions`. A read-only property is always a `Row` (label left, value right, tabular numerals, `mono` for machine data, `unit` secondary). `<div className="inspector-body insp">` gives a section-driven body (sections own their rhythm); plain `inspector-body` keeps the gap-driven stack the other three tabs use.
+- The tab bar in `App.tsx` follows the ARIA tabs pattern (roving tabindex, arrow/Home/End). `.right-resizer` is a `role="separator"` and is keyboard-operable.
+
 ## Testing and verification
 
 - Unit tests colocate as `*.test.ts` next to source (geometry, store). Keep geometry/store logic in pure TS so it stays testable without a DOM.

@@ -1,6 +1,15 @@
 import { useState } from 'react'
-import type { Boundary, BoundaryType, Entity, FlightPath, FormationShape } from '../model/types'
+import type {
+  Boundary,
+  BoundaryType,
+  Connection,
+  Entity,
+  EntityKind,
+  FlightPath,
+  FormationShape,
+} from '../model/types'
 import { entityActive } from '../model/types'
+import { Actions, EmptyState, ObjectHeader, Row, Section, ShortcutList } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
 import type { RaidDraft } from '../state/store'
@@ -15,6 +24,16 @@ import { THREAT_TACTICS } from '../playback/tactics'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
 
+/** Object type shown under the name in the Inspector header. */
+const KIND_LABEL: Record<EntityKind, string> = {
+  sensor: 'Sensor',
+  effector: 'Effector',
+  c2: 'C2 node',
+  uas: 'Threat platform',
+  asset: 'Defended asset',
+  marker: 'Marker',
+}
+
 /** Common C-UAS airspace names offered on the boundary Name field. Typing stays free. */
 const BOUNDARY_NAME_SUGGESTIONS: Record<BoundaryType, string[]> = {
   range: ['Range boundary', 'Test range', 'Danger area', 'Land range fan'],
@@ -26,6 +45,7 @@ const BOUNDARY_NAME_SUGGESTIONS: Record<BoundaryType, string[]> = {
 /** Standard airspace band values from the seed library boundaries, feet. */
 const BOUNDARY_ALT_SUGGESTIONS_FT = [0, 100, 400, 1200, 3000, 5000]
 
+/** Editable property: label above its control, both on the panel padding line. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="field">
@@ -52,13 +72,19 @@ function Options({ id, values }: { id: string; values: Array<string | number> })
  * ceiling gates nothing. Printing them beside the modeled ranges reads as a
  * working constraint, so they get their own marked line instead.
  */
-function NotModeled({ values }: { values: string[] }) {
-  if (values.length === 0) return null
+function NotModeled({ values }: { values: Array<{ label: string; value: string } | null> }) {
+  const rows = values.filter((v): v is { label: string; value: string } => v != null)
+  if (rows.length === 0) return null
   return (
-    <p className="muted small">
-      Recorded, not modeled: {values.join(' · ')}. The board is plan view, so altitude gates no
-      detection and no engagement.
-    </p>
+    <>
+      {rows.map((r) => (
+        <Row key={r.label} label={r.label} value={r.value} unit="recorded" mono />
+      ))}
+      <p className="muted small">
+        Recorded, not modeled. The board is plan view, so altitude gates no detection and no
+        engagement.
+      </p>
+    </>
   )
 }
 
@@ -67,15 +93,23 @@ function Seg<T extends string>({
   value,
   options,
   onChange,
+  label,
 }: {
   value: T
   options: Array<{ v: T; label: string }>
   onChange: (v: T) => void
+  label: string
 }) {
   return (
-    <div className="seg">
+    <div className="seg" role="group" aria-label={label}>
       {options.map((o) => (
-        <button key={o.v} className={value === o.v ? 'active' : ''} onClick={() => onChange(o.v)}>
+        <button
+          key={o.v}
+          type="button"
+          aria-pressed={value === o.v}
+          className={value === o.v ? 'active' : ''}
+          onClick={() => onChange(o.v)}
+        >
           {o.label}
         </button>
       ))}
@@ -98,6 +132,7 @@ function PathSpeedField({ path, cruise, max }: { path: FlightPath; cruise: numbe
     <div className="field">
       <span>Speed (m/s)</span>
       <Seg
+        label="Speed basis"
         value={mode}
         options={[
           { v: 'cruise', label: `Cruise ${cruise}` },
@@ -161,96 +196,109 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
   const ready = !!platform?.uas && !!target
 
   return (
-    <div className="inspector-body">
-      <div className="panel-subtitle">THREAT TACTIC · {tactic.id}</div>
-      <div className="spec-summary">
-        {tactic.name}
-        <br />
-        Study {tactic.sourceRef}
-      </div>
-      <p className="muted small">{tactic.description}</p>
-      <div className="spec-summary">
-        {shipCount} {shipCount === 1 ? 'ship' : 'ships'} · {waveCount}{' '}
-        {waveCount === 1 ? 'wave' : 'waves'} of up to {perWave}
-        {waveCount > 1 ? ` · ${tactic.waveSpacingS} s between waves` : ''}
-        <br />
-        {tactic.axes} {tactic.axes === 1 ? 'ingress axis' : 'ingress axes'}
-        {tactic.axes > 1 ? ` across ${tactic.axisSpreadDeg} deg` : ''} · standoff{' '}
-        {formatDistance(tactic.standoffM, units)} or beyond every sensor detection ring
-        {tactic.decoy && (
-          <>
-            <br />
-            1 of every {tactic.decoy.everyNth} ships is a decoy.
-          </>
+    <div className="inspector-body insp">
+      <ObjectHeader
+        name={tactic.name}
+        type={`Threat tactic · ${tactic.id}`}
+        status="warning"
+        statusLabel="Armed"
+      />
+
+      <Section label="Tactic" note={`Study ${tactic.sourceRef}`}>
+        <p className="muted small">{tactic.description}</p>
+      </Section>
+
+      <Section label="Raid">
+        <Field label="Platform">
+          <select
+            value={draft.platformSpecId ?? ''}
+            onChange={(e) => patchRaidDraft({ platformSpecId: e.target.value || null })}
+          >
+            <option value="">choose a platform…</option>
+            {uasModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {!platform?.uas && (
+          <p className="muted small">No platform matched in the library. Choose one to continue.</p>
         )}
+
+        <Field label="Target asset">
+          <select
+            value={draft.targetEntityId ?? ''}
+            onChange={(e) => patchRaidDraft({ targetEntityId: e.target.value || null })}
+          >
+            <option value="">choose a target…</option>
+            {assets.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {assets.length === 0 && (
+          <p className="muted small">
+            No asset on the canvas. Place an asset entity as the target.
+          </p>
+        )}
+
+        <Field label="Ships">
+          <input
+            type="number"
+            min={1}
+            max={60}
+            value={draft.shipCount}
+            onChange={(e) => {
+              const n = Number(e.target.value)
+              if (Number.isFinite(n)) patchRaidDraft({ shipCount: Math.min(60, Math.max(1, n)) })
+            }}
+          />
+        </Field>
+      </Section>
+
+      <Section label="Laydown">
+        <Row label="Ships" value={shipCount} mono />
+        <Row label="Waves" value={waveCount} mono />
+        <Row label="Ships per wave" value={perWave} unit="max" mono />
+        {waveCount > 1 && <Row label="Wave spacing" value={tactic.waveSpacingS} unit="s" mono />}
+        <Row
+          label="Ingress axes"
+          value={tactic.axes}
+          unit={tactic.axes > 1 ? `across ${tactic.axisSpreadDeg}°` : undefined}
+          mono
+        />
+        <Row label="Standoff" value={formatDistance(tactic.standoffM, units)} mono />
+        {tactic.decoy && (
+          <Row label="Decoys" value={`1 in ${tactic.decoy.everyNth}`} mono />
+        )}
+        <p className="muted small">
+          Standoff is that range or beyond every sensor detection ring, whichever is greater.
+        </p>
         {existingWaves > 0 && (
-          <>
-            <br />
+          <p className="muted small">
             New waves add alongside the {existingWaves} existing{' '}
             {existingWaves === 1 ? 'wave' : 'waves'}; delays restart at 0. Adjust wave delays in
             the timeline strip to sequence them.
-          </>
+          </p>
         )}
-      </div>
+      </Section>
 
-      <Field label="Platform">
-        <select
-          value={draft.platformSpecId ?? ''}
-          onChange={(e) => patchRaidDraft({ platformSpecId: e.target.value || null })}
-        >
-          <option value="">choose a platform…</option>
-          {uasModels.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {!platform?.uas && (
-        <p className="muted small">No platform matched in the library. Choose one to continue.</p>
-      )}
-
-      <Field label="Target asset">
-        <select
-          value={draft.targetEntityId ?? ''}
-          onChange={(e) => patchRaidDraft({ targetEntityId: e.target.value || null })}
-        >
-          <option value="">choose a target…</option>
-          {assets.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {assets.length === 0 && (
-        <p className="muted small">No asset on the canvas. Place an asset entity as the target.</p>
-      )}
-
-      <Field label="Ships">
-        <input
-          type="number"
-          min={1}
-          max={60}
-          value={draft.shipCount}
-          onChange={(e) => {
-            const n = Number(e.target.value)
-            if (Number.isFinite(n)) patchRaidDraft({ shipCount: Math.min(60, Math.max(1, n)) })
-          }}
-        />
-      </Field>
-
-      <div className="spec-summary">
-        {ready
-          ? 'Click the canvas to place the ingress axis. The raid flies from the click point toward the target.'
-          : 'Choose a platform and a target asset to enable commit.'}
-      </div>
-      <div className="inspector-actions">
-        <button className="primary" disabled={!ready} onClick={() => commitRaid(null)}>
-          Use default axis
-        </button>
-        <button onClick={cancelRaidDraft}>Cancel</button>
-      </div>
+      <Section label="Commit">
+        <p className="muted small">
+          {ready
+            ? 'Click the canvas to place the ingress axis. The raid flies from the click point toward the target.'
+            : 'Choose a platform and a target asset to enable commit.'}
+        </p>
+        <Actions>
+          <button className="primary" disabled={!ready} onClick={() => commitRaid(null)}>
+            Use default axis
+          </button>
+          <button onClick={cancelRaidDraft}>Cancel</button>
+        </Actions>
+      </Section>
     </div>
   )
 }
@@ -287,44 +335,48 @@ function IntegrationSection({ entity }: { entity: Entity }) {
   }
 
   return (
-    <div>
-      <div className="panel-subtitle">INTEGRATIONS</div>
-      {summary.program && <div className="spec-summary">{summary.program}</div>}
-      {summary.guidance && <div className="spec-summary">{summary.guidance}</div>}
+    <Section
+      label="Network"
+      note={summary.partners.length > 0 ? `${summary.partners.length} known` : undefined}
+    >
+      {summary.program && <Row label="Program" value={summary.program} stacked />}
+      {summary.guidance && <p className="muted small">{summary.guidance}</p>}
       {summary.partners.length === 0 && (
-        <div className="spec-summary">No known network integrations.</div>
+        <p className="muted small">No known network integrations.</p>
       )}
       {shown.map((p) => (
-        <div key={p.specId} className="suggest-row" title={p.source ? `${p.note} [${p.source}]` : p.note}>
-          <div className="suggest-info">
-            <div>{p.name}</div>
-            <div className="suggest-meta">
-              <span className="suggest-badge">{INTEGRATION_BADGE[p.confidence]}</span>
-              {p.role.replace('-', ' ')}
-            </div>
-          </div>
+        <div
+          key={p.specId}
+          className="insp-row"
+          title={p.source ? `${p.note} [${p.source}]` : p.note}
+        >
+          <span className="insp-row-label" title={p.name}>
+            {p.name}
+          </span>
+          <span className="insp-row-value">
+            <span className="insp-tag">{INTEGRATION_BADGE[p.confidence]}</span>
+            <span className="unit">{p.role.replace('-', ' ')}</span>
+          </span>
         </div>
       ))}
       {!showAll && summary.partners.length > 6 && (
-        <button className="mini" onClick={() => setShowAll(true)}>
+        <button className="mini insp-more" onClick={() => setShowAll(true)}>
           Show all {summary.partners.length}
         </button>
       )}
       {summary.denied.length > 0 && (
-        <div className="spec-summary">
-          No link:{' '}
-          {summary.denied.map((d, i) => (
-            <span key={d.specId} title={d.reason}>
-              {i > 0 ? ', ' : ''}
-              {d.name}
-            </span>
-          ))}
-        </div>
+        <Row
+          label="No link"
+          value={summary.denied.map((d) => d.name).join(', ')}
+          title={summary.denied.map((d) => `${d.name}: ${d.reason}`).join('\n')}
+          stacked
+          muted
+        />
       )}
-      <button className="mini" onClick={suggest}>
-        Suggest connections
-      </button>
-    </div>
+      <Actions>
+        <button onClick={suggest}>Suggest connections</button>
+      </Actions>
+    </Section>
   )
 }
 
@@ -347,164 +399,209 @@ function EntityInspector({ entity }: { entity: Entity }) {
   const blue = entity.kind === 'sensor' || entity.kind === 'effector' || entity.kind === 'c2'
   const formation = entity.formation
 
+  // "Defended asset · Defended asset" says nothing twice; drop the model name
+  // when it repeats the kind.
+  const kindLabel = KIND_LABEL[entity.kind]
+  const modelName = model?.name ?? 'no model'
+  const typeLine =
+    modelName.toLowerCase() === kindLabel.toLowerCase() ? kindLabel : `${kindLabel} · ${modelName}`
+
+  const suggestedName = (() => {
+    if (!model) return null
+    const base = model.name.split(':').pop()?.trim() ?? model.name
+    const peers = scenario.entities.filter((e) => e.specId === entity.specId)
+    const name = `${base} ${peers.findIndex((e) => e.id === entity.id) + 1}`
+    return entity.name === name ? null : name
+  })()
+
   return (
-    <div className="inspector-body">
-      <div className="panel-subtitle">
-        {entity.kind.toUpperCase()} · {model?.name ?? 'no model'}
-      </div>
-      <Field label="Name">
-        <input
-          list="entity-name-options"
-          value={entity.name}
-          onChange={(e) => updateEntity(entity.id, { name: e.target.value })}
-        />
-      </Field>
-      <Options id="entity-name-options" values={sameKindModels.map((m) => m.name)} />
-      {(() => {
-        if (!model) return null
-        const base = model.name.split(':').pop()?.trim() ?? model.name
-        const peers = scenario.entities.filter((e) => e.specId === entity.specId)
-        const suggested = `${base} ${peers.findIndex((e) => e.id === entity.id) + 1}`
-        if (entity.name === suggested) return null
-        return (
-          <button className="mini" onClick={() => updateEntity(entity.id, { name: suggested })}>
-            Rename to {suggested}
+    <div className="inspector-body insp">
+      <ObjectHeader
+        name={entity.name || 'Unnamed'}
+        type={typeLine}
+        status={blue ? (entityActive(entity) ? 'nominal' : 'inactive') : undefined}
+        statusLabel={blue ? (entityActive(entity) ? 'Active' : 'Disabled') : undefined}
+      />
+
+      <Section label="Identity">
+        <Field label="Name">
+          <input
+            list="entity-name-options"
+            value={entity.name}
+            onChange={(e) => updateEntity(entity.id, { name: e.target.value })}
+          />
+        </Field>
+        <Options id="entity-name-options" values={sameKindModels.map((m) => m.name)} />
+        {suggestedName && (
+          <button className="mini" onClick={() => updateEntity(entity.id, { name: suggestedName })}>
+            Rename to {suggestedName}
           </button>
-        )
-      })()}
-      <Field label="Model">
-        <select
-          value={entity.specId ?? ''}
-          onChange={(e) => updateEntity(entity.id, { specId: e.target.value || null })}
-        >
-          <option value="">none</option>
-          {sameKindModels.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <div className="field-row">
-        <Field label="East (km)">
-          <input
-            type="number"
-            step={0.1}
-            value={(entity.pos.x / 1000).toFixed(2)}
-            onChange={(e) =>
-              updateEntity(entity.id, { pos: { ...entity.pos, x: Number(e.target.value) * 1000 } })
+        )}
+        <Field label="Model">
+          <select
+            value={entity.specId ?? ''}
+            onChange={(e) => updateEntity(entity.id, { specId: e.target.value || null })}
+          >
+            <option value="">none</option>
+            {sameKindModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {blue && (
+          <Field label="Enabled in analysis">
+            <input
+              type="checkbox"
+              checked={entityActive(entity)}
+              onChange={(e) => updateEntity(entity.id, { enabled: e.target.checked })}
+            />
+          </Field>
+        )}
+        {entity.systemId && (
+          <Row
+            label="System component"
+            value={
+              <button className="mini" onClick={() => selectSystem(entity.systemId!)}>
+                Select system
+              </button>
             }
           />
-        </Field>
-        <Field label="North (km)">
-          <input
-            type="number"
-            step={0.1}
-            value={(-entity.pos.y / 1000).toFixed(2)}
-            onChange={(e) =>
-              updateEntity(entity.id, { pos: { ...entity.pos, y: -Number(e.target.value) * 1000 } })
-            }
-          />
-        </Field>
-      </div>
-      <div className="field-row">
-        <Field label={`Heading ${Math.round(entity.headingDeg)} deg`}>
-          <input
-            type="range"
-            min={0}
-            max={359}
-            value={entity.headingDeg}
-            onChange={(e) => updateEntity(entity.id, { headingDeg: Number(e.target.value) })}
-          />
-        </Field>
-        <Field label="deg">
-          <input
-            type="number"
-            min={0}
-            max={359}
-            value={Math.round(entity.headingDeg)}
-            onChange={(e) =>
-              updateEntity(entity.id, { headingDeg: ((Number(e.target.value) % 360) + 360) % 360 })
-            }
-          />
-        </Field>
-      </div>
-      {blue && (
-        <Field label="Enabled in analysis">
-          <input
-            type="checkbox"
-            checked={entityActive(entity)}
-            onChange={(e) => updateEntity(entity.id, { enabled: e.target.checked })}
-          />
-        </Field>
-      )}
-      {entity.systemId && (
-        <div className="spec-summary">
-          System component{entity.notes ? `: ${entity.notes}` : ''}
-          <button className="mini" onClick={() => selectSystem(entity.systemId!)}>
-            Select system
-          </button>
+        )}
+      </Section>
+
+      <Section label="Position">
+        <div className="field-row">
+          <Field label="East (km)">
+            <input
+              type="number"
+              step={0.1}
+              value={(entity.pos.x / 1000).toFixed(2)}
+              onChange={(e) =>
+                updateEntity(entity.id, { pos: { ...entity.pos, x: Number(e.target.value) * 1000 } })
+              }
+            />
+          </Field>
+          <Field label="North (km)">
+            <input
+              type="number"
+              step={0.1}
+              value={(-entity.pos.y / 1000).toFixed(2)}
+              onChange={(e) =>
+                updateEntity(entity.id, {
+                  pos: { ...entity.pos, y: -Number(e.target.value) * 1000 },
+                })
+              }
+            />
+          </Field>
         </div>
-      )}
-      <Field label="Notes">
-        <textarea
-          rows={3}
-          value={entity.notes}
-          onChange={(e) => updateEntity(entity.id, { notes: e.target.value })}
-        />
-      </Field>
+        <div className="field">
+          <span>Heading</span>
+          <div className="insp-inline">
+            <input
+              type="range"
+              min={0}
+              max={359}
+              aria-label="Heading, degrees (slider)"
+              value={entity.headingDeg}
+              onChange={(e) => updateEntity(entity.id, { headingDeg: Number(e.target.value) })}
+            />
+            <input
+              type="number"
+              className="insp-inline-num"
+              min={0}
+              max={359}
+              aria-label="Heading, degrees (value)"
+              value={Math.round(entity.headingDeg)}
+              onChange={(e) =>
+                updateEntity(entity.id, { headingDeg: ((Number(e.target.value) % 360) + 360) % 360 })
+              }
+            />
+          </div>
+        </div>
+      </Section>
 
       {model?.sensor && (
-        <>
-          <div className="spec-summary">
-            {model.sensor.role ? `${model.sensor.role} · ` : ''}
-            Detect {formatDistance(model.sensor.detectRangeM, units)} · sector {model.sensor.sectorDeg} deg
-            {model.sensor.classifyRangeM ? ` · classify ${formatDistance(model.sensor.classifyRangeM, units)}` : ''}
-            {sensorEnvFactor(model.sensor.sensorType, scenario.environment) < 1 && (
-              <>
-                <br />
-                In this environment: detect{' '}
-                {formatDistance(effectiveDetectRangeM(model.sensor, scenario.environment), units)}
-              </>
-            )}
-          </div>
+        <Section label="Performance">
+          {model.sensor.role && <Row label="Role" value={model.sensor.role.replace(/-/g, ' ')} />}
+          <Row
+            label="Detection range"
+            value={formatDistance(model.sensor.detectRangeM, units)}
+            mono
+          />
+          {model.sensor.classifyRangeM != null && (
+            <Row
+              label="Classification range"
+              value={formatDistance(model.sensor.classifyRangeM, units)}
+              mono
+            />
+          )}
+          <Row label="Azimuth coverage" value={`${model.sensor.sectorDeg}°`} mono />
+          {sensorEnvFactor(model.sensor.sensorType, scenario.environment) < 1 && (
+            <Row
+              label="Detection, this environment"
+              value={formatDistance(
+                effectiveDetectRangeM(model.sensor, scenario.environment),
+                units,
+              )}
+              mono
+            />
+          )}
           <NotModeled
             values={[
               model.sensor.elevationDeg
-                ? `elevation ${model.sensor.elevationDeg[0]} to ${model.sensor.elevationDeg[1]} deg`
+                ? {
+                    label: 'Elevation coverage',
+                    value: `${model.sensor.elevationDeg[0]}° to ${model.sensor.elevationDeg[1]}°`,
+                  }
                 : null,
               model.sensor.maxAltitudeFt
-                ? `altitude ceiling ${model.sensor.maxAltitudeFt.toLocaleString()} ft`
+                ? {
+                    label: 'Altitude ceiling',
+                    value: `${model.sensor.maxAltitudeFt.toLocaleString()} ft`,
+                  }
                 : null,
-            ].filter((v): v is string => v != null)}
+            ]}
           />
-        </>
+        </Section>
       )}
       {model?.effector && (
-        <>
-          <div className="spec-summary">
-            WEZ {formatDistance(model.effector.minRangeM, units)} – {formatDistance(model.effector.maxRangeM, units)} ·
-            engage {model.effector.engageTimeS} s
-            {(model.effector.sectorDeg ?? 360) < 360 ? ` · sector ${model.effector.sectorDeg} deg` : ''}
-          </div>
-          <NotModeled
-            values={
-              model.effector.maxAltitudeFt
-                ? [`altitude ceiling ${model.effector.maxAltitudeFt.toLocaleString()} ft`]
-                : []
-            }
+        <Section label="Performance">
+          <Row
+            label="WEZ"
+            value={`${formatDistance(model.effector.minRangeM, units)} – ${formatDistance(
+              model.effector.maxRangeM,
+              units,
+            )}`}
+            mono
           />
-        </>
+          <Row label="Engagement time" value={model.effector.engageTimeS} unit="s" mono />
+          {(model.effector.sectorDeg ?? 360) < 360 && (
+            <Row label="Azimuth coverage" value={`${model.effector.sectorDeg}°`} mono />
+          )}
+          <NotModeled
+            values={[
+              model.effector.maxAltitudeFt
+                ? {
+                    label: 'Altitude ceiling',
+                    value: `${model.effector.maxAltitudeFt.toLocaleString()} ft`,
+                  }
+                : null,
+            ]}
+          />
+        </Section>
       )}
       {model?.uas && (
-        <div className="spec-summary">
-          Group {model.uas.group} · cruise {formatSpeed(model.uas.cruiseSpeedMps, units)} · {model.uas.navMode}
-        </div>
+        <Section label="Platform">
+          <Row label="UAS group" value={model.uas.group} mono />
+          <Row label="Cruise speed" value={formatSpeed(model.uas.cruiseSpeedMps, units)} mono />
+          <Row label="Navigation" value={model.uas.navMode} />
+        </Section>
       )}
 
       {entity.kind === 'asset' && (
-        <div className="subsection">
-          <div className="panel-subtitle">Defended area</div>
+        <Section label="Defended area">
           <Field label="Defended radius (m)">
             <input
               type="number"
@@ -520,24 +617,25 @@ function EntityInspector({ entity }: { entity: Entity }) {
               }
             />
           </Field>
-          <div className="spec-summary">
-            In use: {formatDistance(entity.defendedRadiusM ?? DEFAULT_DEFENDED_RADIUS_M, units)}
-            {entity.defendedRadiusM == null || entity.defendedRadiusM <= 0
-              ? ' · default planning factor'
-              : ''}
-          </div>
+          <Row
+            label="In use"
+            value={formatDistance(entity.defendedRadiusM ?? DEFAULT_DEFENDED_RADIUS_M, units)}
+            unit={
+              entity.defendedRadiusM == null || entity.defendedRadiusM <= 0 ? 'default' : undefined
+            }
+            mono
+          />
           <p className="muted small">
             A threat that crosses this radius has ARRIVED at the asset. Arrival sets warning
             time, and it separates a defeat that protected the asset from one that landed too
             late. Leave the field empty to use the{' '}
             {formatDistance(DEFAULT_DEFENDED_RADIUS_M, units)} planning factor.
           </p>
-        </div>
+        </Section>
       )}
 
       {entity.kind === 'uas' && model?.uas && (
-        <div className="subsection">
-          <div className="panel-subtitle">Range</div>
+        <Section label="Range">
           <Field label="Show range ring">
             <input
               type="checkbox"
@@ -554,12 +652,13 @@ function EntityInspector({ entity }: { entity: Entity }) {
             const up = effectiveRadiusM(uas, env, env.windFromDeg)
             return (
               <>
-                <div className="spec-summary">
-                  Basis: {basis.source} · {formatDistance(basis.radiusM, units)} calm ·{' '}
-                  {basis.oneWay ? 'one-way' : 'return-to-home'}
-                  <br />
-                  With environment: {formatDistance(down, units)} downwind · {formatDistance(up, units)} upwind
-                </div>
+                <Row
+                  label="Basis"
+                  value={`${basis.source}, ${basis.oneWay ? 'one-way' : 'return-to-home'}`}
+                />
+                <Row label="Radius, calm" value={formatDistance(basis.radiusM, units)} mono />
+                <Row label="Downwind" value={formatDistance(down, units)} mono />
+                <Row label="Upwind" value={formatDistance(up, units)} mono />
                 {basis.source === 'estimated' && (
                   <p className="muted small">
                     No reported employment radius. This is an estimate from endurance and cruise
@@ -570,12 +669,11 @@ function EntityInspector({ entity }: { entity: Entity }) {
               </>
             )
           })()}
-        </div>
+        </Section>
       )}
 
       {entity.kind === 'uas' && (
-        <div className="subsection">
-          <div className="panel-subtitle">Formation / swarm</div>
+        <Section label="Formation / swarm">
           <Field label="Known construct">
             <select
               value=""
@@ -651,17 +749,15 @@ function EntityInspector({ entity }: { entity: Entity }) {
               </Field>
             </>
           )}
-        </div>
+        </Section>
       )}
 
       {entity.kind === 'uas' && (
-        <div className="subsection">
-          <div className="panel-subtitle">Flight path</div>
+        <Section label="Flight path">
           {path ? (
             <>
-              <div className="spec-summary">
-                {path.points.length} waypoints · {formatDistance(pathLength(path.points), units)}
-              </div>
+              <Row label="Waypoints" value={path.points.length} mono />
+              <Row label="Track length" value={formatDistance(pathLength(path.points), units)} mono />
               <div className="field-row">
                 {(() => {
                   const cruise = model?.uas?.cruiseSpeedMps
@@ -693,17 +789,20 @@ function EntityInspector({ entity }: { entity: Entity }) {
                   />
                 </Field>
               </div>
-              <button onClick={() => deletePathForEntity(entity.id)}>Delete path</button>
+              <Actions>
+                <button onClick={() => deletePathForEntity(entity.id)}>Delete path</button>
+              </Actions>
             </>
           ) : (
-            <button onClick={() => beginPath(entity.id)}>Draw flight path</button>
+            <Actions>
+              <button onClick={() => beginPath(entity.id)}>Draw flight path</button>
+            </Actions>
           )}
-        </div>
+        </Section>
       )}
 
       {entity.kind === 'uas' && (
-        <div className="subsection">
-          <div className="panel-subtitle">Raid wave</div>
+        <Section label="Raid wave">
           {(() => {
             const waves = scenario.raid?.waves ?? []
             const waveIndex = waveIndexFor(scenario.raid, entity.id)
@@ -726,25 +825,38 @@ function EntityInspector({ entity }: { entity: Entity }) {
                   </select>
                 </Field>
                 {path && waveIndex != null && (
-                  <div className="spec-summary">
-                    Effective start delay: {effectivePathDelayS(scenario, path)} s (path{' '}
-                    {path.startDelayS} s + wave {waves[waveIndex].startDelayS} s)
-                  </div>
+                  <Row
+                    label="Effective start delay"
+                    value={effectivePathDelayS(scenario, path)}
+                    unit="s"
+                    mono
+                    title={`Path ${path.startDelayS} s + wave ${waves[waveIndex].startDelayS} s`}
+                  />
                 )}
               </>
             )
           })()}
-        </div>
+        </Section>
       )}
 
       {blue && <IntegrationSection entity={entity} />}
 
-      <div className="inspector-actions">
+      <Section label="Notes">
+        <textarea
+          rows={3}
+          aria-label="Notes"
+          placeholder="Configuration, siting, or test notes"
+          value={entity.notes}
+          onChange={(e) => updateEntity(entity.id, { notes: e.target.value })}
+        />
+      </Section>
+
+      <Actions>
         <button onClick={() => setTool('connect')}>Connect from here</button>
         <button className="danger" onClick={deleteSelection}>
           Delete
         </button>
-      </div>
+      </Actions>
     </div>
   )
 }
@@ -752,58 +864,177 @@ function EntityInspector({ entity }: { entity: Entity }) {
 function BoundaryInspector({ boundary }: { boundary: Boundary }) {
   const { updateBoundary, deleteSelection } = useStore.getState()
   return (
-    <div className="inspector-body">
-      <div className="panel-subtitle">BOUNDARY</div>
-      <Field label="Name">
-        <input
-          list="boundary-name-options"
-          value={boundary.name}
-          onChange={(e) => updateBoundary(boundary.id, { name: e.target.value })}
+    <div className="inspector-body insp">
+      <ObjectHeader
+        name={boundary.name || 'Unnamed boundary'}
+        type={`Airspace boundary · ${boundary.type}`}
+      />
+
+      <Section label="Definition">
+        <Field label="Name">
+          <input
+            list="boundary-name-options"
+            value={boundary.name}
+            onChange={(e) => updateBoundary(boundary.id, { name: e.target.value })}
+          />
+        </Field>
+        <Options id="boundary-name-options" values={BOUNDARY_NAME_SUGGESTIONS[boundary.type]} />
+        <Field label="Type">
+          <select
+            value={boundary.type}
+            onChange={(e) => updateBoundary(boundary.id, { type: e.target.value as BoundaryType })}
+          >
+            <option value="range">range</option>
+            <option value="restricted">restricted</option>
+            <option value="asset">asset</option>
+            <option value="corridor">corridor</option>
+          </select>
+        </Field>
+      </Section>
+
+      <Section label="Geometry">
+        <div className="field-row">
+          <Field label="Floor (ft)">
+            <input
+              type="number"
+              list="boundary-alt-options"
+              value={boundary.altBandFt?.[0] ?? ''}
+              onChange={(e) =>
+                updateBoundary(boundary.id, {
+                  altBandFt: [Number(e.target.value), boundary.altBandFt?.[1] ?? 0],
+                })
+              }
+            />
+          </Field>
+          <Field label="Ceiling (ft)">
+            <input
+              type="number"
+              list="boundary-alt-options"
+              value={boundary.altBandFt?.[1] ?? ''}
+              onChange={(e) =>
+                updateBoundary(boundary.id, {
+                  altBandFt: [boundary.altBandFt?.[0] ?? 0, Number(e.target.value)],
+                })
+              }
+            />
+          </Field>
+        </div>
+        <Options id="boundary-alt-options" values={BOUNDARY_ALT_SUGGESTIONS_FT} />
+        <Row label="Vertices" value={boundary.points.length} mono />
+      </Section>
+
+      <Actions>
+        <button className="danger" onClick={deleteSelection}>
+          Delete
+        </button>
+      </Actions>
+    </div>
+  )
+}
+
+/** Read-only view of one kill-chain link and the evidence behind it. */
+function ConnectionInspector({ connection }: { connection: Connection }) {
+  const scenario = useStore((s) => s.scenario)
+  const { updateConnection, deleteSelection } = useStore.getState()
+  const from = scenario.entities.find((e) => e.id === connection.fromId)
+  const to = scenario.entities.find((e) => e.id === connection.toId)
+  // The source citation is not stored on the connection; re-judge the pair.
+  const fromSpec = from?.specId ? scenario.library.find((m) => m.id === from.specId) : undefined
+  const toSpec = to?.specId ? scenario.library.find((m) => m.id === to.specId) : undefined
+  const verdict = fromSpec && toSpec ? evaluateIntegration(fromSpec, toSpec) : null
+  const source = connection.confidence != null && verdict?.ok ? verdict.source : undefined
+
+  return (
+    <div className="inspector-body insp">
+      <ObjectHeader
+        name={`${from?.name ?? '?'} → ${to?.name ?? '?'}`}
+        type={connection.label ? `Link · ${connection.label}` : 'Kill-chain link'}
+      />
+
+      <Section label="Link">
+        <Row label="Source" value={from?.name} title={from?.name} />
+        <Row label="Destination" value={to?.name} title={to?.name} />
+        <Field label="Label">
+          <input
+            list="connection-label-options"
+            value={connection.label}
+            onChange={(e) => updateConnection(connection.id, { label: e.target.value })}
+          />
+        </Field>
+        <Options
+          id="connection-label-options"
+          values={[...new Set(scenario.connections.map((c) => c.label).filter(Boolean))]}
         />
-      </Field>
-      <Options id="boundary-name-options" values={BOUNDARY_NAME_SUGGESTIONS[boundary.type]} />
-      <Field label="Type">
-        <select
-          value={boundary.type}
-          onChange={(e) => updateBoundary(boundary.id, { type: e.target.value as BoundaryType })}
-        >
-          <option value="range">range</option>
-          <option value="restricted">restricted</option>
-          <option value="asset">asset</option>
-          <option value="corridor">corridor</option>
-        </select>
-      </Field>
-      <div className="field-row">
-        <Field label="Floor (ft)">
-          <input
-            type="number"
-            list="boundary-alt-options"
-            value={boundary.altBandFt?.[0] ?? ''}
-            onChange={(e) =>
-              updateBoundary(boundary.id, {
-                altBandFt: [Number(e.target.value), boundary.altBandFt?.[1] ?? 0],
-              })
-            }
-          />
-        </Field>
-        <Field label="Ceiling (ft)">
-          <input
-            type="number"
-            list="boundary-alt-options"
-            value={boundary.altBandFt?.[1] ?? ''}
-            onChange={(e) =>
-              updateBoundary(boundary.id, {
-                altBandFt: [boundary.altBandFt?.[0] ?? 0, Number(e.target.value)],
-              })
-            }
-          />
-        </Field>
-      </div>
-      <Options id="boundary-alt-options" values={BOUNDARY_ALT_SUGGESTIONS_FT} />
-      <div className="spec-summary">{boundary.points.length} vertices</div>
-      <button className="danger" onClick={deleteSelection}>
-        Delete
-      </button>
+      </Section>
+
+      {connection.confidence != null && (
+        <Section label="Integration">
+          <Row label="Medium" value={connection.medium ?? 'unspecified'} />
+          <Row label="Confidence" value={connection.confidence} />
+          <Row label="Route latency" value={connection.latencyS ?? 0} unit="s" mono />
+          {source && <Row label="Source" value={source} stacked />}
+        </Section>
+      )}
+
+      {connection.note && (
+        <Section label="Note">
+          <p className="muted small">{connection.note}</p>
+        </Section>
+      )}
+
+      <Actions>
+        <button className="danger" onClick={deleteSelection}>
+          Delete
+        </button>
+      </Actions>
+    </div>
+  )
+}
+
+/** Two or more entities selected: only what applies to all of them. */
+function MultiInspector({ ids }: { ids: string[] }) {
+  const scenario = useStore((s) => s.scenario)
+  const { deleteSelection, rotateSystem } = useStore.getState()
+  const selected = scenario.entities.filter((e) => ids.includes(e.id))
+  const systemId = selected[0]?.systemId
+  const wholeSystem = !!systemId && selected.every((e) => e.systemId === systemId)
+  const byKind = (Object.keys(KIND_LABEL) as EntityKind[])
+    .map((k) => [k, selected.filter((e) => e.kind === k).length] as const)
+    .filter(([, n]) => n > 0)
+
+  return (
+    <div className="inspector-body insp">
+      <ObjectHeader
+        name={`${ids.length} entities selected`}
+        type={wholeSystem ? 'One placed system' : 'Mixed selection'}
+      />
+
+      <Section label="Composition">
+        {byKind.map(([kind, n]) => (
+          <Row key={kind} label={KIND_LABEL[kind]} value={n} mono />
+        ))}
+      </Section>
+
+      {wholeSystem && (
+        <Section label="System orientation">
+          <p className="muted small">
+            Drag the amber handle on the canvas to face any direction, or slew in steps.
+          </p>
+          <div className="insp-slew">
+            {[-90, -45, 45, 90].map((d) => (
+              <button key={d} onClick={() => rotateSystem(systemId!, d)}>
+                {d > 0 ? `${d}°→` : `←${-d}°`}
+              </button>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <Actions>
+        <button className="danger" onClick={deleteSelection}>
+          Delete all
+        </button>
+      </Actions>
     </div>
   )
 }
@@ -829,101 +1060,32 @@ export function Inspector() {
 
   if (entity) return <EntityInspector entity={entity} />
   if (boundary) return <BoundaryInspector boundary={boundary} />
-  if (connection) {
-    const { updateConnection, deleteSelection } = useStore.getState()
-    const from = scenario.entities.find((e) => e.id === connection.fromId)
-    const to = scenario.entities.find((e) => e.id === connection.toId)
-    // The source citation is not stored on the connection; re-judge the pair.
-    const fromSpec = from?.specId ? scenario.library.find((m) => m.id === from.specId) : undefined
-    const toSpec = to?.specId ? scenario.library.find((m) => m.id === to.specId) : undefined
-    const verdict = fromSpec && toSpec ? evaluateIntegration(fromSpec, toSpec) : null
-    const source = connection.confidence != null && verdict?.ok ? verdict.source : undefined
-    return (
-      <div className="inspector-body">
-        <div className="panel-subtitle">CONNECTION</div>
-        <div className="spec-summary">
-          {from?.name ?? '?'} → {to?.name ?? '?'}
-        </div>
-        <Field label="Label">
-          <input
-            list="connection-label-options"
-            value={connection.label}
-            onChange={(e) => updateConnection(connection.id, { label: e.target.value })}
-          />
-        </Field>
-        <Options
-          id="connection-label-options"
-          values={[...new Set(scenario.connections.map((c) => c.label).filter(Boolean))]}
-        />
-        {connection.confidence != null && (
-          <div className="spec-summary">
-            {connection.medium ?? 'unspecified medium'} · {connection.confidence} · latency{' '}
-            {connection.latencyS ?? 0} s
-          </div>
-        )}
-        {connection.note && <div className="spec-summary">{connection.note}</div>}
-        {source && <div className="spec-summary">Source: {source}</div>}
-        <button className="danger" onClick={deleteSelection}>
-          Delete
-        </button>
-      </div>
-    )
-  }
-  if (selection.entityIds.length > 1) {
-    const selected = scenario.entities.filter((e) => selection.entityIds.includes(e.id))
-    const systemId = selected[0]?.systemId
-    const wholeSystem = !!systemId && selected.every((e) => e.systemId === systemId)
-    const rotateSystem = useStore.getState().rotateSystem
-    return (
-      <div className="inspector-body">
-        <div className="panel-subtitle">{selection.entityIds.length} entities selected</div>
-        {wholeSystem && (
-          <div className="subsection">
-            <div className="panel-subtitle">System orientation</div>
-            <div className="spec-summary">
-              Drag the amber handle on the canvas to face any direction, or slew in steps.
-            </div>
-            <div className="field-row">
-              {[-90, -45, 45, 90].map((d) => (
-                <button key={d} onClick={() => rotateSystem(systemId!, d)}>
-                  {d > 0 ? `${d}°→` : `←${-d}°`}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        <button className="danger" onClick={useStore.getState().deleteSelection}>
-          Delete all
-        </button>
-      </div>
-    )
-  }
+  if (connection) return <ConnectionInspector connection={connection} />
+  if (selection.entityIds.length > 1) return <MultiInspector ids={selection.entityIds} />
+
   return (
-    <div className="inspector-body">
-      <div className="empty-state">
-        <div className="empty-title">Nothing selected</div>
-        <p>Drag a model from the library onto the canvas, or click an entity to edit it.</p>
-        <div className="empty-shortcuts">
-          {EMPTY_SHORTCUTS.map(([key, action]) => (
-            <div key={key + action} className="empty-row">
-              <span className="kbd">{key}</span>
-              <span>{action}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="inspector-body insp">
+      <Section label="Selection">
+        <EmptyState
+          title="No object selected"
+          body="Select an entity on the board to inspect its configuration, operational parameters, relationships, and test state."
+        />
+      </Section>
+      <Section label="Board controls">
+        <ShortcutList items={BOARD_CONTROLS} />
+      </Section>
     </div>
   )
 }
 
 /** Matches the keyboard map in App.tsx and the CanvasStage gestures. */
-const EMPTY_SHORTCUTS: Array<[string, string]> = [
-  ['⌘Z', 'undo'],
-  ['Space', 'play/pause'],
-  ['Esc', 'cancel draft'],
-  ['Enter', 'finish path'],
-  ['⌘drag', 'box-select'],
-  ['⇧click', 'add to selection'],
-  ['scroll', 'zoom'],
-  ['drag', 'pan'],
+const BOARD_CONTROLS: Array<[string, string[]]> = [
+  ['Undo', ['⌘', 'Z']],
+  ['Play / pause', ['Space']],
+  ['Cancel action', ['Esc']],
+  ['Finish path', ['Enter']],
+  ['Box select', ['⌘', 'Drag']],
+  ['Add to selection', ['⇧', 'Click']],
+  ['Zoom', ['Scroll']],
+  ['Pan', ['Drag']],
 ]

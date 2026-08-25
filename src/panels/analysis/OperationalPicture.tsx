@@ -51,7 +51,7 @@ export function OperationalPicture({
   const salvos = systems.reduce((sum, group) => sum + group.salvosAssigned, 0)
   const tracks = threats.reduce((sum, group) => sum + group.tracks, 0)
   const detected = threats.reduce((sum, group) => sum + group.detected, 0)
-  const timeLabel = tS == null ? 'ready' : `${preview ? 'preview' : 'T+'}${formatTime(tS)}`
+  const timeLabel = tS == null ? 'ready' : `${preview ? 'preview ' : 'T+'}${formatTime(tS)}`
 
   return (
     <div className="operational-picture">

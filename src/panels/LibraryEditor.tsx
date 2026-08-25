@@ -3,6 +3,7 @@ import type { SensorRole, SpecModel, UasSpec } from '../model/types'
 import { SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
 import { useStore } from '../state/store'
 import { formatDistance } from '../geometry/geo'
+import { EmptyState, ObjectHeader, Section } from './inspector/kit'
 
 const SENSOR_ROLES: SensorRole[] = [
   'early-warning',
@@ -150,8 +151,13 @@ export function LibraryEditor() {
   const model = scenario.library.find((m) => m.id === libraryId)
   if (!model) {
     return (
-      <div className="inspector-body muted">
-        <p>Select a model in the library panel, or create one with the + buttons.</p>
+      <div className="inspector-body insp">
+        <Section label="Model">
+          <EmptyState
+            title="No model selected"
+            body="Select a model in the library panel, or create one with the + buttons to edit its recorded specification."
+          />
+        </Section>
       </div>
     )
   }
@@ -164,9 +170,10 @@ export function LibraryEditor() {
 
   return (
     <div className="inspector-body">
-      <div className="panel-subtitle">
-        {model.kind.toUpperCase()} MODEL {model.builtin ? '· seed' : '· custom'}
-      </div>
+      <ObjectHeader
+        name={model.name || 'Unnamed model'}
+        type={`${model.kind} model · ${model.builtin ? 'seed' : 'custom'}`}
+      />
       <Field label="Name">
         <input value={model.name} onChange={(e) => patch({ name: e.target.value })} />
       </Field>

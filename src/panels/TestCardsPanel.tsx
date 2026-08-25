@@ -16,6 +16,7 @@ import { CHECKLIST_TEMPLATES } from '../te/seed/checklistTemplates'
 import { engagementPicture } from '../analysis/impact'
 import { buildAarSummary } from '../analysis/aar'
 import { aarHeadline } from './headlines'
+import { EmptyState, ObjectHeader, Section } from './inspector/kit'
 
 /** Standard independent variables for C-UAS test design. */
 const STANDARD_IVS = [
@@ -232,26 +233,17 @@ function CardEditor({ card }: { card: TestCard }) {
     <div className="inspector-body">
       <Options id="dl-card-campaign" values={campaignValues} />
       <Options id="dl-card-iv" values={STANDARD_IVS} />
-      <div className="field-row">
-        <Field label="Test card ID">
-          <input value={card.cardId} readOnly />
-        </Field>
-        <Field
-          label="Version"
-          action={
-            <button className="mini" onClick={() => select({ cardId: newCardVersion(card.id) })}>
-              New version
-            </button>
-          }
-        >
-          <input value={card.version} readOnly />
-        </Field>
+      <ObjectHeader name={card.cardId} type={`Test card · version ${card.version}`} />
+      <div className="inspector-actions">
+        <button className="mini" onClick={() => select({ cardId: newCardVersion(card.id) })}>
+          New version
+        </button>
       </div>
       <TextField card={card} field="campaign" label="Campaign" listId="dl-card-campaign" />
       <div className="field">
         <span>Question IDs</span>
         {teQuestions.length === 0 && splitIds(card.questionIds).length === 0 && (
-          <div className="muted">No active T&amp;E campaign questions. Add an ID below.</div>
+          <div className="muted small">No active T&amp;E campaign questions. Add an ID below.</div>
         )}
         <CheckPicker
           values={splitIds(card.questionIds)}
@@ -385,7 +377,7 @@ function CardEditor({ card }: { card: TestCard }) {
 
       <div className="subsection">
         <div className="panel-subtitle">Linked entities (highlighted on canvas)</div>
-        {scenario.entities.length === 0 && <div className="muted">No entities on the canvas yet.</div>}
+        {scenario.entities.length === 0 && <div className="muted small">No entities on the canvas yet.</div>}
         {scenario.entities.map((e) => (
           <label key={e.id} className="check-row">
             <input
@@ -504,9 +496,13 @@ export function TestCardsPanel() {
       {selected ? (
         <CardEditor card={selected} />
       ) : (
-        <div className="inspector-body muted">
-          <p>Test cards follow the Field Guide standard card. Create one, fill the test logic, and
-          link the entities that execute it.</p>
+        <div className="inspector-body insp">
+          <Section label="Test card">
+            <EmptyState
+              title="No card selected"
+              body="Test cards follow the Field Guide standard card. Create one, fill the test logic, and link the entities that execute it."
+            />
+          </Section>
         </div>
       )}
     </div>

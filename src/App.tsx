@@ -32,6 +32,29 @@ const TABS: { id: RightTab; label: string }[] = [
   { id: 'analysis', label: 'Analysis' },
 ]
 
+/** Arrow-key navigation across the Inspector tab bar (roving tabindex). */
+function moveTab(
+  e: React.KeyboardEvent<HTMLButtonElement>,
+  current: RightTab,
+  setRightTab: (t: RightTab) => void,
+) {
+  const i = TABS.findIndex((t) => t.id === current)
+  const to =
+    e.key === 'ArrowRight'
+      ? (i + 1) % TABS.length
+      : e.key === 'ArrowLeft'
+        ? (i - 1 + TABS.length) % TABS.length
+        : e.key === 'Home'
+          ? 0
+          : e.key === 'End'
+            ? TABS.length - 1
+            : -1
+  if (to < 0) return
+  e.preventDefault()
+  setRightTab(TABS[to].id)
+  document.getElementById(`insp-tab-${TABS[to].id}`)?.focus()
+}
+
 function isTypingTarget(t: EventTarget | null): boolean {
   return (
     t instanceof HTMLInputElement ||
@@ -207,13 +230,35 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [rightW, setRightW] = useState(savedRightWidth)
 
+  function setRightWidth(w: number) {
+    const next = Math.min(RIGHT_MAX_W, Math.max(RIGHT_MIN_W, w))
+    setRightW(next)
+    localStorage.setItem(RIGHT_W_KEY, String(next))
+  }
+
+  function nudgeRightWidth(e: React.KeyboardEvent) {
+    // The panel grows leftward, so ArrowLeft widens it.
+    const step = e.shiftKey ? 40 : 8
+    const to =
+      e.key === 'ArrowLeft'
+        ? rightW + step
+        : e.key === 'ArrowRight'
+          ? rightW - step
+          : e.key === 'Home'
+            ? RIGHT_MIN_W
+            : e.key === 'End'
+              ? RIGHT_MAX_W
+              : null
+    if (to == null) return
+    e.preventDefault()
+    setRightWidth(to)
+  }
+
   function startRightResize(e: React.MouseEvent) {
     e.preventDefault()
     const from = { x: e.clientX, w: rightW }
     function onMove(ev: MouseEvent) {
-      const w = Math.min(RIGHT_MAX_W, Math.max(RIGHT_MIN_W, from.w - (ev.clientX - from.x)))
-      setRightW(w)
-      localStorage.setItem(RIGHT_W_KEY, String(w))
+      setRightWidth(from.w - (ev.clientX - from.x))
     }
     function onUp() {
       window.removeEventListener('mousemove', onMove)
@@ -294,23 +339,51 @@ export default function App() {
           <EngagementStrip />
           <TimelineBar />
         </div>
-        <aside className="right-panel" style={{ width: rightW }}>
-          <div className="right-resizer" title="Drag to resize" onMouseDown={startRightResize} />
-          <div className="tabs">
+        <aside className="right-panel" style={{ width: rightW }} aria-label="Inspector">
+          <div
+            className="right-resizer"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize inspector"
+            aria-valuenow={rightW}
+            aria-valuemin={RIGHT_MIN_W}
+            aria-valuemax={RIGHT_MAX_W}
+            tabIndex={0}
+            title="Drag or use the arrow keys to resize"
+            onMouseDown={startRightResize}
+            onKeyDown={nudgeRightWidth}
+          />
+          <div className="tabs" role="tablist" aria-label="Inspector views">
             {TABS.map((t) => (
               <button
                 key={t.id}
+                id={`insp-tab-${t.id}`}
+                type="button"
+                role="tab"
+                aria-selected={rightTab === t.id}
+                aria-controls="insp-tabpanel"
+                tabIndex={rightTab === t.id ? 0 : -1}
                 className={rightTab === t.id ? 'active' : ''}
+                title={t.label}
                 onClick={() => setRightTab(t.id)}
+                onKeyDown={(e) => moveTab(e, t.id, setRightTab)}
               >
                 {t.label}
               </button>
             ))}
           </div>
-          {rightTab === 'inspect' && <Inspector />}
-          {rightTab === 'cards' && <TestCardsPanel />}
-          {rightTab === 'library' && <LibraryEditor />}
-          {rightTab === 'analysis' && <AnalysisPanel />}
+          <div
+            className="right-panel-body"
+            id="insp-tabpanel"
+            role="tabpanel"
+            tabIndex={0}
+            aria-labelledby={`insp-tab-${rightTab}`}
+          >
+            {rightTab === 'inspect' && <Inspector />}
+            {rightTab === 'cards' && <TestCardsPanel />}
+            {rightTab === 'library' && <LibraryEditor />}
+            {rightTab === 'analysis' && <AnalysisPanel />}
+          </div>
         </aside>
       </div>
       <CalibrateDialog />
