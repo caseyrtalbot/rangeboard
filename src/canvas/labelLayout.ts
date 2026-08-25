@@ -73,9 +73,70 @@ interface Cluster {
 }
 
 /**
+ * Character budget for a board designator, chosen so the result plus its
+ * instance number still fits the 120px anchored box on one line.
+ */
+const DESIGNATOR_CHARS = 16
+
+/** A product token: it carries a capital or a digit, so it names a thing. */
+function productToken(word: string): boolean {
+  return /[A-Z0-9]/.test(word)
+}
+
+/**
+ * Short board designator for a canvas label. Entity names carry the full
+ * vendor string and an instance number ("Anvil interceptor (Anduril) 1"),
+ * which is a wall of text with leader lines in a dense picture. This keeps the
+ * product name and the instance number in the board's uppercase idiom
+ * ("ANVIL 1").
+ *
+ * Render-time only. Entity.name is never rewritten, so the Inspector and every
+ * panel keep showing the full name.
+ *
+ * Rules, in order:
+ *  1. Split off a trailing instance number.
+ *  2. Drop every parenthetical, which is where the vendor sits.
+ *  3. Keep the whole head when it already fits the budget, so plain names like
+ *     "Defended asset 1" survive intact.
+ *  4. Otherwise keep the leading run of product tokens. The run stops at the
+ *     first plain lowercase word, which is where the description starts
+ *     ("tracking radar", "interceptor"), and at the character budget.
+ *  5. A head that opens with a plain lowercase word has no product token to
+ *     find, so keep its first two words.
+ */
+export function boardDesignator(name: string): string {
+  const trimmed = name.trim()
+  if (trimmed.length === 0) return trimmed
+  const tail = /^(.*?)\s+(\d+)$/.exec(trimmed)
+  const index = tail ? ` ${tail[2]}` : ''
+  const head = (tail ? tail[1] : trimmed)
+    .replace(/\s*\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (head.length === 0) return trimmed.toUpperCase()
+  if (head.length <= DESIGNATOR_CHARS) return (head + index).toUpperCase()
+
+  const words = head.split(' ')
+  let kept: string[]
+  if (productToken(words[0])) {
+    kept = []
+    for (const word of words) {
+      if (!productToken(word)) break
+      const width = kept.length > 0 ? kept.join(' ').length + 1 + word.length : word.length
+      if (kept.length > 0 && width > DESIGNATOR_CHARS) break
+      kept.push(word)
+    }
+  } else {
+    kept = words.slice(0, 2)
+  }
+  return (kept.join(' ') + index).toUpperCase()
+}
+
+/**
  * Lines an anchored name wraps to at the 120px box. Greedy word wrap over the
  * monospace metric, which is how Konva wraps the drawn Text. Callers place
- * anything that sits under the label from this count.
+ * anything that sits under the label from this count. Pass whatever string is
+ * actually drawn: the canvas draws boardDesignator(entity.name).
  */
 export function labelLineCount(name: string): number {
   const words = name.trim().split(/\s+/).filter((w) => w.length > 0)
@@ -251,7 +312,10 @@ function fanCluster(c: Cluster, viewport: LayoutOptions['viewport'], out: Map<st
 
 export function layoutLabels(inputs: LabelInput[], opts: LayoutOptions = {}): Map<string, LabelPlacement> {
   const out = new Map<string, LabelPlacement>()
-  const cs = consolidate(clusters(inputs, opts.sticky).map(geometry))
+  // Measure what the canvas draws, not what the scenario stores: both layers
+  // render boardDesignator(name), so clustering must use the same metric.
+  const drawn = inputs.map((m) => ({ ...m, name: boardDesignator(m.name) }))
+  const cs = consolidate(clusters(drawn, opts.sticky).map(geometry))
   for (const c of cs) {
     if (c.members.length === 1) out.set(c.members[0].id, { mode: 'anchored' })
     else fanCluster(c, opts.viewport, out)

@@ -1,9 +1,22 @@
 import type { Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
+import type { DisplayUnits } from '../../geometry/geo'
 import { formatDistance, gridStepM, NM_M } from '../../geometry/geo'
 
 interface Props {
   mouseWorld: Vec2 | null
+}
+
+/**
+ * One cursor axis with a hemisphere letter and an unsigned magnitude, the way
+ * a position is read aloud. Matches TrackFileReadout so the HUD and the track
+ * card never state the same point two different ways. Northing is -y: the
+ * world frame is +y south.
+ */
+function axisText(m: number, units: DisplayUnits, plus: string, minus: string): string {
+  const mag = Math.abs(m)
+  const value = units === 'aviation' ? `${(mag / NM_M).toFixed(2)} nm` : `${(mag / 1000).toFixed(2)} km`
+  return `${m < 0 ? minus : plus} ${value}`
 }
 
 /** DOM overlay: scale bar, cursor readout, and active-tool hint. */
@@ -55,9 +68,7 @@ export function HudLayer({ mouseWorld }: Props) {
       <div className="hud-bottom">
         <span className="hud-cursor">
           {mouseWorld
-            ? units === 'aviation'
-              ? `E ${(mouseWorld.x / NM_M).toFixed(2)} nm, N ${(-mouseWorld.y / NM_M).toFixed(2)} nm`
-              : `E ${(mouseWorld.x / 1000).toFixed(2)} km, N ${(-mouseWorld.y / 1000).toFixed(2)} km`
+            ? `${axisText(mouseWorld.x, units, 'E', 'W')}, ${axisText(-mouseWorld.y, units, 'N', 'S')}`
             : ''}
         </span>
         <span className="hud-scale">

@@ -13,7 +13,12 @@
   --warn: #d98f41;
   /* EW/jam channel: the sensor-blue family, distinct from good/warn/danger. */
   --ew: #7da7c4;
-  /* Eliminated trackfile: the residual ghost still flying its last course. */
+  /* Directed-energy channel: muted steel, so a DE burst never reads as an EW
+     salvo, as a plain denominator, or as a warning. */
+  --de: #9aa8b0;
+  /* Defeated trackfile: the residual ghost still flying its last course.
+     The canvas ring and the DEFEATED pill read this value from PHASE_STYLE
+     in src/playback/trackState.ts, which is the source of truth. */
   --ghost: #6a7178;
   --radius: 3px;
   --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -1426,9 +1431,11 @@ input[type='color'] {
   color: var(--good);
 }
 
+/* Nine cells in three even rows. A four-column track left the last row
+   half-empty and pushed the leak reading out of the reading order. */
 .live-cells {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1469,6 +1476,11 @@ input[type='color'] {
 .live-of {
   color: var(--text-dim);
   font-size: 11px;
+}
+
+.live-de {
+  color: var(--de);
+  font-size: 12px;
 }
 
 .live-jam {
@@ -2556,6 +2568,21 @@ input[type='number'] {
   text-transform: uppercase;
 }
 
+/* The sub-line carries the rule behind the number ("not a defeat", "no
+   defended asset placed"). A third of a 268px panel cannot hold that on one
+   line, and a truncated caveat is worse than none, so it wraps. */
+.outcome-metric small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+/* The expenditure tile lands alone on the last row of the three-column grid.
+   Spanning it keeps the three-channel breakdown on one readable line. */
+.outcome-metric.wide {
+  grid-column: 1 / -1;
+}
+
 .outcome-metric strong {
   font-family: var(--font-mono);
   font-size: 15px;
@@ -2568,6 +2595,10 @@ input[type='number'] {
 
 .outcome-metric strong.bad {
   color: var(--danger);
+}
+
+.outcome-metric strong.warn {
+  color: var(--warn);
 }
 
 .capacity-list {
@@ -3050,6 +3081,60 @@ input[type='number'] {
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 9px;
+}
+
+/* Run validity states what the run can carry before the record states any
+   result. Same header idiom as the record itself; the left rule carries the
+   severity so the pill is never the only signal. */
+.run-validity {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--text-dim);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+}
+
+.run-validity.validity-valid {
+  border-left-color: var(--good);
+}
+
+.run-validity.validity-valid-limited {
+  border-left-color: var(--warn);
+}
+
+.run-validity.validity-invalid {
+  border-left-color: var(--danger);
+}
+
+.run-validity .debrief-header strong {
+  font-family: inherit;
+  font-size: 10px;
+  white-space: normal;
+}
+
+.validity-finding {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 5px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.validity-finding small {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.telemetry-note {
+  margin: 0 0 2px;
 }
 
 .debrief-actions {

@@ -1,7 +1,7 @@
 import { Circle, Group, Line, Text } from 'react-konva'
 import { entityActive } from '../../model/types'
 import { useStore } from '../../state/store'
-import { LABEL_FONT_PX } from '../labelLayout'
+import { boardDesignator, LABEL_FONT_PX } from '../labelLayout'
 import type { LabelPlacement } from '../labelLayout'
 
 interface Props {
@@ -11,7 +11,9 @@ interface Props {
 /**
  * Spoke callouts for entity labels that would overlap at the current zoom.
  * Rendered in screen space: the group inverts the stage transform, so all
- * placement coordinates are pixels.
+ * placement coordinates are pixels. The text is the short board designator,
+ * the same string EntityLayer anchors and the same string layoutLabels
+ * measured when it placed the spoke.
  */
 export function CalloutLayer({ placements }: Props) {
   const entities = useStore((s) => s.scenario.entities)
@@ -33,7 +35,7 @@ export function CalloutLayer({ placements }: Props) {
               x={p.tx}
               y={p.ty}
               width={p.width}
-              text={e.name}
+              text={boardDesignator(e.name)}
               fontSize={LABEL_FONT_PX}
               fill="#b7bdb2"
               align={p.align}

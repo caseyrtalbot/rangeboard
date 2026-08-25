@@ -1,4 +1,4 @@
-import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
+import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Entity } from '../../model/types'
 import { entityActive } from '../../model/types'
@@ -8,7 +8,16 @@ import { memberPositions } from '../../playback/sim'
 import type { DetectionHit, LiveTrack } from '../../playback/sim'
 import { blinkOn, PHASE_STYLE } from '../../playback/trackState'
 import type { EffectorLiveState, TrackFileState, TrackPhase } from '../../playback/trackState'
-import { LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from '../labelLayout'
+import {
+  FRAME_EDGE,
+  FRAME_FOR,
+  FRAME_INK,
+  FRIEND_FRAME_CX,
+  FRIEND_FRAME_CY,
+  FRIEND_FRAME_D,
+  FUNCTION_LETTER,
+} from '../../panels/Glyph'
+import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from '../labelLayout'
 
 interface Props {
   tracks: Map<string, LiveTrack>
@@ -32,11 +41,31 @@ const FALLBACK: Record<Entity['kind'], string> = {
   marker: '#b7bdb2',
 }
 
-/** Subtle darker edge that reads over any fill color. */
-const EDGE = 'rgba(0, 0, 0, 0.35)'
+/** Subtle darker edge that reads over any fill color. Shared with the palette. */
+const EDGE = FRAME_EDGE
 
 const GHOST = PHASE_STYLE.ghost.color
 const EW = '#7da7c4'
+/** Out of rounds. Matches the 'bad' treatment the system panel gives EMPTY. */
+const DEPLETED = '#c4564a'
+/**
+ * Destroyed-overlay ink. Bright enough to carry over the dimmed ghost group,
+ * and not a phase color, so it never reads as another kill-chain rung.
+ */
+const DESTROYED = '#cfd4cc'
+
+/**
+ * A defeated track is quieter than a live one but never faint: the destroyed
+ * strike, not the opacity, is what says the track is dead.
+ */
+const GHOST_OPACITY = 0.7
+
+/**
+ * Box units to px for FRIEND_FRAME_D: a 19.4 x 13.2 px symbol whose half
+ * diagonal is 11.7 px, so RING_R (14), the hit disc (13) and BRACKET_HALF (19)
+ * all still clear it.
+ */
+const FRIEND_SCALE = 2.2
 
 /** Track ring radius. The glyph is r11, so the ring clears it. */
 const RING_R = 14
@@ -44,7 +73,7 @@ const RING_R = 14
 const SELECT_R = 28
 const BRACKET_HALF = 19
 const BRACKET_ARM = 6
-/** Gap under the wrapped name before the GHOST tag, px. */
+/** Gap under the wrapped name before the DEFEATED tag, px. */
 const TAG_GAP = 6
 
 /** Four corner brackets of a target reticle, each an L of two segments. */
@@ -59,48 +88,92 @@ const BRACKETS: number[][] = [-1, 1].flatMap((sx) =>
 interface GlyphProps {
   entity: Entity
   color: string
-  /** Eliminated track: hollow dashed frame that keeps flying its course. */
+  /** Defeated track: hollow dashed frame under a bold destroyed strike. */
   ghost?: boolean
-  /** Effector only: false draws the 2525 frame as an outline. */
+  /** Effector only: false draws the friend frame as an outline. */
   filled?: boolean
 }
 
 /**
- * MIL-STD-2525-inspired affiliation frames, matching panels/Glyph.tsx:
- * rectangle = sensor/effector, circle = c2/asset, diamond = uas, square = marker.
+ * MIL-STD-2525 destroyed overlay: one bold strike across the frame, drawn
+ * long enough to break out of it on both ends. It runs the opposite diagonal
+ * to the inactive-entity slash, so a defeated track and a switched-off system
+ * never read the same.
+ */
+function DestroyedStrike({ reach, width }: { reach: number; width: number }) {
+  return (
+    <Line
+      points={[-reach, -reach, reach, reach]}
+      stroke={DESTROYED}
+      strokeWidth={width}
+      strokeScaleEnabled={false}
+      lineCap="round"
+      listening={false}
+    />
+  )
+}
+
+/**
+ * The friend affiliation frame plus its function letter. Both come from
+ * panels/Glyph.tsx, so the canvas and the palette draw one shape and one
+ * letter per kind. An outline frame carries its letter in the entity color,
+ * because the dark board shows through the unfilled frame.
+ */
+function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: string; filled: boolean }) {
+  return (
+    <>
+      <Path
+        data={FRIEND_FRAME_D}
+        x={-FRIEND_FRAME_CX * FRIEND_SCALE}
+        y={-FRIEND_FRAME_CY * FRIEND_SCALE}
+        scaleX={FRIEND_SCALE}
+        scaleY={FRIEND_SCALE}
+        fill={filled ? color : undefined}
+        stroke={filled ? EDGE : color}
+        strokeWidth={filled ? 1 : 1.5}
+        strokeScaleEnabled={false}
+      />
+      <Text
+        fontFamily="IBM Plex Mono"
+        x={-9}
+        y={-4.5}
+        width={18}
+        text={FUNCTION_LETTER[kind]}
+        fontSize={9}
+        fill={filled ? FRAME_INK : color}
+        align="center"
+      />
+    </>
+  )
+}
+
+/**
+ * MIL-STD-2525 symbology, matching panels/Glyph.tsx: the FRAME carries
+ * affiliation and an inner LETTER carries function.
+ *   friend frame  - rounded-top rectangle: sensor S, c2 C2, effector E,
+ *                   asset A. One blue-force frame, four readable functions.
+ *   hostile frame - diamond: uas.
+ *   neutral frame - hollow square with a centre dot: marker.
  * Heading ticks draw under the frame so only the protruding tip shows.
  */
 function Glyph({ entity, color, ghost, filled = true }: GlyphProps) {
-  switch (entity.kind) {
-    case 'sensor':
+  switch (FRAME_FOR[entity.kind]) {
+    case 'friend':
+      // Guidance treatment: an idle or empty weapon is an outline, a weapon
+      // holding the track is filled. Every other blue-force kind stays filled.
       return (
         <>
-          <Line points={[0, 0, 0, -16]} stroke={color} strokeWidth={2} rotation={entity.headingDeg} />
-          <Rect x={-10.5} y={-7} width={21} height={14} fill={color} stroke={EDGE} strokeWidth={1} />
+          {entity.kind === 'sensor' && (
+            <Line points={[0, 0, 0, -16]} stroke={color} strokeWidth={2} rotation={entity.headingDeg} />
+          )}
+          <FriendFrame
+            kind={entity.kind}
+            color={color}
+            filled={entity.kind === 'effector' ? filled : true}
+          />
         </>
       )
-    case 'effector':
-      // Guidance treatment: an idle weapon is an outline, a weapon holding the
-      // track is filled. The frame stays a rectangle in both states.
-      return (
-        <Rect
-          x={-10.5}
-          y={-7}
-          width={21}
-          height={14}
-          fill={filled ? color : undefined}
-          stroke={color}
-          strokeWidth={1.5}
-        />
-      )
-    case 'c2':
-      return (
-        <>
-          <Circle radius={9} fill={color} stroke={EDGE} strokeWidth={1} />
-          <Text fontFamily="IBM Plex Mono" x={-8} y={-4} width={16} text="C2" fontSize={9} fill="#121415" align="center" />
-        </>
-      )
-    case 'uas':
+    case 'hostile':
       return (
         <>
           <Line
@@ -110,16 +183,30 @@ function Glyph({ entity, color, ghost, filled = true }: GlyphProps) {
             rotation={entity.headingDeg}
           />
           {ghost ? (
-            <RegularPolygon sides={4} radius={11} stroke={GHOST} strokeWidth={1.7} dash={[3.5, 3]} />
+            <>
+              <RegularPolygon sides={4} radius={11} stroke={GHOST} strokeWidth={1.7} dash={[3.5, 3]} />
+              <DestroyedStrike reach={10} width={2.6} />
+            </>
           ) : (
             <RegularPolygon sides={4} radius={11} fill={color} stroke={EDGE} strokeWidth={1} />
           )}
         </>
       )
-    case 'asset':
-      return <Circle radius={9} fill={color} stroke={EDGE} strokeWidth={1} />
-    case 'marker':
-      return <Rect x={-5} y={-5} width={10} height={10} fill={color} stroke={EDGE} strokeWidth={1} />
+    case 'neutral':
+      return (
+        <>
+          <Rect
+            x={-7}
+            y={-7}
+            width={14}
+            height={14}
+            stroke={color}
+            strokeWidth={1.5}
+            strokeScaleEnabled={false}
+          />
+          <Circle radius={2} fill={color} />
+        </>
+      )
   }
 }
 
@@ -214,13 +301,14 @@ function EntityNode({
       ? 'undetected'
       : (state?.phase ?? (classified ? 'identified' : detected ? 'tracked' : 'undetected'))
   const ghost = phase === 'ghost'
-  // A ghost reads through its hollow dashed glyph, so it draws no ring.
+  // A defeated track carries the destroyed strike, so it draws no ring.
   const ringColor = ghost ? null : PHASE_STYLE[phase].color
   const bracketed = phase === 'targeted' || phase === 'engaged'
   // Pulse floor is 0.5: a dimmed engaged track must stay legible.
   const pulse = phase === 'engaged' && !blinkOn(simTimeS) ? 0.5 : 1
   const jammed = !ghost && state != null && state.jammedFraction >= 0.5
   const effectorState: EffectorLiveState = effectorStates.get(entity.id) ?? 'idle'
+  const depleted = effectorState === 'depleted'
   const effectorFilled =
     effectorState === 'semi-active' ||
     effectorState === 'beam' ||
@@ -240,7 +328,10 @@ function EntityNode({
   // area. Those rings are cues now, so the hit disc carries the same radii.
   const hitR = cardLinked ? 19 : selected ? 16 : 13
   const labelDrawn = showLabels && !spokeIds.has(entity.id)
-  const labelLines = labelDrawn ? labelLineCount(entity.name) : 0
+  // Board labels carry the short designator. Entity.name is untouched, so the
+  // Inspector and the panels keep the full vendor string.
+  const boardName = boardDesignator(entity.name)
+  const labelLines = labelDrawn ? labelLineCount(boardName) : 0
 
   function handleClick(e: KonvaEventObject<MouseEvent>) {
     if (tool === 'connect') {
@@ -285,7 +376,10 @@ function EntityNode({
       {members.slice(1).map((m, i) => (
         <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
           {ghost ? (
-            <RegularPolygon sides={4} radius={7} stroke={GHOST} strokeWidth={1.4} dash={[3, 2.5]} />
+            <>
+              <RegularPolygon sides={4} radius={7} stroke={GHOST} strokeWidth={1.4} dash={[3, 2.5]} />
+              <DestroyedStrike reach={6.5} width={1.8} />
+            </>
           ) : (
             <RegularPolygon sides={4} radius={7} fill={color} stroke={EDGE} strokeWidth={1} />
           )}
@@ -296,7 +390,7 @@ function EntityNode({
         y={pos.y}
         scaleX={1 / k}
         scaleY={1 / k}
-        opacity={off || ghost ? 0.45 : 1}
+        opacity={off ? 0.45 : ghost ? GHOST_OPACITY : 1}
         draggable={tool === 'select'}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
@@ -349,12 +443,23 @@ function EntityNode({
             listening={false}
           />
         )}
+        {depleted && (
+          <Text
+            fontFamily="IBM Plex Mono"
+            x={13}
+            y={-4}
+            text="EMPTY"
+            fontSize={9}
+            fill={DEPLETED}
+            listening={false}
+          />
+        )}
         {labelDrawn && (
           <Text fontFamily="IBM Plex Mono"
             x={-60}
             y={LABEL_ANCHOR_TOP}
             width={120}
-            text={entity.name}
+            text={boardName}
             fontSize={11}
             fill={ghost ? GHOST : '#b7bdb2'}
             align="center"
@@ -368,7 +473,11 @@ function EntityNode({
             y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
             width={120}
             align="center"
-            text={state?.eliminatedBySoft ? 'GHOST · MISSION KILL' : 'GHOST'}
+            text={
+              state?.eliminatedBySoft
+                ? `${PHASE_STYLE.ghost.label} · MISSION KILL`
+                : PHASE_STYLE.ghost.label
+            }
             fontSize={9}
             fill={GHOST}
             listening={false}
