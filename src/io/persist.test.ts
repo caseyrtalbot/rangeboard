@@ -336,3 +336,59 @@ describe('run export validity record', () => {
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 })
+
+describe('seed library and preset merge on load', () => {
+  /** A save whose library and presets predate later seed additions. */
+  function staleSave(): Scenario {
+    const s = emptyScenario()
+    s.library = s.library.slice(0, 3)
+    s.systemPresets = s.systemPresets.slice(0, 1)
+    return s
+  }
+
+  it('gives an old save every seed model and preset added since', () => {
+    const seeds = emptyScenario()
+    const filled = fillScenario(staleSave())
+    expect(filled.library).toHaveLength(seeds.library.length)
+    expect(filled.systemPresets).toHaveLength(seeds.systemPresets.length)
+    for (const seed of seeds.library) {
+      expect(filled.library.some((m) => m.id === seed.id), seed.id).toBe(true)
+    }
+    for (const seed of seeds.systemPresets) {
+      expect(filled.systemPresets.some((p) => p.id === seed.id), seed.id).toBe(true)
+    }
+  })
+
+  it('keeps a user edit to a seed model instead of restoring the seed value', () => {
+    const save = staleSave()
+    save.library[0] = { ...save.library[0], name: 'Renamed by the user' }
+    const filled = fillScenario(save)
+    const edited = filled.library.find((m) => m.id === save.library[0].id)!
+    expect(edited.name).toBe('Renamed by the user')
+    expect(filled.library.filter((m) => m.id === edited.id)).toHaveLength(1)
+  })
+
+  it('keeps custom models and does not duplicate any id', () => {
+    const save = staleSave()
+    save.library.push({
+      id: 'lib-custom-1',
+      name: 'Custom sensor',
+      kind: 'sensor',
+      description: '',
+      color: '#888888',
+      builtin: false,
+      sensor: { sensorType: 'radar', detectRangeM: 1000, classifyRangeM: null, sectorDeg: 360 },
+    })
+    const filled = fillScenario(save)
+    expect(filled.library.some((m) => m.id === 'lib-custom-1')).toBe(true)
+    const ids = filled.library.map((m) => m.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('takes the whole seed set when a save carries no library at all', () => {
+    const save = emptyScenario()
+    delete (save as Partial<Scenario>).library
+    const filled = fillScenario(save)
+    expect(filled.library).toHaveLength(emptyScenario().library.length)
+  })
+})

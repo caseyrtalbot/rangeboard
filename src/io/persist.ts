@@ -11,9 +11,26 @@ import { useStore } from '../state/store'
 const STORAGE_KEY = 'rangeboard.scenario.v1'
 
 /**
+ * Append seed entries the save has never seen, matched by id. Saved entries win
+ * on collision, so a user's edits to a seed model and their custom models both
+ * survive. The tradeoff: a seed entry the user deleted comes back on the next
+ * load. Same policy as the store's mergeLibrary action.
+ */
+function mergeSeeds<T extends { id: string }>(saved: T[] | undefined, seeds: T[]): T[] {
+  if (!Array.isArray(saved)) return seeds
+  const have = new Set(saved.map((x) => x.id))
+  return [...saved, ...seeds.filter((x) => !have.has(x.id))]
+}
+
+/**
  * Fill fields added after a save was written, including nested environment
  * fields, and migrate the legacy engageOn policy to an ROE posture
  * ('detected' -> 'free', 'confirmed' -> 'tight'). Exported for tests.
+ *
+ * Library and system presets MERGE rather than being taken whole from the save.
+ * Spreading the save over the seeds would let a stale library shadow every model
+ * and preset added since, so an existing scenario would never receive new seed
+ * content.
  */
 export function fillScenario(parsed: Scenario): Scenario {
   const empty = emptyScenario()
@@ -23,6 +40,8 @@ export function fillScenario(parsed: Scenario): Scenario {
   return {
     ...empty,
     ...parsed,
+    library: mergeSeeds(parsed.library, empty.library),
+    systemPresets: mergeSeeds(parsed.systemPresets, empty.systemPresets),
     environment: { ...empty.environment, ...parsed.environment },
     requirements: { ...empty.requirements, ...parsed.requirements },
     roe,
