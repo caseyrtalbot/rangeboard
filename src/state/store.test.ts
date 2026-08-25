@@ -138,24 +138,25 @@ describe('store scenario actions', () => {
   it('places the built-in FS-LIDS preset with kill-chain links', () => {
     useStore.getState().addSystemFromPreset('sys-fslids', { x: 0, y: 0 })
     const s = useStore.getState().scenario
-    expect(s.entities).toHaveLength(10)
-    expect(s.connections).toHaveLength(9)
+    expect(s.entities).toHaveLength(8)
+    expect(s.connections).toHaveLength(8)
     const c2 = s.entities.find((e) => e.kind === 'c2')!
-    // Six sensors feed FAAD C2; C2 tasks the three effectors.
-    expect(s.connections.filter((c) => c.toId === c2.id)).toHaveLength(6)
+    // Three sensors feed FAAD C2; C2 tasks the three effectors; the fire-control
+    // radar also uplinks both Coyote launchers directly.
+    expect(s.connections.filter((c) => c.toId === c2.id)).toHaveLength(3)
     expect(s.connections.filter((c) => c.fromId === c2.id)).toHaveLength(3)
-    const north = s.entities.find((e) => e.name.includes('RPS-42') && e.headingDeg === 0)
-    expect(north).toBeDefined()
+    const radar = s.entities.find((e) => e.name.includes('KuRFS'))
+    expect(radar).toBeDefined()
   })
 
   it('places a preset with an orientation and rotates a placed system', () => {
-    // Facing east at placement: the north RPS-42 face slews to 90 deg and its
-    // offset {0,-50} rotates to {50,0}.
+    // Facing east at placement: the first component slews to 90 deg and its
+    // offset {0,-30} rotates to {30,0}.
     useStore.getState().addSystemFromPreset('sys-fslids', { x: 0, y: 0 }, 90)
     let s = useStore.getState().scenario
     const north = s.entities[0]
     expect(north.headingDeg).toBe(90)
-    expect(north.pos.x).toBeCloseTo(50)
+    expect(north.pos.x).toBeCloseTo(30)
     expect(north.pos.y).toBeCloseTo(0)
 
     // Rotating the whole system keeps the centroid fixed.

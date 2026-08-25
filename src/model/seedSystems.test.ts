@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../state/store'
 import { emptyScenario, SEED_LIBRARY, SEED_SYSTEMS } from './seed'
+import { evaluateIntegration } from './integration'
 
 /**
  * System presets reference shared library models by specId only; they carry
@@ -30,6 +31,24 @@ describe('seed system preset integrity', () => {
         expect(b, preset.name).toBeLessThan(preset.components.length)
       }
     }
+  })
+
+
+  it('every preset link is one the integration model supports', () => {
+    // addSystemFromPreset writes these links straight into Connection records
+    // without consulting evaluateIntegration, so a preset can otherwise draw a
+    // kill chain that integrationData.ts denies.
+    const offenders: string[] = []
+    for (const preset of SEED_SYSTEMS) {
+      for (const [a, b] of preset.links) {
+        const from = byId.get(preset.components[a].specId)!
+        const to = byId.get(preset.components[b].specId)!
+        const verdict = evaluateIntegration(from, to)
+        if (!verdict) offenders.push(`${preset.id} [${a},${b}]: no basis ${from.id} -> ${to.id}`)
+        else if (!verdict.ok) offenders.push(`${preset.id} [${a},${b}]: denied ${from.id} -> ${to.id}`)
+      }
+    }
+    expect(offenders).toEqual([])
   })
 
   it('magazine-armed effector models used by presets carry a magazine size', () => {

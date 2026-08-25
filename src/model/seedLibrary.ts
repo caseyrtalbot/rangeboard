@@ -1,11 +1,19 @@
 import type { SpecModel } from './types'
 
 /**
- * Seed spec library, researched from open sources (manufacturer releases,
- * DoD public statements, defense trade press). Values are representative
- * planning figures, not authoritative performance data. Categories follow
- * DoD C-UAS nomenclature: Detect / Track / Identify sensors, Defeat
- * effectors (kinetic, EW, DE, HPM), C2, and threat UAS Groups 1-5.
+ * Seed spec library, researched from open sources (government documents,
+ * manufacturer releases, DoD public statements, defense trade press).
+ *
+ * Values are planning figures, not authoritative performance data. Where the
+ * public record gives no figure the field is null or the description says the
+ * ring is a planning figure; a number is never invented to fill a blank.
+ * Per-field provenance lives in docs/inventory/, which also records what is
+ * unknown and why.
+ *
+ * The detect / track / identify / defeat chain is from the DoD Counter-Small
+ * Unmanned Aircraft Systems Strategy (Jan 2021, p. 17), which reads detect,
+ * track, identify, and, if necessary, deter, deny or defeat. UAS Groups 1-5
+ * are from JP 3-30 (25 Jul 2019) Figure III-14.
  */
 
 const SENSORS: SpecModel[] = [
@@ -14,7 +22,7 @@ const SENSORS: SpecModel[] = [
     name: 'RPS-42 radar panel (RADA MHR)',
     kind: 'sensor',
     description:
-      'S-band AESA panel, one 90 deg face. Target acquisition: ~8 km on mini UAS, 3.5 km on nano. Four panels give 360 deg.',
+      'S-band AESA panel, one 90 deg face; four panels give 360 deg. Nano-UAS acquisition 3.5 km is published; the 8 km mini-UAS figure has no locatable source and is a planning figure.',
     color: '#7da7c4',
     builtin: true,
     sensor: {
@@ -33,7 +41,7 @@ const SENSORS: SpecModel[] = [
     name: 'RPS-62 radar panel (RADA MHR)',
     kind: 'sensor',
     description:
-      'Larger S-band MHR panel for wide-area surveillance. Roughly double RPS-42 range per 90 deg face.',
+      'Larger S-band MHR-family panel. Northrop names MHR/RPS-42/62/82 among FAAD C2 supported sensors, but no range figure is published for the RPS-62: both rings are planning figures.',
     color: '#89b0c9',
     builtin: true,
     sensor: {
@@ -87,10 +95,10 @@ const SENSORS: SpecModel[] = [
   },
   {
     id: 'lib-lstar',
-    name: 'LSTAR / AN/TPQ-50 EW radar (SRC)',
+    name: 'AN/TPQ-50 LSTAR air-surveillance radar (SRC)',
     kind: 'sensor',
     description:
-      'L-band 360 deg air-surveillance radar; the early-warning sensor in FS-LIDS. Small UAS near 10 km.',
+      'L-band 360 deg air-surveillance radar (AN/TPQ-50), the search sensor in the LIDS family. SRC publishes >35 km instrumented in air-surveillance mode and >15 km in counterfire mode, neither conditioned on a UAS class; the 10 km ring is a small-UAS planning figure.',
     color: '#9cc3d6',
     builtin: true,
     sensor: {
@@ -100,8 +108,8 @@ const SENSORS: SpecModel[] = [
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: [0, 30],
-      maxAltitudeFt: 25000,
-      resolutionM: 150,
+      maxAltitudeFt: null,
+      resolutionM: null,
     },
   },
   {
@@ -109,7 +117,7 @@ const SENSORS: SpecModel[] = [
     name: 'AN/TPQ-53 multi-mission radar',
     kind: 'sensor',
     description:
-      'S-band counterfire radar with a simultaneous air-surveillance and C-UAS mode. Cues LIDS effectors.',
+      'S-band counterfire radar with a simultaneous air-surveillance and C-UAS mode, running a 90 deg sector at longer range or 360 deg rotating. Lockheed publishes no range against a UAS class; the ring is a planning figure. Cues LIDS effectors.',
     color: '#86aac2',
     builtin: true,
     sensor: {
@@ -120,7 +128,7 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
-      resolutionM: 100,
+      resolutionM: null,
     },
   },
   {
@@ -128,7 +136,7 @@ const SENSORS: SpecModel[] = [
     name: 'IRIS counter-drone radar (Robin)',
     kind: 'sensor',
     description:
-      'X-band FMCW 3D radar with micro-Doppler drone/bird classification. 5 km instrumented, 12 km long-range mode.',
+      'X-band FMCW 3D radar with micro-Doppler drone/bird classification. 5 km is the instrumented range, not a detection range against a stated target; a 12 km long-range mode is offered.',
     color: '#7395ad',
     builtin: true,
     sensor: {
@@ -166,7 +174,7 @@ const SENSORS: SpecModel[] = [
     name: 'RfOne Mk2 RF sensor (DroneShield)',
     kind: 'sensor',
     description:
-      'Passive RF direction finder for UAS control and video links, ~5 km on common links. Four units give 360 deg.',
+      'Passive, non-emitting RF direction finder for UAS control and video links. Four units give 360 deg; multiple sites triangulate a position. DroneShield publishes no detection range, so the 5 km ring is a planning figure.',
     color: '#cdb079',
     builtin: true,
     sensor: {
@@ -185,7 +193,7 @@ const SENSORS: SpecModel[] = [
     name: 'RF-360 passive RF sensor (Dedrone)',
     kind: 'sensor',
     description:
-      'Omnidirectional passive RF sensor. Detects, classifies, and localizes drones and controllers by protocol signature, ~2 km.',
+      'Omnidirectional passive RF sensor (Dedrone by Axon). Detects, classifies and direction-finds drones and controllers by protocol signature. 2 km is the normal-conditions figure; up to 5 km is claimed in ideal conditions against specific drones. One unit gives angle of arrival only.',
     color: '#d6bf8e',
     builtin: true,
     sensor: {
@@ -213,17 +221,17 @@ const SENSORS: SpecModel[] = [
       detectRangeM: 500,
       classifyRangeM: 400,
       sectorDeg: 105,
-      elevationDeg: [0, 60],
+      elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: 200,
     },
   },
   {
     id: 'lib-acoustic-picket',
-    name: 'Acoustic picket node (Sky Fortress class)',
+    name: 'Acoustic picket node (representative)',
     kind: 'sensor',
     description:
-      'Cheap omnidirectional microphone node used in wide picket lines. Hears OWA engine noise at 3-5 km; cross-bearings form tracks.',
+      'REPRESENTATIVE acoustic picket node, not a named product. Cheap omnidirectional microphone node for a forward picket line. Ranges are planning figures for an engine-noise target; small electric quadcopters are detected at far shorter ranges.',
     color: '#6fa287',
     builtin: true,
     sensor: {
@@ -261,8 +269,198 @@ const SENSORS: SpecModel[] = [
     name: 'Teleidoscope ML auto-track camera',
     kind: 'sensor',
     description:
-      'Machine-learning EO/IR gimbal in the FS-LIDS and M-LIDS upgrade. Keeps fire-control quality track on small UAS.',
+      'Machine-learning EO/IR auto-track gimbal. The fielded program is the NCR-IADS airspace-warning camera modernization; no source places Teleidoscope in FS-LIDS or M-LIDS, and no source supports a fire-control role. Ranges are planning figures.',
     color: '#b0a8cc',
+    builtin: true,
+    sensor: {
+      sensorType: 'eo-ir',
+      role: 'classification',
+      detectRangeM: 2000,
+      classifyRangeM: 1500,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: 15,
+    },
+  },
+  {
+    id: 'lib-wisp',
+    name: 'Wisp wide-area IR sensor (Anduril)',
+    kind: 'sensor',
+    description:
+      'Passive 360 deg wide-area infrared sensor with on-edge AI. Searches for low, slow, small UAS without a radar cue and feeds Lattice. Detection band 3-10 miles; 4.8 km is the low end.',
+    color: '#9b92ba',
+    builtin: true,
+    sensor: {
+      sensorType: 'eo-ir',
+      role: 'surveillance',
+      detectRangeM: 4800,
+      classifyRangeM: 4800,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-mxgcs',
+    name: 'WESCAM MX-GCS EO/IR sight (L3Harris)',
+    kind: 'sensor',
+    description:
+      'Stabilized cooled MWIR and HD colour sight with eyesafe laser rangefinder on SGT Stout M-SHORAD. Slews 360 deg independent of the turret to identify and track air threats for the 30 mm gun. Ranges are planning figures: none are published.',
+    color: '#8f86ab',
+    builtin: true,
+    sensor: {
+      sensorType: 'eo-ir',
+      role: 'fire-control',
+      detectRangeM: 8000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-spynel',
+    name: 'Spynel-S 6000 panoramic IR (HGH)',
+    kind: 'sensor',
+    description:
+      'Passive rotating MWIR sensor that rebuilds a 360 deg thermal panorama every 2 s and cues itself. Wide-area search, no radar needed. UAS ranges are planning figures: HGH publishes DRI for people and vehicles only.',
+    color: '#c3bada',
+    builtin: true,
+    sensor: {
+      sensorType: 'eo-ir',
+      role: 'surveillance',
+      detectRangeM: 5000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: [-45, 45],
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-zvook',
+    name: 'Zvook acoustic station (Ukraine)',
+    kind: 'sensor',
+    description:
+      'Half-metre acoustic mirror over one microphone with edge ML. Tower-mounted at 10-12 m, about 200 deg coverage, 5 km on Shahed-type OWA and 7 km on cruise missiles. Passive: it cannot be jammed or homed on.',
+    color: '#5f9880',
+    builtin: true,
+    sensor: {
+      sensorType: 'acoustic',
+      role: 'early-warning',
+      detectRangeM: 5000,
+      classifyRangeM: 5000,
+      sectorDeg: 200,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-zvooknw0',
+    name: 'Zvook NW0 tactical FPV sensor',
+    kind: 'sensor',
+    description:
+      'Post-mounted 360 deg acoustic sensor for FPV drones, including fibre-optic FPV that emits no RF at all. Declared 150-450 m; the maker advises 400-600 m node spacing. IP67, 15-20 W.',
+    color: '#87b89e',
+    builtin: true,
+    sensor: {
+      sensorType: 'acoustic',
+      role: 'early-warning',
+      detectRangeM: 150,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-kumrfs-m',
+    name: 'KuMRFS-M mobile fire-control radar (Raytheon)',
+    kind: 'sensor',
+    description:
+      'Mobile configuration of KuMRFS-T sized for an M-ATV or JLTV mast. Four independent AESA quadrants give 360 deg upper-hemisphere coverage, with quadrant arrays one quarter the size of the fixed -T. Government brochure: UAS Group 1-3 capability beyond 7 km. Air surveillance and fire control at the short halt, not on the move.',
+    color: '#79a3c0',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'fire-control',
+      detectRangeM: 7000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-xbaeu',
+    name: 'XBAEU Ku720-2 mobile sensing radar (Raytheon)',
+    kind: 'sensor',
+    description:
+      'Scaled Ku720-2 distributed mobile sensing radar. CRS records it as the radar on the single-Stryker M-LIDS Increment 2.1, in place of KuMRFS. RTX states 360 deg persistent detection, identification and tracking. NO range figure of any type is published: the ring is a REPRESENTATIVE planning value from the app role-default table, not an XBAEU performance figure.',
+    color: '#8fb3cb',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'fire-control',
+      detectRangeM: 8000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-cuaews-df',
+    name: 'CUAEWS DF passive RF sensor (SRC)',
+    kind: 'sensor',
+    description:
+      'Passive find-and-fix half of the LIDS EW element. Searches the RF environment for signals of interest, direction-finds lines of bearing to both the UAS and its operator, and classifies each contact SUSPECT, NEUTRAL/UNKNOWN or FRIEND before the jammer half fires. No detection range is published: the ring is REPRESENTATIVE. The brochure\'s 8 km is the EW EFFECTS range and belongs to lib-cuaews.',
+    color: '#c7a86f',
+    builtin: true,
+    sensor: {
+      sensorType: 'rf',
+      role: 'classification',
+      detectRangeM: 6000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-cm262',
+    name: 'CM262 EO/IR/SWIR gimbal (CACI)',
+    kind: 'sensor',
+    description:
+      'Four-sensor 16 kg gimbal on the L-MADIS sensor vehicle: HD EO, HD MWIR, SWIR and a laser rangefinder, 360 deg continuous in azimuth and +90 to -16 deg in elevation, with on-board C-UAS tracking. CACI publishes no detection or identification range against any target, so the ring is REPRESENTATIVE. The datasheet\'s 16 km is the laser rangefinder\'s ranging range, not a detection range.',
+    color: '#a99fc6',
+    builtin: true,
+    sensor: {
+      sensorType: 'eo-ir',
+      role: 'classification',
+      detectRangeM: 5000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: [-16, 90],
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-drs-s3',
+    name: 'DRS S3 stabilised sight (RIwP turret)',
+    kind: 'sensor',
+    description:
+      'EO/IR sight integrated in the Moog RIwP turret with a built-in auto-tracker. Provides the detect / recognise / identify chain and holds track through kinetic engagements against ground and air targets. The M-LIDS brochure gives the vehicle EO/IR camera gun system a target acquisition range greater than 2 km.',
+    color: '#b8b0d4',
     builtin: true,
     sensor: {
       sensorType: 'eo-ir',
@@ -272,9 +470,276 @@ const SENSORS: SpecModel[] = [
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
-      resolutionM: 15,
+      resolutionM: null,
     },
   },
+  {
+    id: 'lib-sentry-lr-fc',
+    name: 'Long Range Sentry Tower w/ fire control (Anduril)',
+    kind: 'sensor',
+    description:
+      'Autonomous Lattice-native tower carrying an ultra-high-powered 360 deg radar that Anduril states identifies, classifies and tracks Group 1-3 drones up to 15 km. SIMPLIFICATION: the real tower is a multi-sensor mast that fuses radar, visible and mid-wave IR on board; RangeBoard models one sensor per SpecModel, so only the radar is modelled because the radar is what gives the tower its C-UAS reach.',
+    color: '#6b93b3',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'fire-control',
+      detectRangeM: 15000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-sentinela4',
+    name: 'Sentinel A4 air defense radar (AN/MPQ-64A4)',
+    kind: 'sensor',
+    description:
+      'X-band digital AESA (GaN), 360 deg with stop-and-stare, -15 deg to zenith. Army SHORAD acquisition radar against FW/RW/CM/RAM and UAS. No public small-UAS detection range; ring is a role planning factor.',
+    color: '#6d92ab',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'target-acquisition',
+      detectRangeM: 15000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: [-15, 90],
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-gator',
+    name: 'AN/TPS-80 G/ATOR multi-mission radar',
+    kind: 'sensor',
+    description:
+      'S-band GaN AESA expeditionary multi-mission radar, 360 deg. USMC air surveillance and air defense (Block 1) plus counterfire (Block 2); the sensor for MRIC. No public small-UAS range; ring is a role planning factor.',
+    color: '#5f87a2',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'early-warning',
+      detectRangeM: 40000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-giraffe1x',
+    name: 'Giraffe 1X 3D radar (Saab)',
+    kind: 'sensor',
+    description:
+      'Compact 3D air surveillance radar; full search volume updated every second. Drone Tracker mode separates mini-UAV from birds. Saab states a UAV lighter than a milk carton at 4 km. Bought by the US Army-contracted for Estonia, Latvia and Lithuania.',
+    color: '#7fa8c0',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'surveillance',
+      detectRangeM: 4000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-spexer2000',
+    name: 'SPEXER 2000 3D radar (HENSOLDT)',
+    kind: 'sensor',
+    description:
+      'X-band pulse-Doppler AESA, 120 deg per antenna (MkIII builds to 360 deg with more antennas), elevation to 90 deg. Datasheet maxima: UAV 9 km, micro-UAV 6 km. Over 300 tracks per 120 deg sector.',
+    color: '#8fb4cb',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'target-acquisition',
+      detectRangeM: 6000,
+      classifyRangeM: null,
+      sectorDeg: 120,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-echoguard',
+    name: 'EchoGuard 4D radar (Echodyne)',
+    kind: 'sensor',
+    description:
+      'K-band MESA ESA panel, 120 x 80 deg field of view, 6 km instrumented. Datasheet: sUAV over 1 km (Phantom 4), over 1.4 km (Matrice 600), vehicle 3.5 km. Up to 20 tracks at 10 Hz.',
+    color: '#a3c3d8',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'tracking',
+      detectRangeM: 1000,
+      classifyRangeM: null,
+      sectorDeg: 120,
+      elevationDeg: [-40, 40],
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-spyglass',
+    name: 'Spyglass short-range radar (Anduril / Numerica)',
+    kind: 'sensor',
+    description:
+      'Ku-band phased array with simultaneous transmit and receive. Numerica states detection and track of small autonomous UAS beyond 3.5 km. Demonstrated in the JCO-recommended SAIC C-sUAS-as-a-Service at Yuma, Sep 2022. Now an Anduril product in Lattice.',
+    color: '#7ea3bd',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'surveillance',
+      detectRangeM: 3500,
+      classifyRangeM: null,
+      sectorDeg: 90,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-a422',
+    name: 'Blighter A422 air security radar',
+    kind: 'sensor',
+    description:
+      'Ku-band FMCW e-scan radar, 180 deg per unit, elevation to 30 deg with W20S antennas, 20 km instrumented. Free-space detection 2.73 km at 0.01 m2 RCS, 4.87 km at 0.1 m2. UK-supplied to Ukraine in 2022.',
+    color: '#94b7cd',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'surveillance',
+      detectRangeM: 2730,
+      classifyRangeM: null,
+      sectorDeg: 180,
+      elevationDeg: [0, 30],
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-gm200mmc',
+    name: 'Ground Master 200 MM/C radar (Thales)',
+    kind: 'sensor',
+    description:
+      '4D AESA multi-mission radar on a tactical truck; over 400 km instrumented for air surveillance and up to 100 km for weapon locating. NATO users NL, DK, LT. Thales claims drone detection but publishes no small-UAS range; ring is a role planning factor.',
+    color: '#6b8fa8',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'early-warning',
+      detectRangeM: 40000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-corian',
+    name: 'CORIAN passive RF array (CACI)',
+    kind: 'sensor',
+    description:
+      'Fixed-site networked passive RF sensor array. TDOA multilateration across nodes geolocates the Group 1-2 sUAS AND its ground operator; positive ID by an unclassified signal library. JCO fixed/semi-fixed interim selection. Range is a planning figure, not a published one.',
+    color: '#b99a5f',
+    builtin: true,
+    sensor: {
+      sensorType: 'rf',
+      role: 'classification',
+      detectRangeM: 5000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-wingman',
+    name: 'Wingman 103 wearable RF detector (MyDefence)',
+    kind: 'sensor',
+    description:
+      'Body-worn passive RF detector for dismounted troops. Up to 6 km on the drone or controller link, direction finding to within 30 deg, alert in under 10 s. 90 deg face as issued; omnidirectional with the wideband antenna. ATAK compatible.',
+    color: '#dcc79c',
+    builtin: true,
+    sensor: {
+      sensorType: 'rf',
+      role: 'early-warning',
+      detectRangeM: 6000,
+      classifyRangeM: null,
+      sectorDeg: 90,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-rfpatrol',
+    name: 'RfPatrol Mk2 body-worn RF detector (DroneShield)',
+    kind: 'sensor',
+    description:
+      'Body-worn, strictly non-emitting RF detector. 4 km in a low-RF (rural) background but only 1 km in a high-RF (urban) background. Directional and omnidirectional antennas give 360 deg cover. Alerts by sound, light and haptic.',
+    color: '#c4a56b',
+    builtin: true,
+    sensor: {
+      sensorType: 'rf',
+      role: 'early-warning',
+      detectRangeM: 4000,
+      classifyRangeM: 4000,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-ardronis',
+    name: 'ARDRONIS Locate RF DF system (Rohde & Schwarz)',
+    kind: 'sensor',
+    description:
+      'Receive-only RF monitoring and direction finding on the control uplink, telemetry and video downlink. Locate Compact states more than 5 km. Warns while the drone is still on the ground. STANAG aligned and SAPIENT compliant.',
+    color: '#e0cfab',
+    builtin: true,
+    sensor: {
+      sensorType: 'rf',
+      role: 'classification',
+      detectRangeM: 5000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+  {
+    id: 'lib-titan',
+    name: 'Titan C-UAS RF sensor (BlueHalo / AeroVironment)',
+    kind: 'sensor',
+    description:
+      'Self-contained RF detection and direction-finding unit, up to 3 km horizontal across five bands from 433 MHz to 5.8 GHz. NOT receive-only: the same 20 lb unit jams to 1.5 km, which belongs in a separate effector record. US Army fielded.',
+    color: '#bfa877',
+    builtin: true,
+    sensor: {
+      sensorType: 'rf',
+      role: 'classification',
+      detectRangeM: 3000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+    },
+  },
+
 ]
 
 const EFFECTORS: SpecModel[] = [
@@ -283,7 +748,7 @@ const EFFECTORS: SpecModel[] = [
     name: 'Coyote Block 2 interceptor',
     kind: 'effector',
     description:
-      'Jet-powered kinetic interceptor with RF seeker and proximity warhead. Combat proven vs Group 2-3; ~15 km reach.',
+      'Rocket-boosted turbojet kinetic interceptor with a tungsten fragmentation warhead, fired from a 4-pack palletized launcher. The RF seeker belongs to Block 1B, not Block 2. Reach is reported at about 15 km.',
     color: '#c47f5c',
     builtin: true,
     effector: {
@@ -302,7 +767,7 @@ const EFFECTORS: SpecModel[] = [
     name: 'Roadrunner-M interceptor (Anduril)',
     kind: 'effector',
     description:
-      'Reusable twin-turbojet VTOL interceptor cued by Lattice. Loiters and returns if not expended. ~15 km planning value.',
+      'Twin-turbojet reusable interceptor launched from a ground nest and managed through Lattice. Anduril publishes no range, speed, altitude or endurance figure: every number here is a planning figure.',
     color: '#c98a68',
     builtin: true,
     effector: {
@@ -329,7 +794,7 @@ const EFFECTORS: SpecModel[] = [
       minRangeM: 100,
       maxRangeM: 4000,
       maxAltitudeFt: 5000,
-      engageTimeS: 90,
+      engageTimeS: 60,
       pk: 0.75,
       magazineSize: 2,
       salvoCooldownS: 60,
@@ -345,7 +810,7 @@ const EFFECTORS: SpecModel[] = [
     builtin: true,
     effector: {
       effectorType: 'interceptor',
-      minRangeM: 5000,
+      minRangeM: 1000,
       maxRangeM: 20000,
       maxAltitudeFt: 16000,
       engageTimeS: 120,
@@ -413,10 +878,10 @@ const EFFECTORS: SpecModel[] = [
   },
   {
     id: 'lib-phel',
-    name: 'P-HEL 20 kW laser (LOCUST)',
+    name: 'P-HEL 20 kW laser (AV LOCUST)',
     kind: 'effector',
     description:
-      'Palletized high-energy laser, deployed since 2022. Hard-kill dwell defeats Group 1-2 at ~2-3 km.',
+      'Palletized 20 kW-class high-energy laser (AeroVironment LOCUST), fielded for base defense. No engagement range has ever been published: the 3 km ring is a planning figure.',
     color: '#b87a8c',
     builtin: true,
     effector: {
@@ -425,7 +890,6 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 3000,
       maxAltitudeFt: 8000,
       engageTimeS: 15,
-      pk: 0.85,
       salvoCooldownS: 15,
     },
   },
@@ -434,7 +898,7 @@ const EFFECTORS: SpecModel[] = [
     name: 'DE M-SHORAD 50 kW laser',
     kind: 'effector',
     description:
-      'Stryker-mounted 50 kW laser prototype. Group 1-3 UAS at ~5 km planning value.',
+      'Stryker-mounted 50 kW-class laser prototype. GAO found the prototype not mature enough to transition; production slipped to FY2027 and the enduring path is now E-HEL. Four prototypes deployed to CENTCOM. No engagement range is published: the ring is a planning figure.',
     color: '#c08698',
     builtin: true,
     effector: {
@@ -443,7 +907,6 @@ const EFFECTORS: SpecModel[] = [
       maxRangeM: 5000,
       maxAltitudeFt: 10000,
       engageTimeS: 15,
-      pk: 0.85,
       salvoCooldownS: 10,
     },
   },
@@ -471,7 +934,7 @@ const EFFECTORS: SpecModel[] = [
     name: 'THOR HPM (AFRL)',
     kind: 'effector',
     description:
-      'Containerized high-power microwave for base defense; near-instant swarm defeat inside ~800 m.',
+      'AFRL high-power microwave counter-swarm demonstrator in a shipping container. AFRL has never published an engagement range or a dwell time; both the ring and the engage time are planning figures.',
     color: '#ae96ce',
     builtin: true,
     effector: {
@@ -496,7 +959,7 @@ const EFFECTORS: SpecModel[] = [
       effectorType: 'jammer',
       minRangeM: 0,
       maxRangeM: 1000,
-      maxAltitudeFt: 1200,
+      maxAltitudeFt: null,
       sectorDeg: 60,
       engageTimeS: 5,
       pk: 0.6,
@@ -508,14 +971,14 @@ const EFFECTORS: SpecModel[] = [
     name: 'Modi II EW jammer',
     kind: 'effector',
     description:
-      'Dismounted or vehicle electronic-attack system; denies GNSS and control links to ~2 km.',
+      'Dismounted/vehicle EW system disrupting UAS communications and control links. Public sources describe control-link disruption, not GNSS denial. No range is published: the 2 km ring is a planning figure.',
     color: '#d2b884',
     builtin: true,
     effector: {
       effectorType: 'jammer',
       minRangeM: 0,
       maxRangeM: 2000,
-      maxAltitudeFt: 3500,
+      maxAltitudeFt: null,
       engageTimeS: 5,
       pk: 0.65,
       salvoCooldownS: 5,
@@ -533,12 +996,209 @@ const EFFECTORS: SpecModel[] = [
       effectorType: 'jammer',
       minRangeM: 0,
       maxRangeM: 3500,
-      maxAltitudeFt: 1200,
+      maxAltitudeFt: null,
       engageTimeS: 20,
       pk: 0.7,
       salvoCooldownS: 20,
     },
   },
+  {
+    id: 'lib-amphel',
+    name: 'AMP-HEL 20 kW laser (LOCUST on ISV)',
+    kind: 'effector',
+    description:
+      'Army RCCTO prototype: 20 kW-class LOCUST laser on an Infantry Squad Vehicle for maneuver-force C-UAS. Two ISV sets delivered Aug 2025; two JLTV sets with radar and C2 followed. Single-target hard kill by dwell. The engagement range is NOT published: this ring is a planning value, not a performance claim. Heavily degraded by fog, rain and dust.',
+    color: '#ca90a2',
+    builtin: true,
+    effector: {
+      effectorType: 'de',
+      minRangeM: 100,
+      maxRangeM: 3000,
+      maxAltitudeFt: null,
+      engageTimeS: 15,
+    },
+  },
+  {
+    id: 'lib-helios',
+    name: 'HELIOS 60 kW shipboard laser',
+    kind: 'effector',
+    description:
+      'US Navy Mk 5 Mod 0 HELIOS: 60 kW-class laser plus optical dazzler, hosted by the Aegis Combat System, installed on USS Preble since 2022 and the only such installation. Engaged four UAS in one at-sea counter-UAS demonstration. Single target per engagement. Magazine is bounded by ship power and cooling, not by rounds. Engagement range and the deckhouse-restricted firing arcs are NOT published.',
+    color: '#ac6e80',
+    builtin: true,
+    effector: {
+      effectorType: 'de',
+      minRangeM: 100,
+      maxRangeM: 3000,
+      maxAltitudeFt: null,
+      engageTimeS: 15,
+    },
+  },
+  {
+    id: 'lib-ironbeam',
+    name: 'Iron Beam 100 kW laser (Rafael)',
+    kind: 'effector',
+    description:
+      'Rafael Iron Beam (\'Or Eitan\'), 100 kW-class laser handed to the Israeli Air Force 28 Dec 2025: the first high-energy laser air-defence system declared operationally mature. Reported to burn rockets, mortars and UAS at about 10 km in clear air; interception takes seconds. Fires from a static emplacement and degrades badly in cloud, fog and low visibility, which is why Iron Dome remains the all-weather layer.',
+    color: '#9e6274',
+    builtin: true,
+    effector: { effectorType: 'de', minRangeM: 100, maxRangeM: 7000, maxAltitudeFt: null, engageTimeS: 5 },
+  },
+  {
+    id: 'lib-cuaews',
+    name: 'CUAEWS DF (SRC, LIDS EW)',
+    kind: 'effector',
+    description:
+      'LIDS/M-LIDS electronic-attack element. Passively searches RF, direction-finds both aircraft and operator, then applies tailored non-kinetic defeat plus a NAVWAR effect against waypoint-guided threats. SRC states EW effects to 8 km. Man-in-the-loop fires; re-tasking is near instantaneous and indefinite.',
+    color: '#c9ab72',
+    builtin: true,
+    effector: {
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 8000,
+      maxAltitudeFt: null,
+      sectorDeg: 360,
+      engageTimeS: 5,
+      pk: 0.65,
+      salvoCooldownS: 5,
+    },
+  },
+  {
+    id: 'lib-ninja',
+    name: 'NINJA RF-cyber defeat (AFRL)',
+    kind: 'effector',
+    description:
+      'Air Force fixed-site RF-cyber C-sUAS. Software-defined radios intercept the drone-operator link and take control of or disable Group 1-2 UAS without the indiscriminate interference of broadband jamming; friendly drones can be whitelisted. NO PUBLIC DEFEAT RANGE: the 2 km ring is a representative planning figure.',
+    color: '#c4a069',
+    builtin: true,
+    effector: {
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 2000,
+      maxAltitudeFt: null,
+      sectorDeg: 360,
+      engageTimeS: 20,
+      pk: 0.6,
+      salvoCooldownS: 20,
+    },
+  },
+  {
+    id: 'lib-pulsar',
+    name: 'Pulsar EW node (Anduril)',
+    kind: 'effector',
+    description:
+      'Software-defined EW node: passive RF sense, classify and direction-find, then directed electronic attack on the control link. One panel covers a 90 deg sector; two panels make 360. Placard effective range 2 km against Group 1. Selectable bands and directional transmit to limit friendly interference. Lattice-managed.',
+    color: '#bb9a62',
+    builtin: true,
+    effector: {
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 2000,
+      maxAltitudeFt: null,
+      sectorDeg: 90,
+      engageTimeS: 5,
+      pk: 0.6,
+      salvoCooldownS: 5,
+    },
+  },
+  {
+    id: 'lib-pitbull',
+    name: 'Pitbull 101 wearable jammer (MyDefence)',
+    kind: 'effector',
+    description:
+      'Vest-worn 1.33 kg directional jammer, 60 deg beam, up to 1 km. Denies control, video and GNSS links. Manual (human-in-the-loop) or automatic, fired on a detection from the paired Wingman sensor. Jammed drones land or return to the controller or launch point.',
+    color: '#d0b686',
+    builtin: true,
+    effector: {
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 1000,
+      maxAltitudeFt: null,
+      sectorDeg: 60,
+      engageTimeS: 5,
+      pk: 0.6,
+      salvoCooldownS: 5,
+    },
+  },
+  {
+    id: 'lib-stinger',
+    name: 'FIM-92 Stinger (M-SHORAD / MADIS)',
+    kind: 'effector',
+    description:
+      'IR-homing SHORAD missile on the M-SHORAD RIwP and MADIS Mk1 turrets. FIM-92J/K proximity fuze added for small UAS. 4.8 km weapon max; 4-round pod.',
+    color: '#b06a4a',
+    builtin: true,
+    effector: {
+      effectorType: 'interceptor',
+      minRangeM: 200,
+      maxRangeM: 4800,
+      maxAltitudeFt: 12500,
+      engageTimeS: 15,
+      pk: 0.7,
+      magazineSize: 4,
+      salvoCooldownS: 10,
+    },
+  },
+  {
+    id: 'lib-eagls',
+    name: 'EAGLS 70 mm APKWS launcher',
+    kind: 'effector',
+    description:
+      'Four-round 70 mm APKWS II launcher on a CROWS II mount with organic RPS-40 radar and EO/IR laser designator. Fielded to CENTCOM base defence 2026.',
+    color: '#d9a888',
+    builtin: true,
+    effector: {
+      effectorType: 'interceptor',
+      minRangeM: 500,
+      maxRangeM: 5000,
+      maxAltitudeFt: null,
+      sectorDeg: 360,
+      engageTimeS: 15,
+      pk: 0.7,
+      magazineSize: 4,
+      salvoCooldownS: 5,
+    },
+  },
+  {
+    id: 'lib-skyranger30',
+    name: 'Skyranger 30 (Rheinmetall)',
+    kind: 'effector',
+    description:
+      '30x173 mm KCE-ABM revolver cannon with AHEAD programmable airburst on a 360-degree turret with organic AESA radar and EO/IR. Effective to 3 km. NATO mobile C-UAS.',
+    color: '#d7b87e',
+    builtin: true,
+    effector: {
+      effectorType: 'gun',
+      minRangeM: 200,
+      maxRangeM: 3000,
+      maxAltitudeFt: null,
+      sectorDeg: 360,
+      engageTimeS: 8,
+      pk: 0.8,
+      magazineSize: 12,
+      salvoCooldownS: 5,
+    },
+  },
+  {
+    id: 'lib-dronehunter',
+    name: 'DroneHunter F700 net interceptor',
+    kind: 'effector',
+    description:
+      'Reusable radar-guided multirotor interceptor that captures Group 1-2 UAS with a tethered net or DrogueChute. First Replicator 2 purchase, Jan 2026. 5 km air-vehicle range.',
+    color: '#6fb3a0',
+    builtin: true,
+    effector: {
+      effectorType: 'net',
+      minRangeM: 100,
+      maxRangeM: 5000,
+      maxAltitudeFt: null,
+      sectorDeg: 360,
+      engageTimeS: 150,
+      pk: 0.85,
+      salvoCooldownS: 180,
+    },
+  },
+
 ]
 
 const C2: SpecModel[] = [
@@ -574,8 +1234,62 @@ const C2: SpecModel[] = [
     name: 'MEDUSA C2 (USAF)',
     kind: 'c2',
     description:
-      'Government-owned, open-standards Air Force C2 for base-defense counter-sUAS.',
+      'Air Force base-defense counter-sUAS C2, developed by Kongsberg Geospatial. Neither government ownership nor open standards is supported by any public source; its FAAD C2 interoperability is stated conditionally in the sources that mention it.',
     color: '#bcc1b8',
+    builtin: true,
+  },
+  {
+    id: 'lib-ibcs',
+    name: 'IBCS battle command (Northrop Grumman)',
+    kind: 'c2',
+    description:
+      'Army IAMD battle command. Fuses distributed sensor data into fire-control-quality tracks on the Integrated Fire Control Network; \'plug-and-fight\' kits adapt sensors and weapons. Set to replace Patriot, THAAD and FAAD C2 C2 systems.',
+    color: '#b4baaf',
+    builtin: true,
+  },
+  {
+    id: 'lib-adsi',
+    name: 'ADSI data link gateway (Ultra)',
+    kind: 'c2',
+    description:
+      'Joint-certified tactical data link forwarding and control gateway. Correlates and forwards tracks across Link 16, Link 11, JREAP, the FAAD data link and Cursor-on-Target. It bridges pictures rather than running a C-UAS engagement itself.',
+    color: '#acb2a7',
+    builtin: true,
+  },
+  {
+    id: 'lib-tak',
+    name: 'TAK / CoT node (Team Awareness Kit)',
+    kind: 'c2',
+    description:
+      'Government-owned situational-awareness and C2 client family built on the Cursor-on-Target message standard. It forwards and displays C-UAS detections and alerts to dismounted teams and operations centres. It is not a track-fusion or fire-control system and carries no engagement authority.',
+    color: '#a4ab9f',
+    builtin: true,
+  },
+  {
+    id: 'lib-dronesentryc2',
+    name: 'DroneSentry-C2 (DroneShield)',
+    kind: 'c2',
+    description:
+      'Commercial C-UAS C2 built on the SensorFusionAI 3D fusion engine. Fuses RF, radar, optical and ADS-B inputs from DroneShield and third-party sensors, drives DroneShield and partner effectors, and speaks SAPIENT and Cursor-on-Target.',
+    color: '#9ca397',
+    builtin: true,
+  },
+  {
+    id: 'lib-dedronetracker',
+    name: 'DedroneTracker.AI C2 (Dedrone by Axon)',
+    kind: 'c2',
+    description:
+      'Commercial airspace-security C2. Fuses RF, radar, camera, acoustic and Remote ID inputs into one risk-ranked track picture and runs jamming, cyber-takeover or kinetic mitigation from the same interface, where legally authorised.',
+    color: '#949b8f',
+    builtin: true,
+  },
+  {
+    id: 'lib-cac2s',
+    name: 'CAC2S (USMC aviation C2)',
+    kind: 'c2',
+    description:
+      'Marine Corps aviation command and control. Fuses expeditionary radar, weapon-system, UAS and ISR inputs into one MAGTF air picture and hosts the engage / do-not-engage decision. Named by CRS as the C2 element of the Marine MRIC air-defence system alongside G/ATOR.',
+    color: '#c0c5bc',
     builtin: true,
   },
 ]
