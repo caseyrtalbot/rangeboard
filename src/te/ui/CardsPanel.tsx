@@ -1,31 +1,53 @@
+/**
+ * Cards stage: decision groups C1-C10 (strategist redesign SPEC 1.3).
+ * Inherited values render read-through with provenance; the stage gate is
+ * a generated StageReview above Issue. Issued cards stay frozen; every
+ * write goes through the store.
+ */
+
 import { useState } from 'react'
 import type { FactorClass, ProcedureStep, TeCampaign, TeCard, TeRecordStatus } from '../model/types'
 import { RUN_ROLES } from '../model/types'
 import { linkedRecordFill, useTeStore } from '../state/teStore'
 import { emptyProcedureStep, nowIso } from '../model/empty'
-import { cardIssueBlockers } from '../validate'
+import { cardIssueBlockers, sanitizeCardTemplatePatch } from '../validate'
 import { CARD_TEMPLATES } from '../seed/cardTemplates'
-import { DATA_STANDARDS } from '../seed/constants'
+import { DATA_STANDARDS, GENERIC_MARKS, KINETIC_MARKS, RESET_ACTIONS, STOP_TAXONOMY, WHY_NEXT_REASONS } from '../seed/constants'
+import { boardSignals } from './DesignBuilders'
 import { PrintOverlay } from '../print/PrintOverlay'
 import { TestCardPrint } from '../print/TestCardPrint'
-import { GENERIC_MARKS } from '../seed/constants'
-import { HELP, allPeople } from './help'
+import { HELP, HINTS, allPeople } from './help'
 import {
+  AdvancedDisclosure,
   ChipList,
+  DecisionGroup,
+  EntityPicker,
+  ExampleHint,
   Field,
-  GateList,
   MultiPicker,
   NumberField,
-  PersonField,
+  NumberUnitField,
+  PersonPicker,
   PhaseIntro,
   Pill,
+  RecordCheck,
   SelectField,
+  StageReview,
   SubTitle,
   SuggestField,
   TextField,
   VersionField,
   fmtDate,
 } from './kit'
+import {
+  ChipString,
+  ClassedLinesTable,
+  DerivedText,
+  LineChecklist,
+  MonitoringBuilder,
+  OrderBlockingBuilder,
+  RedStateBuilder,
+} from './CardBlocks'
 
 const DEFAULT_EVENT_MARKS = [
   'start recording',
@@ -40,89 +62,6 @@ const DEFAULT_EVENT_MARKS = [
   'stop recording',
 ]
 
-/**
- * Check rows over a known string vocabulary plus one free-add row.
- * Checked rows are the stored lines; storage stays string[].
- */
-function LineChecklist({
-  label,
-  options,
-  value,
-  onChange,
-  help,
-  disabled,
-}: {
-  label: string
-  options: string[]
-  value: string[]
-  onChange: (v: string[]) => void
-  help?: string
-  disabled?: boolean
-}) {
-  const [draft, setDraft] = useState('')
-  const known = [...new Set(options.map((o) => o.trim()).filter((o) => o !== ''))]
-  const trimmed = value.map((v) => v.trim())
-  const countOf = (line: string) => trimmed.filter((t) => t === line).length
-  const extras: string[] = []
-  for (const t of trimmed) {
-    if (!known.includes(t) && !extras.includes(t)) extras.push(t)
-  }
-  const removeOne = (line: string) => {
-    const i = trimmed.indexOf(line)
-    onChange(value.filter((_, j) => j !== i))
-  }
-  const toggle = (line: string) =>
-    countOf(line) > 0 ? removeOne(line) : onChange([...value, line])
-  const add = () => {
-    const line = draft.trim()
-    if (line === '' || trimmed.includes(line)) return
-    onChange([...value, line])
-    setDraft('')
-  }
-  return (
-    <div className="subsection">
-      <div className="panel-subtitle">
-        {label}
-        {help && (
-          <span className="help-dot" tabIndex={0} data-help={help}>
-            ?
-          </span>
-        )}
-      </div>
-      {known.map((o) => (
-        <label key={o} className="check-row">
-          <input type="checkbox" checked={countOf(o) > 0} disabled={disabled} onChange={() => toggle(o)} />
-          {countOf(o) > 1 ? `${o} x${countOf(o)}` : o}
-        </label>
-      ))}
-      {extras.map((x) => (
-        <label key={x} className="check-row" title="Uncheck removes this line.">
-          <input type="checkbox" checked disabled={disabled} onChange={() => removeOne(x)} />
-          {countOf(x) > 1 ? `${x} x${countOf(x)}` : x}
-        </label>
-      ))}
-      {!disabled && (
-        <div className="field-row">
-          <input
-            value={draft}
-            placeholder="Add your own"
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                add()
-              }
-            }}
-          />
-          <button type="button" className="mini" disabled={draft.trim() === ''} onClick={add}>
-            Add
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function statusKind(s: TeRecordStatus): 'good' | 'warn' | 'bad' | 'neutral' {
   if (s === 'issued') return 'good'
   if (s === 'approved' || s === 'in-review') return 'warn'
@@ -130,9 +69,105 @@ function statusKind(s: TeRecordStatus): 'good' | 'warn' | 'bad' | 'neutral' {
   return 'neutral'
 }
 
+const nz = (s: string) => s.trim() !== ''
+
+function stateOf(...flags: boolean[]): 'done' | 'partial' | 'empty' {
+  if (flags.every(Boolean)) return 'done'
+  if (flags.some(Boolean)) return 'partial'
+  return 'empty'
+}
+
+function splitLines(s: string): string[] {
+  return s
+    .split(/[\n;]/)
+    .map((t) => t.trim())
+    .filter((t) => t !== '')
+}
+
+/** Compose a short title from the linked question, threat, and condition. */
+function deriveTitle(campaign: TeCampaign, card: TeCard): string {
+  const q = card.questionIds.map((id) => campaign.questions.find((x) => x.id === id)).find((x) => x)
+  const threat = campaign.threats.find((x) => x.id === card.threatId)
+  const condition = campaign.conditions.find((x) => x.id === card.conditionId)
+  const head = q ? q.wording.replace(/[?.]\s*$/, '').slice(0, 48) : ''
+  const parts = [head, threat?.name ? `vs ${threat.name}` : '', condition?.name ? `in ${condition.name}` : '']
+  return parts.filter((p) => p !== '').join(' ')
+}
+
+/** Storage path from the campaign convention: a prior card's pattern, else a default. */
+function deriveStoragePath(campaign: TeCampaign, card: TeCard): string {
+  const donor = campaign.cards.find(
+    (x) => x.id !== card.id && x.storagePath.trim() !== '' && x.storagePath.includes(x.cardCode),
+  )
+  if (donor) return donor.storagePath.split(donor.cardCode).join(card.cardCode)
+  return `data/${campaign.code}/${card.cardCode}/`
+}
+
+/** Creation paths: matrix cell (default), template, blank (SPEC C1). */
+function CardStartRow({ campaign }: { campaign: TeCampaign }) {
+  const { addCard, createCardFromMatrixCell, selectRecord } = useTeStore.getState()
+  // Board-matched templates rank first and carry a flag. Ranking only.
+  const signals = boardSignals()
+  const boardTemplateKeys = [
+    ...(signals.softkill ? ['TC-CUAS-EW-SOFTKILL-001'] : []),
+    ...(signals.c2 ? ['TC-CUAS-C2-HANDOFF-001'] : []),
+  ]
+  const templates = [...CARD_TEMPLATES].sort(
+    (a, b) => Number(boardTemplateKeys.includes(b.key)) - Number(boardTemplateKeys.includes(a.key)),
+  )
+  return (
+    <div className="field-row">
+      {campaign.matrix.length > 0 && (
+        <Field label="From matrix cell" help="The cell's links and fills carry into the card.">
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value === '') return
+              const id = createCardFromMatrixCell(e.target.value)
+              if (id) selectRecord('cards', id)
+            }}
+          >
+            <option value="">pick a cell…</option>
+            {campaign.matrix.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.id} {x.method.slice(0, 24)}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
+      <Field label="From template" help="A worked card structure. Placeholders block issue until resolved.">
+        <select
+          value=""
+          onChange={(e) => {
+            const t = CARD_TEMPLATES.find((x) => x.key === e.target.value)
+            if (!t) return
+            selectRecord('cards', addCard(sanitizeCardTemplatePatch(campaign, t.patch)))
+          }}
+        >
+          <option value="">pick a template…</option>
+          {templates.map((t) => (
+            <option key={t.key} value={t.key}>
+              {t.key}: {t.name}
+              {boardTemplateKeys.includes(t.key) ? ' (matches board)' : ''}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <div className="field">
+        <span>&nbsp;</span>
+        <button type="button" className="mini" onClick={() => selectRecord('cards', addCard())}>
+          Blank card
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) {
   const { patchItem, issueCard, reviseCard, selectRecord } = useTeStore.getState()
   const [printing, setPrinting] = useState(false)
+  const [showCellPicker, setShowCellPicker] = useState(false)
   const frozen = card.status === 'issued' || card.status === 'superseded'
   const people = allPeople(campaign)
   const issueBlockers = frozen ? [] : cardIssueBlockers(campaign, card)
@@ -162,6 +197,7 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
   }
 
   const pickMatrixCell = (v: string | null) => {
+    setShowCellPicker(false)
     const cell = campaign.matrix.find((x) => x.id === v)
     if (!cell) {
       set({ matrixCellId: v })
@@ -195,12 +231,41 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
     set(linkedRecordFill(campaign, card, true))
   }
 
+  // Linked records and live derivations. The stored string stays the truth;
+  // derivations recompute for display and provenance state (SPEC 4.3).
+  const config = campaign.configs.find((x) => x.id === card.configId)
   const threat = campaign.threats.find((x) => x.id === card.threatId)
   const condition = campaign.conditions.find((x) => x.id === card.conditionId)
+  const firstQuestion = card.questionIds
+    .map((id) => campaign.questions.find((x) => x.id === id))
+    .find((x) => x)
   const linkedMeasures = card.measureIds
     .map((id) => campaign.measures.find((m) => m.id === id))
     .filter((m) => m !== undefined)
   const otherCards = campaign.cards.filter((x) => x.id !== card.id)
+  const deriv = linkedRecordFill(campaign, card, true)
+  const configSource = config ? `${config.name || config.id} ${config.version}` : 'configuration'
+  const threatSource = threat ? threat.name || threat.id : 'threat'
+  const conditionSource = condition ? condition.name || condition.id : 'condition'
+  const titleDerived = deriveTitle(campaign, card)
+  const storageDerived = deriveStoragePath(campaign, card)
+  const measureNames = linkedMeasures.map((m) => m.name || m.id)
+  const expectedDerived =
+    card.prediction.trim() === ''
+      ? ''
+      : [card.prediction.trim(), measureNames.length > 0 ? `Scored on: ${measureNames.join(', ')}` : '']
+          .filter((t) => t !== '')
+          .join('\n')
+  const allowedDerived = [threat?.permittedGeneralization ?? '', condition?.permittedGeneralization ?? '']
+    .filter((t) => t.trim() !== '')
+    .join('\n')
+  const prohibitedDerived = [threat?.prohibitedGeneralization ?? '', condition?.prohibitedGeneralization ?? '']
+    .filter((t) => t.trim() !== '')
+    .join('\n')
+
+  const ivFactors = factorOpts('independent-variable')
+  const heldFactors = factorOpts('held-control')
+  const covariateFactors = factorOpts('recorded-covariate')
   const changedFactorNames = campaign.factors
     .filter((x) => x.classification === 'independent-variable')
     .map((x) => x.name || x.id)
@@ -209,9 +274,11 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
       ? [card.changedFactor, ...changedFactorNames]
       : changedFactorNames
   ).map((x) => ({ v: x, label: x }))
+  const signals = boardSignals()
   const markVocabulary = [
     ...DEFAULT_EVENT_MARKS,
     ...GENERIC_MARKS,
+    ...(signals.kinetic ? KINETIC_MARKS : []),
     ...linkedMeasures.flatMap((m) => [m.startEvent, m.stopEvent]),
   ]
   const authorityLines = campaign.authorities.map((a) => `${a.authorityType || 'authority'}: ${a.status}`)
@@ -219,56 +286,112 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
     standard,
     ...otherCards.map((x) => x.siteCalls[key]),
   ]
+  const redDeviationOptions = threat
+    ? [...splitLines(threat.prohibitedActions), ...threat.adaptationRules.map((r) => r.trigger)]
+    : []
+  const fileOptions = [
+    ...DATA_STANDARDS.map((d) => d.name),
+    ...linkedMeasures.flatMap((m) => [m.truth.primarySource, m.truth.backupSource]),
+    ...otherCards.flatMap((x) => splitLines(x.requiredFiles)),
+  ]
+  const claimOptions = campaign.registers
+    .filter((r) => r.kind === 'claim')
+    .map((r) => ({ id: r.id, label: r.statement.slice(0, 60) || r.id, sub: r.id }))
+  const threatDesc = threat
+    ? [threat.name || threat.id, `Group ${threat.uasGroup}`, threat.airframe].filter((t) => t !== '').join(', ')
+    : ''
+  const repeatPlanned = card.repetitionNumber > 1 || card.minValidSample > 1
+  const hasRedContent =
+    nz(card.redInitialState) ||
+    nz(card.redControlled) ||
+    nz(card.redFixed) ||
+    nz(card.blinding) ||
+    nz(card.invalidatingRedDeviations)
+  const showC5 =
+    card.threatId != null ||
+    card.conditionId != null ||
+    campaign.authorities.length > 0 ||
+    hasRedContent ||
+    nz(card.conditionNote) ||
+    nz(card.operatingLimits)
+
+  const c1State = stateOf(
+    card.questionIds.length > 0,
+    card.measureIds.length > 0,
+    card.configId != null,
+    card.threatId != null,
+    card.conditionId != null,
+  )
+  const c2State = stateOf(nz(card.title), nz(card.purpose), nz(card.prediction), nz(card.whyHighestValueNext))
+  const c3State = stateOf(card.repetitionNumber > 0, card.minValidSample > 0, nz(card.orderAndBlocking))
+  const c4State = stateOf(nz(card.systemStateNote), nz(card.operators), nz(card.trainingState))
+  const c5State = stateOf(nz(card.redInitialState), nz(card.redControlled) || nz(card.redFixed), nz(card.blinding))
+  const c6State = stateOf(
+    nz(card.dataSources),
+    nz(card.groundTruth),
+    card.eventMarks.length > 0,
+    nz(card.requiredFiles),
+  )
+  const c7State = stateOf(
+    card.procedure.length > 0,
+    card.procedure.length > 0 &&
+      card.procedure.every((s) => nz(s.action) && nz(s.observableCompletion)),
+  )
+  const c8State = stateOf(
+    nz(card.safetyStops) || nz(card.dataEquipmentStops) || nz(card.holdConditions),
+    nz(card.safeState),
+    nz(card.restartAuthority),
+    nz(card.requiredValidityConditions) || nz(card.invalidatingFailures),
+  )
+  const c9State = stateOf(nz(card.expectedResult), nz(card.allowedConclusion), nz(card.prohibitedConclusion))
+  const c10State = frozen
+    ? 'done'
+    : stateOf(card.coldReaderAt != null, card.dryRunAt != null, issueBlockers.length === 0)
+
+  const reviewRows = [
+    { label: 'What it tests', value: firstQuestion?.wording ?? '' },
+    {
+      label: 'Against',
+      value: [threat?.name ?? '', condition?.name ? `in ${condition.name}` : ''].filter((t) => t !== '').join(' '),
+    },
+    {
+      label: 'Configuration',
+      value: config
+        ? `${config.name || config.id} ${config.version} ${config.frozen ? '(frozen)' : '(not frozen)'}`
+        : '',
+    },
+    {
+      label: 'Sampling',
+      value: `attempt ${card.repetitionNumber}; ${card.minValidSample} valid needed`,
+    },
+    {
+      label: 'Cold read',
+      value: card.coldReaderAt ? `${card.coldReaderBy} ${fmtDate(card.coldReaderAt)}` : '',
+    },
+    { label: 'Dry run', value: card.dryRunAt ? `${card.dryRunBy} ${fmtDate(card.dryRunAt)}` : '' },
+  ]
+
+  const cellLabel = card.matrixCellId
+    ? (() => {
+        const cell = campaign.matrix.find((x) => x.id === card.matrixCellId)
+        return cell ? `${cell.id} ${cell.method.slice(0, 24)}` : card.matrixCellId
+      })()
+    : ''
 
   return (
     <div className="run-row">
-      {!frozen && (
-        <>
-          <SubTitle
-            action={
-              <span className="help-dot" tabIndex={0} data-help={HELP['card-issue']}>
-                ?
-              </span>
-            }
-          >
-            Issue gate
-          </SubTitle>
-          <Pill
-            kind={issueBlockers.length ? 'warn' : 'good'}
-            text={issueBlockers.length ? `${issueBlockers.length} blocker(s)` : 'ready to issue'}
-          />
-          <GateList items={issueBlockers} kind="bad" />
-          <div className="field-row">
-            <PersonField label="Cold reader" value={card.coldReaderBy} onChange={(v) => set(card.coldReaderAt ? { coldReaderBy: v, coldReaderAt: null } : { coldReaderBy: v })} people={people} help={HELP['cold-reader']} />
-            <div className="field">
-              <span>&nbsp;</span>
-              <button className="mini" disabled={!card.coldReaderBy.trim()} onClick={() => set({ coldReaderBy: card.coldReaderBy, coldReaderAt: nowIso() })}>
-                Record check
-              </button>
-            </div>
-            <PersonField label="Dry-run lead" value={card.dryRunBy} onChange={(v) => set(card.dryRunAt ? { dryRunBy: v, dryRunAt: null } : { dryRunBy: v })} people={people} help={HELP['dry-run']} />
-            <div className="field">
-              <span>&nbsp;</span>
-              <button className="mini" disabled={!card.dryRunBy.trim()} onClick={() => set({ dryRunBy: card.dryRunBy, dryRunAt: nowIso() })}>
-                Record check
-              </button>
-            </div>
-          </div>
-        </>
-      )}
       <div className="inspector-actions">
         <Pill kind={statusKind(card.status)} text={`${card.status} ${card.version}`} />
-        <button className="mini" disabled={card.status !== 'draft'} onClick={autoFill}>
+        <span className="muted small num">{card.cardCode}</span>
+        <button type="button" className="mini" disabled={card.status !== 'draft'} onClick={autoFill}>
           Auto-fill from design
         </button>
-        <button className="mini" disabled={frozen} onClick={refill}>
+        <button type="button" className="mini" disabled={frozen} onClick={refill}>
           Refill from linked records
-        </button>
-        <button className="primary" disabled={frozen || issueBlockers.length > 0} onClick={() => issueCard(card.id)}>
-          Issue card
         </button>
         {card.status === 'issued' && (
           <button
+            type="button"
             className="mini"
             onClick={() => {
               const nid = reviseCard(card.id)
@@ -278,234 +401,757 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
             Revise (new version)
           </button>
         )}
-        <button className="mini" onClick={() => setPrinting(true)}>Print</button>
+        <button type="button" className="mini" onClick={() => setPrinting(true)}>
+          Print
+        </button>
       </div>
-      <p className="muted small">
-        Cold reader: {card.coldReaderAt ? `${card.coldReaderBy} ${fmtDate(card.coldReaderAt)}` : 'not recorded'}.
-        Dry run: {card.dryRunAt ? `${card.dryRunBy} ${fmtDate(card.dryRunAt)}` : 'not recorded'}.
-      </p>
       {frozen && (
         <p className="muted small">
           Issued cards are frozen. Record a deviation, or revise to a new version.
         </p>
       )}
-
-      <SubTitle>1. Control</SubTitle>
       <div className="field-row">
-        <TextField label="Title" value={card.title} onChange={(v) => set({ title: v })} disabled={frozen} />
+        <PersonPicker label="Owner" value={card.owner} onChange={(v) => set({ owner: v })} people={people} disabled={frozen} />
+        <PersonPicker label="Approvers" multi value={card.approvers} onChange={(v) => set({ approvers: v })} people={people} disabled={frozen} />
         <VersionField label="Version" value={card.version} />
       </div>
-      <p className="muted small">The version changes only through Revise.</p>
-      <div className="field-row">
-        <PersonField label="Owner" value={card.owner} onChange={(v) => set({ owner: v })} people={people} disabled={frozen} />
-        <PersonField label="Approvers" value={card.approvers} onChange={(v) => set({ approvers: v })} people={people} disabled={frozen} />
-      </div>
       <p className="muted small">
-        Card {card.cardCode}; effective {card.effectiveAt ? fmtDate(card.effectiveAt) : 'not issued'}.
+        Effective {card.effectiveAt ? fmtDate(card.effectiveAt) : 'not issued'}. The version changes only through Revise.
       </p>
 
-      <SubTitle>2. Traceability</SubTitle>
-      <MultiPicker
-        label="Questions"
-        options={campaign.questions.map((q) => ({ id: q.id, label: `${q.id} ${q.wording.slice(0, 40)}` }))}
-        value={card.questionIds}
-        onChange={(v) => applyLinks({ questionIds: v })}
-        disabled={frozen}
-      />
-      <MultiPicker
-        label="Hypotheses"
-        options={campaign.hypotheses.map((h) => ({ id: h.id, label: `${h.id} ${h.producesBehavior.slice(0, 40)}` }))}
-        value={card.hypothesisIds}
-        onChange={(v) => applyLinks({ hypothesisIds: v })}
-        disabled={frozen}
-      />
-      <MultiPicker
-        label="Measures"
-        options={campaign.measures.map((m) => ({ id: m.id, label: `${m.id} ${m.name}` }))}
-        value={card.measureIds}
-        onChange={(v) => applyLinks({ measureIds: v })}
-        disabled={frozen}
-      />
-      <div className="field-row">
-        <SelectField label="Matrix cell" value={card.matrixCellId} allowEmpty="not set" options={campaign.matrix.map((x) => ({ v: x.id, label: `${x.id} ${x.method.slice(0, 24)}` }))} onChange={pickMatrixCell} disabled={frozen} />
-        <SelectField label="Configuration" value={card.configId} allowEmpty="not set" options={campaign.configs.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => applyLinks({ configId: v })} disabled={frozen} />
-      </div>
-      <p className="muted small">Picking a matrix cell fills the linked records.</p>
-      <div className="field-row">
-        <SelectField label="Threat" value={card.threatId} allowEmpty="not set" options={campaign.threats.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => applyLinks({ threatId: v })} disabled={frozen} />
-        <SelectField label="Condition" value={card.conditionId} allowEmpty="not set" options={campaign.conditions.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => applyLinks({ conditionId: v })} disabled={frozen} />
-      </div>
-
-      <SubTitle>3. Purpose and intent</SubTitle>
-      <TextField label="Purpose (one sentence: why the run exists)" rows={2} value={card.purpose} onChange={(v) => set({ purpose: v })} disabled={frozen} />
-      <TextField label="Why this is the highest-value next run" value={card.whyHighestValueNext} onChange={(v) => set({ whyHighestValueNext: v })} disabled={frozen} />
-      <TextField label="Result that could change the decision" value={card.resultThatCouldChangeDecision} onChange={(v) => set({ resultThatCouldChangeDecision: v })} disabled={frozen} />
-      <div className="field-row">
-        <TextField label="Prediction" value={card.prediction} onChange={(v) => set({ prediction: v })} disabled={frozen} />
-        <SelectField label="Changed factor" value={card.changedFactor || null} allowEmpty="not set" options={changedFactorOpts} onChange={(v) => set({ changedFactor: v ?? '' })} disabled={frozen} />
-      </div>
-
-      <SubTitle>4. Planned repetition</SubTitle>
-      <div className="field-row">
-        <NumberField label="Repetition number" value={card.repetitionNumber} onChange={(v) => set({ repetitionNumber: v ?? 1 })} disabled={frozen} />
-        <NumberField label="Minimum valid sample" value={card.minValidSample} onChange={(v) => set({ minValidSample: v ?? 1 })} disabled={frozen} />
-      </div>
-      <div className="field-row">
-        <TextField label="Priority reason" value={card.priorityReason} onChange={(v) => set({ priorityReason: v })} disabled={frozen} />
-        <TextField label="Order and blocking" value={card.orderAndBlocking} onChange={(v) => set({ orderAndBlocking: v })} disabled={frozen} />
-      </div>
-
-      <SubTitle>5. System state</SubTitle>
-      <TextField label="System state" rows={2} value={card.systemStateNote} onChange={(v) => set({ systemStateNote: v })} disabled={frozen} />
-      <div className="field-row">
-        <PersonField label="Operators" value={card.operators} onChange={(v) => set({ operators: v })} people={people} disabled={frozen} />
-        <TextField label="Training state" value={card.trainingState} onChange={(v) => set({ trainingState: v })} disabled={frozen} />
-      </div>
-
-      <SubTitle>6. Threat state</SubTitle>
-      <TextField label="Red initial state" rows={2} value={card.redInitialState} onChange={(v) => set({ redInitialState: v })} disabled={frozen} />
-      <div className="field-row">
-        <TextField label="Red-controlled variables" value={card.redControlled} onChange={(v) => set({ redControlled: v })} disabled={frozen} />
-        <TextField label="Red fixed variables" value={card.redFixed} onChange={(v) => set({ redFixed: v })} disabled={frozen} />
-      </div>
-      <TextField label="Blinding and information control" value={card.blinding} onChange={(v) => set({ blinding: v })} disabled={frozen} />
-      <div className="field-row">
-        <SuggestField label="Invalidating red deviations" value={card.invalidatingRedDeviations} onChange={(v) => set({ invalidatingRedDeviations: v })} suggestions={threat ? [threat.prohibitedActions, ...threat.adaptationRules.map((r) => r.trigger)] : []} disabled={frozen} />
-        <TextField label="Reset before repeat" value={card.resetBeforeRepeat} onChange={(v) => set({ resetBeforeRepeat: v })} disabled={frozen} />
-      </div>
-
-      <SubTitle>7. Condition</SubTitle>
-      <TextField label="Condition notes" rows={2} value={card.conditionNote} onChange={(v) => set({ conditionNote: v })} disabled={frozen} />
-      <TextField label="Operating limits" value={card.operatingLimits} onChange={(v) => set({ operatingLimits: v })} disabled={frozen} />
-
-      <SubTitle>8. Variables</SubTitle>
-      <MultiPicker label="Independent variables" options={factorOpts('independent-variable')} value={card.independentFactorIds} onChange={(v) => set({ independentFactorIds: v })} disabled={frozen} />
-      <MultiPicker label="Held controls" options={factorOpts('held-control')} value={card.heldFactorIds} onChange={(v) => set({ heldFactorIds: v })} disabled={frozen} />
-      <MultiPicker label="Recorded covariates" options={factorOpts('recorded-covariate')} value={card.covariateFactorIds} onChange={(v) => set({ covariateFactorIds: v })} disabled={frozen} />
-
-      <SubTitle>9. Measures</SubTitle>
-      {card.measureIds.length === 0 && <p className="muted small">No measures linked yet. Link them in section 2.</p>}
-      {card.measureIds.map((id) => {
-        const m = campaign.measures.find((x) => x.id === id)
-        return (
-          <div key={id} className="muted small">
-            {m ? `${m.id}: ${m.name} (${m.unit || 'no unit'})` : id}
-          </div>
-        )
-      })}
-      <TextField label="Card-local measures note" rows={2} value={card.measuresNote} onChange={(v) => set({ measuresNote: v })} disabled={frozen} />
-
-      <SubTitle>10. Data and truth</SubTitle>
-      <TextField label="Data sources" rows={2} value={card.dataSources} onChange={(v) => set({ dataSources: v })} disabled={frozen} />
-      <TextField label="Ground truth" rows={2} value={card.groundTruth} onChange={(v) => set({ groundTruth: v })} disabled={frozen} />
-      <div className="field-row">
-        <TextField label="Common time and tolerance" value={card.commonTimeAndTolerance} onChange={(v) => set({ commonTimeAndTolerance: v })} disabled={frozen} />
-        <TextField label="Monitoring and fallback" value={card.monitoringAndFallback} onChange={(v) => set({ monitoringAndFallback: v })} disabled={frozen} />
-      </div>
-      <LineChecklist label="Event marks (tap-button vocabulary)" options={markVocabulary} value={card.eventMarks} onChange={(v) => set({ eventMarks: v })} disabled={frozen} />
-
-      <SubTitle>11. Preconditions</SubTitle>
-      <LineChecklist label="Required state before start" options={authorityLines} value={card.preconditions} onChange={(v) => set({ preconditions: v })} disabled={frozen} />
-
-      <SubTitle
-        action={
-          <button className="mini" disabled={frozen} onClick={() => set({ procedure: [...card.procedure, emptyProcedureStep()] })}>
-            + step
-          </button>
-        }
+      <DecisionGroup
+        id="c1-links"
+        question="Where does this card come from?"
+        hint="Traceability: matrix cell, question, hypothesis, measures, configuration, threat, condition, claims."
+        tier="required"
+        state={c1State}
       >
-        12. Procedure
-      </SubTitle>
-      <div className="field-row">
-        <SuggestField label="Start call" value={card.siteCalls.start} onChange={(v) => set({ siteCalls: { ...card.siteCalls, start: v } })} suggestions={siteCallSuggestions('start', 'START RUN')} disabled={frozen} />
-        <SuggestField label="Pause call" value={card.siteCalls.pause} onChange={(v) => set({ siteCalls: { ...card.siteCalls, pause: v } })} suggestions={siteCallSuggestions('pause', 'HOLD')} disabled={frozen} />
-        <SuggestField label="Stop call" value={card.siteCalls.stop} onChange={(v) => set({ siteCalls: { ...card.siteCalls, stop: v } })} suggestions={siteCallSuggestions('stop', 'STOP STOP STOP')} disabled={frozen} />
-        <SuggestField label="Abort call" value={card.siteCalls.abort} onChange={(v) => set({ siteCalls: { ...card.siteCalls, abort: v } })} suggestions={siteCallSuggestions('abort', 'ABORT ABORT ABORT')} disabled={frozen} />
-      </div>
-      <div className="field-row">
-        <NumberField label="Pre-event margin (s)" value={card.preEventMarginS} onChange={(v) => set({ preEventMarginS: v ?? 0 })} disabled={frozen} />
-        <NumberField label="Post-event margin (s)" value={card.postEventMarginS} onChange={(v) => set({ postEventMarginS: v ?? 0 })} disabled={frozen} />
-      </div>
-      {card.procedure.map((s, i) => (
-        <div key={s.id} className="field-row te-table-row te-step-row">
-          <Field label={`Step ${i + 1} action`}>
-            <textarea
-              rows={1}
-              value={s.action}
+        {card.matrixCellId && !showCellPicker ? (
+          <div className="provenance-line">
+            <span className="provenance-chip">from {cellLabel}</span>
+            {!frozen && (
+              <button type="button" className="mini" onClick={() => setShowCellPicker(true)}>
+                Change cell
+              </button>
+            )}
+          </div>
+        ) : (
+          <EntityPicker
+            label="Matrix cell"
+            help="Picking a cell fills the linked records."
+            options={campaign.matrix.map((x) => ({ id: x.id, label: `${x.id} ${x.method.slice(0, 24)}` }))}
+            value={card.matrixCellId}
+            onChange={pickMatrixCell}
+            disabled={frozen}
+          />
+        )}
+        <EntityPicker
+          label="Questions"
+          multi
+          values={card.questionIds}
+          onChangeMulti={(v) => applyLinks({ questionIds: v })}
+          options={campaign.questions.map((q) => ({ id: q.id, label: q.wording.slice(0, 60) || q.id, sub: q.id }))}
+          disabled={frozen}
+        />
+        {(card.questionIds.length > 0 || card.hypothesisIds.length > 0) && (
+          <EntityPicker
+            label="Hypotheses"
+            multi
+            values={card.hypothesisIds}
+            onChangeMulti={(v) => applyLinks({ hypothesisIds: v })}
+            options={campaign.hypotheses.map((h) => ({
+              id: h.id,
+              label: h.producesBehavior.slice(0, 60) || h.id,
+              sub: h.id,
+            }))}
+            disabled={frozen}
+          />
+        )}
+        <EntityPicker
+          label="Measures"
+          multi
+          values={card.measureIds}
+          onChangeMulti={(v) => applyLinks({ measureIds: v })}
+          options={campaign.measures.map((m) => ({
+            id: m.id,
+            label: m.name || m.id,
+            sub: `${m.id}${m.frozen ? '' : ' (not frozen)'}`,
+          }))}
+          disabled={frozen}
+        />
+        <div className="field-row">
+          <EntityPicker
+            label="Configuration"
+            options={campaign.configs.map((x) => ({
+              id: x.id,
+              label: x.name || x.id,
+              sub: x.frozen ? 'frozen' : 'not frozen',
+            }))}
+            value={card.configId}
+            onChange={(v) => applyLinks({ configId: v })}
+            disabled={frozen}
+          />
+          <EntityPicker
+            label="Threat"
+            options={campaign.threats.map((x) => ({ id: x.id, label: x.name || x.id, sub: x.id }))}
+            value={card.threatId}
+            onChange={(v) => applyLinks({ threatId: v })}
+            disabled={frozen}
+          />
+          <EntityPicker
+            label="Condition"
+            options={campaign.conditions.map((x) => ({ id: x.id, label: x.name || x.id, sub: x.id }))}
+            value={card.conditionId}
+            onChange={(v) => applyLinks({ conditionId: v })}
+            disabled={frozen}
+          />
+        </div>
+        <EntityPicker
+          label="Claims this card tests"
+          help="Claims come from the register. A tested claim carries into findings."
+          multi
+          values={card.claimIds}
+          onChangeMulti={(v) => set({ claimIds: v })}
+          options={claimOptions}
+          disabled={frozen}
+        />
+        {campaign.frames.length > 0 && (
+          <AdvancedDisclosure label="Canvas frames">
+            <MultiPicker
+              label="Frames"
+              options={campaign.frames.map((f) => ({ id: f.id, label: f.name }))}
+              value={card.frameIds}
+              onChange={(v) => set({ frameIds: v })}
               disabled={frozen}
-              onChange={(e) => setStep(s.id, { action: e.target.value })}
-              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
             />
-          </Field>
-          <SelectField label="Role" value={s.role} options={RUN_ROLES.map((v) => ({ v, label: v }))} onChange={(v) => v && setStep(s.id, { role: v })} disabled={frozen} />
-          <Field label="Complete when">
-            <input value={s.observableCompletion} disabled={frozen} onChange={(e) => setStep(s.id, { observableCompletion: e.target.value })} />
-          </Field>
-          <Field label="INV">
-            <input type="checkbox" checked={s.canSilentlyInvalidate} disabled={frozen} onChange={(e) => setStep(s.id, { canSilentlyInvalidate: e.target.checked })} />
-          </Field>
-          <Field label="REC">
-            <input type="checkbox" checked={s.isRecorderStartStop} disabled={frozen} onChange={(e) => setStep(s.id, { isRecorderStartStop: e.target.checked })} />
-          </Field>
-          <button className="mini" disabled={frozen || i === 0} onClick={() => moveStep(i, -1)}>↑</button>
-          <button className="mini" disabled={frozen || i === card.procedure.length - 1} onClick={() => moveStep(i, 1)}>↓</button>
-          <button className="mini danger" disabled={frozen} onClick={() => set({ procedure: card.procedure.filter((x) => x.id !== s.id) })}>×</button>
+          </AdvancedDisclosure>
+        )}
+      </DecisionGroup>
+
+      <DecisionGroup
+        id="c2-why"
+        question="Why run this next, and what do we expect?"
+        hint="Purpose, priority, prediction. Predictions are recorded before the run."
+        tier="required"
+        state={c2State}
+      >
+        <DerivedText
+          label="Title"
+          value={card.title}
+          derived={titleDerived}
+          source="linked records"
+          onChange={(v) => set({ title: v })}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="Purpose"
+          help="One sentence: why this run exists."
+          rows={2}
+          value={card.purpose}
+          derived={deriv.purpose ?? ''}
+          source={firstQuestion?.id ?? 'linked question'}
+          onChange={(v) => set({ purpose: v })}
+          disabled={frozen}
+        />
+        <ChipString
+          label="Why run this next?"
+          value={card.whyHighestValueNext}
+          onChange={(v) => set({ whyHighestValueNext: v })}
+          options={WHY_NEXT_REASONS}
+          disabled={frozen}
+        />
+        <TextField
+          label="Priority note"
+          value={card.priorityReason}
+          onChange={(v) => set({ priorityReason: v })}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="Prediction"
+          help={HELP.prediction}
+          value={card.prediction}
+          derived={deriv.prediction ?? ''}
+          source="linked hypothesis"
+          onChange={(v) => set({ prediction: v })}
+          disabled={frozen}
+        />
+        <ExampleHint {...HINTS.prediction} />
+        <DerivedText
+          label="What result would change the customer's choice?"
+          value={card.resultThatCouldChangeDecision}
+          derived={deriv.resultThatCouldChangeDecision ?? ''}
+          source="decision record"
+          onChange={(v) => set({ resultThatCouldChangeDecision: v })}
+          disabled={frozen}
+        />
+        {(ivFactors.length > 0 || nz(card.changedFactor)) && (
+          <SelectField
+            label="Which one factor does this run change?"
+            value={card.changedFactor || null}
+            allowEmpty="not set"
+            options={changedFactorOpts}
+            onChange={(v) => set({ changedFactor: v ?? '' })}
+            disabled={frozen}
+          />
+        )}
+      </DecisionGroup>
+
+      <DecisionGroup
+        id="c3-sampling"
+        question="How many attempts, in what order?"
+        hint="Sampling plan: repetition number, minimum valid sample, order and blocking."
+        tier="recommended"
+        state={c3State}
+      >
+        <div className="field-row">
+          <NumberField
+            label="This is attempt number"
+            help="Which repetition of this card the next run is."
+            value={card.repetitionNumber}
+            onChange={(v) => set({ repetitionNumber: v ?? 1 })}
+            disabled={frozen}
+          />
+          <NumberField
+            label="Valid runs needed"
+            help="Valid repetitions needed before we can score."
+            value={card.minValidSample}
+            onChange={(v) => set({ minValidSample: v ?? 1 })}
+            disabled={frozen}
+          />
         </div>
-      ))}
+        <OrderBlockingBuilder
+          value={card.orderAndBlocking}
+          derived={deriv.orderAndBlocking ?? ''}
+          source="matrix cell"
+          onChange={(v) => set({ orderAndBlocking: v })}
+          disabled={frozen}
+        />
+        {(repeatPlanned || nz(card.resetBeforeRepeat)) && (
+          <ChipString
+            label="What must reset before the next attempt?"
+            value={card.resetBeforeRepeat}
+            onChange={(v) => set({ resetBeforeRepeat: v })}
+            options={RESET_ACTIONS}
+            disabled={frozen}
+          />
+        )}
+        {(ivFactors.length > 0 || card.independentFactorIds.length > 0) && (
+          <MultiPicker
+            label="Factors this run changes"
+            options={ivFactors}
+            value={card.independentFactorIds}
+            onChange={(v) => set({ independentFactorIds: v })}
+            disabled={frozen}
+          />
+        )}
+        {(heldFactors.length > 0 || card.heldFactorIds.length > 0) && (
+          <MultiPicker
+            label="Factors held constant"
+            options={heldFactors}
+            value={card.heldFactorIds}
+            onChange={(v) => set({ heldFactorIds: v })}
+            disabled={frozen}
+          />
+        )}
+        {(covariateFactors.length > 0 || card.covariateFactorIds.length > 0) && (
+          <MultiPicker
+            label="Conditions we record but do not control"
+            options={covariateFactors}
+            value={card.covariateFactorIds}
+            onChange={(v) => set({ covariateFactorIds: v })}
+            disabled={frozen}
+          />
+        )}
+      </DecisionGroup>
 
-      <SubTitle>13. Expected result</SubTitle>
-      <TextField label="Nominal behavior" rows={2} value={card.expectedResult} onChange={(v) => set({ expectedResult: v })} disabled={frozen} />
-      <TextField label="Known expected artifacts" value={card.knownArtifacts} onChange={(v) => set({ knownArtifacts: v })} disabled={frozen} />
-
-      <SubTitle>14. Stop and restart</SubTitle>
-      <TextField label="Safety and regulatory stops" rows={2} value={card.safetyStops} onChange={(v) => set({ safetyStops: v })} disabled={frozen} />
-      <TextField label="Data and equipment stops" rows={2} value={card.dataEquipmentStops} onChange={(v) => set({ dataEquipmentStops: v })} disabled={frozen} />
-      <div className="field-row">
-        <TextField label="Safe state" value={card.safeState} onChange={(v) => set({ safeState: v })} disabled={frozen} />
-        <SuggestField label="Restart authority" value={card.restartAuthority} onChange={(v) => set({ restartAuthority: v })} suggestions={[...people, ...RUN_ROLES]} disabled={frozen} />
-      </div>
-      <TextField label="Run-specific hold conditions" rows={2} value={card.holdConditions} onChange={(v) => set({ holdConditions: v })} disabled={frozen} />
-
-      <SubTitle>15. Validity and repeat</SubTitle>
-      <TextField label="Required validity conditions" rows={2} value={card.requiredValidityConditions} onChange={(v) => set({ requiredValidityConditions: v })} disabled={frozen} />
-      <TextField label="Invalidating failures" rows={2} value={card.invalidatingFailures} onChange={(v) => set({ invalidatingFailures: v })} disabled={frozen} />
-      <TextField label="Conditional uses" rows={2} value={card.conditionalUses} onChange={(v) => set({ conditionalUses: v })} disabled={frozen} />
-
-      <SubTitle>16. Outputs</SubTitle>
-      <SuggestField label="Required files" rows={2} value={card.requiredFiles} onChange={(v) => set({ requiredFiles: v })} suggestions={[...otherCards.map((x) => x.requiredFiles), ...DATA_STANDARDS.map((d) => `${d.name}: ${d.value}`)]} disabled={frozen} />
-      <SuggestField label="Storage path" value={card.storagePath} onChange={(v) => set({ storagePath: v })} suggestions={otherCards.map((x) => x.storagePath)} disabled={frozen} />
-
-      <SubTitle>17. Deviations and runs</SubTitle>
-      {runs.length === 0 && <p className="muted small">No runs executed against this card yet.</p>}
-      {runs.map((r) => (
-        <div key={r.id} className="muted small">
-          {r.id}: {r.validity}
-          {r.excluded ? ' (excluded)' : ''}
+      <DecisionGroup
+        id="c4-system"
+        question="What state is the system in, and who runs it?"
+        tier="recommended"
+        state={c4State}
+      >
+        <DerivedText
+          label="System state"
+          rows={2}
+          value={card.systemStateNote}
+          derived={deriv.systemStateNote ?? ''}
+          source={configSource}
+          onChange={(v) => set({ systemStateNote: v })}
+          disabled={frozen}
+        />
+        <div className="field-row">
+          <PersonPicker
+            label="Operators"
+            multi
+            value={card.operators}
+            onChange={(v) => set({ operators: v })}
+            people={people}
+            disabled={frozen}
+          />
+          <DerivedText
+            label="Training state"
+            value={card.trainingState}
+            derived={deriv.trainingState ?? ''}
+            source={configSource}
+            onChange={(v) => set({ trainingState: v })}
+            disabled={frozen}
+          />
         </div>
-      ))}
-      {devs.map((d) => (
-        <div key={d.id} className="muted small">
-          {d.id} on {d.runId}: {d.actualState || 'deviation'} ({d.effect}, {d.disposition})
+      </DecisionGroup>
+
+      {showC5 && (
+        <DecisionGroup
+          id="c5-red"
+          question="What does red do, and what voids the run?"
+          hint="Red picture: OPFOR start state, controlled variables, blinding, operating limits."
+          tier="recommended"
+          state={c5State}
+        >
+          {(card.threatId != null || hasRedContent) && (
+            <>
+              {threat ? (
+                <RedStateBuilder
+                  value={card.redInitialState}
+                  onChange={(v) => set({ redInitialState: v })}
+                  threatDesc={threatDesc}
+                  kinetic={signals.kinetic}
+                  disabled={frozen}
+                />
+              ) : (
+                <TextField
+                  label="Red start state"
+                  rows={2}
+                  value={card.redInitialState}
+                  onChange={(v) => set({ redInitialState: v })}
+                  disabled={frozen}
+                />
+              )}
+              <div className="field-row">
+                <DerivedText
+                  label="What red controls"
+                  value={card.redControlled}
+                  derived={deriv.redControlled ?? ''}
+                  source={threatSource}
+                  onChange={(v) => set({ redControlled: v })}
+                  disabled={frozen}
+                />
+                <DerivedText
+                  label="What red holds fixed"
+                  value={card.redFixed}
+                  derived={deriv.redFixed ?? ''}
+                  source={threatSource}
+                  onChange={(v) => set({ redFixed: v })}
+                  disabled={frozen}
+                />
+              </div>
+              <DerivedText
+                label="Who is kept unaware, and of what?"
+                help={HINTS.blinding.definition}
+                value={card.blinding}
+                derived={deriv.blinding ?? ''}
+                source={threatSource}
+                onChange={(v) => set({ blinding: v })}
+                disabled={frozen}
+              />
+              <ChipString
+                label="Red actions that void the run"
+                value={card.invalidatingRedDeviations}
+                onChange={(v) => set({ invalidatingRedDeviations: v })}
+                options={redDeviationOptions}
+                disabled={frozen}
+              />
+            </>
+          )}
+          {(card.conditionId != null || nz(card.conditionNote)) && (
+            <DerivedText
+              label="Condition note"
+              rows={2}
+              value={card.conditionNote}
+              derived={deriv.conditionNote ?? ''}
+              source={conditionSource}
+              onChange={(v) => set({ conditionNote: v })}
+              disabled={frozen}
+            />
+          )}
+          {(campaign.authorities.length > 0 || nz(card.operatingLimits)) && (
+            <DerivedText
+              label="Operating limits"
+              value={card.operatingLimits}
+              derived={deriv.operatingLimits ?? ''}
+              source="active authorities"
+              onChange={(v) => set({ operatingLimits: v })}
+              disabled={frozen}
+            />
+          )}
+        </DecisionGroup>
+      )}
+
+      <DecisionGroup
+        id="c6-truth"
+        question="How do we know what really happened?"
+        hint="Truth sources, common time base, event marks, required files."
+        tier="recommended"
+        state={c6State}
+      >
+        <DerivedText
+          label="Data sources"
+          rows={2}
+          value={card.dataSources}
+          derived={deriv.dataSources ?? ''}
+          source="linked measures"
+          onChange={(v) => set({ dataSources: v })}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="Truth source"
+          help={HINTS['truth-source'].definition}
+          rows={2}
+          value={card.groundTruth}
+          derived={deriv.groundTruth ?? ''}
+          source="linked measures"
+          onChange={(v) => set({ groundTruth: v })}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="Shared clock and allowed time error"
+          value={card.commonTimeAndTolerance}
+          derived={deriv.commonTimeAndTolerance ?? ''}
+          source="linked measures"
+          onChange={(v) => set({ commonTimeAndTolerance: v })}
+          disabled={frozen}
+        />
+        <MonitoringBuilder
+          value={card.monitoringAndFallback}
+          onChange={(v) => set({ monitoringAndFallback: v })}
+          roles={[...RUN_ROLES]}
+          disabled={frozen}
+        />
+        <LineChecklist
+          label="Event marks"
+          help="The tap-button vocabulary for the run log."
+          options={markVocabulary}
+          value={card.eventMarks}
+          onChange={(v) => set({ eventMarks: v })}
+          disabled={frozen}
+        />
+        <ChipString
+          label="Required files"
+          value={card.requiredFiles}
+          onChange={(v) => set({ requiredFiles: v })}
+          options={fileOptions}
+          sep={'\n'}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="Storage path"
+          value={card.storagePath}
+          derived={storageDerived}
+          source="campaign convention"
+          onChange={(v) => set({ storagePath: v })}
+          disabled={frozen}
+        />
+        <AdvancedDisclosure label="Measure caveats">
+          {linkedMeasures.length === 0 && (
+            <p className="muted small">No measures linked yet. Link them under Where does this card come from.</p>
+          )}
+          {linkedMeasures.map((m) => (
+            <div key={m.id} className="muted small">
+              {m.id}: {m.name} ({m.unit || 'no unit'})
+            </div>
+          ))}
+          <TextField
+            label="How a measure applies to this run"
+            rows={2}
+            value={card.measuresNote}
+            onChange={(v) => set({ measuresNote: v })}
+            disabled={frozen}
+          />
+        </AdvancedDisclosure>
+      </DecisionGroup>
+
+      <DecisionGroup
+        id="c7-procedure"
+        question="What are the exact steps?"
+        hint="Each step names a role and an observable completion."
+        tier="required"
+        state={c7State}
+      >
+        {card.procedure.map((s, i) => (
+          <div key={s.id} className="field-row te-table-row te-step-row">
+            <Field label={`Step ${i + 1} action`}>
+              <textarea
+                rows={1}
+                value={s.action}
+                disabled={frozen}
+                onChange={(e) => setStep(s.id, { action: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              />
+            </Field>
+            <SelectField
+              label="Role"
+              value={s.role}
+              options={RUN_ROLES.map((v) => ({ v, label: v }))}
+              onChange={(v) => v && setStep(s.id, { role: v })}
+              disabled={frozen}
+            />
+            <Field label="Done when" help="Done when you can observe what, exactly.">
+              <input
+                value={s.observableCompletion}
+                disabled={frozen}
+                onChange={(e) => setStep(s.id, { observableCompletion: e.target.value })}
+              />
+            </Field>
+            <Field label="Void" help="This step can silently void the run.">
+              <input
+                type="checkbox"
+                checked={s.canSilentlyInvalidate}
+                disabled={frozen}
+                onChange={(e) => setStep(s.id, { canSilentlyInvalidate: e.target.checked })}
+              />
+            </Field>
+            <Field label="Rec" help="Recorder start or stop step.">
+              <input
+                type="checkbox"
+                checked={s.isRecorderStartStop}
+                disabled={frozen}
+                onChange={(e) => setStep(s.id, { isRecorderStartStop: e.target.checked })}
+              />
+            </Field>
+            <button type="button" className="mini" disabled={frozen || i === 0} onClick={() => moveStep(i, -1)}>
+              ↑
+            </button>
+            <button
+              type="button"
+              className="mini"
+              disabled={frozen || i === card.procedure.length - 1}
+              onClick={() => moveStep(i, 1)}
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              className="mini danger"
+              disabled={frozen}
+              onClick={() => set({ procedure: card.procedure.filter((x) => x.id !== s.id) })}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {card.procedure.length === 0 && <p className="muted small">No steps yet. Add step.</p>}
+        <button
+          type="button"
+          className="card-chip add"
+          disabled={frozen}
+          onClick={() => set({ procedure: [...card.procedure, emptyProcedureStep()] })}
+        >
+          Add step
+        </button>
+        <div className="field-row">
+          <SuggestField label="Start call" value={card.siteCalls.start} onChange={(v) => set({ siteCalls: { ...card.siteCalls, start: v } })} suggestions={siteCallSuggestions('start', 'START RUN')} disabled={frozen} />
+          <SuggestField label="Pause call" value={card.siteCalls.pause} onChange={(v) => set({ siteCalls: { ...card.siteCalls, pause: v } })} suggestions={siteCallSuggestions('pause', 'HOLD')} disabled={frozen} />
+          <SuggestField label="Stop call" value={card.siteCalls.stop} onChange={(v) => set({ siteCalls: { ...card.siteCalls, stop: v } })} suggestions={siteCallSuggestions('stop', 'STOP STOP STOP')} disabled={frozen} />
+          <SuggestField label="Abort call" value={card.siteCalls.abort} onChange={(v) => set({ siteCalls: { ...card.siteCalls, abort: v } })} suggestions={siteCallSuggestions('abort', 'ABORT ABORT ABORT')} disabled={frozen} />
         </div>
-      ))}
-      <p className="muted small">
-        Never edit this card to match what occurred. Record a deviation. A deviation that becomes
-        the intended method requires a new card version.
-      </p>
+        <div className="field-row">
+          <NumberUnitField
+            label="Recorded before the event"
+            unit="s"
+            value={card.preEventMarginS}
+            onChange={(v) => set({ preEventMarginS: v ?? 0 })}
+            disabled={frozen}
+          />
+          <NumberUnitField
+            label="Recorded after the event"
+            unit="s"
+            value={card.postEventMarginS}
+            onChange={(v) => set({ postEventMarginS: v ?? 0 })}
+            disabled={frozen}
+          />
+        </div>
+        <LineChecklist
+          label="Required state before start"
+          help="Preconditions. Authority rows track the approval register."
+          options={authorityLines}
+          value={card.preconditions}
+          onChange={(v) => set({ preconditions: v })}
+          disabled={frozen}
+        />
+      </DecisionGroup>
 
-      <SubTitle>18. Allowed conclusion</SubTitle>
-      <SuggestField label="What this run's evidence may support" rows={2} value={card.allowedConclusion} onChange={(v) => set({ allowedConclusion: v })} suggestions={[threat?.permittedGeneralization ?? '', condition?.permittedGeneralization ?? '']} disabled={frozen} />
+      <DecisionGroup
+        id="c8-stops"
+        question="When do we stop, and when does a run still count?"
+        hint={HINTS['stop-rule'].definition}
+        tier="recommended"
+        state={c8State}
+      >
+        <SubTitle>Stops and holds</SubTitle>
+        <ClassedLinesTable
+          fields={[
+            { key: 'safetyStops', label: 'safety' },
+            { key: 'dataEquipmentStops', label: 'data' },
+            { key: 'holdConditions', label: 'hold' },
+          ]}
+          textLabel="Stop or hold when"
+          classLabel="Class"
+          addLabel="Add stop rule"
+          empty="No stop rules yet. Add stop rule."
+          values={{
+            safetyStops: card.safetyStops,
+            dataEquipmentStops: card.dataEquipmentStops,
+            holdConditions: card.holdConditions,
+          }}
+          onChange={(p) => set(p as Partial<TeCard>)}
+          suggestions={STOP_TAXONOMY.map((text) => ({ text, cls: 'data' }))}
+          disabled={frozen}
+        />
+        <div className="field-row">
+          <TextField
+            label="Safe state"
+            help="The state the site and system go to on a stop."
+            value={card.safeState}
+            onChange={(v) => set({ safeState: v })}
+            disabled={frozen}
+          />
+          <EntityPicker
+            label="Restart authority"
+            help="Who clears a restart after a stop."
+            options={[...people, ...RUN_ROLES].map((v) => ({ id: v, label: v }))}
+            allowFree
+            freeValue={card.restartAuthority}
+            onFree={(v) => set({ restartAuthority: v })}
+            disabled={frozen}
+          />
+        </div>
+        <SubTitle>Validity rules</SubTitle>
+        <ExampleHint {...HINTS['validity-rule']} />
+        <ClassedLinesTable
+          fields={[
+            { key: 'requiredValidityConditions', label: 'required' },
+            { key: 'invalidatingFailures', label: 'voids run' },
+            { key: 'conditionalUses', label: 'conditional' },
+          ]}
+          textLabel="Condition"
+          classLabel="Effect"
+          addLabel="Add validity rule"
+          empty="No validity rules yet. Add validity rule."
+          values={{
+            requiredValidityConditions: card.requiredValidityConditions,
+            invalidatingFailures: card.invalidatingFailures,
+            conditionalUses: card.conditionalUses,
+          }}
+          onChange={(p) => set(p as Partial<TeCard>)}
+          suggestions={STOP_TAXONOMY.map((text) => ({ text, cls: 'voids run' }))}
+          disabled={frozen}
+        />
+      </DecisionGroup>
 
-      <SubTitle>19. Prohibited conclusion</SubTitle>
-      <SuggestField label="What must not be inferred" rows={2} value={card.prohibitedConclusion} onChange={(v) => set({ prohibitedConclusion: v })} suggestions={[threat?.prohibitedGeneralization ?? '', condition?.prohibitedGeneralization ?? '']} disabled={frozen} />
+      <DecisionGroup
+        id="c9-scope"
+        question="What can this run prove?"
+        hint="Evidence scope: expected behavior, allowed and prohibited conclusions."
+        tier="recommended"
+        state={c9State}
+      >
+        <DerivedText
+          label="Expected behavior"
+          rows={2}
+          value={card.expectedResult}
+          derived={expectedDerived}
+          source="prediction and measures"
+          onChange={(v) => set({ expectedResult: v })}
+          disabled={frozen}
+        />
+        <ChipString
+          label="Expected data quirks"
+          help="Oddities in the data that are normal, not failures."
+          value={card.knownArtifacts}
+          onChange={(v) => set({ knownArtifacts: v })}
+          options={[]}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="This evidence can support"
+          rows={2}
+          value={card.allowedConclusion}
+          derived={allowedDerived}
+          source="threat and condition"
+          onChange={(v) => set({ allowedConclusion: v })}
+          disabled={frozen}
+        />
+        <DerivedText
+          label="This evidence must not be read as"
+          rows={2}
+          value={card.prohibitedConclusion}
+          derived={prohibitedDerived}
+          source="threat and condition"
+          onChange={(v) => set({ prohibitedConclusion: v })}
+          disabled={frozen}
+        />
+      </DecisionGroup>
 
-      <MultiPicker
-        label="Canvas frames"
-        options={campaign.frames.map((f) => ({ id: f.id, label: f.name }))}
-        value={card.frameIds}
-        onChange={(v) => set({ frameIds: v })}
-        disabled={frozen}
-      />
+      {(runs.length > 0 || devs.length > 0) && (
+        <DecisionGroup id="c-runs" question="Runs against this card" state="done" defaultOpen={false}>
+          {runs.map((r) => (
+            <div key={r.id} className="muted small">
+              {r.id}: {r.validity}
+              {r.excluded ? ' (excluded)' : ''}
+            </div>
+          ))}
+          {devs.map((d) => (
+            <div key={d.id} className="muted small">
+              {d.id} on {d.runId}: {d.actualState || 'deviation'} ({d.effect}, {d.disposition})
+            </div>
+          ))}
+          <p className="muted small">
+            Never edit this card to match what occurred. Record a deviation. A deviation that becomes
+            the intended method requires a new card version.
+          </p>
+        </DecisionGroup>
+      )}
+
+      <DecisionGroup
+        id="c10-issue"
+        question="Is this card safe to issue?"
+        hint={HELP['card-issue']}
+        tier="required"
+        state={c10State}
+      >
+        <div className="field-row">
+          <RecordCheck
+            label="Cold read"
+            help={HELP['cold-reader']}
+            by={card.coldReaderBy}
+            at={card.coldReaderAt}
+            people={people}
+            onRecord={(by) => set({ coldReaderBy: by, coldReaderAt: nowIso() })}
+            disabled={frozen}
+          />
+          <RecordCheck
+            label="Dry run"
+            help={HELP['dry-run']}
+            by={card.dryRunBy}
+            at={card.dryRunAt}
+            people={people}
+            onRecord={(by) => set({ dryRunBy: by, dryRunAt: nowIso() })}
+            disabled={frozen}
+          />
+        </div>
+        {frozen ? (
+          <p className="muted small">
+            Issued {card.effectiveAt ? fmtDate(card.effectiveAt) : ''}. The card is frozen.
+          </p>
+        ) : (
+          <StageReview
+            title={`Issue review ${card.cardCode} ${card.version}`}
+            rows={reviewRows}
+            issues={issueBlockers.map((text) => ({ level: 'block' as const, text }))}
+            passLabel="Issue card"
+            onPass={() => issueCard(card.id)}
+          />
+        )}
+      </DecisionGroup>
 
       {printing && (
         <PrintOverlay title={`Test card ${card.cardCode} ${card.version}`} onClose={() => setPrinting(false)}>
@@ -517,9 +1163,8 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
 }
 
 export function CardsPanel({ campaign }: { campaign: TeCampaign }) {
-  const { addCard, createCardFromMatrixCell, selectRecord } = useTeStore.getState()
+  const { selectRecord } = useTeStore.getState()
   const selected = useTeStore((s) => s.ui.selected.cards ?? null)
-  const [cellId, setCellId] = useState('')
   const card = campaign.cards.find((c) => c.id === selected)
   const issued = campaign.cards.filter((c) => c.status === 'issued').length
   const gate = issued
@@ -537,56 +1182,14 @@ export function CardsPanel({ campaign }: { campaign: TeCampaign }) {
           }))}
           selectedId={selected}
           onSelect={(id) => selectRecord('cards', id)}
-          onAdd={() => selectRecord('cards', addCard())}
-          addLabel="+ New card"
         />
-        <div className="field-row">
-          <Field label="+ From template">
-            <select
-              value=""
-              onChange={(e) => {
-                const t = CARD_TEMPLATES.find((x) => x.key === e.target.value)
-                if (!t) return
-                selectRecord('cards', addCard(t.patch))
-              }}
-            >
-              <option value="">pick a worked template…</option>
-              {CARD_TEMPLATES.map((t) => (
-                <option key={t.key} value={t.key}>
-                  {t.key}: {t.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="New card from cell">
-            <select value={cellId} onChange={(e) => setCellId(e.target.value)}>
-              <option value="">pick a matrix cell…</option>
-              {campaign.matrix.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.id} {x.method.slice(0, 24)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <div className="field">
-            <span>&nbsp;</span>
-            <button
-              className="mini"
-              disabled={!campaign.matrix.some((x) => x.id === cellId)}
-              onClick={() => {
-                const id = createCardFromMatrixCell(cellId)
-                if (id) selectRecord('cards', id)
-                setCellId('')
-              }}
-            >
-              Create
-            </button>
-          </div>
-        </div>
+        <CardStartRow campaign={campaign} />
         {card ? (
           <CardEditor key={card.id} campaign={campaign} card={card} />
         ) : (
-          <p className="muted small">Select a card, create a new one, or start from a template.</p>
+          <p className="muted small">
+            Select a card, or start one from a matrix cell, a template, or blank.
+          </p>
         )}
       </div>
     </div>

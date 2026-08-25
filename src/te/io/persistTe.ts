@@ -4,7 +4,15 @@ import { useTeStore } from '../state/teStore'
 
 const TE_STORAGE_KEY = 'rangeboard.te.v1'
 
-/** Fill fields added after a save was written so old campaigns round-trip. */
+/**
+ * Fill fields added after a save was written so old campaigns round-trip.
+ * Deep-fills only `charter`, `decision`, and `evidencePackage`; top-level
+ * optional fields (presetKey, sourceCampaignId) get defaults from the spread.
+ * Record arrays (measures, threats, cards, ...) are NOT deep-filled. Do not
+ * add new per-record fields; if one ever becomes necessary, read it
+ * defensively (`?? default`) at every use site or extend this function with
+ * a per-record filler in the same change.
+ */
 export function fillCampaign(parsed: TeCampaign): TeCampaign {
   const empty = emptyCampaign(parsed.name ?? 'Campaign', parsed.code ?? 'CAMP')
   return {
@@ -44,6 +52,7 @@ export function startTeAutosave(): void {
       return
     window.clearTimeout(timer)
     timer = window.setTimeout(() => {
+      const store = useTeStore.getState()
       try {
         const s: TeState = {
           schemaVersion: 1,
@@ -51,8 +60,10 @@ export function startTeAutosave(): void {
           activeCampaignId: state.activeCampaignId,
         }
         localStorage.setItem(TE_STORAGE_KEY, JSON.stringify(s))
+        store.setSaveState(new Date().toISOString(), null)
       } catch {
         // Storage full (frame captures): skip autosave, export still works.
+        store.setSaveState(store.lastSavedAt, 'Not saved: storage full. Export the campaign.')
       }
     }, 500)
   })

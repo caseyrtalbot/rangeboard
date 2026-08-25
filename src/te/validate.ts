@@ -16,15 +16,44 @@ export function hasPlaceholder(text: string): boolean {
   return /\[[^\]]*\]/.test(text)
 }
 
+/**
+ * Template patches carry example link IDs and [placeholder] IDs. Keep only
+ * links that resolve to records in this campaign; drop the rest so the
+ * card-issue gate sees them as missing, not as satisfied.
+ */
+export function sanitizeCardTemplatePatch(
+  c: TeCampaign,
+  patch: Partial<TeCard>,
+): Partial<TeCard> {
+  const out = { ...patch }
+  delete out.cardCode // the allocator's campaign-scoped code stands
+  if (out.version && hasPlaceholder(out.version)) delete out.version
+  if (out.questionIds)
+    out.questionIds = out.questionIds.filter((id) => c.questions.some((x) => x.id === id))
+  if (out.hypothesisIds)
+    out.hypothesisIds = out.hypothesisIds.filter((id) => c.hypotheses.some((x) => x.id === id))
+  if (out.measureIds)
+    out.measureIds = out.measureIds.filter((id) => c.measures.some((x) => x.id === id))
+  if (out.configId && !c.configs.some((x) => x.id === out.configId)) out.configId = null
+  if (out.threatId && !c.threats.some((x) => x.id === out.threatId)) out.threatId = null
+  if (out.conditionId && !c.conditions.some((x) => x.id === out.conditionId)) out.conditionId = null
+  if (out.matrixCellId && !c.matrix.some((x) => x.id === out.matrixCellId)) out.matrixCellId = null
+  if (out.linkedEntityIds) out.linkedEntityIds = out.linkedEntityIds.filter((id) => !hasPlaceholder(id))
+  return out
+}
+
 /** Blockers that keep a card from advancing to issued. */
 export function cardIssueBlockers(c: TeCampaign, card: TeCard): string[] {
   const out: string[] = []
   if (!card.title.trim()) out.push('Card has no title.')
   if (!card.purpose.trim()) out.push('Card has no purpose sentence.')
-  if (card.questionIds.length === 0) out.push('Card links no question. No orphan runs.')
+  if (card.questionIds.length === 0 || !c.questions.some((x) => x.id === card.questionIds[0]))
+    out.push('Card links no question. No orphan runs.')
   if (card.measureIds.length === 0) out.push('Card links no measure.')
-  if (!card.configId) out.push('Card links no configuration baseline. No configuration record, no comparison.')
-  if (!card.threatId) out.push('Card links no threat profile.')
+  if (!card.configId || !c.configs.some((x) => x.id === card.configId))
+    out.push('Card links no configuration baseline. No configuration record, no comparison.')
+  if (!card.threatId || !c.threats.some((x) => x.id === card.threatId))
+    out.push('Card links no threat profile.')
   if (!card.conditionId) out.push('Card links no condition.')
   if (card.procedure.length === 0) out.push('Card has no procedure steps.')
   for (const step of card.procedure) {
@@ -178,4 +207,90 @@ export function chainHealth(c: TeCampaign): ChainHealth {
     ).length,
     claimsUndisposed: c.registers.filter((r) => r.kind === 'claim' && !r.disposition).length,
   }
+}
+
+/** Record kinds that controlled deletion covers. */
+export type DeleteImpactKind =
+  | 'registers'
+  | 'questions'
+  | 'measures'
+  | 'configs'
+  | 'threats'
+  | 'conditions'
+  | 'cards'
+
+function counted(n: number, noun: string): string[] {
+  if (n === 0) return []
+  return [`${n} ${noun}${n === 1 ? '' : 's'}`]
+}
+
+/**
+ * Controlled deletion (SPEC section 11). Returns human-readable referrers of
+ * a record. Empty result: the caller may remove after one inline confirm.
+ * Nonempty result: the remove control stays disabled and lists the referrers;
+ * the user clears the references first.
+ */
+export function deleteImpacts(c: TeCampaign, kind: DeleteImpactKind, id: string): string[] {
+  const out: string[] = []
+  switch (kind) {
+    case 'registers': {
+      const entry = c.registers.find((r) => r.id === id)
+      const named =
+        entry !== undefined &&
+        entry.statement.trim() !== '' &&
+        c.decision.blockingUncertainty.trim() === entry.statement.trim()
+      if (named || c.decision.blockingUncertainty.includes(id))
+        out.push('the blocking uncertainty')
+      out.push(...counted(c.hypotheses.filter((h) => h.claimId === id).length, 'hypothesis'))
+      out.push(...counted(c.cards.filter((x) => x.claimIds.includes(id)).length, 'card'))
+      out.push(...counted(c.findings.filter((f) => f.claimId === id).length, 'finding'))
+      break
+    }
+    case 'questions': {
+      out.push(...counted(c.matrix.filter((x) => x.questionId === id).length, 'matrix cell'))
+      out.push(...counted(c.cards.filter((x) => x.questionIds.includes(id)).length, 'card'))
+      out.push(...counted(c.findings.filter((f) => f.questionId === id).length, 'finding'))
+      out.push(...counted(c.measures.filter((m) => m.questionId === id).length, 'measure'))
+      out.push(...counted(c.hypotheses.filter((h) => h.questionId === id).length, 'hypothesis'))
+      break
+    }
+    case 'measures': {
+      out.push(...counted(c.matrix.filter((x) => x.measureIds.includes(id)).length, 'matrix cell'))
+      out.push(...counted(c.cards.filter((x) => x.measureIds.includes(id)).length, 'card'))
+      out.push(...counted(c.findings.filter((f) => f.measureIds.includes(id)).length, 'finding'))
+      out.push(
+        ...counted(
+          c.runs.filter((r) => r.observations.some((o) => o.measureId === id)).length,
+          'run',
+        ),
+      )
+      break
+    }
+    case 'configs': {
+      out.push(...counted(c.matrix.filter((x) => x.configId === id).length, 'matrix cell'))
+      out.push(...counted(c.cards.filter((x) => x.configId === id).length, 'card'))
+      out.push(...counted(c.runs.filter((r) => r.actualConfigId === id).length, 'run'))
+      out.push(...counted(c.findings.filter((f) => f.configId === id).length, 'finding'))
+      break
+    }
+    case 'threats': {
+      out.push(...counted(c.matrix.filter((x) => x.threatId === id).length, 'matrix cell'))
+      out.push(...counted(c.cards.filter((x) => x.threatId === id).length, 'card'))
+      out.push(...counted(c.runs.filter((r) => r.actualThreatId === id).length, 'run'))
+      out.push(...counted(c.findings.filter((f) => f.threatIds.includes(id)).length, 'finding'))
+      break
+    }
+    case 'conditions': {
+      out.push(...counted(c.matrix.filter((x) => x.conditionId === id).length, 'matrix cell'))
+      out.push(...counted(c.cards.filter((x) => x.conditionId === id).length, 'card'))
+      out.push(...counted(c.runs.filter((r) => r.actualConditionId === id).length, 'run'))
+      out.push(...counted(c.findings.filter((f) => f.conditionIds.includes(id)).length, 'finding'))
+      break
+    }
+    case 'cards': {
+      out.push(...counted(c.runs.filter((r) => r.cardId === id).length, 'run'))
+      break
+    }
+  }
+  return out
 }

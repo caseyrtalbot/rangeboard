@@ -1,16 +1,46 @@
+/**
+ * Analyze stage (SPEC 1.5): three decision groups in one column.
+ * A1 results and outcomes, A2 coverage and chain health (derived views),
+ * A3 daily review writing one TeChange. No stage gate here; the gate is
+ * adjudication upstream in Execute.
+ */
+
 import { useState } from 'react'
-import type { NextAction, ResultLabel, TeCampaign } from '../model/types'
+import type { DeviationEffect, NextAction, ResultLabel, TeCampaign } from '../model/types'
 import { useTeStore } from '../state/teStore'
 import { chainHealth } from '../validate'
 import { computeAllMeasures } from '../calc/measures'
 import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
-import { adaptivePriority } from '../calc/priority'
 import { templateByKey } from '../seed/checklistTemplates'
 import { allPeople, decisionRightHolder } from './help'
-import { PersonField, PhaseIntro, Pill, SelectField, Seg, SubTitle, SuggestField, TextField, fmtDate } from './kit'
-
-type Tab = 'results' | 'coverage' | 'daily'
+import {
+  AdvancedDisclosure,
+  CheckField,
+  DecisionGroup,
+  PersonPicker,
+  PhaseIntro,
+  Pill,
+  Seg,
+  SegChips,
+  SubTitle,
+  TextField,
+  fmtDate,
+} from './kit'
+import {
+  ChangeBuilder,
+  ComparabilityPick,
+  FactorGrid,
+  NEXT_ACTION_OPTIONS,
+  OutcomeRow,
+  PriorityCalculator,
+  TextPick,
+  buildGapOptions,
+  buildTriggerOptions,
+  comparabilityString,
+  factorStrings,
+  type FactorMark,
+} from './AnalyzeBlocks'
 
 const LABEL_KIND: Record<ResultLabel, 'good' | 'warn' | 'bad' | 'neutral'> = {
   pass: 'good',
@@ -21,18 +51,6 @@ const LABEL_KIND: Record<ResultLabel, 'good' | 'warn' | 'bad' | 'neutral'> = {
 }
 
 const STATE_KIND = { empty: 'bad', thin: 'warn', met: 'good', redundant: 'neutral' } as const
-
-const NEXT_ACTIONS: Array<{ v: NextAction; label: string }> = [
-  { v: 'execute-next-card', label: 'Execute the next planned card' },
-  { v: 'repeat-for-validity', label: 'Repeat a run for validity' },
-  { v: 'isolate-one-variable', label: 'Isolate one variable' },
-  { v: 'repair-evidence-chain', label: 'Repair the evidence chain' },
-  { v: 'revise-threat-or-condition', label: 'Revise a threat or condition' },
-  { v: 'introduce-diagnostic-card', label: 'Introduce a diagnostic card' },
-  { v: 'stop-low-value-line', label: 'Stop a low-value line' },
-  { v: 'end-for-sufficiency', label: 'End the campaign for sufficiency' },
-  { v: 'end-for-futility', label: 'End the campaign for futility' },
-]
 
 function fmtNum(n: number): number {
   return Math.round(n * 1000) / 1000
@@ -48,32 +66,13 @@ function AccountingLine({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-function ResultsTab({ campaign }: { campaign: TeCampaign }) {
+function ResultsGroup({ campaign }: { campaign: TeCampaign }) {
   const { patchItem } = useTeStore.getState()
   const [expanded, setExpanded] = useState<string[]>([])
   const results = computeAllMeasures(campaign)
-  const ch = chainHealth(campaign)
-  const chainItems = [
-    { n: ch.questionsWithoutMeasures, text: 'question(s) without measures' },
-    { n: ch.measuresWithoutTruth, text: 'measure(s) without truth' },
-    { n: ch.cardsWithoutRuns, text: 'issued card(s) without runs' },
-    { n: ch.runsPendingAdjudication, text: 'run(s) pending adjudication' },
-    { n: ch.findingsWithoutRuns, text: 'finding(s) without runs' },
-    { n: ch.claimsUndisposed, text: 'claim(s) undisposed' },
-  ].filter((x) => x.n > 0)
-
   return (
-    <div className="inspector-body">
-      <SubTitle>Chain health</SubTitle>
-      <div className="field-row">
-        {chainItems.length === 0 && <Pill kind="good" text="traceability chain healthy" />}
-        {chainItems.map((x) => (
-          <Pill key={x.text} kind="warn" text={`${x.n} ${x.text}`} />
-        ))}
-      </div>
-
-      <SubTitle>Measure results</SubTitle>
-      {results.length === 0 && <p className="muted small">No measures defined.</p>}
+    <>
+      {results.length === 0 && <p className="muted small">No measures defined. Add measures under Design.</p>}
       {results.map((r) => {
         const measure = campaign.measures.find((m) => m.id === r.measureId)
         const linked = campaign.hypotheses.filter((h) => measure?.hypothesisIds.includes(h.id))
@@ -108,31 +107,47 @@ function ResultsTab({ campaign }: { campaign: TeCampaign }) {
               </div>
             ))}
             {linked.map((h) => (
-              <div key={h.id} className="field-row te-table-row">
-                <div className="field">
-                  <span>{h.id} predicted</span>
-                  <div className="muted small">{h.predictedValue || 'no prediction'} ({h.predictionType})</div>
-                </div>
-                <SelectField label="Outcome" value={h.outcome} allowEmpty="not set" options={(['supported', 'directionally-supported', 'contradicted', 'inconclusive', 'not-tested'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('hypotheses', h.id, { outcome: v })} />
-                <TextField label="Outcome note" value={h.outcomeNote} onChange={(v) => patchItem('hypotheses', h.id, { outcomeNote: v })} />
-              </div>
+              <OutcomeRow
+                key={h.id}
+                hyp={h}
+                result={r}
+                onOutcome={(v) => patchItem('hypotheses', h.id, { outcome: v })}
+                onNote={(v) => patchItem('hypotheses', h.id, { outcomeNote: v })}
+              />
             ))}
           </div>
         )
       })}
-    </div>
+    </>
   )
 }
 
-function CoverageTab({ campaign }: { campaign: TeCampaign }) {
+function CoverageGroup({ campaign }: { campaign: TeCampaign }) {
+  const ch = chainHealth(campaign)
   const rows = coverage(campaign)
+  const chainItems = [
+    { n: ch.questionsWithoutMeasures, text: 'question(s) without measures' },
+    { n: ch.measuresWithoutTruth, text: 'measure(s) without a truth source' },
+    { n: ch.cardsWithoutRuns, text: 'issued card(s) without runs' },
+    { n: ch.runsPendingAdjudication, text: 'run(s) pending adjudication' },
+    { n: ch.findingsWithoutRuns, text: 'finding(s) without runs' },
+    { n: ch.claimsUndisposed, text: 'claim(s) not disposed' },
+  ].filter((x) => x.n > 0)
   return (
-    <div className="inspector-body">
+    <>
+      <SubTitle>Chain health</SubTitle>
+      <div className="field-row">
+        {chainItems.length === 0 && <Pill kind="good" text="traceability chain healthy" />}
+        {chainItems.map((x) => (
+          <Pill key={x.text} kind="warn" text={`${x.n} ${x.text}`} />
+        ))}
+      </div>
+
       <SubTitle>Run accounting</SubTitle>
       <AccountingLine campaign={campaign} />
 
       <SubTitle>Matrix coverage</SubTitle>
-      {rows.length === 0 && <p className="muted small">No matrix cells defined.</p>}
+      {rows.length === 0 && <p className="muted small">No matrix cells defined. Add cells under Design.</p>}
       {rows.map((r) => {
         const cell = campaign.matrix.find((m) => m.id === r.cellId)
         const q = campaign.questions.find((x) => x.id === cell?.questionId)
@@ -152,125 +167,235 @@ function CoverageTab({ campaign }: { campaign: TeCampaign }) {
           </div>
         )
       })}
-      <p className="muted small">Do not combine cells across different configurations, threats, or conditions into one estimate.</p>
-    </div>
+      <p className="muted small">Do not combine cells across different configurations, threats, or conditions into one estimate. Open items here feed the picks in the next group.</p>
+    </>
   )
 }
 
-function ScoreSeg({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="field">
-      <span>{label}</span>
-      <Seg value={String(value) as '1' | '2' | '3'} options={(['1', '2', '3'] as const).map((v) => ({ v, label: v }))} onChange={(v) => onChange(Number(v))} />
-    </div>
-  )
-}
-
-function DailyReviewTab({ campaign }: { campaign: TeCampaign }) {
+function DailyReviewGroup({ campaign }: { campaign: TeCampaign }) {
   const { startChecklist, addChange, patchItem } = useTeStore.getState()
   const [nextAction, setNextAction] = useState<NextAction | null>(null)
   const [trigger, setTrigger] = useState('')
+  const [triggerNote, setTriggerNote] = useState('')
   const [gap, setGap] = useState('')
   const [selectedChange, setSelectedChange] = useState('')
-  const [varsChanged, setVarsChanged] = useState('')
-  const [varsHeld, setVarsHeld] = useState('')
-  const [comparability, setComparability] = useState('')
+  const [marks, setMarks] = useState<Record<string, FactorMark>>({})
+  const [effect, setEffect] = useState<DeviationEffect | null>(null)
+  const [effectNote, setEffectNote] = useState('')
+  const [optionsConsidered, setOptionsConsidered] = useState('')
+  const [changeKind, setChangeKind] = useState<'exploratory' | 'confirmatory'>('confirmatory')
   const defaultApprovals = decisionRightHolder(campaign, 'card change')
   const [approvals, setApprovals] = useState(defaultApprovals)
+  const results = computeAllMeasures(campaign)
+  const cov = coverage(campaign)
+  const gapOptions = buildGapOptions(campaign, cov)
+  const triggerOptions = buildTriggerOptions(campaign, results, cov)
   const factorNames = campaign.factors.map((x) => x.name)
-  const [importance, setImportance] = useState(2)
-  const [uncertainty, setUncertainty] = useState(2)
-  const [likelihood, setLikelihood] = useState(2)
-  const [burden, setBurden] = useState(2)
   const changes = [...campaign.changes].sort((a, b) => b.at.localeCompare(a.at))
-  const score = adaptivePriority(importance, uncertainty, likelihood, burden)
+
+  const record = () => {
+    if (nextAction === null) return
+    const vars = factorStrings(marks)
+    const id = addChange()
+    patchItem('changes', id, {
+      trigger: triggerNote.trim() === '' ? trigger : `${trigger}${trigger ? ': ' : ''}${triggerNote.trim()}`,
+      gapToResolve: gap,
+      optionsConsidered,
+      selectedChangeAndReason: selectedChange,
+      variablesChanged: vars.changed,
+      variablesHeld: vars.held,
+      comparabilityEffect: comparabilityString(effect, effectNote),
+      approvals,
+      nextAction,
+      kind: changeKind,
+    })
+    setNextAction(null)
+    setTrigger('')
+    setTriggerNote('')
+    setGap('')
+    setSelectedChange('')
+    setMarks({})
+    setEffect(null)
+    setEffectNote('')
+    setOptionsConsidered('')
+    setChangeKind('confirmatory')
+    setApprovals(defaultApprovals)
+  }
 
   return (
-    <div className="inspector-body">
+    <>
       <div className="inspector-actions">
         <button onClick={() => startChecklist(templateByKey('daily-evidence-review')!)}>Start daily evidence review checklist</button>
       </div>
       <p className="muted small">The started checklist opens under Execute, Checklists.</p>
 
-      <SubTitle>Record adaptation</SubTitle>
-      <SelectField label="Next action (exactly one)" value={nextAction} allowEmpty="select the next action" options={NEXT_ACTIONS} onChange={setNextAction} />
+      <SegChips<NextAction>
+        label="Next move"
+        help="The daily review ends in exactly one next action."
+        options={NEXT_ACTION_OPTIONS}
+        value={nextAction}
+        onChange={(v) => setNextAction(v as NextAction | null)}
+      />
+
+      <SubTitle>What happened, and what is missing?</SubTitle>
       <div className="field-row">
-        <TextField label="Triggering evidence" value={trigger} onChange={setTrigger} />
-        <TextField label="Gap to resolve" value={gap} onChange={setGap} />
+        <TextPick
+          label="What result caused this change?"
+          help="Triggering evidence: a run, a measure result, an anomaly, or a coverage cell."
+          options={triggerOptions}
+          value={trigger}
+          onChange={setTrigger}
+        />
+        <TextField label="Trigger note" value={triggerNote} onChange={setTriggerNote} />
       </div>
-      <TextField label="Selected change and reason" rows={2} value={selectedChange} onChange={setSelectedChange} />
+      <TextPick
+        label="What evidence is missing?"
+        help="Gap to resolve. The list derives live from chain health and coverage."
+        options={gapOptions}
+        value={gap}
+        onChange={setGap}
+      />
+
+      <ChangeBuilder value={selectedChange} onChange={setSelectedChange} />
+      <FactorGrid factorNames={factorNames} marks={marks} onMark={(name, v) => {
+        setMarks((m) => {
+          const next = { ...m }
+          if (v === null) delete next[name]
+          else next[name] = v
+          return next
+        })
+      }} />
       <div className="field-row">
-        <SuggestField label="Variables changed" value={varsChanged} onChange={setVarsChanged} suggestions={factorNames} />
-        <SuggestField label="Variables held" value={varsHeld} onChange={setVarsHeld} suggestions={factorNames} />
+        <ComparabilityPick effect={effect} onEffect={setEffect} note={effectNote} onNote={setEffectNote} />
+        <PersonPicker
+          label="Approver"
+          value={approvals}
+          onChange={setApprovals}
+          people={allPeople(campaign)}
+          prefillSource={defaultApprovals !== '' && approvals === defaultApprovals ? 'decision rights: card change' : undefined}
+        />
       </div>
-      <div className="field-row">
-        <TextField label="Comparability effect" value={comparability} onChange={setComparability} />
-        <PersonField label="Approvals" value={approvals} onChange={setApprovals} people={allPeople(campaign)} />
-      </div>
+
+      <AdvancedDisclosure>
+        <TextField
+          label="Options considered"
+          help="Other changes weighed before this one."
+          value={optionsConsidered}
+          onChange={setOptionsConsidered}
+        />
+        <div className="field">
+          <span>
+            Change kind
+            <span className="help-dot" tabIndex={0} data-help="Confirmatory changes test a stated prediction. Exploratory changes look for structure.">
+              ?
+            </span>
+          </span>
+          <Seg
+            value={changeKind}
+            options={[
+              { v: 'confirmatory', label: 'Confirmatory' },
+              { v: 'exploratory', label: 'Exploratory' },
+            ]}
+            onChange={setChangeKind}
+          />
+        </div>
+        <SubTitle>Next-run priority</SubTitle>
+        <PriorityCalculator />
+      </AdvancedDisclosure>
+
       <div className="inspector-actions">
         <button
           className="primary"
-          onClick={() => {
-            const id = addChange()
-            patchItem('changes', id, {
-              trigger,
-              gapToResolve: gap,
-              selectedChangeAndReason: selectedChange,
-              variablesChanged: varsChanged,
-              variablesHeld: varsHeld,
-              comparabilityEffect: comparability,
-              approvals,
-              nextAction,
-            })
-            setTrigger('')
-            setGap('')
-            setSelectedChange('')
-            setVarsChanged('')
-            setVarsHeld('')
-            setComparability('')
-            setApprovals(defaultApprovals)
-          }}
+          disabled={nextAction === null}
+          title={nextAction === null ? 'Pick one next move first.' : undefined}
+          onClick={record}
         >
           Record adaptation
         </button>
       </div>
 
       <SubTitle>Changes (latest first)</SubTitle>
-      {changes.length === 0 && <p className="muted small">None recorded.</p>}
+      {changes.length === 0 && <p className="muted small">None recorded. Record adaptation adds one.</p>}
       {changes.map((c) => (
-        <div key={c.id} className="gate-item">
-          {c.id} · {fmtDate(c.at)} · {c.nextAction ?? 'no next action'} · {c.trigger.slice(0, 48) || 'no trigger'} · {c.selectedChangeAndReason.slice(0, 48) || 'no change stated'}
+        <div key={c.id} className="run-row">
+          <div className="gate-item">
+            {c.id} · {fmtDate(c.at)} · {c.nextAction ?? 'no next action'} · {c.trigger.slice(0, 48) || 'no trigger'} · {c.selectedChangeAndReason.slice(0, 48) || 'no change stated'}
+          </div>
+          <div className="field-row">
+            <TextField
+              label="Result after"
+              help="Fill after the change takes effect: what the next runs showed."
+              value={c.resultAfter}
+              onChange={(v) => patchItem('changes', c.id, { resultAfter: v })}
+            />
+            <CheckField
+              label="Briefed"
+              help="The team heard this change before the next run."
+              value={c.briefed}
+              onChange={(v) => patchItem('changes', c.id, { briefed: v })}
+            />
+          </div>
         </div>
       ))}
-
-      <SubTitle>Adaptive priority helper</SubTitle>
-      <p className="muted small">Score the next candidate runs; higher runs first.</p>
-      <div className="field-row">
-        <ScoreSeg label="Importance" value={importance} onChange={setImportance} />
-        <ScoreSeg label="Uncertainty reduction" value={uncertainty} onChange={setUncertainty} />
-        <ScoreSeg label="Likelihood" value={likelihood} onChange={setLikelihood} />
-        <ScoreSeg label="Burden" value={burden} onChange={setBurden} />
-      </div>
-      <div className="spec-summary">priority score: {Math.round(score * 100) / 100}</div>
-    </div>
+    </>
   )
 }
 
-const TABS: Array<{ v: Tab; label: string }> = [
-  { v: 'results', label: 'Results' },
-  { v: 'coverage', label: 'Coverage' },
-  { v: 'daily', label: 'Daily review' },
-]
-
 export function AnalyzePanel({ campaign }: { campaign: TeCampaign }) {
-  const [tab, setTab] = useState<Tab>('results')
+  const results = computeAllMeasures(campaign)
+  const linkedHyps = campaign.hypotheses.filter((h) =>
+    campaign.measures.some((m) => m.hypothesisIds.includes(h.id)),
+  )
+  const outcomesSet = linkedHyps.filter((h) => h.outcome !== null).length
+  const a1State =
+    results.length === 0 || linkedHyps.length === 0
+      ? 'empty'
+      : outcomesSet === linkedHyps.length
+        ? 'done'
+        : outcomesSet > 0
+          ? 'partial'
+          : 'empty'
+  const ch = chainHealth(campaign)
+  const cov = coverage(campaign)
+  const chainClean = Object.values(ch).every((n) => n === 0)
+  const covClean = cov.every((c) => c.state === 'met' || c.state === 'redundant')
+  const a2State =
+    campaign.matrix.length === 0 && campaign.runs.length === 0
+      ? 'empty'
+      : chainClean && covClean
+        ? 'done'
+        : 'partial'
+  const a3State = campaign.changes.length > 0 ? 'done' : 'empty'
+
   return (
     <div className="te-panel">
       <PhaseIntro phase="analyze" />
-      <Seg value={tab} options={TABS} onChange={setTab} />
-      {tab === 'results' && <ResultsTab campaign={campaign} />}
-      {tab === 'coverage' && <CoverageTab campaign={campaign} />}
-      {tab === 'daily' && <DailyReviewTab campaign={campaign} />}
+      <DecisionGroup
+        id="a1-results"
+        question="What do the numbers say?"
+        hint="Measure computation from adjudicated runs; hypothesis outcomes vs recorded predictions."
+        tier="recommended"
+        state={a1State}
+      >
+        <ResultsGroup campaign={campaign} />
+      </DecisionGroup>
+      <DecisionGroup
+        id="a2-coverage"
+        question="Where is evidence still thin?"
+        hint="Matrix coverage and traceability chain health. Derived views; nothing here is stored."
+        state={a2State}
+      >
+        <CoverageGroup campaign={campaign} />
+      </DecisionGroup>
+      <DecisionGroup
+        id="a3-daily"
+        question="What is the one next move?"
+        hint="Daily evidence review. Records one deliberate change; old records stay preserved."
+        tier="recommended"
+        state={a3State}
+      >
+        <DailyReviewGroup campaign={campaign} />
+      </DecisionGroup>
     </div>
   )
 }

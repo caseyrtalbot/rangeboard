@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import type { TeCampaign } from '../model/types'
 import { activeCampaign, useTeStore } from '../state/teStore'
 import type { TePhaseTab } from '../state/teStore'
-import { chainHealth, designLint, qualificationBlockers } from '../validate'
+import { campaignReadiness } from '../calc/readiness'
+import type { ArtifactKey, StageStatus } from '../calc/readiness'
 import { exportCampaignJson, importCampaignFile } from '../io/persistTe'
+import { displayId } from '../model/ids'
+import { PrintOverlay } from '../print/PrintOverlay'
+import { TestCardPrint } from '../print/TestCardPrint'
+import { RunRecordPrint } from '../print/RunRecordPrint'
+import { PackagePrint } from '../print/PackagePrint'
 import { CampaignPanel } from './CampaignPanel'
 import { DesignPanel } from './DesignPanel'
 import { CardsPanel } from './CardsPanel'
@@ -11,7 +16,7 @@ import { ExecutePanel } from './ExecutePanel'
 import { AnalyzePanel } from './AnalyzePanel'
 import { DeliverPanel } from './DeliverPanel'
 import { ProductsPanel } from './ProductsPanel'
-import { Field } from './kit'
+import { Field, ReadinessRail } from './kit'
 import { loadDemoCampaign } from './demo'
 
 const PHASES: Array<{ id: TePhaseTab; label: string }> = [
@@ -24,44 +29,6 @@ const PHASES: Array<{ id: TePhaseTab; label: string }> = [
   { id: 'products', label: 'Products' },
 ]
 
-type StepStatus = 'good' | 'warn' | 'neutral'
-
-/** Presentational progress dots for the stepper; navigation stays free. */
-function stepStatus(c: TeCampaign, id: TePhaseTab): StepStatus | null {
-  const qualified = qualificationBlockers(c).length === 0
-  switch (id) {
-    case 'campaign':
-      return qualified ? 'good' : 'neutral'
-    case 'design': {
-      const passed = c.qualificationPassedAt != null
-      if (
-        passed &&
-        c.questions.length > 0 &&
-        c.measures.length > 0 &&
-        designLint(c).length === 0
-      )
-        return 'good'
-      return passed && c.questions.length > 0 ? 'warn' : 'neutral'
-    }
-    case 'cards':
-      return c.cards.some((card) => card.status === 'issued') ? 'good' : 'neutral'
-    case 'execute':
-      if (c.runs.length === 0) return 'neutral'
-      return c.runs.every((r) => r.validity !== 'pending') ? 'good' : 'warn'
-    case 'analyze': {
-      const clean = Object.values(chainHealth(c)).every((n) => n === 0)
-      const adjudicated = c.runs.some((r) => r.validity !== 'pending')
-      if (adjudicated && clean) return 'good'
-      if (c.runs.length > 0 && !clean) return 'warn'
-      return 'neutral'
-    }
-    case 'deliver':
-      return c.evidencePackage.deliveredAt != null ? 'good' : 'neutral'
-    case 'products':
-      return null
-  }
-}
-
 /** Campaign code suggestion: word initials plus digit groups, id-grammar charset. */
 function suggestCode(name: string): string {
   return name
@@ -71,6 +38,12 @@ function suggestCode(name: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 6)
+}
+
+function fmtClock(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
 function StartScreen() {
@@ -123,14 +96,102 @@ function StartScreen() {
   )
 }
 
+/** Header saved-state readout: dim time on success, plain error text on failure. */
+function SavedIndicator() {
+  const lastSavedAt = useTeStore((s) => s.lastSavedAt)
+  const saveError = useTeStore((s) => s.saveError)
+  if (saveError) {
+    return (
+      <span className="status bad" role="status">
+        {saveError}
+      </span>
+    )
+  }
+  if (!lastSavedAt) return null
+  return (
+    <span className="muted" role="status" title="Autosave writes every change.">
+      Saved <span className="num">{fmtClock(lastSavedAt)}</span>
+    </span>
+  )
+}
+
+/** Artifact previews that a print component can render. */
+type Preview =
+  | { kind: 'card'; id: string }
+  | { kind: 'run'; id: string }
+  | { kind: 'package' }
+
 export function OpsWorkspace() {
   const campaigns = useTeStore((s) => s.campaigns)
   const activeId = useTeStore((s) => s.activeCampaignId)
   const phase = useTeStore((s) => s.ui.phase)
   const { setPhase, setActiveCampaign, deleteCampaign } = useTeStore.getState()
   const campaign = activeCampaign({ campaigns, activeCampaignId: activeId })
+  const [railOpen, setRailOpen] = useState(true)
+  const [preview, setPreview] = useState<Preview | null>(null)
 
   if (!campaign) return <StartScreen />
+
+  const readiness = campaignReadiness(campaign)
+  const statusByStage = new Map<string, StageStatus>(
+    readiness.stages.map((s) => [s.id, s.status]),
+  )
+
+  /** Rail preview: open a print view where one exists, else go to the stage. */
+  function previewArtifact(key: ArtifactKey, stage: TePhaseTab): void {
+    if (!campaign) return
+    if (key === 'cards') {
+      const card =
+        [...campaign.cards].reverse().find((x) => x.status === 'issued') ??
+        campaign.cards[campaign.cards.length - 1]
+      if (card) {
+        setPreview({ kind: 'card', id: card.id })
+        return
+      }
+    }
+    if (key === 'runs') {
+      const run = campaign.runs[campaign.runs.length - 1]
+      if (run) {
+        setPreview({ kind: 'run', id: run.id })
+        return
+      }
+    }
+    if (key === 'package') {
+      setPreview({ kind: 'package' })
+      return
+    }
+    setPhase(stage)
+  }
+
+  const overlay = (() => {
+    if (!preview) return null
+    if (preview.kind === 'card') {
+      const card = campaign.cards.find((x) => x.id === preview.id)
+      if (!card) return null
+      return (
+        <PrintOverlay
+          title={`Test card ${displayId(card.cardCode, card.version)}`}
+          onClose={() => setPreview(null)}
+        >
+          <TestCardPrint campaign={campaign} card={card} />
+        </PrintOverlay>
+      )
+    }
+    if (preview.kind === 'run') {
+      const run = campaign.runs.find((r) => r.id === preview.id)
+      if (!run) return null
+      return (
+        <PrintOverlay title={`Run record ${run.id}`} onClose={() => setPreview(null)}>
+          <RunRecordPrint campaign={campaign} run={run} />
+        </PrintOverlay>
+      )
+    }
+    return (
+      <PrintOverlay title="Decision evidence package" onClose={() => setPreview(null)}>
+        <PackagePrint campaign={campaign} />
+      </PrintOverlay>
+    )
+  })()
 
   return (
     <div className="te-workspace">
@@ -158,7 +219,17 @@ export function OpsWorkspace() {
             illustrative demo
           </span>
         )}
+        <SavedIndicator />
         <div className="spacer" />
+        <button
+          type="button"
+          className="mini"
+          aria-pressed={railOpen}
+          title={railOpen ? 'Hide the readiness rail' : 'Show the readiness rail'}
+          onClick={() => setRailOpen((o) => !o)}
+        >
+          Readiness <span className="num">{readiness.pct}%</span>
+        </button>
         <div className="seg">
           <button onClick={() => exportCampaignJson(campaign)}>Export JSON</button>
           <button onClick={importCampaignFile}>Import</button>
@@ -177,7 +248,7 @@ export function OpsWorkspace() {
       <div className="te-body">
         <nav className="te-nav">
           {PHASES.map((p) => {
-            const status = stepStatus(campaign, p.id)
+            const status = statusByStage.get(p.id) ?? null
             return (
               <button
                 key={p.id}
@@ -199,7 +270,19 @@ export function OpsWorkspace() {
           {phase === 'deliver' && <DeliverPanel key={campaign.id} campaign={campaign} />}
           {phase === 'products' && <ProductsPanel key={campaign.id} campaign={campaign} />}
         </main>
+        {railOpen && (
+          <ReadinessRail
+            pct={readiness.pct}
+            items={readiness.artifacts.map((a) => ({
+              label: a.label,
+              state: a.state,
+              detail: a.detail,
+              onPreview: () => previewArtifact(a.key, a.stage),
+            }))}
+          />
+        )}
       </div>
+      {overlay}
     </div>
   )
 }

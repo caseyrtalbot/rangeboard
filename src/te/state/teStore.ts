@@ -40,11 +40,14 @@ import {
   nowIso,
 } from '../model/empty'
 import { newId } from '../../model/types'
-import { cardIssueBlockers } from '../validate'
+import { cardIssueBlockers, sanitizeCardTemplatePatch } from '../validate'
+import { MEASURE_DICTIONARY, measureFromDict } from '../seed/measureDictionary'
+import { CARD_TEMPLATES } from '../seed/cardTemplates'
+import { THREAT_VIGNETTES } from '../seed/vignettes'
 
 /** Campaign fields that are arrays of records keyed by `id`. */
 export type TeListKey = {
-  [K in keyof TeCampaign]: TeCampaign[K] extends Array<{ id: string }> ? K : never
+  [K in keyof TeCampaign]-?: TeCampaign[K] extends Array<{ id: string }> ? K : never
 }[keyof TeCampaign]
 
 export type TePhaseTab =
@@ -70,6 +73,10 @@ export interface TeStore {
   campaigns: TeCampaign[]
   activeCampaignId: string | null
   ui: TeUi
+  /** Ephemeral autosave status. Set by persistTe after each write attempt; never persisted. */
+  lastSavedAt: string | null
+  saveError: string | null
+  setSaveState: (lastSavedAt: string | null, saveError: string | null) => void
 
   // Workspace and navigation
   setWorkspace: (w: Workspace) => void
@@ -82,6 +89,21 @@ export interface TeStore {
   setActiveCampaign: (id: string) => void
   /** Adds an imported or seeded campaign and activates it. */
   loadCampaign: (c: TeCampaign) => void
+  /**
+   * New campaign copying structure from an existing one (SPEC section 7).
+   * Copies people, organizations, the acceptance block, roles, authorities,
+   * decision rights, schedule, registers, factors, measures, threats,
+   * conditions, configs, and question skeletons. Never copies evidence:
+   * cards, runs, findings, freezes, dispositions, and dates stay clear.
+   * All ids reallocate under the new campaign code.
+   */
+  startFromCampaign: (sourceId: string, name?: string, code?: string) => string | null
+  /**
+   * Seeds the active campaign from a preset (SPEC section 7). Presets seed
+   * structure and recommended records only; text placeholders use [brackets]
+   * so the card gate catches them. Facts are never fabricated.
+   */
+  applyPreset: (presetKey: string) => void
   replaceState: (s: TeState) => void
   patchCampaign: (patch: Partial<TeCampaign>) => void
 
@@ -309,6 +331,10 @@ export const useTeStore = create<TeStore>()((set, get) => {
     campaigns: [],
     activeCampaignId: null,
     ui: { workspace: 'board', phase: 'campaign', selected: {} },
+    lastSavedAt: null,
+    saveError: null,
+
+    setSaveState: (lastSavedAt, saveError) => set({ lastSavedAt, saveError }),
 
     setWorkspace: (w) => set((s) => ({ ui: { ...s.ui, workspace: w } })),
     setPhase: (p) => set((s) => ({ ui: { ...s.ui, phase: p } })),
@@ -334,6 +360,327 @@ export const useTeStore = create<TeStore>()((set, get) => {
         const item = s.campaigns.some((x) => x.id === c.id) ? { ...c, id: newId('tecamp') } : c
         return { campaigns: [...s.campaigns, item], activeCampaignId: item.id }
       }),
+
+    startFromCampaign: (sourceId, name, code) => {
+      const src = get().campaigns.find((x) => x.id === sourceId)
+      if (!src) return null
+      const next = emptyCampaign(name ?? `${src.name} restart`, code ?? src.code)
+      next.sourceCampaignId = src.id
+      let seq = next.seq
+      const alloc = (type: TypeCode): string => {
+        const r = nextId(seq, next.code, type)
+        seq = r.seq
+        return r.id
+      }
+      // Charter: organizations, people, security class, and the acceptance
+      // block copy. Every date and every campaign-specific fact stays clear.
+      next.charter = {
+        ...next.charter,
+        sponsor: src.charter.sponsor,
+        requestingOrganization: src.charter.requestingOrganization,
+        customerDecisionOwner: src.charter.customerDecisionOwner,
+        evidenceAcceptanceAuthority: src.charter.evidenceAcceptanceAuthority,
+        deploymentStrategist: src.charter.deploymentStrategist,
+        contractAndFundingOwner: src.charter.contractAndFundingOwner,
+        dataSecurityReleaseClass: src.charter.dataSecurityReleaseClass,
+        acceptance: { ...src.charter.acceptance },
+      }
+      next.roles = src.roles.map((r) => ({ ...r, id: alloc('ROLE') }))
+      next.authorities = src.authorities.map((a) => ({
+        ...a,
+        id: alloc('AUTH'),
+        status: 'pending' as const,
+        dueDate: '',
+        evidence: '',
+      }))
+      next.decisionRights = src.decisionRights.map((d) => ({ ...d, id: newId('dr') }))
+      next.schedule = src.schedule.map((s) => ({ ...s, id: alloc('SCH'), done: false }))
+      const regCode: Record<string, TypeCode> = {
+        claim: 'CLM',
+        unknown: 'UNK',
+        assumption: 'ASM',
+        'known-fact': 'REG',
+      }
+      next.registers = src.registers.map((r) => ({
+        ...r,
+        id: alloc(regCode[r.kind] ?? 'REG'),
+        disposition: null,
+        dispositionNote: '',
+      }))
+      next.factors = src.factors.map((f) => ({ ...f, id: alloc('FAC') }))
+      const qMap = new Map<string, string>()
+      next.questions = src.questions.map((q) => {
+        const id = alloc('Q')
+        qMap.set(q.id, id)
+        return {
+          ...q,
+          id,
+          requiredAnswerDate: '',
+          frozen: false,
+          disposition: null,
+          evidenceLevel: null,
+          dispositionNote: '',
+        }
+      })
+      next.measures = src.measures.map((m) => ({
+        ...m,
+        id: alloc('M'),
+        questionId: qMap.get(m.questionId) ?? '',
+        hypothesisIds: [],
+        frozen: false,
+        thresholdApproved: false,
+      }))
+      next.threats = src.threats.map((t) => ({ ...t, id: alloc('THR'), version: 'v1.0' }))
+      next.conditions = src.conditions.map((cd) => ({ ...cd, id: alloc('COND') }))
+      next.configs = src.configs.map((cfg) => ({
+        ...cfg,
+        id: alloc('CFG'),
+        version: 'v1.0',
+        frozen: false,
+        freezeTime: '',
+        functionalCheckResult: '',
+        releasedBy: '',
+        scenarioSnapshot: null,
+        driftLog: [],
+      }))
+      next.seq = seq
+      set((s) => ({ campaigns: [...s.campaigns, next], activeCampaignId: next.id }))
+      return next.id
+    },
+
+    applyPreset: (presetKey) => {
+      const st = get()
+      if (!requireCampaign(st)) return
+      /** Question skeleton. Placeholder wording; the card gate catches [brackets]. */
+      const seedQuestion = (
+        wording: string,
+        pattern: TeCampaign['questions'][number]['pattern'],
+      ): string => {
+        const id = get().addQuestion()
+        get().patchItem('questions', id, { wording, pattern, priority: 'P1' as const })
+        return id
+      }
+      /** Measures from the dictionary. Structure and wording only, no values. */
+      const seedMeasures = (dictKeys: string[], questionId: string): Map<string, string> => {
+        const byDict = new Map<string, string>()
+        for (const key of dictKeys) {
+          const entry = MEASURE_DICTIONARY.find((e) => e.dictKey === key)
+          if (!entry) continue
+          const id = get().addMeasure(questionId)
+          get().patchItem('measures', id, measureFromDict(entry, id, questionId))
+          byDict.set(key, id)
+        }
+        return byDict
+      }
+      const seedThreat = (vignetteKey: string | null, patch?: Partial<TeCampaign['threats'][number]>): string => {
+        const id = get().addThreat()
+        const v = vignetteKey ? THREAT_VIGNETTES.find((x) => x.key === vignetteKey) : undefined
+        if (v) get().patchItem('threats', id, v.patch)
+        if (patch) get().patchItem('threats', id, patch)
+        return id
+      }
+      /** Card draft from a worked template, relinked to the seeded records. */
+      const seedCard = (
+        templateKey: string,
+        questionId: string | null,
+        measuresByDict: Map<string, string>,
+      ): string | null => {
+        const t = CARD_TEMPLATES.find((x) => x.key === templateKey)
+        if (!t) return null
+        const patch: Partial<TeCard> = { ...t.patch }
+        if (questionId) patch.questionIds = [questionId]
+        if (patch.measureIds)
+          patch.measureIds = patch.measureIds.map((k) => measuresByDict.get(k) ?? k)
+        return get().addCard(sanitizeCardTemplatePatch(requireCampaign(get())!, patch))
+      }
+      switch (presetKey) {
+        case 'sensor-characterization': {
+          get().patchCampaign({
+            charter: {
+              ...requireCampaign(get())!.charter,
+              engagementType: 'characterization',
+              valkrynTasking: 'characterize',
+            },
+          })
+          const q = seedQuestion(
+            'Where does the sensor detect and hold a stable track against [threat] under [conditions]?',
+            'performance',
+          )
+          const ms = seedMeasures(
+            [
+              'CUAS-SEN-PD-001',
+              'CUAS-SEN-FD-002',
+              'CUAS-TRK-FST-003',
+              'CUAS-TRK-CONT-004',
+              'CUAS-TRK-ERR-005',
+              'CUAS-SUR-FTR-007',
+            ],
+            q,
+          )
+          seedCard('TC-CUAS-SEN-CHAR-001', q, ms)
+          break
+        }
+        case 'radar-comparison': {
+          get().patchCampaign({
+            charter: {
+              ...requireCampaign(get())!.charter,
+              engagementType: 'comparison',
+              valkrynTasking: 'compare',
+            },
+          })
+          const q = seedQuestion(
+            'Does [radar A] or [radar B] detect and track [threat] better under [conditions]?',
+            'comparison',
+          )
+          const ms = seedMeasures(
+            ['CUAS-SEN-PD-001', 'CUAS-SEN-FD-002', 'CUAS-TRK-FST-003', 'CUAS-TRK-ERR-005'],
+            q,
+          )
+          const cfgA = get().addConfig()
+          get().patchItem('configs', cfgA, { name: '[radar A]' })
+          const cfgB = get().addConfig()
+          get().patchItem('configs', cfgB, { name: '[radar B]' })
+          const baseline = get().addMatrixCell()
+          get().patchItem('matrix', baseline, {
+            questionId: q,
+            configId: cfgA,
+            method: 'baseline comparison',
+            measureIds: [...ms.values()],
+          })
+          const delta = get().addMatrixCell()
+          get().patchItem('matrix', delta, {
+            questionId: q,
+            configId: cfgB,
+            method: 'comparison',
+            measureIds: [...ms.values()],
+          })
+          break
+        }
+        case 'sensor-c2-integration': {
+          const q = seedQuestion(
+            'Does the sensor hand a decision-ready track to the C2 within [time]?',
+            'capability',
+          )
+          const ms = seedMeasures(['CUAS-C2-HS-008', 'CUAS-C2-LAT-009', 'CUAS-MSN-UWT-010'], q)
+          seedCard('TC-CUAS-C2-HANDOFF-001', q, ms)
+          break
+        }
+        case 'c2-track-fusion': {
+          get().patchCampaign({
+            charter: {
+              ...requireCampaign(get())!.charter,
+              engagementType: 'evaluation',
+              valkrynTasking: 'validate',
+            },
+          })
+          const q = seedQuestion(
+            'Does the C2 fuse multi-sensor tracks into one decision-ready picture under [conditions]?',
+            'capability',
+          )
+          seedMeasures(
+            ['CUAS-C2-HS-008', 'CUAS-C2-LAT-009', 'CUAS-TRK-CONT-004', 'CUAS-HMI-INT-018'],
+            q,
+          )
+          seedThreat('V-08')
+          seedThreat('V-09')
+          break
+        }
+        case 'ew-resilience': {
+          const q = seedQuestion(
+            'Does the system keep detecting and defeating [threat] in a contested spectrum?',
+            'boundary',
+          )
+          const ms = seedMeasures(['CUAS-EW-EFF-011', 'CUAS-EW-REC-012', 'CUAS-MSN-E2E-015'], q)
+          const cond = get().addCondition()
+          get().patchItem('conditions', cond, {
+            name: '[contested spectrum condition]',
+            emEnvironment: 'contested',
+          })
+          seedThreat(null, { opforMode: 'bounded-adaptive' })
+          seedCard('TC-CUAS-EW-SOFTKILL-001', q, ms)
+          break
+        }
+        case 'interceptor-evaluation': {
+          get().patchCampaign({
+            charter: {
+              ...requireCampaign(get())!.charter,
+              engagementType: 'evaluation',
+              valkrynTasking: 'validate',
+            },
+          })
+          const q = seedQuestion(
+            'Does the interceptor defeat [threat] before it reaches the defended asset?',
+            'performance',
+          )
+          const ms = seedMeasures(
+            [
+              'CUAS-C2-LAT-009',
+              'CUAS-MSN-UWT-010',
+              'CUAS-DEF-PINT-013',
+              'CUAS-DEF-PDEF-014',
+              'CUAS-MSN-E2E-015',
+            ],
+            q,
+          )
+          seedCard('TC-CUAS-DEF-INTERCEPT-001', q, ms)
+          break
+        }
+        case 'detect-to-defeat': {
+          const q1 = seedQuestion(
+            'Where does the system first detect [threat] under [conditions]?',
+            'performance',
+          )
+          seedQuestion('Does the track survive handoff to the effector?', 'capability')
+          const q3 = seedQuestion(
+            'Does the system defeat a raid of [count] before boundary crossing?',
+            'mission-effect',
+          )
+          const ms1 = seedMeasures(
+            [
+              'CUAS-MSN-UWT-010',
+              'CUAS-SEN-PD-001',
+              'CUAS-TRK-ERR-005',
+              'CUAS-TRK-CONT-004',
+              'CUAS-C2-LAT-009',
+              'CUAS-SUR-FTR-007',
+            ],
+            q1,
+          )
+          const ms3 = seedMeasures(
+            ['CUAS-C2-HS-008', 'CUAS-SAT-LEAK-016', 'CUAS-HMI-INT-018', 'CUAS-MSN-E2E-015'],
+            q3,
+          )
+          seedThreat('V-01')
+          seedCard('TC-CUAS-SOS-EWBUF-001', q1, ms1)
+          seedCard(
+            'TC-CUAS-SAT-RAID-001',
+            q3,
+            new Map([...ms1.entries(), ...ms3.entries()]),
+          )
+          break
+        }
+        case 'regression-test': {
+          // The structural copy routes through startFromCampaign first.
+          get().patchCampaign({
+            charter: {
+              ...requireCampaign(get())!.charter,
+              engagementType: 'evaluation',
+              valkrynTasking: 'validate',
+            },
+          })
+          const cell = get().addMatrixCell()
+          get().patchItem('matrix', cell, {
+            method: 'baseline comparison',
+            notes: 'Repeat of the previous baseline.',
+          })
+          break
+        }
+        default:
+          // 'blank', 'previous-campaign', unknown keys: record the pick only.
+          break
+      }
+      get().patchCampaign({ presetKey })
+    },
 
     replaceState: (st) =>
       set({ schemaVersion: 1, campaigns: st.campaigns, activeCampaignId: st.activeCampaignId }),

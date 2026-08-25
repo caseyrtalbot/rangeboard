@@ -124,6 +124,15 @@ export type ThresholdSource =
   | 'customer-decision-rule'
   | 'analyst-judgment-labeled'
 
+export const THRESHOLD_SOURCES: ThresholdSource[] = [
+  'law-regulation-safety',
+  'contract-validated-requirement',
+  'mission-arithmetic',
+  'accepted-baseline',
+  'customer-decision-rule',
+  'analyst-judgment-labeled',
+]
+
 export type FactorClass =
   | 'independent-variable'
   | 'held-control'
@@ -1089,6 +1098,10 @@ export interface TeCampaign {
   frames: TeFrame[]
   /** Illustrative demo campaigns render a persistent banner. */
   illustrative: boolean
+  /** Preset that seeded this campaign, or null. Provenance for the package. */
+  presetKey?: string | null
+  /** Campaign this one was started from, or null. Ancestry for traceability. */
+  sourceCampaignId?: string | null
 }
 
 export interface TeState {

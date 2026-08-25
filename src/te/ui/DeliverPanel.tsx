@@ -1,206 +1,129 @@
+/**
+ * Deliver stage as ordered decision groups L1-L6 (SPEC 1.6). One scrolling
+ * column, free navigation, only the gates block. Evidence generation runs on
+ * link change and fills only empty fields; the package generator respects
+ * the edited flag; the closeout ends in a generated StageReview.
+ */
+
 import { useState } from 'react'
-import type { PackageSection, TeCampaign, TeEvidencePackage, TeFinding } from '../model/types'
+import type { TeCampaign, TeEvidencePackage, TeFinding } from '../model/types'
 import { newId } from '../../model/types'
 import { useTeStore } from '../state/teStore'
 import { closeoutBlockers, findingBlockers, runIncludable } from '../validate'
-import { computeMeasure } from '../calc/measures'
-import type { MeasureComputation } from '../calc/measures'
-import { runAccounting } from '../calc/accounting'
-import { REFUTED_CLAIMS } from '../seed/constants'
+import { AAR_QUESTIONS } from '../seed/questionBanks'
 import {
+  AdvancedDisclosure,
   ChipList,
   DateField,
+  DecisionGroup,
+  EntityPicker,
+  ExampleHint,
   GateList,
-  MultiPicker,
-  PersonField,
+  PersonPicker,
   PhaseIntro,
   Pill,
-  SelectField,
   Seg,
+  SegChips,
+  SelectField,
+  StageReview,
   SubTitle,
-  SuggestField,
   TextField,
   VersionField,
   fmtDate,
 } from './kit'
-import { allPeople, decisionRightHolder } from './help'
+import { HINTS, allPeople, decisionRightHolder } from './help'
+import {
+  ConfirmButton,
+  EvidenceField,
+  FinalAuthorityField,
+  FindingStatementBuilder,
+  MANUAL_SECTIONS,
+  SECTION_GUIDANCE,
+  SuggestLine,
+  decisionSeed,
+  derivedRunLinks,
+  evidenceDerivation,
+  findingComputations,
+  generatedEvidence,
+  generatedSection,
+  refutedClaimMatches,
+  sectionTemplate,
+  suggestedClaimDisposition,
+  suggestedQuestionDisposition,
+  suggestedStrength,
+} from './DeliverBlocks'
 
-type Tab = 'findings' | 'actions' | 'debriefs' | 'package' | 'closeout'
+type GroupState = 'done' | 'partial' | 'empty'
 
-const AAR_QUESTIONS: string[] = [
-  'What created decision value?',
-  'What produced invalid runs or delay?',
-  'Which assumptions failed?',
-  'Which authority or acceptance issue arrived late?',
-  'Which interface or data failure repeated?',
-  'Which control was too heavy or too weak?',
-  'Which work depended on one person?',
-  'Which task should be standardized, automated, trained, redesigned, or removed?',
-  'What must change before the next campaign?',
-]
-
-function fmtNum(n: number): number {
-  return Math.round(n * 1000) / 1000
+/** Display text for a package section: edited text wins, else live generation. */
+function sectionDisplay(campaign: TeCampaign, s: TeEvidencePackage['sections'][number]): string {
+  if (s.edited) return s.content
+  const gen = generatedSection(campaign, s)
+  return gen !== '' ? gen : s.content
 }
 
-/** Distinctive lowercase phrase per REFUTED_CLAIMS entry. */
-const REFUTED_PHRASES = [
-  'destroyed russian tanks',
-  'democratized air power',
-  'depends less on technology',
-  'ew-immune',
-  '40-70 km of front',
-  '10% of targets',
-  '50-60% targeting efficiency',
-  '70% of russian gerans',
-]
-
-function refutedClaimMatches(text: string): string[] {
-  const lower = text.toLowerCase()
-  return REFUTED_CLAIMS.filter((claim) => {
-    const phrase = REFUTED_PHRASES.find((p) => claim.toLowerCase().includes(p))
-    return phrase !== undefined && lower.includes(phrase)
+/** Persist live generated text into every unedited generated section. */
+function persistGeneratedSections() {
+  const st = useTeStore.getState()
+  const c = st.campaigns.find((x) => x.id === st.activeCampaignId)
+  if (!c) return
+  st.patchCampaign({
+    evidencePackage: {
+      ...c.evidencePackage,
+      sections: c.evidencePackage.sections.map((s) => {
+        if (s.edited) return s
+        const gen = generatedSection(c, s)
+        return gen === '' ? s : { ...s, content: gen }
+      }),
+    },
   })
 }
 
-function measureSummary(c: MeasureComputation): string {
-  const estimate = c.estimate === null ? 'no estimate' : `${fmtNum(c.estimate)}${c.unit ? ` ${c.unit}` : ''}`
-  const interval = c.interval ? ` [${fmtNum(c.interval.lo)}, ${fmtNum(c.interval.hi)}] (${c.interval.method})` : ''
-  return `${c.measureId} ${c.name || 'unnamed'}: ${estimate}${interval}, n=${c.nIncluded}`
-}
+// ---------------------------------------------------------------------------
+// L1: What did we learn?
+// ---------------------------------------------------------------------------
 
-/** Evidence text derived from the finding's links; fills only empty fields. */
-function generatedEvidence(campaign: TeCampaign, f: TeFinding): Partial<TeFinding> {
-  const patch: Partial<TeFinding> = {}
-  const put = (key: keyof TeFinding & string, current: string, next: string) => {
-    if (next.trim() === '' || current.trim() !== '') return
-    ;(patch as Record<string, unknown>)[key] = next
-  }
-  const comps = f.measureIds
-    .map((id) => computeMeasure(campaign, id))
-    .filter((c): c is MeasureComputation => c !== null)
-  put('quantifiedResult', f.quantifiedResult, comps.map(measureSummary).join('\n'))
-  put(
-    'thresholdComparison',
-    f.thresholdComparison,
-    comps
-      .filter((c) => c.estimate !== null)
-      .map((c) => {
-        const m = campaign.measures.find((x) => x.id === c.measureId)
-        if (!m) return ''
-        if (!c.thresholdShown || m.threshold === null) {
-          return `${c.measureId}: characterization only; no customer-approved threshold`
-        }
-        return `${c.measureId}: estimate ${fmtNum(c.estimate!)} vs threshold ${m.threshold}${m.unit ? ` ${m.unit}` : ''} (${c.label})`
-      })
-      .filter((t) => t !== '')
-      .join('\n'),
-  )
-  put(
-    'sampleAndIndependence',
-    f.sampleAndIndependence,
-    comps
-      .map((c) => {
-        const m = campaign.measures.find((x) => x.id === c.measureId)
-        const unitText = m && m.experimentalUnit.trim() !== '' ? `; unit: ${m.experimentalUnit}` : ''
-        return `${c.measureId}: ${c.nIncluded} included of ${c.nAttempted} attempted${unitText}`
-      })
-      .join('\n'),
-  )
-  put(
-    'uncertaintyNote',
-    f.uncertaintyNote,
-    comps
-      .filter((c) => c.interval !== null)
-      .map((c) => `${c.measureId}: [${fmtNum(c.interval!.lo)}, ${fmtNum(c.interval!.hi)}] (${c.interval!.method})`)
-      .join('\n'),
-  )
-  const linkedRuns = [...new Set([...f.supportingRunIds, ...f.contradictingRunIds])]
-    .map((id) => campaign.runs.find((r) => r.id === id))
-    .filter((r) => r !== undefined)
-  if (linkedRuns.length > 0) {
-    let missing = 0
-    let invalid = 0
-    let censored = 0
-    for (const r of linkedRuns) {
-      for (const o of r.observations) {
-        if (f.measureIds.length > 0 && !f.measureIds.includes(o.measureId)) continue
-        if (o.status === 'missing') missing++
-        if (o.status === 'invalid') invalid++
-        if (o.status === 'censored') censored++
-      }
+const STRENGTH_OPTIONS = [
+  { v: 'conclusive' as const, label: 'Conclusive', def: 'The evidence supports one answer.' },
+  { v: 'directional' as const, label: 'Directional', def: 'The evidence leans one way, not settled.' },
+  { v: 'insufficient' as const, label: 'Insufficient', def: 'Not enough valid evidence.' },
+  { v: 'not-tested' as const, label: 'Not tested', def: 'No run covered this.' },
+]
+
+const LADDER_OPTIONS = [
+  { v: 'observation' as const, label: 'What we saw', def: 'A recorded event, no math.' },
+  { v: 'calculation' as const, label: 'What we computed', def: 'A number from the data.' },
+  { v: 'interpretation' as const, label: 'What it means', def: 'Judgment about the number.' },
+  { v: 'recommendation' as const, label: 'What to do', def: 'A proposed action.' },
+  { v: 'decision' as const, label: 'What was decided', def: 'The recorded decision.' },
+]
+
+function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) {
+  const { patchItem, removeItem, selectRecord, bumpRecordVersion, addItem } = useTeStore.getState()
+  const [dissentOpen, setDissentOpen] = useState(false)
+  const set = (patch: Partial<TeFinding>) => patchItem('findings', f.id, patch)
+
+  /** Link writes trigger derived fills; generation fills only empty fields. */
+  const linkPatch = (patch: Partial<TeFinding>) => {
+    patchItem('findings', f.id, patch)
+    const st = useTeStore.getState()
+    const c2 = st.campaigns.find((x) => x.id === campaign.id)
+    const f2 = c2?.findings.find((x) => x.id === f.id)
+    if (!c2 || !f2) return
+    const extra: Partial<TeFinding> = {}
+    if (patch.supportingRunIds !== undefined || patch.contradictingRunIds !== undefined) {
+      const d = derivedRunLinks(c2, f2)
+      if (f2.threatIds.length === 0 && d.threatIds.length > 0) extra.threatIds = d.threatIds
+      if (f2.conditionIds.length === 0 && d.conditionIds.length > 0)
+        extra.conditionIds = d.conditionIds
     }
-    const excluded = linkedRuns.filter((r) => r.excluded).length
-    put(
-      'missingAndExcludedData',
-      f.missingAndExcludedData,
-      `Across ${linkedRuns.length} linked run(s): ${missing} missing, ${invalid} invalid, ${censored} censored observation(s); ${excluded} excluded run(s).`,
-    )
+    const gen = generatedEvidence(c2, { ...f2, ...extra })
+    const all = { ...extra, ...gen }
+    if (Object.keys(all).length > 0) patchItem('findings', f.id, all)
   }
-  const config = campaign.configs.find((x) => x.id === f.configId)
-  const threats = f.threatIds
-    .map((id) => campaign.threats.find((t) => t.id === id))
-    .filter((t) => t !== undefined)
-  const conds = f.conditionIds
-    .map((id) => campaign.conditions.find((x) => x.id === id))
-    .filter((x) => x !== undefined)
-  put(
-    'appliesTo',
-    f.appliesTo,
-    [
-      config ? `configuration ${config.name || config.id} ${config.version}` : '',
-      ...threats.map((t) => t.name || t.id),
-      ...conds.map((x) => x.name || x.id),
-      ...threats.map((t) => t.permittedGeneralization),
-      ...conds.map((x) => x.permittedGeneralization),
-    ]
-      .filter((t) => t.trim() !== '')
-      .join('; '),
-  )
-  put(
-    'doesNotApplyTo',
-    f.doesNotApplyTo,
-    [...threats.map((t) => t.prohibitedGeneralization), ...conds.map((x) => x.prohibitedGeneralization)]
-      .filter((t) => t.trim() !== '')
-      .join('; '),
-  )
-  const hyp = campaign.hypotheses.find((h) => h.id === f.hypothesisId)
-  if (hyp) {
-    const observed = comps
-      .filter((c) => c.estimate !== null)
-      .map((c) => `${c.measureId} ${fmtNum(c.estimate!)}${c.unit ? ` ${c.unit}` : ''}`)
-      .join(', ')
-    put(
-      'comparisonWithPrediction',
-      f.comparisonWithPrediction,
-      `Predicted: ${hyp.predictedValue || 'no prediction recorded'}. Observed: ${observed || 'no estimate'}.`,
-    )
-  }
-  return patch
-}
-
-function FindingsTab({ campaign }: { campaign: TeCampaign }) {
-  const { addFinding, patchItem, removeItem, selectRecord, bumpRecordVersion, createActionFromFinding } = useTeStore.getState()
-  const selected = useTeStore((s) => s.ui.selected.findings ?? null)
-  const [helperMeasureId, setHelperMeasureId] = useState('')
-  const f = campaign.findings.find((x) => x.id === selected)
-  const set = (patch: Partial<TeFinding>) => f && patchItem('findings', f.id, patch)
-  const runOptions = campaign.runs.map((r) => ({ id: r.id, label: `${r.id} (${r.validity}${r.excluded ? ', excluded' : ''})` }))
-  const claims = campaign.registers.filter((r) => r.kind === 'claim')
-  const helper = helperMeasureId ? computeMeasure(campaign, helperMeasureId) : null
-  const blockers = f ? findingBlockers(f) : []
-  const people = allPeople(campaign)
-  const refuted = f ? refutedClaimMatches(f.statement) : []
-  const linkedRunIds = f ? [...new Set([...f.supportingRunIds, ...f.contradictingRunIds])] : []
-  const linkedActions = f ? campaign.actions.filter((a) => a.findingId === f.id) : []
-  const nonIncludable = linkedRunIds.filter((id) => {
-    const r = campaign.runs.find((x) => x.id === id)
-    return r !== undefined && !runIncludable(r)
-  }).length
 
   /** Question pick fills the chained records when exactly one candidate exists. */
   const pickQuestion = (v: string | null) => {
-    if (!f) return
     const patch: Partial<TeFinding> = { questionId: v ?? '' }
     if (v) {
       const hyps = campaign.hypotheses.filter((h) => h.questionId === v)
@@ -210,12 +133,11 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
       const ms = campaign.measures.filter((m) => m.questionId === v)
       if (ms.length === 1 && f.measureIds.length === 0) patch.measureIds = [ms[0].id]
     }
-    set(patch)
+    linkPatch(patch)
   }
 
   /** Supporting-run pick fills configId from the runs' cards when unambiguous. */
   const pickSupportingRuns = (v: string[]) => {
-    if (!f) return
     const patch: Partial<TeFinding> = { supportingRunIds: v }
     if (!f.configId) {
       const configIds = [
@@ -231,11 +153,258 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
       ]
       if (configIds.length === 1) patch.configId = configIds[0]
     }
-    set(patch)
+    linkPatch(patch)
+  }
+
+  const blockers = findingBlockers(f)
+  const refuted = refutedClaimMatches(f.statement)
+  const people = allPeople(campaign)
+  const comps = findingComputations(campaign, f)
+  const derivation = evidenceDerivation(campaign, f)
+  const claims = campaign.registers.filter((r) => r.kind === 'claim')
+  const assumptionRegs = campaign.registers.filter((r) => r.kind === 'assumption')
+  const hyp = campaign.hypotheses.find((h) => h.id === f.hypothesisId)
+  const linkedActions = campaign.actions.filter((a) => a.findingId === f.id)
+  const linkedRunIds = [...new Set([...f.supportingRunIds, ...f.contradictingRunIds])]
+  const nonIncludable = linkedRunIds.filter((id) => {
+    const r = campaign.runs.find((x) => x.id === id)
+    return r !== undefined && !runIncludable(r)
+  }).length
+  const runOptions = [...campaign.runs]
+    .sort((a, b) => Number(runIncludable(b)) - Number(runIncludable(a)))
+    .map((r) => ({
+      id: r.id,
+      label: r.id,
+      sub: `${r.validity}${r.excluded ? ', excluded' : ''}`,
+      pill: runIncludable(r) ? undefined : ('warn' as const),
+    }))
+  const strengthSugg = suggestedStrength(comps)
+  const findingsRight = decisionRightHolder(campaign, 'findings')
+  const assumptionsPicked = f.assumptions
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+  const onAssumptions = (v: string | string[] | null) => {
+    const list = Array.isArray(v) ? v : v == null ? [] : [v]
+    for (const s of list) {
+      if (s.trim() !== '' && !assumptionRegs.some((r) => r.statement.trim() === s.trim())) {
+        addItem('registers', {
+          id: newId('reg'),
+          kind: 'assumption',
+          statement: s.trim(),
+          sourceAndDate: '',
+          relevance: '',
+          rank: null,
+          disposition: null,
+          dispositionNote: '',
+          notes: '',
+        })
+      }
+    }
+    set({ assumptions: list.join('; ') })
   }
 
   return (
-    <div className="inspector-body">
+    <div className="run-row">
+      <SubTitle
+        action={
+          blockers.length === 0 ? (
+            <Pill kind="good" text="releasable" />
+          ) : (
+            <Pill kind="bad" text={`${blockers.length} blocker(s)`} />
+          )
+        }
+      >
+        {f.id} {f.version}
+      </SubTitle>
+      <GateList items={blockers} kind="bad" />
+
+      <SubTitle>Statement</SubTitle>
+      <FindingStatementBuilder campaign={campaign} value={f.statement} onChange={(v) => set({ statement: v })} />
+      <ExampleHint
+        definition="One statement at one ladder rung. Say what the evidence shows, no more."
+        example="[system] detected the [threat] beyond the required range under [condition]."
+        why="A statement that mixes observation with judgment cannot be traced."
+      />
+      <GateList
+        items={refuted.map((c) => `This wording matches a refuted claim: ${c}. Check the evidence.`)}
+        kind="warn"
+      />
+
+      <SubTitle>Chain links</SubTitle>
+      <div className="field-row">
+        <EntityPicker
+          label="Question"
+          options={campaign.questions.map((q) => ({ id: q.id, label: q.id, sub: q.wording.slice(0, 48) }))}
+          value={f.questionId || null}
+          onChange={pickQuestion}
+        />
+        <EntityPicker
+          label="Claim"
+          options={claims.map((r) => ({ id: r.id, label: r.id, sub: r.statement.slice(0, 48) }))}
+          value={f.claimId}
+          onChange={(v) => linkPatch({ claimId: v })}
+        />
+      </div>
+      <div className="field-row">
+        <EntityPicker
+          label="Hypothesis"
+          options={campaign.hypotheses.map((h) => ({ id: h.id, label: h.id, sub: h.producesBehavior.slice(0, 48) }))}
+          value={f.hypothesisId}
+          onChange={(v) => linkPatch({ hypothesisId: v })}
+        />
+        <EntityPicker
+          label="Configuration"
+          options={campaign.configs.map((c) => ({ id: c.id, label: `${c.name || c.id} ${c.version}` }))}
+          value={f.configId}
+          onChange={(v) => linkPatch({ configId: v })}
+        />
+      </div>
+      <EntityPicker
+        label="Supporting runs"
+        options={runOptions}
+        multi
+        values={f.supportingRunIds}
+        onChangeMulti={pickSupportingRuns}
+      />
+      <EntityPicker
+        label="Contradicting runs"
+        options={runOptions}
+        multi
+        values={f.contradictingRunIds}
+        onChangeMulti={(v) => linkPatch({ contradictingRunIds: v })}
+      />
+      {nonIncludable > 0 && (
+        <div className="field-row">
+          <Pill kind="warn" text="check linked runs" />
+          <div className="muted small">{nonIncludable} linked run(s) are not includable (pending or excluded).</div>
+        </div>
+      )}
+      <div className="field-row">
+        <EntityPicker
+          label="Threats"
+          options={campaign.threats.map((t) => ({ id: t.id, label: t.name || t.id }))}
+          multi
+          values={f.threatIds}
+          onChangeMulti={(v) => linkPatch({ threatIds: v })}
+        />
+        <EntityPicker
+          label="Conditions"
+          options={campaign.conditions.map((c) => ({ id: c.id, label: c.name || c.id }))}
+          multi
+          values={f.conditionIds}
+          onChangeMulti={(v) => linkPatch({ conditionIds: v })}
+        />
+      </div>
+      <EntityPicker
+        label="Measures"
+        options={campaign.measures.map((m) => ({ id: m.id, label: `${m.id}: ${m.name || 'unnamed'}` }))}
+        multi
+        values={f.measureIds}
+        onChangeMulti={(v) => linkPatch({ measureIds: v })}
+      />
+
+      <SubTitle>Evidence detail</SubTitle>
+      <p className="muted small">Text below derives from the linked records. Edit any field; revert restores the derivation.</p>
+      <EvidenceField label="Quantified result" rows={2} value={f.quantifiedResult} derived={derivation.quantifiedResult as string | undefined} onChange={(v) => set({ quantifiedResult: v })} />
+      <EvidenceField label="Result vs required value" value={f.thresholdComparison} derived={derivation.thresholdComparison as string | undefined} onChange={(v) => set({ thresholdComparison: v })} />
+      <div className="field-row">
+        <EvidenceField label="How many runs count?" help="Sample and independence of the counted runs." value={f.sampleAndIndependence} derived={derivation.sampleAndIndependence as string | undefined} onChange={(v) => set({ sampleAndIndependence: v })} />
+        <EvidenceField label="How sure are we?" help="Uncertainty interval on the estimate." value={f.uncertaintyNote} derived={derivation.uncertaintyNote as string | undefined} onChange={(v) => set({ uncertaintyNote: v })} />
+      </div>
+      <EvidenceField label="Missing and excluded data" value={f.missingAndExcludedData} derived={derivation.missingAndExcludedData as string | undefined} onChange={(v) => set({ missingAndExcludedData: v })} />
+      {f.hypothesisId && (
+        <EvidenceField label="Result vs prediction" value={f.comparisonWithPrediction} derived={derivation.comparisonWithPrediction as string | undefined} onChange={(v) => set({ comparisonWithPrediction: v })} />
+      )}
+      <TextField label="What else could explain this?" help="Confounders and alternative explanations." value={f.confoundersAndAlternatives} onChange={(v) => set({ confoundersAndAlternatives: v })} />
+      {hyp && hyp.competingExplanations.trim() !== '' && f.confoundersAndAlternatives.trim() === '' && (
+        <SuggestLine text={hyp.competingExplanations} source={hyp.id} onAccept={() => set({ confoundersAndAlternatives: hyp.competingExplanations })} />
+      )}
+
+      <SubTitle>Where does this finding hold?</SubTitle>
+      <EvidenceField label="Applies to" help={HINTS['generalization-bounds'].definition} value={f.appliesTo} derived={derivation.appliesTo as string | undefined} onChange={(v) => set({ appliesTo: v })} />
+      <EvidenceField label="Does not apply to" value={f.doesNotApplyTo} derived={derivation.doesNotApplyTo as string | undefined} onChange={(v) => set({ doesNotApplyTo: v })} />
+      <SegChips
+        label="Assumptions this finding rests on"
+        help="Pick from the assumption register. A new entry joins the register."
+        options={assumptionRegs.map((r) => ({ v: r.statement, label: r.statement.slice(0, 48) || r.id }))}
+        value={assumptionsPicked}
+        multi
+        allowCustom
+        onChange={onAssumptions}
+      />
+
+      <SubTitle>Strength and kind</SubTitle>
+      <SegChips
+        label="How strong is the evidence?"
+        options={STRENGTH_OPTIONS}
+        value={f.strength}
+        onChange={(v) => {
+          if (v != null && !Array.isArray(v)) set({ strength: v })
+        }}
+      />
+      {strengthSugg !== null && strengthSugg !== f.strength && (
+        <SuggestLine text={`Suggested: ${strengthSugg}`} source="computed results" onAccept={() => set({ strength: strengthSugg })} />
+      )}
+      <SegChips
+        label="What kind of statement is this?"
+        help={HINTS['ladder-level'].definition}
+        options={LADDER_OPTIONS}
+        value={f.ladderLevel}
+        onChange={(v) => {
+          if (v != null && !Array.isArray(v)) set({ ladderLevel: v })
+        }}
+      />
+
+      <TextField label="How long is this result good for?" help={HINTS['evidence-life'].definition} value={f.evidenceLifeAndStaleness} onChange={(v) => set({ evidenceLifeAndStaleness: v })} />
+      {f.evidenceLifeAndStaleness.trim() === '' && campaign.decision.latestAcceptedEvidenceDate.trim() !== '' && (
+        <SuggestLine
+          text={`Valid until ${campaign.decision.latestAcceptedEvidenceDate}`}
+          source="decision record"
+          onAccept={() => set({ evidenceLifeAndStaleness: `Valid until ${campaign.decision.latestAcceptedEvidenceDate}` })}
+        />
+      )}
+
+      <div className="field-row">
+        <VersionField label="Version" value={f.version} onBump={() => bumpRecordVersion('findings', f.id)} />
+        <PersonPicker
+          label="Approvers"
+          value={f.approvers}
+          onChange={(v) => set({ approvers: v })}
+          people={people}
+          prefillSource={findingsRight !== '' && f.approvers.trim() === findingsRight ? 'decision rights' : undefined}
+        />
+      </div>
+      {dissentOpen || f.dissent.trim() !== '' ? (
+        <TextField label="Disagreement on record" help={HINTS.dissent.definition} value={f.dissent} onChange={(v) => set({ dissent: v })} />
+      ) : (
+        <div className="inspector-actions">
+          <button type="button" className="mini" onClick={() => setDissentOpen(true)}>
+            Record disagreement
+          </button>
+        </div>
+      )}
+      <div className="inspector-actions">
+        <ConfirmButton
+          label="Remove finding"
+          disabled={linkedActions.length > 0}
+          title={linkedActions.length > 0 ? `In use: ${linkedActions.length} action(s)` : undefined}
+          onConfirm={() => {
+            removeItem('findings', f.id)
+            selectRecord('findings', null)
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function FindingsGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
+  const { addFinding, patchItem, selectRecord } = useTeStore.getState()
+  const selected = useTeStore((s) => s.ui.selected.findings ?? null)
+  const f = campaign.findings.find((x) => x.id === selected)
+  return (
+    <DecisionGroup id="deliver-findings" question="What did we learn?" hint="Findings: statements traced to questions, runs, and measures." tier="required" state={state}>
       <ChipList
         items={campaign.findings.map((x) => ({ id: x.id, label: `${x.id}: ${x.statement.slice(0, 32) || 'new'}` }))}
         selectedId={selected}
@@ -246,108 +415,47 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
           if (approvers !== '') patchItem('findings', id, { approvers })
           selectRecord('findings', id)
         }}
-        addLabel="+ finding"
+        addLabel="Add finding"
       />
+      {campaign.findings.length === 0 && <p className="muted small">No findings yet. Add finding.</p>}
+      {f && <FindingEditor key={f.id} campaign={campaign} f={f} />}
+    </DecisionGroup>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// L2: What should the customer do?
+// ---------------------------------------------------------------------------
+
+function DecisionEffectGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
+  const { patchItem, selectRecord, createActionFromFinding } = useTeStore.getState()
+  const selected = useTeStore((s) => s.ui.selected.findings ?? null)
+  const f = campaign.findings.find((x) => x.id === selected)
+  return (
+    <DecisionGroup id="deliver-effect" question="What should the customer do?" hint="Decision implication, customer effect, and recommended action per finding." tier="recommended" state={state}>
+      {!f && <p className="muted small">Pick a finding above first.</p>}
       {f && (
         <div className="run-row">
-          <SubTitle action={blockers.length === 0 ? <Pill kind="good" text="releasable" /> : <Pill kind="bad" text={`${blockers.length} blocker(s)`} />}>
-            {f.id} {f.version}
-          </SubTitle>
-          <GateList items={blockers} kind="bad" />
-          {blockers.length > 0 && <p className="muted small">A finding with blockers is not releasable.</p>}
-
-          <TextField label="Finding statement" rows={2} value={f.statement} onChange={(v) => set({ statement: v })} />
-          <GateList items={refuted.map((c) => `This wording matches a refuted claim: ${c}. Check the evidence.`)} kind="warn" />
-          <TextField label="Quantified result" rows={2} value={f.quantifiedResult} onChange={(v) => set({ quantifiedResult: v })} />
+          <div className="muted small">{f.id}: {f.statement.slice(0, 64) || 'no statement yet'}</div>
+          <TextField label="What does this mean for the decision?" rows={2} value={f.decisionImplication} onChange={(v) => patchItem('findings', f.id, { decisionImplication: v })} />
+          {f.decisionImplication.trim() === '' &&
+            (() => {
+              const seed = decisionSeed(campaign, findingComputations(campaign, f))
+              return seed ? (
+                <SuggestLine
+                  text={`Result class ${seed.cls}: ${seed.text}`}
+                  source="qualify action map"
+                  onAccept={() => patchItem('findings', f.id, { decisionImplication: seed.text })}
+                />
+              ) : null
+            })()}
           <div className="field-row">
-            <SelectField label="Quantified-result helper" value={helperMeasureId || null} allowEmpty="pick a measure" options={campaign.measures.map((m) => ({ v: m.id, label: `${m.id}: ${m.name || 'unnamed'}` }))} onChange={(v) => setHelperMeasureId(v ?? '')} />
-            {helper && (
-              <div className="field">
-                <span>Computed</span>
-                <div className="muted small">{measureSummary(helper)}</div>
-              </div>
-            )}
-            {helper && (
-              <button className="mini" onClick={() => set({ quantifiedResult: [f.quantifiedResult, measureSummary(helper)].filter((x) => x.trim()).join('\n') })}>insert</button>
-            )}
-          </div>
-
-          <SubTitle>Traceability links</SubTitle>
-          <div className="field-row">
-            <SelectField label="Question" value={f.questionId || null} allowEmpty="none" options={campaign.questions.map((q) => ({ v: q.id, label: `${q.id}: ${q.wording.slice(0, 32)}` }))} onChange={pickQuestion} />
-            <SelectField label="Claim" value={f.claimId} allowEmpty="none" options={claims.map((r) => ({ v: r.id, label: r.statement.slice(0, 40) || r.id }))} onChange={(v) => set({ claimId: v })} />
-          </div>
-          <div className="field-row">
-            <SelectField label="Hypothesis" value={f.hypothesisId} allowEmpty="none" options={campaign.hypotheses.map((h) => ({ v: h.id, label: h.id }))} onChange={(v) => set({ hypothesisId: v })} />
-            <SelectField label="Configuration" value={f.configId} allowEmpty="none" options={campaign.configs.map((c) => ({ v: c.id, label: `${c.name || c.id} ${c.version}` }))} onChange={(v) => set({ configId: v })} />
-          </div>
-          <MultiPicker label="Supporting runs" options={runOptions} value={f.supportingRunIds} onChange={pickSupportingRuns} />
-          <MultiPicker label="Contradicting runs" options={runOptions} value={f.contradictingRunIds} onChange={(v) => set({ contradictingRunIds: v })} />
-          {nonIncludable > 0 && (
-            <div className="field-row">
-              <Pill kind="warn" text="check linked runs" />
-              <div className="muted small">{nonIncludable} linked run(s) are not includable (pending or excluded).</div>
-            </div>
-          )}
-          <MultiPicker label="Threats" options={campaign.threats.map((t) => ({ id: t.id, label: t.name || t.id }))} value={f.threatIds} onChange={(v) => set({ threatIds: v })} />
-          <MultiPicker label="Conditions" options={campaign.conditions.map((c) => ({ id: c.id, label: c.name || c.id }))} value={f.conditionIds} onChange={(v) => set({ conditionIds: v })} />
-          <MultiPicker label="Measures" options={campaign.measures.map((m) => ({ id: m.id, label: `${m.id}: ${m.name || 'unnamed'}` }))} value={f.measureIds} onChange={(v) => set({ measureIds: v })} />
-
-          <SubTitle>Strength and ladder</SubTitle>
-          <div className="field">
-            <span>Strength</span>
-            <Seg value={f.strength} options={(['conclusive', 'directional', 'insufficient', 'not-tested'] as const).map((v) => ({ v, label: v }))} onChange={(v) => set({ strength: v })} />
-          </div>
-          <div className="field">
-            <span>Ladder level</span>
-            <Seg value={f.ladderLevel} options={(['observation', 'calculation', 'interpretation', 'recommendation', 'decision'] as const).map((v) => ({ v, label: v }))} onChange={(v) => set({ ladderLevel: v })} />
-          </div>
-          <p className="muted small">Never merge levels in one statement.</p>
-
-          <SubTitle
-            action={
-              <button className="mini" onClick={() => set(generatedEvidence(campaign, f))}>
-                Generate evidence text
-              </button>
-            }
-          >
-            Evidence detail
-          </SubTitle>
-          <p className="muted small">Generation fills only empty fields from the linked records.</p>
-          <TextField label="Threshold comparison" value={f.thresholdComparison} onChange={(v) => set({ thresholdComparison: v })} />
-          <div className="field-row">
-            <TextField label="Sample and independence" value={f.sampleAndIndependence} onChange={(v) => set({ sampleAndIndependence: v })} />
-            <TextField label="Uncertainty" value={f.uncertaintyNote} onChange={(v) => set({ uncertaintyNote: v })} />
-          </div>
-          <div className="field-row">
-            <TextField label="Missing and excluded data" value={f.missingAndExcludedData} onChange={(v) => set({ missingAndExcludedData: v })} />
-            <TextField label="Confounders and alternatives" value={f.confoundersAndAlternatives} onChange={(v) => set({ confoundersAndAlternatives: v })} />
-          </div>
-
-          <SubTitle>Applicability</SubTitle>
-          <div className="field-row">
-            <TextField label="Applies to" value={f.appliesTo} onChange={(v) => set({ appliesTo: v })} />
-            <TextField label="Does not apply to" value={f.doesNotApplyTo} onChange={(v) => set({ doesNotApplyTo: v })} />
-          </div>
-          <div className="field-row">
-            <TextField label="Assumptions" value={f.assumptions} onChange={(v) => set({ assumptions: v })} />
-            <TextField label="Evidence life and staleness" value={f.evidenceLifeAndStaleness} onChange={(v) => set({ evidenceLifeAndStaleness: v })} />
-          </div>
-
-          <SubTitle>Decision effect</SubTitle>
-          <TextField label="Decision implication" rows={2} value={f.decisionImplication} onChange={(v) => set({ decisionImplication: v })} />
-          <div className="field-row">
-            <TextField label="Customer effect" value={f.customerEffect} onChange={(v) => set({ customerEffect: v })} />
-            <TextField label="Recommended action" value={f.recommendedAction} onChange={(v) => set({ recommendedAction: v })} />
-          </div>
-          <TextField label="Comparison with the prediction" value={f.comparisonWithPrediction} onChange={(v) => set({ comparisonWithPrediction: v })} />
-          <div className="field-row">
-            <VersionField label="Version" value={f.version} onBump={() => bumpRecordVersion('findings', f.id)} />
-            <PersonField label="Approvers" value={f.approvers} onChange={(v) => set({ approvers: v })} people={people} />
-            <TextField label="Dissent" value={f.dissent} onChange={(v) => set({ dissent: v })} />
+            <TextField label="Effect on the customer" value={f.customerEffect} onChange={(v) => patchItem('findings', f.id, { customerEffect: v })} />
+            <TextField label="Recommended action" value={f.recommendedAction} onChange={(v) => patchItem('findings', f.id, { recommendedAction: v })} />
           </div>
           <div className="inspector-actions">
             <button
+              type="button"
               className="mini"
               onClick={() => {
                 const id = createActionFromFinding(f.id)
@@ -356,84 +464,115 @@ function FindingsTab({ campaign }: { campaign: TeCampaign }) {
             >
               Create action from finding
             </button>
-            <button className="mini danger" onClick={() => { removeItem('findings', f.id); selectRecord('findings', null) }}>remove</button>
           </div>
-          {linkedActions.length > 0 && (
-            <p className="muted small">Linked actions: {linkedActions.map((a) => a.id).join(', ')}</p>
-          )}
         </div>
       )}
-    </div>
+    </DecisionGroup>
   )
 }
 
-function ActionsTab({ campaign }: { campaign: TeCampaign }) {
+// ---------------------------------------------------------------------------
+// L3: Who does what by when?
+// ---------------------------------------------------------------------------
+
+function ActionsGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { addItem, patchItem, removeItem } = useTeStore.getState()
   const people = allPeople(campaign)
+  const actionRight = decisionRightHolder(campaign, 'customer action')
   return (
-    <div className="inspector-body">
-      <SubTitle
-        action={
-          <button
-            className="mini"
-            onClick={() =>
-              addItem('actions', {
-                id: newId('act'),
-                findingId: null,
-                decisionOwner: decisionRightHolder(campaign, 'customer action'),
-                executionOwner: '',
-                dueDate: '',
-                requiredWork: '',
-                evidenceForClosure: '',
-                riskIfLate: '',
-                status: 'open',
-                communicationRequired: '',
-              })
-            }
-          >
-            + action
-          </button>
-        }
-      >
-        Actions
-      </SubTitle>
-      {campaign.actions.length === 0 && <p className="muted small">No actions yet.</p>}
-      {campaign.actions.map((a) => (
-        <div key={a.id} className="run-row">
-          <div className="field-row">
-            <SelectField label="Finding" value={a.findingId} allowEmpty="none" options={campaign.findings.map((x) => ({ v: x.id, label: x.id }))} onChange={(v) => patchItem('actions', a.id, { findingId: v })} />
-            <PersonField label="Decision owner" value={a.decisionOwner} onChange={(v) => patchItem('actions', a.id, { decisionOwner: v })} people={people} />
-            <PersonField label="Execution owner" value={a.executionOwner} onChange={(v) => patchItem('actions', a.id, { executionOwner: v })} people={people} />
-            <DateField label="Due date" value={a.dueDate || null} onChange={(v) => patchItem('actions', a.id, { dueDate: v ?? '' })} />
+    <DecisionGroup id="deliver-actions" question="Who does what by when?" hint="Follow-up actions with owners, due dates, and closure evidence." tier="recommended" state={state}>
+      <div className="inspector-actions">
+        <button
+          type="button"
+          className="mini"
+          onClick={() =>
+            addItem('actions', {
+              id: newId('act'),
+              findingId: null,
+              decisionOwner: actionRight,
+              executionOwner: '',
+              dueDate: '',
+              requiredWork: '',
+              evidenceForClosure: '',
+              riskIfLate: '',
+              status: 'open',
+              communicationRequired: '',
+            })
+          }
+        >
+          Add action
+        </button>
+      </div>
+      {campaign.actions.length === 0 && <p className="muted small">No actions yet. Add action, or create one from a finding.</p>}
+      {campaign.actions.map((a) => {
+        const finding = campaign.findings.find((x) => x.id === a.findingId)
+        return (
+          <div key={a.id} className="run-row">
+            <div className="field-row">
+              <EntityPicker
+                label="Finding"
+                options={campaign.findings.map((x) => ({ id: x.id, label: x.id, sub: x.statement.slice(0, 40) }))}
+                value={a.findingId}
+                onChange={(v) => patchItem('actions', a.id, { findingId: v })}
+              />
+              <PersonPicker
+                label="Decision owner"
+                value={a.decisionOwner}
+                onChange={(v) => patchItem('actions', a.id, { decisionOwner: v })}
+                people={people}
+                prefillSource={actionRight !== '' && a.decisionOwner.trim() === actionRight ? 'decision rights' : undefined}
+              />
+              <PersonPicker label="Execution owner" value={a.executionOwner} onChange={(v) => patchItem('actions', a.id, { executionOwner: v })} people={people} />
+              <DateField label="Due date" value={a.dueDate || null} onChange={(v) => patchItem('actions', a.id, { dueDate: v ?? '' })} />
+            </div>
+            <TextField label="Required work" rows={2} value={a.requiredWork} onChange={(v) => patchItem('actions', a.id, { requiredWork: v })} />
+            {finding && a.requiredWork.trim() !== '' && a.requiredWork === finding.recommendedAction && (
+              <div className="provenance-line">
+                <span className="provenance-chip">from {finding.id}</span>
+              </div>
+            )}
+            <TextField label="Evidence for closure" help="What proves the work is done." value={a.evidenceForClosure} onChange={(v) => patchItem('actions', a.id, { evidenceForClosure: v })} />
+            <AdvancedDisclosure>
+              <div className="field-row">
+                <TextField label="Risk if late" value={a.riskIfLate} onChange={(v) => patchItem('actions', a.id, { riskIfLate: v })} />
+                <PersonPicker label="Who must be told?" value={a.communicationRequired} onChange={(v) => patchItem('actions', a.id, { communicationRequired: v })} people={people} multi />
+              </div>
+            </AdvancedDisclosure>
+            <div className="field-row">
+              <div className="field">
+                <span>Status</span>
+                <Seg
+                  value={a.status}
+                  options={[
+                    { v: 'open' as const, label: 'Open' },
+                    { v: 'closed' as const, label: 'Closed' },
+                    { v: 'transferred' as const, label: 'Transferred' },
+                  ]}
+                  onChange={(v) => patchItem('actions', a.id, { status: v })}
+                />
+              </div>
+              <ConfirmButton label="Remove action" onConfirm={() => removeItem('actions', a.id)} />
+            </div>
           </div>
-          <TextField label="Required work" rows={2} value={a.requiredWork} onChange={(v) => patchItem('actions', a.id, { requiredWork: v })} />
-          <div className="field-row">
-            <TextField label="Evidence for closure" value={a.evidenceForClosure} onChange={(v) => patchItem('actions', a.id, { evidenceForClosure: v })} />
-            <TextField label="Risk if late" value={a.riskIfLate} onChange={(v) => patchItem('actions', a.id, { riskIfLate: v })} />
-            <TextField label="Communication required" value={a.communicationRequired} onChange={(v) => patchItem('actions', a.id, { communicationRequired: v })} />
-          </div>
-          <div className="field">
-            <span>Status</span>
-            <Seg value={a.status} options={(['open', 'closed', 'transferred'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('actions', a.id, { status: v })} />
-          </div>
-          <div className="inspector-actions">
-            <button className="mini danger" onClick={() => removeItem('actions', a.id)}>remove</button>
-          </div>
-        </div>
-      ))}
-    </div>
+        )
+      })}
+    </DecisionGroup>
   )
 }
 
-function DebriefsTab({ campaign }: { campaign: TeCampaign }) {
+// ---------------------------------------------------------------------------
+// L4: What did the team learn?
+// ---------------------------------------------------------------------------
+
+function DebriefsGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { addDebrief, patchItem, selectRecord } = useTeStore.getState()
   const selected = useTeStore((s) => s.ui.selected.debriefs ?? null)
   const [expandedRun, setExpandedRun] = useState<string | null>(null)
   const d = campaign.debriefs.find((x) => x.id === selected)
   const completedRuns = campaign.runs.filter((r) => r.endAt !== null)
-
+  const people = allPeople(campaign)
   return (
-    <div className="inspector-body">
+    <DecisionGroup id="deliver-debriefs" question="What did the team learn?" hint="After-action review. Prompts come from the seed bank." tier="recommended" state={state}>
       <ChipList
         items={campaign.debriefs.map((x) => ({ id: x.id, label: `${x.kind} · ${x.date}${x.runId ? ` · ${x.runId}` : ''}` }))}
         selectedId={selected}
@@ -445,16 +584,27 @@ function DebriefsTab({ campaign }: { campaign: TeCampaign }) {
         }}
         addLabel="New AAR"
       />
+      {campaign.debriefs.length === 0 && <p className="muted small">No debriefs yet. New AAR.</p>}
       {d && (
         <div className="run-row">
-          <SubTitle>{d.kind} debrief · {d.date}</SubTitle>
+          <SubTitle>
+            {d.kind} debrief {'·'} {d.date}
+          </SubTitle>
           {d.answers.map((a, i) => (
             <TextField key={i} label={a.question} rows={2} value={a.answer} onChange={(v) => patchItem('debriefs', d.id, { answers: d.answers.map((x, j) => (j === i ? { ...x, answer: v } : x)) })} />
           ))}
           <SubTitle
             action={
-              <button className="mini" onClick={() => patchItem('debriefs', d.id, { improvements: [...d.improvements, { id: newId('imp'), text: '', owner: '', dueDate: '', destination: 'standard-work' as const }] })}>
-                + improvement
+              <button
+                type="button"
+                className="mini"
+                onClick={() =>
+                  patchItem('debriefs', d.id, {
+                    improvements: [...d.improvements, { id: newId('imp'), text: '', owner: '', dueDate: '', destination: 'standard-work' as const }],
+                  })
+                }
+              >
+                Add improvement
               </button>
             }
           >
@@ -463,26 +613,37 @@ function DebriefsTab({ campaign }: { campaign: TeCampaign }) {
           {d.improvements.map((imp) => (
             <div key={imp.id} className="field-row te-table-row">
               <TextField label="Improvement" value={imp.text} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, text: v } : x)) })} />
-              <PersonField label="Owner" value={imp.owner} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, owner: v } : x)) })} people={allPeople(campaign)} />
+              <PersonPicker label="Owner" value={imp.owner} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, owner: v } : x)) })} people={people} />
               <DateField label="Due date" value={imp.dueDate || null} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, dueDate: v ?? '' } : x)) })} />
               <div className="field">
-                <span>Destination</span>
-                <Seg value={imp.destination} options={(['standard-work', 'product-backlog'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, destination: v } : x)) })} />
+                <span>Where does it go?</span>
+                <Seg
+                  value={imp.destination}
+                  options={[
+                    { v: 'standard-work' as const, label: 'Standard work' },
+                    { v: 'product-backlog' as const, label: 'Product backlog' },
+                  ]}
+                  onChange={(v) => patchItem('debriefs', d.id, { improvements: d.improvements.map((x) => (x.id === imp.id ? { ...x, destination: v } : x)) })}
+                />
               </div>
-              <button className="mini danger" onClick={() => patchItem('debriefs', d.id, { improvements: d.improvements.filter((x) => x.id !== imp.id) })}>×</button>
+              <ConfirmButton label="Remove" onConfirm={() => patchItem('debriefs', d.id, { improvements: d.improvements.filter((x) => x.id !== imp.id) })} />
             </div>
           ))}
           <p className="muted small">AAR within five working days. Every improvement gets an owner and a destination.</p>
         </div>
       )}
-
       <SubTitle>Immediate run debriefs</SubTitle>
       {completedRuns.length === 0 && <p className="muted small">No completed runs.</p>}
       {completedRuns.map((r) => (
         <div key={r.id}>
           <div className="field-row te-table-row">
-            <div className="muted small">{r.id} · ended {fmtDate(r.endAt)}{r.preliminaryUse ? ` · ${r.preliminaryUse}` : ''}</div>
-            <button className="mini" onClick={() => setExpandedRun(expandedRun === r.id ? null : r.id)}>{expandedRun === r.id ? 'hide' : 'show'}</button>
+            <div className="muted small">
+              {r.id} {'·'} ended {fmtDate(r.endAt)}
+              {r.preliminaryUse ? ` · ${r.preliminaryUse}` : ''}
+            </div>
+            <button type="button" className="mini" onClick={() => setExpandedRun(expandedRun === r.id ? null : r.id)}>
+              {expandedRun === r.id ? 'Hide' : 'Show'}
+            </button>
           </div>
           {expandedRun === r.id && (
             <div className="run-row">
@@ -496,176 +657,292 @@ function DebriefsTab({ campaign }: { campaign: TeCampaign }) {
           )}
         </div>
       ))}
-    </div>
+    </DecisionGroup>
   )
 }
 
-const SECTION_GUIDANCE: Record<number, string> = {
-  11: 'State the architecture and mission-thread assessment.',
-  14: 'State the alternatives and trade-offs, including delay and no action.',
-  16: 'State the retest and evidence-refresh triggers.',
-  17: 'State the raw-to-result reproduction instructions.',
-  18: 'State data delivery, classification, distribution, retention, and deletion.',
-}
+// ---------------------------------------------------------------------------
+// L5: Is the evidence package complete?
+// ---------------------------------------------------------------------------
 
-function generatedContent(c: TeCampaign, s: PackageSection): string {
-  const d = c.decision
-  switch (s.n) {
-    case 1:
-      return [`Decision owner: ${d.authorizedDecisionOwner}`, `Bounded choice: ${d.boundedChoice}`, `Alternatives: ${d.alternatives}`, `Decision date: ${d.decisionDate}`].join('\n')
-    case 2:
-      return d.blockingUncertainty
-    case 3: {
-      const first = c.findings[0]
-      if (!first) return 'Executive answer: [complete after findings review]'
-      return [first.statement, first.decisionImplication].filter((x) => x.trim()).join('\n')
-    }
-    case 4:
-      return [`Mission: ${c.charter.missionAndProtectedOutcome}`, `Configurations: ${c.configs.map((x) => x.name || x.id).join(', ')}`].join('\n')
-    case 5:
-      return [
-        `Threats: ${c.threats.map((t) => `${t.name || t.id} (${t.representationClass})`).join(', ')}`,
-        `Conditions: ${c.conditions.map((x) => x.name || x.id).join(', ')}`,
-      ].join('\n')
-    case 6:
-      return [
-        ...c.questions.map((q) => `${q.id} (${q.priority}): ${q.wording}`),
-        ...c.hypotheses.map((h) => `${h.id}: predicts ${h.predictedValue || 'no prediction'}`),
-        ...c.measures.map((m) => `${m.id} ${m.name}${m.threshold !== null ? `, threshold ${m.threshold}${m.unit ? ` ${m.unit}` : ''}` : ''}${m.thresholdApproved ? '' : ' (threshold not customer approved)'}`),
-      ].join('\n')
-    case 7: {
-      const a = c.charter.acceptance
-      return [`Relying organization: ${a.relyingOrganization}`, `Method approval authority: ${a.methodApprovalAuthority}`, `Required witnesses: ${a.requiredWitnesses}`, `Evidence standard: ${a.evidenceStandard}`, `Rejection conditions: ${a.rejectionConditions}`].join('\n')
-    }
-    case 8: {
-      const acc = runAccounting(c)
-      return `Planned ${acc.planned}, attempted ${acc.attempted}, valid ${acc.valid}, conditional ${acc.conditional}, invalid ${acc.invalid}, excluded ${acc.excluded}, pending ${acc.pending}.`
-    }
-    case 9:
-      return c.findings.filter((f) => f.strength === 'conclusive' || f.strength === 'directional').map((f) => `${f.id} (${f.strength}): ${f.statement}`).join('\n')
-    case 10:
-      return c.findings.filter((f) => f.strength === 'insufficient' || f.strength === 'not-tested').map((f) => `${f.id} (${f.strength}): ${f.statement}`).join('\n')
-    case 12:
-      return c.findings
-        .map((f) => [f.uncertaintyNote.trim() && `${f.id} uncertainty: ${f.uncertaintyNote}`, f.dissent.trim() && `${f.id} dissent: ${f.dissent}`].filter(Boolean).join('\n'))
-        .filter((x) => x !== '')
-        .join('\n')
-    case 13:
-      return c.registers.filter((r) => r.kind === 'claim').map((r) => `${r.statement || r.id}: ${r.disposition ?? 'undisposed'}`).join('\n')
-    case 15:
-      return c.findings.filter((f) => f.recommendedAction.trim()).map((f) => `${f.id}: ${f.recommendedAction}`).join('\n')
-    case 19:
-      return c.actions.map((a) => `${a.requiredWork || a.id} (owner ${a.executionOwner || 'unassigned'}, due ${a.dueDate || 'not set'}, ${a.status})`).join('\n')
-    case 20: {
-      const p = c.evidencePackage
-      return [`Method acceptance: ${p.methodAcceptance}`, `Evidence acceptance: ${p.evidenceAcceptance}`, `Final authority and date: ${p.finalAuthorityAndDate}`].join('\n')
-    }
-    default:
-      return s.content || SECTION_GUIDANCE[s.n] || ''
-  }
-}
-
-function PackageTab({ campaign }: { campaign: TeCampaign }) {
-  const { patchCampaign, markPackageDelivered } = useTeStore.getState()
+function PackageGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
+  const { patchCampaign } = useTeStore.getState()
   const pkg = campaign.evidencePackage
+  const people = allPeople(campaign)
   const setPkg = (patch: Partial<TeEvidencePackage>) => patchCampaign({ evidencePackage: { ...pkg, ...patch } })
   const setSection = (n: number, content: string) =>
     setPkg({ sections: pkg.sections.map((s) => (s.n === n ? { ...s, content, edited: true } : s)) })
-
+  const revertSection = (n: number) =>
+    setPkg({ sections: pkg.sections.map((s) => (s.n === n ? { ...s, content: '', edited: false } : s)) })
+  const methodDefault = campaign.charter.acceptance.methodApprovalAuthority.trim()
+  const evidenceDefault = campaign.charter.evidenceAcceptanceAuthority.trim()
   return (
-    <div className="inspector-body">
-      <SubTitle action={pkg.deliveredAt ? <Pill kind="good" text={`delivered ${fmtDate(pkg.deliveredAt)}`} /> : undefined}>
-        Decision evidence package (20 sections)
-      </SubTitle>
-      <div className="inspector-actions">
-        <button onClick={() => setPkg({ sections: pkg.sections.map((s) => (s.edited ? s : { ...s, content: generatedContent(campaign, s) })) })}>
-          Generate from records
+    <DecisionGroup id="deliver-package" question="Is the evidence package complete?" hint="Decision evidence package: 20 sections. Generated text tracks the records; edits stick." tier="recommended" state={state}>
+      <div className="field-row">
+        {pkg.deliveredAt && <Pill kind="good" text={`delivered ${fmtDate(pkg.deliveredAt)}`} />}
+        <button type="button" className="mini" onClick={() => persistGeneratedSections()}>
+          Save generated text
         </button>
+        <div className="muted small">Generated sections track the records live. Save writes them; edits always stick.</div>
       </div>
-      <p className="muted small">Generation fills only sections without manual edits.</p>
-      {pkg.sections.map((s) => (
-        <TextField key={s.n} label={`${s.n}. ${s.title}${s.edited ? ' (edited)' : ''}`} rows={3} value={s.content} onChange={(v) => setSection(s.n, v)} />
-      ))}
+      {pkg.sections.map((s) => {
+        const manual = MANUAL_SECTIONS.includes(s.n)
+        if (manual) {
+          const template = sectionTemplate(campaign, s.n)
+          return (
+            <div key={s.n}>
+              <TextField label={`${s.n}. ${s.title}`} rows={3} value={s.content} placeholder={SECTION_GUIDANCE[s.n]} onChange={(v) => setSection(s.n, v)} />
+              {s.content.trim() === '' && template !== '' && (
+                <div className="provenance-line">
+                  <button type="button" className="mini" onClick={() => setSection(s.n, template)}>
+                    Insert template
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        }
+        const display = sectionDisplay(campaign, s)
+        return (
+          <div key={s.n} className={`provenance ${s.edited ? 'edited' : 'inherited'}`}>
+            <TextField label={`${s.n}. ${s.title}`} rows={3} value={display} onChange={(v) => setSection(s.n, v)} />
+            <div className="provenance-line">
+              {s.edited ? (
+                <>
+                  <span className="provenance-chip">edited</span>
+                  <button type="button" className="mini" onClick={() => revertSection(s.n)}>
+                    Revert
+                  </button>
+                </>
+              ) : (
+                <span className="provenance-chip">from campaign records</span>
+              )}
+            </div>
+          </div>
+        )
+      })}
 
       <SubTitle>Acceptance</SubTitle>
       <div className="field-row">
-        <SuggestField label="Method acceptance" value={pkg.methodAcceptance} onChange={(v) => setPkg({ methodAcceptance: v })} suggestions={[campaign.charter.acceptance.methodApprovalAuthority, campaign.charter.evidenceAcceptanceAuthority, campaign.charter.customerDecisionOwner]} />
-        <SuggestField label="Evidence acceptance" value={pkg.evidenceAcceptance} onChange={(v) => setPkg({ evidenceAcceptance: v })} suggestions={[campaign.charter.evidenceAcceptanceAuthority, campaign.charter.acceptance.methodApprovalAuthority, campaign.charter.customerDecisionOwner]} />
+        <PersonPicker
+          label="Method acceptance"
+          value={pkg.methodAcceptance}
+          onChange={(v) => setPkg({ methodAcceptance: v })}
+          people={people}
+          prefillSource={methodDefault !== '' && pkg.methodAcceptance.trim() === methodDefault ? 'charter' : undefined}
+        />
+        <PersonPicker
+          label="Evidence acceptance"
+          value={pkg.evidenceAcceptance}
+          onChange={(v) => setPkg({ evidenceAcceptance: v })}
+          people={people}
+          prefillSource={evidenceDefault !== '' && pkg.evidenceAcceptance.trim() === evidenceDefault ? 'charter' : undefined}
+        />
       </div>
-      <SuggestField label="Final approving authority and date" value={pkg.finalAuthorityAndDate} onChange={(v) => setPkg({ finalAuthorityAndDate: v })} suggestions={[campaign.charter.evidenceAcceptanceAuthority, campaign.charter.acceptance.methodApprovalAuthority, campaign.charter.customerDecisionOwner]} />
-      <div className="inspector-actions">
-        <button className="primary" disabled={pkg.deliveredAt !== null} onClick={() => markPackageDelivered()}>Mark delivered</button>
-      </div>
-    </div>
+      {pkg.methodAcceptance.trim() === '' && methodDefault !== '' && (
+        <SuggestLine text={methodDefault} source="charter method approval authority" onAccept={() => setPkg({ methodAcceptance: methodDefault })} />
+      )}
+      {pkg.evidenceAcceptance.trim() === '' && evidenceDefault !== '' && (
+        <SuggestLine text={evidenceDefault} source="charter evidence acceptance authority" onAccept={() => setPkg({ evidenceAcceptance: evidenceDefault })} />
+      )}
+      <FinalAuthorityField value={pkg.finalAuthorityAndDate} onChange={(v) => setPkg({ finalAuthorityAndDate: v })} people={people} />
+    </DecisionGroup>
   )
 }
 
-function CloseoutTab({ campaign }: { campaign: TeCampaign }) {
-  const { patchItem, patchCampaign } = useTeStore.getState()
+// ---------------------------------------------------------------------------
+// L6: Can we close?
+// ---------------------------------------------------------------------------
+
+const QUESTION_DISPOSITIONS = [
+  { v: 'answered' as const, label: 'Answered' },
+  { v: 'partially-answered' as const, label: 'Partly answered' },
+  { v: 'not-answered' as const, label: 'Not answered' },
+]
+
+const EVIDENCE_LEVELS = [
+  { v: 'component-behavior' as const, label: 'Component' },
+  { v: 'interface-behavior' as const, label: 'Interface' },
+  { v: 'mission-conditions' as const, label: 'Mission conditions' },
+  { v: 'end-to-end-mission-effect' as const, label: 'End-to-end effect' },
+]
+
+const CLAIM_DISPOSITIONS = [
+  { v: 'supported' as const, label: 'Supported' },
+  { v: 'contradicted' as const, label: 'Contradicted' },
+  { v: 'directionally-supported' as const, label: 'Leans supported' },
+  { v: 'inconclusive' as const, label: 'Inconclusive' },
+  { v: 'untested' as const, label: 'Untested' },
+  { v: 'outside-scope' as const, label: 'Out of scope' },
+]
+
+function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
+  const { patchItem, patchCampaign, markPackageDelivered } = useTeStore.getState()
   const blockers = closeoutBlockers(campaign)
   const claims = campaign.registers.filter((r) => r.kind === 'claim')
+  const pkg = campaign.evidencePackage
+  const openActions = campaign.actions.filter((a) => a.status === 'open')
+  const disposedQ = campaign.questions.filter((q) => q.disposition !== null).length
+  const disposedC = claims.filter((r) => r.disposition !== null).length
+  const sectionsComplete = pkg.sections.filter((s) => sectionDisplay(campaign, s).trim() !== '').length
+  const strengths = (['conclusive', 'directional', 'insufficient', 'not-tested'] as const)
+    .map((s) => ({ s, n: campaign.findings.filter((f) => f.strength === s).length }))
+    .filter((x) => x.n > 0)
+    .map((x) => `${x.n} ${x.s}`)
+    .join(', ')
+  const findingsBad = campaign.findings.filter((f) => findingBlockers(f).length > 0).length
   return (
-    <div className="inspector-body">
+    <DecisionGroup id="deliver-closeout" question="Can we close?" hint="Dispose every question and claim, close or transfer actions, deliver the package." tier="required" state={state}>
       <SubTitle>Question dispositions</SubTitle>
       {campaign.questions.length === 0 && <p className="muted small">No questions defined.</p>}
-      {campaign.questions.map((q) => (
-        <div key={q.id} className="run-row">
-          <div className="muted small">{q.id}: {q.wording || 'no wording'}</div>
-          <div className="field-row">
-            <SelectField label="Disposition" value={q.disposition} allowEmpty="undisposed" options={(['answered', 'partially-answered', 'not-answered'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('questions', q.id, { disposition: v })} />
-            <SelectField label="Evidence level" value={q.evidenceLevel} allowEmpty="not set" options={(['component-behavior', 'interface-behavior', 'mission-conditions', 'end-to-end-mission-effect'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('questions', q.id, { evidenceLevel: v })} />
-            <TextField label="Note" value={q.dispositionNote} onChange={(v) => patchItem('questions', q.id, { dispositionNote: v })} />
+      {campaign.questions.map((q) => {
+        const sugg = q.disposition === null ? suggestedQuestionDisposition(campaign, q.id) : null
+        return (
+          <div key={q.id} className="run-row">
+            <div className="muted small">
+              {q.id}: {q.wording || 'no wording'}
+            </div>
+            <div className="field-row">
+              <SelectField label="Is it answered?" value={q.disposition} allowEmpty="undisposed" options={QUESTION_DISPOSITIONS} onChange={(v) => patchItem('questions', q.id, { disposition: v })} />
+              <SelectField label="How close to a mission?" help="Evidence level of the answer." value={q.evidenceLevel} allowEmpty="not set" options={EVIDENCE_LEVELS} onChange={(v) => patchItem('questions', q.id, { evidenceLevel: v })} />
+              {q.disposition !== null && q.disposition !== 'answered' && (
+                <TextField label="Why not fully answered?" value={q.dispositionNote} onChange={(v) => patchItem('questions', q.id, { dispositionNote: v })} />
+              )}
+            </div>
+            {sugg !== null && (
+              <SuggestLine text={`Suggested: ${sugg}`} source="linked finding strengths" onAccept={() => patchItem('questions', q.id, { disposition: sugg })} />
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       <SubTitle>Claim dispositions</SubTitle>
       {claims.length === 0 && <p className="muted small">No claims registered.</p>}
-      {claims.map((r) => (
-        <div key={r.id} className="field-row te-table-row">
-          <div className="field">
-            <span>{r.id}</span>
-            <div className="muted small">{r.statement.slice(0, 80) || 'no statement'}</div>
+      {claims.map((r) => {
+        const sugg = r.disposition === null ? suggestedClaimDisposition(campaign, r.id) : null
+        return (
+          <div key={r.id} className="field-row te-table-row">
+            <div className="field">
+              <span>{r.id}</span>
+              <div className="muted small">{r.statement.slice(0, 80) || 'no statement'}</div>
+            </div>
+            <SelectField label="Did the evidence support it?" value={r.disposition} allowEmpty="undisposed" options={CLAIM_DISPOSITIONS} onChange={(v) => patchItem('registers', r.id, { disposition: v })} />
+            {sugg !== null && (
+              <SuggestLine text={`Suggested: ${sugg}`} source="linked findings and outcomes" onAccept={() => patchItem('registers', r.id, { disposition: sugg })} />
+            )}
           </div>
-          <SelectField label="Disposition" value={r.disposition} allowEmpty="undisposed" options={(['supported', 'contradicted', 'directionally-supported', 'inconclusive', 'untested', 'outside-scope'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('registers', r.id, { disposition: v })} />
+        )
+      })}
+
+      <SubTitle>Open actions</SubTitle>
+      {openActions.length === 0 && <p className="muted small">No open actions.</p>}
+      {openActions.map((a) => (
+        <div key={a.id} className="muted small">
+          {a.id}: {a.requiredWork || 'no work stated'} {'·'} due {a.dueDate || 'not set'}
         </div>
       ))}
 
-      <SubTitle>Closeout gate</SubTitle>
-      {blockers.length === 0 ? (
-        <Pill kind="good" text={campaign.phase === 'closed' ? 'closed' : 'ready to close'} />
-      ) : (
-        <Pill kind="warn" text={`${blockers.length} blocker(s)`} />
-      )}
-      <GateList items={blockers} kind="bad" />
+      <StageReview
+        title="Deliver review"
+        rows={[
+          { label: 'Questions disposed', value: `${disposedQ}/${campaign.questions.length}` },
+          { label: 'Claims disposed', value: `${disposedC}/${claims.length}` },
+          { label: 'Findings', value: strengths || 'none' },
+          { label: 'Open actions', value: String(openActions.length) },
+          { label: 'Package sections', value: `${sectionsComplete}/${pkg.sections.length}` },
+          { label: 'Method acceptance', value: pkg.methodAcceptance },
+          { label: 'Evidence acceptance', value: pkg.evidenceAcceptance },
+        ]}
+        issues={[
+          ...blockers.map((t) => ({ level: 'block' as const, text: t })),
+          ...(findingsBad > 0 ? [{ level: 'warn' as const, text: `${findingsBad} finding(s) have open blockers.` }] : []),
+        ]}
+        passLabel="Mark package delivered"
+        disabled={pkg.deliveredAt !== null}
+        onPass={() => {
+          persistGeneratedSections()
+          markPackageDelivered()
+        }}
+      />
       <div className="inspector-actions">
-        <button className="primary" disabled={blockers.length > 0 || campaign.phase === 'closed'} onClick={() => patchCampaign({ phase: 'closed' })}>
+        <button
+          type="button"
+          className="primary"
+          disabled={blockers.length > 0 || campaign.phase === 'closed'}
+          title={blockers.length > 0 ? 'Dispose every question and claim, and close or transfer actions.' : undefined}
+          onClick={() => patchCampaign({ phase: 'closed' })}
+        >
           Close campaign
         </button>
+        {campaign.phase === 'closed' && <Pill kind="good" text="closed" />}
       </div>
-    </div>
+    </DecisionGroup>
   )
 }
 
-const TABS: Array<{ v: Tab; label: string }> = [
-  { v: 'findings', label: 'Findings' },
-  { v: 'actions', label: 'Actions' },
-  { v: 'debriefs', label: 'Debriefs' },
-  { v: 'package', label: 'Package' },
-  { v: 'closeout', label: 'Closeout' },
-]
+// ---------------------------------------------------------------------------
+// Panel
+// ---------------------------------------------------------------------------
 
 export function DeliverPanel({ campaign }: { campaign: TeCampaign }) {
-  const [tab, setTab] = useState<Tab>('findings')
+  const pkg = campaign.evidencePackage
+  const claims = campaign.registers.filter((r) => r.kind === 'claim')
+  const findingsState: GroupState =
+    campaign.findings.length === 0
+      ? 'empty'
+      : campaign.findings.every((f) => findingBlockers(f).length === 0)
+        ? 'done'
+        : 'partial'
+  const effectState: GroupState =
+    campaign.findings.length === 0
+      ? 'empty'
+      : campaign.findings.every((f) => f.decisionImplication.trim() !== '')
+        ? 'done'
+        : campaign.findings.some((f) => f.decisionImplication.trim() !== '')
+          ? 'partial'
+          : 'empty'
+  const actionsState: GroupState =
+    campaign.actions.length === 0
+      ? 'empty'
+      : campaign.actions.every((a) => a.status !== 'open')
+        ? 'done'
+        : 'partial'
+  const debriefsState: GroupState = campaign.debriefs.length > 0 ? 'done' : 'empty'
+  const sectionsComplete = pkg.sections.filter((s) => sectionDisplay(campaign, s).trim() !== '').length
+  const packageState: GroupState =
+    pkg.deliveredAt !== null
+      ? 'done'
+      : sectionsComplete === 0
+        ? 'empty'
+        : sectionsComplete === pkg.sections.length && pkg.methodAcceptance.trim() !== '' && pkg.evidenceAcceptance.trim() !== ''
+          ? 'done'
+          : 'partial'
+  const blockers = closeoutBlockers(campaign)
+  const disposedAny =
+    campaign.questions.some((q) => q.disposition !== null) || claims.some((r) => r.disposition !== null)
+  const closeoutState: GroupState =
+    campaign.phase === 'closed' ? 'done' : blockers.length === 0 && pkg.deliveredAt !== null ? 'done' : disposedAny ? 'partial' : 'empty'
+
   return (
     <div className="te-panel">
-      <PhaseIntro phase="deliver" />
-      <Seg value={tab} options={TABS} onChange={setTab} />
-      {tab === 'findings' && <FindingsTab campaign={campaign} />}
-      {tab === 'actions' && <ActionsTab campaign={campaign} />}
-      {tab === 'debriefs' && <DebriefsTab campaign={campaign} />}
-      {tab === 'package' && <PackageTab campaign={campaign} />}
-      {tab === 'closeout' && <CloseoutTab campaign={campaign} />}
+      <PhaseIntro
+        phase="deliver"
+        gate={
+          campaign.phase === 'closed'
+            ? { kind: 'good', text: 'closed' }
+            : pkg.deliveredAt !== null
+              ? { kind: 'good', text: 'delivered' }
+              : blockers.length > 0
+                ? { kind: 'warn', text: `${blockers.length} closeout blocker(s)` }
+                : { kind: 'neutral', text: 'in work' }
+        }
+      />
+      <FindingsGroup campaign={campaign} state={findingsState} />
+      <DecisionEffectGroup campaign={campaign} state={effectState} />
+      <ActionsGroup campaign={campaign} state={actionsState} />
+      <DebriefsGroup campaign={campaign} state={debriefsState} />
+      <PackageGroup campaign={campaign} state={packageState} />
+      <CloseoutGroup campaign={campaign} state={closeoutState} />
     </div>
   )
 }

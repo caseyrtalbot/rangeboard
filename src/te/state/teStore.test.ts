@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { linkedRecordFill, useTeStore } from './teStore'
 import { nextId, bumpMajor, bumpMinor, displayId } from '../model/ids'
-import { hasPlaceholder } from '../validate'
+import { deleteImpacts, hasPlaceholder } from '../validate'
 
 function campaign() {
   const s = useTeStore.getState()
@@ -443,5 +443,318 @@ describe('validation helpers', () => {
   it('detects unresolved placeholders', () => {
     expect(hasPlaceholder('fly the [planned route]')).toBe(true)
     expect(hasPlaceholder('fly the planned route')).toBe(false)
+  })
+})
+
+describe('startFromCampaign', () => {
+  function buildSource() {
+    const st = useTeStore.getState()
+    st.patchCampaign({
+      charter: {
+        ...campaign().charter,
+        sponsor: 'JIATF',
+        requestingOrganization: 'JIATF South',
+        customerDecisionOwner: 'COL Decision',
+        evidenceAcceptanceAuthority: 'Dr. Evidence',
+        deploymentStrategist: 'C. Talbot',
+        contractAndFundingOwner: 'K. Funds',
+        dataSecurityReleaseClass: 'CUI',
+        exactRequest: 'Tell us if the radar works.',
+        dateReceived: '2026-08-01',
+        deliverablesDate: '2026-12-01',
+        acceptance: {
+          relyingOrganization: 'JIATF South',
+          methodApprovalAuthority: 'Dr. Method',
+          requiredWitnesses: 'MAJ Witness',
+          evidenceStandard: '20 valid reps',
+          rejectionConditions: 'no truth source',
+        },
+      },
+    })
+    st.addItem('roles', { id: 'r1', role: 'test-conductor', primary: 'C. Talbot', backup: '' })
+    st.addItem('authorities', {
+      id: 'a1',
+      authorityType: 'FAA Part 107 waiver',
+      owner: 'K. Funds',
+      dueDate: '2026-09-01',
+      operatingLimits: 'Below 400 ft AGL',
+      evidence: 'waiver PDF on file',
+      status: 'active',
+      leadTimeNote: '1 to 3 months',
+    })
+    st.addItem('schedule', {
+      id: 's1',
+      tMinusDays: 30,
+      name: 'Design approved',
+      owner: 'C. Talbot',
+      done: true,
+      notes: '',
+    })
+    st.addItem('registers', {
+      id: 'reg1',
+      kind: 'claim',
+      statement: 'Vendor claims 5 km detection.',
+      sourceAndDate: 'brochure 2026',
+      relevance: '',
+      rank: null,
+      disposition: 'contradicted',
+      dispositionNote: 'missed at 3 km',
+      notes: '',
+    })
+    const q = st.addQuestion()
+    st.patchItem('questions', q, {
+      wording: 'How far does detection reach?',
+      requiredAnswerDate: '2026-11-01',
+      frozen: true,
+      disposition: 'answered',
+      evidenceLevel: 'mission-conditions',
+      dispositionNote: 'done',
+    })
+    const m = st.addMeasure(q)
+    st.patchItem('measures', m, {
+      name: 'Probability of detection',
+      frozen: true,
+      thresholdApproved: true,
+      threshold: 0.9,
+      hypothesisIds: ['VLK-OLD-HYP-001'],
+    })
+    const cfg = st.addConfig()
+    st.patchItem('configs', cfg, {
+      name: 'Baseline A',
+      frozen: true,
+      freezeTime: '2026-08-10T00:00:00Z',
+      functionalCheckResult: 'pass',
+      releasedBy: 'C. Talbot',
+      scenarioSnapshot: '{"x":1}',
+      driftLog: [{ time: '2026-08-11T00:00:00Z', note: 'moved sensor' }],
+    })
+    st.addThreat()
+    st.addCondition()
+    st.addFactor()
+    // Evidence that must never copy.
+    const cardId = st.addCard({ title: 'Card A' })
+    st.patchItem('cards', cardId, { status: 'issued' })
+    st.createRunFromCard(cardId)
+    st.addFinding()
+    return campaign()
+  }
+
+  it('copies structure with reallocated ids and records ancestry', () => {
+    const src = buildSource()
+    const st = useTeStore.getState()
+    const newId = st.startFromCampaign(src.id, 'Follow-on', 'F2')!
+    const next = campaign()
+    expect(next.id).toBe(newId)
+    expect(next.sourceCampaignId).toBe(src.id)
+    expect(next.code).toBe('F2')
+    // People and organizations copy; the acceptance block copies whole.
+    expect(next.charter.customerDecisionOwner).toBe('COL Decision')
+    expect(next.charter.requestingOrganization).toBe('JIATF South')
+    expect(next.charter.acceptance.evidenceStandard).toBe('20 valid reps')
+    // Campaign-specific facts and dates never copy.
+    expect(next.charter.exactRequest).toBe('')
+    expect(next.charter.dateReceived).toBe('')
+    expect(next.charter.deliverablesDate).toBe('')
+    // Ids reallocate under the new code; question links remap.
+    expect(next.questions[0].id).toBe('VLK-F2-Q-001')
+    expect(next.questions[0].id).not.toBe(src.questions[0].id)
+    expect(next.measures[0].id).toBe('VLK-F2-M-001')
+    expect(next.measures[0].questionId).toBe(next.questions[0].id)
+    expect(next.roles).toHaveLength(1)
+    expect(next.factors).toHaveLength(1)
+    expect(next.threats[0].version).toBe('v1.0')
+  })
+
+  it('never copies evidence, freezes, dispositions, or done flags', () => {
+    const src = buildSource()
+    useTeStore.getState().startFromCampaign(src.id, 'Follow-on', 'F2')
+    const next = campaign()
+    expect(next.cards).toHaveLength(0)
+    expect(next.runs).toHaveLength(0)
+    expect(next.findings).toHaveLength(0)
+    expect(next.deviations).toHaveLength(0)
+    expect(next.anomalies).toHaveLength(0)
+    expect(next.checklists).toHaveLength(0)
+    expect(next.gonogos).toHaveLength(0)
+    expect(next.actions).toHaveLength(0)
+    expect(next.debriefs).toHaveLength(0)
+    expect(next.frames).toHaveLength(0)
+    expect(next.evidencePackage.sections.every((s) => s.content === '')).toBe(true)
+    // Questions: skeletons only.
+    expect(next.questions[0].wording).toBe('How far does detection reach?')
+    expect(next.questions[0].frozen).toBe(false)
+    expect(next.questions[0].disposition).toBeNull()
+    expect(next.questions[0].requiredAnswerDate).toBe('')
+    // Measures: unfrozen, approval cleared, hypothesis links cleared.
+    expect(next.measures[0].frozen).toBe(false)
+    expect(next.measures[0].thresholdApproved).toBe(false)
+    expect(next.measures[0].hypothesisIds).toEqual([])
+    // Configs: unfrozen with the snapshot and drift log cleared.
+    expect(next.configs[0].frozen).toBe(false)
+    expect(next.configs[0].freezeTime).toBe('')
+    expect(next.configs[0].functionalCheckResult).toBe('')
+    expect(next.configs[0].scenarioSnapshot).toBeNull()
+    expect(next.configs[0].driftLog).toEqual([])
+    // Authorities reset; approval evidence never copies.
+    expect(next.authorities[0].status).toBe('pending')
+    expect(next.authorities[0].dueDate).toBe('')
+    expect(next.authorities[0].evidence).toBe('')
+    expect(next.authorities[0].operatingLimits).toBe('Below 400 ft AGL')
+    // Schedule keeps offsets, clears done.
+    expect(next.schedule[0].tMinusDays).toBe(30)
+    expect(next.schedule[0].done).toBe(false)
+    // Register dispositions clear: a new campaign has tested nothing.
+    expect(next.registers[0].statement).toBe('Vendor claims 5 km detection.')
+    expect(next.registers[0].disposition).toBeNull()
+    expect(next.registers[0].dispositionNote).toBe('')
+    // The source campaign is untouched.
+    const srcAfter = useTeStore.getState().campaigns.find((c) => c.id === src.id)!
+    expect(srcAfter.cards).toHaveLength(1)
+    expect(srcAfter.measures[0].frozen).toBe(true)
+  })
+
+  it('returns null for an unknown source', () => {
+    expect(useTeStore.getState().startFromCampaign('nope')).toBeNull()
+  })
+})
+
+describe('applyPreset', () => {
+  it('blank records the pick and seeds nothing', () => {
+    useTeStore.getState().applyPreset('blank')
+    const c = campaign()
+    expect(c.presetKey).toBe('blank')
+    expect(c.questions).toHaveLength(0)
+    expect(c.measures).toHaveLength(0)
+    expect(c.cards).toHaveLength(0)
+  })
+
+  it('sensor characterization seeds structure without fabricated facts', () => {
+    useTeStore.getState().applyPreset('sensor-characterization')
+    const c = campaign()
+    expect(c.presetKey).toBe('sensor-characterization')
+    expect(c.charter.engagementType).toBe('characterization')
+    expect(c.charter.valkrynTasking).toBe('characterize')
+    expect(c.questions).toHaveLength(1)
+    // Placeholder wording, so nothing reads as a real campaign fact.
+    expect(c.questions[0].wording).toContain('[')
+    expect(c.measures).toHaveLength(6)
+    for (const m of c.measures) {
+      expect(m.dictKey).not.toBe('')
+      expect(m.questionId).toBe(c.questions[0].id)
+      // No fabricated performance facts: no thresholds, nothing approved or frozen.
+      expect(m.threshold).toBeNull()
+      expect(m.thresholdApproved).toBe(false)
+      expect(m.frozen).toBe(false)
+    }
+    expect(c.cards).toHaveLength(1)
+    const card = c.cards[0]
+    expect(card.status).toBe('draft')
+    expect(card.questionIds).toEqual([c.questions[0].id])
+    // Template dict keys relink to the seeded campaign measures.
+    expect(card.measureIds.sort()).toEqual(c.measures.map((m) => m.id).sort())
+    // The card gate still blocks the draft: placeholders are intended.
+    expect(useTeStore.getState().issueCard(card.id).length).toBeGreaterThan(0)
+  })
+
+  it('radar comparison seeds two configs and a baseline plus delta matrix', () => {
+    useTeStore.getState().applyPreset('radar-comparison')
+    const c = campaign()
+    expect(c.charter.engagementType).toBe('comparison')
+    expect(c.configs).toHaveLength(2)
+    expect(c.configs.every((cfg) => cfg.name.includes('['))).toBe(true)
+    expect(c.matrix).toHaveLength(2)
+    expect(c.matrix[0].method).toBe('baseline comparison')
+    expect(c.matrix[1].method).toBe('comparison')
+    expect(c.matrix[0].configId).not.toBe(c.matrix[1].configId)
+  })
+
+  it('ew resilience seeds a contested condition and an adaptive threat skeleton', () => {
+    useTeStore.getState().applyPreset('ew-resilience')
+    const c = campaign()
+    expect(c.conditions).toHaveLength(1)
+    expect(c.conditions[0].emEnvironment).toBe('contested')
+    expect(c.threats).toHaveLength(1)
+    expect(c.threats[0].opforMode).toBe('bounded-adaptive')
+    expect(c.cards).toHaveLength(1)
+  })
+})
+
+describe('deleteImpacts', () => {
+  it('returns nothing for an unreferenced record', () => {
+    const st = useTeStore.getState()
+    const q = st.addQuestion()
+    const m = st.addMeasure(q)
+    // The measure references the question, so the question is in use.
+    expect(deleteImpacts(campaign(), 'measures', m)).toEqual([])
+    expect(deleteImpacts(campaign(), 'questions', q)).toEqual(['1 measure'])
+  })
+
+  it('lists every referrer of a measure', () => {
+    const st = useTeStore.getState()
+    const q = st.addQuestion()
+    const m = st.addMeasure(q)
+    const cell = st.addMatrixCell()
+    st.patchItem('matrix', cell, { measureIds: [m] })
+    const cardId = st.addCard({ title: 'Card A', measureIds: [m] })
+    st.patchItem('cards', cardId, { status: 'issued' })
+    st.createRunFromCard(cardId)
+    const f = st.addFinding()
+    st.patchItem('findings', f, { measureIds: [m] })
+    expect(deleteImpacts(campaign(), 'measures', m)).toEqual([
+      '1 matrix cell',
+      '1 card',
+      '1 finding',
+      '1 run',
+    ])
+  })
+
+  it('protects a claim named by hypotheses, cards, findings, or the blocking uncertainty', () => {
+    const st = useTeStore.getState()
+    st.addItem('registers', {
+      id: 'clm1',
+      kind: 'claim',
+      statement: 'Vendor claims 5 km detection.',
+      sourceAndDate: '',
+      relevance: '',
+      rank: null,
+      disposition: null,
+      dispositionNote: '',
+      notes: '',
+    })
+    const q = st.addQuestion()
+    const h = st.addHypothesis(q)
+    st.patchItem('hypotheses', h, { claimId: 'clm1' })
+    expect(deleteImpacts(campaign(), 'registers', 'clm1')).toEqual(['1 hypothesis'])
+    st.addItem('registers', {
+      id: 'unk1',
+      kind: 'unknown',
+      statement: 'Night detection range unknown.',
+      sourceAndDate: '',
+      relevance: '',
+      rank: 1,
+      disposition: null,
+      dispositionNote: '',
+      notes: '',
+    })
+    st.patchCampaign({
+      decision: { ...campaign().decision, blockingUncertainty: 'Night detection range unknown.' },
+    })
+    expect(deleteImpacts(campaign(), 'registers', 'unk1')).toEqual(['the blocking uncertainty'])
+  })
+
+  it('protects records a card or run still uses', () => {
+    const st = useTeStore.getState()
+    const thr = st.addThreat()
+    const cond = st.addCondition()
+    const cfg = st.addConfig()
+    const cardId = st.addCard({ title: 'Card A', threatId: thr, conditionId: cond, configId: cfg })
+    expect(deleteImpacts(campaign(), 'threats', thr)).toEqual(['1 card'])
+    expect(deleteImpacts(campaign(), 'conditions', cond)).toEqual(['1 card'])
+    expect(deleteImpacts(campaign(), 'configs', cfg)).toEqual(['1 card'])
+    expect(deleteImpacts(campaign(), 'cards', cardId)).toEqual([])
+    st.patchItem('cards', cardId, { status: 'issued' })
+    st.createRunFromCard(cardId)
+    expect(deleteImpacts(campaign(), 'cards', cardId)).toEqual(['1 run'])
+    expect(deleteImpacts(campaign(), 'threats', thr)).toEqual(['1 card', '1 run'])
   })
 })

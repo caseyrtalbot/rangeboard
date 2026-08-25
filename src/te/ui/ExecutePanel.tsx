@@ -1,77 +1,50 @@
+/**
+ * Execute stage (SPEC groups E1 to E7). Tabs stay: Day, Run console,
+ * Checklists, Adjudication. Inside each tab, ordered decision groups.
+ * Gates: no issued card no run; holdOnUnknown items hold the run;
+ * no validity status no analysis.
+ */
+
 import { useState } from 'react'
-import { GENERIC_MARKS } from '../seed/constants'
 import type {
   ChecklistInstanceItem,
   ChecklistPhase,
   GoNoGo,
-  GoNoGoScope,
-  MeasureObservation,
   TeCampaign,
   TeChecklist,
-  TeRun,
-  TeRunValidity,
 } from '../model/types'
-import { RUN_ROLES } from '../model/types'
 import { useTeStore } from '../state/teStore'
-import { canStartRun } from '../validate'
 import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
 import { templateByKey, templatesForPhase } from '../seed/checklistTemplates'
 import { nowIso } from '../model/empty'
-import { HELP, allPeople, decisionRightHolder } from './help'
+import { HELP, allPeople } from './help'
 import {
   CheckField,
-  MultiPicker,
-  NumberField,
-  PersonField,
+  DecisionGroup,
+  PersonPicker,
   PhaseIntro,
   Pill,
-  SelectField,
   Seg,
   SubTitle,
-  SuggestField,
   TextField,
   fmtDate,
 } from './kit'
+import {
+  ActiveRunBlock,
+  AdjudicationBlock,
+  AnomalyCard,
+  DebriefBlock,
+  DeviationCard,
+  GO_NO_GO_OPTIONS,
+  GoNoGoForm,
+  StartRunBlock,
+  VALIDITY_KIND,
+  VALIDITY_LABEL,
+  decisionKind,
+} from './ExecuteBlocks'
 
 type Tab = 'day' | 'run' | 'checklists' | 'adjudication'
-
-
-const GO_NO_GO_OPTIONS = (['go', 'conditional-go', 'hold', 'no-go'] as GoNoGo[]).map((v) => ({ v, label: v }))
-
-function decisionKind(d: GoNoGo): 'good' | 'warn' | 'bad' {
-  return d === 'go' ? 'good' : d === 'no-go' ? 'bad' : 'warn'
-}
-
-const VALIDITY_KIND: Record<TeRunValidity, 'good' | 'warn' | 'bad' | 'neutral'> = {
-  pending: 'warn',
-  valid: 'good',
-  invalid: 'bad',
-  'conditionally-valid': 'neutral',
-}
-
-/** Yes/no question over a stored string; a legacy value renders as a prepended option. */
-function YesNoSeg({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-}) {
-  const base = ['yes', 'no']
-  const options = (value !== '' && !base.includes(value) ? [value, ...base] : base).map((v) => ({
-    v,
-    label: v,
-  }))
-  return (
-    <div className="field">
-      <span>{label}</span>
-      <Seg value={value} options={options} onChange={onChange} />
-    </div>
-  )
-}
 
 function AccountingLine({ campaign }: { campaign: TeCampaign }) {
   const acc = runAccounting(campaign)
@@ -84,13 +57,6 @@ function AccountingLine({ campaign }: { campaign: TeCampaign }) {
 }
 
 function DayTab({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenChecklists: () => void }) {
-  const { recordGoNoGo, startChecklist } = useTeStore.getState()
-  const [scope, setScope] = useState<GoNoGoScope>('daily')
-  const [decision, setDecision] = useState<GoNoGo>('go')
-  const defaultApprovers = decisionRightHolder(campaign, 'daily go/no-go')
-  const [approvers, setApprovers] = useState(defaultApprovers)
-  const [note, setNote] = useState('')
-  const people = allPeople(campaign)
   const cov = coverage(campaign)
   const counts = { empty: 0, thin: 0, met: 0, redundant: 0 }
   for (const c of cov) counts[c.state]++
@@ -101,10 +67,12 @@ function DayTab({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenCh
     .sort((a, b) => a.cell!.priority - b.cell!.priority)
     .slice(0, 3)
   const gonogos = [...campaign.gonogos].sort((a, b) => b.at.localeCompare(a.at))
+  const today = nowIso().slice(0, 10)
+  const decidedToday = campaign.gonogos.some((g) => g.at.slice(0, 10) === today)
 
   return (
     <div className="inspector-body">
-      <SubTitle>Day dashboard · {nowIso().slice(0, 10)}</SubTitle>
+      <SubTitle>Day dashboard · {today}</SubTitle>
       <AccountingLine campaign={campaign} />
 
       <SubTitle>Coverage</SubTitle>
@@ -127,336 +95,153 @@ function DayTab({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenCh
         )
       })}
 
-      <SubTitle>Go/no-go decisions (latest first)</SubTitle>
+      <DecisionGroup
+        id="e1-day-start"
+        question="Are we go today?"
+        hint="Go/no-go decision. The named approver releases the day, a readiness review, or one run."
+        state={decidedToday ? 'done' : gonogos.length > 0 ? 'partial' : 'empty'}
+      >
+        <GoNoGoForm campaign={campaign} onOpenChecklists={onOpenChecklists} />
+      </DecisionGroup>
+
+      <SubTitle>Decisions (latest first)</SubTitle>
       {gonogos.length === 0 && <p className="muted small">None recorded.</p>}
       {gonogos.map((g) => (
         <div key={g.id} className="field-row te-table-row">
-          <div className="muted small">{fmtDate(g.at)} · {g.scope} · approvers: {g.approvers || 'none'}{g.note ? ` · ${g.note}` : ''}</div>
+          <div className="muted small">
+            {fmtDate(g.at)} · {g.scope} · approvers: {g.approvers || 'none'}
+            {g.note ? ` · ${g.note}` : ''}
+          </div>
           <Pill kind={decisionKind(g.decision)} text={g.decision} />
         </div>
       ))}
-
-      <SubTitle>Record go/no-go</SubTitle>
-      <div className="field">
-        <span>Scope</span>
-        <Seg value={scope} options={(['daily', 'readiness-review', 'pre-run-release'] as GoNoGoScope[]).map((v) => ({ v, label: v }))} onChange={setScope} />
-      </div>
-      <div className="field">
-        <span>Decision</span>
-        <Seg value={decision} options={GO_NO_GO_OPTIONS} onChange={setDecision} />
-      </div>
-      <div className="field-row">
-        <PersonField label="Approvers" value={approvers} onChange={setApprovers} people={people} />
-        <TextField label="Note" value={note} onChange={setNote} />
-      </div>
-      <div className="inspector-actions">
-        <button className="primary" onClick={() => { recordGoNoGo(scope, decision, approvers, note); setApprovers(defaultApprovers); setNote('') }}>Record</button>
-        <button onClick={() => { startChecklist(templateByKey('day-start')!); onOpenChecklists() }}>Start day-start checklist</button>
-      </div>
-    </div>
-  )
-}
-
-function ObservationRow({ campaign, run, measureId }: { campaign: TeCampaign; run: TeRun; measureId: string }) {
-  const { patchItem } = useTeStore.getState()
-  const measure = campaign.measures.find((m) => m.id === measureId)
-  const obs: MeasureObservation = run.observations.find((o) => o.measureId === measureId) ?? {
-    measureId,
-    status: 'no-test',
-    success: null,
-    value: null,
-    note: '',
-  }
-  const setObs = (patch: Partial<MeasureObservation>) => {
-    const has = run.observations.some((o) => o.measureId === measureId)
-    const next = has
-      ? run.observations.map((o) => (o.measureId === measureId ? { ...o, ...patch } : o))
-      : [...run.observations, { ...obs, ...patch }]
-    patchItem('runs', run.id, { observations: next })
-  }
-  return (
-    <div className="field-row te-table-row">
-      <div className="field">
-        <span>Measure</span>
-        <div className="muted small">{measureId}: {measure?.name || 'unnamed'}</div>
-      </div>
-      <SelectField label="Status" value={obs.status} options={(['observed', 'missing', 'invalid', 'censored', 'unknown-outcome', 'no-test'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && setObs({ status: v })} />
-      {measure?.family === 'binomial' ? (
-        <div className="field">
-          <span>Success</span>
-          <Seg value={(obs.success === true ? 'yes' : obs.success === false ? 'no' : '') as 'yes' | 'no'} options={[{ v: 'yes', label: 'yes' }, { v: 'no', label: 'no' }]} onChange={(v) => setObs({ success: v === 'yes' })} />
-        </div>
-      ) : (
-        <NumberField label={`Value${measure?.unit ? ` (${measure.unit})` : ''}`} value={obs.value} onChange={(v) => setObs({ value: v })} />
-      )}
-      <TextField label="Note" value={obs.note} onChange={(v) => setObs({ note: v })} />
-    </div>
-  )
-}
-
-function RunDebriefForm({ run, onClose }: { run: TeRun; onClose: () => void }) {
-  const { patchItem } = useTeStore.getState()
-  const set = (patch: Partial<TeRun['debrief']>) =>
-    patchItem('runs', run.id, { debrief: { ...run.debrief, ...patch } })
-  return (
-    <div className="run-row">
-      <SubTitle action={<button className="mini" onClick={onClose}>close</button>}>
-        Immediate debrief · {run.id}
-      </SubTitle>
-      <TextField label="What was planned and what occurred in time order" rows={2} value={run.debrief.plannedVsOccurred} onChange={(v) => set({ plannedVsOccurred: v })} />
-      <TextField label="What differed" rows={2} value={run.debrief.differences} onChange={(v) => set({ differences: v })} />
-      <YesNoSeg label="Were all sources recorded" value={run.debrief.sourcesRecorded} onChange={(v) => set({ sourcesRecorded: v })} />
-      <TextField label="Warnings or failures" value={run.debrief.warningsOrFailures} onChange={(v) => set({ warningsOrFailures: v })} />
-      <TextField label="Which result was unexpected" value={run.debrief.unexpectedResult} onChange={(v) => set({ unexpectedResult: v })} />
-      <YesNoSeg label="Repeat needed" value={run.debrief.repeatNeeded} onChange={(v) => set({ repeatNeeded: v })} />
-      <div className="field">
-        <span>Preliminary use</span>
-        <Seg
-          value={(run.preliminaryUse ?? '') as NonNullable<TeRun['preliminaryUse']>}
-          options={(['usable', 'limited', 'repeat', 'valid-failure'] as const).map((v) => ({ v, label: v }))}
-          onChange={(v) =>
-            patchItem('runs', run.id, {
-              preliminaryUse: v,
-              ...(v === 'repeat' && run.debrief.repeatNeeded.trim() === ''
-                ? { debrief: { ...run.debrief, repeatNeeded: 'yes' } }
-                : {}),
-            })
-          }
-        />
-      </div>
     </div>
   )
 }
 
 function RunConsoleTab({ campaign }: { campaign: TeCampaign }) {
-  const { createRunFromCard, markRunEvent, addDeviation, addAnomaly, patchItem, discardRun, createDiagnosticCard, selectRecord } = useTeStore.getState()
-  const [cardId, setCardId] = useState('')
-  const people = allPeople(campaign)
   const [debriefRunId, setDebriefRunId] = useState<string | null>(null)
-  const issued = campaign.cards.filter((c) => c.status === 'issued')
-  const selectedCard = issued.find((c) => c.id === cardId)
   const active = [...campaign.runs].reverse().find((r) => r.endAt === null) ?? null
   const activeCard = active ? campaign.cards.find((c) => c.id === active.cardId) : undefined
   const debriefRun = debriefRunId ? campaign.runs.find((r) => r.id === debriefRunId) : undefined
+  const debriefCard = debriefRun ? campaign.cards.find((c) => c.id === debriefRun.cardId) : undefined
   const completed = campaign.runs
     .filter((r) => r.endAt !== null)
     .sort((a, b) => (b.endAt ?? '').localeCompare(a.endAt ?? ''))
-  const marks = active ? [...new Set([...(activeCard?.eventMarks.filter((m) => m.trim() !== '') ?? []), ...GENERIC_MARKS])] : []
-  const events = active ? [...active.events].sort((a, b) => a.at.localeCompare(b.at)) : []
   const runDeviations = active ? campaign.deviations.filter((d) => d.runId === active.id) : []
-  const runAnomalies = active ? campaign.anomalies.filter((a) => a.runId === active?.id) : []
+  const runAnomalies = active ? campaign.anomalies.filter((a) => a.runId === active.id) : []
 
-  const validityHolder = decisionRightHolder(campaign, 'run validity')
-  const priorRolesRun = active
-    ? [...campaign.runs]
-        .reverse()
-        .find((r) => r.cardId === active.cardId && r.id !== active.id && r.roles.length > 0)
-    : undefined
-  const truthSources = campaign.measures
-    .flatMap((m) => [m.truth.primarySource, m.truth.backupSource])
-    .filter((t) => t.trim() !== '')
-  const anomalySourceSuggestions = [...truthSources, activeCard?.dataSources ?? '']
-  const plannedStateSuggestions = activeCard
-    ? [activeCard.redInitialState, activeCard.conditionNote, ...activeCard.procedure.map((s) => s.action)]
-    : []
-  const affectedSuggestions = [
-    ...campaign.factors.map((x) => x.name),
-    ...campaign.measures.map((x) => x.name),
-  ]
-
-  const tap = (mark: string) => {
-    if (!active) return
-    markRunEvent(active.id, mark)
-    if (mark === 'mark deviation') {
-      const id = addDeviation(active.id)
-      if (id && validityHolder !== '') patchItem('deviations', id, { approver: validityHolder })
-    }
-    if (mark === 'mark anomaly') addAnomaly(active.id)
-  }
+  const deviationState =
+    runDeviations.length === 0
+      ? 'empty'
+      : runDeviations.every((d) => d.validityEffect.trim() !== '' && d.actualState.trim() !== '')
+        ? 'done'
+        : 'partial'
+  const anomalyState =
+    runAnomalies.length === 0
+      ? 'empty'
+      : runAnomalies.every((a) => a.observation.trim() !== '' && !a.open)
+        ? 'done'
+        : 'partial'
+  const duringState = active
+    ? active.events.length > 0 || active.observations.length > 0 || active.operatorObservations.trim() !== ''
+      ? 'partial'
+      : 'empty'
+    : 'empty'
+  const debriefState = debriefRun
+    ? debriefRun.debrief.plannedVsOccurred.trim() !== '' && debriefRun.preliminaryUse !== null
+      ? 'done'
+      : debriefRun.debrief.plannedVsOccurred.trim() !== '' || debriefRun.preliminaryUse !== null
+        ? 'partial'
+        : 'empty'
+    : 'empty'
 
   return (
     <div className="inspector-body">
-      <SubTitle>Start a run</SubTitle>
-      <div className="field-row">
-        <SelectField label="Issued card" value={cardId || null} allowEmpty="select a card" options={issued.map((c) => ({ v: c.id, label: `${c.cardCode} ${c.version}: ${c.title || 'untitled'}` }))} onChange={(v) => setCardId(v ?? '')} />
-        <div className="field">
-          <span>&nbsp;</span>
-          <button className="primary" disabled={!canStartRun(selectedCard)} onClick={() => { const id = createRunFromCard(cardId); if (!id) window.alert('No run started. The card must be issued.') }}>Start run</button>
-        </div>
-      </div>
-      {issued.length === 0 && <p className="muted small">No issued cards. Issue a card before a live run.</p>}
+      <DecisionGroup
+        id="e2-start-run"
+        question="Which card runs next?"
+        hint={HELP['card-issue']}
+        tier="required"
+        state={active ? 'done' : campaign.runs.length > 0 ? 'partial' : 'empty'}
+        defaultOpen={active === null}
+      >
+        <StartRunBlock campaign={campaign} />
+      </DecisionGroup>
 
       {active && activeCard && (
         <>
-          <SubTitle action={<Pill kind="good" text="active" />}>{active.id} · {activeCard.cardCode} {active.cardVersion}</SubTitle>
-          <div className="spec-summary">
-            Purpose: {activeCard.purpose || 'not stated'} · Prediction: {activeCard.prediction || 'not stated'} · Changed factor: {activeCard.changedFactor || 'not stated'}
-          </div>
+          <DecisionGroup id="e3-during-run" question="What happened, when?" state={duringState}>
+            <ActiveRunBlock
+              campaign={campaign}
+              run={active}
+              card={activeCard}
+              onComplete={() => setDebriefRunId(active.id)}
+            />
+          </DecisionGroup>
 
-          <SubTitle
-            action={
-              <>
-                <button
-                  className="mini"
-                  disabled={!priorRolesRun}
-                  onClick={() => {
-                    if (!priorRolesRun) return
-                    patchItem('runs', active.id, { roles: priorRolesRun.roles.map((r) => ({ ...r })) })
-                  }}
-                >
-                  Copy roles from last run of this card
-                </button>
-                <button
-                  className="mini"
-                  onClick={() => patchItem('runs', active.id, { roles: [...active.roles, { role: RUN_ROLES[0], person: '' }] })}
-                >
-                  + role
-                </button>
-              </>
-            }
+          <DecisionGroup
+            id="e4-deviations"
+            question="Something differed. Does the run still count?"
+            hint={HELP.deviation}
+            tier="recommended"
+            state={deviationState}
+            defaultOpen={runDeviations.length > 0}
           >
-            Run roles
-          </SubTitle>
-          {active.roles.length === 0 && <p className="muted small">No roles assigned yet.</p>}
-          {active.roles.map((r, i) => (
-            <div key={i} className="field-row te-table-row">
-              <SelectField label="Role" value={r.role} options={RUN_ROLES.map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('runs', active.id, { roles: active.roles.map((x, j) => (j === i ? { ...x, role: v } : x)) })} />
-              <PersonField label="Person" value={r.person} onChange={(v) => patchItem('runs', active.id, { roles: active.roles.map((x, j) => (j === i ? { ...x, person: v } : x)) })} people={people} />
-              <button className="mini danger" onClick={() => patchItem('runs', active.id, { roles: active.roles.filter((_, j) => j !== i) })}>×</button>
-            </div>
-          ))}
-
-          <SubTitle>Procedure</SubTitle>
-          <ol className="muted small">
-            {activeCard.procedure.map((s) => (
-              <li key={s.id}>{s.action} ({s.role}) · done when: {s.observableCompletion || 'not stated'}</li>
-            ))}
-          </ol>
-
-          <SubTitle>Event marks</SubTitle>
-          <div className="cards-list">
-            {marks.map((m) => (
-              <button key={m} className="card-chip" onClick={() => tap(m)}>{m}</button>
-            ))}
-          </div>
-
-          <SubTitle>Event log</SubTitle>
-          {events.length === 0 && <p className="muted small">No events yet.</p>}
-          {events.map((e) => (
-            <div key={e.id} className="muted small">{fmtDate(e.at)} · {e.mark}{e.note ? ` · ${e.note}` : ''}</div>
-          ))}
-
-          <SubTitle>Observations per measure</SubTitle>
-          {activeCard.measureIds.length === 0 && <p className="muted small">The card links no measures.</p>}
-          {activeCard.measureIds.map((mid) => (
-            <ObservationRow key={mid} campaign={campaign} run={active} measureId={mid} />
-          ))}
-
-          <TextField label="Operator observations" rows={3} value={active.operatorObservations} onChange={(v) => patchItem('runs', active.id, { operatorObservations: v })} />
-
-          <SubTitle>Deviations this run</SubTitle>
-          {runDeviations.length === 0 && <p className="muted small">None. Tap "mark deviation" to record one.</p>}
-          {runDeviations.map((d) => (
-            <div key={d.id} className="run-row">
-              <div className="field-row">
-                <SuggestField label="Planned state" value={d.plannedState} onChange={(v) => patchItem('deviations', d.id, { plannedState: v })} suggestions={plannedStateSuggestions} />
-                <TextField label="Actual state" value={d.actualState} onChange={(v) => patchItem('deviations', d.id, { actualState: v })} />
-              </div>
-              <div className="field-row">
-                <TextField label="Direct observation" value={d.directObservation} onChange={(v) => patchItem('deviations', d.id, { directObservation: v })} />
-                <SuggestField label="Affected variable, control, measure, or rule" value={d.affected} onChange={(v) => patchItem('deviations', d.id, { affected: v })} suggestions={affectedSuggestions} />
-              </div>
-              <div className="field-row">
-                <TextField label="Immediate action" value={d.immediateAction} onChange={(v) => patchItem('deviations', d.id, { immediateAction: v })} />
-                <SelectField label="Effect" value={d.effect} options={(['none', 'bounded', 'material', 'unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('deviations', d.id, { effect: v })} />
-                <SelectField label="Disposition" value={d.disposition} options={(['repeat', 'analyze-with-limits', 'exclude'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('deviations', d.id, { disposition: v })} />
-              </div>
-              <div className="field-row">
-                <div className="field">
-                  <span>Easier or harder</span>
-                  <Seg value={(d.easierOrHarder ?? '') as 'easier' | 'harder' | 'neutral-unknown'} options={(['easier', 'harder', 'neutral-unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => patchItem('deviations', d.id, { easierOrHarder: v })} />
-                </div>
-                <TextField label="Validity effect" value={d.validityEffect} onChange={(v) => patchItem('deviations', d.id, { validityEffect: v })} />
-                <CheckField label="Data preserved" value={d.dataPreserved} onChange={(v) => patchItem('deviations', d.id, { dataPreserved: v })} />
-              </div>
-              <div className="field-row">
-                <TextField label="Generalization limit" value={d.generalizationLimit} onChange={(v) => patchItem('deviations', d.id, { generalizationLimit: v })} />
-                <PersonField label="Approver" value={d.approver} onChange={(v) => patchItem('deviations', d.id, { approver: v })} people={people} />
-              </div>
-            </div>
-          ))}
-
-          <SubTitle>Anomalies this run</SubTitle>
-          {runAnomalies.length === 0 && <p className="muted small">None. Tap "mark anomaly" to record one.</p>}
-          {runAnomalies.map((a) => (
-            <div key={a.id} className="run-row">
-              <TextField label="Observation (record before discussing causes)" rows={2} value={a.observation} onChange={(v) => patchItem('anomalies', a.id, { observation: v })} />
-              <div className="field-row">
-                <SuggestField label="Source" value={a.source} onChange={(v) => patchItem('anomalies', a.id, { source: v })} suggestions={anomalySourceSuggestions} />
-                <SelectField label="Classification" value={a.classification} options={(['system-behavior', 'test-infrastructure', 'threat-deviation', 'operator-action', 'data-artifact', 'unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('anomalies', a.id, { classification: v })} />
-                <TextField label="Mission effect" value={a.missionEffect} onChange={(v) => patchItem('anomalies', a.id, { missionEffect: v })} />
-              </div>
-              <TextField label="Preservation action" value={a.preservationAction} onChange={(v) => patchItem('anomalies', a.id, { preservationAction: v })} />
-              <SubTitle
-                action={
-                  <span className="help-dot" tabIndex={0} data-help={HELP.anomaly}>
-                    ?
-                  </span>
-                }
-              >
-                Closure
-              </SubTitle>
-              <div className="field-row">
-                <SelectField label="Root cause status" value={a.rootCauseStatus} options={(['confirmed', 'supported', 'plausible', 'contradicted', 'unknown'] as const).map((v) => ({ v, label: v }))} onChange={(v) => v && patchItem('anomalies', a.id, { rootCauseStatus: v })} />
-                <TextField label="Candidate causes" value={a.candidateCauses} onChange={(v) => patchItem('anomalies', a.id, { candidateCauses: v })} />
-                <TextField label="Corrective action" value={a.correctiveAction} onChange={(v) => patchItem('anomalies', a.id, { correctiveAction: v })} />
-              </div>
-              <div className="field-row">
-                <SuggestField label="Verification test" value={a.verificationTest} onChange={(v) => patchItem('anomalies', a.id, { verificationTest: v })} suggestions={campaign.cards.map((c) => c.cardCode)} />
-                <div className="field">
-                  <span>&nbsp;</span>
-                  <button
-                    className="mini"
-                    onClick={() => {
-                      const id = createDiagnosticCard(a.id)
-                      if (id) selectRecord('cards', id)
-                    }}
-                  >
-                    Create diagnostic card
-                  </button>
-                </div>
-                <PersonField label="Owner" value={a.owner} onChange={(v) => patchItem('anomalies', a.id, { owner: v })} people={people} />
-                <CheckField label="Open" value={a.open} onChange={(v) => patchItem('anomalies', a.id, { open: v })} />
-              </div>
-            </div>
-          ))}
-
-          <div className="inspector-actions">
-            <button className="primary" onClick={() => { patchItem('runs', active.id, { endAt: nowIso() }); setDebriefRunId(active.id) }}>Complete run</button>
-            {active.events.length === 0 && active.deviationIds.length === 0 && active.anomalyIds.length === 0 && active.adjudications.length === 0 && active.observations.length === 0 && active.operatorObservations.trim() === '' && (
-              <button
-                className="mini danger"
-                onClick={() => {
-                  if (window.confirm('Discard this run? This run has no recorded evidence.')) discardRun(active.id)
-                }}
-              >
-                Discard run (no evidence)
-              </button>
+            {runDeviations.length === 0 && (
+              <p className="muted small">None. Tap "mark deviation" in the event marks to record one.</p>
             )}
-          </div>
+            {runDeviations.map((d) => (
+              <DeviationCard key={d.id} campaign={campaign} card={activeCard} dev={d} />
+            ))}
+          </DecisionGroup>
+
+          <DecisionGroup
+            id="e5-anomalies"
+            question="Something unexpected. Record it first"
+            hint={HELP.anomaly}
+            state={anomalyState}
+            defaultOpen={runAnomalies.length > 0}
+          >
+            {runAnomalies.length === 0 && (
+              <p className="muted small">None. Tap "mark anomaly" in the event marks to record one.</p>
+            )}
+            {runAnomalies.map((a) => (
+              <AnomalyCard key={a.id} campaign={campaign} card={activeCard} anomaly={a} />
+            ))}
+          </DecisionGroup>
         </>
       )}
       {!active && <p className="muted small">No active run.</p>}
 
-      {debriefRun && <RunDebriefForm run={debriefRun} onClose={() => setDebriefRunId(null)} />}
+      {debriefRun && (
+        <DecisionGroup
+          id="e6-debrief"
+          question="What did we get?"
+          hint={HELP['immediate-debrief']}
+          tier="recommended"
+          state={debriefState}
+        >
+          <DebriefBlock
+            campaign={campaign}
+            run={debriefRun}
+            card={debriefCard}
+            onClose={() => setDebriefRunId(null)}
+          />
+        </DecisionGroup>
+      )}
 
       <SubTitle>Recently completed runs</SubTitle>
       {completed.length === 0 && <p className="muted small">None yet.</p>}
       {completed.slice(0, 8).map((r) => (
         <div key={r.id} className="field-row te-table-row">
-          <div className="muted small">{r.id} · {r.plannedPurpose.slice(0, 48) || 'no purpose'} · ended {fmtDate(r.endAt)}</div>
+          <div className="muted small">
+            {r.id} · {r.plannedPurpose.slice(0, 48) || 'no purpose'} · ended {fmtDate(r.endAt)}
+          </div>
           {r.preliminaryUse && <Pill kind="neutral" text={r.preliminaryUse} />}
-          <button className="mini" onClick={() => setDebriefRunId(r.id)}>debrief</button>
+          <button className="mini" onClick={() => setDebriefRunId(r.id)}>
+            debrief
+          </button>
         </div>
       ))}
     </div>
@@ -492,7 +277,9 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
     .filter((c) => c.completedAt !== null)
     .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
   const setItem = (inst: TeChecklist, index: number, patch: Partial<ChecklistInstanceItem>) =>
-    patchItem('checklists', inst.id, { items: inst.items.map((it, i) => (i === index ? { ...it, ...patch } : it)) })
+    patchItem('checklists', inst.id, {
+      items: inst.items.map((it, i) => (i === index ? { ...it, ...patch } : it)),
+    })
 
   return (
     <div className="inspector-body">
@@ -505,8 +292,13 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
             <div className="panel-subtitle">{phase}</div>
             {templates.map((t) => (
               <div key={t.key} className="field-row te-table-row">
-                <div className="muted small">{t.name} · runner: {t.runner}{t.gate ? ` · gate: ${t.gate}` : ''}</div>
-                <button className="mini" onClick={() => startChecklist(t)}>Start</button>
+                <div className="muted small">
+                  {t.name} · runner: {t.runner}
+                  {t.gate ? ` · gate: ${t.gate}` : ''}
+                </div>
+                <button className="mini" onClick={() => startChecklist(t)}>
+                  Start
+                </button>
               </div>
             ))}
           </div>
@@ -517,11 +309,17 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
       {open.length === 0 && <p className="muted small">None open.</p>}
       {open.map((inst) => {
         const template = templateByKey(inst.templateKey)
-        const holdCount = inst.items.filter((it, i) => template?.items[i]?.holdOnUnknown && it.state === 'unchecked').length
+        const holdCount = inst.items.filter(
+          (it, i) => template?.items[i]?.holdOnUnknown && it.state === 'unchecked',
+        ).length
         return (
           <div key={inst.id} className="run-row">
-            <SubTitle>{inst.name} · {inst.phase} · started {fmtDate(inst.startedAt)}</SubTitle>
-            {holdCount > 0 && <Pill kind="warn" text={`${holdCount} unknown answer(s) hold the run`} />}
+            <SubTitle>
+              {inst.name} · {inst.phase} · started {fmtDate(inst.startedAt)}
+            </SubTitle>
+            {holdCount > 0 && (
+              <Pill kind="warn" text={`${holdCount} unknown answer(s) hold the run`} />
+            )}
             {inst.items.map((it, i) => {
               const hold = template?.items[i]?.holdOnUnknown === true && it.state === 'unchecked'
               return (
@@ -552,10 +350,27 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
                     {hold && <Pill kind="warn" text="hold" />}
                   </label>
                   <div className="field-row">
-                    {it.type === 'value' && <TextField label="Value" value={it.value} onChange={(v) => setItem(inst, i, { value: v })} />}
-                    <PersonField label="Completer" value={it.completer} onChange={(v) => setItem(inst, i, { completer: v })} people={people} />
-                    <CheckField label="n/a" value={it.state === 'na'} onChange={(v) => setItem(inst, i, v ? { state: 'na' } : { state: 'unchecked' })} />
-                    {it.state === 'na' && <TextField label="n/a reason" value={it.naReason} onChange={(v) => setItem(inst, i, { naReason: v })} />}
+                    {it.type === 'value' && (
+                      <TextField label="Value" value={it.value} onChange={(v) => setItem(inst, i, { value: v })} />
+                    )}
+                    <PersonPicker
+                      label="Completer"
+                      value={it.completer}
+                      onChange={(v) => setItem(inst, i, { completer: v })}
+                      people={people}
+                    />
+                    <CheckField
+                      label="n/a"
+                      value={it.state === 'na'}
+                      onChange={(v) => setItem(inst, i, v ? { state: 'na' } : { state: 'unchecked' })}
+                    />
+                    {it.state === 'na' && (
+                      <TextField
+                        label="n/a reason"
+                        value={it.naReason}
+                        onChange={(v) => setItem(inst, i, { naReason: v })}
+                      />
+                    )}
                   </div>
                 </div>
               )
@@ -564,13 +379,28 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
               <>
                 <div className="field">
                   <span>Gate outcome ({template.gate})</span>
-                  <Seg value={(inst.outcome ?? '') as GoNoGo} options={GO_NO_GO_OPTIONS} onChange={(v) => patchItem('checklists', inst.id, { outcome: v })} />
+                  <Seg
+                    value={(inst.outcome ?? '') as GoNoGo}
+                    options={GO_NO_GO_OPTIONS}
+                    onChange={(v) => patchItem('checklists', inst.id, { outcome: v })}
+                  />
                 </div>
-                <TextField label="Conditional limits" value={inst.conditionalLimits} onChange={(v) => patchItem('checklists', inst.id, { conditionalLimits: v })} />
+                {(inst.outcome === 'conditional-go' || inst.conditionalLimits.trim() !== '') && (
+                  <TextField
+                    label="Conditional limits"
+                    value={inst.conditionalLimits}
+                    onChange={(v) => patchItem('checklists', inst.id, { conditionalLimits: v })}
+                  />
+                )}
               </>
             )}
             <div className="inspector-actions">
-              <button className="primary" onClick={() => patchItem('checklists', inst.id, { completedAt: nowIso() })}>Complete</button>
+              <button
+                className="primary"
+                onClick={() => patchItem('checklists', inst.id, { completedAt: nowIso() })}
+              >
+                Complete checklist
+              </button>
             </div>
           </div>
         )
@@ -587,83 +417,35 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-function RunAdjudication({ campaign, run }: { campaign: TeCampaign; run: TeRun }) {
-  const { adjudicateRun, patchItem } = useTeStore.getState()
-  const [validity, setValidity] = useState<TeRunValidity>(run.validity)
-  const [by, setBy] = useState(decisionRightHolder(campaign, 'run validity'))
-  const [reason, setReason] = useState('')
-  const card = campaign.cards.find((c) => c.id === run.cardId)
-  const people = allPeople(campaign)
-  const qualitySuggestions = [
-    ...campaign.runs.map((r) => r.initialDataQuality),
-    'complete',
-    'gaps noted',
-    'truth dropout',
-  ]
-  return (
-    <div className="run-row">
-      <SubTitle action={<Pill kind={VALIDITY_KIND[run.validity]} text={run.validity} />}>{run.id}</SubTitle>
-      <div className="muted small">
-        card: {card?.title || run.cardId} {run.cardVersion} · start {fmtDate(run.startAt)} · end {fmtDate(run.endAt)} · {run.events.length} event(s) · {run.deviationIds.length} deviation(s) · {run.anomalyIds.length} anomaly record(s)
-      </div>
-      <SubTitle>As-run records</SubTitle>
-      <div className="field-row">
-        <SelectField label="Actual configuration" value={run.actualConfigId} allowEmpty="same as planned" options={campaign.configs.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => patchItem('runs', run.id, { actualConfigId: v })} help="Record what actually ran when it differs from the plan." />
-        <SelectField label="Actual threat" value={run.actualThreatId} allowEmpty="same as planned" options={campaign.threats.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => patchItem('runs', run.id, { actualThreatId: v })} />
-        <SelectField label="Actual condition" value={run.actualConditionId} allowEmpty="same as planned" options={campaign.conditions.map((x) => ({ v: x.id, label: `${x.id} ${x.name}` }))} onChange={(v) => patchItem('runs', run.id, { actualConditionId: v })} />
-      </div>
-      <div className="field-row">
-        <TextField label="As-run note" value={run.actualsNote} onChange={(v) => patchItem('runs', run.id, { actualsNote: v })} />
-        <TextField label="Data files note" value={run.dataFilesNote} onChange={(v) => patchItem('runs', run.id, { dataFilesNote: v })} />
-      </div>
-      <SuggestField label="Initial data quality" value={run.initialDataQuality} onChange={(v) => patchItem('runs', run.id, { initialDataQuality: v })} suggestions={qualitySuggestions} />
-      <div className="field">
-        <span>Validity</span>
-        <Seg value={validity} options={(['pending', 'valid', 'conditionally-valid', 'invalid'] as TeRunValidity[]).map((v) => ({ v, label: v }))} onChange={setValidity} />
-      </div>
-      {validity === 'conditionally-valid' && (
-        <>
-          <MultiPicker label="Allowed measures" options={(card?.measureIds ?? []).map((id) => { const m = campaign.measures.find((x) => x.id === id); return { id, label: m ? `${m.id}: ${m.name || 'unnamed'}` : id } })} value={run.allowedMeasureIds} onChange={(v) => patchItem('runs', run.id, { allowedMeasureIds: v })} />
-          <TextField label="Prohibited uses" value={run.prohibitedUses} onChange={(v) => patchItem('runs', run.id, { prohibitedUses: v })} />
-          <TextField label="Limits" value={run.limits} onChange={(v) => patchItem('runs', run.id, { limits: v })} />
-        </>
-      )}
-      <div className="field-row">
-        <PersonField label="Adjudicator" value={by} onChange={setBy} people={people} />
-        <TextField label="Reason" value={reason} onChange={setReason} />
-      </div>
-      <div className="inspector-actions">
-        <button className="primary" onClick={() => adjudicateRun(run.id, validity, by, reason)}>Record adjudication</button>
-      </div>
-      <CheckField label="Excluded (accounting decision, not an adjudication)" value={run.excluded} onChange={(v) => patchItem('runs', run.id, { excluded: v })} />
-      {run.adjudications.length > 0 && (
-        <>
-          <SubTitle>Adjudication history</SubTitle>
-          {run.adjudications.map((a) => (
-            <div key={a.version} className="muted small">v{a.version} · {fmtDate(a.at)} · {a.by || 'unnamed'} · {a.validity} · {a.reason || 'no reason'}</div>
-          ))}
-        </>
-      )}
-    </div>
-  )
-}
-
 function AdjudicationTab({ campaign }: { campaign: TeCampaign }) {
   const { selectRecord } = useTeStore.getState()
   const selected = useTeStore((s) => s.ui.selected.runs ?? null)
   const run = campaign.runs.find((r) => r.id === selected)
+  const pending = campaign.runs.filter((r) => r.validity === 'pending').length
   return (
     <div className="inspector-body">
-      <p className="muted small">No status = not available for analysis. Dependent next runs wait for validation.</p>
-      {campaign.runs.length === 0 && <p className="muted small">No runs yet.</p>}
-      <div className="cards-list">
-        {campaign.runs.map((r) => (
-          <button key={r.id} className={`card-chip ${selected === r.id ? 'active' : ''} ${r.excluded ? 'dim' : ''}`} onClick={() => selectRecord('runs', r.id)}>
-            {r.id} <Pill kind={VALIDITY_KIND[r.validity]} text={r.validity} />
-          </button>
-        ))}
-      </div>
-      {run && <RunAdjudication key={run.id} campaign={campaign} run={run} />}
+      <DecisionGroup
+        id="e7-adjudication"
+        question="Does each run count?"
+        hint={HELP['run-validity']}
+        tier="required"
+        state={campaign.runs.length === 0 ? 'empty' : pending === 0 ? 'done' : 'partial'}
+      >
+        <p className="muted small">No status = not available for analysis. Dependent next runs wait.</p>
+        {campaign.runs.length === 0 && <p className="muted small">No runs yet.</p>}
+        <div className="cards-list">
+          {campaign.runs.map((r) => (
+            <button
+              key={r.id}
+              className={`card-chip ${selected === r.id ? 'active' : ''} ${r.excluded ? 'dim' : ''}`}
+              onClick={() => selectRecord('runs', r.id)}
+            >
+              {r.id} <Pill kind={VALIDITY_KIND[r.validity]} text={VALIDITY_LABEL[r.validity]} />
+            </button>
+          ))}
+        </div>
+        {run && <AdjudicationBlock key={run.id} campaign={campaign} run={run} />}
+      </DecisionGroup>
     </div>
   )
 }

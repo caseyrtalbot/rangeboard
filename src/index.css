@@ -2884,6 +2884,548 @@ input[type='number'] {
   background: var(--border);
 }
 
+/* ===== T&E strategist redesign (kit.tsx section-5 components) ===== */
+
+/* Wide content scrolls inside its own wrapper; the panel body never
+   scrolls horizontally. */
+.te-scroll-x {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* ---- Decision group ---- */
+
+.decision-group {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.dg-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dg-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 5px 2px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.dg-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.dg-question {
+  flex: 1;
+  min-width: 0;
+}
+
+.dg-chevron {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.dg-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.dg-dot.done {
+  background: var(--good);
+}
+
+.dg-dot.partial {
+  background: var(--warn);
+}
+
+.dg-dot.empty {
+  background: var(--border);
+}
+
+.dg-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-1) 0 var(--space-3);
+}
+
+/* ---- Tier badge: one dim label, never a wall of red ---- */
+
+.req-badge {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.req-badge.required {
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+  color: var(--warn);
+}
+
+/* ---- Chip select ---- */
+
+.te-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.te-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.te-chip-add {
+  flex: 0 1 90px;
+  min-width: 60px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+/* ---- Combobox ---- */
+
+.te-combobox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.te-combobox-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  margin: 2px 0 0;
+  padding: 2px;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-input);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+
+.te-combobox-option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 4px 7px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.te-combobox-option.active {
+  background: var(--surface-selected);
+}
+
+.te-combobox-option .te-opt-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.te-combobox-option .te-opt-sub {
+  color: var(--text-dim);
+  font-size: 10.5px;
+}
+
+.te-combobox-option.create {
+  color: var(--accent);
+}
+
+/* ---- Provenance: text plus a 1 px rule, tokens only ---- */
+
+.provenance-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 16px;
+}
+
+.provenance-chip {
+  color: var(--text-dim);
+  font-size: 10.5px;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.provenance {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.provenance.pending > .provenance-line .provenance-chip {
+  color: var(--warn);
+  border-bottom-color: color-mix(in srgb, var(--warn) 40%, transparent);
+}
+
+/* ---- Sentence builder ---- */
+
+.sentence-builder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sb-slots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.sb-slots select,
+.sb-slots input {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 70px;
+  max-width: 220px;
+  padding: 2px 5px;
+  font-size: 11.5px;
+}
+
+.sb-slots input[type='number'] {
+  min-width: 56px;
+  width: 70px;
+}
+
+.sb-literal {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+
+.sb-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sb-unit,
+.nu-unit,
+.nu-sep {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+/* ---- Example hint ---- */
+
+.example-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+}
+
+.eh-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-2);
+  border-left: 2px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.eh-body p {
+  margin: 0;
+}
+
+.eh-example {
+  font-style: italic;
+}
+
+.eh-illustrative {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px dashed var(--warn);
+  color: var(--warn);
+  font-style: normal;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.eh-why {
+  color: var(--text-dim);
+}
+
+/* ---- Number-unit and range fields ---- */
+
+.nu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nu-row input[type='number'] {
+  flex: 1;
+  min-width: 0;
+}
+
+select.nu-unit {
+  flex: 0 0 auto;
+  width: auto;
+  color: var(--text);
+}
+
+/* ---- Register table: dense rows inside a scroll wrapper ---- */
+
+.register-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.register-table-wrap > .te-scroll-x {
+  align-self: stretch;
+}
+
+.register-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.register-table th {
+  padding: 2px 4px;
+  text-align: left;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-default);
+  white-space: nowrap;
+}
+
+.register-table td {
+  padding: 2px 3px;
+  border-bottom: 1px dotted var(--border-subtle);
+  min-width: 90px;
+  vertical-align: middle;
+}
+
+.register-table td input,
+.register-table td select {
+  width: 100%;
+  min-width: 80px;
+  padding: 2px 5px;
+  font-size: 11.5px;
+}
+
+.register-table .rt-actions-col {
+  width: 1%;
+}
+
+.register-table .rt-actions {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.register-table .rt-actions .mini {
+  margin-left: 2px;
+}
+
+/* ---- Record check ---- */
+
+.record-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.record-check input {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-check.done .rc-stamp {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ---- Readiness rail ---- */
+
+.readiness-rail {
+  flex: none;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 10px 8px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow-y: auto;
+}
+
+.rr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rr-bar {
+  height: 3px;
+  background: var(--border-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rr-bar-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.rr-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.rr-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.rr-item .rr-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rr-item .rr-detail {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+/* ---- Stage review ---- */
+
+.stage-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-top: 1px solid var(--border-default);
+  padding-top: var(--space-3);
+}
+
+.sr-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-height: 22px;
+  border-bottom: 1px dotted var(--border-subtle);
+  font-size: 11.5px;
+}
+
+.sr-label {
+  flex: 0 0 180px;
+  color: var(--text-secondary);
+}
+
+.sr-value {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.sr-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* ---- Advanced disclosure ---- */
+
+.advanced-disclosure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ad-toggle {
+  align-self: flex-start;
+  padding: 2px 4px;
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.ad-toggle:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.ad-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-subtle);
+}
+
+/* ---- 2x2 action map: stacks to one column on narrow panels ---- */
+
+.te-action-map {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+@media (max-width: 480px) {
+  .te-action-map {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- Command palette ---------- */
 
 .cmdk-backdrop {

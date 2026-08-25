@@ -366,3 +366,217 @@ export const GENERIC_MARKS: string[] = [
   'stop',
   'complete run',
 ]
+
+/** Expenditure marks offered when the board holds a kinetic effector. */
+export const KINETIC_MARKS: string[] = [
+  'effector fired',
+  'rounds expended',
+  'intercept',
+]
+
+// ---------------------------------------------------------------------------
+// Promoted and new selection vocabularies (strategist redesign, SPEC section 3).
+// These back chips and selects. Every consumer prepends an unknown stored
+// value to its option list so legacy free text stays valid.
+// ---------------------------------------------------------------------------
+
+/** Release classes. CUI is the doctrine floor; default on create. */
+export const SECURITY_CLASSES = ['Unclassified', 'CUI', 'Secret']
+
+/** Threat navigation modes (matches the board UasSpec vocabulary). */
+export const NAV_MODES = ['gps', 'inertial', 'rf-manual', 'optical', 'fiber', 'mixed']
+
+/** Threat airframe classes (matches the board UasSpec vocabulary). */
+export const AIRFRAMES = ['quad', 'fixed-wing', 'vtol', 'one-way-attack', 'fpv']
+
+/** Matrix cell methods. A baseline row anchors every comparison. */
+export const MATRIX_METHODS = [
+  'baseline comparison',
+  'characterization sweep',
+  'comparison',
+  'stress',
+  'diagnostic',
+]
+
+/** Standard covariate factor names (src/model/seedCards.ts standardCovariates). */
+export const STANDARD_COVARIATE_FACTORS = [
+  'Surface wind',
+  'Visibility and cloud base',
+  'Air temperature and dew point',
+  'Pressure QNH/QFE',
+  'Illuminance',
+  'EM background',
+  'Acoustic background',
+]
+
+/** Evidence available today for a question, before this campaign runs. */
+export const CURRENT_EVIDENCE_STATES = [
+  'none',
+  'vendor claim only',
+  'prior test',
+  'model only',
+  'operational report',
+]
+
+/** What one trial is for a measure. */
+export const EXPERIMENTAL_UNITS = ['engagement', 'run', 'track', 'sortie', 'day']
+
+/** How far the truth source stands from the tested system. */
+export const TRUTH_INDEPENDENCE = [
+  'fully independent',
+  'shares components',
+  'derived from tested system',
+]
+
+/** Threat emissions bands. */
+export const EMISSIONS_BANDS = ['2.4 GHz', '5.8 GHz', 'silent']
+
+/** Who is blind to the plan during a run. */
+export const BLINDING_OPTIONS = ['none', 'red blind', 'blue blind', 'both']
+
+/** Fidelity grid feature rows for non-actual threat representations. */
+export const FIDELITY_FEATURES = ['emissions', 'speed', 'payload', 'nav']
+
+/** Terrain and clutter classes for conditions. */
+export const TERRAIN_CLASSES = ['open', 'rolling', 'urban', 'coastal', 'mountain']
+
+/** EM spectrum states. Contested or worse promotes degraded-mode questions. */
+export const SPECTRUM_STATES = ['benign', 'representative', 'congested', 'contested', 'denied']
+
+/** Network states for conditions. */
+export const NETWORK_STATES = ['nominal', 'degraded', 'denied']
+
+/** Operator workload levels. */
+export const WORKLOAD_LEVELS = ['low', 'moderate', 'high', 'saturated']
+
+/** Degraded modes offered on conditions; promoted when the spectrum is contested. */
+export const DEGRADED_MODES = ['GPS denied', 'comms out', 'sensor down']
+
+/** Named environment presets (D4). One pick writes weather, spectrum, and network. */
+export const ENVIRONMENT_PRESETS: Array<{
+  key: string
+  label: string
+  hint: string
+  weatherAndIllumination: string
+  emEnvironment: string
+  networkState: string
+}> = [
+  {
+    key: 'benign-day',
+    label: 'benign day',
+    hint: 'Clear day, quiet spectrum, nominal network.',
+    weatherAndIllumination: 'Wind 5 kt from 270 deg true; 20 C; clear; day light',
+    emEnvironment: 'benign',
+    networkState: 'nominal',
+  },
+  {
+    key: 'contested-ew-range',
+    label: 'contested EW range',
+    hint: 'Clear day, contested spectrum, nominal network.',
+    weatherAndIllumination: 'Wind 10 kt from 270 deg true; 20 C; clear; day light',
+    emEnvironment: 'contested',
+    networkState: 'nominal',
+  },
+  {
+    key: 'degraded-network',
+    label: 'degraded network',
+    hint: 'Clear day, representative spectrum, degraded network.',
+    weatherAndIllumination: 'Wind 10 kt from 270 deg true; 20 C; clear; day light',
+    emEnvironment: 'representative',
+    networkState: 'degraded',
+  },
+]
+
+/** Why-this-run-next reason chips (writes whyHighestValueNext and priorityReason). */
+export const WHY_NEXT_REASONS = [
+  'closes largest gap',
+  'unblocks runs',
+  'decision deadline',
+  'cheapest discriminator',
+  'perishable access',
+]
+
+/** Standard reset actions between repetitions on one card. */
+export const RESET_ACTIONS = [
+  'threat back to start point',
+  'clear track picture',
+  'restart recorders',
+  'reload effector',
+  'confirm truth source lock',
+  'confirm time sync',
+]
+
+/** Stop classes for the card stop-and-hold table. */
+export const STOP_CLASSES = ['safety', 'data', 'hold']
+
+/** Data-stop taxonomy: instrumentation failures that stop a run. */
+export const STOP_TAXONOMY = ['truth loss', 'recorder failure', 'time-sync loss']
+
+/** First-look data quality after a run (E7). */
+export const INITIAL_DATA_QUALITY = ['complete', 'gaps noted', 'truth dropout']
+
+/** Immediate actions when a deviation appears (E4). */
+export const IMMEDIATE_ACTIONS = ['continue', 'pause', 'safe state', 'stop', 'resume after fix']
+
+/** Protect-the-data actions when an anomaly appears (E5). */
+export const PRESERVATION_ACTIONS = [
+  'freeze files',
+  'screenshot',
+  'keep hardware state',
+  'copy logs',
+]
+
+/** Mission effect of an anomaly. */
+export const MISSION_EFFECTS = ['none', 'degraded', 'data loss', 'safety']
+
+/** Standard missing-data rules for measures. */
+export const MISSING_DATA_RULES = [
+  'exclude the opportunity',
+  'count as failure',
+  'repeat the run',
+  'note and analyze with limits',
+]
+
+/** Standard invalid-data rules for measures. */
+export const INVALID_DATA_RULES = [
+  'exclude the opportunity',
+  'repeat the run',
+  'use backup truth source',
+]
+
+/** Standard censoring rules for latency and time-to-event measures. */
+export const CENSORING_RULES = [
+  'censor at run end',
+  'censor at truth loss',
+  'exclude censored opportunities',
+]
+
+/** Known-limit categories (Qualify Q7). Filled chips seed feasibility rows. */
+export const KNOWN_LIMIT_CATEGORIES = [
+  'range and site access',
+  'airspace',
+  'spectrum',
+  'threat articles',
+  'instrumentation',
+  'schedule and funding',
+]
+
+/**
+ * Campaign start presets (Qualify Q0). A preset seeds structure and
+ * recommended records only. It never fabricates factual test data;
+ * text placeholders use [placeholder] so the card gate catches them.
+ * `previous-campaign` routes through startFromCampaign, not applyPreset.
+ */
+export const CAMPAIGN_PRESETS: Array<{ key: string; label: string; hint: string }> = [
+  { key: 'blank', label: 'Blank', hint: 'Start with nothing seeded.' },
+  { key: 'previous-campaign', label: 'Previous campaign', hint: 'Copy structure from an existing campaign. Evidence never copies.' },
+  { key: 'sensor-characterization', label: 'Sensor characterization', hint: 'Detect and track measures, one question, one card draft.' },
+  { key: 'radar-comparison', label: 'Radar comparison', hint: 'Two config skeletons, baseline plus delta matrix rows.' },
+  { key: 'sensor-c2-integration', label: 'Sensor-to-C2 integration', hint: 'Handoff measures and a handoff card draft.' },
+  { key: 'c2-track-fusion', label: 'C2 track fusion', hint: 'Fusion measures and two threat skeletons.' },
+  { key: 'ew-resilience', label: 'EW resilience', hint: 'Contested spectrum condition, EW measures, adaptive threat skeleton.' },
+  { key: 'interceptor-evaluation', label: 'Interceptor evaluation', hint: 'Defeat measures and an intercept card draft.' },
+  { key: 'detect-to-defeat', label: 'Detect to defeat', hint: 'Kill-chain questions, raid threat skeleton, two card drafts.' },
+  { key: 'regression-test', label: 'Regression test', hint: 'Copy a previous campaign, then re-run its baseline.' },
+  { key: 'custom-template', label: 'Custom template', hint: 'Reserved. Behaves as Blank until a template store exists.' },
+]

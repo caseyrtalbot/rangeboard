@@ -167,6 +167,8 @@ export function emptyCampaign(name: string, code: string): TeCampaign {
     evidencePackage: emptyPackage(),
     frames: [],
     illustrative: false,
+    presetKey: null,
+    sourceCampaignId: null,
   }
 }
 
