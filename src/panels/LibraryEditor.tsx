@@ -270,6 +270,10 @@ export function LibraryEditor() {
             step={500}
             onChange={(n) => patch({ sensor: { ...sensor, maxAltitudeFt: n > 0 ? n : null } })}
           />
+          <p className="muted small">
+            Recorded, not modeled: the elevation limits and the altitude ceiling. The board is
+            plan view, so they do not gate detection. Keep them as spec data.
+          </p>
           <Num
             label="Track split distance (m, 0 = always splits)"
             value={sensor.resolutionM ?? 0}
@@ -328,6 +332,10 @@ export function LibraryEditor() {
             step={500}
             onChange={(n) => patch({ effector: { ...effector, maxAltitudeFt: n > 0 ? n : null } })}
           />
+          <p className="muted small">
+            Recorded, not modeled: the altitude ceiling. The board is plan view, so it does not
+            gate an engagement. Keep it as spec data.
+          </p>
         </div>
       )}
 
@@ -408,6 +416,10 @@ export function LibraryEditor() {
               onChange={(n) => patch({ uas: { ...uas, altBandFt: [uas.altBandFt[0], n] } })}
             />
           </div>
+          <p className="muted small">
+            Recorded, not modeled: the altitude band. The board is plan view, so the band does
+            not change detection, engagement, or any analysis. Keep it as spec data.
+          </p>
           <div className="field-row">
             <Num
               label="Control link (m, 0 = autonomous)"

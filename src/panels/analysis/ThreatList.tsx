@@ -7,7 +7,7 @@ import { formatDistance, formatTime } from '../../geometry/geo'
 import type { DisplayUnits } from '../../geometry/geo'
 import type { LeakerImpact } from '../../analysis/impact'
 import { SEVERITY_LABEL, wezKindFor, wezRadiusM } from '../../analysis/impact'
-import { TIER_CLS, threatCompactStats, threatShotLine } from '../headlines'
+import { expenditureParts, TIER_CLS, threatCompactStats, threatShotLine } from '../headlines'
 
 const STATUS_TEXT: Record<ThreatStatus, { label: string; short: string; cls: string }> = {
   'no-path': { label: 'No flight path', short: 'No path', cls: 'neutral' },
@@ -84,6 +84,33 @@ function engagementPotentialText(
     parts.push(`arrives jam-degraded ${Math.round(imp.jamDegradedProb * 100)}%`)
   }
   return parts.join(' · ')
+}
+
+/**
+ * CLOSEST APPROACH: pure geometry to the nearest defended asset. It exists
+ * whenever any asset is placed, including for a threat that turned away and
+ * never got near. It says how close the track got, never that it got there.
+ */
+function closestApproachText(
+  a: ThreatAssessment,
+  name: (id: string | null) => string,
+  units: DisplayUnits,
+): string {
+  if (a.cpaAssetId == null || a.cpaDistanceM == null) return 'no asset placed'
+  const when = a.cpaS != null ? `${formatTime(a.cpaS)} · ` : ''
+  return `${when}${name(a.cpaAssetId)} · ${formatDistance(a.cpaDistanceM, units)}`
+}
+
+/**
+ * ARRIVAL: the threat crossed the asset's defended boundary. This is a
+ * different measurement from closest approach, and it is the one the defeat
+ * credit turns on, so a fly-by must never borrow an arrival time. No
+ * crossing reads as a dash with the reason.
+ */
+function arrivalText(a: ThreatAssessment, name: (id: string | null) => string): string {
+  if (a.arrivalS != null) return `${formatTime(a.arrivalS)} · ${name(a.cpaAssetId)}`
+  if (a.cpaAssetId == null) return '— · no asset placed'
+  return '— · fly-by, never crossed the defended boundary'
 }
 
 /** Per-channel kill split for the advanced view: hard, soft (jam), jam-degraded arrival. */
@@ -184,15 +211,12 @@ export function ThreatDetail({
             </tr>
           )}
           <tr>
+            <td>{projected ? 'Projected closest approach' : 'Closest approach'}</td>
+            <td>{closestApproachText(a, name, units)}</td>
+          </tr>
+          <tr>
             <td>{projected ? 'Projected arrival at asset' : 'Arrival at asset'}</td>
-            <td>
-              {a.arrivalS != null
-                ? `${formatTime(a.arrivalS)} · ${name(a.assetId)} · CPA ${formatDistance(
-                    a.closestApproachM ?? 0,
-                    units,
-                  )}`
-                : 'no asset placed'}
-            </td>
+            <td>{arrivalText(a, name)}</td>
           </tr>
           <tr>
             <td>{projected ? 'Projected best window' : 'Best window'}</td>
@@ -206,12 +230,11 @@ export function ThreatDetail({
           </tr>
           {advanced && (
             <tr>
-              <td>{projected ? 'Projected expenditure' : 'Shots fired'}</td>
+              <td>{projected ? 'Projected expenditure' : 'Expenditure'}</td>
               <td>
-                {att && (att.shotsFired > 0 || att.jamSalvos > 0)
+                {att && expenditureParts(att).length > 0
                   ? [
-                      att.shotsFired > 0 ? `${att.shotsFired} kinetic` : null,
-                      att.jamSalvos > 0 ? `${att.jamSalvos} jam` : null,
+                      ...expenditureParts(att),
                       att.firstShotS != null ? `first at ${formatTime(att.firstShotS)}` : null,
                     ]
                       .filter(Boolean)
@@ -301,7 +324,7 @@ export function ThreatRowCompact({
       <div
         className="threat-substats"
         onClick={toggle}
-        title={`${mode === 'projected' ? 'full-run projection · ' : ''}kinetic shots · jam salvos · kill/leak · warning ${stats.warning} · window ${stats.window}`}
+        title={`${mode === 'projected' ? 'full-run projection · ' : ''}expenditure by channel (kin · DE · EW) · kill/leak · warning ${stats.warning} · window ${stats.window}`}
       >
         {threatShotLine(att)}
       </div>
@@ -346,9 +369,11 @@ interface GroupAgg {
   kills: number
   hardKills: number
   softKills: number
-  /** Kinetic salvos fired at the group's members. */
-  kineticShots: number
-  /** Jam salvos directed at the group's members. */
+  /** Kinetic salvos (interceptor, gun, net) fired at the group's members. */
+  shotsFired: number
+  /** Directed-energy bursts (DE, HPM) directed at the group's members. */
+  deSalvos: number
+  /** EW salvos (jammer) directed at the group's members. */
   jamSalvos: number
   /** Ships in members that never drew a shot (microbar gray segment). */
   notEngaged: number
@@ -365,7 +390,8 @@ function aggregate(members: ThreatAssessment[], report: AttritionReport): GroupA
     kills: 0,
     hardKills: 0,
     softKills: 0,
-    kineticShots: 0,
+    shotsFired: 0,
+    deSalvos: 0,
     jamSalvos: 0,
     notEngaged: 0,
     engagedLeak: 0,
@@ -379,9 +405,10 @@ function aggregate(members: ThreatAssessment[], report: AttritionReport): GroupA
     agg.kills += att?.expectedKills ?? 0
     agg.hardKills += att?.expectedHardKills ?? 0
     agg.softKills += att?.expectedSoftKills ?? 0
-    agg.kineticShots += att?.shotsFired ?? 0
+    agg.shotsFired += att?.shotsFired ?? 0
+    agg.deSalvos += att?.deSalvos ?? 0
     agg.jamSalvos += att?.jamSalvos ?? 0
-    if (!att || (att.shotsFired === 0 && att.jamSalvos === 0)) agg.notEngaged += ships
+    if (!att || expenditureParts(att).length === 0) agg.notEngaged += ships
     else agg.engagedLeak += ships * att.leakProbability
     if (a.warningS != null && (agg.minWarnS == null || a.warningS < agg.minWarnS)) {
       agg.minWarnS = a.warningS
@@ -455,10 +482,7 @@ function ThreatGroupRow({
   const [open, setOpen] = useState(false)
   const agg = aggregate(members, report)
   const gs = groupStatus(members)
-  const shots = [
-    agg.kineticShots > 0 ? `${agg.kineticShots} kin` : null,
-    agg.jamSalvos > 0 ? `${agg.jamSalvos} jam` : null,
-  ].filter(Boolean)
+  const shots = expenditureParts(agg)
   const statsText =
     shots.length > 0
       ? `${shots.join(' · ')} · kill ${agg.kills.toFixed(1)} · leak ${agg.leak.toFixed(1)}`
@@ -479,7 +503,7 @@ function ThreatGroupRow({
       <div
         className="threat-substats"
         onClick={toggle}
-        title={`kinetic shots · jam salvos · kill/leak · min warning ${
+        title={`expenditure by channel (kin · DE · EW) · kill/leak · min warning ${
           agg.minWarnS != null ? formatTime(agg.minWarnS) : 'none'
         }`}
       >

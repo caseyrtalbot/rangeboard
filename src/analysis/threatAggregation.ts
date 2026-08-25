@@ -26,7 +26,10 @@ export interface ThreatOperationalRow {
   firstDetectS: number | null
   hostileAtS: number | null
   firstShotS: number | null
+  /** First effect that actually removed kill mass; a 'continue' jam dwell is not one. */
   firstEffectS: number | null
+  /** First 'continue' jam effect (track degrade, no mass removed); null when never jammed. */
+  firstJamEffectS: number | null
   arrivalS: number | null
   trackContinuity: number | null
   longestTrackGapS: number | null
@@ -83,6 +86,47 @@ function minTime(values: Array<number | null>): number | null {
   return min
 }
 
+/**
+ * Time each threat's expected residual first falls below the engine's
+ * expected-dead cutoff, keyed by uasId. This is the same rule trackState.ts
+ * latches its GHOST phase on: residual fraction strictly below
+ * SHIP_DEAD_BELOW, prefix-aggregated over the ledger in effect-time order.
+ * killDelta is never negative, so residual only falls and the latch is
+ * one-way by construction. Threats that never reach the cutoff are absent
+ * from the map.
+ *
+ * Late kill mass counts here exactly like pre-arrival mass. Whether a defeat
+ * defended the asset is a CREDIT question (see EngagementEvent.lateEffect);
+ * whether the airframe still flies is a survival question, and a late kill
+ * still destroys it. Shared by systemTelemetry.targetsNow, liveStats
+ * targetable, and targetableNow below, so every telemetry surface stops
+ * calling an expected-dead track a target at the same instant.
+ */
+export function expectedDeadTimes(report: AttritionReport): Map<string, number> {
+  const shipCounts = new Map(report.threats.map((row) => [row.uasId, row.shipCount]))
+  const byThreat = new Map<string, AttritionReport['events']>()
+  for (const event of report.events) {
+    const events = byThreat.get(event.uasId) ?? []
+    events.push(event)
+    byThreat.set(event.uasId, events)
+  }
+  const out = new Map<string, number>()
+  for (const [uasId, events] of byThreat) {
+    // No attrition row means no resolved formation: treat it as one ship.
+    const shipCount = shipCounts.get(uasId) ?? 1
+    if (shipCount <= 0) continue
+    let killed = 0
+    for (const event of [...events].sort((a, b) => a.tEffectS - b.tEffectS)) {
+      killed += event.killDelta
+      if (Math.max(0, shipCount - killed) / shipCount < SHIP_DEAD_BELOW) {
+        out.set(uasId, event.tEffectS)
+        break
+      }
+    }
+  }
+  return out
+}
+
 /** Track quality up to t, not the whole run. Null before the first detection. */
 export function trackQualityAt(
   assessment: ThreatAssessment,
@@ -137,6 +181,7 @@ export function threatPictureAt(
   currentHits: Map<string, DetectionHit[]>,
 ): ThreatOperationalGroup[] {
   const attrition = new Map(report.threats.map((row) => [row.uasId, row]))
+  const deadAtS = expectedDeadTimes(report)
   const eventsByThreat = new Map<string, AttritionReport['events']>()
   for (const event of report.events) {
     const events = eventsByThreat.get(event.uasId) ?? []
@@ -159,7 +204,15 @@ export function threatPictureAt(
     const tactic = tacticId ? THREAT_TACTICS.find((candidate) => candidate.id === tacticId) : null
     const waveIndex = entity ? waveIndexFor(scenario.raid, entity.id) : null
     const modelName = model?.name.split(':').pop()?.trim() ?? entity?.name ?? assessment.uasId
-    const firstEffectS = minTime(events.map((event) => event.tEffectS))
+    // An effect is the first EFFECT only when it removed kill mass. A
+    // 'continue' jam dwell degrades the track and removes nothing, so it
+    // reports separately instead of claiming the first-effect time.
+    const firstEffectS = minTime(
+      events.filter((event) => event.killDelta > 0).map((event) => event.tEffectS),
+    )
+    const firstJamEffectS = minTime(
+      events.filter((event) => event.channel === 'jam').map((event) => event.tEffectS),
+    )
     const trackQuality = trackQualityAt(assessment, tS)
     const decisionS = att?.firstShotS ?? assessment.windowS?.[0] ?? assessment.arrivalS
     const trackedAtDecision =
@@ -167,17 +220,25 @@ export function threatPictureAt(
       (assessment.sensorObservations ?? []).some((observation) =>
         heldAt(observation.intervals, decisionS),
       )
+    // An expected-dead track is not a target. targetableNow is a gauge, so it
+    // drops the instant the residual crosses the cutoff. targetAcquired is a
+    // milestone latch, so it asks the same question at the moment the window
+    // opened: a ghost can never be acquired, and a track that was acquired
+    // while it still flew keeps that history after it is killed.
+    const deadS = deadAtS.get(assessment.uasId) ?? null
     const targetAcquired =
       tS != null &&
       assessment.status === 'engageable' &&
       assessment.windowS != null &&
-      assessment.windowS[0] <= tS + 1e-9
+      assessment.windowS[0] <= tS + 1e-9 &&
+      (deadS == null || assessment.windowS[0] < deadS)
     const targetableNow =
       tS != null &&
       assessment.status === 'engageable' &&
       assessment.windowS != null &&
       tS >= assessment.windowS[0] - 1e-9 &&
-      tS <= assessment.windowS[1] + 1e-9
+      tS <= assessment.windowS[1] + 1e-9 &&
+      (deadS == null || tS < deadS)
     const row: ThreatOperationalRow = {
       uasId: assessment.uasId,
       name: entity?.name ?? assessment.uasId,
@@ -200,6 +261,7 @@ export function threatPictureAt(
       hostileAtS: assessment.classificationAtS.hostileAtS,
       firstShotS: att?.firstShotS ?? null,
       firstEffectS,
+      firstJamEffectS,
       arrivalS: assessment.arrivalS,
       trackContinuity: trackQuality?.continuity ?? null,
       longestTrackGapS: trackQuality?.longestGapS ?? null,

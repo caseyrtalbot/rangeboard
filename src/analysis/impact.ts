@@ -14,6 +14,13 @@ import { resolveEngagements } from '../playback/attrition'
  * no store imports. Everything derives from the scenario; nothing here is
  * ever written back into it.
  *
+ * ARRIVAL AND CPA ARE DIFFERENT QUESTIONS. arrivalS is the crossing of the
+ * asset's defended boundary; cpaS and cpaDistanceM are how near the track
+ * ever got. Every geometry test here is a CPA test, because a threat holds an
+ * asset at risk as soon as the asset is inside its WEZ, which for a standoff
+ * shooter happens far outside any boundary it will never cross. arrivalS is
+ * carried as reporting data only.
+ *
  * Honest fallbacks, never silent zeros:
  * - A model saved before the weapon fields existed falls back through
  *   defaultWeaponProfile / defaultEffectRadiusM (weaponFactors.ts).
@@ -114,12 +121,25 @@ export function threatWezList(scenario: Scenario): ThreatWez[] {
 export interface LeakerImpact {
   uasId: string
   name: string
+  /** Asset of closest approach (ThreatAssessment.cpaAssetId). */
   assetId: string | null
   assetName: string | null
+  /**
+   * Defended-boundary crossing time, null when the track never crosses one or
+   * no asset is placed. This is "over the asset", not "nearest the asset": a
+   * standoff shooter can hold an asset at risk from a CPA it never arrives at,
+   * so read cpaS for the geometry and arrivalS only for the boundary.
+   */
   arrivalS: number | null
-  /** closestApproachM <= wez radius: the target sits inside the WEZ at arrival. */
+  /** Time of closest approach to that asset; populated whenever any asset is placed. */
+  cpaS: number | null
+  /** cpaDistanceM <= WEZ radius: the asset sits inside the WEZ at closest approach. */
   assetInWez: boolean
-  /** shipCount * leakProbability, from attrition survival. */
+  /**
+   * shipCount * leakProbability. leakProbability is per-ship survival AT
+   * ARRIVAL, so kill mass that landed after the boundary crossing does not
+   * reduce this figure: a leaker that was destroyed too late still leaked.
+   */
   expectedShipsArriving: number
   /** expectedShipsArriving * warheadKg. */
   expectedWarheadKg: number
@@ -173,6 +193,10 @@ export function severityFor(
  * those ships never count in expectedShipsArriving. A 'continue' jam-degraded
  * leaker keeps its severity (the warhead is a property of the airframe, not
  * of the guidance link) and the degrade surfaces as jamDegradedProb data.
+ *
+ * A threat with no arrival still warns when its CPA puts the asset inside its
+ * WEZ. That is the point of the warning: engagement potential, not a report
+ * that the asset was reached.
  */
 export function assessLeakerImpacts(
   scenario: Scenario,
@@ -196,20 +220,24 @@ export function assessLeakerImpacts(
     const ships = shipCount * leakProb
     const warheadKg = model?.uas?.warheadKg ?? null
     const kg = warheadKg != null ? ships * warheadKg : 0
+    // WEZ containment is a CLOSEST-APPROACH question, never a boundary
+    // question: the threat only has to get within its own effect radius of
+    // the asset, which it can do without ever crossing the defended boundary.
     const assetInWez =
       kind !== 'none' &&
-      a.assetId != null &&
+      a.cpaAssetId != null &&
       // Unknown radius: assume inside (conservative; the UI labels r unknown).
-      (radiusM == null || (a.closestApproachM != null && a.closestApproachM <= radiusM))
+      (radiusM == null || (a.cpaDistanceM != null && a.cpaDistanceM <= radiusM))
     out.push({
       uasId: a.uasId,
       name: entity.name,
-      assetId: a.assetId,
+      assetId: a.cpaAssetId,
       assetName:
-        a.assetId != null
-          ? (scenario.entities.find((e) => e.id === a.assetId)?.name ?? null)
+        a.cpaAssetId != null
+          ? (scenario.entities.find((e) => e.id === a.cpaAssetId)?.name ?? null)
           : null,
       arrivalS: a.arrivalS,
+      cpaS: a.cpaS,
       assetInWez,
       expectedShipsArriving: ships,
       expectedWarheadKg: kg,

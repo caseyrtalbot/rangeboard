@@ -109,15 +109,27 @@ function reportWith(uasId: string, patch: Partial<ThreatAttrition>): AttritionRe
     expectedKills: 0,
     expectedHardKills: 0,
     expectedSoftKills: 0,
+    expectedLateKills: 0,
+    expectedLateHardKills: 0,
+    expectedLateSoftKills: 0,
+    arrived: true,
+    expectedLeakers: 0,
+    expectedNoArrival: 0,
     leakProbability: 1,
     continueJamProb: 0,
     firstShotS: null,
     shotsFired: 0,
+    deSalvos: 0,
     jamSalvos: 0,
     killedByEffectorId: null,
     killedBySoft: false,
     ...patch,
   }
+  // Keep the fixture self-consistent: the raid partition follows shipCount,
+  // the defeat mass, and whether the threat crossed a boundary.
+  const undefeated = row.shipCount - row.expectedKills
+  row.expectedLeakers = row.arrived ? undefeated : 0
+  row.expectedNoArrival = row.arrived ? 0 : undefeated
   return {
     threats: [row],
     effectors: [],
@@ -126,8 +138,12 @@ function reportWith(uasId: string, patch: Partial<ThreatAttrition>): AttritionRe
       expectedKills: row.expectedKills,
       expectedHardKills: row.expectedHardKills,
       expectedSoftKills: row.expectedSoftKills,
-      expectedLeakers: row.shipCount - row.expectedKills,
+      expectedLateKills: row.expectedLateKills,
+      expectedLeakers: row.expectedLeakers,
+      expectedNoArrival: row.expectedNoArrival,
+      reportedLeakers: row.expectedLeakers,
       shotsFired: row.shotsFired,
+      deSalvos: row.deSalvos,
       jamSalvos: row.jamSalvos,
     },
     events: [],
@@ -284,7 +300,13 @@ describe('assessLeakerImpacts', () => {
     const [imp] = impactsFor(scenario)
     expect(imp.assetId).toBe(assetId)
     expect(imp.assetInWez).toBe(true)
-    expect(imp.arrivalS).toBeCloseTo(25, 1) // 1000 m at 40 m/s
+    // ARRIVAL is the defended-boundary crossing, not the impact point. The
+    // threat starts 1,000 m out at 40 m/s and the default protected radius is
+    // 500 m, so it is inside the boundary after 500 m of travel: T+12.5 s.
+    expect(imp.arrivalS).toBeCloseTo(12.5, 1)
+    // CPA is a different question: nearest approach is the impact point at
+    // T+25 s, which is what the WEZ containment test reads.
+    expect(imp.cpaS).toBeCloseTo(25, 1)
     expect(imp.expectedShipsArriving).toBe(1)
     expect(imp.expectedWarheadKg).toBe(40)
     expect(imp.severity).toBe('severe') // 40 kg >= 20 and 1.0 ships >= 1.0
@@ -303,6 +325,20 @@ describe('assessLeakerImpacts', () => {
     expect(imp.assetInWez).toBe(true) // conservative: unknown r never hides a threat
     expect(imp.expectedWarheadKg).toBe(0) // unknown warhead, never an invented mass
     expect(imp.severity).toBe('severe') // 1.0 ships, ships-only criteria
+  })
+
+  it('warns from CPA when the threat never crosses the defended boundary', () => {
+    // Standoff shooter passing 700 m abeam: outside the 500 m protected
+    // boundary, so it never arrives, but the asset is well inside its 8 km
+    // WEZ. Engagement potential is a CPA question, never an arrival question.
+    const m = uasModel({ weaponProfile: 'standoff', standoffRangeM: 8000, warheadKg: 40 })
+    const { scenario, assetId } = scenarioWith(m, { x: 0, y: 700 })
+    const [imp] = impactsFor(scenario)
+    expect(imp.arrivalS).toBeNull()
+    expect(imp.cpaS).not.toBeNull()
+    expect(imp.assetId).toBe(assetId)
+    expect(imp.assetInWez).toBe(true)
+    expect(imp.severity).toBe('severe')
   })
 
   it('never warns for weaponless platforms even on a direct approach', () => {
@@ -345,8 +381,12 @@ describe('assessLeakerImpacts', () => {
         expectedKills: 0,
         expectedHardKills: 0,
         expectedSoftKills: 0,
+        expectedLateKills: 0,
         expectedLeakers: 0,
+        expectedNoArrival: 0,
+        reportedLeakers: 0,
         shotsFired: 0,
+        deSalvos: 0,
         jamSalvos: 0,
       },
       events: [],

@@ -83,6 +83,24 @@ const JAMMER: SpecModel = {
   },
 }
 
+/** Directed energy: a hard kill that fires no round, so it spends deSalvos. */
+const HPM: SpecModel = {
+  id: 'tst-hpm',
+  name: 'test hpm',
+  kind: 'effector',
+  description: '',
+  color: '#fff',
+  builtin: false,
+  effector: {
+    effectorType: 'hpm',
+    minRangeM: 0,
+    maxRangeM: 1000,
+    engageTimeS: 0,
+    pk: 0.7,
+    salvoCooldownS: 5,
+  },
+}
+
 let seq = 0
 function ent(kind: Entity['kind'], specId: string, pos: Vec2, name?: string): Entity {
   seq += 1
@@ -160,9 +178,21 @@ describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () =>
     expect(aar.expectedHardKills).toBeGreaterThan(0.9)
     expect(aar.expectedSoftKills).toBeGreaterThan(0.9)
     expect(aar.expectedKills).toBeCloseTo(aar.expectedHardKills + aar.expectedSoftKills, 9)
+    // expectedLeakers is UNDEFEATED ships: everything the defence did not
+    // defeat before arrival, whether or not it ever crossed a boundary.
     expect(aar.expectedLeakers).toBeCloseTo(3 - aar.expectedKills, 9)
-    expect(aar.expectedLeakers).toBeGreaterThan(1) // threat C always leaks
+    expect(aar.expectedLeakers).toBeGreaterThan(1) // threat C is never engaged
     expect(aar.leakProbability).toBeCloseTo(aar.expectedLeakers / 3, 9)
+  })
+
+  it('splits the undefeated mass and reports late intercepts apart', () => {
+    // No asset is placed, so nothing can arrive: every undefeated ship sits
+    // in the never-arrived bucket and no defeat can be late.
+    expect(aar.expectedNoArrival).toBeCloseTo(aar.expectedLeakers, 9)
+    expect(aar.expectedLateKills).toBe(0)
+    expect(
+      aar.expectedKills + aar.expectedNoArrival! + (aar.expectedLeakers - aar.expectedNoArrival!),
+    ).toBeCloseTo(aar.raidSize, 9)
   })
 
   it('reports first detection and first shot', () => {
@@ -178,6 +208,7 @@ describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () =>
     // at pk 0.9 (Pk 0.6327/0.6543/0.6759 by falloff) leave survival
     // 0.041 < SHIP_DEAD_BELOW, so the last two rounds are held.
     expect(int.shotsFired).toBe(3)
+    expect(int.deSalvos).toBe(0)
     expect(int.jamSalvos).toBe(0)
     expect(int.magazineSize).toBe(5)
     expect(int.expectedRoundsRemaining).toBe(2)
@@ -188,11 +219,13 @@ describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () =>
     // Jammer expenditure is jam salvos, never kinetic shots. Five soft-kill
     // salvos (cooldown 5 s) push survival below the cutoff; then it holds.
     expect(jam.shotsFired).toBe(0)
+    expect(jam.deSalvos).toBe(0)
     expect(jam.jamSalvos).toBe(5)
     expect(jam.expectedRoundsRemaining).toBeNull()
     expect(jam.magazineSize).toBeNull()
 
     expect(aar.shotsFired).toBe(int.shotsFired) // kinetic only
+    expect(aar.deSalvos).toBe(0)
     expect(aar.jamSalvos).toBe(jam.jamSalvos)
   })
 
@@ -271,7 +304,9 @@ describe('AAR engagement-potential (I&W) fields', () => {
     const aar = summarize(scenario)
     const row = aar.threats.find((t) => t.uasId === uasId)!
     expect(row.assetName).toBe('CP Main')
-    expect(row.arrivalS).toBeCloseTo(25, 1)
+    // Arrival is the defended-boundary crossing (default 500 m protected
+    // radius), so 1,000 m out at 40 m/s crosses at T+12.5 s, not at impact.
+    expect(row.arrivalS).toBeCloseTo(12.5, 1)
     expect(row.assetInWez).toBe(true)
     expect(row.expectedShipsArriving).toBe(1)
     expect(row.expectedWarheadKg).toBe(40)
@@ -304,6 +339,124 @@ describe('AAR engagement-potential (I&W) fields', () => {
     // The pre-existing row contract still reads normally.
     expect(round.threats[0].name).toBe('OWA Threat')
     expect(round.threats[0].outcome).toBe('not-engaged')
+  })
+})
+
+describe('AAR directed-energy engagement', () => {
+  /** The same lane as threat A, defended by an HPM emitter instead. */
+  function hpmScenario(): { scenario: Scenario; hpmId: string; aId: string } {
+    const scenario = emptyScenario()
+    scenario.library = [...scenario.library, SENSOR, TARGET, HPM]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const hpm = ent('effector', HPM.id, { x: 0, y: 0 }, 'HPM Charlie')
+    const a = ent('uas', TARGET.id, { x: -1210, y: 0 }, 'Threat A')
+    scenario.entities = [sensor, hpm, a]
+    scenario.connections = [link(sensor.id, hpm.id)]
+    scenario.paths = [flight(a.id, 0)]
+    return { scenario, hpmId: hpm.id, aId: a.id }
+  }
+
+  const { scenario, hpmId, aId } = hpmScenario()
+  const aar = summarize(scenario)
+
+  it('counts the bursts as directed energy, never as rounds fired', () => {
+    const hpm = aar.effectors.find((e) => e.effectorId === hpmId)!
+    expect(hpm.effectorType).toBe('hpm')
+    expect(hpm.deSalvos).toBeGreaterThan(0)
+    expect(hpm.shotsFired).toBe(0)
+    expect(hpm.jamSalvos).toBe(0)
+    expect(aar.deSalvos).toBe(hpm.deSalvos)
+    expect(aar.shotsFired).toBe(0)
+  })
+
+  it('does not report a directed-energy engagement as never engaged', () => {
+    // aarOutcome tested only shotsFired and jamSalvos, so a DE or HPM
+    // engagement that defeated the threat reported 'not-engaged'.
+    const row = aar.threats.find((t) => t.uasId === aId)!
+    expect(row.deSalvos).toBeGreaterThan(0)
+    expect(row.shotsFired).toBe(0)
+    expect(row.outcome).toBe('hard-kill')
+    expect(aar.expectedHardKills).toBeGreaterThan(0.9)
+  })
+
+  it('is JSON-serializable and round-trips intact', () => {
+    expect(JSON.parse(JSON.stringify(aar))).toEqual(aar)
+  })
+})
+
+describe('AAR late intercepts', () => {
+  /**
+   * An interceptor whose effect lands 30 s after assignment, sited at a
+   * defended asset the threat crosses first. The kill still happens; it just
+   * lands too late to have defended the asset.
+   */
+  function lateScenario(): { scenario: Scenario; uasId: string } {
+    const scenario = emptyScenario()
+    const slow: SpecModel = {
+      ...INTERCEPTOR,
+      id: 'tst-slow-int',
+      effector: { ...INTERCEPTOR.effector!, engageTimeS: 30, maxRangeM: 4000 },
+    }
+    scenario.library = [...scenario.library, SENSOR, TARGET, slow]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const int = ent('effector', slow.id, { x: 0, y: 0 }, 'Slow Interceptor')
+    const asset = ent('asset', TARGET.id, { x: 0, y: 0 }, 'CP Main')
+    const uas = ent('uas', TARGET.id, { x: -1210, y: 0 }, 'Threat A')
+    scenario.entities = [sensor, int, asset, uas]
+    scenario.connections = [link(sensor.id, int.id)]
+    scenario.paths = [flight(uas.id, 0)]
+    return { scenario, uasId: uas.id }
+  }
+
+  const { scenario } = lateScenario()
+  const aar = summarize(scenario)
+
+  it('reports the late mass apart and never adds it to the defeat', () => {
+    expect(aar.expectedLateKills).toBeGreaterThan(0)
+    // The defeat number carries PRE-ARRIVAL mass only.
+    expect(aar.expectedKills).toBeCloseTo(
+      aar.expectedHardKills + aar.expectedSoftKills,
+      9,
+    )
+    expect(aar.expectedKills + aar.expectedLeakers).toBeCloseTo(aar.raidSize, 9)
+    // Late mass sits inside the undefeated bucket, so the two overlap.
+    expect(aar.expectedLateKills!).toBeLessThanOrEqual(aar.expectedLeakers + 1e-9)
+  })
+
+  it('records that the threat arrived, so the undefeated mass is a real leak', () => {
+    expect(aar.expectedNoArrival).toBeCloseTo(0, 9)
+  })
+})
+
+describe('AarSummary pinned-shape tolerance', () => {
+  it('accepts an old pin that lacks every field added after it was made', () => {
+    const aar = summarize(mixedScenario().scenario)
+    const pin = JSON.parse(JSON.stringify(aar)) as typeof aar
+    const drop = (record: Record<string, unknown>, keys: string[]) => {
+      for (const key of keys) delete record[key]
+    }
+    drop(pin as unknown as Record<string, unknown>, [
+      'deSalvos',
+      'jamSalvos',
+      'expectedNoArrival',
+      'expectedLateKills',
+    ])
+    for (const e of pin.effectors) {
+      drop(e as unknown as Record<string, unknown>, ['deSalvos', 'jamSalvos'])
+    }
+    for (const t of pin.threats) {
+      drop(t as unknown as Record<string, unknown>, ['deSalvos', 'jamSalvos'])
+    }
+    const round = JSON.parse(JSON.stringify(pin)) as typeof aar
+    expect(round).toEqual(pin)
+    expect(round.deSalvos).toBeUndefined()
+    expect(round.expectedLateKills).toBeUndefined()
+    expect(round.expectedNoArrival).toBeUndefined()
+    expect(round.effectors[0].deSalvos).toBeUndefined()
+    // Every field the pin has always carried still reads normally.
+    expect(round.raidSize).toBe(3)
+    expect(round.shotsFired).toBe(3)
+    expect(round.expectedLeakers).toBeGreaterThan(1)
   })
 })
 

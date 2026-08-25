@@ -1,12 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type { Entity, FlightPath } from '../model/types'
+import type { Entity, FlightPath, Scenario } from '../model/types'
 import type { AttritionReport } from '../playback/attrition'
+import { SHIP_DEAD_BELOW } from '../playback/attrition'
 import type { ThreatAssessment } from '../playback/sim'
 import { buildRequirementGateReport } from './requirements'
 
 function fixture() {
   const scenario = emptyScenario()
+  const asset: Entity = {
+    id: 'a1',
+    name: 'Command post',
+    kind: 'asset',
+    specId: null,
+    pos: { x: 20000, y: 0 },
+    headingDeg: 0,
+    color: null,
+    notes: '',
+  }
   const threat: Entity = {
     id: 'u1',
     name: 'Threat 1',
@@ -24,7 +35,7 @@ function fixture() {
     speedMps: 10,
     startDelayS: 0,
   }
-  scenario.entities.push(threat)
+  scenario.entities.push(asset, threat)
   scenario.paths.push(path)
   scenario.roe = 'free'
   const assessment: ThreatAssessment = {
@@ -35,9 +46,12 @@ function fixture() {
     firstConfirmS: 15,
     techs: ['radar'],
     swarmMerged: false,
-    assetId: 'a1',
-    arrivalS: 50,
+    cpaAssetId: asset.id,
+    cpaS: 50,
+    cpaDistanceM: 0,
+    assetId: asset.id,
     closestApproachM: 0,
+    arrivalS: 50,
     warningS: 40,
     windowS: [20, 40],
     windowEffectorId: 'e1',
@@ -66,10 +80,17 @@ function fixture() {
         expectedKills: 0.96,
         expectedHardKills: 0.96,
         expectedSoftKills: 0,
+        expectedLateKills: 0,
+        expectedLateHardKills: 0,
+        expectedLateSoftKills: 0,
+        arrived: true,
+        expectedLeakers: 0.04,
+        expectedNoArrival: 0,
         leakProbability: 0.04,
         continueJamProb: 0,
         firstShotS: 20,
         shotsFired: 2,
+        deSalvos: 0,
         jamSalvos: 0,
         killedByEffectorId: 'e1',
         killedBySoft: false,
@@ -81,13 +102,35 @@ function fixture() {
       expectedKills: 0.96,
       expectedHardKills: 0.96,
       expectedSoftKills: 0,
+      expectedLateKills: 0,
       expectedLeakers: 0.04,
+      expectedNoArrival: 0,
+      reportedLeakers: 0.04,
       shotsFired: 2,
+      deSalvos: 0,
       jamSalvos: 0,
     },
     events: [],
   }
   return { scenario, assessment, report }
+}
+
+/** Sensor whose 10 km ring covers the fixture threat spawn at the origin. */
+function addSensorOverSpawn(scenario: Scenario): void {
+  scenario.entities.push({
+    id: 's1',
+    name: 'LSTAR',
+    kind: 'sensor',
+    specId: 'lib-lstar',
+    pos: { x: 0, y: 0 },
+    headingDeg: 0,
+    color: null,
+    notes: '',
+  })
+}
+
+function gateOf(result: ReturnType<typeof buildRequirementGateReport>, id: string) {
+  return result.gates.find((g) => g.id === id)!
 }
 
 describe('non-compensating requirement gates', () => {
@@ -97,6 +140,8 @@ describe('non-compensating requirement gates', () => {
     expect(result.overall).toBe('pass')
     expect(result.met).toBe(6)
     expect(result.gates.every((gate) => gate.status === 'pass')).toBe(true)
+    expect(result.gates.every((gate) => gate.caveats.length === 0)).toBe(true)
+    expect(result.gates.every((gate) => gate.notEvaluatedReason === null)).toBe(true)
   })
 
   it('does not let other gates compensate for a failed identification requirement', () => {
@@ -105,7 +150,7 @@ describe('non-compensating requirement gates', () => {
     const result = buildRequirementGateReport(scenario, [assessment], report)
     expect(result.overall).toBe('fail')
     expect(result.met).toBe(5)
-    expect(result.gates.find((gate) => gate.id === 'identify')?.status).toBe('fail')
+    expect(gateOf(result, 'identify').status).toBe('fail')
   })
 
   it('marks engagement requirements not evaluated under weapons hold', () => {
@@ -115,6 +160,191 @@ describe('non-compensating requirement gates', () => {
     expect(result.overall).toBe('not-evaluated')
     expect(result.gates.filter((gate) => ['target', 'engage', 'effect'].includes(gate.id)))
       .toHaveLength(3)
-    expect(result.gates.find((gate) => gate.id === 'effect')?.status).toBe('not-evaluated')
+    expect(gateOf(result, 'effect').status).toBe('not-evaluated')
+    expect(gateOf(result, 'effect').notEvaluatedReason).toBe(
+      'ROE hold: the run assigns no engagements',
+    )
+  })
+})
+
+describe('the Effect requirement is test-defined, not an engine constant', () => {
+  it('defaults to a threshold that is not the engine fire-cutoff', () => {
+    expect(emptyScenario().requirements.maxResidualPerTrack).toBe(0.1)
+    expect(emptyScenario().requirements.maxResidualPerTrack).not.toBe(SHIP_DEAD_BELOW)
+  })
+
+  it('names the scenario as the source of the threshold', () => {
+    const { scenario, assessment, report } = fixture()
+    const gate = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'effect')
+    expect(gate.detail).toBe(
+      '0.04 expected ships residual · requirement ≤10% per track (scenario setting)',
+    )
+  })
+
+  it('says residual is not measurable when no asset is placed', () => {
+    // reportedLeakers is null for an asset-free laydown. Printing 0.00 there
+    // would read as a perfect defence, so the gate names the missing asset.
+    const { scenario, assessment, report } = fixture()
+    report.totals.reportedLeakers = null
+    const gate = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'effect')
+    expect(gate.detail).toBe(
+      'residual not measurable: no defended asset placed · requirement ≤10% per track (scenario setting)',
+    )
+    expect(gate.detail).not.toContain('0.00')
+  })
+
+  it('fails a residual the engine cutoff alone would have passed', () => {
+    const { scenario, assessment, report } = fixture()
+    // 0.045 sits below SHIP_DEAD_BELOW (0.05), so the engine stops firing here
+    // and the old gate passed itself. The test asks for 3%, so this fails.
+    report.threats[0].leakProbability = 0.045
+    scenario.requirements.maxResidualPerTrack = 0.03
+    const result = buildRequirementGateReport(scenario, [assessment], report)
+    const gate = gateOf(result, 'effect')
+    expect(gate.status).toBe('fail')
+    expect(gate.failures).toEqual([{ uasId: 'u1', name: 'Threat 1', reason: '4.5% residual' }])
+    expect(gate.detail).toContain('requirement ≤3% per track (scenario setting)')
+    expect(result.overall).toBe('fail')
+  })
+
+  it('passes the same residual against a looser test threshold', () => {
+    const { scenario, assessment, report } = fixture()
+    report.threats[0].leakProbability = 0.045
+    scenario.requirements.maxResidualPerTrack = 0.05
+    expect(
+      gateOf(buildRequirementGateReport(scenario, [assessment], report), 'effect').status,
+    ).toBe('pass')
+  })
+})
+
+describe('Detect is a performance test, not a presence test', () => {
+  it('drops a spawn-in-ring track from the population and says why', () => {
+    const { scenario, assessment, report } = fixture()
+    addSensorOverSpawn(scenario)
+    const result = buildRequirementGateReport(scenario, [assessment], report)
+    const detect = gateOf(result, 'detect')
+    expect(detect.status).toBe('not-evaluated')
+    expect(detect.met).toBe(0)
+    expect(detect.notEvaluatedReason).toBe(
+      'every track is invalidated by a run validity finding',
+    )
+    expect(detect.caveats).toHaveLength(1)
+    expect(detect.caveats[0]).toBe(
+      '1 track not scored here. Flight paths start inside a detect ring (detected at T0): Threat 1 held by LSTAR',
+    )
+    // The invalidated track still scores every gate the finding does not touch.
+    expect(gateOf(result, 'track').status).toBe('pass')
+    expect(gateOf(result, 'track').required).toBe(1)
+    expect(result.overall).toBe('not-evaluated')
+  })
+
+  it('fails a detection that does not precede arrival', () => {
+    const { scenario, assessment, report } = fixture()
+    assessment.firstDetectS = 60
+    assessment.warningS = -10
+    const detect = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'detect')
+    expect(detect.status).toBe('fail')
+    expect(detect.failures[0].reason).toBe('detected 1:00, not before arrival 0:50')
+  })
+
+  it('fails a warning time below the scenario requirement', () => {
+    const { scenario, assessment, report } = fixture()
+    scenario.requirements.minWarningS = 60
+    const detect = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'detect')
+    expect(detect.status).toBe('fail')
+    expect(detect.failures[0].reason).toBe('0:40 warning, requirement 1:00')
+    expect(detect.detail).toBe('minimum warning 0:40 · requirement ≥1:00 warning (scenario setting)')
+  })
+
+  it('passes a warning time at or above the scenario requirement', () => {
+    const { scenario, assessment, report } = fixture()
+    scenario.requirements.minWarningS = 40
+    expect(
+      gateOf(buildRequirementGateReport(scenario, [assessment], report), 'detect').status,
+    ).toBe('pass')
+  })
+
+  it('says no defended asset is placed instead of no asset warning time', () => {
+    const { scenario, assessment, report } = fixture()
+    scenario.entities = scenario.entities.filter((e) => e.kind !== 'asset')
+    assessment.arrivalS = null
+    assessment.warningS = null
+    const detect = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'detect')
+    expect(detect.status).toBe('pass')
+    expect(detect.detail).toBe('no defended asset placed')
+    expect(detect.caveats[0]).toContain('No defended asset is placed')
+  })
+
+  it('does not score a warning requirement it cannot measure', () => {
+    const { scenario, assessment, report } = fixture()
+    scenario.entities = scenario.entities.filter((e) => e.kind !== 'asset')
+    scenario.requirements.minWarningS = 60
+    assessment.arrivalS = null
+    assessment.warningS = null
+    const detect = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'detect')
+    expect(detect.status).toBe('not-evaluated')
+    expect(detect.notEvaluatedReason).toBe(
+      'a warning time requirement is set but no defended asset is placed',
+    )
+  })
+})
+
+describe('Track keeps a decision point without an arrival', () => {
+  it('falls back to closest approach when the threat never arrives', () => {
+    const { scenario, assessment, report } = fixture()
+    assessment.arrivalS = null
+    assessment.warningS = null
+    assessment.windowS = null
+    assessment.cpaS = 30
+    report.threats[0].firstShotS = null
+    const track = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'track')
+    expect(track.status).toBe('pass')
+    expect(track.metric).toBe('1/1 held')
+    expect(track.detail).toContain('closest approach')
+  })
+
+  it('reports no decision point when there is no arrival and no closest approach', () => {
+    const { scenario, assessment, report } = fixture()
+    assessment.arrivalS = null
+    assessment.warningS = null
+    assessment.windowS = null
+    assessment.cpaS = null
+    report.threats[0].firstShotS = null
+    const track = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'track')
+    expect(track.status).toBe('fail')
+    expect(track.failures[0].reason).toBe('no decision point')
+  })
+
+  it('fails a track the sensors dropped before closest approach', () => {
+    const { scenario, assessment, report } = fixture()
+    assessment.arrivalS = null
+    assessment.warningS = null
+    assessment.windowS = null
+    assessment.cpaS = 90
+    report.threats[0].firstShotS = null
+    const track = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'track')
+    expect(track.status).toBe('fail')
+    expect(track.failures[0].reason).toBe('not held at 1:30')
+  })
+})
+
+describe('gate populations exclude tracks with no flight path', () => {
+  it('counts only pathed tracks and carries the caveat', () => {
+    const { scenario, assessment, report } = fixture()
+    scenario.entities.push({
+      id: 'u2',
+      name: 'Threat 2',
+      kind: 'uas',
+      specId: 'lib-mavic3',
+      pos: { x: 5000, y: 5000 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    })
+    const noPath: ThreatAssessment = { ...assessment, uasId: 'u2', status: 'no-path' }
+    const result = buildRequirementGateReport(scenario, [assessment, noPath], report)
+    expect(gateOf(result, 'identify').required).toBe(1)
+    expect(gateOf(result, 'identify').caveats[0]).toContain('Threat 2')
+    expect(result.overall).toBe('pass')
   })
 })

@@ -135,9 +135,17 @@ function OutcomeCounts({ rows }: { rows: AarThreatRowData[] }) {
 }
 
 /**
- * Headline raid distribution: one stacked bar (killed | not engaged | leakers)
- * and a one-line total under it. Segment palette is validated for color
- * vision; the 2px gaps read as panel background. No text inside the bar.
+ * Headline raid distribution: one stacked bar (defeated | not engaged |
+ * engaged and still undefeated) and a one-line total under it.
+ *
+ * "Defeated" is PRE-ARRIVAL mass only, so the counterpart is UNDEFEATED, not
+ * "leaked": AarSummary.expectedLeakers is the leaker bucket plus the
+ * never-arrived bucket, and calling that combined figure a leak claims an
+ * arrival the run may never have had. Late intercepts get their own line,
+ * because destruction that landed after arrival defended nothing.
+ *
+ * Segment palette is validated for color vision; the 2px gaps read as panel
+ * background. No text inside the bar.
  */
 function AarOutcomeBar({
   aar,
@@ -146,19 +154,23 @@ function AarOutcomeBar({
   aar: AarSummary
   mode?: 'actual' | 'projected'
 }) {
-  const killed = aar.expectedHardKills + aar.expectedSoftKills
+  const defeated = aar.expectedHardKills + aar.expectedSoftKills
   const notEngaged = aar.threats
     .filter((t) => t.outcome === 'not-engaged')
     .reduce((s, t) => s + t.shipCount, 0)
-  // expectedLeakers already counts not-engaged ships (each leaks with p=1);
-  // the red segment holds only engaged leakers so the bar partitions the raid.
-  const engagedLeak = Math.max(0, aar.expectedLeakers - notEngaged)
+  // expectedLeakers carries UNDEFEATED ships and already counts every
+  // not-engaged ship; the red segment holds only the engaged ones that
+  // survived, so the three segments partition the raid exactly.
+  const engagedUndefeated = Math.max(0, aar.expectedLeakers - notEngaged)
+  // Absent on pins made before the arrival split; those pins simply omit the
+  // late-intercept line rather than claiming a zero they never measured.
+  const late = aar.expectedLateKills ?? null
   const segments = [
-    { v: killed, color: '#8fae7a' },
+    { v: defeated, color: '#8fae7a' },
     { v: notEngaged, color: 'var(--border)' },
-    { v: engagedLeak, color: '#c4564a' },
+    { v: engagedUndefeated, color: '#c4564a' },
   ].filter((s) => s.v > 0.05)
-  const barTitle = `${mode === 'projected' ? 'Full-run model: ' : ''}${killed.toFixed(1)} killed · ${notEngaged} not engaged (leak through) · ${engagedLeak.toFixed(1)} leak through engaged`
+  const barTitle = `${mode === 'projected' ? 'Full-run model: ' : ''}${defeated.toFixed(1)} defeated before arrival · ${notEngaged} not engaged · ${engagedUndefeated.toFixed(1)} engaged and still undefeated`
   return (
     <div className="aar-headline">
       {segments.length > 0 && (
@@ -170,15 +182,29 @@ function AarOutcomeBar({
       )}
       <div>
         {mode === 'projected' ? 'Projected: ' : ''}
-        {killed.toFixed(1)} killed ({aar.expectedHardKills.toFixed(1)} hard ·{' '}
-        {aar.expectedSoftKills.toFixed(1)} soft) · {aar.expectedLeakers.toFixed(1)} leak
-        through · {aarPct(aar.leakProbability)}
+        {defeated.toFixed(1)} defeated ({aar.expectedHardKills.toFixed(1)} hard ·{' '}
+        {aar.expectedSoftKills.toFixed(1)} soft) · {aar.expectedLeakers.toFixed(1)} undefeated
+        · {aarPct(aar.leakProbability)}
       </div>
+      {late != null && late > 0.05 && (
+        <div
+          className="muted small"
+          title="Destruction whose effect landed after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is never a defeat."
+        >
+          {late.toFixed(1)} destroyed after arrival, too late to defend. Not a defeat.
+        </div>
+      )}
     </div>
   )
 }
 
-/** AAR totals and per-effector shot ledger. Renders from the summary alone. */
+/**
+ * AAR totals and the per-effector expenditure ledger. Renders from the
+ * summary alone, so a pinned scorecard still reads after the laydown changes.
+ * Every field added after the first pin is optional: a row appears only when
+ * the summary actually carries it, so an old pin shows fewer rows instead of
+ * inventing a zero.
+ */
 export function AarTotals({
   aar,
   mode = 'actual',
@@ -207,13 +233,36 @@ export function AarTotals({
               <td>{aarTime(aar.firstShotS)}</td>
             </tr>
             <tr>
-              <td>{projected ? 'Projected kinetic shots' : 'Shots fired'}</td>
+              <td>{projected ? 'Projected kinetic shots' : 'Kinetic shots'}</td>
               <td>{aar.shotsFired}</td>
             </tr>
+            {(aar.deSalvos ?? 0) > 0 && (
+              <tr>
+                <td>{projected ? 'Projected DE bursts' : 'DE bursts'}</td>
+                <td>{aar.deSalvos}</td>
+              </tr>
+            )}
             {(aar.jamSalvos ?? 0) > 0 && (
               <tr>
-                <td>{projected ? 'Projected jam salvos' : 'Jam salvos'}</td>
+                <td>{projected ? 'Projected EW salvos' : 'EW salvos'}</td>
                 <td>{aar.jamSalvos}</td>
+              </tr>
+            )}
+            {(aar.expectedLateKills ?? 0) > 0.05 && (
+              <tr>
+                <td>Late intercepts</td>
+                <td>
+                  {aar.expectedLateKills!.toFixed(1)} ships destroyed after arrival, not a defeat
+                </td>
+              </tr>
+            )}
+            {(aar.expectedNoArrival ?? 0) > 0.05 && (
+              <tr>
+                <td>Never arrived</td>
+                <td>
+                  {aar.expectedNoArrival!.toFixed(1)} of the {aar.expectedLeakers.toFixed(1)}{' '}
+                  undefeated ships never crossed a defended boundary
+                </td>
               </tr>
             )}
           </tbody>

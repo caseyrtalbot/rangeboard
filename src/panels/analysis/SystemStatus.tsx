@@ -20,13 +20,22 @@ function stateClass(state: ComponentTelemetry['state']): string {
   return 'neutral'
 }
 
+/** "1 target", "2 targets": a count and its noun always agree. */
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
+}
+
 function ComponentRow({ component }: { component: ComponentTelemetry }) {
+  // holdSeconds is the clock reading: the elapsed seconds this sensor held at
+  // least one track. trackSeconds is INTEGRATED sensor loading and can exceed
+  // the run length, so it is labeled track-seconds and never given to a clock
+  // formatter (which printed "10:01 hold" on a run under five minutes).
   const detail =
     component.kind === 'sensor'
-      ? `${component.tracksNow} now · ${component.tracksSeen} seen · ${component.classifications} classified · ${formatTime(component.trackSeconds)} hold`
+      ? `${component.tracksNow} now · ${component.tracksSeen} seen · ${component.classifications} classified · ${formatTime(component.holdSeconds)} hold · ${Math.round(component.trackSeconds)} track-s`
       : component.kind === 'c2'
-        ? `${component.tracksNow} now · ${component.tracksSeen} routed · ${component.downstreamEffectors} effectors`
-        : `${component.targetsNow} targets · ${component.salvosAssigned} salvos · ${component.effectsLanded} effects · E[k] ${component.expectedKills.toFixed(2)}`
+        ? `${component.tracksNow} now · ${component.tracksSeen} routed · ${plural(component.downstreamEffectors, 'effector')}`
+        : `${plural(component.targetsNow, 'target')} · ${plural(component.salvosAssigned, 'salvo')} · ${plural(component.effectsLanded, 'effect')} · E[k] ${component.expectedKills.toFixed(2)}`
   const capacity =
     component.kind !== 'effector'
       ? null
@@ -72,10 +81,33 @@ function SystemCard({ group, defaultOpen }: { group: SystemTelemetryGroup; defau
   )
 }
 
-export function SystemStatus({ groups, expanded = true }: { groups: SystemTelemetryGroup[]; expanded?: boolean }) {
+/**
+ * Component telemetry list.
+ *
+ * The state pill is a SAMPLED INSTANT: it is whatever the component was doing
+ * at the cursor time the caller asked for. In an evidence record that instant
+ * is the last frame of the run, which is not a run outcome. Set endOfRun so
+ * the record names what the column is, rather than letting "SEARCH" or
+ * "READY" read as a verdict on the run.
+ */
+export function SystemStatus({
+  groups,
+  expanded = true,
+  endOfRun = false,
+}: {
+  groups: SystemTelemetryGroup[]
+  expanded?: boolean
+  endOfRun?: boolean
+}) {
   if (groups.length === 0) return <p className="muted small">No sensors, C2, or effectors placed.</p>
   return (
     <div className="system-telemetry-list">
+      {endOfRun && (
+        <p className="muted small telemetry-note">
+          State column: the state at the end of the run. It is one sampled instant, not a run
+          outcome. The counts beside it cover the whole run.
+        </p>
+      )}
       {groups.map((group, index) => (
         <SystemCard key={group.id} group={group} defaultOpen={expanded && (groups.length <= 3 || index === 0)} />
       ))}

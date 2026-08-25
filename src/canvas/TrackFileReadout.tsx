@@ -37,16 +37,27 @@ const NAV_LABEL: Record<string, string> = {
   mixed: 'GPS and RF mixed',
 }
 
-/** One position axis. Aviation keeps two decimals of a nautical mile. */
-function axisText(m: number, units: DisplayUnits): string {
-  if (units === 'aviation') return `${(m / NM_M).toFixed(2)} nm`
-  return `${m < 0 ? '-' : ''}${formatDistance(Math.abs(m), units)}`
+/**
+ * One position axis as a hemisphere letter and a magnitude. A negative easting
+ * is a westing, so the letter carries the sign and the number never does. The
+ * caller passes the letters for that axis. Aviation keeps two decimals of a
+ * nautical mile.
+ */
+function axisText(m: number, units: DisplayUnits, plus: string, minus: string): string {
+  const mag = Math.abs(m)
+  const value = units === 'aviation' ? `${(mag / NM_M).toFixed(2)} nm` : formatDistance(mag, units)
+  return `${m < 0 ? minus : plus} ${value}`
 }
 
 /**
  * Telemetry for one selected trackfile. It docks at a fixed board corner with
  * a leader line to the track, so it never covers the inbound axis. Every
  * figure is derived from the planning sweep: nothing here is measured.
+ *
+ * Every row is a value at sim time t, with one exception: ALT BAND is spec
+ * data, not state. The engine is plan view only, so it holds no altitude and
+ * reads no altitude field. That row is marked in place, because an unmarked
+ * altitude on a telemetry card reads as a modeled height.
  */
 export function TrackFileReadout({ trackStates, detections, assessments, tracks, size }: Props) {
   const scenario = useStore((s) => s.scenario)
@@ -89,18 +100,41 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
   const continuity = assessment ? trackQualityAt(assessment, simTimeS)?.continuity : undefined
   const jam = state?.jammedFraction ?? 0
 
+  // Closest approach and arrival answer two different questions. CPA is pure
+  // geometry and exists whenever an asset is placed, so a fly-by that turns
+  // away still has one. Arrival is the crossing of that asset's defended
+  // radius, so a fly-by has no arrival at all. Showing only arrival made the
+  // two look alike.
+  const hasAsset = scenario.entities.some((e) => e.kind === 'asset')
+  const cpaAsset = assessment?.cpaAssetId
+    ? scenario.entities.find((e) => e.id === assessment.cpaAssetId)
+    : undefined
+  const noAssetText = 'no defended asset placed'
+  const cpaText =
+    assessment?.cpaS != null && assessment.cpaDistanceM != null
+      ? `T+${formatTime(assessment.cpaS)} · ${formatDistance(assessment.cpaDistanceM, units)}${
+          cpaAsset ? ` from ${cpaAsset.name}` : ''
+        }`
+      : hasAsset
+        ? NA
+        : noAssetText
+  const arrivalText = !state
+    ? NA
+    : state.arrivalS != null
+      ? `T+${formatTime(state.arrivalS)}`
+      : hasAsset
+        ? 'never crossed the defended boundary'
+        : noAssetText
+
   const rows: Array<[string, string]> = [
     [
       'PLATFORM',
       uas ? `${model!.name} · Group ${uas.group} · ${uas.airframe}` : 'no model linked',
     ],
     ['NAV', uas ? (NAV_LABEL[uas.navMode] ?? uas.navMode) : 'unknown'],
-    ['POSITION', `E ${axisText(pos.x, units)}, N ${axisText(-pos.y, units)}`],
     [
-      'ALTITUDE',
-      uas
-        ? `${uas.altBandFt[0].toLocaleString()} - ${uas.altBandFt[1].toLocaleString()} ft AGL`
-        : 'unknown',
+      'POSITION',
+      `${axisText(pos.x, units, 'E', 'W')}, ${axisText(-pos.y, units, 'N', 'S')}`,
     ],
     [
       'SPEED / HDG',
@@ -124,7 +158,7 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
     [
       'SALVOS',
       state
-        ? `${state.kineticSalvos} kinetic · ${state.jamSalvos} jam · ${state.incomingSalvos} inbound`
+        ? `${state.kineticSalvos} kinetic · ${state.deSalvos} DE · ${state.jamSalvos} EW · ${state.incomingSalvos} inbound`
         : NA,
     ],
     [
@@ -132,15 +166,24 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
       state ? `${state.effectsLanded} landed · E[k] ${state.expectedKills.toFixed(2)}` : NA,
     ],
     ['RESIDUAL', state ? `${state.residual.toFixed(2)} of ${state.shipCount} ships` : NA],
+    ['CLOSEST', cpaText],
+    ['ARRIVAL', arrivalText],
+    // Spec data, not state at t. The engine reads no altitude anywhere, so
+    // this row states the band the model records and says the model does not
+    // use it.
     [
-      'ARRIVAL',
-      state ? (state.arrivalS != null ? `T+${formatTime(state.arrivalS)}` : 'not reached') : NA,
+      'ALT BAND',
+      uas
+        ? `${uas.altBandFt[0].toLocaleString()} - ${uas.altBandFt[1].toLocaleString()} ft AGL · spec envelope, not modeled`
+        : 'unknown',
     ],
   ]
 
+  // One vocabulary for a defeated track: the pill, the board tag and this line
+  // all take the word from PHASE_STYLE.
   const ghostLine =
     state?.eliminated && state.eliminatedAtS != null
-      ? `Ghost track. Eliminated T+${formatTime(state.eliminatedAtS)} by ${
+      ? `${PHASE_STYLE.ghost.label} track at T+${formatTime(state.eliminatedAtS)} by ${
           state.eliminatedBySoft ? 'mission kill' : 'hard kill'
         }. It keeps flying its last course.`
       : null
@@ -181,7 +224,9 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
             </Fragment>
           ))}
         </div>
-        <div className="ro-foot">PLANNING MODEL · 0.5 S CADENCE · NOT INSTRUMENTED</div>
+        <div className="ro-foot">
+          PLANNING MODEL · 0.5 S CADENCE · PLAN VIEW ONLY · NOT INSTRUMENTED
+        </div>
       </div>
     </div>
   )

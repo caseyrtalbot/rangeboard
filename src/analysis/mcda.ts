@@ -34,6 +34,8 @@ export function mcdaParts(
     engage: engageable / n,
   }
   // Attrition part: expected kill fraction of the raid (1 - mean leak probability).
+  // expectedKills is PRE-ARRIVAL mass only (late intercepts sit in
+  // expectedLateKills), so this ratio is the true defeat rate the score claims.
   if (attrition && attrition.totals.raidSize > 0) {
     parts.attrition = attrition.totals.expectedKills / attrition.totals.raidSize
   }

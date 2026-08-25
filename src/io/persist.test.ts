@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type { AarSummary, EngagePolicy, Scenario, ScorecardSnap } from '../model/types'
+import type { AarSummary, EngagePolicy, Entity, Scenario, ScorecardSnap } from '../model/types'
 import type { AttritionReport } from '../playback/attrition'
+import type { ThreatAssessment } from '../playback/sim'
 import { aarExportObject, fillScenario, runExportObject } from './persist'
 
 /** A save written before the roe field existed. */
@@ -155,8 +156,12 @@ describe('AAR export payload', () => {
         expectedKills: 0,
         expectedHardKills: 0,
         expectedSoftKills: 0,
+        expectedLateKills: 0,
         expectedLeakers: 0,
+        expectedNoArrival: 0,
+        reportedLeakers: null,
         shotsFired: 0,
+        deSalvos: 0,
         jamSalvos: 0,
       },
       events: [],
@@ -187,6 +192,147 @@ describe('AAR export payload', () => {
     expect(out.scenario.name).toBe('Clean run demo')
     expect(out.requirements.overall).toBe('not-evaluated')
     expect(out.requirements.gates).toHaveLength(6)
+    expect(out.validity.validity).toBe('pending')
+    expect(JSON.parse(JSON.stringify(out))).toEqual(out)
+  })
+})
+
+describe('requirement threshold load fill', () => {
+  it('fills the defaults on a save made before requirements existed', () => {
+    const s = emptyScenario()
+    delete (s as { requirements?: unknown }).requirements
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: null })
+    expect(out.schemaVersion).toBe(1)
+  })
+
+  it('keeps saved thresholds', () => {
+    const s = emptyScenario()
+    s.requirements = { maxResidualPerTrack: 0.02, minWarningS: 120 }
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.02, minWarningS: 120 })
+  })
+
+  it('fills only the missing threshold when a save carries one of them', () => {
+    const s = emptyScenario()
+    s.requirements = { minWarningS: 90 } as Scenario['requirements']
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: 90 })
+  })
+})
+
+function entity(id: string, kind: Entity['kind'], specId: string | null, x: number): Entity {
+  return {
+    id,
+    name: id.toUpperCase(),
+    kind,
+    specId,
+    pos: { x, y: 0 },
+    headingDeg: 0,
+    color: null,
+    notes: '',
+  }
+}
+
+function emptyAttrition(): AttritionReport {
+  return {
+    threats: [],
+    effectors: [],
+    totals: {
+      raidSize: 0,
+      expectedKills: 0,
+      expectedHardKills: 0,
+      expectedSoftKills: 0,
+      expectedLateKills: 0,
+      expectedLeakers: 0,
+      expectedNoArrival: 0,
+      reportedLeakers: null,
+      shotsFired: 0,
+      deSalvos: 0,
+      jamSalvos: 0,
+    },
+    events: [],
+  }
+}
+
+function runMeta() {
+  return {
+    id: 'simrun-2',
+    label: 'RUN-0002',
+    sequence: 2,
+    startedAt: '2026-08-24T19:00:00.000Z',
+    completedAt: '2026-08-24T19:01:00.000Z',
+    durationS: 60,
+    observedThroughS: 60,
+  }
+}
+
+describe('run export validity record', () => {
+  /** Threat spawning inside a 10 km radar ring: the detect result is invalid. */
+  function spawnInRingRun() {
+    const scenario = emptyScenario()
+    scenario.entities.push(entity('s1', 'sensor', 'lib-lstar', 0))
+    scenario.entities.push(entity('u1', 'uas', 'lib-mavic3', 2800))
+    scenario.paths.push({
+      id: 'p1',
+      entityId: 'u1',
+      points: [{ x: 2800, y: 0 }, { x: 22800, y: 0 }],
+      speedMps: 15,
+      startDelayS: 0,
+    })
+    const assessment: ThreatAssessment = {
+      uasId: 'u1',
+      status: 'engageable',
+      firstDetectS: 0,
+      firstDetectSensorId: 's1',
+      firstConfirmS: 0,
+      techs: ['radar'],
+      swarmMerged: false,
+      cpaAssetId: null,
+      cpaS: null,
+      cpaDistanceM: null,
+      assetId: null,
+      closestApproachM: null,
+      arrivalS: null,
+      warningS: null,
+      windowS: null,
+      windowEffectorId: null,
+      classificationAtS: { unknownAtS: 0, suspectedAtS: 0, hostileAtS: 0 },
+      engageGateS: 0,
+      detectingSensorIds: ['s1'],
+      effectorWindows: [],
+    }
+    return runExportObject(scenario, runMeta(), [assessment], emptyAttrition(), sampleSummary())
+  }
+
+  it('records the invalid run and the finding behind it', () => {
+    const out = spawnInRingRun()
+    expect(out.validity.validity).toBe('invalid')
+    expect(out.validity.findings.map((f) => f.id)).toContain('spawn-in-ring')
+    const spawn = out.validity.findings.find((f) => f.id === 'spawn-in-ring')!
+    expect(spawn.severity).toBe('invalidating')
+    expect(spawn.uasIds).toEqual(['u1'])
+    expect(spawn.gates).toEqual(['detect'])
+  })
+
+  it('does not score the detect gate on the invalidated track', () => {
+    const detect = spawnInRingRun().requirements.gates.find((g) => g.id === 'detect')!
+    expect(detect.status).toBe('not-evaluated')
+    // Both findings that bear on Detect: the invalidating spawn and the
+    // limiting laydown with no defended asset.
+    expect(detect.caveats).toHaveLength(2)
+    expect(detect.caveats[0]).toContain('1 track not scored here')
+    expect(detect.notEvaluatedReason).toBe('every track is invalidated by a run validity finding')
+  })
+
+  it('keeps the dataBasis block and stays JSON-serializable', () => {
+    const out = spawnInRingRun()
+    expect(out.dataBasis).toEqual({
+      kind: 'deterministic-planning-model',
+      sampleStepS: 0.5,
+      independentlyInstrumented: false,
+      runScoped: true,
+    })
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 })

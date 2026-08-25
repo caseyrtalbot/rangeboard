@@ -20,6 +20,14 @@ function GateCard({ gate }: { gate: RequirementGate }) {
       </div>
       <div className="gate-metric">{gate.metric}</div>
       <div className="gate-detail">{gate.detail}</div>
+      {gate.notEvaluatedReason && (
+        <div className="gate-detail">NOT SCORED: {gate.notEvaluatedReason}</div>
+      )}
+      {gate.caveats.map((caveat) => (
+        <div className="gate-detail" key={caveat}>
+          CAVEAT: {caveat}
+        </div>
+      ))}
       {gate.failures.length > 0 && (
         <details className="gate-failures">
           <summary>

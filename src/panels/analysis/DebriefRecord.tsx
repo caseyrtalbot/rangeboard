@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import type { AarSummary, Scenario } from '../../model/types'
+import type { AarSummary, RunValidity, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attrition'
 import type { ThreatAssessment } from '../../playback/sim'
 import { detectionsAt } from '../../playback/sim'
 import { buildRequirementGateReport } from '../../analysis/requirements'
+import type { RunValidityAssessment, RunValidityFinding } from '../../analysis/runValidity'
+import { assessRunValidity } from '../../analysis/runValidity'
 import { systemTelemetryAt } from '../../analysis/systemTelemetry'
 import { threatPictureAt } from '../../analysis/threatAggregation'
 import { formatRunLabel, useStore } from '../../state/store'
@@ -11,6 +13,7 @@ import { formatTime } from '../../geometry/geo'
 import { exportRunRecord } from '../../io/persist'
 import { downloadBoardFrame } from '../../te/io/frameCapture'
 import { resetAnalysisRun } from '../../playback/runSession'
+import { CHANNEL_LABEL, CHANNEL_SHORT, residualSectionHeadline, totalSalvos } from '../headlines'
 import { AnalysisSection } from './AnalysisSection'
 import { OutcomeSummary } from './OutcomeSummary'
 import { RequirementGates } from './RequirementGates'
@@ -87,7 +90,10 @@ function EventLedger({ scenario, report }: { scenario: Scenario; report: Attriti
           <span className="event-route">
             <strong>{name(event.effectorId)}</strong>
             <small>
-              {name(event.uasId)} · ship {event.shipIdx + 1} · {event.softShot ? 'EW' : 'kinetic'}
+              {name(event.uasId)} · ship {event.shipIdx + 1} ·{' '}
+              <span title={`${CHANNEL_LABEL[event.channelClass]} expenditure`}>
+                {CHANNEL_SHORT[event.channelClass]}
+              </span>
             </small>
           </span>
           <span className="event-effect">
@@ -101,6 +107,67 @@ function EventLedger({ scenario, report }: { scenario: Scenario; report: Attriti
           Show next {Math.min(EVENT_PAGE, report.events.length - visible)} · {report.events.length - visible} remaining
         </button>
       )}
+    </div>
+  )
+}
+
+const VALIDITY_TEXT: Record<RunValidity, { pill: string; line: string; cls: string }> = {
+  valid: {
+    pill: 'VALID',
+    line: 'No finding limits this run.',
+    cls: 'good',
+  },
+  'valid-limited': {
+    pill: 'VALID, LIMITED',
+    line: 'The results stand, with the caveats below.',
+    cls: 'warn',
+  },
+  invalid: {
+    pill: 'INVALID',
+    line: 'A gate below is not scored: the run never made that measurement.',
+    cls: 'bad',
+  },
+  pending: {
+    pill: 'PENDING',
+    line: 'No track was assessed, so nothing has been measured yet.',
+    cls: 'neutral',
+  },
+}
+
+const SEVERITY_PILL: Record<RunValidityFinding['severity'], { text: string; cls: string }> = {
+  invalidating: { text: 'INVALIDATES', cls: 'bad' },
+  limiting: { text: 'LIMITS', cls: 'warn' },
+}
+
+/**
+ * Run-validity banner for the evidence record. A run the test cannot support
+ * is not a pass and not a fail, so the record states the validity before it
+ * states any result, and lists every finding with the gates it bears on.
+ * Findings come from the one assessRunValidity call the record already made,
+ * which is also the call the gates read, so the two can never disagree.
+ */
+function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }) {
+  const text = VALIDITY_TEXT[assessment.validity]
+  return (
+    <div className={`run-validity validity-${assessment.validity}`}>
+      <div className="debrief-header">
+        <div>
+          <span className="debrief-kicker">RUN VALIDITY</span>
+          <strong>{text.line}</strong>
+        </div>
+        <span className={`status ${text.cls}`}>{text.pill}</span>
+      </div>
+      {assessment.findings.map((finding) => (
+        <div className="validity-finding" key={finding.id}>
+          <span className={`status ${SEVERITY_PILL[finding.severity].cls}`}>
+            {SEVERITY_PILL[finding.severity].text}
+          </span>
+          <span>
+            {finding.message}
+            <small> Gates: {finding.gates.join(', ')}.</small>
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -140,9 +207,16 @@ export function DebriefRecord({
         : new Map(),
     [complete, scenario, durationS, runTrackIds],
   )
+  // One sweep for the whole record: the banner, the gate populations, and
+  // the gate caveats all read this single assessment, so they cannot disagree
+  // and the spawn-in-ring scan runs once instead of once per consumer.
+  const validity = useMemo(
+    () => assessRunValidity(scenario, assessments),
+    [scenario, assessments],
+  )
   const requirements = useMemo(
-    () => buildRequirementGateReport(scenario, assessments, report),
-    [scenario, assessments, report],
+    () => buildRequirementGateReport(scenario, assessments, report, validity),
+    [scenario, assessments, report, validity],
   )
   const systems = useMemo(
     () => systemTelemetryAt(scenario, assessments, report, durationS, hits),
@@ -175,6 +249,7 @@ export function DebriefRecord({
       <div className="debrief-meta">
         {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events
       </div>
+      <RunValidityBanner assessment={validity} />
       <RunActions
         scenario={scenario}
         assessments={assessments}
@@ -192,14 +267,18 @@ export function DebriefRecord({
       </AnalysisSection>
       <AnalysisSection
         title="System and component record"
-        headline={`${componentCount} components · ${report.totals.shotsFired + report.totals.jamSalvos} salvos`}
+        headline={`${componentCount} components · ${totalSalvos(report.totals)} salvos`}
         defaultOpen
       >
-        <SystemStatus groups={systems} expanded />
+        <SystemStatus groups={systems} expanded endOfRun />
       </AnalysisSection>
       <AnalysisSection
         title="Threat record"
-        headline={`${trackCount} tracks · ${report.totals.expectedLeakers.toFixed(2)} residual`}
+        headline={`${trackCount} tracks · ${residualSectionHeadline(report.totals)}${
+          report.totals.expectedLateKills > 0.005
+            ? ` · ${report.totals.expectedLateKills.toFixed(2)} late E[k]`
+            : ''
+        }`}
         defaultOpen
       >
         <ThreatPicture groups={threats} mode="debrief" />

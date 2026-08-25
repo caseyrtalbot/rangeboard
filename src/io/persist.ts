@@ -3,6 +3,8 @@ import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attrition'
 import type { RequirementGateReport } from '../analysis/requirements'
 import { buildRequirementGateReport } from '../analysis/requirements'
+import type { RunValidityAssessment } from '../analysis/runValidity'
+import { assessRunValidity } from '../analysis/runValidity'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 
@@ -22,6 +24,7 @@ export function fillScenario(parsed: Scenario): Scenario {
     ...empty,
     ...parsed,
     environment: { ...empty.environment, ...parsed.environment },
+    requirements: { ...empty.requirements, ...parsed.requirements },
     roe,
   }
 }
@@ -112,6 +115,12 @@ export interface RunExport {
     independentlyInstrumented: false
     runScoped: true
   }
+  /**
+   * Whether the run can carry the evidence it looks like it carries, and
+   * every finding behind that call. A detect result from a track that spawned
+   * inside a sensor ring is not a detect result, and the record has to say so.
+   */
+  validity: RunValidityAssessment
   run: RunRecordMeta
   scenario: Scenario
   assessments: ThreatAssessment[]
@@ -128,6 +137,7 @@ export function runExportObject(
   attrition: AttritionReport,
   summary: AarSummary,
 ): RunExport {
+  const validity = assessRunValidity(scenario, assessments)
   return {
     rangeboardRun: 1,
     dataBasis: {
@@ -136,11 +146,12 @@ export function runExportObject(
       independentlyInstrumented: false,
       runScoped: true,
     },
+    validity,
     run,
     scenario,
     assessments,
     attrition,
-    requirements: buildRequirementGateReport(scenario, assessments, attrition),
+    requirements: buildRequirementGateReport(scenario, assessments, attrition, validity),
     summary,
   }
 }

@@ -10,6 +10,7 @@ import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
+import { DEFAULT_DEFENDED_RADIUS_M } from '../playback/sim'
 import { THREAT_TACTICS } from '../playback/tactics'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
@@ -42,6 +43,22 @@ function Options({ id, values }: { id: string; values: Array<string | number> })
         <option key={v} value={v} />
       ))}
     </datalist>
+  )
+}
+
+/**
+ * Spec values the library records but the engine never reads. The board is
+ * plan view: no altitude, no slant range, so an elevation limit or an altitude
+ * ceiling gates nothing. Printing them beside the modeled ranges reads as a
+ * working constraint, so they get their own marked line instead.
+ */
+function NotModeled({ values }: { values: string[] }) {
+  if (values.length === 0) return null
+  return (
+    <p className="muted small">
+      Recorded, not modeled: {values.join(' · ')}. The board is plan view, so altitude gates no
+      detection and no engagement.
+    </p>
   )
 }
 
@@ -438,34 +455,83 @@ function EntityInspector({ entity }: { entity: Entity }) {
       </Field>
 
       {model?.sensor && (
-        <div className="spec-summary">
-          {model.sensor.role ? `${model.sensor.role} · ` : ''}
-          Detect {formatDistance(model.sensor.detectRangeM, units)} · sector {model.sensor.sectorDeg} deg
-          {model.sensor.classifyRangeM ? ` · classify ${formatDistance(model.sensor.classifyRangeM, units)}` : ''}
-          {model.sensor.elevationDeg
-            ? ` · elev ${model.sensor.elevationDeg[0]} to ${model.sensor.elevationDeg[1]} deg`
-            : ''}
-          {model.sensor.maxAltitudeFt ? ` · to ${model.sensor.maxAltitudeFt} ft` : ''}
-          {sensorEnvFactor(model.sensor.sensorType, scenario.environment) < 1 && (
-            <>
-              <br />
-              In this environment: detect{' '}
-              {formatDistance(effectiveDetectRangeM(model.sensor, scenario.environment), units)}
-            </>
-          )}
-        </div>
+        <>
+          <div className="spec-summary">
+            {model.sensor.role ? `${model.sensor.role} · ` : ''}
+            Detect {formatDistance(model.sensor.detectRangeM, units)} · sector {model.sensor.sectorDeg} deg
+            {model.sensor.classifyRangeM ? ` · classify ${formatDistance(model.sensor.classifyRangeM, units)}` : ''}
+            {sensorEnvFactor(model.sensor.sensorType, scenario.environment) < 1 && (
+              <>
+                <br />
+                In this environment: detect{' '}
+                {formatDistance(effectiveDetectRangeM(model.sensor, scenario.environment), units)}
+              </>
+            )}
+          </div>
+          <NotModeled
+            values={[
+              model.sensor.elevationDeg
+                ? `elevation ${model.sensor.elevationDeg[0]} to ${model.sensor.elevationDeg[1]} deg`
+                : null,
+              model.sensor.maxAltitudeFt
+                ? `altitude ceiling ${model.sensor.maxAltitudeFt.toLocaleString()} ft`
+                : null,
+            ].filter((v): v is string => v != null)}
+          />
+        </>
       )}
       {model?.effector && (
-        <div className="spec-summary">
-          WEZ {formatDistance(model.effector.minRangeM, units)} – {formatDistance(model.effector.maxRangeM, units)} ·
-          engage {model.effector.engageTimeS} s
-          {(model.effector.sectorDeg ?? 360) < 360 ? ` · sector ${model.effector.sectorDeg} deg` : ''}
-          {model.effector.maxAltitudeFt ? ` · to ${model.effector.maxAltitudeFt} ft` : ''}
-        </div>
+        <>
+          <div className="spec-summary">
+            WEZ {formatDistance(model.effector.minRangeM, units)} – {formatDistance(model.effector.maxRangeM, units)} ·
+            engage {model.effector.engageTimeS} s
+            {(model.effector.sectorDeg ?? 360) < 360 ? ` · sector ${model.effector.sectorDeg} deg` : ''}
+          </div>
+          <NotModeled
+            values={
+              model.effector.maxAltitudeFt
+                ? [`altitude ceiling ${model.effector.maxAltitudeFt.toLocaleString()} ft`]
+                : []
+            }
+          />
+        </>
       )}
       {model?.uas && (
         <div className="spec-summary">
           Group {model.uas.group} · cruise {formatSpeed(model.uas.cruiseSpeedMps, units)} · {model.uas.navMode}
+        </div>
+      )}
+
+      {entity.kind === 'asset' && (
+        <div className="subsection">
+          <div className="panel-subtitle">Defended area</div>
+          <Field label="Defended radius (m)">
+            <input
+              type="number"
+              min={0}
+              step={50}
+              placeholder={String(DEFAULT_DEFENDED_RADIUS_M)}
+              value={entity.defendedRadiusM ?? ''}
+              onChange={(e) =>
+                updateEntity(entity.id, {
+                  defendedRadiusM:
+                    e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
+                })
+              }
+            />
+          </Field>
+          <div className="spec-summary">
+            In use: {formatDistance(entity.defendedRadiusM ?? DEFAULT_DEFENDED_RADIUS_M, units)}
+            {entity.defendedRadiusM == null || entity.defendedRadiusM <= 0
+              ? ' · default planning factor'
+              : ''}
+          </div>
+          <p className="muted small">
+            A threat that crosses this radius has ARRIVED at the asset. Arrival sets warning
+            time, and it separates a defeat that protected the asset from one that landed too
+            late. Leave the field empty to use the{' '}
+            {formatDistance(DEFAULT_DEFENDED_RADIUS_M, units)} planning factor.
+          </p>
         </div>
       )}
 

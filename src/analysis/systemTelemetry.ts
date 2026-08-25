@@ -4,6 +4,7 @@ import { profileFor } from '../model/integration'
 import type { AttritionReport } from '../playback/attrition'
 import type { DetectionHit, ThreatAssessment } from '../playback/sim'
 import { killChainRoutes } from '../playback/sim'
+import { expectedDeadTimes } from './threatAggregation'
 
 export type ComponentTelemetryState =
   | 'disabled'
@@ -25,7 +26,26 @@ export interface ComponentTelemetry {
   tracksNow: number
   tracksSeen: number
   classifications: number
+  /**
+   * INTEGRATED TRACK-SECONDS: sensor-seconds summed over tracks, so a sensor
+   * holding three tracks for 100 s reports 300. It is a legitimate sensor
+   * loading measure and it is NOT a clock reading; it can exceed the run
+   * length by the number of simultaneous tracks. Use holdSeconds for elapsed
+   * time and never render this one with a clock formatter.
+   */
   trackSeconds: number
+  /**
+   * UNION HOLD TIME: the clock seconds during which this sensor held at least
+   * one track, up to t. Concurrent tracks count once, so it is bounded by the
+   * elapsed run time (plus the one 0.5 s sample width every held sample
+   * carries). This is the figure a clock formatter can read.
+   */
+  holdSeconds: number
+  /**
+   * Threats this effector can service right now: gate open, in an engagement
+   * window, route available, and NOT expected dead. A ghost track is not a
+   * target, so it never holds a target slot open (see expectedDeadTimes).
+   */
   targetsNow: number
   salvosAssigned: number
   effectsLanded: number
@@ -56,12 +76,39 @@ function intervalContains(intervals: Array<[number, number]>, tS: number): boole
   return intervals.some(([start, end]) => tS >= start - 0.25 && tS <= end + 0.25)
 }
 
+/** Integrated dwell on ONE track up to t; each held sample carries its 0.5 s width. */
 function observedSeconds(intervals: Array<[number, number]>, tS: number): number {
   let seconds = 0
   for (const [start, end] of intervals) {
     if (start > tS) continue
     seconds += Math.max(0, Math.min(end, tS) - start) + 0.5
   }
+  return seconds
+}
+
+/**
+ * Union hold time up to t: the clock seconds a sensor held at least one
+ * track. Intervals from different tracks overlap freely, so they are merged
+ * before they are summed; samples one 0.5 s step apart belong to the same
+ * continuous hold. Each merged span carries one sample width, exactly as
+ * observedSeconds does per track, so the total is bounded by elapsed time
+ * plus one sample and can never double count concurrent tracks.
+ */
+function unionSeconds(intervals: Array<[number, number]>, tS: number): number {
+  const clipped = intervals
+    .filter(([start]) => start <= tS)
+    .map(([start, end]) => [start, Math.min(end, tS)] as [number, number])
+    .sort((a, b) => a[0] - b[0])
+  let seconds = 0
+  let span: [number, number] | null = null
+  for (const [start, end] of clipped) {
+    if (span && start <= span[1] + 0.5 + 1e-9) span[1] = Math.max(span[1], end)
+    else {
+      if (span) seconds += span[1] - span[0] + 0.5
+      span = [start, end]
+    }
+  }
+  if (span) seconds += span[1] - span[0] + 0.5
   return seconds
 }
 
@@ -156,6 +203,9 @@ export function systemTelemetryAt(
     (entity): entity is Entity & { kind: 'sensor' | 'c2' | 'effector' } =>
       entity.kind === 'sensor' || entity.kind === 'c2' || entity.kind === 'effector',
   )
+  // One ledger pass: the time each threat's expected residual drops below the
+  // engine's expected-dead cutoff, so no surface reports a ghost as a target.
+  const deadAtS = expectedDeadTimes(report)
   const sensorNow = new Map<string, Set<string>>()
   for (const [uasId, hits] of currentHits) {
     for (const hit of hits) {
@@ -168,6 +218,7 @@ export function systemTelemetryAt(
   const sensorSeen = new Map<string, Set<string>>()
   const sensorClassified = new Map<string, Set<string>>()
   const sensorSeconds = new Map<string, number>()
+  const sensorIntervals = new Map<string, Array<[number, number]>>()
   for (const assessment of assessments) {
     for (const observation of assessment.sensorObservations ?? []) {
       if (observation.firstDetectS <= tS) {
@@ -178,6 +229,10 @@ export function systemTelemetryAt(
           observation.sensorId,
           (sensorSeconds.get(observation.sensorId) ?? 0) + observedSeconds(observation.intervals, tS),
         )
+        // Kept per sensor across every track so union hold can merge them.
+        const spans = sensorIntervals.get(observation.sensorId) ?? []
+        spans.push(...observation.intervals)
+        sensorIntervals.set(observation.sensorId, spans)
       }
       if (observation.firstClassifyS != null && observation.firstClassifyS <= tS) {
         const classified = sensorClassified.get(observation.sensorId) ?? new Set<string>()
@@ -238,6 +293,7 @@ export function systemTelemetryAt(
       tracksSeen: 0,
       classifications: 0,
       trackSeconds: 0,
+      holdSeconds: 0,
       targetsNow: 0,
       salvosAssigned: 0,
       effectsLanded: 0,
@@ -259,6 +315,7 @@ export function systemTelemetryAt(
         tracksSeen: sensorSeen.get(entity.id)?.size ?? 0,
         classifications: sensorClassified.get(entity.id)?.size ?? 0,
         trackSeconds: sensorSeconds.get(entity.id) ?? 0,
+        holdSeconds: unionSeconds(sensorIntervals.get(entity.id) ?? [], tS),
       })
       continue
     }
@@ -282,6 +339,12 @@ export function systemTelemetryAt(
     let targetsNow = 0
     for (const assessment of assessments) {
       if (assessment.engageGateS == null || assessment.engageGateS > tS) continue
+      // An expected-dead track is not a target. The engine stops assigning to
+      // a ship below SHIP_DEAD_BELOW (attrition.ts), the track picture latches
+      // it to GHOST, and this count has to agree: a completed run must never
+      // read "1 targets" against a threat that has been a ghost for minutes.
+      const deadS = deadAtS.get(assessment.uasId)
+      if (deadS != null && tS >= deadS) continue
       const windows = assessment.effectorWindows.find((window) => window.effectorId === entity.id)
       if (!windows || !intervalContains(windows.intervals, tS)) continue
       if (routeAvailable(scenario, assessment, entity, tS)) targetsNow += 1

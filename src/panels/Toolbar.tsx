@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultFrameName, useStore } from '../state/store'
-import { spawnInRingViolations } from '../playback/sim'
+import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
 import { ViewMenu } from './ViewMenu'
 import { useTeStore } from '../te/state/teStore'
@@ -163,25 +163,13 @@ export function Toolbar() {
   const roe = scenario.roe ?? 'tight'
   const derates = activeDerates(scenario.environment)
 
-  // Derived live from the scenario (never stored): threats whose paths start
-  // inside a sensor's effective detect ring are detected at T0.
+  // One source of truth with the analysis record: the chip reads the same
+  // run-validity finding the requirement gates and the run export read, so the
+  // toolbar and the evidence can never disagree. Derived live, never stored.
   const spawnWarning = useMemo(() => {
-    const violations = spawnInRingViolations(scenario)
-    if (violations.length === 0) return null
-    const nameOf = (id: string) => scenario.entities.find((e) => e.id === id)?.name ?? id
-    const sensorsByUas = new Map<string, string[]>()
-    for (const v of violations) {
-      const names = sensorsByUas.get(v.uasId) ?? []
-      names.push(nameOf(v.sensorId))
-      sensorsByUas.set(v.uasId, names)
-    }
-    const lines = [...sensorsByUas.entries()].map(
-      ([uasId, sensors]) => `${nameOf(uasId)} held by ${sensors.join(', ')}`,
-    )
-    return {
-      count: sensorsByUas.size,
-      hint: `Flight paths start inside a detect ring (detected at T0): ${lines.join('; ')}`,
-    }
+    const finding = assessRunValidity(scenario, []).findings.find((f) => f.id === 'spawn-in-ring')
+    if (!finding) return null
+    return { count: finding.uasIds.length, hint: finding.message }
   }, [scenario])
 
   if (workspace === 'ops') {

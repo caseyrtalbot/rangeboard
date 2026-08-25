@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { detectionsAt } from '../../playback/sim'
 import { scenarioDurationS, formatRunLabel, useStore } from '../../state/store'
 import { engagementPicture } from '../../analysis/impact'
-import { buildLiveTimeline, liveKpisAt } from '../../analysis/liveStats'
+import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../analysis/liveStats'
 import { formatTime } from '../../geometry/geo'
 import { resetAnalysisRun } from '../../playback/runSession'
 
@@ -34,15 +34,17 @@ export function LiveStrip() {
 
   const t = Math.min(qt, durationS)
   const untouched = phase === 'ready'
-  const k = untouched
+  const k: LiveKpis = untouched
     ? {
         detected: 0,
         classified: 0,
         targetable: 0,
         engaged: 0,
         kineticShots: 0,
+        deSalvos: 0,
         jamSalvos: 0,
         expectedKills: 0,
+        lateKills: 0,
         arrivedTracks: 0,
         leakerShips: 0,
       }
@@ -129,7 +131,7 @@ export function LiveStrip() {
         </div>
         <div
           className="live-cell"
-          title="Threats inside a usable ROE-gated effector window right now"
+          title="Threats inside a usable ROE-gated effector window right now, ghost tracks excluded"
         >
           <span className="live-label">Target now</span>
           <span className="live-value">
@@ -138,7 +140,7 @@ export function LiveStrip() {
         </div>
         <div
           className="live-cell"
-          title="Threats with at least one kinetic or EW salvo assigned by now"
+          title="Threats with at least one salvo of any channel assigned by now"
         >
           <span className="live-label">Engaged</span>
           <span className="live-value">
@@ -147,24 +149,32 @@ export function LiveStrip() {
         </div>
         <div
           className="live-cell"
-          title="Kinetic shots and EW jam salvos committed by assignment time"
+          title="Salvos committed by assignment time, by what each one costs: kinetic rounds, then d for directed-energy bursts, then j for EW jam salvos"
         >
           <span className="live-label">Salvos</span>
           <span className="live-value">
             {k.kineticShots}
+            {k.deSalvos > 0 && <span className="live-de"> · {k.deSalvos}d</span>}
             {k.jamSalvos > 0 && <span className="live-jam"> · {k.jamSalvos}j</span>}
           </span>
         </div>
         <div
           className="live-cell"
-          title="Expected kill mass after modeled effects land"
+          title="Expected kill mass from effects that landed at or before the threat reached the defended asset. This is the defeat number."
         >
           <span className="live-label">Kill E[k]</span>
           <span className="live-value">{k.expectedKills.toFixed(1)}</span>
         </div>
         <div
           className="live-cell"
-          title="Expected surviving ship mass after passing the defended asset"
+          title="Expected kill mass intercepted after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is not a defeat and it does not reduce the leaker count."
+        >
+          <span className="live-label">Late E[k]</span>
+          <span className="live-value">{k.lateKills.toFixed(1)}</span>
+        </div>
+        <div
+          className="live-cell"
+          title="Expected ship mass that reached the defended asset. A kill that lands after the threat is over the asset never reduces this."
         >
           <span className="live-label">Leak E[n]</span>
           <span className={`live-value${leakCls}`}>{k.leakerShips.toFixed(1)}</span>

@@ -1,5 +1,6 @@
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attrition'
+import { expectedDeadTimes } from './threatAggregation'
 
 /**
  * Live prefix-aggregation over the engagement ledger. buildLiveTimeline sorts
@@ -8,45 +9,75 @@ import type { AttritionReport } from '../playback/attrition'
  * searches, cheap enough for the playback frame rate. Pure TS, no DOM, no
  * store imports.
  *
- * Time semantics match the engine ledger: expenditure (shots, jam salvos)
- * counts at assignment time tS; kills count at effect time tEffectS; a threat
- * is detected at its firstDetectS and arrived at its arrivalS. All bounds are
- * inclusive (an event at exactly t has happened by t).
+ * Time semantics match the engine ledger: expenditure (kinetic rounds,
+ * directed-energy bursts, EW salvos) counts at assignment time tS; kill mass
+ * counts at effect time tEffectS; a threat is detected at its firstDetectS
+ * and arrives at its arrivalS. Arrival is the defended-boundary crossing from
+ * sim.ts, not the closest approach. All bounds are inclusive: an event at
+ * exactly t has happened by t.
  *
- * Leakers stay consistent with kills at every instant: an arrived threat
- * contributes its ship count minus the kill mass landed on it by t, so a kill
- * effect after arrival moves mass from Leakers to Exp kills at the effect
- * time, and both converge to the run-final totals.
+ * ARRIVAL RULE, the same rule attrition.ts applies to the run totals. A
+ * defeat that lands after the threat was already over the defended asset did
+ * not protect the asset. Only kill mass stamped lateEffect: false may reduce
+ * leakerShips, and only that mass is reported as expectedKills. Post-arrival
+ * mass is reported apart as lateKills, so the operator still sees the
+ * intercept without it un-leaking a threat that already reached the asset.
+ * One consequence is a useful property: an arrived threat's leaker mass is
+ * frozen at its arrival time, because every non-late effect on it has landed
+ * by then. The live leaker count only rises.
+ *
+ * Expenditure splits on EngagementEvent.channelClass, which says what the
+ * salvo COST. softShot says how the salvo KILLS (the soft/jam channel) and is
+ * not an expenditure channel: a DE or HPM burst is a hard kill that fires no
+ * round, so it belongs in deSalvos and never in kineticShots.
+ *
+ * An expected-dead track is not a target. A threat whose expected residual
+ * has fallen below the engine's SHIP_DEAD_BELOW cutoff leaves the targetable
+ * count even while its ROE window is still open, which keeps this surface
+ * consistent with trackState's ghost latch, systemTelemetry's targetsNow and
+ * threatAggregation's targetableNow.
  */
 
-/** One arrived threat's contribution to the live leaker count. */
-interface ArrivalTrack {
-  /** Ships in the formation (1 when no attrition row exists). */
-  shipCount: number
-  /** This threat's kill-effect times ascending, with killPrefix[i] = kill mass through effect i. */
-  effectTS: number[]
-  killPrefix: number[]
+/** One ROE-gated usable window, with the time its threat becomes expected dead. */
+interface LiveTargetWindow {
+  startS: number
+  endS: number
+  /** Expected-dead time from the ledger; null when the threat is never eliminated. */
+  deadAtS: number | null
 }
 
 export interface LiveTimeline {
-  /** Kinetic salvo assignment times, ascending. */
+  /** Kinetic salvo assignment times (interceptor, gun, net), ascending. */
   kineticTS: number[]
-  /** Jammer salvo assignment times (every jam behavior), ascending. */
+  /** Directed-energy burst assignment times (DE, HPM), ascending. */
+  deTS: number[]
+  /** EW salvo assignment times (jammer, every jam behavior), ascending. */
   jamTS: number[]
-  /** Effect times ascending; effectKillPrefix[i] = expected-kill mass removed through effect i. */
+  /**
+   * Effect times ascending. effectKillPrefix[i] = PRE-ARRIVAL kill mass
+   * through effect i; effectLateKillPrefix[i] = post-arrival kill mass
+   * through effect i. The two prefixes share one time axis, so a single
+   * binary search answers both.
+   */
   effectTS: number[]
   effectKillPrefix: number[]
+  effectLateKillPrefix: number[]
   /** First-detection times over threats with paths, ascending. */
   detectTS: number[]
   /** Hostile-classification times, ascending (the engine's identification proxy). */
   classifyTS: number[]
   /** First salvo assignment per engaged threat, ascending. */
   engageTS: number[]
-  /** ROE-gated usable target windows. */
-  targetWindows: Array<[number, number]>
-  /** Arrival times ascending; arrivalTracks[i] is the threat arriving at arrivalTS[i]. */
+  /** ROE-gated usable target windows, each carrying its threat's dead time. */
+  targetWindows: LiveTargetWindow[]
+  /**
+   * Arrival times ascending. arrivalLeakerPrefix[i] = leaker ship mass over
+   * the first i + 1 arrivals. A threat's leaker mass is its ship count minus
+   * the kill mass that landed at or before its own arrival, so it is a
+   * constant from arrival onward and prefix-sums cleanly.
+   */
   arrivalTS: number[]
-  arrivalTracks: ArrivalTrack[]
+  arrivalLeakerPrefix: number[]
   /** Threat tracks in play (assessments with a flight path). */
   trackCount: number
   trackIds: string[]
@@ -76,42 +107,51 @@ export function buildLiveTimeline(
   report: AttritionReport,
 ): LiveTimeline {
   const kineticTS: number[] = []
+  const deTS: number[] = []
   const jamTS: number[] = []
   for (const ev of report.events) {
-    if (ev.softShot) jamTS.push(ev.tS)
+    // Expenditure channel, not kill channel: softShot marks the soft-kill
+    // (jam) channel and would file every DE and HPM burst as a round fired.
+    if (ev.channelClass === 'ew') jamTS.push(ev.tS)
+    else if (ev.channelClass === 'directed-energy') deTS.push(ev.tS)
     else kineticTS.push(ev.tS)
   }
   // events arrive in assignment-time order; per-channel subsequences stay sorted.
 
   const effects = report.events
-    .map((ev) => ({ t: ev.tEffectS, kill: ev.killDelta, uasId: ev.uasId }))
+    .map((ev) => ({
+      t: ev.tEffectS,
+      kill: ev.killDelta,
+      late: ev.lateEffect,
+      uasId: ev.uasId,
+    }))
     .sort((a, b) => a.t - b.t)
   const effectTS = effects.map((e) => e.t)
   const effectKillPrefix: number[] = []
+  const effectLateKillPrefix: number[] = []
   let killSum = 0
+  let lateSum = 0
   for (const e of effects) {
-    killSum += e.kill
+    if (e.late) lateSum += e.kill
+    else killSum += e.kill
     effectKillPrefix.push(killSum)
+    effectLateKillPrefix.push(lateSum)
   }
 
-  // Per-threat kill-effect timelines (already in tEffect order from the
-  // global sort above), for the live per-arrival leaker math.
-  const perThreat = new Map<string, ArrivalTrack>()
+  // Pre-arrival kill mass per threat: the only mass that defended the asset,
+  // so the only mass allowed to reduce that threat's leaker contribution.
+  const preArrivalKill = new Map<string, number>()
   for (const e of effects) {
-    let tr = perThreat.get(e.uasId)
-    if (!tr) {
-      tr = { shipCount: 1, effectTS: [], killPrefix: [] }
-      perThreat.set(e.uasId, tr)
-    }
-    tr.effectTS.push(e.t)
-    tr.killPrefix.push((tr.killPrefix[tr.killPrefix.length - 1] ?? 0) + e.kill)
+    if (e.late) continue
+    preArrivalKill.set(e.uasId, (preArrivalKill.get(e.uasId) ?? 0) + e.kill)
   }
+  const deadAtS = expectedDeadTimes(report)
 
   const detectTS: number[] = []
   const classifyTS: number[] = []
-  const targetWindows: Array<[number, number]> = []
+  const targetWindows: LiveTargetWindow[] = []
   const trackIds: string[] = []
-  const arrivals: Array<{ t: number; track: ArrivalTrack }> = []
+  const arrivals: Array<{ t: number; leakerShips: number }> = []
   let trackCount = 0
   for (const a of assessments) {
     if (a.status === 'no-path') continue
@@ -119,18 +159,30 @@ export function buildLiveTimeline(
     trackIds.push(a.uasId)
     if (a.firstDetectS != null) detectTS.push(a.firstDetectS)
     if (a.classificationAtS.hostileAtS != null) classifyTS.push(a.classificationAtS.hostileAtS)
-    if (a.status === 'engageable' && a.windowS != null) targetWindows.push(a.windowS)
+    if (a.status === 'engageable' && a.windowS != null) {
+      targetWindows.push({
+        startS: a.windowS[0],
+        endS: a.windowS[1],
+        deadAtS: deadAtS.get(a.uasId) ?? null,
+      })
+    }
     if (a.arrivalS != null) {
       const att = report.threats.find((x) => x.uasId === a.uasId)
-      const track = perThreat.get(a.uasId) ?? { shipCount: 1, effectTS: [], killPrefix: [] }
       // No attrition row means no shots resolved: every ship arrives.
-      track.shipCount = att ? att.shipCount : 1
-      arrivals.push({ t: a.arrivalS, track })
+      const shipCount = att ? att.shipCount : 1
+      const leakerShips = Math.max(0, shipCount - (preArrivalKill.get(a.uasId) ?? 0))
+      arrivals.push({ t: a.arrivalS, leakerShips })
     }
   }
   detectTS.sort((a, b) => a - b)
   classifyTS.sort((a, b) => a - b)
   arrivals.sort((a, b) => a.t - b.t)
+  const arrivalLeakerPrefix: number[] = []
+  let leakSum = 0
+  for (const arrival of arrivals) {
+    leakSum += arrival.leakerShips
+    arrivalLeakerPrefix.push(leakSum)
+  }
   const firstEngageByThreat = new Map<string, number>()
   for (const ev of report.events) {
     if (!firstEngageByThreat.has(ev.uasId)) firstEngageByThreat.set(ev.uasId, ev.tS)
@@ -139,15 +191,17 @@ export function buildLiveTimeline(
 
   return {
     kineticTS,
+    deTS,
     jamTS,
     effectTS,
     effectKillPrefix,
+    effectLateKillPrefix,
     detectTS,
     classifyTS,
     engageTS,
     targetWindows,
     arrivalTS: arrivals.map((x) => x.t),
-    arrivalTracks: arrivals.map((x) => x.track),
+    arrivalLeakerPrefix,
     trackCount,
     trackIds,
     raidSize: report.totals.raidSize,
@@ -159,42 +213,59 @@ export interface LiveKpis {
   detected: number
   /** Threat tracks promoted to hostile classification by t. */
   classified: number
-  /** Threat tracks inside a currently usable, ROE-gated effector window. */
+  /**
+   * Threat tracks inside a currently usable, ROE-gated effector window and
+   * not yet expected dead. A ghost track holds no target slot.
+   */
   targetable: number
   /** Threat tracks with at least one salvo assigned by t. */
   engaged: number
-  /** Kinetic salvos assigned by t. */
+  /** Kinetic salvos (interceptor, gun, net) assigned by t. */
   kineticShots: number
-  /** Jam salvos assigned by t. */
+  /** Directed-energy bursts (DE, HPM) assigned by t. */
+  deSalvos: number
+  /** EW salvos (jammer) assigned by t. */
   jamSalvos: number
-  /** Expected-kill mass applied by t (effects landed). */
+  /**
+   * DEFEAT mass: expected kill mass landed by t whose effect was at or before
+   * its threat's arrival. Converges to AttritionTotals.expectedKills.
+   */
   expectedKills: number
+  /**
+   * Kill mass landed by t whose effect was strictly after its threat's
+   * arrival. Real destruction that arrived too late to defend the asset, so
+   * it is reported apart and never reduces leakerShips. Converges to
+   * AttritionTotals.expectedLateKills.
+   */
+  lateKills: number
   /** Threat tracks past arrival at the defended asset by t. */
   arrivedTracks: number
   /**
-   * Surviving expected ships among those arrived tracks: per arrived threat,
-   * shipCount minus the kill mass landed on it by t. Complementary with
-   * expectedKills at every t and converges to the run-final leaker total.
+   * Expected ship mass that reached the asset: per arrived threat, its ship
+   * count minus the PRE-ARRIVAL kill mass landed on it. Fixed at each
+   * threat's arrival, so this count never falls, and it converges exactly to
+   * AttritionTotals.expectedLeakers. A threat that never crosses a defended
+   * boundary leaks nothing here and nothing there: its survivors sit in
+   * AttritionTotals.expectedNoArrival instead.
    */
   leakerShips: number
 }
 
 export function liveKpisAt(tl: LiveTimeline, tS: number): LiveKpis {
-  const arrivedTracks = countAtMost(tl.arrivalTS, tS)
-  let leakerShips = 0
-  for (let i = 0; i < arrivedTracks; i++) {
-    const tr = tl.arrivalTracks[i]
-    leakerShips += tr.shipCount - prefixAt(tr.killPrefix, countAtMost(tr.effectTS, tS))
-  }
+  const effectN = countAtMost(tl.effectTS, tS)
   return {
     detected: countAtMost(tl.detectTS, tS),
     classified: countAtMost(tl.classifyTS, tS),
-    targetable: tl.targetWindows.filter(([start, end]) => tS >= start && tS <= end).length,
+    targetable: tl.targetWindows.filter(
+      (w) => tS >= w.startS && tS <= w.endS && (w.deadAtS == null || tS < w.deadAtS),
+    ).length,
     engaged: countAtMost(tl.engageTS, tS),
     kineticShots: countAtMost(tl.kineticTS, tS),
+    deSalvos: countAtMost(tl.deTS, tS),
     jamSalvos: countAtMost(tl.jamTS, tS),
-    expectedKills: prefixAt(tl.effectKillPrefix, countAtMost(tl.effectTS, tS)),
-    arrivedTracks,
-    leakerShips,
+    expectedKills: prefixAt(tl.effectKillPrefix, effectN),
+    lateKills: prefixAt(tl.effectLateKillPrefix, effectN),
+    arrivedTracks: countAtMost(tl.arrivalTS, tS),
+    leakerShips: prefixAt(tl.arrivalLeakerPrefix, countAtMost(tl.arrivalTS, tS)),
   }
 }

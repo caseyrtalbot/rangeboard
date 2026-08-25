@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AttritionReport } from '../playback/attrition'
 import type { ThreatAssessment } from '../playback/sim'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from './mcda'
 
@@ -11,6 +12,9 @@ function threat(patch: Partial<ThreatAssessment>): ThreatAssessment {
     firstConfirmS: null,
     techs: [],
     swarmMerged: false,
+    cpaAssetId: null,
+    cpaS: null,
+    cpaDistanceM: null,
     assetId: null,
     arrivalS: null,
     closestApproachM: null,
@@ -44,6 +48,45 @@ describe('mcdaParts', () => {
   it('clamps warning time to the full-score cap', () => {
     const parts = mcdaParts([threat({ firstDetectS: 0, warningS: WARNING_FULL_S * 4 })])!
     expect(parts.warning).toBe(1)
+  })
+})
+
+/** Raid of 4 ships: 3 defeated before arrival, 1 killed after arrival. */
+function attritionReport(): AttritionReport {
+  return {
+    threats: [],
+    effectors: [],
+    totals: {
+      raidSize: 4,
+      expectedKills: 3,
+      expectedHardKills: 3,
+      expectedSoftKills: 0,
+      expectedLateKills: 1,
+      expectedLeakers: 1,
+      expectedNoArrival: 0,
+      reportedLeakers: 1,
+      shotsFired: 6,
+      deSalvos: 0,
+      jamSalvos: 0,
+    },
+    events: [],
+  }
+}
+
+describe('attrition part', () => {
+  it('is the pre-arrival defeat rate and excludes late intercepts', () => {
+    const parts = mcdaParts(
+      [threat({ status: 'engageable', firstDetectS: 10, firstConfirmS: 20 })],
+      attritionReport(),
+    )!
+    // 3 of 4 ships defeated before arrival. The late kill is real destruction
+    // but it did not defend the asset, so it is not in the score.
+    expect(parts.attrition).toBe(0.75)
+  })
+
+  it('is absent when no attrition report is supplied', () => {
+    const parts = mcdaParts([threat({ status: 'engageable', firstDetectS: 10 })])!
+    expect(parts.attrition).toBeUndefined()
   })
 })
 

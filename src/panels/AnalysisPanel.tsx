@@ -4,6 +4,7 @@ import { formatSpeed } from '../geometry/geo'
 import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
 import { buildRequirementGateReport } from '../analysis/requirements'
+import { assessRunValidity } from '../analysis/runValidity'
 import { threatPictureAt } from '../analysis/threatAggregation'
 import { scenarioDurationS, useStore } from '../state/store'
 import { Info } from './analysis/Info'
@@ -14,7 +15,7 @@ import { OperationalPicture } from './analysis/OperationalPicture'
 import { OutcomeSummary } from './analysis/OutcomeSummary'
 import { RequirementGates } from './analysis/RequirementGates'
 import { ThreatPicture } from './analysis/ThreatPicture'
-import { environmentHeadline } from './headlines'
+import { environmentHeadline, residualSectionHeadline } from './headlines'
 
 /**
  * Explicit boundary around conditional full-run output. Live and completed
@@ -221,9 +222,16 @@ export function AnalysisPanel() {
     () => buildAarSummary(scenario, assessments, report, impacts),
     [scenario, assessments, report, impacts],
   )
+  // One validity sweep feeds the gates here and, through DebriefRecord, the
+  // evidence record: the spawn-in-ring scan runs once per run, not once per
+  // consumer.
+  const validity = useMemo(
+    () => assessRunValidity(scenario, assessments),
+    [scenario, assessments],
+  )
   const requirements = useMemo(
-    () => buildRequirementGateReport(scenario, assessments, report),
-    [scenario, assessments, report],
+    () => buildRequirementGateReport(scenario, assessments, report, validity),
+    [scenario, assessments, report, validity],
   )
   const projectionGroups = useMemo(
     () => threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map()),
@@ -306,7 +314,7 @@ export function AnalysisPanel() {
           </AnalysisSection>
           <AnalysisSection
             title="Projected threat outcome"
-            headline={`${report.totals.expectedLeakers.toFixed(2)} expected residual`}
+            headline={residualSectionHeadline(report.totals)}
             defaultOpen
           >
             <ThreatPicture groups={projectionGroups} mode="projected" />
