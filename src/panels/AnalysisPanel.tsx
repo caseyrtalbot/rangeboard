@@ -209,8 +209,8 @@ export function AnalysisPanel() {
   const completedAtMs = useStore((state) => state.playback.completedAtMs)
   const observedThroughS = useStore((state) => state.playback.observedThroughS)
   const patchScenario = useStore((state) => state.patchScenario)
-  const showThreatWez = useStore((state) => state.ui.showThreatWez)
-  const setShowThreatWez = useStore((state) => state.setShowThreatWez)
+  const threatWez = useStore((state) => state.ui.layers.threatWez)
+  const setLayer = useStore((state) => state.setLayer)
   const displayUnits = useStore((state) => state.ui.units)
   const durationS = useMemo(() => scenarioDurationS(scenario), [scenario])
   const { assessments, report, impacts } = useMemo(() => {
@@ -249,8 +249,8 @@ export function AnalysisPanel() {
         <label className="adv-toggle" title="Draw threat weapon engagement zones on the canvas">
           <input
             type="checkbox"
-            checked={showThreatWez}
-            onChange={(event) => setShowThreatWez(event.target.checked)}
+            checked={threatWez}
+            onChange={(event) => setLayer('threatWez', event.target.checked)}
           />
           WEZ
         </label>

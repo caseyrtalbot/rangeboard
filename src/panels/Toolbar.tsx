@@ -1,18 +1,14 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultFrameName, useStore } from '../state/store'
 import { spawnInRingViolations } from '../playback/sim'
 import { Tip } from './Tooltip'
+import { ViewMenu } from './ViewMenu'
 import { useTeStore } from '../te/state/teStore'
 import type { Workspace } from '../te/state/teStore'
 import { captureFrameToCampaign } from '../te/io/frameCapture'
-import type { BasemapMode, BoundaryType, EnvironmentSpec, Roe } from '../model/types'
-import type { DisplayUnits } from '../geometry/geo'
+import type { BoundaryType, EnvironmentSpec, Roe } from '../model/types'
 import { emptyScenario } from '../model/seed'
-import {
-  exportScenario,
-  importScenarioFile,
-  importUnderlayImage,
-} from '../io/persist'
+import { exportScenario, importScenarioFile } from '../io/persist'
 
 const TOOLS = [
   { id: 'select', label: 'Select', hint: 'Move, pan, edit' },
@@ -22,18 +18,7 @@ const TOOLS = [
   { id: 'calibrate', label: 'Calibrate', hint: 'Set image scale from two points' },
 ] as const
 
-const BASEMAPS: { id: BasemapMode; label: string }[] = [
-  { id: 'canvas', label: 'Canvas' },
-  { id: 'sat', label: 'Sat' },
-  { id: 'airspace', label: 'Airspace' },
-]
-
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
-
-const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
-  { id: 'aviation', label: 'kt nm', hint: 'Aviation units: knots and nautical miles. Altitude is always feet.' },
-  { id: 'metric', label: 'm km', hint: 'Metric units: m/s and km. Altitude is always feet.' },
-]
 
 const ROE_PILLS: Record<Roe, { label: string; cls: string; hint: string }> = {
   free: { label: 'ROE Free', cls: 'pill-good', hint: 'ROE free: engage on first detection' },
@@ -59,29 +44,117 @@ function activeDerates(env: EnvironmentSpec): string[] {
   return out
 }
 
+// File actions sit behind one button so the bar holds a single row at 1440px.
+function OverflowMenu() {
+  const scenario = useStore((s) => s.scenario)
+  const replaceScenario = useStore((s) => s.replaceScenario)
+  const hasCampaign = useTeStore((s) => s.activeCampaignId != null)
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDown(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    // Capture phase: Escape must close only the menu, never also reach the
+    // global canvas shortcut in App.tsx that clears the tool and the selection.
+    // The command palette can open over the menu, and then it owns Escape.
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return
+      if (document.querySelector('.cmdk-panel')) return
+      e.stopPropagation()
+      setOpen(false)
+      buttonRef.current?.focus()
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey, true)
+    }
+  }, [open])
+
+  return (
+    <div className="tb-menu-wrap" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        className={`tb-menu ${open ? 'active' : ''}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label="More actions"
+        title="File actions"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⋯
+      </button>
+      {open && (
+        <div className="tb-menu-panel tb-menu-right" role="menu" aria-label="More actions">
+          <button
+            className="tb-menu-item"
+            onClick={() => {
+              setOpen(false)
+              if (window.confirm('Start a new empty scenario? Unsaved work is replaced.')) {
+                replaceScenario(emptyScenario())
+              }
+            }}
+          >
+            New
+          </button>
+          <button
+            className="tb-menu-item"
+            onClick={() => {
+              setOpen(false)
+              importScenarioFile()
+            }}
+          >
+            Import
+          </button>
+          <button
+            className="tb-menu-item"
+            onClick={() => {
+              setOpen(false)
+              exportScenario(scenario)
+            }}
+          >
+            Export
+          </button>
+          {hasCampaign && (
+            <button
+              className="tb-menu-item"
+              title="Save the current board view as a PNG frame on the active T&E campaign"
+              onClick={() => {
+                setOpen(false)
+                const st = useStore.getState()
+                const frameName = defaultFrameName(
+                  st.scenario.name,
+                  st.playback.simTimeS,
+                  st.ui.basemap,
+                )
+                if (!captureFrameToCampaign(frameName)) {
+                  window.alert('Could not capture: no active campaign or canvas.')
+                }
+              }}
+            >
+              Capture frame
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function Toolbar() {
   const scenario = useStore((s) => s.scenario)
   const ui = useStore((s) => s.ui)
   const canUndo = useStore((s) => s.past.length > 0)
   const canRedo = useStore((s) => s.future.length > 0)
-  const {
-    setTool,
-    setBasemap,
-    setBoundaryType,
-    setScenarioName,
-    undo,
-    redo,
-    replaceScenario,
-    updateUnderlay,
-    setMoveUnderlay,
-    setShowThreatWez,
-    setUnits,
-    setLocationDialogOpen,
-  } = useStore.getState()
+  const { setTool, setBoundaryType, setScenarioName, undo, redo } = useStore.getState()
 
   const workspace = useTeStore((s) => s.ui.workspace)
   const setWorkspace = useTeStore((s) => s.setWorkspace)
-  const hasCampaign = useTeStore((s) => s.activeCampaignId != null)
   const workspaces: Array<{ id: Workspace; label: string }> = [
     { id: 'board', label: 'Board' },
     { id: 'ops', label: 'T&E Ops' },
@@ -148,6 +221,7 @@ export function Toolbar() {
         className="scenario-name"
         value={scenario.name}
         onChange={(e) => setScenarioName(e.target.value)}
+        aria-label="Scenario name"
         title="Scenario name"
       />
 
@@ -174,64 +248,7 @@ export function Toolbar() {
         )}
       </div>
 
-      <div className="seg" aria-label="Basemap">
-        {BASEMAPS.map((b) => (
-          <button
-            key={b.id}
-            className={ui.basemap === b.id ? 'active' : ''}
-            onClick={() => setBasemap(b.id)}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="seg" aria-label="Units">
-        {UNITS.map((u) => (
-          <Tip key={u.id} label={u.hint}>
-            <button className={ui.units === u.id ? 'active' : ''} onClick={() => setUnits(u.id)}>
-              {u.label}
-            </button>
-          </Tip>
-        ))}
-      </div>
-
-      <div className="seg" aria-label="Overlays">
-        <Tip label="Show threat weapon engagement zones">
-          <button
-            className={ui.showThreatWez ? 'active' : ''}
-            onClick={() => setShowThreatWez(!ui.showThreatWez)}
-          >
-            WEZ
-          </button>
-        </Tip>
-      </div>
-
-      {ui.basemap === 'sat' && (
-        <div className="seg sat-controls">
-          <button onClick={() => setLocationDialogOpen(true)}>Location…</button>
-          <button onClick={importUnderlayImage}>Image…</button>
-          <label className="inline">
-            <input
-              type="checkbox"
-              checked={ui.moveUnderlay}
-              onChange={(e) => setMoveUnderlay(e.target.checked)}
-            />
-            Move image
-          </label>
-          <label className="inline">
-            Opacity
-            <input
-              type="range"
-              min={0.1}
-              max={1}
-              step={0.05}
-              value={scenario.underlay.opacity}
-              onChange={(e) => updateUnderlay({ opacity: Number(e.target.value) })}
-            />
-          </label>
-        </div>
-      )}
+      <ViewMenu />
 
       <div className="spacer" />
 
@@ -239,7 +256,7 @@ export function Toolbar() {
         <span className={`pill ${ROE_PILLS[roe].cls}`} title={ROE_PILLS[roe].hint}>
           {ROE_PILLS[roe].label}
         </span>
-        {ui.showThreatWez && (
+        {ui.layers.threatWez && (
           <span className="pill pill-danger" title="Threat weapon engagement zones are drawn on the canvas">
             WEZ On
           </span>
@@ -261,50 +278,15 @@ export function Toolbar() {
         )}
       </div>
 
-      <div className="seg">
-        <Tip label="Undo" shortcut="⌘Z">
-          <button onClick={undo} disabled={!canUndo}>
-            Undo
-          </button>
-        </Tip>
-        <Tip label="Redo" shortcut="⇧⌘Z">
-          <button onClick={redo} disabled={!canRedo}>
-            Redo
-          </button>
-        </Tip>
-      </div>
-      <div className="seg">
-        <button
-          onClick={() => {
-            if (window.confirm('Start a new empty scenario? Unsaved work is replaced.')) {
-              replaceScenario(emptyScenario())
-            }
-          }}
-        >
-          New
+      <div className="seg" role="group" aria-label="History">
+        <button className="tb-glyph" title="Undo (⌘Z)" aria-label="Undo" onClick={undo} disabled={!canUndo}>
+          ↶
         </button>
-        <button onClick={importScenarioFile}>Import</button>
-        <button onClick={() => exportScenario(scenario)}>Export</button>
-        {hasCampaign && (
-          <Tip label="Save the current board view as a PNG frame on the active T&E campaign">
-            <button
-              onClick={() => {
-                const st = useStore.getState()
-                const frameName = defaultFrameName(
-                  st.scenario.name,
-                  st.playback.simTimeS,
-                  st.ui.basemap,
-                )
-                if (!captureFrameToCampaign(frameName)) {
-                  window.alert('Could not capture: no active campaign or canvas.')
-                }
-              }}
-            >
-              Capture frame
-            </button>
-          </Tip>
-        )}
+        <button className="tb-glyph" title="Redo (⇧⌘Z)" aria-label="Redo" onClick={redo} disabled={!canRedo}>
+          ↷
+        </button>
       </div>
+      <OverflowMenu />
     </header>
   )
 }

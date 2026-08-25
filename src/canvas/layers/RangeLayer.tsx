@@ -11,6 +11,8 @@ export function RangeLayer() {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
+  const show = useStore((s) => s.ui.layers.rangeRings)
+  if (!show) return null
   const env = scenario.environment
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EntityKind } from '../model/types'
 import { entityActive } from '../model/types'
+import type { LayerKey, LayerPreset } from '../state/store'
 import { useStore, modelFor } from '../state/store'
 
 const MODEL_GROUPS: { kind: EntityKind; title: string }[] = [
@@ -10,6 +11,28 @@ const MODEL_GROUPS: { kind: EntityKind; title: string }[] = [
   { kind: 'uas', title: 'Threat UAS' },
   { kind: 'asset', title: 'Asset' },
   { kind: 'marker', title: 'Marker' },
+]
+
+const PRESET_ITEMS: { key: LayerPreset; label: string }[] = [
+  { key: 'full', label: 'Full' },
+  { key: 'planning', label: 'Planning' },
+  { key: 'engagement', label: 'Engagement' },
+  { key: 'clean', label: 'Clean' },
+]
+
+const LAYER_ITEMS: { key: LayerKey; label: string }[] = [
+  { key: 'grid', label: 'Grid' },
+  { key: 'boundaries', label: 'Boundaries' },
+  { key: 'sensorFootprints', label: 'Sensor footprints' },
+  { key: 'classifyRings', label: 'Classify rings' },
+  { key: 'effectorEnvelopes', label: 'Effector envelopes' },
+  { key: 'threatWez', label: 'Threat WEZ' },
+  { key: 'flightPaths', label: 'Flight paths' },
+  { key: 'connections', label: 'Connections' },
+  { key: 'rangeRings', label: 'Range rings' },
+  { key: 'engagements', label: 'Engagements' },
+  { key: 'labels', label: 'Labels' },
+  { key: 'trackTelemetry', label: 'Track telemetry' },
 ]
 
 function Item({ label, onPick, danger }: { label: string; onPick: () => void; danger?: boolean }) {
@@ -27,11 +50,23 @@ function Item({ label, onPick, danger }: { label: string; onPick: () => void; da
   )
 }
 
+// Layer variant of Item: it keeps the menu open so several layers can be
+// switched in one visit. Every other entry closes on pick through Item.
+function ToggleItem({ label, checked, onPick }: { label: string; checked: boolean; onPick: () => void }) {
+  return (
+    <button className="ctx-item" onClick={onPick}>
+      <span className="ctx-check">{checked ? '✓' : ''}</span>
+      {label}
+    </button>
+  )
+}
+
 /** Right-click menu for the canvas. Rendered as DOM over the Konva stage. */
 export function ContextMenu() {
   const menu = useStore((s) => s.ui.contextMenu)
   const scenario = useStore((s) => s.scenario)
   const selection = useStore((s) => s.selection)
+  const layers = useStore((s) => s.ui.layers)
   const closeContextMenu = useStore((s) => s.closeContextMenu)
   // Tied to the menu object identity so each freshly opened menu starts closed.
   const [submenuState, setSubmenuState] = useState<{ menu: unknown; value: string | null } | null>(
@@ -53,6 +88,33 @@ export function ContextMenu() {
   if (!menu) return null
   const st = useStore.getState()
   const entity = menu.entityId ? scenario.entities.find((e) => e.id === menu.entityId) : undefined
+
+  // Layer visibility is view state, so these actions use set, not mutate.
+  // Nothing here is undoable and nothing here enters the scenario.
+  function displayFlyout() {
+    return (
+      <div className="ctx-sub" onMouseEnter={() => setSubmenu('display')}>
+        <button className="ctx-item">Display ▸</button>
+        {submenu === 'display' && (
+          <div className="ctx-menu ctx-flyout">
+            <div className="ctx-head">Presets</div>
+            {PRESET_ITEMS.map((p) => (
+              <Item key={p.key} label={p.label} onPick={() => st.applyLayerPreset(p.key)} />
+            ))}
+            <div className="ctx-head">Layers</div>
+            {LAYER_ITEMS.map((l) => (
+              <ToggleItem
+                key={l.key}
+                label={l.label}
+                checked={layers[l.key]}
+                onPick={() => st.toggleLayer(l.key)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   function entityItems() {
     if (!entity) return null
@@ -134,6 +196,7 @@ export function ContextMenu() {
         {multi && (
           <Item label="Save selection as system" onPick={() => st.saveSelectionAsSystem('')} />
         )}
+        {displayFlyout()}
         <Item danger label="Delete" onPick={() => {
           st.select({ entityIds: [entity.id] })
           st.deleteSelection()
@@ -177,6 +240,7 @@ export function ContextMenu() {
         {selection.entityIds.length > 1 && (
           <Item label="Save selection as system" onPick={() => st.saveSelectionAsSystem('')} />
         )}
+        {displayFlyout()}
       </>
     )
   }

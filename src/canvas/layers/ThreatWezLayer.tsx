@@ -74,7 +74,7 @@ function Badge({
 
 /**
  * Threat weapon-engagement zones and leaker I&W badges.
- * - WEZ circles render only when ui.showThreatWez: red 3-3 dashed rings with
+ * - WEZ circles render only when ui.layers.threatWez: red 3-3 dashed rings with
  *   a faint fill, one per formation, centered on the lead ship. Impact-kind
  *   circles stay fixed at the predicted impact point (path end); standoff
  *   rings ride the live track during playback. A threat with no path draws at
@@ -97,7 +97,7 @@ export function ThreatWezLayer({
 }) {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
-  const show = useStore((s) => s.ui.showThreatWez)
+  const show = useStore((s) => s.ui.layers.threatWez)
   const units = useStore((s) => s.ui.units)
   const simTimeS = useStore((s) => s.playback.simTimeS)
   const k = camera.scale

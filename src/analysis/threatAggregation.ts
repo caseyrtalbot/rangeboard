@@ -83,7 +83,8 @@ function minTime(values: Array<number | null>): number | null {
   return min
 }
 
-function trackQualityAt(
+/** Track quality up to t, not the whole run. Null before the first detection. */
+export function trackQualityAt(
   assessment: ThreatAssessment,
   tS: number | null,
 ): { continuity: number; longestGapS: number } | null {

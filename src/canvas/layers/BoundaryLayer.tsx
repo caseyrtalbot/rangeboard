@@ -57,6 +57,8 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
 
 export function BoundaryLayer() {
   const boundaries = useStore((s) => s.scenario.boundaries)
+  const show = useStore((s) => s.ui.layers.boundaries)
+  if (!show) return null
   return (
     <>
       {boundaries.map((b) => (

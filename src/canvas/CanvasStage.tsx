@@ -7,6 +7,12 @@ import type { Vec2 } from '../model/types'
 import { useStore } from '../state/store'
 import { detectionsAt, liveTracks } from '../playback/sim'
 import { engagementPicture } from '../analysis/impact'
+import {
+  buildTrackTimeline,
+  effectorStatesAt,
+  shotsInFlightAt,
+  trackStatesAt,
+} from '../playback/trackState'
 import { GridLayer } from './layers/GridLayer'
 import { TileLayer } from './layers/TileLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
@@ -16,11 +22,13 @@ import { ThreatWezLayer } from './layers/ThreatWezLayer'
 import { RangeLayer } from './layers/RangeLayer'
 import { PathLayer } from './layers/PathLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
+import { EngagementLayer } from './layers/EngagementLayer'
 import { EntityLayer } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
 import { layoutLabels } from './labelLayout'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 import { HudLayer } from './layers/HudLayer'
+import { TrackFileReadout } from './TrackFileReadout'
 import { ContextMenu } from './ContextMenu'
 import { ConnectSuggestPopup } from './ConnectSuggestPopup'
 
@@ -106,7 +114,17 @@ export function CanvasStage() {
   const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
   // Attrition is time-independent; engagementPicture shares one computation
   // per scenario object with AnalysisPanel (module-level WeakMap in impact.ts).
-  const impacts = useMemo(() => engagementPicture(scenario).impacts, [scenario])
+  const picture = useMemo(() => engagementPicture(scenario), [scenario])
+  const { assessments, report, impacts } = picture
+  // One prefix-aggregated timeline per sweep. The per-frame queries below are
+  // binary searches over it, so no layer ever rebuilds it.
+  const timeline = useMemo(
+    () => buildTrackTimeline(scenario, assessments, report),
+    [scenario, assessments, report],
+  )
+  const trackStates = useMemo(() => trackStatesAt(timeline, simTimeS), [timeline, simTimeS])
+  const shots = useMemo(() => shotsInFlightAt(timeline, simTimeS), [timeline, simTimeS])
+  const effectorStates = useMemo(() => effectorStatesAt(timeline, simTimeS), [timeline, simTimeS])
   const prevSpokeIds = useRef<Set<string>>(new Set())
   const labelPlacements = useMemo(
     () =>
@@ -355,7 +373,15 @@ export function CanvasStage() {
           <RangeLayer />
           <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
           <ConnectionLayer />
-          <EntityLayer tracks={tracks} detections={detections} spokeIds={spokeIds} />
+          <EngagementLayer shots={shots} simTimeS={simTimeS} />
+          <EntityLayer
+            tracks={tracks}
+            detections={detections}
+            spokeIds={spokeIds}
+            trackStates={trackStates}
+            effectorStates={effectorStates}
+            simTimeS={simTimeS}
+          />
           <SystemHandleLayer />
           <CalloutLayer placements={labelPlacements} />
           {marquee && (
@@ -380,6 +406,13 @@ export function CanvasStage() {
         </div>
       )}
       <HudLayer mouseWorld={mouseWorld} />
+      <TrackFileReadout
+        trackStates={trackStates}
+        detections={detections}
+        assessments={assessments}
+        tracks={tracks}
+        size={size}
+      />
       <ContextMenu />
       <ConnectSuggestPopup />
     </div>

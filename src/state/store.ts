@@ -78,6 +78,28 @@ export interface RaidDraft {
   shipCount: number
 }
 
+/** Canvas layer visibility. View state only: not undoable, not in the scenario. */
+export interface LayerVisibility {
+  grid: boolean
+  boundaries: boolean
+  sensorFootprints: boolean
+  classifyRings: boolean
+  effectorEnvelopes: boolean
+  threatWez: boolean
+  flightPaths: boolean
+  connections: boolean
+  rangeRings: boolean
+  engagements: boolean
+  labels: boolean
+  trackTelemetry: boolean
+}
+
+/** Name of a single canvas layer toggle. */
+export type LayerKey = keyof LayerVisibility
+
+/** Named declutter set applied to every layer at once. */
+export type LayerPreset = 'full' | 'planning' | 'engagement' | 'clean'
+
 interface UiState {
   basemap: BasemapMode
   tool: Tool
@@ -92,8 +114,8 @@ interface UiState {
   rightTab: RightTab
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
-  /** Draw threat WEZ circles on the canvas. Render toggle only: ui state, not undoable, not autosaved. */
-  showThreatWez: boolean
+  /** Canvas layer visibility. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  layers: LayerVisibility
   /** Display units for distances and speeds. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
   units: DisplayUnits
   /** Open right-click menu; screen px within the canvas host, world meters. */
@@ -251,7 +273,9 @@ export interface Store {
   setBoundaryType: (t: BoundaryType) => void
   setRightTab: (t: RightTab) => void
   setMoveUnderlay: (v: boolean) => void
-  setShowThreatWez: (v: boolean) => void
+  setLayer: (key: LayerKey, v: boolean) => void
+  toggleLayer: (key: LayerKey) => void
+  applyLayerPreset: (p: LayerPreset) => void
   setLocationDialogOpen: (v: boolean) => void
   setUnits: (v: DisplayUnits) => void
   setLastAutosaveAt: (t: number) => void
@@ -269,6 +293,67 @@ export interface Store {
 }
 
 const UNITS_KEY = 'rangeboard.units.v1'
+const LAYERS_KEY = 'rangeboard.layers.v1'
+
+/** Declutter sets. `full` is also the default layer state. */
+const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
+  full: {
+    grid: true,
+    boundaries: true,
+    sensorFootprints: true,
+    classifyRings: true,
+    effectorEnvelopes: true,
+    threatWez: false,
+    flightPaths: true,
+    connections: true,
+    rangeRings: true,
+    engagements: true,
+    labels: true,
+    trackTelemetry: true,
+  },
+  planning: {
+    grid: true,
+    boundaries: true,
+    sensorFootprints: true,
+    classifyRings: true,
+    effectorEnvelopes: true,
+    threatWez: false,
+    flightPaths: true,
+    connections: true,
+    rangeRings: true,
+    engagements: false,
+    labels: true,
+    trackTelemetry: true,
+  },
+  engagement: {
+    grid: true,
+    boundaries: true,
+    sensorFootprints: false,
+    classifyRings: false,
+    effectorEnvelopes: true,
+    threatWez: false,
+    flightPaths: true,
+    connections: false,
+    rangeRings: false,
+    engagements: true,
+    labels: true,
+    trackTelemetry: true,
+  },
+  clean: {
+    grid: true,
+    boundaries: false,
+    sensorFootprints: false,
+    classifyRings: false,
+    effectorEnvelopes: false,
+    threatWez: false,
+    flightPaths: false,
+    connections: false,
+    rangeRings: false,
+    engagements: false,
+    labels: true,
+    trackTelemetry: true,
+  },
+}
 
 export function formatRunLabel(seq: number): string {
   return `RUN-${String(seq).padStart(4, '0')}`
@@ -346,6 +431,27 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
 function savedUnits(): DisplayUnits {
   if (typeof localStorage === 'undefined') return 'aviation'
   return localStorage.getItem(UNITS_KEY) === 'metric' ? 'metric' : 'aviation'
+}
+
+/**
+ * Layer visibility from localStorage, spread over the `full` preset so a layer
+ * key added after the save still gets a value.
+ */
+export function savedLayers(): LayerVisibility {
+  const defaults = { ...LAYER_PRESETS.full }
+  if (typeof localStorage === 'undefined') return defaults
+  const raw = localStorage.getItem(LAYERS_KEY)
+  if (raw == null) return defaults
+  try {
+    return { ...defaults, ...(JSON.parse(raw) as Partial<LayerVisibility>) }
+  } catch {
+    return defaults
+  }
+}
+
+function writeLayers(layers: LayerVisibility): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(LAYERS_KEY, JSON.stringify(layers))
 }
 
 const KIND_NAMES: Record<EntityKind, string> = {
@@ -463,7 +569,7 @@ export const useStore = create<Store>()((set, get) => {
       calibrateB: null,
       rightTab: 'inspect',
       moveUnderlay: false,
-      showThreatWez: false,
+      layers: savedLayers(),
       units: savedUnits(),
       contextMenu: null,
       connectSuggestion: null,
@@ -1398,7 +1504,22 @@ export const useStore = create<Store>()((set, get) => {
     setBoundaryType: (t) => set((st) => ({ ui: { ...st.ui, boundaryType: t } })),
     setRightTab: (t) => set((st) => ({ ui: { ...st.ui, rightTab: t } })),
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
-    setShowThreatWez: (v) => set((st) => ({ ui: { ...st.ui, showThreatWez: v } })),
+    setLayer: (key, v) => {
+      const layers = { ...get().ui.layers, [key]: v }
+      writeLayers(layers)
+      set((st) => ({ ui: { ...st.ui, layers } }))
+    },
+    toggleLayer: (key) => {
+      const current = get().ui.layers
+      const layers = { ...current, [key]: !current[key] }
+      writeLayers(layers)
+      set((st) => ({ ui: { ...st.ui, layers } }))
+    },
+    applyLayerPreset: (p) => {
+      const layers = { ...LAYER_PRESETS[p] }
+      writeLayers(layers)
+      set((st) => ({ ui: { ...st.ui, layers } }))
+    },
     setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
     setLastAutosaveAt: (t) => set((st) => ({ ui: { ...st.ui, lastAutosaveAt: t } })),
     setUnits: (v) => {

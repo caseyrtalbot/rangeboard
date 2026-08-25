@@ -9,6 +9,8 @@ export function ConnectionLayer() {
   const selectedId = useStore((s) => s.selection.connectionId)
   const camera = useStore((s) => s.camera)
   const tool = useStore((s) => s.ui.tool)
+  const show = useStore((s) => s.ui.layers.connections)
+  if (!show) return null
   const k = camera.scale
 
   return (

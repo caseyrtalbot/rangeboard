@@ -11,9 +11,11 @@ export function GridLayer({ size }: Props) {
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
   const basemap = useStore((s) => s.ui.basemap)
+  const show = useStore((s) => s.ui.layers.grid)
   const hasImage = useStore((s) => Boolean(s.scenario.underlay.dataUrl))
   const hasGeoRef = useStore((s) => Boolean(s.scenario.geoRef))
 
+  if (!show) return null
   if (basemap === 'sat' && (hasImage || hasGeoRef)) return null
 
   const step = gridStepM(camera.scale, 90, units)

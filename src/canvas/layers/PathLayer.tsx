@@ -15,9 +15,12 @@ export function PathLayer({ mouseWorld }: Props) {
   const ui = useStore((s) => s.ui)
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
+  const showPaths = useStore((s) => s.ui.layers.flightPaths)
   const k = camera.scale
 
-  const paths = scenario.paths.map((p) => {
+  // The flightPaths toggle hides committed paths only. The draft below and the
+  // calibrate markers always draw, or the drawing tools lose their feedback.
+  const paths = (showPaths ? scenario.paths : []).map((p) => {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null
     const color = entity.color ?? modelFor(scenario, entity)?.color ?? '#c46a5a'

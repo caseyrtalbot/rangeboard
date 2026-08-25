@@ -40,8 +40,14 @@ export interface LayoutOptions {
 export const LABEL_FONT_PX = 11
 const CHAR_W = LABEL_FONT_PX * 0.6
 const ANCHOR_W = 120
-const ANCHOR_TOP = 14
-const LINE_H = 12
+/**
+ * Top of the anchored label box, px below the glyph centre. EntityLayer draws
+ * the label at this offset, so the two must move together. It clears the
+ * target brackets, which reach y 19.8 at a bracket half of 19.
+ */
+export const LABEL_ANCHOR_TOP = 20
+/** Line box height of a wrapped anchored label, px. */
+export const LABEL_LINE_H = 12
 const SLOT_H = 15
 const TERMINAL_LEN = 30
 const TEXT_GAP = 5
@@ -66,12 +72,37 @@ interface Cluster {
   radius: number
 }
 
+/**
+ * Lines an anchored name wraps to at the 120px box. Greedy word wrap over the
+ * monospace metric, which is how Konva wraps the drawn Text. Callers place
+ * anything that sits under the label from this count.
+ */
+export function labelLineCount(name: string): number {
+  const words = name.trim().split(/\s+/).filter((w) => w.length > 0)
+  if (words.length === 0) return 1
+  let lines = 1
+  let width = 0
+  for (const word of words) {
+    const w = word.length * CHAR_W
+    if (width > 0 && width + CHAR_W + w > ANCHOR_W) {
+      lines++
+      width = 0
+    }
+    if (w > ANCHOR_W) {
+      // A word wider than the box breaks inside itself and fills its last line.
+      lines += Math.ceil(w / ANCHOR_W) - 1
+      width = ANCHOR_W
+    } else {
+      width = width > 0 ? width + CHAR_W + w : w
+    }
+  }
+  return lines
+}
+
 /** Footprint of the default anchored label (centered, 120px wrap). */
 function anchoredRect(m: LabelInput): Rect {
-  const textW = m.name.length * CHAR_W
-  const w = Math.min(ANCHOR_W, textW)
-  const lines = Math.max(1, Math.ceil(textW / ANCHOR_W))
-  return { x: m.sx - w / 2, y: m.sy + ANCHOR_TOP, w, h: lines * LINE_H }
+  const w = Math.min(ANCHOR_W, m.name.length * CHAR_W)
+  return { x: m.sx - w / 2, y: m.sy + LABEL_ANCHOR_TOP, w, h: labelLineCount(m.name) * LABEL_LINE_H }
 }
 
 function overlaps(a: Rect, b: Rect): boolean {

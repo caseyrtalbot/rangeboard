@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LABEL_FONT_PX, layoutLabels } from './labelLayout'
+import { LABEL_FONT_PX, labelLineCount, layoutLabels } from './labelLayout'
 import type { LabelInput, SpokePlacement } from './labelLayout'
 
 function spokeRect(p: SpokePlacement) {
@@ -123,5 +123,28 @@ describe('layoutLabels', () => {
     const sticky = layoutLabels(inputs, { sticky: new Set(['a', 'b']) })
     expect(sticky.get('a')!.mode).toBe('spoke')
     expect(sticky.get('b')!.mode).toBe('spoke')
+  })
+})
+
+describe('labelLineCount', () => {
+  it('keeps a name that fits the box on one line', () => {
+    expect(labelLineCount('Shahed-136')).toBe(1)
+    // 18 chars at 6.6px is 118.8px, still inside the 120px box.
+    expect(labelLineCount('Shahed-136 / Geran')).toBe(1)
+  })
+
+  it('wraps on a word boundary when the name passes the box', () => {
+    expect(labelLineCount('RPS-42 radar panel (RADA MHR) 1')).toBe(2)
+    expect(labelLineCount('Ranger HDC MR EO/IR (FLIR) 1')).toBe(2)
+    expect(labelLineCount('AAAAAAAAA BBBBBBBBB CCCCCCCCC')).toBe(3)
+  })
+
+  it('breaks inside a word wider than the box', () => {
+    expect(labelLineCount('A'.repeat(40))).toBe(3)
+  })
+
+  it('never reports fewer than one line', () => {
+    expect(labelLineCount('')).toBe(1)
+    expect(labelLineCount('   ')).toBe(1)
   })
 })

@@ -16,12 +16,18 @@ const DISABLED_COLOR = '#565b58'
 export function FootprintLayer({ detections }: Props) {
   const scenario = useStore((s) => s.scenario)
   const basemap = useStore((s) => s.ui.basemap)
+  // Three independent toggles share this layer: the detect wedge, the dashed
+  // classify ring, and the effector envelope.
+  const showSensors = useStore((s) => s.ui.layers.sensorFootprints)
+  const showClassify = useStore((s) => s.ui.layers.classifyRings)
+  const showEffectors = useStore((s) => s.ui.layers.effectorEnvelopes)
   const dim = basemap === 'airspace'
   const activeSensorIds = new Set([...detections.values()].flat().map((h) => h.sensorId))
 
   function sensorFootprint(e: Entity) {
     const spec = modelFor(scenario, e)?.sensor
     if (!spec) return null
+    if (!showSensors && !showClassify) return null
     const off = !entityActive(e)
     const color = off ? DISABLED_COLOR : (e.color ?? modelFor(scenario, e)?.color ?? '#7da7c4')
     const active = !off && activeSensorIds.has(e.id)
@@ -33,43 +39,45 @@ export function FootprintLayer({ detections }: Props) {
     const classifyRangeM = effectiveClassifyRangeM(spec, scenario.environment)
     return (
       <Group key={e.id} listening={false}>
-        {full ? (
-          <Circle
-            x={e.pos.x}
-            y={e.pos.y}
-            radius={detectRangeM}
-            fill={color}
-            opacity={fillOpacity}
-          />
-        ) : (
-          <Line
-            points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, detectRangeM)}
-            closed
-            fill={color}
-            opacity={fillOpacity}
-          />
-        )}
-        {full ? (
-          <Circle
-            x={e.pos.x}
-            y={e.pos.y}
-            radius={detectRangeM}
-            stroke={color}
-            strokeWidth={active ? 2 : 1}
-            strokeScaleEnabled={false}
-            opacity={strokeOpacity}
-          />
-        ) : (
-          <Line
-            points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, detectRangeM)}
-            closed
-            stroke={color}
-            strokeWidth={active ? 2 : 1}
-            strokeScaleEnabled={false}
-            opacity={strokeOpacity}
-          />
-        )}
-        {!off && classifyRangeM != null && classifyRangeM > 0 && (
+        {showSensors &&
+          (full ? (
+            <Circle
+              x={e.pos.x}
+              y={e.pos.y}
+              radius={detectRangeM}
+              fill={color}
+              opacity={fillOpacity}
+            />
+          ) : (
+            <Line
+              points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, detectRangeM)}
+              closed
+              fill={color}
+              opacity={fillOpacity}
+            />
+          ))}
+        {showSensors &&
+          (full ? (
+            <Circle
+              x={e.pos.x}
+              y={e.pos.y}
+              radius={detectRangeM}
+              stroke={color}
+              strokeWidth={active ? 2 : 1}
+              strokeScaleEnabled={false}
+              opacity={strokeOpacity}
+            />
+          ) : (
+            <Line
+              points={wedgePoints(e.pos, e.headingDeg, spec.sectorDeg, detectRangeM)}
+              closed
+              stroke={color}
+              strokeWidth={active ? 2 : 1}
+              strokeScaleEnabled={false}
+              opacity={strokeOpacity}
+            />
+          ))}
+        {showClassify && !off && classifyRangeM != null && classifyRangeM > 0 && (
           <Circle
             x={e.pos.x}
             y={e.pos.y}
@@ -88,6 +96,7 @@ export function FootprintLayer({ detections }: Props) {
   function effectorFootprint(e: Entity) {
     const spec = modelFor(scenario, e)?.effector
     if (!spec) return null
+    if (!showEffectors) return null
     const off = !entityActive(e)
     const color = off ? DISABLED_COLOR : (e.color ?? modelFor(scenario, e)?.color ?? '#c9975a')
     const sector = spec.sectorDeg ?? 360

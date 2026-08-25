@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { bumpCardVersion, useStore, scenarioDurationS } from './store'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { bumpCardVersion, savedLayers, useStore, scenarioDurationS } from './store'
+import type { LayerVisibility } from './store'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
 
@@ -529,5 +530,189 @@ describe('connect suggestions', () => {
     expect(conn.label).toBe('direct cue')
     expect(conn.confidence).toBeUndefined()
     expect(conn.medium).toBeUndefined()
+  })
+})
+
+// The node test env has no Web Storage, so the layer key needs a stand-in.
+function stubLayerStorage(seed: string | null): Map<string, string> {
+  const store = new Map<string, string>()
+  if (seed != null) store.set('rangeboard.layers.v1', seed)
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+  })
+  return store
+}
+
+describe('layer visibility', () => {
+  const FULL: LayerVisibility = {
+    grid: true,
+    boundaries: true,
+    sensorFootprints: true,
+    classifyRings: true,
+    effectorEnvelopes: true,
+    threatWez: false,
+    flightPaths: true,
+    connections: true,
+    rangeRings: true,
+    engagements: true,
+    labels: true,
+    trackTelemetry: true,
+  }
+  const PLANNING: LayerVisibility = {
+    grid: true,
+    boundaries: true,
+    sensorFootprints: true,
+    classifyRings: true,
+    effectorEnvelopes: true,
+    threatWez: false,
+    flightPaths: true,
+    connections: true,
+    rangeRings: true,
+    engagements: false,
+    labels: true,
+    trackTelemetry: true,
+  }
+  const ENGAGEMENT: LayerVisibility = {
+    grid: true,
+    boundaries: true,
+    sensorFootprints: false,
+    classifyRings: false,
+    effectorEnvelopes: true,
+    threatWez: false,
+    flightPaths: true,
+    connections: false,
+    rangeRings: false,
+    engagements: true,
+    labels: true,
+    trackTelemetry: true,
+  }
+  const CLEAN: LayerVisibility = {
+    grid: true,
+    boundaries: false,
+    sensorFootprints: false,
+    classifyRings: false,
+    effectorEnvelopes: false,
+    threatWez: false,
+    flightPaths: false,
+    connections: false,
+    rangeRings: false,
+    engagements: false,
+    labels: true,
+    trackTelemetry: true,
+  }
+
+  beforeEach(() => {
+    reset()
+    useStore.getState().applyLayerPreset('full')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('defaults to the full preset', () => {
+    expect(useStore.getState().ui.layers).toEqual(FULL)
+  })
+
+  it('setLayer writes one key and leaves the rest alone', () => {
+    useStore.getState().setLayer('sensorFootprints', false)
+    expect(useStore.getState().ui.layers.sensorFootprints).toBe(false)
+    useStore.getState().setLayer('threatWez', true)
+    expect(useStore.getState().ui.layers).toEqual({
+      ...FULL,
+      sensorFootprints: false,
+      threatWez: true,
+    })
+  })
+
+  it('setLayer is idempotent for the value it already holds', () => {
+    useStore.getState().setLayer('grid', true)
+    expect(useStore.getState().ui.layers).toEqual(FULL)
+  })
+
+  it('toggleLayer flips a key each call', () => {
+    useStore.getState().toggleLayer('threatWez')
+    expect(useStore.getState().ui.layers.threatWez).toBe(true)
+    useStore.getState().toggleLayer('threatWez')
+    expect(useStore.getState().ui.layers.threatWez).toBe(false)
+    useStore.getState().toggleLayer('connections')
+    expect(useStore.getState().ui.layers.connections).toBe(false)
+    expect(useStore.getState().ui.layers).toEqual({ ...FULL, connections: false })
+  })
+
+  it('applyLayerPreset full matches the specified set', () => {
+    useStore.getState().applyLayerPreset('clean')
+    useStore.getState().applyLayerPreset('full')
+    expect(useStore.getState().ui.layers).toEqual(FULL)
+  })
+
+  it('applyLayerPreset planning matches the specified set', () => {
+    useStore.getState().applyLayerPreset('planning')
+    expect(useStore.getState().ui.layers).toEqual(PLANNING)
+  })
+
+  it('applyLayerPreset engagement matches the specified set', () => {
+    useStore.getState().applyLayerPreset('engagement')
+    expect(useStore.getState().ui.layers).toEqual(ENGAGEMENT)
+  })
+
+  it('applyLayerPreset clean matches the specified set', () => {
+    useStore.getState().applyLayerPreset('clean')
+    expect(useStore.getState().ui.layers).toEqual(CLEAN)
+  })
+
+  it('a preset discards earlier single-layer edits', () => {
+    useStore.getState().setLayer('threatWez', true)
+    useStore.getState().applyLayerPreset('engagement')
+    expect(useStore.getState().ui.layers).toEqual(ENGAGEMENT)
+  })
+
+  it('layer changes push no undo history and never enter the scenario', () => {
+    useStore.getState().addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    const past = useStore.getState().past.length
+    const future = useStore.getState().future.length
+    const scenario = useStore.getState().scenario
+    useStore.getState().setLayer('grid', false)
+    useStore.getState().toggleLayer('labels')
+    useStore.getState().applyLayerPreset('clean')
+    expect(useStore.getState().past.length).toBe(past)
+    expect(useStore.getState().future.length).toBe(future)
+    expect(useStore.getState().scenario).toBe(scenario)
+    expect(JSON.stringify(scenario)).not.toContain('trackTelemetry')
+  })
+
+  it('undo after a layer change restores the scenario, not the layers', () => {
+    useStore.getState().addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    useStore.getState().applyLayerPreset('clean')
+    useStore.getState().undo()
+    expect(useStore.getState().scenario.entities).toHaveLength(0)
+    expect(useStore.getState().ui.layers).toEqual(CLEAN)
+  })
+
+  it('savedLayers falls back to the full preset with no store', () => {
+    expect(savedLayers()).toEqual(FULL)
+  })
+
+  it('savedLayers spreads a partial saved object over the defaults', () => {
+    stubLayerStorage(JSON.stringify({ grid: false, threatWez: true }))
+    expect(savedLayers()).toEqual({ ...FULL, grid: false, threatWez: true })
+  })
+
+  it('a layer action round-trips through localStorage', () => {
+    const store = stubLayerStorage(null)
+    useStore.getState().applyLayerPreset('engagement')
+    useStore.getState().toggleLayer('threatWez')
+    expect(JSON.parse(store.get('rangeboard.layers.v1')!)).toEqual({
+      ...ENGAGEMENT,
+      threatWez: true,
+    })
+    expect(savedLayers()).toEqual({ ...ENGAGEMENT, threatWez: true })
+  })
+
+  it('savedLayers falls back to the defaults on unreadable saved data', () => {
+    stubLayerStorage('not json')
+    expect(savedLayers()).toEqual(FULL)
   })
 })

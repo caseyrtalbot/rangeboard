@@ -34,9 +34,13 @@ src/model/     types.ts (all domain types + newId), seed.ts (seed spec library, 
 src/geometry/  geo.ts pure math: bearings, wedges, path interpolation, grid steps, formatters
 src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui + playback)
 src/playback/  sim.ts: liveTracks / detectionsAt (render-time), assessThreat (0.5 s sampling sweep)
+               trackState.ts: track phase, shots in flight, effector state at sim time t
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool click routing, HTML5 drop target)
-               layers/: Underlay, Grid, Boundary, Footprint, Path, Connection, Entity, Hud(DOM)
-src/panels/    Toolbar, Palette (drag source), Inspector, LibraryEditor, TestCardsPanel,
+               TrackFileReadout.tsx (DOM telemetry card for the one selected track)
+               layers/: Underlay, Grid, Boundary, Footprint, Path, Connection, Engagement,
+                        Entity, Hud(DOM)
+src/panels/    Toolbar, ViewMenu (layer/basemap/units dropdown), Palette (drag source),
+               Inspector, LibraryEditor, TestCardsPanel,
                AnalysisPanel, TimelineBar (owns the rAF playback loop + frames strip)
 src/io/        persist.ts: localStorage autosave, JSON export/import, library export/import,
                underlay image import
@@ -59,7 +63,8 @@ Data flow for a click/drag: Konva event → store action → new scenario → Re
 - `assessThreat` statuses: `no-path | never-detected | not-confirmed | detect-only | no-kill-chain | window-too-short | weapons-hold | engageable`. Warning time = arrival at nearest `asset` entity minus first detection. Engagement windows are gated by `Scenario.roe` (`free` = first detection, `tight` default = hostile classification, `hold` = none); the derived classification ladder (`pending → unknown → suspected → hostile`) lives in `sim.ts`. Legacy `engageOn` saves migrate on load in `persist.ts` (`detected` → `free`, `confirmed` → `tight`). `not-confirmed` = tight ROE, never reached hostile.
 - Sensor physics live in `src/analysis/sensorEnv.ts` (COURAGEOUS-based planning factors): rain/fog/night/urban-EM/wind derate ranges per `SensorType`; radar range scales with target `UasGroup` (rings show the Group 1 range); RF sensors only hear `rf-manual`/`mixed` nav modes; EO/IR only holds targets another technology already holds; jammers cannot affect `fiber`/`inertial`/`optical` threats. `SensorSpec.resolutionM` merges formations spaced below it into one track (`swarmMerged`).
 - Threat tactics: `src/playback/tactics.ts` (THREAT_TACTICS, study-coded, platform pairings by seed designator). The raid builder arms a ui-only `raidDraft` and `commitRaid` creates entities + paths + waves in ONE `mutate()` (single undo); spawn standoff clears every enabled sensor ring measured from the sensor position.
-- Threat WEZ + I&W: weapon fields on `UasSpec` (warheadKg, effectRadiusM, standoffRangeM, weaponProfile); `effectRadiusM` values are PLANNING FACTORS (`src/model/weaponFactors.ts`) — the threat study declines lethal radii, so label them PF in UI. `src/analysis/impact.ts` derives WEZ geometry (coincident impact circles merge with a count) and leaker severity; `engagementPicture` WeakMap-caches one sweep per scenario object. `ui.showThreatWez` is a render toggle (Toolbar + Analysis header).
+- Threat WEZ + I&W: weapon fields on `UasSpec` (warheadKg, effectRadiusM, standoffRangeM, weaponProfile); `effectRadiusM` values are PLANNING FACTORS (`src/model/weaponFactors.ts`) — the threat study declines lethal radii, so label them PF in UI. `src/analysis/impact.ts` derives WEZ geometry (coincident impact circles merge with a count) and leaker severity; `engagementPicture` WeakMap-caches one sweep per scenario object. `ui.layers.threatWez` is a render toggle (View menu, right-click Display flyout, Analysis header, command palette).
+- **Layer visibility:** `ui.layers` (`LayerVisibility`, 12 boolean keys). Actions are `setLayer`, `toggleLayer`, and `applyLayerPreset` (`full | planning | engagement | clean`, default `full`). This is view state. The setters write it to `rangeboard.layers.v1`, `savedLayers()` spreads the stored value over the defaults on load, undo never touches it, and it never enters the `Scenario`. Each Konva layer reads its own flag and returns `null`; `CanvasStage` does no gating.
 - `src/analysis/mcda.ts` scores a configuration 0-100 from `Scenario.mcdaWeights`; pinned results live in `Scenario.scorecards`. Card templates and the standard covariate checklist live in `src/model/seedCards.ts`.
 - Basemap modes (`canvas | sat | airspace`) are render toggles only — never move data. Sat underlay scale is set by two-point calibration, which scales the image about point A.
 - Test cards follow the Field Guide standard card; `linkedEntityIds` drive the cyan on-canvas highlight when a card is selected.

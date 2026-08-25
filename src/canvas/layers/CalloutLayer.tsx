@@ -16,6 +16,8 @@ interface Props {
 export function CalloutLayer({ placements }: Props) {
   const entities = useStore((s) => s.scenario.entities)
   const camera = useStore((s) => s.camera)
+  const show = useStore((s) => s.ui.layers.labels)
+  if (!show) return null
   const k = camera.scale
   return (
     <Group x={-camera.x / k} y={-camera.y / k} scaleX={1 / k} scaleY={1 / k} listening={false}>

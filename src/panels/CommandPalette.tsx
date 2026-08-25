@@ -52,10 +52,7 @@ const ACTIONS: Command[] = [
     id: 'toggle-wez',
     category: 'View',
     label: 'Toggle threat WEZ overlay',
-    run: () => {
-      const st = useStore.getState()
-      st.setShowThreatWez(!st.ui.showThreatWez)
-    },
+    run: () => useStore.getState().toggleLayer('threatWez'),
   },
   {
     id: 'toggle-units',
