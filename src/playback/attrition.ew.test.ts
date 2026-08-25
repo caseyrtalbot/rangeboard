@@ -158,7 +158,11 @@ describe('jammer vs jam-immune threat', () => {
     expect(t.expectedSoftKills).toBe(0)
     expect(t.leakProbability).toBe(1)
     expect(r.effectors.find((e) => e.effectorId === effIds[0])!.shotsFired).toBe(0)
-    expect(r.totals.expectedLeakers).toBe(1)
+    // These laydowns place no asset, so the undefeated ship never arrives
+    // anywhere: it is never-arrived mass, not a leaker.
+    expect(r.totals.expectedLeakers).toBe(0)
+    expect(r.totals.expectedNoArrival).toBe(1)
+    expect(r.totals.reportedLeakers).toBeNull()
   })
 })
 
@@ -214,7 +218,12 @@ describe('continue behavior still leaks', () => {
     expect(t.leakProbability).toBe(1)
     expect(t.continueJamProb).toBeCloseTo(0.3515, 6)
     expect(t.killedByEffectorId).toBeNull()
-    expect(r.totals.expectedLeakers).toBe(1)
+    // 'continue' still leaks in the doctrinal sense, but with no asset on the
+    // board there is no boundary to leak past.
+    expect(t.arrived).toBe(false)
+    expect(r.totals.expectedLeakers).toBe(0)
+    expect(r.totals.expectedNoArrival).toBe(1)
+    expect(r.totals.reportedLeakers).toBeNull()
   })
 
   it('degrades the hard-kill shot that follows the jam', () => {

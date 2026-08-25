@@ -191,6 +191,13 @@ export interface Entity {
   formation?: FormationSpec | null
   /** UAS only: draw the wind-adjusted range ring for this drone. */
   showRange?: boolean
+  /**
+   * Asset only: protected-boundary radius, meters. A threat inside it counts
+   * as ARRIVED at the asset (`ThreatAssessment.arrivalS` in sim.ts), which is
+   * what separates a defeat that protected the asset from one that landed too
+   * late. Absent or null means the DEFAULT_DEFENDED_RADIUS_M planning factor.
+   */
+  defendedRadiusM?: number | null
 }
 
 /** True unless the entity was explicitly disabled. */
@@ -374,8 +381,9 @@ export interface RaidPlan {
 
 /**
  * Compact per-threat AAR outcome label, derived from the expected-value math:
- * 'not-engaged' = zero shots; 'leaker' = engaged but more likely than not to
- * arrive; otherwise the dominant kill channel ('hard-kill' vs 'soft-kill').
+ * 'not-engaged' = no salvo of any expenditure channel (kinetic, directed
+ * energy, or EW); 'leaker' = engaged but more likely than not to arrive;
+ * otherwise the dominant kill channel ('hard-kill' vs 'soft-kill').
  */
 export type AarOutcome = 'hard-kill' | 'soft-kill' | 'leaker' | 'not-engaged'
 
@@ -397,11 +405,16 @@ export interface AarThreatRow {
   unknownAtS: number | null
   suspectedAtS: number | null
   hostileAtS: number | null
-  /** First salvo of either channel at this threat; null when never engaged. */
+  /** First salvo of any expenditure channel at this threat; null when never engaged. */
   engageS: number | null
-  /** Kinetic (non-jammer) salvos at this threat. */
+  /** Kinetic salvos (interceptor, gun, net) at this threat. */
   shotsFired: number
-  /** Jammer salvos at this threat. Absent on pins made before the split. */
+  /**
+   * Directed-energy bursts (DE, HPM) at this threat. Absent on pins made
+   * before the three-way expenditure split; read it as `deSalvos ?? 0`.
+   */
+  deSalvos?: number
+  /** EW salvos (jammer) at this threat. Absent on pins made before the split. */
   jamSalvos?: number
   expectedHardKills: number
   expectedSoftKills: number
@@ -425,14 +438,25 @@ export interface AarThreatRow {
   impactSeverity?: ImpactSeverity | null
 }
 
-/** One effector's shot ledger in the AAR. */
+/**
+ * One effector's expenditure ledger in the AAR. Expenditure splits three ways
+ * by effector class, independently of the kill channel: kinetic rounds
+ * (interceptor, gun, net), directed-energy bursts (DE, HPM), and EW salvos
+ * (jammer). A DE or HPM burst is a hard kill that fires no round, so it never
+ * belongs in shotsFired.
+ */
 export interface AarEffectorShots {
   effectorId: string
   name: string
   effectorType: EffectorSpec['effectorType'] | null
-  /** Kinetic salvos; 0 for jammers (their expenditure is jamSalvos). */
+  /** Kinetic salvos; 0 for DE, HPM, and jammers (see deSalvos, jamSalvos). */
   shotsFired: number
-  /** Jammer salvos. Absent on pins made before the expenditure split. */
+  /**
+   * Directed-energy bursts; 0 for every other effector class. Absent on pins
+   * made before the three-way split; read it as `deSalvos ?? 0`.
+   */
+  deSalvos?: number
+  /** EW salvos (jammer). Absent on pins made before the expenditure split. */
   jamSalvos?: number
   /** Null = unlimited magazine (jammers, DE, HPM). */
   expectedRoundsRemaining: number | null
@@ -447,19 +471,49 @@ export interface AarEffectorShots {
 export interface AarSummary {
   roe: Roe
   raidSize: number
+  /** Pre-arrival hard-kill mass: destruction that defended the asset. */
   expectedHardKills: number
+  /** Pre-arrival soft-kill (jam) mass: mission kills that ended the approach. */
   expectedSoftKills: number
+  /** DEFEATS: expectedHardKills + expectedSoftKills. */
   expectedKills: number
+  /**
+   * UNDEFEATED ships: the ships the defence did not defeat before arrival.
+   * It is the leaker bucket plus the never-arrived bucket, because this
+   * pinned shape has always carried one combined figure. It claims only "not
+   * defeated", never "reached an asset". expectedNoArrival splits the second
+   * bucket out; AttritionTotals.reportedLeakers is the measurable leaker
+   * count. Absent on no pin: the field predates the split.
+   */
   expectedLeakers: number
-  /** Mean per-ship leak probability over the raid; null when the raid is empty. */
+  /**
+   * Ships neither defeated nor arrived: a fly-by that turned away short, or a
+   * run with no defended asset placed at all. Part of expectedLeakers, so
+   * expectedLeakers minus this is the arrived-undefeated mass. Absent on pins
+   * made before the arrival split; read it as `expectedNoArrival ?? null`.
+   */
+  expectedNoArrival?: number
+  /**
+   * Kill mass whose effect landed strictly after the threat was already over
+   * the defended asset. Real destruction that did not protect the asset, so
+   * it is NEVER a defeat: it is a sub-measure of the undefeated mass, not a
+   * deduction from it. Absent on pins made before the arrival split.
+   */
+  expectedLateKills?: number
+  /** Mean per-ship undefeated fraction over the raid; null when the raid is empty. */
   leakProbability: number | null
   /** Earliest detection of any threat, sim seconds; null = never. */
   firstDetectS: number | null
-  /** Earliest shot at any threat, sim seconds; null = never. */
+  /** Earliest salvo of any channel at any threat, sim seconds; null = never. */
   firstShotS: number | null
-  /** Kinetic (non-jammer) salvos only. */
+  /** Kinetic salvos (interceptor, gun, net) only. */
   shotsFired: number
-  /** Jammer salvos. Absent on pins made before the expenditure split. */
+  /**
+   * Directed-energy bursts (DE, HPM). Absent on pins made before the
+   * three-way expenditure split; read it as `deSalvos ?? 0`.
+   */
+  deSalvos?: number
+  /** EW salvos (jammer). Absent on pins made before the expenditure split. */
   jamSalvos?: number
   effectors: AarEffectorShots[]
   threats: AarThreatRow[]
@@ -474,6 +528,37 @@ export interface ScorecardSnap {
   parts: McdaVector
   /** Full AAR summary at pin time. Absent on pins made before WS5. */
   aar?: AarSummary
+}
+
+/**
+ * Test-defined pass criteria for the requirement gates. These are the numbers
+ * the test asks the system to meet, so they belong to the scenario, not to the
+ * engine. A gate threshold must never be an engine constant: the attrition
+ * model stops firing at SHIP_DEAD_BELOW, so a requirement set to that same
+ * value passes itself by construction.
+ */
+export interface RequirementThresholds {
+  /**
+   * Largest residual (per-ship survival at arrival) a track may hold and still
+   * pass the Effect gate. 0..1. Read as "no more than this share of any one
+   * track survives".
+   */
+  maxResidualPerTrack: number
+  /**
+   * Smallest acceptable early-warning time, seconds: first detection to
+   * arrival at the defended asset. Null means the test sets no warning
+   * requirement, so the Detect gate scores detection only.
+   */
+  minWarningS: number | null
+}
+
+/**
+ * Default requirement thresholds for a new scenario. maxResidualPerTrack is
+ * deliberately NOT the engine's SHIP_DEAD_BELOW cutoff.
+ */
+export const DEFAULT_REQUIREMENT_THRESHOLDS: RequirementThresholds = {
+  maxResidualPerTrack: 0.1,
+  minWarningS: null,
 }
 
 export interface Scenario {
@@ -492,6 +577,8 @@ export interface Scenario {
   scorecards?: ScorecardSnap[]
   /** Raid wave schedule. Absent on old saves; treat as no waves. */
   raid?: RaidPlan
+  /** Requirement pass criteria. Filled from the defaults on old saves. */
+  requirements: RequirementThresholds
   entities: Entity[]
   connections: Connection[]
   boundaries: Boundary[]

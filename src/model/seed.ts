@@ -1,4 +1,5 @@
-import type { EnvironmentSpec, Scenario, Underlay } from './types'
+import type { EnvironmentSpec, RequirementThresholds, Scenario, Underlay } from './types'
+import { DEFAULT_REQUIREMENT_THRESHOLDS } from './types'
 import { SEED_LIBRARY } from './seedLibrary'
 import { SEED_SYSTEMS } from './seedSystems'
 
@@ -19,6 +20,11 @@ export function defaultEnvironment(): EnvironmentSpec {
   }
 }
 
+/** Test-defined gate criteria for a new scenario. Never engine constants. */
+export function defaultRequirements(): RequirementThresholds {
+  return { ...DEFAULT_REQUIREMENT_THRESHOLDS }
+}
+
 export function emptyUnderlay(): Underlay {
   return { dataUrl: null, pos: { x: 0, y: 0 }, widthM: 10000, naturalW: 0, naturalH: 0, opacity: 0.85 }
 }
@@ -34,6 +40,7 @@ export function emptyScenario(): Scenario {
     mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3, attrition: 3 },
     scorecards: [],
     raid: { waves: [] },
+    requirements: defaultRequirements(),
     entities: [],
     connections: [],
     boundaries: [],

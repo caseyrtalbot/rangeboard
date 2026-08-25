@@ -226,21 +226,35 @@ describe('CLAIM 1 - assignment latency, closed-form single interceptor', () => {
     const assessments = assessAllThreats(scenario)
     const r = resolveEngagements(scenario, assessments)
 
+    // The raid partitions three ways, not two: defeated, arrived undefeated,
+    // and never arrived. This laydown places no asset, so the 0.22161436
+    // survivor mass is never-arrived and the leaker bucket is empty.
     expect(
-      Math.abs(r.totals.raidSize - (r.totals.expectedKills + r.totals.expectedLeakers)),
+      Math.abs(
+        r.totals.raidSize -
+          (r.totals.expectedKills + r.totals.expectedLeakers + r.totals.expectedNoArrival),
+      ),
     ).toBeLessThan(1e-9)
+    expect(r.totals.expectedLeakers).toBe(0)
+    expect(r.totals.expectedNoArrival).toBeCloseTo(0.22161436, 6)
+    expect(r.totals.reportedLeakers).toBeNull() // not measurable, never 0
 
     const aar = buildAarSummary(scenario, assessments, r, [])
     expect(aar.raidSize).toBe(r.totals.raidSize)
     expect(aar.expectedKills).toBe(r.totals.expectedKills)
     expect(aar.expectedHardKills).toBe(r.totals.expectedHardKills)
     expect(aar.expectedSoftKills).toBe(r.totals.expectedSoftKills)
-    expect(aar.expectedLeakers).toBe(r.totals.expectedLeakers)
+    // AarSummary carries UNDEFEATED ships (leakers plus never-arrived), the
+    // combined figure its pinned shape has always stored.
+    expect(aar.expectedLeakers).toBeCloseTo(
+      r.totals.expectedLeakers + r.totals.expectedNoArrival,
+      9,
+    )
     expect(aar.shotsFired).toBe(r.totals.shotsFired)
     // Hand values: firstDetect t = 0 (d = 2010 < 50 km), first shot 25.5.
     expect(aar.firstDetectS).toBeCloseTo(0, 9)
     expect(aar.firstShotS).toBeCloseTo(25.5, 9)
-    // leakProbability = expectedLeakers / raidSize = 0.22161436.
+    // leakProbability = undefeated / raidSize = 0.22161436.
     expect(aar.leakProbability).toBeCloseTo(0.22161436, 6)
   })
 })
@@ -902,5 +916,77 @@ describe('longest window no longer shadows a usable shorter one', () => {
     const r = resolveEngagements(scenario, [a])
     expect(r.totals.shotsFired).toBe(0)
     expect(r.threats[0].leakProbability).toBe(1)
+  })
+})
+
+/*
+ * ================= ROUTE LATENCY IS CHARGED FROM THE GATE =================
+ * assessThreat charges engageTimeS + route latency against window USABILITY.
+ * resolveEngagements used to charge the same latency as an absolute floor
+ * measured from T0, so once the ROE gate landed later than the latency the
+ * delay disappeared entirely (a 90 s chain with a gate at T+1333.5 still
+ * fired at T+1333.5). The cue has to traverse the chain AFTER the track
+ * becomes engageable, so the charge is now relative to the gate.
+ */
+
+describe('CLAIM 5 - route latency delays the trigger, not just the window', () => {
+  /** Standard crossing, 1000 m envelope, one shot available. */
+  function latencyCase(latencyS: number) {
+    const model = effModel(`vr-lat-${++seq}`, {
+      maxRangeM: 1000,
+      engageTimeS: 0,
+      pk: 0.6,
+      salvoCooldownS: 1000,
+      magazineSize: 5,
+    })
+    const { scenario, effIds } = crossing([model])
+    scenario.connections[0].latencyS = latencyS
+    const a = assessAllThreats(scenario)[0]
+    return { scenario, a, effId: effIds[0], r: resolveEngagements(scenario, [a]) }
+  }
+
+  it('holds the first salvo until gate + route latency', () => {
+    // Window (grid) [25.5, 75.0]; tight-ROE gate 25.5 (first sample with
+    // d <= 1000). Route latency 20 s over the single sensor -> effector link.
+    // Usability: needS = engageTimeS 0 + latency 20 = 20 <= 49.5 gated
+    // length, so the threat stays engageable.
+    // First legal assignment: 25.5 + 20 = 45.5, engageTime 0 so the effect
+    // lands there too. x(45.5) = -2010 + 1820 = -190, d = 190,
+    // falloff = 1 - 0.3 * 0.19 = 0.943, Pk = 0.6 * 0.943 = 0.5658.
+    const { a, r } = latencyCase(20)
+    expect(a.status).toBe('engageable')
+    expect(a.engageGateS).toBeCloseTo(25.5, 9)
+    expect(a.windowS).toEqual([25.5, 75])
+
+    const t = r.threats[0]
+    expect(t.shotsFired).toBe(1)
+    expect(t.firstShotS).toBeCloseTo(45.5, 9)
+    // The refutation: an absolute floor from T0 vanishes behind a later gate,
+    // leaving delta 0. The charge must be the full latency.
+    expect(t.firstShotS! - a.engageGateS!).toBeCloseTo(20, 9)
+    expect(t.expectedKills).toBeCloseTo(0.6 * (1 - 0.3 * (190 / 1000)), 6) // 0.5658
+    // Explicitly refute the un-delayed geometry at the gate (d = 990).
+    expect(Math.abs(t.expectedKills - 0.4218)).toBeGreaterThan(1e-3)
+  })
+
+  it('fires at the gate itself when the chain has no latency', () => {
+    // Same laydown, latency 0: first shot at the gate, d = 990,
+    // Pk = 0.6 * 0.703 = 0.4218. This is the control for the case above.
+    const { a, r } = latencyCase(0)
+    const t = r.threats[0]
+    expect(t.firstShotS).toBeCloseTo(25.5, 9)
+    expect(t.firstShotS! - a.engageGateS!).toBe(0)
+    expect(t.expectedKills).toBeCloseTo(0.6 * (1 - 0.3 * (990 / 1000)), 6) // 0.4218
+  })
+
+  it('spends nothing when the latency pushes the trigger past the window', () => {
+    // Latency 60 s: 25.5 + 60 = 85.5 > 75.0 window close. The magazine is
+    // untouched and the shot never happens. assessThreat still calls the
+    // threat window-too-short here, since needS 60 > the 49.5 gated length.
+    const { a, r, effId } = latencyCase(60)
+    expect(a.status).toBe('window-too-short')
+    expect(r.threats[0].shotsFired).toBe(0)
+    expect(r.threats[0].firstShotS).toBeNull()
+    expect(r.effectors.find((x) => x.effectorId === effId)!.expectedRoundsRemaining).toBe(5)
   })
 })

@@ -41,6 +41,7 @@ const HOLD_TOLERANCE_S = 0.25
 /**
  * Track lifecycle, highest precedence first:
  * ghost > engaged > targeted > identified > tracked > searching > undetected.
+ * ENGAGED latches: see TrackFileState.firstSalvoAtS.
  */
 export type TrackPhase =
   | 'undetected' | 'searching' | 'tracked' | 'identified'
@@ -50,15 +51,32 @@ export type TrackPhase =
  * Canonical phase presentation. One table, so the canvas ring and the
  * telemetry pill can never drift apart. `color` is null for 'undetected',
  * which takes the entity color and draws no ring.
+ *
+ * The kill-chain rungs used to share one red, so an operator could not read
+ * HOSTILE, TARGETED and ENGAGED apart by color. Each rung now has its own
+ * value. Contrast is measured against the board background (--bg #16181a in
+ * src/index.css); every value clears the 3:1 graphic floor there and on the
+ * two darker basemaps as well.
+ *   searching  #82887e  dim grey,   4.89:1. Held once, not held now.
+ *   tracked    #d9a441  amber,      7.91:1. A sensor holds it.
+ *   identified #c4564a  brick red,  4.05:1. The --danger token, so the ring
+ *              matches every other hostile mark on the board.
+ *   targeted   #bb6499  plum,       4.57:1. The one free hue on this palette,
+ *              so a weapon-assigned track reads as neither amber nor red.
+ *   engaged    #f2795e  hot coral,  6.50:1. Same family as HOSTILE and 1.6x
+ *              brighter, because rounds are in the air. It pulses as well.
+ *   ghost      #6a7178  dim steel,  3.60:1. Defeated, and deliberately quiet.
+ * HOSTILE and ENGAGED separate by value, TARGETED separates from both by hue,
+ * so no pair depends on one channel alone.
  */
 export const PHASE_STYLE = {
   undetected: { label: 'UNDETECTED', color: null },
   searching: { label: 'SEARCHING', color: '#82887e' },
   tracked: { label: 'TRACKED', color: '#d9a441' },
   identified: { label: 'HOSTILE', color: '#c4564a' },
-  targeted: { label: 'TARGETED', color: '#c4564a' },
-  engaged: { label: 'ENGAGED', color: '#c4564a' },
-  ghost: { label: 'GHOST', color: '#6a7178' },
+  targeted: { label: 'TARGETED', color: '#bb6499' },
+  engaged: { label: 'ENGAGED', color: '#f2795e' },
+  ghost: { label: 'DEFEATED', color: '#6a7178' },
 } as const satisfies Record<TrackPhase, { label: string; color: string | null }>
 
 export interface TrackFileState {
@@ -75,9 +93,21 @@ export interface TrackFileState {
   targetedNow: boolean
   /** Salvos assigned whose effect has not landed at t. */
   incomingSalvos: number
-  /** Salvos assigned at or before t (kinetic plus jam). */
+  /**
+   * Assignment time of the first salvo against this track, null while none has
+   * been assigned. This is the ENGAGED latch: a zero-flight-time beam is
+   * incoming for only BEAM_DISPLAY_S, so a phase driven by incomingSalvos
+   * dropped back to TARGETED between dwells and flickered for the whole
+   * engagement. Once a weapon has fired at the track, the track is engaged.
+   */
+  firstSalvoAtS: number | null
+  /** Salvos assigned at or before t, every expenditure channel summed. */
   salvosAssigned: number
+  /** Kinetic rounds (interceptor, gun, net) assigned at or before t. */
   kineticSalvos: number
+  /** Directed-energy bursts (DE, HPM) assigned at or before t. */
+  deSalvos: number
+  /** EW dwells (jammer) assigned at or before t. */
   jamSalvos: number
   /** Effects landed at or before t. */
   effectsLanded: number
@@ -131,8 +161,14 @@ export interface ShotInFlight {
  */
 export type EffectorEngagementMode = 'semi-active' | 'active' | 'beam'
 
-/** Effector glyph treatment at t. 'idle' draws the outline frame only. */
-export type EffectorLiveState = 'idle' | 'semi-active' | 'active' | 'beam'
+/**
+ * Effector glyph treatment at t. 'idle' draws the outline frame only.
+ * 'depleted' means the magazine is spent: the board used to draw a dry
+ * interceptor exactly like a ready one while the side panel read EMPTY.
+ * A live salvo outranks it, so the guidance treatment still plays out on the
+ * last round in flight.
+ */
+export type EffectorLiveState = 'idle' | 'semi-active' | 'active' | 'beam' | 'depleted'
 
 /** Researched guidance value to draw treatment. */
 const GUIDANCE_MODE: Record<'fc-uplink' | 'c2-cue' | 'self' | 'operator', EffectorEngagementMode> = {
@@ -195,8 +231,13 @@ interface TrackSeries {
   /** Usable ROE-gated window; null unless the status is 'engageable'. */
   windowS: [number, number] | null
   arrivalS: number | null
-  /** Salvo assignment times ascending, split by expenditure channel. */
+  /**
+   * Salvo assignment times ascending, split by EngagementEvent.channelClass:
+   * kinetic rounds, directed-energy bursts, and EW dwells are three different
+   * expenditures, so a directed-energy effector never inflates a round count.
+   */
   kineticTS: number[]
+  deTS: number[]
   jamTS: number[]
   assignTS: number[]
   /** Per-salvo end of draw ascending: tEffectS, or tS + BEAM_DISPLAY_S. */
@@ -228,9 +269,24 @@ interface ShotRecord {
   mode: EffectorEngagementMode
 }
 
+/**
+ * One effector's magazine history. Rounds count at assignment, exactly the way
+ * the engine spends them and the way systemTelemetry reads capacity, so the
+ * board and the side panel call the same weapon empty at the same instant.
+ */
+interface EffectorSeries {
+  effectorId: string
+  /** Assignment times ascending. */
+  assignTS: number[]
+  /** Rounds carried. null means unlimited (jammer, DE, HPM): never depleted. */
+  magazineSize: number | null
+}
+
 /** Built once per (scenario, assessments, report). Opaque to callers. */
 export interface TrackTimeline {
   tracks: TrackSeries[]
+  /** Magazine history per effector entity, for the depleted glyph cue. */
+  effectors: EffectorSeries[]
   /** Every salvo, assignment time ascending. */
   shots: ShotRecord[]
   /** Parallel to shots: assignment times, for the range scan. */
@@ -330,16 +386,19 @@ export function buildTrackTimeline(
     const evs = eventsByThreat.get(a.uasId) ?? []
 
     const kineticTS: number[] = []
+    const deTS: number[] = []
     const jamTS: number[] = []
     const assignTS: number[] = []
     const liveEndTS: number[] = []
     for (const ev of evs) {
       assignTS.push(ev.tS)
-      if (ev.softShot) jamTS.push(ev.tS)
+      if (ev.channelClass === 'ew') jamTS.push(ev.tS)
+      else if (ev.channelClass === 'directed-energy') deTS.push(ev.tS)
       else kineticTS.push(ev.tS)
       liveEndTS.push(drawEndS(ev))
     }
     kineticTS.sort(ascending)
+    deTS.sort(ascending)
     jamTS.sort(ascending)
     assignTS.sort(ascending)
     liveEndTS.sort(ascending)
@@ -424,6 +483,7 @@ export function buildTrackTimeline(
       windowS: a.status === 'engageable' ? a.windowS : null,
       arrivalS: a.arrivalS,
       kineticTS,
+      deTS,
       jamTS,
       assignTS,
       liveEndTS,
@@ -438,11 +498,17 @@ export function buildTrackTimeline(
 
   const effectorById = new Map<string, Entity>()
   const modeById = new Map<string, EffectorEngagementMode>()
+  const effectors: EffectorSeries[] = []
   for (const e of scenario.entities) {
     if (e.kind !== 'effector') continue
     effectorById.set(e.id, e)
     const spec = scenario.library.find((m) => m.id === e.specId)?.effector
     modeById.set(e.id, effectorEngagementMode(e.specId, spec?.effectorType))
+    effectors.push({
+      effectorId: e.id,
+      assignTS: report.events.filter((ev) => ev.effectorId === e.id).map((ev) => ev.tS).sort(ascending),
+      magazineSize: spec?.magazineSize ?? null,
+    })
   }
 
   // Target geometry is fixed once the effect time is known, so each salvo's
@@ -502,7 +568,7 @@ export function buildTrackTimeline(
   }
   shots.sort((x, y) => x.tS - y.tS)
 
-  return { tracks, shots, shotTS: shots.map((s) => s.tS), maxSpanS }
+  return { tracks, effectors, shots, shotTS: shots.map((s) => s.tS), maxSpanS }
 }
 
 /** Track state for every threat with a flight path, keyed by uasId. */
@@ -520,6 +586,7 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
     const targetedNow = tr.windowS != null && tS >= tr.windowS[0] && tS <= tr.windowS[1]
 
     const kineticSalvos = countAtMost(tr.kineticTS, tS)
+    const deSalvos = countAtMost(tr.deTS, tS)
     const jamSalvos = countAtMost(tr.jamTS, tS)
     const incomingSalvos = countAtMost(tr.assignTS, tS) - countAtMost(tr.liveEndTS, tS)
     const effectsLanded = countAtMost(tr.effectTS, tS)
@@ -529,9 +596,17 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
     const jammedFraction = prefixAt(tr.jammedPrefix, countAtMost(tr.jamEffectTS, tS))
     const eliminated = tr.eliminatedAtS != null && tS >= tr.eliminatedAtS
 
+    // The latch, not incomingSalvos: a beam is only ever incoming for
+    // BEAM_DISPLAY_S, so the track would flicker between dwells. assignTS is
+    // ascending, so its first entry is the first shot ever taken at the track.
+    // It stays null until that shot is taken, because no field here may read
+    // ahead of t.
+    const firstSalvoAtS =
+      tr.assignTS.length > 0 && tS >= tr.assignTS[0] ? tr.assignTS[0] : null
+
     let phase: TrackPhase = 'undetected'
     if (eliminated) phase = 'ghost'
-    else if (incomingSalvos > 0) phase = 'engaged'
+    else if (firstSalvoAtS != null) phase = 'engaged'
     else if (targetedNow) phase = 'targeted'
     else if (classification === 'hostile') phase = 'identified'
     else if (heldNow) phase = 'tracked'
@@ -546,8 +621,10 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
       classification,
       targetedNow,
       incomingSalvos,
-      salvosAssigned: kineticSalvos + jamSalvos,
+      firstSalvoAtS,
+      salvosAssigned: kineticSalvos + deSalvos + jamSalvos,
       kineticSalvos,
+      deSalvos,
       jamSalvos,
       effectsLanded,
       expectedKills,
@@ -598,11 +675,19 @@ export function shotsInFlightAt(tl: TrackTimeline, tS: number): ShotInFlight[] {
   }))
 }
 
-/** Effector glyph treatment at t, keyed by effector id. Absent means idle. */
+/**
+ * Effector glyph treatment at t, keyed by effector id. Absent means idle.
+ * A drawn salvo wins, so the guidance treatment always plays out; a weapon
+ * with nothing left to fire then reads 'depleted' for the rest of the run.
+ */
 export function effectorStatesAt(tl: TrackTimeline, tS: number): Map<string, EffectorLiveState> {
   const out = new Map<string, EffectorLiveState>()
   for (const s of liveShots(tl, tS)) {
     if (!out.has(s.effectorId)) out.set(s.effectorId, s.mode)
+  }
+  for (const e of tl.effectors) {
+    if (e.magazineSize == null || out.has(e.effectorId)) continue
+    if (countAtMost(e.assignTS, tS) >= e.magazineSize) out.set(e.effectorId, 'depleted')
   }
   return out
 }

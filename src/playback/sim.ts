@@ -227,6 +227,24 @@ export interface TrackQualitySummary {
 /** Estimated speed above which an unknown track becomes suspected, kph (source: 50). */
 export const SUSPECT_SPEED_KPH = 50
 
+/**
+ * Protected-boundary radius, meters, for an asset entity that carries no
+ * `defendedRadiusM` of its own. The T&E catalog measures warning time to a
+ * protected-boundary CROSSING, not to closest approach
+ * (docs/te-compilation/MASTER-CALCULATIONS.md section 5; the JIATF-401
+ * vignette in docs/te-compilation/12-jiatf401.md section 1.5 flies against a
+ * 1,000 m boundary). 500 m is the conservative point-defence default used
+ * here: a threat inside it is over the asset. Planning factor, not a measured
+ * figure. Set `Entity.defendedRadiusM` per asset to match the real boundary.
+ */
+export const DEFAULT_DEFENDED_RADIUS_M = 500
+
+/** Protected-boundary radius of one asset entity, meters. */
+function defendedRadiusOf(asset: Entity): number {
+  const r = asset.defendedRadiusM
+  return r != null && r > 0 ? r : DEFAULT_DEFENDED_RADIUS_M
+}
+
 /** Proximity multiple of a connected effector's max range that makes a track suspected. */
 export const SUSPECT_RANGE_FACTOR = 1.5
 
@@ -251,11 +269,30 @@ export interface ThreatAssessment {
   techs: SensorType[]
   /** True when a formation was detected but no detecting sensor could split it. */
   swarmMerged: boolean
-  /** Closest approach to the nearest defended asset. */
+  /**
+   * Closest point of approach (CPA) to the nearest defended asset: which
+   * asset, when the sweep sampled it, and how close. Populated whenever any
+   * asset is placed, even for a threat that turns away and never arrives.
+   * CPA is pure geometry: it says how near the track got, never that it got
+   * there. Use arrivalS for the "over the asset" question.
+   */
+  cpaAssetId: string | null
+  cpaS: number | null
+  cpaDistanceM: number | null
+  /** Same value as cpaAssetId; kept for callers written before the CPA split. */
   assetId: string | null
-  arrivalS: number | null
+  /** Same value as cpaDistanceM; kept for callers written before the CPA split. */
   closestApproachM: number | null
-  /** arrival minus first detection; the early-warning buffer. */
+  /**
+   * ARRIVAL: the first sample time the threat is inside a defended asset's
+   * protected-boundary radius (Entity.defendedRadiusM, default
+   * DEFAULT_DEFENDED_RADIUS_M). Null when it never enters one, and null when
+   * no asset is placed. A threat that only reaches CPA has NOT arrived.
+   * attrition.ts credits a defeat as a defeat only when the effect lands at
+   * or before this time.
+   */
+  arrivalS: number | null
+  /** arrival minus first detection; the early-warning buffer. Null when either is null. */
   warningS: number | null
   /**
    * Longest usable interval [start, end] against any connected effector
@@ -474,9 +511,12 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     firstConfirmS: null,
     techs: [],
     swarmMerged: false,
+    cpaAssetId: null,
+    cpaS: null,
+    cpaDistanceM: null,
     assetId: null,
-    arrivalS: null,
     closestApproachM: null,
+    arrivalS: null,
     warningS: null,
     windowS: null,
     windowEffectorId: null,
@@ -522,6 +562,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     tS: null,
     distM: Number.POSITIVE_INFINITY,
   }
+  // First protected-boundary crossing, which is the ARRIVAL. Separate from
+  // closest approach: a threat can pass its CPA 2 km out and never arrive.
+  let arrivalS: number | null = null
 
   // Classification-loop route cache; see the rebuild rule at the use site.
   let connectedCache: Set<string> | null = null
@@ -610,9 +653,13 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       }
     }
 
+    // Lead-ship geometry, matching the rest of the asset math. Two questions
+    // per sample: how near did the track get (CPA), and is it inside a
+    // protected boundary yet (arrival)?
     for (const asset of assets) {
       const d = dist(pos, asset.pos)
       if (d < closest.distM) closest = { assetId: asset.id, tS: t, distM: d }
+      if (arrivalS == null && d <= defendedRadiusOf(asset)) arrivalS = t
     }
 
     // A threat is in-range of an effector when ANY formation member is inside
@@ -648,15 +695,20 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   }))
   base.swarmMerged = hasFormation && base.firstDetectS != null && !anyResolved
   if (closest.assetId != null) {
+    base.cpaAssetId = closest.assetId
+    base.cpaS = closest.tS
+    base.cpaDistanceM = closest.distM
     base.assetId = closest.assetId
-    base.arrivalS = closest.tS
     base.closestApproachM = closest.distM
   }
+  base.arrivalS = arrivalS
   if (base.firstDetectS != null && base.arrivalS != null) {
     base.warningS = base.arrivalS - base.firstDetectS
   }
   if (base.firstDetectS != null) {
-    const horizonS = base.arrivalS ?? trackSamples[trackSamples.length - 1]?.tS ?? base.firstDetectS
+    // Track continuity is judged out to closest approach, not to arrival: a
+    // threat that never crosses a boundary still has a decision horizon.
+    const horizonS = base.cpaS ?? trackSamples[trackSamples.length - 1]?.tS ?? base.firstDetectS
     const samples = trackSamples.filter(
       (sample) => sample.tS >= base.firstDetectS! - DT / 2 && sample.tS <= horizonS + DT / 2,
     )

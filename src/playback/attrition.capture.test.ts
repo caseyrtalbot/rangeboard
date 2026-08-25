@@ -68,11 +68,74 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     for (let i = 1; i < report.events.length; i++) {
       expect(report.events[i].tS).toBeGreaterThanOrEqual(report.events[i - 1].tS)
     }
-    const kinetic = report.events.filter((e) => !e.softShot).length
-    const jam = report.events.filter((e) => e.softShot).length
+    // Expenditure reconciles per channel. This laydown carries three
+    // interceptor types plus a Modi II jammer and no directed energy.
+    const kinetic = report.events.filter((e) => e.channelClass === 'kinetic').length
+    const de = report.events.filter((e) => e.channelClass === 'directed-energy').length
+    const jam = report.events.filter((e) => e.channelClass === 'ew').length
     expect(kinetic).toBe(report.totals.shotsFired)
+    expect(de).toBe(report.totals.deSalvos)
+    expect(de).toBe(0)
     expect(jam).toBe(report.totals.jamSalvos)
+    // Kill mass reconciles only against BOTH credit buckets. The old
+    // assertion compared it to expectedKills alone, which is exactly the
+    // defect: it counted post-arrival kills as defeats.
     const killMass = report.events.reduce((s, e) => s + e.killDelta, 0)
-    expect(killMass).toBeCloseTo(report.totals.expectedKills, 9)
+    expect(killMass).toBeCloseTo(
+      report.totals.expectedKills + report.totals.expectedLateKills,
+      9,
+    )
+  })
+
+  it('credits kill mass that lands after arrival as late, not as defeat', () => {
+    // One defended asset sits at (4464, 3912) with the default 500 m
+    // protected boundary, and part of the raid crosses it before the last
+    // intercepts land. Late mass is real destruction that failed to defend
+    // the asset, so it must sit outside expectedKills.
+    const lateEvents = report.events.filter((e) => e.lateEffect)
+    expect(lateEvents.length).toBeGreaterThan(0)
+    const lateMass = lateEvents.reduce((s, e) => s + e.killDelta, 0)
+    expect(lateMass).toBeCloseTo(report.totals.expectedLateKills, 9)
+    expect(report.totals.expectedLateKills).toBeGreaterThan(0)
+    // Every late event belongs to a threat that actually arrived.
+    for (const e of lateEvents) {
+      const a = assessments.find((x) => x.uasId === e.uasId)!
+      expect(a.arrivalS).not.toBeNull()
+      expect(e.tEffectS).toBeGreaterThan(a.arrivalS!)
+    }
+    // The partition identity uses the defeat mass alone.
+    expect(
+      report.totals.expectedKills +
+        report.totals.expectedLeakers +
+        report.totals.expectedNoArrival,
+    ).toBeCloseTo(report.totals.raidSize, 9)
+  })
+
+  it('partitions the raid into defeated, leaked, and never-arrived ships', () => {
+    // The laydown places one asset and every threat crosses its boundary, so
+    // this fixture is the AGREEMENT case: never-arrived mass is genuinely 0
+    // and the new partition reproduces the old raidSize-minus-kills figure.
+    // The buckets must still be filled independently, not by subtraction.
+    const { totals } = report
+    expect(report.threats.every((t) => t.arrived)).toBe(true)
+    expect(totals.reportedLeakers).toBe(totals.expectedLeakers)
+    expect(totals.expectedLeakers).toBeGreaterThan(0)
+    expect(totals.expectedNoArrival).toBe(0)
+    expect(totals.expectedLeakers).toBeCloseTo(totals.raidSize - totals.expectedKills, 9)
+    expect(
+      totals.expectedKills + totals.expectedLeakers + totals.expectedNoArrival,
+    ).toBeCloseTo(totals.raidSize, 9)
+    // Row by row as well, so no threat is double counted into two buckets.
+    for (const t of report.threats) {
+      expect(t.expectedKills + t.expectedLeakers + t.expectedNoArrival).toBeCloseTo(
+        t.shipCount,
+        9,
+      )
+      if (t.arrived) expect(t.expectedNoArrival).toBe(0)
+      else expect(t.expectedLeakers).toBe(0)
+    }
+    // Late mass is a sub-measure of the leaker mass, never a deduction.
+    expect(totals.expectedLateKills).toBeGreaterThan(0)
+    expect(totals.expectedLeakers).toBeGreaterThan(totals.expectedLateKills)
   })
 })

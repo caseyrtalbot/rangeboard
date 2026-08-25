@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
-import type { EntityKind, Roe, Scenario, SensorRole } from '../model/types'
+import type { EntityKind, Roe, Scenario, SensorRole, Vec2 } from '../model/types'
 import { newId } from '../model/types'
 import type { LinkMedium } from '../model/integration'
 import { MEDIUM_LATENCY_S } from '../model/integration'
-import { assessThreat, detectionsAt, memberPositions } from './sim'
+import { assessThreat, DEFAULT_DEFENDED_RADIUS_M, detectionsAt, memberPositions } from './sim'
 
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())
@@ -857,5 +857,106 @@ describe('typed kill-chain routing', () => {
     // The same laydown over untyped links keeps its legacy zero latency.
     for (const c of s.connections) Object.assign(c, { confidence: null, latencyS: 0 })
     expect(assessThreat(s, uasId).status).toBe('engageable')
+  })
+})
+
+/**
+ * Arrival is a protected-boundary crossing; closest approach is geometry.
+ * Before the fix `arrivalS` was the closest-approach time, so a threat that
+ * turned away 2 km short still "arrived", and a laydown with no asset placed
+ * reported null with no way to tell "never arrived" from "nothing to arrive
+ * at". The CPA fields now always carry the geometry and arrivalS answers only
+ * the boundary question.
+ */
+describe('arrival versus closest approach', () => {
+  /** 50 km radar at the origin, threat crossing west to east at 40 m/s. */
+  function crossingScenario(): { scenario: Scenario; uasId: string } {
+    return ladderScenario({
+      speedMps: 40,
+      sensor: { x: 0, detectRangeM: 50000 },
+      pathFromX: -2000,
+      pathToX: 2000,
+    })
+  }
+
+  function addAsset(s: Scenario, pos: Vec2, defendedRadiusM?: number): string {
+    const id = newId('e-ast')
+    s.entities.push({
+      id,
+      name: 'Asset',
+      kind: 'asset',
+      specId: null,
+      pos,
+      headingDeg: 0,
+      color: null,
+      notes: '',
+      ...(defendedRadiusM != null ? { defendedRadiusM } : {}),
+    })
+    return id
+  }
+
+  it('uses the default 500 m protected boundary as a planning factor', () => {
+    expect(DEFAULT_DEFENDED_RADIUS_M).toBe(500)
+  })
+
+  it('arrives at the first sample inside the boundary, not at closest approach', () => {
+    // x(t) = -2000 + 40 t. Inside 500 m when |x| <= 500 -> t in [37.5, 62.5];
+    // 37.5 is on the 0.5 s grid. Closest approach is x = 0 at t = 50.
+    const { scenario, uasId } = crossingScenario()
+    const assetId = addAsset(scenario, { x: 0, y: 0 })
+    const a = assessThreat(scenario, uasId)
+    expect(a.arrivalS).toBeCloseTo(37.5, 9)
+    expect(a.cpaS).toBeCloseTo(50, 9)
+    expect(a.cpaDistanceM).toBeCloseTo(0, 6)
+    expect(a.cpaAssetId).toBe(assetId)
+    // Legacy fields still carry the CPA values for callers not yet updated.
+    expect(a.assetId).toBe(assetId)
+    expect(a.closestApproachM).toBe(a.cpaDistanceM)
+    // warningS = arrival - first detection; the 50 km radar holds from t = 0.
+    expect(a.firstDetectS).toBeCloseTo(0, 9)
+    expect(a.warningS).toBeCloseTo(37.5, 9)
+  })
+
+  it('honours a per-asset defendedRadiusM', () => {
+    // 1000 m boundary: |x| <= 1000 -> t in [25, 75].
+    const { scenario, uasId } = crossingScenario()
+    addAsset(scenario, { x: 0, y: 0 }, 1000)
+    const a = assessThreat(scenario, uasId)
+    expect(a.arrivalS).toBeCloseTo(25, 9)
+    expect(a.cpaS).toBeCloseTo(50, 9)
+  })
+
+  it('never arrives when the track turns away short of the boundary', () => {
+    // Asset 2500 m off the lane: CPA 2500 m at t = 50, boundary never crossed.
+    const { scenario, uasId } = crossingScenario()
+    const assetId = addAsset(scenario, { x: 0, y: 2500 })
+    const a = assessThreat(scenario, uasId)
+    expect(a.arrivalS).toBeNull()
+    expect(a.warningS).toBeNull()
+    // The geometry is still reported, so a caller can say how close it got.
+    expect(a.cpaS).toBeCloseTo(50, 9)
+    expect(a.cpaDistanceM).toBeCloseTo(2500, 6)
+    expect(a.cpaAssetId).toBe(assetId)
+  })
+
+  it('reports null CPA and null arrival when no asset is placed', () => {
+    const { scenario, uasId } = crossingScenario()
+    const a = assessThreat(scenario, uasId)
+    expect(a.cpaAssetId).toBeNull()
+    expect(a.cpaS).toBeNull()
+    expect(a.cpaDistanceM).toBeNull()
+    expect(a.assetId).toBeNull()
+    expect(a.closestApproachM).toBeNull()
+    expect(a.arrivalS).toBeNull()
+    expect(a.warningS).toBeNull()
+  })
+
+  it('takes the first boundary crossed when several assets are placed', () => {
+    // Near asset at x = -1200 (crossed from t = 7.5), far asset at x = 1200.
+    const { scenario, uasId } = crossingScenario()
+    addAsset(scenario, { x: 1200, y: 0 })
+    addAsset(scenario, { x: -1200, y: 0 })
+    const a = assessThreat(scenario, uasId)
+    expect(a.arrivalS).toBeCloseTo(7.5, 9)
   })
 })

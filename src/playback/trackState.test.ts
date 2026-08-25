@@ -13,6 +13,7 @@ import {
   buildTrackTimeline,
   effectorEngagementMode,
   effectorStatesAt,
+  PHASE_STYLE,
   shotsInFlightAt,
   trackStatesAt,
 } from './trackState'
@@ -33,9 +34,12 @@ function assessment(over: Partial<ThreatAssessment>): ThreatAssessment {
     firstConfirmS: null,
     techs: [],
     swarmMerged: false,
+    cpaAssetId: null,
+    cpaS: null,
+    cpaDistanceM: null,
     assetId: null,
-    arrivalS: null,
     closestApproachM: null,
+    arrivalS: null,
     warningS: null,
     windowS: null,
     windowEffectorId: null,
@@ -69,10 +73,18 @@ function event(over: Partial<EngagementEvent>): EngagementEvent {
     shipIdx: 0,
     channel: 'kill',
     softShot: false,
+    effectorType: 'interceptor',
+    channelClass: 'kinetic',
+    lateEffect: false,
     pk: 0.5,
     killDelta: 0,
     ...over,
   }
+}
+
+/** Jammer salvo: soft kill channel AND ew expenditure channel. */
+function jamEvent(over: Partial<EngagementEvent>): EngagementEvent {
+  return event({ softShot: true, effectorType: 'jammer', channelClass: 'ew', ...over })
 }
 
 function threatAtt(uasId: string, shipCount: number): AttritionReport['threats'][number] {
@@ -82,10 +94,17 @@ function threatAtt(uasId: string, shipCount: number): AttritionReport['threats']
     expectedKills: 0,
     expectedHardKills: 0,
     expectedSoftKills: 0,
+    expectedLateKills: 0,
+    expectedLateHardKills: 0,
+    expectedLateSoftKills: 0,
+    arrived: false,
+    expectedLeakers: 0,
+    expectedNoArrival: shipCount,
     leakProbability: 1,
     continueJamProb: 0,
     firstShotS: null,
     shotsFired: 0,
+    deSalvos: 0,
     jamSalvos: 0,
     killedByEffectorId: null,
     killedBySoft: false,
@@ -104,9 +123,13 @@ function reportOf(
       expectedKills: 0,
       expectedHardKills: 0,
       expectedSoftKills: 0,
+      expectedLateKills: 0,
       expectedLeakers: 0,
-      shotsFired: events.filter((e) => !e.softShot).length,
-      jamSalvos: events.filter((e) => e.softShot).length,
+      expectedNoArrival: 0,
+      reportedLeakers: null,
+      shotsFired: events.filter((e) => e.channelClass === 'kinetic').length,
+      deSalvos: events.filter((e) => e.channelClass === 'directed-energy').length,
+      jamSalvos: events.filter((e) => e.channelClass === 'ew').length,
     },
     events,
   }
@@ -159,6 +182,55 @@ describe('effectorEngagementMode', () => {
 
   it('draws semi-active when neither a profile nor a spec is known', () => {
     expect(effectorEngagementMode(null, undefined)).toBe('semi-active')
+  })
+})
+
+/** WCAG relative luminance, for the phase color contrast check. */
+function luminance(hex: string): number {
+  const channel = (v: number) => {
+    const c = v / 255
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  }
+  const r = channel(parseInt(hex.slice(1, 3), 16))
+  const g = channel(parseInt(hex.slice(3, 5), 16))
+  const b = channel(parseInt(hex.slice(5, 7), 16))
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+function contrast(a: string, b: string): number {
+  const x = luminance(a)
+  const y = luminance(b)
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+
+describe('PHASE_STYLE', () => {
+  /** Every phase that draws a ring. 'undetected' takes the entity color. */
+  const rungs = ['searching', 'tracked', 'identified', 'targeted', 'engaged', 'ghost'] as const
+
+  it('gives every rung its own color', () => {
+    // identified, targeted and engaged all used to be '#c4564a', so the ring
+    // could not tell HOSTILE, TARGETED and ENGAGED apart.
+    const colors = rungs.map((p) => PHASE_STYLE[p].color)
+    expect(new Set(colors).size).toBe(rungs.length)
+    expect(PHASE_STYLE.undetected.color).toBeNull()
+  })
+
+  it('keeps HOSTILE on the shared danger token and names a defeated track', () => {
+    expect(PHASE_STYLE.identified.color).toBe('#c4564a')
+    expect(PHASE_STYLE.ghost.label).toBe('DEFEATED')
+  })
+
+  it('clears the 3:1 graphic contrast floor on every basemap background', () => {
+    // --bg, .canvas-host.airspace and .canvas-host.sat in src/index.css.
+    for (const bg of ['#16181a', '#131619', '#0e0f10']) {
+      for (const rung of rungs) {
+        expect(contrast(PHASE_STYLE[rung].color, bg)).toBeGreaterThanOrEqual(3)
+      }
+    }
+  })
+
+  it('separates HOSTILE from ENGAGED by value, not by hue alone', () => {
+    expect(contrast(PHASE_STYLE.identified.color, PHASE_STYLE.engaged.color)).toBeGreaterThan(1.5)
   })
 })
 
@@ -278,6 +350,44 @@ describe('phase transitions and precedence', () => {
     expect(stateAt(short, empty, 60).phase).toBe('searching')
   })
 
+  it('latches ENGAGED from the first salvo to the end of the run', () => {
+    // A beam holds incoming for BEAM_DISPLAY_S only, so a phase driven by
+    // incomingSalvos dropped back to TARGETED between dwells and flickered.
+    const beams = reportOf(
+      [
+        jamEvent({ tS: 52, tEffectS: 52 }),
+        jamEvent({ tS: 56, tEffectS: 56 }),
+        jamEvent({ tS: 60, tEffectS: 60 }),
+      ],
+      [threatAtt('u1', 1)],
+    )
+    expect(stateAt(a, beams, 51.9).phase).toBe('targeted')
+    expect(stateAt(a, beams, 52).phase).toBe('engaged')
+    // Between dwells: nothing is incoming, and the phase must not fall back.
+    expect(stateAt(a, beams, 54).incomingSalvos).toBe(0)
+    expect(stateAt(a, beams, 54).phase).toBe('engaged')
+    expect(stateAt(a, beams, 58).phase).toBe('engaged')
+    // Past the window and past every dwell, the latch still holds.
+    expect(stateAt(a, beams, 90).targetedNow).toBe(false)
+    expect(stateAt(a, beams, 90).phase).toBe('engaged')
+    expect(stateAt(a, beams, 1e6).phase).toBe('engaged')
+  })
+
+  it('reports the first salvo time and leaves it null before any shot', () => {
+    expect(stateAt(a, report, 61.9).firstSalvoAtS).toBeNull()
+    expect(stateAt(a, report, 62).firstSalvoAtS).toBe(62)
+    expect(stateAt(a, report, 200).firstSalvoAtS).toBe(62)
+    expect(stateAt(a, reportOf([]), 200).firstSalvoAtS).toBeNull()
+  })
+
+  it('keeps ghost above the latch', () => {
+    // The track is eliminated at 66 and salvos keep arriving after it.
+    expect(stateAt(a, report, 65.9).phase).toBe('engaged')
+    expect(stateAt(a, report, 66).phase).toBe('ghost')
+    expect(stateAt(a, report, 71).firstSalvoAtS).toBe(62)
+    expect(stateAt(a, report, 71).phase).toBe('ghost')
+  })
+
   it('reports arrival and skips no-path assessments', () => {
     const arr = assessment({ arrivalS: 80 })
     expect(stateAt(arr, reportOf([]), 79.9).arrived).toBe(false)
@@ -299,7 +409,9 @@ describe('ghost cutoff', () => {
     expect(at.residualFraction).toBeCloseTo(0.05, 9)
     expect(at.eliminated).toBe(false)
     expect(at.eliminatedAtS).toBeNull()
-    expect(at.phase).toBe('undetected')
+    // Not a ghost. It is ENGAGED, not 'undetected': a salvo was assigned at
+    // t = 0 and the phase latches. The old expectation encoded the flicker.
+    expect(at.phase).toBe('engaged')
   })
 
   it('flips at the first effect below the cutoff and reports that effect time', () => {
@@ -349,7 +461,7 @@ describe('ghost cutoff', () => {
 describe('eliminatedBySoft', () => {
   it('is true when the landed jam mass dominates at the cutoff', () => {
     const report = reportOf([
-      event({ tEffectS: 10, killDelta: 0.6, softShot: true }),
+      jamEvent({ tEffectS: 10, killDelta: 0.6 }),
       event({ tEffectS: 20, killDelta: 0.36 }),
     ])
     const at = stateAt(assessment({}), report, 20)
@@ -360,7 +472,7 @@ describe('eliminatedBySoft', () => {
 
   it('is false when the landed kinetic mass dominates at the cutoff', () => {
     const report = reportOf([
-      event({ tEffectS: 10, killDelta: 0.36, softShot: true }),
+      jamEvent({ tEffectS: 10, killDelta: 0.36 }),
       event({ tEffectS: 20, killDelta: 0.6 }),
     ])
     const at = stateAt(assessment({}), report, 20)
@@ -370,7 +482,7 @@ describe('eliminatedBySoft', () => {
 
   it('stays false while the track is alive', () => {
     const report = reportOf([
-      event({ tEffectS: 10, killDelta: 0.6, softShot: true }),
+      jamEvent({ tEffectS: 10, killDelta: 0.6 }),
       event({ tEffectS: 20, killDelta: 0.36 }),
     ])
     const at = stateAt(assessment({}), report, 15)
@@ -385,9 +497,9 @@ describe('jammedFraction', () => {
     // Engine rule: jammed += (1 - jammed) * pk per ship, mean over shipCount.
     const report = reportOf(
       [
-        event({ tEffectS: 10, channel: 'jam', softShot: true, pk: 0.5, shipIdx: 0 }),
-        event({ tEffectS: 20, channel: 'jam', softShot: true, pk: 0.5, shipIdx: 0 }),
-        event({ tEffectS: 30, channel: 'jam', softShot: true, pk: 0.4, shipIdx: 1 }),
+        jamEvent({ tEffectS: 10, channel: 'jam', pk: 0.5, shipIdx: 0 }),
+        jamEvent({ tEffectS: 20, channel: 'jam', pk: 0.5, shipIdx: 0 }),
+        jamEvent({ tEffectS: 30, channel: 'jam', pk: 0.4, shipIdx: 1 }),
       ],
       [threatAtt('u1', 2)],
     )
@@ -401,7 +513,7 @@ describe('jammedFraction', () => {
 
   it('ignores kill-channel salvos, jammer-fired ones included', () => {
     const report = reportOf([
-      event({ tEffectS: 10, channel: 'kill', softShot: true, pk: 0.9, killDelta: 0.5 }),
+      jamEvent({ tEffectS: 10, channel: 'kill', pk: 0.9, killDelta: 0.5 }),
       event({ tEffectS: 20, channel: 'kill', softShot: false, pk: 0.9, killDelta: 0.2 }),
     ])
     expect(stateAt(assessment({}), report, 100).jammedFraction).toBe(0)
@@ -409,8 +521,8 @@ describe('jammedFraction', () => {
 
   it('accumulates in effect order, not assignment order', () => {
     const report = reportOf([
-      event({ tS: 10, tEffectS: 40, channel: 'jam', softShot: true, pk: 0.5 }),
-      event({ tS: 12, tEffectS: 14, channel: 'jam', softShot: true, pk: 0.5 }),
+      jamEvent({ tS: 10, tEffectS: 40, channel: 'jam', pk: 0.5 }),
+      jamEvent({ tS: 12, tEffectS: 14, channel: 'jam', pk: 0.5 }),
     ])
     const a = assessment({})
     expect(stateAt(a, report, 14).jammedFraction).toBeCloseTo(0.5, 9)
@@ -422,7 +534,7 @@ describe('jammedFraction', () => {
 describe('salvo counting', () => {
   const report = reportOf([
     event({ tS: 10, tEffectS: 14 }),
-    event({ tS: 11, tEffectS: 15, softShot: true, channel: 'jam' }),
+    jamEvent({ tS: 11, tEffectS: 15, channel: 'jam' }),
     event({ tS: 30, tEffectS: 34, killDelta: 0.2 }),
   ])
   const a = assessment({})
@@ -431,12 +543,46 @@ describe('salvo counting', () => {
     expect(stateAt(a, report, 9.9).salvosAssigned).toBe(0)
     const mid = stateAt(a, report, 11)
     expect(mid.kineticSalvos).toBe(1)
+    expect(mid.deSalvos).toBe(0)
     expect(mid.jamSalvos).toBe(1)
     expect(mid.salvosAssigned).toBe(2)
     const end = stateAt(a, report, 40)
     expect(end.kineticSalvos).toBe(2)
+    expect(end.deSalvos).toBe(0)
     expect(end.jamSalvos).toBe(1)
     expect(end.salvosAssigned).toBe(3)
+  })
+
+  it('keeps directed energy out of the kinetic and EW counts', () => {
+    // A DE burst is a hard kill that fires no round: it belongs in deSalvos
+    // alone. Counting it as kinetic reported interceptors that never flew.
+    const mixed = reportOf([
+      event({ tS: 10, tEffectS: 14, killDelta: 0.2 }),
+      event({
+        tS: 12,
+        tEffectS: 12,
+        effectorType: 'hpm',
+        channelClass: 'directed-energy',
+        killDelta: 0.3,
+      }),
+      event({
+        tS: 13,
+        tEffectS: 13,
+        effectorType: 'de',
+        channelClass: 'directed-energy',
+        killDelta: 0.1,
+      }),
+      jamEvent({ tS: 14, tEffectS: 14, channel: 'jam' }),
+    ])
+    const end = stateAt(assessment({}), mixed, 20)
+    expect(end.kineticSalvos).toBe(1)
+    expect(end.deSalvos).toBe(2)
+    expect(end.jamSalvos).toBe(1)
+    expect(end.salvosAssigned).toBe(4)
+    // Each channel starts counting at its own assignment time.
+    expect(stateAt(assessment({}), mixed, 11.9).deSalvos).toBe(0)
+    expect(stateAt(assessment({}), mixed, 12).deSalvos).toBe(1)
+    expect(stateAt(assessment({}), mixed, 13).deSalvos).toBe(2)
   })
 
   it('counts effects and kill mass at effect time', () => {
@@ -456,7 +602,9 @@ describe('incomingSalvos', () => {
     expect(stateAt(a, report, 10).phase).toBe('engaged')
     expect(stateAt(a, report, 19.9).incomingSalvos).toBe(1)
     expect(stateAt(a, report, 20).incomingSalvos).toBe(0)
-    expect(stateAt(a, report, 20).phase).toBe('undetected')
+    // The phase is latched, so it does not fall back when the round lands.
+    // This assertion used to read 'undetected', which encoded the flicker.
+    expect(stateAt(a, report, 20).phase).toBe('engaged')
   })
 
   it('holds a zero-flight-time salvo incoming for BEAM_DISPLAY_S', () => {
@@ -617,7 +765,7 @@ describe('shot geometry and effector state', () => {
   it('keeps a zero-flight-time salvo at progress 1 for BEAM_DISPLAY_S', () => {
     const { scenario, effId, uasId } = shotScenario(effectorModel('tst-jam', 'jammer'))
     const report = reportOf([
-      event({ effectorId: effId, uasId, tS: 10, tEffectS: 10, channel: 'jam', softShot: true }),
+      jamEvent({ effectorId: effId, uasId, tS: 10, tEffectS: 10, channel: 'jam' }),
     ])
     const tl = buildTrackTimeline(scenario, [assessment({ uasId })], report)
     expect(shotsInFlightAt(tl, 10)[0].progress).toBe(1)
@@ -647,6 +795,45 @@ describe('shot geometry and effector state', () => {
     expect(effectorStatesAt(tl, 9.9).size).toBe(0)
     expect(effectorStatesAt(tl, 15).get(effId)).toBe('semi-active')
     expect(effectorStatesAt(tl, 20).size).toBe(0)
+  })
+
+  it('reads a spent magazine as depleted for the rest of the run', () => {
+    const { scenario, effId, uasId } = shotScenario(
+      effectorModel('tst-int', 'interceptor', { magazineSize: 2 }),
+    )
+    const report = reportOf([
+      event({ effectorId: effId, uasId, tS: 10, tEffectS: 20 }),
+      event({ effectorId: effId, uasId, tS: 30, tEffectS: 40 }),
+    ])
+    const tl = buildTrackTimeline(scenario, [assessment({ uasId })], report)
+    // One round left and nothing in flight: still a plain idle glyph.
+    expect(effectorStatesAt(tl, 25).size).toBe(0)
+    // The last round is flying, so the guidance treatment still wins.
+    expect(effectorStatesAt(tl, 35).get(effId)).toBe('active')
+    expect(effectorStatesAt(tl, 40).get(effId)).toBe('depleted')
+    expect(effectorStatesAt(tl, 1e6).get(effId)).toBe('depleted')
+  })
+
+  it('counts the magazine at assignment, the way the engine spends it', () => {
+    const { scenario, effId, uasId } = shotScenario(
+      effectorModel('tst-int', 'interceptor', { magazineSize: 1 }),
+    )
+    const report = reportOf([event({ effectorId: effId, uasId, tS: 10, tEffectS: 20 })])
+    const tl = buildTrackTimeline(scenario, [assessment({ uasId })], report)
+    expect(effectorStatesAt(tl, 9.9).size).toBe(0)
+    expect(effectorStatesAt(tl, 20).get(effId)).toBe('depleted')
+  })
+
+  it('never depletes an unlimited magazine', () => {
+    for (const type of ['jammer', 'de', 'hpm'] as const) {
+      const { scenario, effId, uasId } = shotScenario(effectorModel(`tst-${type}`, type))
+      const report = reportOf([
+        jamEvent({ effectorId: effId, uasId, tS: 10, tEffectS: 10, channel: 'jam' }),
+      ])
+      const tl = buildTrackTimeline(scenario, [assessment({ uasId })], report)
+      expect(effectorStatesAt(tl, 10).get(effId)).toBe('beam')
+      expect(effectorStatesAt(tl, 1e6).size).toBe(0)
+    }
   })
 })
 
@@ -731,7 +918,7 @@ describe('against the engine', () => {
     // Every sampled instant stays internally consistent.
     for (let t = 0; t <= 120; t += 0.5) {
       const s = trackStatesAt(tl, t).get(uasId)!
-      expect(s.salvosAssigned).toBe(s.kineticSalvos + s.jamSalvos)
+      expect(s.salvosAssigned).toBe(s.kineticSalvos + s.deSalvos + s.jamSalvos)
       expect(s.incomingSalvos).toBeGreaterThanOrEqual(0)
       expect(s.residualFraction).toBeGreaterThanOrEqual(0)
       expect(s.residualFraction).toBeLessThanOrEqual(1)
