@@ -10,6 +10,7 @@ import {
   jammable,
   rfDetectable,
 } from '../analysis/sensorEnv'
+import { jamBandsOverlap } from '../analysis/ewPhysics'
 
 /** Positions of every ship in the entity's formation (just the lead when none). */
 export function memberPositions(entity: Entity, pos: Vec2, headingDeg: number): Vec2[] {
@@ -537,11 +538,14 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const duration = scenarioDurationS(scenario)
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const assets = scenario.entities.filter((e) => e.kind === 'asset')
-  // Jammers cannot affect RF-silent, non-GNSS threats (fiber, inertial, optical).
+  // Jammers cannot affect RF-silent, non-GNSS threats (fiber, inertial,
+  // optical), and cannot affect a threat whose link bands they do not cover.
   const effectors = scenario.entities.filter((e) => {
     if (e.kind !== 'effector' || !entityActive(e)) return false
     const spec = modelFor(scenario, e)?.effector
-    if (spec?.effectorType === 'jammer' && uasSpec && !jammable(uasSpec)) return false
+    if (spec?.effectorType === 'jammer' && uasSpec) {
+      if (!jammable(uasSpec) || !jamBandsOverlap(spec, uasSpec)) return false
+    }
     return true
   })
 

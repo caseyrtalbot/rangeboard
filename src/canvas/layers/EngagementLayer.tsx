@@ -1,7 +1,7 @@
 import { Circle, Group, Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { bearingDeg, dist } from '../../geometry/geo'
-import { blinkOn } from '../../playback/trackState'
+import { blinkOn, EW_JAM_COLOR } from '../../playback/trackState'
 import type { ShotInFlight } from '../../playback/trackState'
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 }
 
 const KILL = '#c4564a'
-const JAM = '#7da7c4'
+const JAM = EW_JAM_COLOR
 
 /** Screen px trimmed off the effector glyph and off the target ring. */
 const TRIM_SOURCE = 13

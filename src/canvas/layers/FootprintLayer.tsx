@@ -4,6 +4,7 @@ import { entityActive } from '../../model/types'
 import { useStore, modelFor } from '../../state/store'
 import { wedgePoints } from '../../geometry/geo'
 import { effectiveClassifyRangeM, effectiveDetectRangeM } from '../../analysis/sensorEnv'
+import { effectiveJamRangeM } from '../../analysis/ewPhysics'
 import type { DetectionHit } from '../../playback/sim'
 
 interface Props {
@@ -11,6 +12,12 @@ interface Props {
 }
 
 const DISABLED_COLOR = '#565b58'
+
+/** '#rrggbb' to 'rgba(...)' for Konva gradient color stops. */
+function rgba(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
+}
 
 /** Sensor coverage and effector envelopes. Never intercepts pointer events. */
 export function FootprintLayer({ detections }: Props) {
@@ -101,6 +108,64 @@ export function FootprintLayer({ detections }: Props) {
     const color = off ? DISABLED_COLOR : (e.color ?? modelFor(scenario, e)?.color ?? '#c9975a')
     const sector = spec.sectorDeg ?? 360
     const full = sector >= 360
+
+    // A jammer footprint is a flashlight beam, not a weapon arc: a solid-edged
+    // cone whose fill fades with range the way the jam power density does. The
+    // cone length is the power-scaled effective range, so a derated
+    // transmitter draws a shorter beam than its placard.
+    if (spec.effectorType === 'jammer') {
+      const rangeM = effectiveJamRangeM(spec)
+      const gradient = {
+        fillRadialGradientStartPoint: { x: e.pos.x, y: e.pos.y },
+        fillRadialGradientEndPoint: { x: e.pos.x, y: e.pos.y },
+        fillRadialGradientStartRadius: 0,
+        fillRadialGradientEndRadius: rangeM,
+        fillRadialGradientColorStops: [0, rgba(color, 0.38), 0.55, rgba(color, 0.14), 1, rgba(color, 0.02)],
+      }
+      return (
+        <Group key={e.id} listening={false} opacity={off ? 0.2 : dim ? 0.35 : 0.85}>
+          {full ? (
+            <>
+              <Circle x={e.pos.x} y={e.pos.y} radius={rangeM} {...gradient} />
+              <Circle
+                x={e.pos.x}
+                y={e.pos.y}
+                radius={rangeM}
+                stroke={color}
+                strokeWidth={1}
+                strokeScaleEnabled={false}
+                opacity={0.8}
+              />
+            </>
+          ) : (
+            <>
+              <Line points={wedgePoints(e.pos, e.headingDeg, sector, rangeM)} closed {...gradient} />
+              <Line
+                points={wedgePoints(e.pos, e.headingDeg, sector, rangeM)}
+                closed
+                stroke={color}
+                strokeWidth={1}
+                strokeScaleEnabled={false}
+                opacity={0.8}
+              />
+            </>
+          )}
+          {spec.minRangeM > 0 && (
+            <Circle
+              x={e.pos.x}
+              y={e.pos.y}
+              radius={spec.minRangeM}
+              stroke={color}
+              strokeWidth={1}
+              dash={[2, 6]}
+              strokeScaleEnabled={false}
+              opacity={0.6}
+            />
+          )}
+        </Group>
+      )
+    }
+
     return (
       <Group key={e.id} listening={false} opacity={off ? 0.2 : dim ? 0.35 : 0.8}>
         {full ? (

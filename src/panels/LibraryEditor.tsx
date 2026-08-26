@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SensorRole, SpecModel, UasSpec } from '../model/types'
-import { SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
+import { JAM_BAND_LABEL, JAM_BANDS, SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
+import { jammerBands } from '../analysis/ewPhysics'
 import { useStore } from '../state/store'
 import { formatDistance } from '../geometry/geo'
 import { EmptyState, ObjectHeader, Section } from './inspector/kit'
@@ -343,6 +344,61 @@ export function LibraryEditor() {
             Recorded, not modeled: the altitude ceiling. The board is plan view, so it does not
             gate an engagement. Keep it as spec data.
           </p>
+          {effector.effectorType === 'jammer' && (
+            <>
+              <div className="panel-subtitle">Jam physics</div>
+              <Field label="Transmit bands">
+                <div className="field-row" style={{ flexWrap: 'wrap' }}>
+                  {JAM_BANDS.map((b) => {
+                    const bands = jammerBands(effector)
+                    const on = bands.includes(b)
+                    return (
+                      <label key={b} className="small" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...bands, b]
+                              : bands.filter((x) => x !== b)
+                            // An empty band set would read back as "every band"
+                            // (the legacy default), so the last band stays on.
+                            if (next.length === 0) return
+                            patch({ effector: { ...effector, jamBands: next } })
+                          }}
+                        />
+                        {JAM_BAND_LABEL[b]}
+                      </label>
+                    )
+                  })}
+                </div>
+              </Field>
+              <div className="field-row">
+                <Num
+                  label="EIRP (W, 0 = rated)"
+                  value={effector.eirpW ?? 0}
+                  step={10}
+                  min={0}
+                  onChange={(n) => patch({ effector: { ...effector, eirpW: n > 0 ? n : undefined } })}
+                />
+                <Num
+                  label="Rated EIRP (W)"
+                  value={effector.ratedEirpW ?? 0}
+                  step={10}
+                  min={0}
+                  onChange={(n) =>
+                    patch({ effector: { ...effector, ratedEirpW: n > 0 ? n : undefined } })
+                  }
+                />
+              </div>
+              <p className="muted small">
+                A jam only holds when the physics close: the target must fly a covered band, sit
+                inside the cone, and be within the power-scaled effective range. Max range is the
+                placard range at rated EIRP; a lower EIRP shrinks the reach by the square root of
+                the power ratio.
+              </p>
+            </>
+          )}
         </div>
       )}
 

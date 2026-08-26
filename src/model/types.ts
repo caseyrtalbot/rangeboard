@@ -66,6 +66,23 @@ export type UasGroup = 1 | 2 | 3 | 4 | 5
 /** How a threat responds to a successful jam (EW soft kill). */
 export type JamBehavior = 'drift' | 'return-home' | 'continue'
 
+/**
+ * RF bands the EW model reasons about. GNSS is the navigation band; the rest
+ * are the common sUAS control/video link bands. Coarse by design: this is a
+ * planning-factor model, not a spectrum survey.
+ */
+export type JamBand = 'gnss' | 'uhf-433' | 'ism-915' | 'ism-2400' | 'ism-5800'
+
+export const JAM_BANDS: JamBand[] = ['gnss', 'uhf-433', 'ism-915', 'ism-2400', 'ism-5800']
+
+export const JAM_BAND_LABEL: Record<JamBand, string> = {
+  gnss: 'GNSS',
+  'uhf-433': '433 MHz',
+  'ism-915': '915 MHz',
+  'ism-2400': '2.4 GHz',
+  'ism-5800': '5.8 GHz',
+}
+
 export interface UasSpec {
   group: UasGroup
   airframe: 'quad' | 'fixed-wing' | 'vtol' | 'one-way-attack' | 'fpv'
@@ -88,6 +105,16 @@ export interface UasSpec {
   rangeNote?: string
   /** Response to a successful jam. Absent on old saves; defaultJamBehavior fills in. */
   jamBehavior?: JamBehavior
+  /**
+   * RF bands this threat depends on (navigation and control/video links).
+   * Absent means the nav-mode default in src/analysis/ewPhysics.ts.
+   */
+  linkBands?: JamBand[]
+  /**
+   * Extra J/S margin, dB, a jammer must overcome against this threat
+   * (frequency hopping, directional link antennas). Absent means 0.
+   */
+  jamResistDb?: number
   /**
    * Warhead mass, kg, from the threat study (docs/threat). Null when the study
    * gives no public figure. Never invented to fill the blank.
@@ -140,6 +167,16 @@ export interface EffectorSpec {
   magazineSize?: number
   /** Seconds between salvos at the same or the next target. Absent: type baseline. */
   salvoCooldownS?: number
+  /** Jammer only: bands the transmitter covers. Absent means every band (legacy). */
+  jamBands?: JamBand[]
+  /** Jammer only: transmit EIRP, watts. Absent means rated power (no derate). */
+  eirpW?: number
+  /**
+   * Jammer only: the EIRP at which maxRangeM (the placard range) holds.
+   * eirpW below this shrinks the effective jam range by sqrt(eirpW/ratedEirpW)
+   * (free-space inverse square). Absent means eirpW is the rated power.
+   */
+  ratedEirpW?: number
 }
 
 /** Threat employment intent, carried by threat/UAS models for cards and playback. */

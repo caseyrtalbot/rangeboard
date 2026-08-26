@@ -38,6 +38,17 @@ export const BLINK_PERIOD_S = 0.5
  */
 const HOLD_TOLERANCE_S = 0.25
 
+/** 'Continue' jam probability at which a track reads JAMMED between dwells. */
+export const JAMMED_AT = 0.5
+
+/**
+ * The one EW color: the jam beam, the jammed diamond, and the J badge all
+ * read as the same channel. Cyan on purpose: no kill-chain rung in
+ * PHASE_STYLE uses the hue, so a jammed track never reads as another rung.
+ * 7.9:1 against the board background.
+ */
+export const EW_JAM_COLOR = '#5ad1e0'
+
 /**
  * Track lifecycle, highest precedence first:
  * ghost > engaged > targeted > identified > tracked > searching > undetected.
@@ -120,6 +131,14 @@ export interface TrackFileState {
   residualFraction: number
   /** Probability the track is degraded by a 'continue' jam at t, 0..1. */
   jammedFraction: number
+  /**
+   * Effective jamming holds on this track at t: an EW dwell is live now, or
+   * the compounded 'continue' jam probability is at or above JAMMED_AT. Only
+   * dwells the engine actually fired count, and the engine only fires when
+   * the jam physics close (bands, alignment, power; src/analysis/ewPhysics.ts),
+   * so this flag is what the board's jammed symbology keys on.
+   */
+  jammedNow: boolean
   /** residualFraction < SHIP_DEAD_BELOW. */
   eliminated: boolean
   /** Effect time at which it first fell below the cutoff; null while alive. */
@@ -242,6 +261,9 @@ interface TrackSeries {
   assignTS: number[]
   /** Per-salvo end of draw ascending: tEffectS, or tS + BEAM_DISPLAY_S. */
   liveEndTS: number[]
+  /** EW dwell draw windows ascending (both jam and soft-kill channel). */
+  ewLiveStartTS: number[]
+  ewLiveEndTS: number[]
   /** Effect times ascending with the running expected-kill mass. */
   effectTS: number[]
   killPrefix: number[]
@@ -390,10 +412,15 @@ export function buildTrackTimeline(
     const jamTS: number[] = []
     const assignTS: number[] = []
     const liveEndTS: number[] = []
+    const ewLiveStartTS: number[] = []
+    const ewLiveEndTS: number[] = []
     for (const ev of evs) {
       assignTS.push(ev.tS)
-      if (ev.channelClass === 'ew') jamTS.push(ev.tS)
-      else if (ev.channelClass === 'directed-energy') deTS.push(ev.tS)
+      if (ev.channelClass === 'ew') {
+        jamTS.push(ev.tS)
+        ewLiveStartTS.push(ev.tS)
+        ewLiveEndTS.push(drawEndS(ev))
+      } else if (ev.channelClass === 'directed-energy') deTS.push(ev.tS)
       else kineticTS.push(ev.tS)
       liveEndTS.push(drawEndS(ev))
     }
@@ -402,6 +429,8 @@ export function buildTrackTimeline(
     jamTS.sort(ascending)
     assignTS.sort(ascending)
     liveEndTS.sort(ascending)
+    ewLiveStartTS.sort(ascending)
+    ewLiveEndTS.sort(ascending)
 
     const byEffect = [...evs].sort((x, y) => x.tEffectS - y.tEffectS)
     const effectTS: number[] = []
@@ -487,6 +516,8 @@ export function buildTrackTimeline(
       jamTS,
       assignTS,
       liveEndTS,
+      ewLiveStartTS,
+      ewLiveEndTS,
       effectTS,
       killPrefix,
       jamEffectTS,
@@ -595,6 +626,11 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
     const residualFraction = tr.shipCount > 0 ? residual / tr.shipCount : 0
     const jammedFraction = prefixAt(tr.jammedPrefix, countAtMost(tr.jamEffectTS, tS))
     const eliminated = tr.eliminatedAtS != null && tS >= tr.eliminatedAtS
+    // Each dwell start pairs with one dwell end, so starts-so-far minus
+    // ends-so-far counts the dwells live at t even when dwells overlap.
+    const ewDwellLive =
+      countAtMost(tr.ewLiveStartTS, tS) - countAtMost(tr.ewLiveEndTS, tS) > 0
+    const jammedNow = !eliminated && (ewDwellLive || jammedFraction >= JAMMED_AT)
 
     // The latch, not incomingSalvos: a beam is only ever incoming for
     // BEAM_DISPLAY_S, so the track would flicker between dwells. assignTS is
@@ -632,6 +668,7 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
       residual,
       residualFraction,
       jammedFraction,
+      jammedNow,
       eliminated,
       eliminatedAtS: eliminated ? tr.eliminatedAtS : null,
       eliminatedBySoft: eliminated && tr.eliminatedBySoft,

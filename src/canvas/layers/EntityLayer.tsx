@@ -6,7 +6,7 @@ import { useStore, modelFor } from '../../state/store'
 import { bearingDeg } from '../../geometry/geo'
 import { memberPositions } from '../../playback/sim'
 import type { DetectionHit, LiveTrack } from '../../playback/sim'
-import { blinkOn, PHASE_STYLE } from '../../playback/trackState'
+import { blinkOn, EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
 import type { EffectorLiveState, TrackFileState, TrackPhase } from '../../playback/trackState'
 import {
   FRAME_EDGE,
@@ -46,6 +46,7 @@ const EDGE = FRAME_EDGE
 
 const GHOST = PHASE_STYLE.ghost.color
 const EW = '#7da7c4'
+const JAM_CYAN = EW_JAM_COLOR
 /** Out of rounds. Matches the 'bad' treatment the system panel gives EMPTY. */
 const DEPLETED = '#c4564a'
 /**
@@ -73,6 +74,8 @@ const RING_R = 14
 const SELECT_R = 28
 const BRACKET_HALF = 19
 const BRACKET_ARM = 6
+/** Jammed-diamond radius: clears the r14 ring, stays inside SELECT_R. */
+const JAM_DIAMOND_R = 21
 /** Gap under the wrapped name before the DEFEATED tag, px. */
 const TAG_GAP = 6
 
@@ -303,10 +306,14 @@ function EntityNode({
   const ghost = phase === 'ghost'
   // A defeated track carries the destroyed strike, so it draws no ring.
   const ringColor = ghost ? null : PHASE_STYLE[phase].color
-  const bracketed = phase === 'targeted' || phase === 'engaged'
+  // Effective jamming holds on the track now (see TrackFileState.jammedNow).
+  const jammed = !ghost && (state?.jammedNow ?? false)
+  // An EW-only engagement swaps the target brackets for the jammed diamond;
+  // a track also under kinetic or DE fire keeps its brackets as well.
+  const ewOnly = state != null && state.kineticSalvos + state.deSalvos === 0
+  const bracketed = (phase === 'targeted' || phase === 'engaged') && !(jammed && ewOnly)
   // Pulse floor is 0.5: a dimmed engaged track must stay legible.
   const pulse = phase === 'engaged' && !blinkOn(simTimeS) ? 0.5 : 1
-  const jammed = !ghost && state != null && state.jammedFraction >= 0.5
   const effectorState: EffectorLiveState = effectorStates.get(entity.id) ?? 'idle'
   const depleted = effectorState === 'depleted'
   const effectorFilled =
@@ -433,15 +440,24 @@ function EntityNode({
           <Text fontFamily="IBM Plex Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
         )}
         {jammed && (
-          <Text
-            fontFamily="IBM Plex Mono"
-            x={16}
-            y={-4}
-            text={`JAM ${state!.jammedFraction.toFixed(2)}`}
-            fontSize={9}
-            fill={EW}
-            listening={false}
-          />
+          <>
+            <RegularPolygon
+              sides={4}
+              radius={JAM_DIAMOND_R}
+              stroke={JAM_CYAN}
+              strokeWidth={1.6}
+              listening={false}
+            />
+            <Text
+              fontFamily="IBM Plex Mono"
+              x={JAM_DIAMOND_R * 0.62 + 3}
+              y={-JAM_DIAMOND_R * 0.62 - 11}
+              text="J"
+              fontSize={10}
+              fill={JAM_CYAN}
+              listening={false}
+            />
+          </>
         )}
         {depleted && (
           <Text

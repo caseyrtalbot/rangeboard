@@ -964,6 +964,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 5,
       pk: 0.6,
       salvoCooldownS: 5,
+      // "GNSS and control-link jammer".
+      jamBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
   },
   {
@@ -982,6 +984,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 5,
       pk: 0.65,
       salvoCooldownS: 5,
+      // Public sources describe control-link disruption, not GNSS denial.
+      jamBands: ['uhf-433', 'ism-915', 'ism-2400', 'ism-5800'],
     },
   },
   {
@@ -1000,6 +1004,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 20,
       pk: 0.7,
       salvoCooldownS: 20,
+      // Takeover rides the drone's own control protocol, not GNSS.
+      jamBands: ['ism-2400', 'ism-5800'],
     },
   },
   {
@@ -1061,6 +1067,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 5,
       pk: 0.65,
       salvoCooldownS: 5,
+      // Tailored link defeat plus a NAVWAR (GNSS) effect.
+      jamBands: ['gnss', 'uhf-433', 'ism-915', 'ism-2400', 'ism-5800'],
     },
   },
   {
@@ -1080,6 +1088,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 20,
       pk: 0.6,
       salvoCooldownS: 20,
+      // Intercepts the drone-operator link; no broadband or GNSS jamming.
+      jamBands: ['ism-2400', 'ism-5800'],
     },
   },
   {
@@ -1099,6 +1109,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 5,
       pk: 0.6,
       salvoCooldownS: 5,
+      // Software-defined, selectable bands: control links and GNSS.
+      jamBands: ['gnss', 'ism-915', 'ism-2400', 'ism-5800'],
     },
   },
   {
@@ -1118,6 +1130,8 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 5,
       pk: 0.6,
       salvoCooldownS: 5,
+      // "Denies control, video and GNSS links".
+      jamBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
   },
   {

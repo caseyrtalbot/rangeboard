@@ -220,12 +220,20 @@ describe('ROE gates and jammer limits', () => {
     useStore.getState().finishPath()
     const a = assessThreat(useStore.getState().scenario, uasId)
     expect(a.status).toBe('detect-only')
-    // The same jammer works against a GNSS-guided threat.
+    // Modi II is a control-link jammer (no GNSS band), so an RF-silent
+    // GNSS-waypoint threat is out of its reach as well.
     useStore.getState().addEntityFromModel('lib-mugin5', { x: -30000, y: 0 })
     const gpsId = useStore.getState().scenario.entities.at(-1)!.id
     useStore.getState().beginPath(gpsId)
     useStore.getState().addDraftPoint({ x: 30000, y: 0 })
     useStore.getState().finishPath()
+    expect(assessThreat(useStore.getState().scenario, gpsId).status).toBe('detect-only')
+    // A jammer whose bands cover GNSS (CUAEWS NAVWAR) closes the chain.
+    const st2 = useStore.getState()
+    st2.addEntityFromModel('lib-cuaews', { x: 0, y: 0 })
+    const navwar = useStore.getState().scenario.entities.at(-1)!
+    useStore.getState().beginConnect(radar.id)
+    useStore.getState().completeConnect(navwar.id)
     expect(assessThreat(useStore.getState().scenario, gpsId).status).toBe('engageable')
   })
 })

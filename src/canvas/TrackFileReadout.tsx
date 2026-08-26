@@ -154,7 +154,16 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
           }`
         : NA,
     ],
-    ['EW', state ? (jam >= 0.005 ? `jam degrade ${jam.toFixed(2)}` : 'no jam effect') : NA],
+    [
+      'EW',
+      state
+        ? state.jammedNow
+          ? `JAMMED${jam >= 0.005 ? ` · degrade ${jam.toFixed(2)}` : ''}`
+          : jam >= 0.005
+            ? `jam degrade ${jam.toFixed(2)}`
+            : 'no jam effect'
+        : NA,
+    ],
     [
       'SALVOS',
       state

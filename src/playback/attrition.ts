@@ -11,6 +11,7 @@ import type {
 } from '../model/types'
 import { defaultJamBehavior, entityActive } from '../model/types'
 import { dist, pointInSector, posAtTime } from '../geometry/geo'
+import { assessJam } from '../analysis/ewPhysics'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats, killChainRoutes, memberPositions } from './sim'
 import { effectivePathDelayS } from './raid'
@@ -650,6 +651,12 @@ export function resolveEngagements(
       const inEnvelope = (p: Vec2) =>
         dist(es.entity.pos, p) >= es.spec.minRangeM &&
         pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
+      const isJammer = es.spec.effectorType === 'jammer'
+      // Jam physics (band coverage, alignment, power out) decide whether a
+      // jammer can affect this ship at all; a ship the physics cannot reach
+      // is never a jam candidate, so the dwell is not wasted on it.
+      const jamFactor = (uasSpec: UasSpec | undefined, p: Vec2): number =>
+        assessJam(es.spec, es.entity.pos, es.entity.headingDeg, uasSpec, p).factor
 
       // Global ship-level assignment. Among every gated threat whose window
       // (this effector's) contains t and tEffect, and every ship inside the
@@ -687,6 +694,7 @@ export function resolveEngagements(
         for (let i = 0; i < ts.ships.length; i++) {
           const p = members[Math.min(i, members.length - 1)]
           if (!inEnvelope(p)) continue
+          if (isJammer && jamFactor(ts.uasSpec, p) <= 0) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
           if (alive < SHIP_DEAD_BELOW) continue // expected dead: never targeted
@@ -714,10 +722,18 @@ export function resolveEngagements(
       if (target == null || shipIdx < 0 || shipPos == null) continue
       const continueJam = softShot && target.jamBehavior === 'continue'
 
-      const falloff = distanceFalloff(dist(es.entity.pos, shipPos), es.spec.maxRangeM)
-      const size = target.uasSpec ? SIZE_PENALTY[target.uasSpec.group] : 1
-      const evasion = target.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
-      const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
+      // Jam Pk is link physics (band, alignment, power/range), not aiming:
+      // airframe size and jinking do not protect a link, so a jammer takes
+      // none of the kinetic penalties and all of the EW ones.
+      let pk: number
+      if (isJammer) {
+        pk = Math.min(1, Math.max(0, es.pk * jamFactor(target.uasSpec, shipPos)))
+      } else {
+        const falloff = distanceFalloff(dist(es.entity.pos, shipPos), es.spec.maxRangeM)
+        const size = target.uasSpec ? SIZE_PENALTY[target.uasSpec.group] : 1
+        const evasion = target.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
+        pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
+      }
 
       const event: EngagementEvent = {
         tS: t,
