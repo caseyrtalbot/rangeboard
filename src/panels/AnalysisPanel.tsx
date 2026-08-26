@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { EmBackground, LightLevel, Precipitation, Roe } from '../model/types'
+import { effectiveDoctrine } from '../model/types'
 import { formatSpeed } from '../geometry/geo'
 import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
@@ -254,6 +255,21 @@ export function AnalysisPanel() {
           ]}
           onChange={(roe) => patchScenario({ roe })}
         />
+        <label
+          className="adv-toggle"
+          title="Doctrinal fire control: firm radar track + hostile declaration before release, shoot-look-shoot with BDA, best-Pk shooter assignment"
+        >
+          <input
+            type="checkbox"
+            checked={scenario.doctrine?.enabled ?? false}
+            onChange={(event) =>
+              patchScenario({
+                doctrine: { ...effectiveDoctrine(scenario), enabled: event.target.checked },
+              })
+            }
+          />
+          Doctrine
+        </label>
         <label className="adv-toggle" title="Draw threat weapon engagement zones on the canvas">
           <input
             type="checkbox"

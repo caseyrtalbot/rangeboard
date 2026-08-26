@@ -24,6 +24,11 @@ const STATUS_TEXT: Record<ThreatStatus, { label: string; short: string; cls: str
     cls: 'warn',
   },
   'weapons-hold': { label: 'Weapons hold (ROE)', short: 'Hold', cls: 'neutral' },
+  'no-stable-track': {
+    label: 'No stable fire-control track (doctrine gate)',
+    short: 'No firm track',
+    cls: 'warn',
+  },
   'no-fc-uplink': {
     label: 'Interceptor needs its fire-control radar connected',
     short: 'NO FC UPLINK',

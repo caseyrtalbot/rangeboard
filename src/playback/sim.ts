@@ -1,5 +1,5 @@
 import type { Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { defaultSensorRole, entityActive } from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInSector, posAtTime } from '../geometry/geo'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
@@ -178,12 +178,14 @@ export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
 export type ThreatStatus =
   | 'no-path'
   | 'never-detected'
-  /** ROE 'tight' and the track never reached hostile classification. */
+  /** ROE 'tight' (or doctrine) and the track never reached hostile classification. */
   | 'not-confirmed'
   | 'detect-only'
   | 'no-kill-chain'
   /** ROE 'hold': analysis-only posture, no engagement windows. */
   | 'weapons-hold'
+  /** Doctrine: no radar/EO-IR sensor ever held the track for trackFirmS. */
+  | 'no-stable-track'
   /** Routes exist but every routed fc-uplink effector lacks its fire-control sensor. */
   | 'no-fc-uplink'
   | 'window-too-short'
@@ -305,8 +307,21 @@ export interface ThreatAssessment {
   windowEffectorId: string | null
   /** Time each classification level was reached on the derived ladder. */
   classificationAtS: ClassificationTimes
-  /** ROE-gated earliest engagement time: free = first detection, tight = hostile, hold = null. */
+  /** ROE-gated earliest engagement time: free = first detection, tight = hostile, hold = null.
+   *  Doctrine enabled: max(hostile, stable track) + declaration dwell. */
   engageGateS: number | null
+  /**
+   * First time a FIRE-CONTROL-QUALITY sensor (radar or EO/IR) had held the
+   * track continuously for doctrine.trackFirmS: the stable-track-file time.
+   * Computed from the scenario's doctrine planning factors whether or not
+   * doctrine is enabled, so the panel can always show it. Null when no such
+   * sensor ever holds that long. RF and acoustic holds never qualify: a
+   * bearing-only alert is a cue, not a firing solution. Optional so older
+   * hand-built fixtures stay valid; assessThreat always fills it.
+   */
+  stableTrackAtS?: number | null
+  /** The doctrinal weapons-release time (the gate); null when doctrine is off. */
+  declaredHostileAtS?: number | null
   /** Sensors that detected the threat at any time during the sweep. */
   detectingSensorIds: string[]
   /** Per-sensor detection/classification intervals retained for operator telemetry. */
@@ -523,6 +538,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     windowEffectorId: null,
     classificationAtS: { unknownAtS: null, suspectedAtS: null, hostileAtS: null },
     engageGateS: null,
+    stableTrackAtS: null,
+    declaredHostileAtS: null,
     detectingSensorIds: [],
     sensorObservations: [],
     trackQuality: null,
@@ -739,11 +756,39 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     }
   }
 
+  // Stable track file: the first time a fire-control-quality sensor (radar
+  // or EO/IR) has held the track continuously for trackFirmS. Intervals are
+  // already split on every hold break, so an unbroken interval IS continuous
+  // hold. Informational when doctrine is off; the gate when it is on.
+  const doctrine = effectiveDoctrine(scenario)
+  for (const obs of sensorObservations.values()) {
+    if (obs.sensorType !== 'radar' && obs.sensorType !== 'eo-ir') continue
+    for (const [s0, s1] of obs.intervals) {
+      if (s1 - s0 + DT / 2 < doctrine.trackFirmS) continue
+      const firmAt = s0 + doctrine.trackFirmS
+      if (base.stableTrackAtS == null || firmAt < base.stableTrackAtS) base.stableTrackAtS = firmAt
+      break // intervals are in time order; the first long-enough one is earliest
+    }
+  }
+
   // ROE gates the engagement window start: free = first detection,
   // tight = hostile classification, hold = no engagement at all.
+  // Doctrine replaces the free/tight split with the full sequence: firm
+  // fire-control track AND hostile ID, then the declaration dwell.
   const roe = scenario.roe ?? 'tight'
-  const gateS =
-    roe === 'hold' ? null : roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
+  let gateS: number | null
+  if (roe === 'hold') {
+    gateS = null
+  } else if (doctrine.enabled) {
+    const hostileAtS = base.classificationAtS.hostileAtS
+    gateS =
+      hostileAtS != null && base.stableTrackAtS != null
+        ? Math.max(hostileAtS, base.stableTrackAtS) + doctrine.declareHostileS
+        : null
+    base.declaredHostileAtS = gateS
+  } else {
+    gateS = roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
+  }
   base.engageGateS = gateS
   // A gated interval is USABLE for an effector when its gated length covers
   // that effector's OWN engage time plus the route latency. The longest usable
@@ -809,7 +854,12 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     base.status = 'no-kill-chain'
   } else if (roe === 'hold') {
     base.status = 'weapons-hold'
-  } else if (roe === 'tight' && base.classificationAtS.hostileAtS == null) {
+  } else if (doctrine.enabled && base.stableTrackAtS == null) {
+    base.status = 'no-stable-track'
+  } else if (
+    (roe === 'tight' || doctrine.enabled) &&
+    base.classificationAtS.hostileAtS == null
+  ) {
     base.status = 'not-confirmed'
   } else {
     // Engageable when ANY routed effector has a usable interval; a long

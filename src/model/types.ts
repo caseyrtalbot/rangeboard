@@ -395,6 +395,55 @@ export type EngagePolicy = 'detected' | 'confirmed'
  */
 export type Roe = 'hold' | 'tight' | 'free'
 
+/**
+ * Doctrinal fire-control settings (detect -> track -> identify -> declare ->
+ * engage -> assess). Disabled = legacy behavior: the ROE gate alone opens the
+ * engagement and every ready effector volleys until the target is expected
+ * dead. Enabled, three things change:
+ *   GATE. A shot needs a STABLE FIRE-CONTROL TRACK (a radar or EO/IR sensor
+ *   holding the track continuously for trackFirmS; RF and acoustic hits cue
+ *   but cannot build a firing solution), hostile identification on the
+ *   classification ladder, then a declareHostileS operator dwell after both.
+ *   ROE 'free' vs 'tight' no longer changes the gate (both require the
+ *   declaration); 'hold' still blocks everything.
+ *   FIRE DISTRIBUTION. Shoot-look-shoot: one kill salvo in flight per ship,
+ *   and after its effect a bdaS assessment dwell before anyone re-engages
+ *   that ship. Among effectors able to shoot, the best predicted per-shot Pk
+ *   wins the assignment.
+ *   LAUNCH POINT. A shooter holds fire until its predicted Pk at effect time
+ *   reaches pkCommit, unless waiting longer would forfeit `opportunities`
+ *   full engagement cycles (engage time + BDA) before the threat's arrival,
+ *   in which case it fires at that deadline regardless of Pk.
+ * All values are planning factors, editable per scenario.
+ */
+export interface FireDoctrine {
+  enabled: boolean
+  /** Continuous radar / EO-IR hold needed for a stable track file, seconds. */
+  trackFirmS: number
+  /** Operator dwell from hostile ID (with firm track) to weapons release, s. */
+  declareHostileS: number
+  /** Battle-damage-assessment dwell after a salvo's effect, seconds. */
+  bdaS: number
+  /** Hold fire until predicted per-shot Pk reaches this, deadline permitting. */
+  pkCommit: number
+  /** Engagement cycles to preserve before arrival (shoot-look-shoot depth). */
+  opportunities: number
+}
+
+export const DEFAULT_FIRE_DOCTRINE: FireDoctrine = {
+  enabled: false,
+  trackFirmS: 5,
+  declareHostileS: 10,
+  bdaS: 10,
+  pkCommit: 0.35,
+  opportunities: 2,
+}
+
+/** Scenario doctrine with defaults filled for fields older saves lack. */
+export function effectiveDoctrine(scenario: { doctrine?: FireDoctrine }): FireDoctrine {
+  return { ...DEFAULT_FIRE_DOCTRINE, ...scenario.doctrine }
+}
+
 /** Weights (0-5) and normalized scores (0-1) share this shape. */
 export interface McdaVector {
   warning: number
@@ -608,6 +657,8 @@ export interface Scenario {
   engageOn?: EngagePolicy
   /** Absent on old saves; migrated from engageOn on load, default 'tight'. */
   roe?: Roe
+  /** Doctrinal fire-control settings. Absent on old saves = disabled. */
+  doctrine?: FireDoctrine
   /** MCDA scorecard weights, 0-5 each. Absent on old saves. */
   mcdaWeights?: McdaVector
   /** Pinned scorecard results. Absent on old saves. */

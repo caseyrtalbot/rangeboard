@@ -9,7 +9,7 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
-import { defaultJamBehavior, entityActive } from '../model/types'
+import { defaultJamBehavior, effectiveDoctrine, entityActive } from '../model/types'
 import { dist, pointInSector, posAtTime } from '../geometry/geo'
 import { assessJam } from '../analysis/ewPhysics'
 import type { ThreatAssessment } from './sim'
@@ -388,6 +388,12 @@ interface ShipState {
   lateSoft: number
   /** 'Continue' jam holds by jammer entity id (see JamHold). */
   jamBy: Map<string, JamHold>
+  /**
+   * Doctrine shoot-look-shoot lockout: no kill salvo targets this ship
+   * before this time (assigned salvo's effect time + the BDA dwell).
+   * Always 0 when doctrine is off.
+   */
+  holdUntilS: number
   /** Kill-channel salvos in flight at this ship (assigned, effect pending). */
   pendingKill: Set<PendingEffect>
   /** 'Continue' jam salvos in flight at this ship. */
@@ -530,6 +536,7 @@ export function resolveEngagements(
   const assessments = (precomputed ?? assessAllThreats(scenario)).filter(
     (a) => a.status !== 'no-path',
   )
+  const doctrine = effectiveDoctrine(scenario)
 
   const threats: ThreatState[] = assessments.map((a) => {
     const entity = scenario.entities.find((e) => e.id === a.uasId)!
@@ -568,6 +575,7 @@ export function resolveEngagements(
         lateHard: 0,
         lateSoft: 0,
         jamBy: new Map<string, JamHold>(),
+        holdUntilS: 0,
         pendingKill: new Set<PendingEffect>(),
         pendingJam: new Set<PendingEffect>(),
         killDiscount: 1,
@@ -693,12 +701,92 @@ export function resolveEngagements(
     return g
   }
 
+  // One salvo, committed: the event, the in-flight (or inline) effect, the
+  // expenditure channel counts, the magazine decrement, and the cooldown.
+  // Shared by the legacy volley loop and the doctrine assignment pass, so the
+  // bookkeeping cannot diverge between them.
+  const commitSalvo = (
+    es: EffectorState,
+    target: ThreatState,
+    shipIdx: number,
+    pk: number,
+    t: number,
+    continueJam: boolean,
+  ) => {
+    const tEffect = t + es.engageTimeS
+    const softShot = !isHardKill(es.spec.effectorType)
+    const event: EngagementEvent = {
+      tS: t,
+      tEffectS: tEffect,
+      effectorId: es.entity.id,
+      uasId: target.a.uasId,
+      shipIdx,
+      channel: continueJam ? 'jam' : 'kill',
+      softShot,
+      effectorType: es.spec.effectorType,
+      channelClass: expenditureChannel(es.spec.effectorType),
+      // Strictly after: an effect landing exactly at arrival still defends.
+      lateEffect: target.a.arrivalS != null && tEffect > target.a.arrivalS + EPS,
+      pk,
+      killDelta: 0,
+    }
+    events.push(event)
+
+    const fx: PendingEffect = {
+      tEffectS: tEffect,
+      effectorId: es.entity.id,
+      target,
+      shipIdx,
+      pk,
+      softShot,
+      continueJam,
+      event,
+    }
+    // Zero-latency effects land inside the same step (preserves the
+    // pre-latency same-tick jam-then-kill coupling); the rest wait in
+    // flight and discount later aiming at the same ship.
+    if (es.engageTimeS <= 0) {
+      applyEffect(fx)
+    } else {
+      const ship = target.ships[shipIdx]
+      if (continueJam) {
+        ship.pendingJam.add(fx)
+        ship.jamDiscount *= 1 - pk
+      } else {
+        ship.pendingKill.add(fx)
+        ship.killDiscount *= 1 - pk
+      }
+      pending.push(fx)
+    }
+
+    // Expenditure follows the effector class, not the kill channel: a DE or
+    // HPM burst is a hard kill that spends no round.
+    if (event.channelClass === 'ew') {
+      target.jamSalvos += 1
+      es.jamSalvos += 1
+    } else if (event.channelClass === 'directed-energy') {
+      target.deSalvos += 1
+      es.deSalvos += 1
+    } else {
+      target.shotsFired += 1
+      es.shotsFired += 1
+    }
+    if (target.firstShotS == null) target.firstShotS = t
+
+    if (es.rounds != null) es.rounds -= 1
+    es.nextReadyS = t + es.cooldownS
+  }
+
   for (let t = 0; t <= tEnd + EPS; t += DT) {
     // Effects due by now land before this step's assignments.
     applyDueEffects(t)
     const tickGeom = new Map<ThreatState, Map<number, ThreatGeom>>()
 
     for (const es of effectors.values()) {
+      // Under doctrine, kinetic and DE fire moves to the assignment pass
+      // below. Jammers stay here: a jam dwell is illumination, not a round,
+      // so shoot-look-shoot and magazine preservation do not apply to it.
+      if (doctrine.enabled && es.spec.effectorType !== 'jammer') continue
       if (t + EPS < es.nextReadyS) continue
       if (es.rounds != null && es.rounds <= 0) continue
       const tEffect = t + es.engageTimeS
@@ -797,66 +885,105 @@ export function resolveEngagements(
         pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
       }
 
-      const event: EngagementEvent = {
-        tS: t,
-        tEffectS: tEffect,
-        effectorId: es.entity.id,
-        uasId: target.a.uasId,
-        shipIdx,
-        channel: continueJam ? 'jam' : 'kill',
-        softShot,
-        effectorType: es.spec.effectorType,
-        channelClass: expenditureChannel(es.spec.effectorType),
-        // Strictly after: an effect landing exactly at arrival still defends.
-        lateEffect: target.a.arrivalS != null && tEffect > target.a.arrivalS + EPS,
-        pk,
-        killDelta: 0,
-      }
-      events.push(event)
+      commitSalvo(es, target, shipIdx, pk, t, continueJam)
+    }
 
-      const fx: PendingEffect = {
-        tEffectS: tEffect,
-        effectorId: es.entity.id,
-        target,
-        shipIdx,
-        pk,
-        softShot,
-        continueJam,
-        event,
+    // DOCTRINE ASSIGNMENT PASS (kinetic and DE only). Doctrinal sequence:
+    // the gate in sim.ts already required a stable fire-control track,
+    // hostile ID, and the declaration dwell. Here the fire distribution is
+    // shoot-look-shoot: a ship with a kill salvo in flight, or inside its
+    // post-effect BDA dwell (ShipState.holdUntilS), draws no fire from
+    // anyone. Among the shooters that CAN engage a ship this tick, the best
+    // predicted per-shot Pk takes the shot (ties prefer unlimited magazines,
+    // then fuller magazines, then the threat closing soonest). A shooter
+    // holds fire until its Pk at effect time reaches pkCommit — the target
+    // is closing, so waiting buys accuracy — unless waiting past the
+    // deadline would forfeit `opportunities` full engagement cycles before
+    // the threat's arrival (CPA for a fly-by, window end when no asset
+    // exists), in which case it fires at the deadline regardless.
+    if (doctrine.enabled) {
+      interface Candidate {
+        es: EffectorState
+        ts: ThreatState
+        shipIdx: number
+        pk: number
+        arrivalS: number
       }
-      // Zero-latency effects land inside the same step (preserves the
-      // pre-latency same-tick jam-then-kill coupling); the rest wait in
-      // flight and discount later aiming at the same ship.
-      if (es.engageTimeS <= 0) {
-        applyEffect(fx)
-      } else {
-        const ship = target.ships[shipIdx]
-        if (continueJam) {
-          ship.pendingJam.add(fx)
-          ship.jamDiscount *= 1 - pk
-        } else {
-          ship.pendingKill.add(fx)
-          ship.killDiscount *= 1 - pk
+      const candidates: Candidate[] = []
+      for (const es of effectors.values()) {
+        if (es.spec.effectorType === 'jammer') continue
+        if (t + EPS < es.nextReadyS) continue
+        if (es.rounds != null && es.rounds <= 0) continue
+        const tEffect = t + es.engageTimeS
+        const inEnvelope = (p: Vec2) =>
+          dist(es.entity.pos, p) >= es.spec.minRangeM &&
+          pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
+        for (const ts of threats) {
+          if (ts.gateS == null || !ts.path) continue
+          const intervals = ts.windows.get(es.entity.id)
+          if (!intervals) continue
+          if (t + EPS < ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
+          const within = intervals.find(
+            ([s0, s1]) => t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
+          )
+          if (!within) continue
+          // Latest commit that still leaves the planned re-engagement depth,
+          // capped by the last launch whose effect still lands inside this
+          // in-range window: a closing window is its own deadline, so a high
+          // pkCommit can never hold fire past the final physical shot.
+          const refS = ts.a.arrivalS ?? ts.a.cpaS
+          const windowDeadlineS = within[1] - es.engageTimeS
+          const deadlineS =
+            refS != null
+              ? Math.min(
+                  refS - doctrine.opportunities * (es.engageTimeS + doctrine.bdaS),
+                  windowDeadlineS,
+                )
+              : windowDeadlineS
+          const { members } = geomAt(tickGeom, ts, tEffect)
+          const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
+          for (let i = 0; i < ts.ships.length; i++) {
+            const ship = ts.ships[i]
+            // Shoot-look-shoot: in-flight salvo or BDA dwell locks the ship.
+            if (t + EPS < ship.holdUntilS) continue
+            if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
+            const p = members[Math.min(i, members.length - 1)]
+            if (!inEnvelope(p)) continue
+            const falloff = distanceFalloff(dist(es.entity.pos, p), es.spec.maxRangeM)
+            const size = ts.uasSpec ? SIZE_PENALTY[ts.uasSpec.group] : 1
+            const evasion = ts.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
+            const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
+            if (pk <= 0) continue
+            // Hold fire below commit Pk while time still allows.
+            if (pk < doctrine.pkCommit - EPS && t + EPS < deadlineS) continue
+            candidates.push({ es, ts, shipIdx: i, pk, arrivalS })
+          }
         }
-        pending.push(fx)
       }
-
-      // Expenditure follows the effector class, not the kill channel: a DE or
-      // HPM burst is a hard kill that spends no round.
-      if (event.channelClass === 'ew') {
-        target.jamSalvos += 1
-        es.jamSalvos += 1
-      } else if (event.channelClass === 'directed-energy') {
-        target.deSalvos += 1
-        es.deSalvos += 1
-      } else {
-        target.shotsFired += 1
-        es.shotsFired += 1
+      // Best shot first. Near-ties (within 0.02 Pk) preserve salvo: an
+      // unlimited magazine outranks a counted one, a fuller magazine a
+      // lower one; then the threat closing soonest.
+      candidates.sort((a, b) => {
+        if (Math.abs(b.pk - a.pk) > 0.02) return b.pk - a.pk
+        const aInf = a.es.rounds == null ? 1 : 0
+        const bInf = b.es.rounds == null ? 1 : 0
+        if (aInf !== bInf) return bInf - aInf
+        if (a.es.rounds != null && b.es.rounds != null && a.es.rounds !== b.es.rounds) {
+          return b.es.rounds - a.es.rounds
+        }
+        return a.arrivalS - b.arrivalS
+      })
+      const firedThisTick = new Set<EffectorState>()
+      for (const c of candidates) {
+        if (firedThisTick.has(c.es)) continue
+        const ship = c.ts.ships[c.shipIdx]
+        // A better candidate may already have taken this ship this tick.
+        if (t + EPS < ship.holdUntilS) continue
+        if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
+        commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, false)
+        ship.holdUntilS = t + c.es.engageTimeS + doctrine.bdaS
+        firedThisTick.add(c.es)
       }
-      if (target.firstShotS == null) target.firstShotS = t
-
-      if (es.rounds != null) es.rounds -= 1
-      es.nextReadyS = t + es.cooldownS
     }
   }
 

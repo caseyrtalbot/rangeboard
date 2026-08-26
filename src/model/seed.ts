@@ -1,5 +1,5 @@
 import type { EnvironmentSpec, RequirementThresholds, Scenario, Underlay } from './types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS } from './types'
+import { DEFAULT_FIRE_DOCTRINE, DEFAULT_REQUIREMENT_THRESHOLDS } from './types'
 import { SEED_LIBRARY } from './seedLibrary'
 import { SEED_SYSTEMS } from './seedSystems'
 
@@ -37,6 +37,7 @@ export function emptyScenario(): Scenario {
     systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
     environment: defaultEnvironment(),
     roe: 'tight',
+    doctrine: { ...DEFAULT_FIRE_DOCTRINE },
     mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3, attrition: 3 },
     scorecards: [],
     raid: { waves: [] },
