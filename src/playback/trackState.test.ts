@@ -529,6 +529,44 @@ describe('jammedFraction', () => {
     expect(stateAt(a, report, 39.9).jammedFraction).toBeCloseTo(0.5, 9)
     expect(stateAt(a, report, 40).jammedFraction).toBeCloseTo(0.75, 9)
   })
+
+  it('releases the hold when the illumination interval ends', () => {
+    // Jamming is illumination: the hold is valid only while the track stays
+    // inside the jammer's in-range interval that produced the dwells. Past
+    // the interval (behind a fixed cone) the link recovers and the JAMMED
+    // cue must drop.
+    const a = assessment({ effectorWindows: [{ effectorId: 'e1', intervals: [[5, 30]] }] })
+    const report = reportOf(
+      [
+        jamEvent({ tS: 10, tEffectS: 10, channel: 'jam', pk: 0.5 }),
+        jamEvent({ tS: 20, tEffectS: 20, channel: 'jam', pk: 0.5 }),
+      ],
+      [threatAtt('u1', 1)],
+    )
+    expect(stateAt(a, report, 15).jammedFraction).toBeCloseTo(0.5, 9)
+    expect(stateAt(a, report, 29.9).jammedFraction).toBeCloseTo(0.75, 9)
+    expect(stateAt(a, report, 31).jammedFraction).toBe(0)
+    expect(stateAt(a, report, 31).jammedNow).toBe(false)
+  })
+
+  it('starts a fresh hold on re-entry into a later interval', () => {
+    const a = assessment({
+      effectorWindows: [{ effectorId: 'e1', intervals: [[5, 30], [50, 70]] }],
+    })
+    const report = reportOf(
+      [
+        jamEvent({ tS: 10, tEffectS: 10, channel: 'jam', pk: 0.5 }),
+        jamEvent({ tS: 20, tEffectS: 20, channel: 'jam', pk: 0.5 }),
+        jamEvent({ tS: 60, tEffectS: 60, channel: 'jam', pk: 0.5 }),
+      ],
+      [threatAtt('u1', 1)],
+    )
+    expect(stateAt(a, report, 25).jammedFraction).toBeCloseTo(0.75, 9)
+    expect(stateAt(a, report, 40).jammedFraction).toBe(0)
+    // Re-entry compounds from zero, not from the lapsed 0.75.
+    expect(stateAt(a, report, 60).jammedFraction).toBeCloseTo(0.5, 9)
+    expect(stateAt(a, report, 71).jammedFraction).toBe(0)
+  })
 })
 
 describe('salvo counting', () => {
@@ -863,9 +901,10 @@ describe('against the engine', () => {
     return { scenario, assessments, report, uasId: uas.id, effId: eff.id }
   }
 
-  it('replays continueJamProb exactly at the end of a run', () => {
+  it('replays continueJamProb exactly at the last dwell, then releases', () => {
     // 'mixed' nav gives the 'continue' jam behavior: the threat presses on
-    // with a degraded track, so the engine fills continueJamProb.
+    // with a degraded track, so the engine fills continueJamProb. With no
+    // asset placed the engine reads that figure at the last dwell effect.
     const mixed: SpecModel = { ...TARGET, uas: { ...TARGET.uas!, navMode: 'mixed' } }
     const { scenario, assessments, report, uasId } = runScenario(
       effectorModel('tst-jam', 'jammer', { pk: 0.5, salvoCooldownS: 2 }),
@@ -876,8 +915,16 @@ describe('against the engine', () => {
     expect(row.continueJamProb).toBeGreaterThan(0)
 
     const tl = buildTrackTimeline(scenario, assessments, report)
+    const lastDwellS = Math.max(
+      ...report.events.filter((e) => e.channelClass === 'ew').map((e) => e.tEffectS),
+    )
+    const held = trackStatesAt(tl, lastDwellS).get(uasId)!
+    expect(held.jammedFraction).toBeCloseTo(row.continueJamProb, 9)
+    // Illumination-bound: once the threat has flown out of the jammer's
+    // in-range interval, the hold lapses and the track reads un-jammed.
     const end = trackStatesAt(tl, 1e6).get(uasId)!
-    expect(end.jammedFraction).toBeCloseTo(row.continueJamProb, 9)
+    expect(end.jammedFraction).toBe(0)
+    expect(end.jammedNow).toBe(false)
     expect(end.jamSalvos).toBe(row.jamSalvos)
     expect(end.kineticSalvos).toBe(row.shotsFired)
   })
@@ -955,8 +1002,13 @@ describe('against the engine', () => {
     expect(row.shipCount).toBe(3)
 
     const tl = buildTrackTimeline(scenario, assessments, report)
-    const end = trackStatesAt(tl, 1e6).get(uas.id)!
-    expect(end.shipCount).toBe(3)
-    expect(end.jammedFraction).toBeCloseTo(row.continueJamProb, 9)
+    const lastDwellS = Math.max(
+      ...report.events.filter((e) => e.channelClass === 'ew').map((e) => e.tEffectS),
+    )
+    const held = trackStatesAt(tl, lastDwellS).get(uas.id)!
+    expect(held.shipCount).toBe(3)
+    expect(held.jammedFraction).toBeCloseTo(row.continueJamProb, 9)
+    // The hold releases once the formation leaves the jam envelope.
+    expect(trackStatesAt(tl, 1e6).get(uas.id)!.jammedFraction).toBe(0)
   })
 })

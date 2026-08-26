@@ -226,6 +226,30 @@ describe('continue behavior still leaks', () => {
     expect(r.totals.reportedLeakers).toBeNull()
   })
 
+  it('drops the kill-shot degrade once the target leaves the jam envelope', () => {
+    // Jamming is illumination-bound. The dwell lands at t = 5.5 (jam prob
+    // 0.3515). The interceptor's 4 km envelope opens at t = 0, so it fires
+    // at 0 with a 60 s flight: the effect lands at t = 60, after the target
+    // exits the 1 km jam envelope near t = 55. The hold has lapsed by then,
+    // so the kill takes NO jam degrade: d(60) = 1190 of 4000, falloff
+    // 0.91075, kill = 0.5 * 0.91075 (a degraded kill would read 0.4073).
+    const { scenario } = scenarioWith(target({ navMode: 'mixed' }), [
+      effectorModel('tst-jam', 'jammer', { pk: 0.5, salvoCooldownS: 1000 }),
+      effectorModel('tst-int', 'interceptor', {
+        pk: 0.5,
+        maxRangeM: 4000,
+        engageTimeS: 60,
+        salvoCooldownS: 1000,
+      }),
+    ])
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    expect(t.jamSalvos).toBe(1)
+    expect(t.expectedHardKills).toBeCloseTo(0.5 * 0.91075, 6)
+    // The reported jam figure reads at the last dwell, where the hold held.
+    expect(t.continueJamProb).toBeCloseTo(0.3515, 6)
+  })
+
   it('degrades the hard-kill shot that follows the jam', () => {
     // Jammer fires first in entity order at t = 5.5: jammed = 0.3515.
     // Interceptor kill the same tick: 0.3515 * (1 - 0.3 * 0.3515) = 0.314434325.

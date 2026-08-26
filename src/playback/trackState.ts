@@ -1,7 +1,7 @@
 import type { EffectorSpec, Entity, FlightPath, Scenario, Vec2 } from '../model/types'
 import type { ThreatAssessment, ThreatClassification } from './sim'
 import type { AttritionReport, EngagementEvent } from './attrition'
-import { SHIP_DEAD_BELOW } from './attrition'
+import { intervalIndexAt, SHIP_DEAD_BELOW } from './attrition'
 import { memberPositions } from './sim'
 import { posAtTime } from '../geometry/geo'
 import { effectivePathDelayS } from './raid'
@@ -267,9 +267,15 @@ interface TrackSeries {
   /** Effect times ascending with the running expected-kill mass. */
   effectTS: number[]
   killPrefix: number[]
-  /** 'continue' jam effect times ascending with the running formation jam probability. */
-  jamEffectTS: number[]
-  jammedPrefix: number[]
+  /**
+   * Step function of the mean formation 'continue' jam probability:
+   * jamStepVal[i] holds from jamStepTS[i] until the next step. Steps rise at
+   * dwell effects and drop when a hold's illumination interval ends, matching
+   * the engine's JamHold rule, so the JAMMED cue releases the moment the
+   * track leaves a fixed jam cone.
+   */
+  jamStepTS: number[]
+  jamStepVal: number[]
   eliminatedAtS: number | null
   eliminatedBySoft: boolean
 }
@@ -465,21 +471,60 @@ export function buildTrackTimeline(
       eliminatedBySoft = soft > prefixAt(killPrefix, n) - soft
     }
 
-    // Engine rule (attrition applyEffect): a 'continue' jam compounds per ship
-    // as jammed += (1 - jammed) * pk, then averages over the formation exactly
-    // the way ThreatAttrition.continueJamProb does.
-    const jammed = new Array<number>(Math.max(1, shipCount)).fill(0)
-    const jamEffectTS: number[] = []
-    const jammedPrefix: number[] = []
-    let jamSum = 0
+    // Engine rule (attrition JamHold): a 'continue' jam is illumination, not
+    // damage. Per (ship, jammer) the dwells compound inside one in-range
+    // interval of that jammer and the hold drops to zero at that interval's
+    // end; independent jammers combine as 1 - product of misses. No interval
+    // data (a hand-built ledger) means the hold never lapses, exactly like
+    // the engine's intervalIdx -1.
+    const nShips = Math.max(1, shipCount)
+    const windowsByEffector = new Map(a.effectorWindows.map((w) => [w.effectorId, w.intervals]))
+    const jamGroups = new Map<string, EngagementEvent[]>()
     for (const ev of byEffect) {
       if (ev.channel !== 'jam') continue
-      const i = Math.min(Math.max(ev.shipIdx, 0), jammed.length - 1)
-      const before = jammed[i]
-      jammed[i] = before + (1 - before) * ev.pk
-      jamSum += jammed[i] - before
-      jamEffectTS.push(ev.tEffectS)
-      jammedPrefix.push(shipCount > 0 ? jamSum / shipCount : 0)
+      const ship = Math.min(Math.max(ev.shipIdx, 0), nShips - 1)
+      const key = `${ship}|${ev.effectorId}`
+      const list = jamGroups.get(key)
+      if (list) list.push(ev)
+      else jamGroups.set(key, [ev])
+    }
+    const jamBreaks: Array<{ t: number; ship: number; key: string; value: number }> = []
+    for (const [key, evs] of jamGroups) {
+      const ship = Number(key.slice(0, key.indexOf('|')))
+      const intervals = windowsByEffector.get(evs[0].effectorId)
+      let value = 0
+      let curIdx = Number.NaN // never equals anything, so the first dwell inits
+      let curEndS: number | null = null
+      for (const ev of evs) {
+        const idx = intervalIndexAt(intervals, ev.tEffectS)
+        if (idx !== curIdx) {
+          if (curEndS != null && value > 0) jamBreaks.push({ t: curEndS, ship, key, value: 0 })
+          value = 0
+          curIdx = idx
+          curEndS = idx >= 0 && intervals ? intervals[idx][1] : null
+        }
+        value += (1 - value) * ev.pk
+        jamBreaks.push({ t: ev.tEffectS, ship, key, value })
+      }
+      if (curEndS != null && value > 0) jamBreaks.push({ t: curEndS, ship, key, value: 0 })
+    }
+    jamBreaks.sort((x, y) => x.t - y.t)
+    const holdsByShip: Array<Map<string, number>> = Array.from({ length: nShips }, () => new Map())
+    const jamStepTS: number[] = []
+    const jamStepVal: number[] = []
+    for (let i = 0; i < jamBreaks.length; i++) {
+      const b = jamBreaks[i]
+      holdsByShip[b.ship].set(b.key, b.value)
+      // Fold every same-instant break in before emitting one step.
+      if (i + 1 < jamBreaks.length && jamBreaks[i + 1].t <= b.t + 1e-9) continue
+      let jamSum = 0
+      for (const holds of holdsByShip) {
+        let unjammed = 1
+        for (const v of holds.values()) unjammed *= 1 - v
+        jamSum += 1 - unjammed
+      }
+      jamStepTS.push(b.t)
+      jamStepVal.push(shipCount > 0 ? jamSum / shipCount : 0)
     }
 
     const cls = a.classificationAtS
@@ -520,8 +565,8 @@ export function buildTrackTimeline(
       ewLiveEndTS,
       effectTS,
       killPrefix,
-      jamEffectTS,
-      jammedPrefix,
+      jamStepTS,
+      jamStepVal,
       eliminatedAtS,
       eliminatedBySoft,
     })
@@ -624,7 +669,7 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
     const expectedKills = prefixAt(tr.killPrefix, effectsLanded)
     const residual = Math.max(0, tr.shipCount - expectedKills)
     const residualFraction = tr.shipCount > 0 ? residual / tr.shipCount : 0
-    const jammedFraction = prefixAt(tr.jammedPrefix, countAtMost(tr.jamEffectTS, tS))
+    const jammedFraction = prefixAt(tr.jamStepVal, countAtMost(tr.jamStepTS, tS))
     const eliminated = tr.eliminatedAtS != null && tS >= tr.eliminatedAtS
     // Each dwell start pairs with one dwell end, so starts-so-far minus
     // ends-so-far counts the dwells live at t even when dwells overlap.

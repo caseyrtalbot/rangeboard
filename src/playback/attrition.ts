@@ -59,7 +59,10 @@ import { profileFor } from '../model/integration'
  * HPM) destroy the airframe. Soft kills (jammer) apply the threat's
  * JamBehavior: 'drift' and 'return-home' end the approach — a mission kill
  * flagged soft — while 'continue' leaves the threat inbound with a degraded
- * track, so it still leaks.
+ * track, so it still leaks. A 'continue' jam is ILLUMINATION, not damage:
+ * the hold is bound to the jammer's in-range interval that produced it
+ * (JamHold), lapses the moment the target flies out of the beam, and a
+ * later re-entry starts from zero.
  *
  * ARRIVAL RULE. A defeat that lands after the threat was already over the
  * defended asset did not protect the asset. Every salvo is stamped
@@ -356,6 +359,22 @@ function speedFor(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
+/**
+ * One jammer's 'continue' hold on one ship. Jamming is illumination, not
+ * damage: the denial exists only while the transmitter keeps painting the
+ * target, so the hold is valid only while the ship stays inside the SAME
+ * in-range interval of that jammer that produced the dwells. A fixed cone
+ * stops jamming the moment the target flies out behind it; a later re-entry
+ * starts a fresh hold from zero.
+ */
+interface JamHold {
+  /** Compounded probability the jam degrades this ship's track. */
+  value: number
+  /** Index of the jammer's in-range interval the dwells landed in; -1 when
+   *  the geometry is unknown (hold never lapses, the legacy behavior). */
+  intervalIdx: number
+}
+
 interface ShipState {
   /** Probability the ship is still inbound (not hard- or mission-killed). */
   alive: number
@@ -367,8 +386,8 @@ interface ShipState {
   lateHard: number
   /** Soft-kill mass that landed after arrival: destroyed, but too late. */
   lateSoft: number
-  /** Probability a 'continue' jam degrades this ship's track. */
-  jammed: number
+  /** 'Continue' jam holds by jammer entity id (see JamHold). */
+  jamBy: Map<string, JamHold>
   /** Kill-channel salvos in flight at this ship (assigned, effect pending). */
   pendingKill: Set<PendingEffect>
   /** 'Continue' jam salvos in flight at this ship. */
@@ -384,9 +403,33 @@ function effectiveAlive(s: ShipState): number {
   return s.alive * s.killDiscount
 }
 
-/** Un-jammed probability discounted by the jam salvos already in flight. */
-function effectiveUnjammed(s: ShipState): number {
-  return (1 - s.jammed) * s.jamDiscount
+/** Index of the interval containing t, or -1 (none, or intervals unknown). */
+export function intervalIndexAt(
+  intervals: Array<[number, number]> | undefined,
+  t: number,
+): number {
+  if (!intervals) return -1
+  for (let i = 0; i < intervals.length; i++) {
+    const [s0, s1] = intervals[i]
+    if (t >= s0 - EPS && t <= s1 + EPS) return i
+  }
+  return -1
+}
+
+/**
+ * Probability the ship's track is jam-degraded at t. A hold counts only
+ * while t sits inside the same in-range interval of the jammer that fired
+ * it (see JamHold); independent jammers combine as 1 - product of misses.
+ */
+function jammedAt(ts: ThreatState, s: ShipState, t: number): number {
+  if (s.jamBy.size === 0) return 0
+  let unjammed = 1
+  for (const [effectorId, hold] of s.jamBy) {
+    if (intervalIndexAt(ts.windows.get(effectorId), t) === hold.intervalIdx) {
+      unjammed *= 1 - hold.value
+    }
+  }
+  return 1 - unjammed
 }
 
 /**
@@ -428,6 +471,8 @@ interface ThreatState {
   shotsFired: number
   deSalvos: number
   jamSalvos: number
+  /** Effect time of the last 'continue' jam dwell; null when never jammed. */
+  lastJamEffectS: number | null
   firstShotS: number | null
   /** Expected kills contributed per effector, for killedByEffectorId. */
   killContrib: Map<string, number>
@@ -522,7 +567,7 @@ export function resolveEngagements(
         soft: 0,
         lateHard: 0,
         lateSoft: 0,
-        jammed: 0,
+        jamBy: new Map<string, JamHold>(),
         pendingKill: new Set<PendingEffect>(),
         pendingJam: new Set<PendingEffect>(),
         killDiscount: 1,
@@ -535,6 +580,7 @@ export function resolveEngagements(
       shotsFired: 0,
       deSalvos: 0,
       jamSalvos: 0,
+      lastJamEffectS: null,
       firstShotS: null,
       killContrib: new Map(),
     }
@@ -579,10 +625,22 @@ export function resolveEngagements(
     const ship = fx.target.ships[fx.shipIdx]
     if (fx.continueJam) {
       // Jam holds but the threat presses on: no kill, the track degrades.
-      ship.jammed += (1 - ship.jammed) * fx.pk
+      // The hold is bound to the illumination interval the dwell landed in;
+      // a dwell in a NEW interval starts a fresh hold, because the link
+      // recovered while the target was outside the beam.
+      const idx = intervalIndexAt(fx.target.windows.get(fx.effectorId), fx.tEffectS)
+      const hold = ship.jamBy.get(fx.effectorId)
+      if (hold && hold.intervalIdx === idx) hold.value += (1 - hold.value) * fx.pk
+      else ship.jamBy.set(fx.effectorId, { value: fx.pk, intervalIdx: idx })
+      if (fx.target.lastJamEffectS == null || fx.tEffectS > fx.target.lastJamEffectS) {
+        fx.target.lastJamEffectS = fx.tEffectS
+      }
     } else {
-      // Kill shot; a jam-degraded track worsens the firing solution.
-      const kill = ship.alive * fx.pk * (1 - CONTINUE_TRACK_DEGRADE * ship.jammed)
+      // Kill shot; a track jam-degraded AT THE EFFECT TIME worsens the
+      // firing solution. A target that already flew out of the jam cone has
+      // its link back, so it takes no degrade.
+      const kill =
+        ship.alive * fx.pk * (1 - CONTINUE_TRACK_DEGRADE * jammedAt(fx.target, ship, fx.tEffectS))
       ship.alive -= kill
       // Survival math is unchanged. Only the credit splits: mass removed
       // after the threat was already over the asset destroyed an airframe
@@ -700,7 +758,11 @@ export function resolveEngagements(
           if (alive < SHIP_DEAD_BELOW) continue // expected dead: never targeted
           let weight = alive
           if (continueJam) {
-            const unjammed = effectiveUnjammed(s)
+            // Un-jammed probability where the dwell would land, discounted by
+            // the jam salvos already in flight. Illumination-bound: a hold on
+            // a target that left the beam has lapsed, so the track is open to
+            // fresh jamming again.
+            const unjammed = (1 - jammedAt(ts, s, tEffect)) * s.jamDiscount
             if (unjammed < SHIP_DEAD_BELOW) continue // track saturated: hold
             weight = alive * unjammed
           }
@@ -815,7 +877,12 @@ export function resolveEngagements(
     // crossed a defended boundary. A fly-by, or any threat in a run with no
     // asset placed, banks its survivors as never-arrived instead.
     const arrived = ts.a.arrivalS != null
-    const jammed = ts.ships.reduce((s, v) => s + v.jammed, 0)
+    // Jam degrade is read where it matters: at arrival when the threat
+    // arrives, at closest approach for a fly-by, else at the last dwell. An
+    // illumination-bound hold that lapsed before that instant counts 0.
+    const jamRefS = ts.a.arrivalS ?? ts.a.cpaS ?? ts.lastJamEffectS
+    const jammed =
+      jamRefS == null ? 0 : ts.ships.reduce((s, v) => s + jammedAt(ts, v, jamRefS), 0)
     let killedBy: string | null = null
     let best = 0
     for (const [id, v] of ts.killContrib) {
