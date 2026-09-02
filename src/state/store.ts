@@ -23,9 +23,11 @@ import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength
 import type { DisplayUnits } from '../geometry/geo'
 import { buildRaidPlan, effectivePathDelayS } from '../playback/raid'
 import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
-import { effectiveDetectRangeM } from '../analysis/sensorEnv'
+import { sensorHoldsPoint } from '../playback/sim'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
+import { savedView, writeView, writeViewCamera } from '../io/viewState'
+import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -61,6 +63,9 @@ const HISTORY_LIMIT = 100
  * factor, so first detection happens inside the play, never at T0.
  */
 const STANDOFF_CLEAR_FACTOR = 1.1
+/** Standoff search: multiply by this per step until no ship is held, up to the step cap. */
+const STANDOFF_STEP = 1.05
+const STANDOFF_MAX_STEPS = 200
 /** In-trail spacing for raid ships when the tactic carries no formation, meters. */
 const RAID_TRAIL_SPACING_M = 300
 /** Camera scale bounds, pixels per meter (mirrors CanvasStage zoom limits). */
@@ -85,6 +90,8 @@ export interface LayerVisibility {
   sensorFootprints: boolean
   classifyRings: boolean
   effectorEnvelopes: boolean
+  /** Defended-area ring around every asset (Entity.defendedRadiusM, else the 500 m default). */
+  defendedAreas: boolean
   threatWez: boolean
   flightPaths: boolean
   connections: boolean
@@ -135,8 +142,17 @@ interface UiState {
   raidDraft: RaidDraft | null
   /** Sat basemap location dialog visibility. */
   locationDialogOpen: boolean
-  /** Epoch ms of the last successful autosave write; null before the first. Set by persist, never undoable. */
+}
+
+/**
+ * Autosave status. Its own slice, not part of `ui`, so a write does not
+ * re-render every ui subscriber. Set by persist, never undoable.
+ */
+export interface SaveState {
+  /** Epoch ms of the last successful autosave write; null before the first. */
   lastAutosaveAt: number | null
+  /** Why the last write failed; null when the last write succeeded. */
+  error: string | null
 }
 
 export type RunPhase = 'ready' | 'running' | 'paused' | 'complete' | 'review'
@@ -168,13 +184,26 @@ export interface Store {
   camera: Camera
   ui: UiState
   playback: PlaybackState
+  save: SaveState
 
   // History
   undo: () => void
   redo: () => void
 
   // Scenario lifecycle
+  /**
+   * Install a scenario as the whole board: history, selection, every draft
+   * and interaction state, and the playback run are reset. The run sequence
+   * is kept (only a manual reset advances it).
+   */
   replaceScenario: (s: Scenario) => void
+  /**
+   * The one load path for the startup autosave and a file import: replace
+   * the scenario, then fit the camera to its entities and paths. `fit`
+   * defaults to `if-unsaved` (startup: keep the camera the user left); an
+   * import passes `always`.
+   */
+  loadScenario: (s: Scenario, opts?: { fit?: 'always' | 'if-unsaved' }) => void
   setScenarioName: (name: string) => void
 
   // Entities
@@ -278,7 +307,7 @@ export interface Store {
   applyLayerPreset: (p: LayerPreset) => void
   setLocationDialogOpen: (v: boolean) => void
   setUnits: (v: DisplayUnits) => void
-  setLastAutosaveAt: (t: number) => void
+  setSaveState: (lastAutosaveAt: number | null, error: string | null) => void
 
   // Playback
   setPlaying: (p: boolean) => void
@@ -292,8 +321,6 @@ export interface Store {
   resetRun: (reason?: RunResetReason) => void
 }
 
-const UNITS_KEY = 'rangeboard.units.v1'
-const LAYERS_KEY = 'rangeboard.layers.v1'
 
 /** Declutter sets. `full` is also the default layer state. */
 const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
@@ -303,6 +330,7 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
     sensorFootprints: true,
     classifyRings: true,
     effectorEnvelopes: true,
+    defendedAreas: true,
     threatWez: false,
     flightPaths: true,
     connections: true,
@@ -317,6 +345,7 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
     sensorFootprints: true,
     classifyRings: true,
     effectorEnvelopes: true,
+    defendedAreas: true,
     threatWez: false,
     flightPaths: true,
     connections: true,
@@ -331,6 +360,7 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
     sensorFootprints: false,
     classifyRings: false,
     effectorEnvelopes: true,
+    defendedAreas: true,
     threatWez: false,
     flightPaths: true,
     connections: false,
@@ -345,6 +375,7 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
     sensorFootprints: false,
     classifyRings: false,
     effectorEnvelopes: false,
+    defendedAreas: false,
     threatWez: false,
     flightPaths: false,
     connections: false,
@@ -418,6 +449,11 @@ export function analysisBasisSignature(s: Scenario): string {
   })
 }
 
+/**
+ * A configuration change invalidates the run in progress: the telemetry it
+ * produced no longer describes the board. The run keeps its sequence number;
+ * only a manual reset issues a new one.
+ */
 function playbackForScenarioChange(playback: PlaybackState, next: Scenario): PlaybackState {
   if (
     playback.basisSignature == null ||
@@ -425,7 +461,76 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
   ) {
     return playback
   }
-  return freshPlayback(playback.runSeq + 1, playback.speedMult, 'configuration-changed')
+  return freshPlayback(playback.runSeq, playback.speedMult, 'configuration-changed')
+}
+
+/**
+ * Run sequence the next startup issues. Written on a manual reset (the fresh
+ * run's own number, so a reload shows the same run) and on the first start of
+ * a run (that number plus one, so a run that produced telemetry is never
+ * reissued after a reload). Exported for tests.
+ */
+export function savedRunSeq(): number {
+  if (typeof localStorage === 'undefined') return 1
+  const n = Number(localStorage.getItem(RUNSEQ_KEY))
+  return Number.isInteger(n) && n >= 1 ? n : 1
+}
+
+function writeRunSeq(seq: number): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(RUNSEQ_KEY, String(seq))
+  } catch {
+    // A lost sequence write costs a reused label, never data.
+  }
+}
+
+/** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
+function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined): string[] {
+  const have = s.deletedSeedIds ?? []
+  if (!builtin || have.includes(id)) return have
+  return [...have, id]
+}
+
+/** Drop selection ids that the scenario no longer holds. */
+
+function pruneSelection(sel: Selection, s: Scenario): Selection {
+  const entityIds = sel.entityIds.filter((id) => s.entities.some((e) => e.id === id))
+  const keep = <T extends { id: string }>(id: string | null, list: T[]) =>
+    id != null && list.some((x) => x.id === id) ? id : null
+  return {
+    entityIds,
+    boundaryId: keep(sel.boundaryId, s.boundaries),
+    connectionId: keep(sel.connectionId, s.connections),
+    libraryId: keep(sel.libraryId, s.library),
+    cardId: keep(sel.cardId, s.testCards),
+  }
+}
+
+/** Every in-progress interaction field, as `cancelDraft` clears them. */
+const CLEARED_DRAFT: Pick<
+  UiState,
+  | 'draftPoints'
+  | 'pathEntityId'
+  | 'connectFromId'
+  | 'calibrateA'
+  | 'calibrateB'
+  | 'moveUnderlay'
+  | 'contextMenu'
+  | 'locationDialogOpen'
+  | 'raidDraft'
+  | 'connectSuggestion'
+> = {
+  draftPoints: [],
+  pathEntityId: null,
+  connectFromId: null,
+  calibrateA: null,
+  calibrateB: null,
+  moveUnderlay: false,
+  contextMenu: null,
+  locationDialogOpen: false,
+  raidDraft: null,
+  connectSuggestion: null,
 }
 
 function savedUnits(): DisplayUnits {
@@ -552,14 +657,16 @@ export const useStore = create<Store>()((set, get) => {
     })
   }
 
+  const view = savedView()
+
   return {
     scenario: emptyScenario(),
     past: [],
     future: [],
     selection: EMPTY_SELECTION,
-    camera: { x: 0, y: 0, scale: 0.05 },
+    camera: view.camera ?? { x: 0, y: 0, scale: 0.05 },
     ui: {
-      basemap: 'canvas',
+      basemap: view.basemap ?? 'canvas',
       tool: 'select',
       boundaryType: 'range',
       draftPoints: [],
@@ -567,7 +674,7 @@ export const useStore = create<Store>()((set, get) => {
       connectFromId: null,
       calibrateA: null,
       calibrateB: null,
-      rightTab: 'inspect',
+      rightTab: view.rightTab ?? 'inspect',
       moveUnderlay: false,
       layers: savedLayers(),
       units: savedUnits(),
@@ -575,19 +682,19 @@ export const useStore = create<Store>()((set, get) => {
       connectSuggestion: null,
       raidDraft: null,
       locationDialogOpen: false,
-      lastAutosaveAt: null,
     },
-    playback: freshPlayback(1),
+    playback: freshPlayback(savedRunSeq()),
+    save: { lastAutosaveAt: null, error: null },
 
     undo: () => {
-      const { past, future, scenario, ui, playback } = get()
+      const { past, future, scenario, ui, playback, selection } = get()
       if (past.length === 0) return
       const restored = past[past.length - 1]
       set({
         scenario: restored,
         past: past.slice(0, -1),
         future: [scenario, ...future],
-        selection: EMPTY_SELECTION,
+        selection: pruneSelection(selection, restored),
         playback: playbackForScenarioChange(playback, restored),
         // A restored scenario invalidates any open connect offer.
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
@@ -595,14 +702,14 @@ export const useStore = create<Store>()((set, get) => {
     },
 
     redo: () => {
-      const { past, future, scenario, ui, playback } = get()
+      const { past, future, scenario, ui, playback, selection } = get()
       if (future.length === 0) return
       const restored = future[0]
       set({
         scenario: restored,
         past: [...past, scenario],
         future: future.slice(1),
-        selection: EMPTY_SELECTION,
+        selection: pruneSelection(selection, restored),
         playback: playbackForScenarioChange(playback, restored),
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
@@ -614,16 +721,19 @@ export const useStore = create<Store>()((set, get) => {
         past: [],
         future: [],
         selection: EMPTY_SELECTION,
-        playback: freshPlayback(
-          st.playback.runSeq + 1,
-          st.playback.speedMult,
-          'scenario-loaded',
-        ),
-        ui:
-          st.ui.raidDraft || st.ui.connectSuggestion
-            ? { ...st.ui, raidDraft: null, connectSuggestion: null }
-            : st.ui,
+        playback: freshPlayback(st.playback.runSeq, st.playback.speedMult, 'scenario-loaded'),
+        ui: { ...st.ui, ...CLEARED_DRAFT, tool: 'select' },
       })),
+
+    loadScenario: (s, opts) => {
+      get().replaceScenario(s)
+      if ((opts?.fit ?? 'if-unsaved') === 'if-unsaved' && savedView().camera) return
+      const cam = fitCameraTo([
+        ...s.entities.map((e) => e.pos),
+        ...s.paths.flatMap((p) => p.points),
+      ])
+      if (cam) get().setCamera(cam)
+    },
 
     setScenarioName: (name) => mutate((s) => ({ ...s, name })),
 
@@ -878,7 +988,11 @@ export const useStore = create<Store>()((set, get) => {
     },
 
     deleteSystemPreset: (id) =>
-      mutate((s) => ({ ...s, systemPresets: s.systemPresets.filter((p) => p.id !== id) })),
+      mutate((s) => ({
+        ...s,
+        systemPresets: s.systemPresets.filter((p) => p.id !== id),
+        deletedSeedIds: withDeletedSeed(s, id, s.systemPresets.find((p) => p.id === id)?.builtin),
+      })),
 
     rotateSystem: (systemId, deltaDeg) =>
       mutate((s) => {
@@ -1094,38 +1208,6 @@ export const useStore = create<Store>()((set, get) => {
           : tactic.defaultBearingDeg
       const axes = fanAxes(ingressDeg, tactic.axes, tactic.axisSpreadDeg)
 
-      // Clamp each axis's spawn standoff so the origin sits outside every
-      // enabled sensor's detection ring against this platform's group,
-      // measured from the sensor position: a forward-deployed sensor along the
-      // ingress axis must not hold the origin at T0.
-      const rings: Array<{ pos: Vec2; rM: number }> = []
-      for (const e of scenario.entities) {
-        if (e.kind !== 'sensor' || !entityActive(e)) continue
-        const spec = e.specId
-          ? scenario.library.find((m) => m.id === e.specId)?.sensor
-          : undefined
-        if (!spec) continue
-        const r = effectiveDetectRangeM(spec, scenario.environment, platform.uas.group)
-        if (r > 0) rings.push({ pos: e.pos, rM: r * STANDOFF_CLEAR_FACTOR })
-      }
-      // Distance d along the spawn ray (target -> reciprocal of the axis) so
-      // that target + d*u clears ring i: d >= u.v + sqrt((u.v)^2 + R^2 - |v|^2)
-      // whenever the ray enters the ring (world frame: +x east, +y south,
-      // bearing 0 = north, so north is -y).
-      const standoffFor = (headingDeg: number): number => {
-        const rad = ((headingDeg + 180) * Math.PI) / 180
-        const u = { x: Math.sin(rad), y: -Math.cos(rad) }
-        let d = tactic.standoffM
-        for (const ring of rings) {
-          const v = { x: ring.pos.x - target.pos.x, y: ring.pos.y - target.pos.y }
-          const along = u.x * v.x + u.y * v.y
-          const disc = along * along + ring.rM * ring.rM - (v.x * v.x + v.y * v.y)
-          if (disc <= 0) continue
-          d = Math.max(d, along + Math.sqrt(disc))
-        }
-        return d
-      }
-
       // Decoy platform, resolved like a one-designator tactic. Unresolvable
       // decoys degrade to an all-strike raid rather than blocking.
       const decoySpec = tactic.decoy
@@ -1134,6 +1216,38 @@ export const useStore = create<Store>()((set, get) => {
             scenario.library,
           )
         : null
+      const specFor = (shipIdx: number): SpecModel =>
+        tactic.decoy != null && decoySpec != null && (shipIdx + 1) % tactic.decoy.everyNth === 0
+          ? decoySpec
+          : platform
+
+      // Spawn standoff clamp: no ship's own start point (after formation
+      // offsets, against its OWN spec: a decoy has its own signature) may be
+      // held by an enabled sensor at T0, under the real per-sensor rule
+      // (sector wedge, environment, target scaling, RF silence and bands,
+      // the EO/IR cue rule). The standoff steps outward until the group is
+      // clear, then takes the clearance margin.
+      const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
+      const layoutFor = (heading: number, members: number[], standoffM: number): Vec2[] => {
+        const origin = destination(target.pos, heading + 180, standoffM)
+        const f = tactic.formation
+        const offsets = f
+          ? formationOffsets(f.shape, members.length, f.spacingM, heading)
+          : formationOffsets('column', members.length, RAID_TRAIL_SPACING_M, heading)
+        return members.map((_, j) => ({ x: origin.x + offsets[j].x, y: origin.y + offsets[j].y }))
+      }
+      const held = (members: number[], pts: Vec2[]): boolean =>
+        pts.some((p, j) => sensorHoldsPoint(scenario, sensors, specFor(members[j]).uas, p))
+      const clearLayout = (heading: number, members: number[]): Vec2[] => {
+        let d = tactic.standoffM
+        let pts = layoutFor(heading, members, d)
+        if (!held(members, pts)) return pts
+        for (let i = 0; i < STANDOFF_MAX_STEPS && held(members, pts); i++) {
+          d *= STANDOFF_STEP
+          pts = layoutFor(heading, members, d)
+        }
+        return layoutFor(heading, members, d * STANDOFF_CLEAR_FACTOR)
+      }
 
       // Ship i flies wave floor(i / shipsPerWave) on axis i % axes, so every
       // wave draws from every ingress axis. Each wave-axis group is laid out
@@ -1151,13 +1265,9 @@ export const useStore = create<Store>()((set, get) => {
       for (const [key, members] of groups) {
         const heading = axes[Number(key.split(':')[1])]
         // Origin: target displaced along the reciprocal of the ingress axis.
-        const origin = destination(target.pos, heading + 180, standoffFor(heading))
-        const f = tactic.formation
-        const offsets = f
-          ? formationOffsets(f.shape, members.length, f.spacingM, heading)
-          : formationOffsets('column', members.length, RAID_TRAIL_SPACING_M, heading)
+        const pts = clearLayout(heading, members)
         members.forEach((shipIdx, j) => {
-          starts[shipIdx] = { x: origin.x + offsets[j].x, y: origin.y + offsets[j].y }
+          starts[shipIdx] = pts[j]
           headings[shipIdx] = heading
         })
       }
@@ -1165,9 +1275,7 @@ export const useStore = create<Store>()((set, get) => {
       const entities: Entity[] = []
       const paths: FlightPath[] = []
       for (let i = 0; i < shipCount; i++) {
-        const isDecoy =
-          tactic.decoy != null && decoySpec != null && (i + 1) % tactic.decoy.everyNth === 0
-        const spec = isDecoy ? decoySpec : platform
+        const spec = specFor(i)
         const designator =
           spec.threatProfile?.designator ?? spec.name.split(':').pop()?.trim() ?? spec.name
         const id = newId('ent')
@@ -1325,6 +1433,7 @@ export const useStore = create<Store>()((set, get) => {
       mutate((s) => ({
         ...s,
         library: s.library.filter((m) => m.id !== id),
+        deletedSeedIds: withDeletedSeed(s, id, s.library.find((m) => m.id === id)?.builtin),
         entities: s.entities.map((e) => (e.specId === id ? { ...e, specId: null } : e)),
       })),
 
@@ -1460,17 +1569,27 @@ export const useStore = create<Store>()((set, get) => {
     applyFrame: (id) => {
       const frame = get().scenario.frames.find((f) => f.id === id)
       if (!frame) return
-      set((st) => ({
-        camera: { ...frame.camera },
-        playback: {
-          ...st.playback,
-          playing: false,
-          simTimeS: frame.simTimeS,
-          phase:
-            frame.simTimeS === 0 && st.playback.startedAtMs == null ? 'ready' : 'review',
-        },
-        ui: { ...st.ui, basemap: frame.basemap },
-      }))
+      writeView({ camera: { ...frame.camera }, basemap: frame.basemap })
+      set((st) => {
+        // A frame is a recorded instant of this run: play resumes from it, so
+        // the observation horizon covers it, as startRun requires.
+        const ready = frame.simTimeS === 0 && st.playback.startedAtMs == null
+        return {
+          camera: { ...frame.camera },
+          playback: {
+            ...st.playback,
+            playing: false,
+            simTimeS: frame.simTimeS,
+            observedThroughS: Math.max(st.playback.observedThroughS, frame.simTimeS),
+            phase: ready ? 'ready' : 'review',
+            startedAtMs: ready ? st.playback.startedAtMs : (st.playback.startedAtMs ?? Date.now()),
+            basisSignature: ready
+              ? st.playback.basisSignature
+              : (st.playback.basisSignature ?? analysisBasisSignature(st.scenario)),
+          },
+          ui: { ...st.ui, basemap: frame.basemap },
+        }
+      })
     },
 
     deleteFrame: (id) => mutate((s) => ({ ...s, frames: s.frames.filter((f) => f.id !== id) })),
@@ -1486,7 +1605,11 @@ export const useStore = create<Store>()((set, get) => {
 
     clearSelection: () => set({ selection: EMPTY_SELECTION }),
 
-    setCamera: (c) => set({ camera: c }),
+    setCamera: (c) => {
+      writeViewCamera(c)
+      set({ camera: c })
+    },
+
     setTool: (t) =>
       set((st) => ({
         ui: {
@@ -1500,9 +1623,15 @@ export const useStore = create<Store>()((set, get) => {
           raidDraft: null,
         },
       })),
-    setBasemap: (b) => set((st) => ({ ui: { ...st.ui, basemap: b } })),
+    setBasemap: (b) => {
+      writeView({ basemap: b })
+      set((st) => ({ ui: { ...st.ui, basemap: b } }))
+    },
     setBoundaryType: (t) => set((st) => ({ ui: { ...st.ui, boundaryType: t } })),
-    setRightTab: (t) => set((st) => ({ ui: { ...st.ui, rightTab: t } })),
+    setRightTab: (t) => {
+      writeView({ rightTab: t })
+      set((st) => ({ ui: { ...st.ui, rightTab: t } }))
+    },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
     setLayer: (key, v) => {
       const layers = { ...get().ui.layers, [key]: v }
@@ -1521,7 +1650,7 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, layers } }))
     },
     setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
-    setLastAutosaveAt: (t) => set((st) => ({ ui: { ...st.ui, lastAutosaveAt: t } })),
+    setSaveState: (lastAutosaveAt, error) => set({ save: { lastAutosaveAt, error } }),
     setUnits: (v) => {
       if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
       set((st) => ({ ui: { ...st.ui, units: v } }))
@@ -1542,6 +1671,7 @@ export const useStore = create<Store>()((set, get) => {
         // A preview beyond the observed horizon is never silently promoted
         // to live data. Resume from the last actually observed instant.
         const simTimeS = Math.min(st.playback.simTimeS, st.playback.observedThroughS)
+        if (st.playback.startedAtMs == null) writeRunSeq(st.playback.runSeq + 1)
         return {
           playback: {
             ...st.playback,
@@ -1567,6 +1697,7 @@ export const useStore = create<Store>()((set, get) => {
     advanceRun: (t) =>
       set((st) => {
         const simTimeS = Math.max(0, t)
+        if (st.playback.startedAtMs == null) writeRunSeq(st.playback.runSeq + 1)
         return {
           playback: {
             ...st.playback,
@@ -1611,9 +1742,12 @@ export const useStore = create<Store>()((set, get) => {
       }),
 
     resetRun: (reason = 'manual') =>
-      set((st) => ({
-        playback: freshPlayback(st.playback.runSeq + 1, st.playback.speedMult, reason),
-      })),
+      set((st) => {
+        const runSeq = reason === 'manual' ? st.playback.runSeq + 1 : st.playback.runSeq
+        if (reason === 'manual') writeRunSeq(runSeq)
+        return { playback: freshPlayback(runSeq, st.playback.speedMult, reason) }
+      }),
+
   }
 })
 

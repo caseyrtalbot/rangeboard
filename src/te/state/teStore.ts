@@ -5,6 +5,8 @@
  */
 
 import { create } from 'zustand'
+import { savedView, writeView } from '../../io/viewState'
+
 import type {
   CampaignPhase,
   ChecklistTemplate,
@@ -330,13 +332,17 @@ export const useTeStore = create<TeStore>()((set, get) => {
     schemaVersion: 1,
     campaigns: [],
     activeCampaignId: null,
-    ui: { workspace: 'board', phase: 'campaign', selected: {} },
+    ui: { workspace: savedView().workspace ?? 'board', phase: 'campaign', selected: {} },
     lastSavedAt: null,
     saveError: null,
 
     setSaveState: (lastSavedAt, saveError) => set({ lastSavedAt, saveError }),
 
-    setWorkspace: (w) => set((s) => ({ ui: { ...s.ui, workspace: w } })),
+    setWorkspace: (w) => {
+      writeView({ workspace: w })
+      set((s) => ({ ui: { ...s.ui, workspace: w } }))
+    },
+
     setPhase: (p) => set((s) => ({ ui: { ...s.ui, phase: p } })),
     selectRecord: (key, id) =>
       set((s) => ({ ui: { ...s.ui, selected: { ...s.ui.selected, [key]: id } } })),

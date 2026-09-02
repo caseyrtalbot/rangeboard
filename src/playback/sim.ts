@@ -7,10 +7,16 @@ import { effectivePathDelayS } from './raid'
 import {
   effectiveClassifyRangeM,
   effectiveDetectRangeM,
+  eoIrNeedsCue,
   jammable,
-  rfDetectable,
+  sensorHoldGate,
 } from '../analysis/sensorEnv'
-import { jamBandsOverlap } from '../analysis/ewPhysics'
+import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
+import {
+  CONFIRMED_DECLARE_FACTOR,
+  defaultLinkLatencyS,
+  trackInitSFor,
+} from '../analysis/doctrineFactors'
 
 /** Positions of every ship in the entity's formation (just the lead when none). */
 export function memberPositions(entity: Entity, pos: Vec2, headingDeg: number): Vec2[] {
@@ -63,47 +69,54 @@ export interface DetectionHit {
 
 /**
  * One sensor's hit on one threat at an instant, or null.
- * Applies environment derates, radar target-size scaling, and RF silence.
- * EO/IR sensors need a cue: pass cued=false to suppress them.
+ * The hold gate (sensorHoldGate) decides technology eligibility: RF silence,
+ * RF band coverage, a zero range, and the EO/IR cue rule (a needs-cue sensor
+ * holds only when cued=true). Then the effective range against this target
+ * (environment derates, radar RCS, EO/IR span, acoustic level) and the
+ * sector wedge decide geometry.
  */
 function sensorHit(
   sensor: Entity,
   spec: SensorSpec,
   scenario: Scenario,
-  uas: Entity,
+  formation: Entity['formation'],
   uasSpec: UasSpec | undefined,
   members: Vec2[],
   cued: boolean,
 ): DetectionHit | null {
-  if (spec.sensorType === 'eo-ir' && !cued) return null
-  if (spec.sensorType === 'rf' && uasSpec && !rfDetectable(uasSpec)) return null
+  const gate = sensorHoldGate(spec, uasSpec)
+  if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
   const env = scenario.environment
-  const detectR = effectiveDetectRangeM(spec, env, uasSpec?.group)
+  const detectR = effectiveDetectRangeM(spec, env, uasSpec)
+  if (!(detectR > 0)) return null
   const inDetect = members.some((m) =>
     pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, detectR, m),
   )
   if (!inDetect) return null
-  const classifyR = effectiveClassifyRangeM(spec, env, uasSpec?.group)
+  const classifyR = effectiveClassifyRangeM(spec, env, uasSpec)
   const classified =
     classifyR != null &&
     members.some((m) => pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, classifyR, m))
-  const f = uas.formation
+  const f = formation
   const resolved = !(f && f.count > 1 && spec.resolutionM != null && f.spacingM < spec.resolutionM)
   return { sensorId: sensor.id, sensorType: spec.sensorType, classified, resolved }
 }
 
 /**
- * Two-pass sensor sweep over one threat position set: search sensors
- * (everything but EO/IR) first, then cued EO/IR, which only hold when an
- * earlier hit in the same sweep provides the cue (COURAGEOUS: narrow-FOV
- * cameras verify and track cued targets, they do not search). One place owns
- * the pass order and the cued flag; detectionsAt, assessThreat, and
- * spawnInRingViolations all sweep through here.
+ * Two-pass sensor sweep over one threat position set: search sensors first
+ * (everything that does not need a cue: radar, RF, acoustic, and wide-area
+ * EO/IR in a surveillance or early-warning role), then cued EO/IR, which
+ * only hold when an earlier hit in the same sweep provides the cue
+ * (COURAGEOUS: narrow-FOV cameras verify and track cued targets, they do
+ * not search). One place owns the pass order and the cued flag;
+ * detectionsAt, assessThreat, spawnInRingViolations and the raid-builder
+ * standoff clamp all sweep through here. `formation` is the threat's
+ * formation (track-resolution test); pass undefined for a single point.
  */
-function sweepSensorHits(
+export function sweepSensorHits(
   scenario: Scenario,
   sensors: Entity[],
-  uas: Entity,
+  formation: Entity['formation'],
   uasSpec: UasSpec | undefined,
   members: Vec2[],
 ): Array<{ spec: SensorSpec; hit: DetectionHit }> {
@@ -112,13 +125,28 @@ function sweepSensorHits(
     for (const sensor of sensors) {
       const spec = modelFor(scenario, sensor)?.sensor
       if (!spec) continue
-      const isEo = spec.sensorType === 'eo-ir'
-      if (pass === 'search' ? isEo : !isEo) continue
-      const hit = sensorHit(sensor, spec, scenario, uas, uasSpec, members, out.length > 0)
+      const cueSensor = eoIrNeedsCue(spec)
+      if (pass === 'search' ? cueSensor : !cueSensor) continue
+      const hit = sensorHit(sensor, spec, scenario, formation, uasSpec, members, out.length > 0)
       if (hit) out.push({ spec, hit })
     }
   }
   return out
+}
+
+/**
+ * True when any of `sensors` holds a single ship of `uasSpec` standing at
+ * `point`, under the full per-sensor rule set (sector, environment, target
+ * scaling, RF silence and bands, the cue rule). The raid builder's spawn
+ * standoff clamp uses this so it agrees with spawnInRingViolations.
+ */
+export function sensorHoldsPoint(
+  scenario: Scenario,
+  sensors: Entity[],
+  uasSpec: UasSpec | undefined,
+  point: Vec2,
+): boolean {
+  return sweepSensorHits(scenario, sensors, undefined, uasSpec, [point]).length > 0
 }
 
 /**
@@ -137,7 +165,9 @@ export function detectionsAt(scenario: Scenario, tS: number): Map<string, Detect
     const heading = track?.headingDeg ?? uas.headingDeg
     const members = memberPositions(uas, pos, heading)
     const uasSpec = modelFor(scenario, uas)?.uas
-    const hits = sweepSensorHits(scenario, sensors, uas, uasSpec, members).map((s) => s.hit)
+    const hits = sweepSensorHits(scenario, sensors, uas.formation, uasSpec, members).map(
+      (s) => s.hit,
+    )
     if (hits.length > 0) out.set(uas.id, hits)
   }
   return out
@@ -157,8 +187,10 @@ export interface SpawnViolation {
  * hand-drawn paths get no standoff at all, so this is derived live from the
  * scenario and never stored. Uses the same per-sensor rules as sensorHit at
  * path.points[0] (lead position; formation offsets are ignored): environment
- * derates, radar target-size scaling, sector wedges, RF silence, and the
- * EO/IR cue rule (an EO/IR-only hold is not a violation).
+ * derates, target scaling (radar RCS, EO/IR span, acoustic level), sector
+ * wedges, RF silence and band coverage, and the role-aware EO/IR cue rule
+ * (a hold by a cued-only camera with no cue is not a violation; a wide-area
+ * EO/IR search sensor holds on its own).
  */
 export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
@@ -168,7 +200,7 @@ export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
     const start = scenario.paths.find((p) => p.entityId === uas.id)?.points[0]
     if (!start) continue
     const uasSpec = modelFor(scenario, uas)?.uas
-    for (const { hit } of sweepSensorHits(scenario, sensors, uas, uasSpec, [start])) {
+    for (const { hit } of sweepSensorHits(scenario, sensors, uas.formation, uasSpec, [start])) {
       out.push({ uasId: uas.id, sensorId: hit.sensorId })
     }
   }
@@ -243,7 +275,7 @@ export const SUSPECT_SPEED_KPH = 50
 export const DEFAULT_DEFENDED_RADIUS_M = 500
 
 /** Protected-boundary radius of one asset entity, meters. */
-function defendedRadiusOf(asset: Entity): number {
+export function defendedRadiusOf(asset: Entity): number {
   const r = asset.defendedRadiusM
   return r != null && r > 0 ? r : DEFAULT_DEFENDED_RADIUS_M
 }
@@ -322,6 +354,14 @@ export interface ThreatAssessment {
   stableTrackAtS?: number | null
   /** The doctrinal weapons-release time (the gate); null when doctrine is off. */
   declaredHostileAtS?: number | null
+  /**
+   * Doctrine: per-effector release gates. Each effector opens only when a
+   * firm track from a sensor ROUTED TO IT exists, hostile ID is made, and
+   * the declaration dwell has run. An effector absent here can never fire at
+   * this threat. Present only when doctrine is enabled; engageGateS carries
+   * the earliest of these.
+   */
+  effectorGates?: Array<{ effectorId: string; gateS: number }>
   /** Sensors that detected the threat at any time during the sweep. */
   detectingSensorIds: string[]
   /** Per-sensor detection/classification intervals retained for operator telemetry. */
@@ -347,6 +387,13 @@ export interface KillChainRoute {
   latencyS: number
   /** C2 entities on the min-latency path, in hop order (empty for direct/standalone). */
   viaC2Ids: string[]
+  /**
+   * Every detecting sensor with ANY valid path to this effector. Doctrine
+   * uses it for route-aware track gating: only a firm track from one of
+   * these sensors can authorize this effector's shot. Empty for a standalone
+   * effector's own-radar route.
+   */
+  sourceSensorIds: string[]
   /**
    * Detecting sensors on any valid path that satisfy the effector's
    * fire-control uplink: profile fcSources, or a researched fc-uplink pairing
@@ -393,11 +440,15 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
     if (list) list.push(e)
     else m.set(key, [e])
   }
+  // Doctrine charges a realistic default hop latency on links that set none;
+  // legacy keeps the unset-means-zero contract.
+  const doctrine = effectiveDoctrine(scenario)
   for (const c of scenario.connections) {
     const from = byId.get(c.fromId)
     const to = byId.get(c.toId)
     if (!from || !to) continue
-    const latencyS = c.latencyS ?? 0
+    const latencyS =
+      c.latencyS ?? (doctrine.enabled ? defaultLinkLatencyS(from.kind, to.kind) : 0)
     const typed = c.confidence != null
     if (from.kind === 'c2' && to.kind === 'c2') {
       push(c2Adj, c.fromId, { toId: c.toId, latencyS, typed })
@@ -411,6 +462,7 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
     latencyS: number
     viaC2Ids: string[]
     fcSourceIds: Set<string>
+    sourceSensorIds: Set<string>
     /** Stays true only while EVERY recorded path is fully typed. */
     typed: boolean
   }
@@ -435,7 +487,7 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
     }
     let s = best.get(effectorId)
     if (!s) {
-      s = { latencyS, viaC2Ids, fcSourceIds: new Set(), typed: pathTyped }
+      s = { latencyS, viaC2Ids, fcSourceIds: new Set(), sourceSensorIds: new Set(), typed: pathTyped }
       best.set(effectorId, s)
     } else {
       if (latencyS < s.latencyS) {
@@ -444,6 +496,7 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
       }
       s.typed = s.typed && pathTyped
     }
+    s.sourceSensorIds.add(sensor.id)
     const fcMatch =
       sensor.specId != null &&
       (profile?.fcSources?.includes(sensor.specId) ||
@@ -490,7 +543,13 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
       s.viaC2Ids = []
       s.typed = false
     } else {
-      best.set(e.id, { latencyS: 0, viaC2Ids: [], fcSourceIds: new Set(), typed: false })
+      best.set(e.id, {
+        latencyS: 0,
+        viaC2Ids: [],
+        fcSourceIds: new Set(),
+        sourceSensorIds: new Set(),
+        typed: false,
+      })
     }
   }
 
@@ -501,6 +560,7 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
       latencyS: s.latencyS,
       viaC2Ids: s.viaC2Ids,
       fcSourceIds: [...s.fcSourceIds],
+      sourceSensorIds: [...s.sourceSensorIds],
       typed: s.typed,
     })
   }
@@ -599,7 +659,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
     const stepTechs = new Set<SensorType>()
     let fcClassifiedNow = false
-    for (const { spec, hit } of sweepSensorHits(scenario, sensors, uas, uasSpec, members)) {
+    for (const { spec, hit } of sweepSensorHits(scenario, sensors, uas.formation, uasSpec, members)) {
       stepTechs.add(hit.sensorType)
       detectingSensors.add(hit.sensorId)
       if (hit.resolved) anyResolved = true
@@ -686,14 +746,18 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     // A threat is in-range of an effector when ANY formation member is inside
     // the envelope (min range, max range, sector). Effector reach is physical
     // geometry per ship; whether sensors can split the formation
-    // (swarmMerged) is a separate track-resolution question.
+    // (swarmMerged) is a separate track-resolution question. A jammer's
+    // reach is its power-scaled effective range against this target, so the
+    // window, the attrition jam gate and the drawn cone agree.
     for (const eff of effectors) {
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
+      const reachM =
+        spec.effectorType === 'jammer' ? effectiveJamRangeM(spec, uasSpec) : spec.maxRangeM
       const inRange = members.some(
         (m) =>
           dist(m, eff.pos) >= spec.minRangeM &&
-          pointInSector(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, spec.maxRangeM, m),
+          pointInSector(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, reachM, m),
       )
       const intervals = effectorInRange.get(eff.id) ?? []
       const last = intervals[intervals.length - 1]
@@ -756,36 +820,72 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     }
   }
 
-  // Stable track file: the first time a fire-control-quality sensor (radar
-  // or EO/IR) has held the track continuously for trackFirmS. Intervals are
-  // already split on every hold break, so an unbroken interval IS continuous
-  // hold. Informational when doctrine is off; the gate when it is on.
+  // Stable track file, PER SENSOR: the first time each fire-control-quality
+  // sensor (radar or EO/IR) has held the track continuously for its own
+  // initiation time (spec trackInitS, else the TRACK_INIT_S role table: a
+  // staring fire-control radar confirms in ~2 s, a rotating early-warning
+  // search radar needs several revolutions). Intervals are already split on
+  // every hold break, so an unbroken interval IS continuous hold.
+  // Informational when doctrine is off; the gate inputs when it is on.
   const doctrine = effectiveDoctrine(scenario)
+  const firmBySensor = new Map<string, number>()
   for (const obs of sensorObservations.values()) {
     if (obs.sensorType !== 'radar' && obs.sensorType !== 'eo-ir') continue
+    const sensorEnt = sensors.find((s) => s.id === obs.sensorId)
+    const spec = sensorEnt ? modelFor(scenario, sensorEnt)?.sensor : undefined
+    const initS = spec ? trackInitSFor(spec, doctrine) : doctrine.trackFirmS
     for (const [s0, s1] of obs.intervals) {
-      if (s1 - s0 + DT / 2 < doctrine.trackFirmS) continue
-      const firmAt = s0 + doctrine.trackFirmS
-      if (base.stableTrackAtS == null || firmAt < base.stableTrackAtS) base.stableTrackAtS = firmAt
+      if (s1 - s0 + DT / 2 < initS) continue
+      firmBySensor.set(obs.sensorId, s0 + initS)
       break // intervals are in time order; the first long-enough one is earliest
     }
   }
+  for (const firmAt of firmBySensor.values()) {
+    if (base.stableTrackAtS == null || firmAt < base.stableTrackAtS) base.stableTrackAtS = firmAt
+  }
+
+  // Kill-chain routes from the detecting sensors: used for the doctrine
+  // gates here and the usable-window sweep below.
+  const routes = killChainRoutes(scenario, detectingSensors)
 
   // ROE gates the engagement window start: free = first detection,
   // tight = hostile classification, hold = no engagement at all.
-  // Doctrine replaces the free/tight split with the full sequence: firm
-  // fire-control track AND hostile ID, then the declaration dwell.
+  // Doctrine replaces the free/tight split with the full sequence PER
+  // EFFECTOR: a firm track from a sensor actually ROUTED to that effector
+  // (a track file that never reaches the shooter authorizes nothing), plus
+  // hostile ID, then the declaration dwell. Two-phenomenology confirmation
+  // at declaration start halves the dwell: correlated ID decides faster.
   const roe = scenario.roe ?? 'tight'
-  let gateS: number | null
+  const effectorGateS = new Map<string, number>()
+  let gateS: number | null = null
   if (roe === 'hold') {
     gateS = null
   } else if (doctrine.enabled) {
     const hostileAtS = base.classificationAtS.hostileAtS
-    gateS =
-      hostileAtS != null && base.stableTrackAtS != null
-        ? Math.max(hostileAtS, base.stableTrackAtS) + doctrine.declareHostileS
-        : null
+    if (hostileAtS != null && firmBySensor.size > 0) {
+      for (const [effectorId, route] of routes) {
+        // A standalone effector (own radar, empty source set) self-acquires:
+        // it accepts the earliest firm track anywhere as its cue.
+        const sources =
+          route.sourceSensorIds.length > 0 ? route.sourceSensorIds : [...firmBySensor.keys()]
+        let firmS: number | null = null
+        for (const sid of sources) {
+          const f = firmBySensor.get(sid)
+          if (f != null && (firmS == null || f < firmS)) firmS = f
+        }
+        if (firmS == null) continue
+        const declStartS = Math.max(hostileAtS, firmS)
+        const confirmed = base.firstConfirmS != null && base.firstConfirmS <= declStartS
+        const dwellS = doctrine.declareHostileS * (confirmed ? CONFIRMED_DECLARE_FACTOR : 1)
+        effectorGateS.set(effectorId, declStartS + dwellS)
+      }
+      for (const g of effectorGateS.values()) if (gateS == null || g < gateS) gateS = g
+    }
     base.declaredHostileAtS = gateS
+    base.effectorGates = [...effectorGateS.entries()].map(([effectorId, g]) => ({
+      effectorId,
+      gateS: g,
+    }))
   } else {
     gateS = roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
   }
@@ -802,7 +902,6 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     // Only effectors with a route from the detecting sensors can fire
     // (resolveEngagements uses the same route set). Unrouted geometry stays
     // available in effectorWindows.
-    const routes = killChainRoutes(scenario, detectingSensors)
     let bestUsableLen = -1
     let bestGatedLen = 0
     let gatedWindow: [number, number] | null = null
@@ -812,6 +911,10 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       if (!route) continue
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
+      // Doctrine: each effector opens at ITS OWN gate (route-aware firm
+      // track + declaration); an effector with no gate has no usable window.
+      const effGateS = doctrine.enabled ? effectorGateS.get(eff.id) : gateS
+      if (effGateS == null) continue
       const needS = (spec.engageTimeS ?? 0) + route.latencyS
       // A fully typed route to an fc-uplink effector needs a researched
       // fire-control sensor on the chain; without one its windows stay
@@ -821,7 +924,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
         profileFor(eff.specId)?.guidance === 'fc-uplink' &&
         route.fcSourceIds.length === 0
       for (const [s0, s1] of effectorInRange.get(eff.id) ?? []) {
-        const start = Math.max(s0, gateS)
+        const start = Math.max(s0, effGateS)
         const len = s1 - start
         if (len < 0) continue
         if (len >= needS) {
@@ -854,7 +957,14 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     base.status = 'no-kill-chain'
   } else if (roe === 'hold') {
     base.status = 'weapons-hold'
-  } else if (doctrine.enabled && base.stableTrackAtS == null) {
+  } else if (
+    doctrine.enabled &&
+    (base.stableTrackAtS == null || effectorGateS.size === 0) &&
+    !(base.stableTrackAtS != null && base.classificationAtS.hostileAtS == null)
+  ) {
+    // No firm fire-control track at all, or none from a sensor routed to any
+    // shooter: nothing can be declared. (A firm track with no hostile ID
+    // falls through to not-confirmed instead.)
     base.status = 'no-stable-track'
   } else if (
     (roe === 'tight' || doctrine.enabled) &&

@@ -29,6 +29,7 @@ const SENSORS: SpecModel[] = [
       sensorType: 'radar',
       role: 'target-acquisition',
       detectRangeM: 8000,
+      refRcsM2: 0.01, // nano/mini-UAS class figures
       classifyRangeM: 5000,
       sectorDeg: 90,
       elevationDeg: [0, 90],
@@ -47,6 +48,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'surveillance',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 15000,
       classifyRangeM: 8000,
       sectorDeg: 90,
@@ -86,6 +88,7 @@ const SENSORS: SpecModel[] = [
       sensorType: 'radar',
       role: 'tracking',
       detectRangeM: 4000,
+      refRcsM2: 0.01, // Group 1 UAS line
       classifyRangeM: 2500,
       sectorDeg: 130,
       elevationDeg: [-45, 45],
@@ -104,7 +107,9 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'early-warning',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 10000,
+      instrumentedRangeM: 35000, // SRC: >35 km instrumented, air-surveillance mode
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: [0, 30],
@@ -123,6 +128,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'early-warning',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 15000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -142,7 +148,9 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'classification',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 5000,
+      instrumentedRangeM: 5000, // 5 km is the instrumented range in this mode
       classifyRangeM: 3000,
       sectorDeg: 360,
       elevationDeg: [0, 60],
@@ -180,6 +188,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'rf',
       role: 'early-warning',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 5000,
       classifyRangeM: 5000,
       sectorDeg: 90,
@@ -218,6 +227,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'acoustic',
       role: 'tracking',
+      refAcousticDb: 75, // Group 1-2 small UAS source level (signatureFactors.ts tiers), PF
       detectRangeM: 500,
       classifyRangeM: 400,
       sectorDeg: 105,
@@ -237,6 +247,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'acoustic',
       role: 'early-warning',
+      refAcousticDb: 95, // engine-noise target (G3 tier), PF
       detectRangeM: 4000,
       classifyRangeM: 2000,
       sectorDeg: 360,
@@ -256,6 +267,8 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'classification',
+      eoBand: 'dual', // thermal and color imager
+      refSpanM: 0.4, // Group 1 span planning factor (signatureFactors.ts); FLIR states no target class
       detectRangeM: 3000,
       classifyRangeM: 1500,
       sectorDeg: 360,
@@ -275,6 +288,8 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'classification',
+      eoBand: 'dual',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 2000,
       classifyRangeM: 1500,
       sectorDeg: 360,
@@ -294,7 +309,10 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'surveillance',
+      eoBand: 'thermal', // wide-area infrared; searches without a cue (surveillance role)
+      refSpanM: 0.4, // 'low, slow, small UAS' band: Group 1 span planning factor
       detectRangeM: 4800,
+      instrumentedRangeM: 16000, // top of Anduril's stated 3-10 mile detection band
       classifyRangeM: 4800,
       sectorDeg: 360,
       elevationDeg: null,
@@ -313,6 +331,8 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'fire-control',
+      eoBand: 'dual', // cooled MWIR plus HD colour
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 8000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -332,6 +352,8 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'surveillance',
+      eoBand: 'thermal', // rotating MWIR panorama; self-cueing (surveillance role)
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 5000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -351,6 +373,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'acoustic',
       role: 'early-warning',
+      refAcousticDb: 100, // Shahed-type OWA (MD550 piston), PF
       detectRangeM: 5000,
       classifyRangeM: 5000,
       sectorDeg: 200,
@@ -370,6 +393,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'acoustic',
       role: 'early-warning',
+      refAcousticDb: 75, // FPV quad, PF
       detectRangeM: 150,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -408,6 +432,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'fire-control',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 8000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -427,6 +452,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'rf',
       role: 'classification',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 6000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -446,6 +472,8 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'classification',
+      eoBand: 'dual', // HD EO, HD MWIR, SWIR
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 5000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -465,6 +493,8 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'eo-ir',
       role: 'fire-control',
+      eoBand: 'dual',
+      refSpanM: 0.4, // brochure '>2 km' names no target class: Group 1 span planning factor
       detectRangeM: 2000,
       classifyRangeM: 1500,
       sectorDeg: 360,
@@ -503,6 +533,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'target-acquisition',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 15000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -522,6 +553,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'early-warning',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 40000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -542,6 +574,8 @@ const SENSORS: SpecModel[] = [
       sensorType: 'radar',
       role: 'surveillance',
       detectRangeM: 4000,
+      refRcsM2: 0.01, // 'lighter than a milk carton' nano/micro class
+      instrumentedRangeM: 75000, // Saab layered-defence page, instrumented
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: null,
@@ -561,6 +595,7 @@ const SENSORS: SpecModel[] = [
       sensorType: 'radar',
       role: 'target-acquisition',
       detectRangeM: 6000,
+      refRcsM2: 0.04, // back-solved: 9 km at 0.2 m2 (trade reporting) scales to 6 km at 0.04 m2
       classifyRangeM: null,
       sectorDeg: 120,
       elevationDeg: null,
@@ -580,6 +615,8 @@ const SENSORS: SpecModel[] = [
       sensorType: 'radar',
       role: 'tracking',
       detectRangeM: 1000,
+      refRcsM2: 0.01, // Phantom 4 line
+      instrumentedRangeM: 6000, // datasheet instrumented range
       classifyRangeM: null,
       sectorDeg: 120,
       elevationDeg: [-40, 40],
@@ -618,6 +655,8 @@ const SENSORS: SpecModel[] = [
       sensorType: 'radar',
       role: 'surveillance',
       detectRangeM: 2730,
+      refRcsM2: 0.01, // datasheet condition for the 2.73 km line
+      instrumentedRangeM: 20000, // datasheet instrumented range
       classifyRangeM: null,
       sectorDeg: 180,
       elevationDeg: [0, 30],
@@ -636,7 +675,9 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'early-warning',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 40000,
+      instrumentedRangeM: 400000, // Thales: over 400 km instrumented
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: null,
@@ -655,6 +696,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'rf',
       role: 'classification',
+      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
       detectRangeM: 5000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -693,6 +735,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'rf',
       role: 'early-warning',
+      urbanRangeM: 1000, // DroneShield: 1 km in a high-RF (urban) background
       detectRangeM: 4000,
       classifyRangeM: 4000,
       sectorDeg: 360,
@@ -731,6 +774,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'rf',
       role: 'classification',
+      rfBands: ['uhf-433', 'ism-915', 'ism-2400', 'ism-5800'], // '433 MHz to 5.8 GHz': every non-GNSS link band in the model
       detectRangeM: 3000,
       classifyRangeM: null,
       sectorDeg: 360,
@@ -1319,6 +1363,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 1,
+      rcsM2: 0.01, // planning factor (rcsFactors.ts): G1 tier; Phantom/Mavic class is the Blighter A400 datasheet's 0.01 m2 small-drone case
+      spanM: 0.38, // public dimension: DJI Mavic 3 diagonal 380 mm
+      acousticDb: 68, // PF: small electric quad class
       airframe: 'quad',
       cruiseSpeedMps: 12,
       maxSpeedMps: 21,
@@ -1356,6 +1403,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 1,
+      rcsM2: 0.005, // planning factor (rcsFactors.ts): half the G1 tier: sub-250 g airframe
+      spanM: 0.25, // public dimension: DJI Mini 4 Pro diagonal 247 mm
+      acousticDb: 60, // PF: sub-250 g quad
       airframe: 'quad',
       cruiseSpeedMps: 10,
       maxSpeedMps: 16,
@@ -1393,6 +1443,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 1,
+      rcsM2: 0.01, // planning factor (rcsFactors.ts): G1 tier; study 5.x: low RCS is the FPV's main survivability trait
+      spanM: 0.3, // public dimension: 7-inch FPV frame, ~300 mm wheelbase
+      acousticDb: 75, // PF: 7-inch FPV at speed
       airframe: 'fpv',
       cruiseSpeedMps: 25,
       maxSpeedMps: 45,
@@ -1429,6 +1482,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 1,
+      rcsM2: 0.01, // planning factor (rcsFactors.ts): G1 tier; the fiber spool adds no radar return of note
+      spanM: 0.3, // public dimension: 7-inch FPV frame class
+      acousticDb: 75, // PF: 7-inch FPV class
       airframe: 'fpv',
       cruiseSpeedMps: 15,
       maxSpeedMps: 25,
@@ -1466,6 +1522,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 2,
+      rcsM2: 0.05, // planning factor (rcsFactors.ts): G2 tier; EchoGuard sees a Matrice 600 ~4x the Phantom energy (1.4 km vs 1 km)
+      spanM: 0.9, // public dimension: DJI M350 RTK diagonal wheelbase 895 mm
+      acousticDb: 78, // PF: industrial quad
       airframe: 'quad',
       cruiseSpeedMps: 15,
       maxSpeedMps: 23,
@@ -1503,6 +1562,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 2,
+      rcsM2: 0.1, // planning factor (rcsFactors.ts): above the G2 tier: heavy multirotor frame with exposed payload
+      spanM: 1.5, // public dimension: agricultural hexacopter class, ~1.5 m motor-to-motor
+      acousticDb: 85, // PF: heavy multirotor
       airframe: 'quad',
       cruiseSpeedMps: 12,
       maxSpeedMps: 20,
@@ -1541,6 +1603,10 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 2,
+      rcsM2: 0.05, // planning factor (rcsFactors.ts): G2 tier
+      spanM: 3.5, // public dimension: JOUAV CW-15 wingspan 3.5 m
+      acousticDb: 80, // PF: electric VTOL fixed-wing
+      irSignature: 'low', // electric VTOL; same as the airframe default, stated for the record
       airframe: 'vtol',
       cruiseSpeedMps: 17,
       maxSpeedMps: 25,
@@ -1577,6 +1643,10 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 2,
+      rcsM2: 0.05, // planning factor (rcsFactors.ts): G2 tier; small composite airframe
+      spanM: 1.65, // public dimension: Lancet-3 wingspan ~1.65 m
+      acousticDb: 75, // PF: electric pusher
+      irSignature: 'low', // electric pusher: no engine exhaust; the one-way-attack default is high
       airframe: 'one-way-attack',
       cruiseSpeedMps: 28,
       maxSpeedMps: 83,
@@ -1613,6 +1683,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 3,
+      rcsM2: 0.1, // planning factor (rcsFactors.ts): below the G3 tier: 3 m composite airframe, piston engine
+      spanM: 3.1, // public dimension: Orlan-10 wingspan 3.1 m
+      acousticDb: 90, // PF: small piston engine
       airframe: 'fixed-wing',
       cruiseSpeedMps: 30,
       maxSpeedMps: 42,
@@ -1650,6 +1723,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 3,
+      rcsM2: 0.2, // planning factor (rcsFactors.ts): G3 tier; delta wing, composite skin
+      spanM: 2.5, // public dimension: Shahed-136 wingspan 2.5 m
+      acousticDb: 100, // PF: MD550 piston engine
       airframe: 'one-way-attack',
       cruiseSpeedMps: 50,
       maxSpeedMps: 64,
@@ -1687,6 +1763,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 2,
+      rcsM2: 0.2, // planning factor (rcsFactors.ts): G3 tier, not G2: a decoy built to present a Shahed-class radar return
+      spanM: 2.5, // public dimension: Gerbera wingspan ~2.5 m (Shahed-form decoy)
+      acousticDb: 90, // PF: small piston engine
       airframe: 'one-way-attack',
       cruiseSpeedMps: 33,
       maxSpeedMps: 44,
@@ -1724,6 +1803,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 3,
+      rcsM2: 0.2, // planning factor (rcsFactors.ts): G3 tier
+      spanM: 5.0, // public dimension: Mugin-5 wingspan 5.0 m
+      acousticDb: 95, // PF: gasoline engine
       airframe: 'one-way-attack',
       cruiseSpeedMps: 32,
       maxSpeedMps: 40,
@@ -1760,6 +1842,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 4,
+      rcsM2: 1, // planning factor (rcsFactors.ts): G4 tier; light-aircraft class
+      spanM: 10, // public dimension: Mohajer-6 wingspan 10 m
+      acousticDb: 100, // PF: Rotax-class piston
       airframe: 'fixed-wing',
       cruiseSpeedMps: 40,
       maxSpeedMps: 56,
@@ -1797,6 +1882,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 3,
+      rcsM2: 0.2, // planning factor (rcsFactors.ts): G3 tier; jet variant keeps the Shahed airframe class
+      spanM: 2.5, // public dimension: Shahed airframe class, wingspan 2.5 m
+      acousticDb: 105, // PF: turbojet
       airframe: 'one-way-attack',
       cruiseSpeedMps: 89,
       maxSpeedMps: 97,
@@ -1835,6 +1923,9 @@ const THREATS: SpecModel[] = [
     builtin: true,
     uas: {
       group: 4,
+      rcsM2: 1, // planning factor (rcsFactors.ts): G4 tier; light-aircraft class
+      spanM: 12, // public dimension: Bayraktar TB2 wingspan 12 m
+      acousticDb: 100, // PF: Rotax 912 piston
       airframe: 'fixed-wing',
       cruiseSpeedMps: 46,
       maxSpeedMps: 57,

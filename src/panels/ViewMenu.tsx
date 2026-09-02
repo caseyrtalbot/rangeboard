@@ -19,6 +19,7 @@ const LAYER_GROUPS: { title: string; layers: { id: LayerKey; label: string; hint
       { id: 'sensorFootprints', label: 'Sensor footprints' },
       { id: 'classifyRings', label: 'Classify rings' },
       { id: 'effectorEnvelopes', label: 'Effector envelopes' },
+      { id: 'defendedAreas', label: 'Defended areas', hint: 'Show the protected boundary around each asset' },
       { id: 'threatWez', label: 'Threat WEZ', hint: 'Show threat weapon engagement zones' },
     ],
   },
@@ -54,7 +55,7 @@ const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
 ]
 
 /**
- * Toolbar View dropdown. Holds the four layer presets, the twelve layer
+ * Toolbar View dropdown. Holds the four layer presets, the thirteen layer
  * toggles, the basemap, the units, and the satellite underlay controls.
  * Layer visibility is view state, so nothing here is undoable.
  */

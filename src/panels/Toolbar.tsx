@@ -8,7 +8,7 @@ import type { Workspace } from '../te/state/teStore'
 import { captureFrameToCampaign } from '../te/io/frameCapture'
 import type { BoundaryType, EnvironmentSpec, Roe } from '../model/types'
 import { emptyScenario } from '../model/seed'
-import { exportScenario, importScenarioFile } from '../io/persist'
+import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
 
 const TOOLS = [
   { id: 'select', label: 'Select', hint: 'Move, pan, edit' },
@@ -95,9 +95,13 @@ function OverflowMenu() {
             className="tb-menu-item"
             onClick={() => {
               setOpen(false)
-              if (window.confirm('Start a new empty scenario? Unsaved work is replaced.')) {
+              if (
+                !scenarioHasWork(scenario) ||
+                window.confirm('Start a new empty scenario? Unsaved work is replaced.')
+              ) {
                 replaceScenario(emptyScenario())
               }
+
             }}
           >
             New
@@ -149,6 +153,7 @@ function OverflowMenu() {
 export function Toolbar() {
   const scenario = useStore((s) => s.scenario)
   const ui = useStore((s) => s.ui)
+  const save = useStore((s) => s.save)
   const canUndo = useStore((s) => s.past.length > 0)
   const canRedo = useStore((s) => s.future.length > 0)
   const { setTool, setBoundaryType, setScenarioName, undo, redo } = useStore.getState()
@@ -259,11 +264,18 @@ export function Toolbar() {
             Spawn In Ring {spawnWarning.count}
           </span>
         )}
-        {ui.lastAutosaveAt != null && (
-          <span className="pill pill-dim" title="Last autosave to browser storage">
-            Saved {clockHHMM(ui.lastAutosaveAt)}
+        {save.error != null ? (
+          <span className="pill pill-danger" title={save.error} role="alert">
+            Save failed
           </span>
+        ) : (
+          save.lastAutosaveAt != null && (
+            <span className="pill pill-dim" title="Last autosave to browser storage">
+              Saved {clockHHMM(save.lastAutosaveAt)}
+            </span>
+          )
         )}
+
       </div>
 
       <div className="seg" role="group" aria-label="History">

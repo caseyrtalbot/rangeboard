@@ -1,8 +1,8 @@
 import type { TeCampaign, TeState } from '../model/types'
 import { emptyCampaign, emptyPackage } from '../model/empty'
 import { useTeStore } from '../state/teStore'
-
-const TE_STORAGE_KEY = 'rangeboard.te.v1'
+import { notifyRecovery, stashUnreadableSave } from '../../io/recovery'
+import { TE_KEY, TE_RECOVERY_PREFIX } from '../../io/storageKeys'
 
 /**
  * Fill fields added after a save was written so old campaigns round-trip.
@@ -26,48 +26,88 @@ export function fillCampaign(parsed: TeCampaign): TeCampaign {
   }
 }
 
-export function loadTeAutosave(): TeState | null {
-  try {
-    const raw = localStorage.getItem(TE_STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as TeState
-    if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.campaigns)) return null
-    return {
-      schemaVersion: 1,
-      campaigns: parsed.campaigns.map(fillCampaign),
-      activeCampaignId: parsed.activeCampaignId ?? null,
-    }
-  } catch {
-    return null
+/**
+ * Parse a raw T&E autosave record. Throws on malformed JSON; returns null when
+ * the record is not a schema-1 state. Exported for tests.
+ */
+export function parseTeAutosave(raw: string): TeState | null {
+  const parsed = JSON.parse(raw) as TeState | null
+  if (!parsed || typeof parsed !== 'object') return null
+  if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.campaigns)) return null
+  return {
+    schemaVersion: 1,
+    campaigns: parsed.campaigns.map(fillCampaign),
+    activeCampaignId: parsed.activeCampaignId ?? null,
   }
 }
 
-/** Subscribe the T&E store to localStorage autosave. Call once at startup. */
+/**
+ * Load the T&E autosave. A record that exists but cannot be loaded is copied
+ * to a recovery key before the autosave subscriber can overwrite it.
+ */
+export function loadTeAutosave(): TeState | null {
+  let raw: string | null
+  try {
+    raw = localStorage.getItem(TE_KEY)
+  } catch {
+    return null
+  }
+  if (!raw) return null
+  let state: TeState | null = null
+  try {
+    state = parseTeAutosave(raw)
+  } catch {
+    state = null
+  }
+  if (state) return state
+  notifyRecovery('T&E campaigns', stashUnreadableSave(raw, TE_RECOVERY_PREFIX))
+  return null
+}
+
+/**
+ * Subscribe the T&E store to localStorage autosave. Call once at startup.
+ * Writes are debounced; a pending write is flushed synchronously when the tab
+ * is hidden or unloaded so a close never loses the last edit.
+ */
 export function startTeAutosave(): void {
   const saved = loadTeAutosave()
   if (saved) useTeStore.getState().replaceState(saved)
   let timer: number | undefined
+  let pending: TeState | null = null
+
+  function flush(): void {
+    window.clearTimeout(timer)
+    timer = undefined
+    const s = pending
+    pending = null
+    if (!s) return
+    const store = useTeStore.getState()
+    try {
+      localStorage.setItem(TE_KEY, JSON.stringify(s))
+      store.setSaveState(new Date().toISOString(), null)
+    } catch {
+      // Storage full (frame captures): skip autosave, export still works.
+      store.setSaveState(store.lastSavedAt, 'Not saved: storage full. Export the campaign.')
+    }
+  }
+
   useTeStore.subscribe((state, prev) => {
     if (state.campaigns === prev.campaigns && state.activeCampaignId === prev.activeCampaignId)
       return
+    pending = {
+      schemaVersion: 1,
+      campaigns: state.campaigns,
+      activeCampaignId: state.activeCampaignId,
+    }
     window.clearTimeout(timer)
-    timer = window.setTimeout(() => {
-      const store = useTeStore.getState()
-      try {
-        const s: TeState = {
-          schemaVersion: 1,
-          campaigns: state.campaigns,
-          activeCampaignId: state.activeCampaignId,
-        }
-        localStorage.setItem(TE_STORAGE_KEY, JSON.stringify(s))
-        store.setSaveState(new Date().toISOString(), null)
-      } catch {
-        // Storage full (frame captures): skip autosave, export still works.
-        store.setSaveState(store.lastSavedAt, 'Not saved: storage full. Export the campaign.')
-      }
-    }, 500)
+    timer = window.setTimeout(flush, 500)
+  })
+  window.addEventListener('pagehide', flush)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flush()
   })
 }
+
 
 function safeName(name: string): string {
   return name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'campaign'

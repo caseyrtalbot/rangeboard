@@ -1,14 +1,13 @@
-import { clearEngagementPictureCache } from '../analysis/impact'
 import type { RunResetReason } from '../state/store'
 import { useStore } from '../state/store'
 
 /**
  * Start a new run with a new identity and an empty observation horizon. The
- * derived engagement cache is also discarded so an unchanged configuration
- * is recalculated rather than reusing any object from the previous run.
+ * engagement picture is a pure function of the scenario object and is cached
+ * by that object's identity, so an unchanged configuration reuses the same
+ * derived result: the run identity, not the derivation, is what changes.
  */
 export function resetAnalysisRun(reason: RunResetReason = 'manual'): void {
-  clearEngagementPictureCache()
   useStore.getState().resetRun(reason)
 }
 

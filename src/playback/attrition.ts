@@ -11,11 +11,12 @@ import type {
 } from '../model/types'
 import { defaultJamBehavior, effectiveDoctrine, entityActive } from '../model/types'
 import { dist, pointInSector, posAtTime } from '../geometry/geo'
-import { assessJam } from '../analysis/ewPhysics'
+import { assessJam, effectiveJamRangeM } from '../analysis/ewPhysics'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats, killChainRoutes, memberPositions } from './sim'
 import { effectivePathDelayS } from './raid'
 import { profileFor } from '../model/integration'
+import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls: each
@@ -474,6 +475,12 @@ interface ThreatState {
   routeLatencyS: Map<string, number>
   /** Time the required track quality was met; shots start no earlier. */
   gateS: number | null
+  /**
+   * Doctrine: per-effector release gates from ThreatAssessment.effectorGates
+   * (route-aware firm track + declaration). Empty when doctrine is off. An
+   * effector with no entry cannot fire at this threat under doctrine.
+   */
+  effectorGateS: Map<string, number>
   shotsFired: number
   deSalvos: number
   jamSalvos: number
@@ -585,6 +592,7 @@ export function resolveEngagements(
       windows,
       routeLatencyS,
       gateS: a.engageGateS,
+      effectorGateS: new Map((a.effectorGates ?? []).map((g) => [g.effectorId, g.gateS])),
       shotsFired: 0,
       deSalvos: 0,
       jamSalvos: 0,
@@ -792,12 +800,21 @@ export function resolveEngagements(
       const tEffect = t + es.engageTimeS
       const softShot = !isHardKill(es.spec.effectorType)
 
-      // The in-range intervals are member-union geometry, so ship
-      // eligibility re-verifies the same min/max/sector test per ship.
-      const inEnvelope = (p: Vec2) =>
-        dist(es.entity.pos, p) >= es.spec.minRangeM &&
-        pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
       const isJammer = es.spec.effectorType === 'jammer'
+      // The in-range intervals are member-union geometry, so ship
+      // eligibility re-verifies the same min/max/sector test per ship. A
+      // jammer's reach is its power-scaled effective range against this
+      // target (jamResistDb included), the same figure the sim window and
+      // the drawn cone use.
+      const inEnvelope = (p: Vec2, uasSpec: UasSpec | undefined) =>
+        dist(es.entity.pos, p) >= es.spec.minRangeM &&
+        pointInSector(
+          es.entity.pos,
+          es.entity.headingDeg,
+          es.spec.sectorDeg ?? 360,
+          isJammer ? effectiveJamRangeM(es.spec, uasSpec) : es.spec.maxRangeM,
+          p,
+        )
       // Jam physics (band coverage, alignment, power out) decide whether a
       // jammer can affect this ship at all; a ship the physics cannot reach
       // is never a jam candidate, so the dwell is not wasted on it.
@@ -825,8 +842,11 @@ export function resolveEngagements(
         if (!intervals) continue
         // The cue reaches this shooter routeLatencyS after the track became
         // engageable. Charging it from the gate (not from T0) keeps the delay
-        // real when the ROE gate is later than the latency.
-        if (t + EPS < ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
+        // real when the ROE gate is later than the latency. Under doctrine
+        // the gate is this effector's own (route-aware) release time.
+        const gateBaseS = doctrine.enabled ? ts.effectorGateS.get(es.entity.id) : ts.gateS
+        if (gateBaseS == null) continue
+        if (t + EPS < gateBaseS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
         const contains = (x: number) => intervals.some(([s0, s1]) => x >= s0 - EPS && x <= s1 + EPS)
         if (!contains(t) || !contains(tEffect)) continue
         const continueJam = softShot && ts.jamBehavior === 'continue'
@@ -839,7 +859,7 @@ export function resolveEngagements(
 
         for (let i = 0; i < ts.ships.length; i++) {
           const p = members[Math.min(i, members.length - 1)]
-          if (!inEnvelope(p)) continue
+          if (!inEnvelope(p, ts.uasSpec)) continue
           if (isJammer && jamFactor(ts.uasSpec, p) <= 0) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
@@ -915,14 +935,21 @@ export function resolveEngagements(
         if (t + EPS < es.nextReadyS) continue
         if (es.rounds != null && es.rounds <= 0) continue
         const tEffect = t + es.engageTimeS
+        // Per-system factors: spec override, else the type table, else the
+        // scenario uniform value (doctrineFactors.ts).
+        const esBdaS = bdaSFor(es.spec, doctrine)
+        const esCommitPk = commitPkFor(es.spec, doctrine)
         const inEnvelope = (p: Vec2) =>
           dist(es.entity.pos, p) >= es.spec.minRangeM &&
           pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
         for (const ts of threats) {
-          if (ts.gateS == null || !ts.path) continue
+          if (!ts.path) continue
+          // This effector's own route-aware release gate; no gate, no shot.
+          const gateBaseS = ts.effectorGateS.get(es.entity.id)
+          if (gateBaseS == null) continue
           const intervals = ts.windows.get(es.entity.id)
           if (!intervals) continue
-          if (t + EPS < ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
+          if (t + EPS < gateBaseS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
           const within = intervals.find(
             ([s0, s1]) => t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
           )
@@ -936,7 +963,7 @@ export function resolveEngagements(
           const deadlineS =
             refS != null
               ? Math.min(
-                  refS - doctrine.opportunities * (es.engageTimeS + doctrine.bdaS),
+                  refS - doctrine.opportunities * (es.engageTimeS + esBdaS),
                   windowDeadlineS,
                 )
               : windowDeadlineS
@@ -955,7 +982,7 @@ export function resolveEngagements(
             const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
             if (pk <= 0) continue
             // Hold fire below commit Pk while time still allows.
-            if (pk < doctrine.pkCommit - EPS && t + EPS < deadlineS) continue
+            if (pk < esCommitPk - EPS && t + EPS < deadlineS) continue
             candidates.push({ es, ts, shipIdx: i, pk, arrivalS })
           }
         }
@@ -981,7 +1008,7 @@ export function resolveEngagements(
         if (t + EPS < ship.holdUntilS) continue
         if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
         commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, false)
-        ship.holdUntilS = t + c.es.engageTimeS + doctrine.bdaS
+        ship.holdUntilS = t + c.es.engageTimeS + bdaSFor(c.es.spec, doctrine)
         firedThisTick.add(c.es)
       }
     }

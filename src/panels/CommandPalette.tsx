@@ -10,6 +10,7 @@ import {
   exportScenario,
   importLibraryFile,
   importScenarioFile,
+  scenarioHasWork,
 } from '../io/persist'
 
 interface Command {
@@ -76,9 +77,13 @@ const ACTIONS: Command[] = [
     category: 'Scenario',
     label: 'New scenario',
     run: () => {
-      if (window.confirm('Start a new empty scenario? Unsaved work is replaced.')) {
+      if (
+        !scenarioHasWork(useStore.getState().scenario) ||
+        window.confirm('Start a new empty scenario? Unsaved work is replaced.')
+      ) {
         useStore.getState().replaceScenario(emptyScenario())
       }
+
     },
   },
   {

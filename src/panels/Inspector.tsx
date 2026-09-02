@@ -17,7 +17,18 @@ import { formatDistance, formatSpeed, pathLength } from '../geometry/geo'
 import { evaluateIntegration, integrationSummary } from '../model/integration'
 import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
-import { effectiveDetectRangeM, sensorEnvFactor } from '../analysis/sensorEnv'
+import {
+  effectiveDetectRangeM,
+  refAcousticDbFor,
+  refRcsM2For,
+  refSpanMFor,
+  sensorHoldGate,
+  targetScaled,
+} from '../analysis/sensorEnv'
+import { GATE_WORD } from '../canvas/layers/footprintStyle'
+import type { SensorSpec, SpecModel } from '../model/types'
+import { rcsM2For } from '../model/rcsFactors'
+import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
 import { DEFAULT_DEFENDED_RADIUS_M } from '../playback/sim'
 import { THREAT_TACTICS } from '../playback/tactics'
@@ -72,6 +83,69 @@ function Options({ id, values }: { id: string; values: Array<string | number> })
  * ceiling gates nothing. Printing them beside the modeled ranges reads as a
  * working constraint, so they get their own marked line instead.
  */
+/** Reference condition the placard detect range is quoted against, as a unit tag. */
+function referenceCondition(spec: SensorSpec): string | undefined {
+  switch (spec.sensorType) {
+    case 'radar':
+      return `at ${refRcsM2For(spec)} m²${spec.refRcsM2 == null ? ' (default)' : ''}`
+    case 'eo-ir':
+      return `at ${refSpanMFor(spec)} m span${spec.refSpanM == null ? ' (default)' : ''}`
+    case 'acoustic':
+      return `at ${refAcousticDbFor(spec)} dB${spec.refAcousticDb == null ? ' (default)' : ''}`
+    default:
+      return undefined
+  }
+}
+
+function referenceTitle(spec: SensorSpec): string | undefined {
+  switch (spec.sensorType) {
+    case 'radar':
+      return 'The target RCS the detection range is quoted against. Range against another threat scales with the fourth root of the RCS ratio.'
+    case 'eo-ir':
+      return 'The target span the detection range is quoted against. Range against another threat scales linearly with the span ratio, then the thermal class, then stops at the visibility.'
+    case 'acoustic':
+      return 'The source level the detection range is quoted against. Range against another threat follows spherical spreading plus atmospheric absorption.'
+    default:
+      return 'Passive RF hears a threat only when it emits in a covered band; the range does not scale with the target.'
+  }
+}
+
+/** Effective detect range, or the gate word, for each distinct UAS model placed on the board. */
+function AgainstThreats({ spec }: { spec: SensorSpec }) {
+  const scenario = useStore((s) => s.scenario)
+  const units = useStore((s) => s.ui.units)
+  const seen = new Set<string>()
+  const models: SpecModel[] = []
+  for (const e of scenario.entities) {
+    if (e.kind !== 'uas' || !e.specId || seen.has(e.specId)) continue
+    seen.add(e.specId)
+    const m = scenario.library.find((x) => x.id === e.specId)
+    if (m?.uas) models.push(m)
+  }
+  if (models.length === 0) return null
+  const planning = !targetScaled(spec)
+  return (
+    <>
+      <p className="muted small">Against threats on the board</p>
+      {models.map((m) => {
+        const gate = sensorHoldGate(spec, m.uas)
+        const label = m.threatProfile?.designator ?? m.name
+        if (gate !== 'ok') return <Row key={m.id} label={label} value={GATE_WORD[gate]} muted />
+        const r = effectiveDetectRangeM(spec, scenario.environment, m.uas)
+        return (
+          <Row
+            key={m.id}
+            label={label}
+            value={formatDistance(r, units)}
+            unit={planning ? 'planning' : undefined}
+            mono
+          />
+        )
+      })}
+    </>
+  )
+}
+
 function NotModeled({ values }: { values: Array<{ label: string; value: string } | null> }) {
   const rows = values.filter((v): v is { label: string; value: string } => v != null)
   if (rows.length === 0) return null
@@ -528,6 +602,8 @@ function EntityInspector({ entity }: { entity: Entity }) {
           <Row
             label="Detection range"
             value={formatDistance(model.sensor.detectRangeM, units)}
+            unit={referenceCondition(model.sensor)}
+            title={referenceTitle(model.sensor)}
             mono
           />
           {model.sensor.classifyRangeM != null && (
@@ -537,8 +613,29 @@ function EntityInspector({ entity }: { entity: Entity }) {
               mono
             />
           )}
+          <Row
+            label="Range basis"
+            value={targetScaled(model.sensor) ? 'sourced, target-scaled' : 'planning figure'}
+            title={
+              targetScaled(model.sensor)
+                ? 'A datasheet figure conditioned on the reference target. Range against another threat follows the physics for this technology.'
+                : 'A role-table or representative figure with no stated target. No target scaling runs on it.'
+            }
+          />
           <Row label="Azimuth coverage" value={`${model.sensor.sectorDeg}°`} mono />
-          {sensorEnvFactor(model.sensor.sensorType, scenario.environment) < 1 && (
+          {model.sensor.sensorType === 'eo-ir' && (
+            <Row label="Band" value={model.sensor.eoBand ?? 'dual'} unit={model.sensor.eoBand == null ? 'default' : undefined} />
+          )}
+          {model.sensor.instrumentedRangeM != null && (
+            <Row
+              label="Maximum reported range"
+              value={formatDistance(model.sensor.instrumentedRangeM, units)}
+              title="Instrumented range or the top of the vendor's detection band. Caps the target-scaled detection range."
+              mono
+            />
+          )}
+          {effectiveDetectRangeM(model.sensor, scenario.environment) !==
+            model.sensor.detectRangeM && (
             <Row
               label="Detection, this environment"
               value={formatDistance(
@@ -548,6 +645,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
               mono
             />
           )}
+          <AgainstThreats spec={model.sensor} />
           <NotModeled
             values={[
               model.sensor.elevationDeg
@@ -595,6 +693,33 @@ function EntityInspector({ entity }: { entity: Entity }) {
       {model?.uas && (
         <Section label="Platform">
           <Row label="UAS group" value={model.uas.group} mono />
+          <Row
+            label="Radar cross section"
+            value={`${rcsM2For(model.uas)} m²`}
+            unit={model.uas.rcsM2 == null ? 'group PF' : 'PF'}
+            title="Planning factor, not measured signature data. Sets each radar's detection range against this threat by the fourth-root law."
+            mono
+          />
+          <Row
+            label="Span"
+            value={`${spanMFor(model.uas)} m`}
+            unit={model.uas.spanM == null ? 'group PF' : 'PF'}
+            title="Planning factor: wingspan or motor-to-motor diagonal. Sets each EO/IR sensor's range against this threat linearly (Johnson criteria)."
+            mono
+          />
+          <Row
+            label="Acoustic level"
+            value={`${acousticDbFor(model.uas)} dB`}
+            unit={model.uas.acousticDb == null ? 'group PF' : 'PF'}
+            title="Planning factor: broadband source level at 1 m. Sets each acoustic sensor's range by spreading plus absorption."
+            mono
+          />
+          <Row
+            label="IR signature"
+            value={irSignatureFor(model.uas)}
+            unit={model.uas.irSignature == null ? 'default' : undefined}
+            title="Thermal contrast class. Multiplies EO/IR range when the thermal channel carries."
+          />
           <Row label="Cruise speed" value={formatSpeed(model.uas.cruiseSpeedMps, units)} mono />
           <Row label="Navigation" value={model.uas.navMode} />
         </Section>

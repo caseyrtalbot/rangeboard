@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { EmBackground, LightLevel, Precipitation, Roe } from '../model/types'
 import { effectiveDoctrine } from '../model/types'
 import { formatSpeed } from '../geometry/geo'
+import { visibilityMFor } from '../analysis/sensorEnv'
 import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
 import { buildRequirementGateReport } from '../analysis/requirements'
@@ -115,16 +116,33 @@ function EnvironmentBody() {
           />
         </Field>
       </div>
-      <Field label="EM clutter">
-        <Seg
-          value={environment.emBackground ?? 'rural'}
-          options={[
-            { v: 'rural' as EmBackground, label: 'Rural (quiet)' },
-            { v: 'urban' as EmBackground, label: 'Urban (dense)' },
-          ]}
-          onChange={(emBackground) => updateEnvironment({ emBackground })}
-        />
-      </Field>
+      <div className="field-row">
+        <Field label="EM clutter">
+          <Seg
+            value={environment.emBackground ?? 'rural'}
+            options={[
+              { v: 'rural' as EmBackground, label: 'Rural (quiet)' },
+              { v: 'urban' as EmBackground, label: 'Urban (dense)' },
+            ]}
+            onChange={(emBackground) => updateEnvironment({ emBackground })}
+          />
+        </Field>
+        <Field label={`Visibility (m, blank = ${visibilityMFor({ ...environment, visibilityM: null })} from sky)`}>
+          <input
+            type="number"
+            min={0}
+            step={500}
+            placeholder={String(visibilityMFor({ ...environment, visibilityM: null }))}
+            value={environment.visibilityM ?? ''}
+            onChange={(event) =>
+              updateEnvironment({
+                visibilityM:
+                  event.target.value === '' ? null : Math.max(0, Number(event.target.value)),
+              })
+            }
+          />
+        </Field>
+      </div>
       <div className="field-row">
         <Field label={`Wind ${formatSpeed(environment.windSpeedMps, units)}`}>
           <input

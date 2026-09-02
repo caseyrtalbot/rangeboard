@@ -1,9 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { AarSummary, EngagePolicy, Entity, Scenario, ScorecardSnap } from '../model/types'
 import type { AttritionReport } from '../playback/attrition'
 import type { ThreatAssessment } from '../playback/sim'
-import { aarExportObject, fillScenario, runExportObject } from './persist'
+import {
+  aarExportObject,
+  fillScenario,
+  loadAutosave,
+  runExportObject,
+  scenarioHasWork,
+} from './persist'
+
+import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+
 
 /** A save written before the roe field existed. */
 function legacySave(engageOn?: EngagePolicy): Scenario {
@@ -390,5 +399,105 @@ describe('seed library and preset merge on load', () => {
     delete (save as Partial<Scenario>).library
     const filled = fillScenario(save)
     expect(filled.library).toHaveLength(emptyScenario().library.length)
+  })
+})
+
+describe('deleted seed ids on load', () => {
+  it('does not restore a seed model or preset the user deleted', () => {
+    const s = emptyScenario()
+    const model = s.library[0]
+    const preset = s.systemPresets[0]
+    s.library = s.library.filter((m) => m.id !== model.id)
+    s.systemPresets = s.systemPresets.filter((p) => p.id !== preset.id)
+    s.deletedSeedIds = [model.id, preset.id]
+    const filled = fillScenario(s)
+    expect(filled.library.some((m) => m.id === model.id)).toBe(false)
+    expect(filled.systemPresets.some((p) => p.id === preset.id)).toBe(false)
+    expect(filled.deletedSeedIds).toEqual([model.id, preset.id])
+  })
+
+  it('defaults to an empty list on a save made before the field existed', () => {
+    const s = emptyScenario()
+    delete s.deletedSeedIds
+    expect(fillScenario(s).deletedSeedIds).toEqual([])
+  })
+})
+
+describe('nested object load fill', () => {
+  it('fills doctrine, mcda weights, underlay, and raid fields an old save lacks', () => {
+    const s = emptyScenario() as unknown as Record<string, unknown>
+    s.doctrine = { enabled: true }
+    s.mcdaWeights = { warning: 5 }
+    s.underlay = { dataUrl: null }
+    s.raid = {}
+    const filled = fillScenario(s as unknown as Scenario)
+    const empty = emptyScenario()
+    expect(filled.doctrine).toEqual({ ...empty.doctrine, enabled: true })
+    expect(filled.mcdaWeights).toEqual({ ...empty.mcdaWeights, warning: 5 })
+    expect(filled.underlay).toEqual(empty.underlay)
+    expect(filled.raid).toEqual({ waves: [] })
+  })
+})
+
+// The node test env has no Web Storage or window; both get stand-ins.
+function stubStorage(raw: string | null): Map<string, string> {
+  const store = new Map<string, string>()
+  if (raw != null) store.set(SCENARIO_KEY, raw)
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+  })
+  return store
+}
+
+describe('autosave recovery', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function recoveryKeys(store: Map<string, string>): string[] {
+    return [...store.keys()].filter((k) => k.startsWith(SCENARIO_RECOVERY_PREFIX))
+  }
+
+  it('copies an unparseable save to a recovery key and tells the user', () => {
+    const store = stubStorage('{not json')
+    const alert = vi.fn()
+    vi.stubGlobal('window', { alert })
+    expect(loadAutosave()).toBeNull()
+    const keys = recoveryKeys(store)
+    expect(keys).toHaveLength(1)
+    expect(store.get(keys[0])).toBe('{not json')
+    expect(store.get(SCENARIO_KEY)).toBe('{not json')
+    expect(alert).toHaveBeenCalledTimes(1)
+    expect(alert.mock.calls[0][0]).toContain(keys[0])
+  })
+
+  it('copies a save with another schema version to a recovery key', () => {
+    const raw = JSON.stringify({ ...emptyScenario(), schemaVersion: 2 })
+    const store = stubStorage(raw)
+    expect(loadAutosave()).toBeNull()
+    const keys = recoveryKeys(store)
+    expect(keys).toHaveLength(1)
+    expect(store.get(keys[0])).toBe(raw)
+  })
+
+  it('loads a valid save without writing a recovery key', () => {
+    const store = stubStorage(JSON.stringify({ ...emptyScenario(), name: 'kept' }))
+    expect(loadAutosave()?.name).toBe('kept')
+    expect(recoveryKeys(store)).toHaveLength(0)
+  })
+
+  it('returns null and writes nothing when no save exists', () => {
+    const store = stubStorage(null)
+    expect(loadAutosave()).toBeNull()
+    expect(store.size).toBe(0)
+  })
+})
+
+describe('scenarioHasWork', () => {
+  it('is false for an empty board and true once an entity, path, or boundary exists', () => {
+    const s = emptyScenario()
+    expect(scenarioHasWork(s)).toBe(false)
+    expect(scenarioHasWork({ ...s, boundaries: [{ id: 'b', name: 'b', type: 'range', points: [], closed: true, altBandFt: null }] })).toBe(true)
+    expect(scenarioHasWork({ ...s, paths: [{ id: 'p', entityId: 'e', points: [], speedMps: null, startDelayS: 0 }] })).toBe(true)
   })
 })

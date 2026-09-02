@@ -81,14 +81,14 @@ describe('formation detection', () => {
 
   it('detects a formation when any member enters coverage', () => {
     const st = useStore.getState()
-    st.addEntityFromModel('lib-acoustic-picket', { x: 0, y: 0 }) // 4000 m omni
-    st.addEntityFromModel('lib-mavic3', { x: 5000, y: 0 }) // lead outside coverage
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // 10 km omni, planning basis (no target scaling)
+    st.addEntityFromModel('lib-mavic3', { x: 12500, y: 0 }) // lead outside coverage
     const [, uas] = useStore.getState().scenario.entities
-    // Heading north, line abreast: one wingman sits 1200 m east (outside) and
-    // the other 1200 m west, at x = 3800, inside the 4000 m ring.
+    // Heading north, line abreast: one wingman sits 3000 m east (outside) and
+    // the other 3000 m west, at x = 9500, inside the 10 km ring.
     useStore.getState().updateEntity(uas.id, {
       headingDeg: 0,
-      formation: { count: 3, shape: 'line', spacingM: 1200 },
+      formation: { count: 3, shape: 'line', spacingM: 3000 },
     })
     const hits = detectionsAt(useStore.getState().scenario, 0)
     expect(hits.get(uas.id)).toHaveLength(1)
@@ -130,6 +130,29 @@ describe('emissions and detection technology rules', () => {
     const hits = detectionsAt(useStore.getState().scenario, 0).get(uasId)!
     expect(hits.map((h) => h.sensorType).sort()).toEqual(['eo-ir', 'radar'])
   })
+
+  it('a wide-area EO/IR search sensor holds without a cue and cues a narrow camera', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-wisp', { x: 0, y: 0 }) // surveillance role, 4.8 km thermal
+    st.addEntityFromModel('lib-mavic3', { x: 1500, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toHaveLength(1)
+    useStore.getState().addEntityFromModel('lib-hdcmr', { x: 0, y: 0 }) // classification: needs the cue
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toHaveLength(2)
+  })
+
+  it('an RF sensor hears only the bands it covers', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rf360', { x: 0, y: 0 }) // every band
+    st.addEntityFromModel('lib-fpv7', { x: 1000, y: 0 }) // rf-manual: 2.4 / 5.8 GHz default
+    const [rf, uas] = useStore.getState().scenario.entities
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uas.id)).toHaveLength(1)
+    const model = useStore.getState().scenario.library.find((m) => m.id === rf.specId)!
+    useStore.getState().updateModel(model.id, {
+      sensor: { ...model.sensor!, rfBands: ['uhf-433'] },
+    })
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uas.id)).toBeUndefined()
+  })
 })
 
 describe('environment effects on sensors', () => {
@@ -147,9 +170,11 @@ describe('environment effects on sensors', () => {
 
   it('radar sees a Group 3 airframe farther than a Group 1 at the same spot', () => {
     const st = useStore.getState()
-    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // 10 km base
-    st.addEntityFromModel('lib-mavic3', { x: 14000, y: 0 }) // G1
-    st.addEntityFromModel('lib-shahed136', { x: -14000, y: 0 }) // G3: x1.6 -> 16 km
+    // Blighter A422: 2.73 km sourced at 0.01 m2. Shahed 0.2 m2 -> x2.11 -> 5.77 km.
+    st.addEntityFromModel('lib-a422', { x: 0, y: 0 })
+    useStore.getState().updateEntity(useStore.getState().scenario.entities[0].id, { headingDeg: 90 })
+    st.addEntityFromModel('lib-mavic3', { x: 3000, y: 0 }) // G1, outside 2.73 km
+    st.addEntityFromModel('lib-shahed136', { x: 4000, y: 0 }) // G3, inside 5.77 km
     const [, g1, g3] = useStore.getState().scenario.entities
     const hits = detectionsAt(useStore.getState().scenario, 0)
     expect(hits.get(g1.id)).toBeUndefined()
@@ -235,6 +260,31 @@ describe('ROE gates and jammer limits', () => {
     useStore.getState().beginConnect(radar.id)
     useStore.getState().completeConnect(navwar.id)
     expect(assessThreat(useStore.getState().scenario, gpsId).status).toBe('engageable')
+  })
+})
+
+describe('jammer windows', () => {
+  beforeEach(reset)
+
+  it('effectorWindows uses the power-scaled jam range, not the placard', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-modi', { x: 0, y: 0 }) // jammer, 2 km placard
+    const [radar, jam] = useStore.getState().scenario.entities
+    useStore.getState().beginConnect(radar.id)
+    useStore.getState().completeConnect(jam.id)
+    const uasId = placeThreat() // 12 m/s straight over the jammer
+    const full = assessThreat(useStore.getState().scenario, uasId)
+    const w0 = full.effectorWindows.find((w) => w.effectorId === jam.id)!.intervals[0]
+    expect(w0[1] - w0[0]).toBeCloseTo(4000 / 12, -1)
+    // A quarter of rated EIRP halves the reach, so the window halves too.
+    const model = useStore.getState().scenario.library.find((m) => m.id === jam.specId)!
+    useStore.getState().updateModel(model.id, {
+      effector: { ...model.effector!, eirpW: 25, ratedEirpW: 100 },
+    })
+    const derated = assessThreat(useStore.getState().scenario, uasId)
+    const w1 = derated.effectorWindows.find((w) => w.effectorId === jam.id)!.intervals[0]
+    expect(w1[1] - w1[0]).toBeCloseTo(2000 / 12, -1)
   })
 })
 

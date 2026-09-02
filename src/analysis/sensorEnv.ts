@@ -1,42 +1,78 @@
-import type { EnvironmentSpec, SensorSpec, SensorType, UasGroup, UasSpec } from '../model/types'
+import type {
+  EnvironmentSpec,
+  JamBand,
+  Precipitation,
+  SensorRole,
+  SensorSpec,
+  SensorType,
+  UasSpec,
+} from '../model/types'
+import { JAM_BANDS, defaultSensorRole } from '../model/types'
+import { RADAR_REF_RCS_M2, rcsM2For } from '../model/rcsFactors'
+import {
+  ACOUSTIC_REF_DB,
+  EO_REF_SPAN_M,
+  IR_SIGNATURE_FACTOR,
+  acousticDbFor,
+  irSignatureFor,
+  spanMFor,
+} from '../model/signatureFactors'
+import { targetLinkBands } from './ewPhysics'
 
 /**
  * Sensor performance under environmental covariates and target effects.
- * Model: each covariate multiplies the sensor's spec range by a factor.
- * Factors follow the COURAGEOUS project findings (Brewczynski et al.,
- * Remote Sens. 2024, 16, 3714): rain and fog attenuate radar and EO/IR,
- * visible-light cameras are daylight sensors, urban EM clutter cuts RF
- * detection, and wind masks acoustic signatures. Values are representative
- * planning factors, not test data.
+ *
+ * One shape for every technology: the spec range is quoted against a
+ * REFERENCE target; the range against another target follows a physical law
+ * (radar: fourth root of the RCS ratio; EO/IR: linear in the span ratio,
+ * Johnson criteria; acoustic: spherical spreading plus atmospheric
+ * absorption against a reference source level; RF: band overlap, no
+ * scaling); then environment multiplies the result. A 'planning' range
+ * basis carries no stated target, so no target law runs on it.
+ *
+ * Environment factors follow the COURAGEOUS project findings (Brewczynski
+ * et al., Remote Sens. 2024, 16, 3714): rain and fog attenuate radar and
+ * EO/IR, visible-light cameras are daylight sensors, urban EM clutter cuts
+ * RF detection, and wind masks acoustic signatures. Values are
+ * representative planning factors, not test data.
  */
 export const SENSOR_ENV_MODEL = {
   rain: { radar: 0.75, 'eo-ir': 0.6, rf: 1, acoustic: 0.7 } as Record<SensorType, number>,
   fog: { radar: 0.85, 'eo-ir': 0.4, rf: 1, acoustic: 1 } as Record<SensorType, number>,
-  night: { radar: 1, 'eo-ir': 0.6, rf: 1, acoustic: 1 } as Record<SensorType, number>,
   urbanEm: { radar: 0.9, 'eo-ir': 1, rf: 0.6, acoustic: 0.85 } as Record<SensorType, number>,
   /** Acoustic range loss per m/s of wind, with a floor. */
   acousticWindLossPerMps: 0.03,
   acousticWindFloor: 0.4,
-  /**
-   * Radar detection range vs target size. Seed radar figures are quoted
-   * against Group 1 small UAS; larger airframes return more energy and are
-   * seen farther (range grows with the fourth root of RCS). Capped planning
-   * values, not the raw radar equation.
-   */
-  radarGroupFactor: { 1: 1, 2: 1.2, 3: 1.6, 4: 1.9, 5: 2.2 } as Record<UasGroup, number>,
   source: 'COURAGEOUS project (Remote Sens. 2024) + radar range equation',
 }
 
-/** Range multiplier for one sensor technology under the current environment, (0, 1]. */
-export function sensorEnvFactor(type: SensorType, env: EnvironmentSpec): number {
+/**
+ * Night range multiplier for a visible-only EO sensor. Thermal and dual-band
+ * sensors keep their range at night (the thermal channel carries); night is
+ * handled per band in eoRangeFactor, not as a type-wide factor.
+ */
+export const NIGHT_VISIBLE_FACTOR = 0.2
+
+/** Meteorological visibility derived from precipitation when the environment sets none, meters. */
+export const VISIBILITY_BY_PRECIP: Record<Precipitation, number> = {
+  clear: 20000,
+  rain: 6000,
+  fog: 600,
+}
+
+/** Atmospheric absorption, dB per km, at 1 kHz on a standard day (planning value). */
+export const ALPHA_DB_PER_KM = 5
+
+function envFactorImpl(type: SensorType, env: EnvironmentSpec, includeUrban: boolean): number {
   if (!env.apply) return 1
   let f = 1
   const precip = env.precipitation ?? 'clear'
   if (precip === 'rain') f *= SENSOR_ENV_MODEL.rain[type]
   if (precip === 'fog') f *= SENSOR_ENV_MODEL.fog[type]
-  if ((env.light ?? 'day') === 'night') f *= SENSOR_ENV_MODEL.night[type]
-  if ((env.emBackground ?? 'rural') === 'urban') f *= SENSOR_ENV_MODEL.urbanEm[type]
+  if (includeUrban && (env.emBackground ?? 'rural') === 'urban') f *= SENSOR_ENV_MODEL.urbanEm[type]
   if (type === 'acoustic' && env.windSpeedMps > 0) {
+    // Wind bearing relative to the source is out of scope: the loss is a
+    // scalar noise-floor effect, the same in every direction.
     f *= Math.max(
       SENSOR_ENV_MODEL.acousticWindFloor,
       1 - env.windSpeedMps * SENSOR_ENV_MODEL.acousticWindLossPerMps,
@@ -45,31 +81,169 @@ export function sensorEnvFactor(type: SensorType, env: EnvironmentSpec): number 
   return f
 }
 
-/** Radar range multiplier for the target's size class. 1 when unknown. */
-export function radarTargetFactor(group: UasGroup | undefined): number {
-  return group ? SENSOR_ENV_MODEL.radarGroupFactor[group] : 1
+/**
+ * Range multiplier for one sensor technology under the current environment,
+ * (0, 1]. Type-wide effects only: rain, fog, urban EM, wind. Night is a
+ * per-band EO/IR effect (eoRangeFactor) and is not in here.
+ */
+export function sensorEnvFactor(type: SensorType, env: EnvironmentSpec): number {
+  return envFactorImpl(type, env, true)
 }
 
-/** Detect range after environment and, for radar, target-size effects. */
-export function effectiveDetectRangeM(
+/** True when the sensor's detect range is a sourced figure that target laws may scale. */
+export function targetScaled(spec: SensorSpec): boolean {
+  return (spec.rangeBasis ?? 'sourced') !== 'planning'
+}
+
+// ---------------------------------------------------------------------------
+// Radar
+
+/** The RCS, m2, at which a radar's detect range is quoted: spec value, else the Group 1 planning factor. */
+export function refRcsM2For(spec: SensorSpec): number {
+  const r = spec.refRcsM2
+  return r != null && Number.isFinite(r) && r > 0 ? r : RADAR_REF_RCS_M2
+}
+
+/**
+ * Radar range multiplier for one target: (target RCS / reference RCS)^(1/4),
+ * the radar range equation with everything but the target held fixed. A
+ * bigger airframe is seen farther, a smaller one closer, and the target the
+ * range was quoted against scores exactly 1. Non-radar sensors, an unknown
+ * target, and a planning-basis range score 1.
+ */
+export function rcsRangeFactor(spec: SensorSpec, target: UasSpec | undefined): number {
+  if (spec.sensorType !== 'radar' || !target || !targetScaled(spec)) return 1
+  return Math.pow(rcsM2For(target) / refRcsM2For(spec), 0.25)
+}
+
+/** Cap at the radar's instrumented range: nothing is reported beyond what the radar processes. */
+function capInstrumented(spec: SensorSpec, rangeM: number): number {
+  const cap = spec.instrumentedRangeM
+  return cap != null && Number.isFinite(cap) && cap > 0 ? Math.min(rangeM, cap) : rangeM
+}
+
+// ---------------------------------------------------------------------------
+// EO/IR
+
+/** The span, m, at which an EO/IR detect range is quoted: spec value, else the Group 1 planning factor. */
+export function refSpanMFor(spec: SensorSpec): number {
+  const r = spec.refSpanM
+  return r != null && Number.isFinite(r) && r > 0 ? r : EO_REF_SPAN_M
+}
+
+/** True when the thermal channel carries the detection: a thermal sensor, or a dual sensor at night. */
+export function eoThermalCarries(spec: SensorSpec, env: EnvironmentSpec): boolean {
+  const band = spec.eoBand ?? 'dual'
+  if (band === 'thermal') return true
+  if (band === 'visible') return false
+  return env.apply && (env.light ?? 'day') === 'night'
+}
+
+/** Meteorological visibility in use, meters: the environment value, else the precipitation default. */
+export function visibilityMFor(env: EnvironmentSpec): number {
+  const v = env.visibilityM
+  if (v != null && Number.isFinite(v) && v > 0) return v
+  return VISIBILITY_BY_PRECIP[env.precipitation ?? 'clear']
+}
+
+/**
+ * EO/IR range multiplier for one target. Size term: target span over the
+ * reference span (Johnson criteria: the line pairs across the critical
+ * dimension scale linearly with range). Thermal term: the target's contrast
+ * class, when the thermal channel carries. Night: a visible-only sensor
+ * falls to NIGHT_VISIBLE_FACTOR; thermal and dual sensors keep range. The
+ * target terms are physics, not weather, so they apply whether or not the
+ * environment toggle is on; night is weather and follows the toggle.
+ */
+export function eoRangeFactor(
   spec: SensorSpec,
+  target: UasSpec | undefined,
   env: EnvironmentSpec,
-  targetGroup?: UasGroup,
 ): number {
-  const size = spec.sensorType === 'radar' && env.apply ? radarTargetFactor(targetGroup) : 1
-  return spec.detectRangeM * sensorEnvFactor(spec.sensorType, env) * size
+  if (spec.sensorType !== 'eo-ir') return 1
+  let f = 1
+  if (env.apply && (env.light ?? 'day') === 'night' && (spec.eoBand ?? 'dual') === 'visible') {
+    f *= NIGHT_VISIBLE_FACTOR
+  }
+  if (target && targetScaled(spec)) {
+    f *= spanMFor(target) / refSpanMFor(spec)
+    if (eoThermalCarries(spec, env)) f *= IR_SIGNATURE_FACTOR[irSignatureFor(target)]
+  }
+  return f
 }
 
-/** Classify range under the same effects. Null when the sensor cannot classify. */
-export function effectiveClassifyRangeM(
-  spec: SensorSpec,
-  env: EnvironmentSpec,
-  targetGroup?: UasGroup,
-): number | null {
-  if (spec.classifyRangeM == null) return null
-  const size = spec.sensorType === 'radar' && env.apply ? radarTargetFactor(targetGroup) : 1
-  return spec.classifyRangeM * sensorEnvFactor(spec.sensorType, env) * size
+/** Koschmieder cap: no EO/IR contrast survives beyond the meteorological visibility. */
+function capVisibility(spec: SensorSpec, env: EnvironmentSpec, rangeM: number): number {
+  if (spec.sensorType !== 'eo-ir' || !env.apply) return rangeM
+  return Math.min(rangeM, visibilityMFor(env))
 }
+
+// ---------------------------------------------------------------------------
+// Acoustic
+
+/** The source level, dB at 1 m, an acoustic detect range is quoted against: spec value, else the Group 1 tier. */
+export function refAcousticDbFor(spec: SensorSpec): number {
+  const r = spec.refAcousticDb
+  return r != null && Number.isFinite(r) && r > 0 ? r : ACOUSTIC_REF_DB
+}
+
+/**
+ * Range at which a source deltaDb louder than the reference reaches the
+ * same received level the reference reached at refRangeM. Solves
+ *   20 log10(R / Rref) + ALPHA_DB_PER_KM (R - Rref) / 1000 = deltaDb
+ * by bisection on the monotone left side. deltaDb 0 returns Rref exactly.
+ * At short range the absorption term is small and +20 dB is about 10x; at
+ * long range absorption bends the answer below the spreading-only value.
+ */
+export function acousticSolveM(refRangeM: number, deltaDb: number): number {
+  if (!(refRangeM > 0)) return 0
+  if (deltaDb === 0) return refRangeM
+  const f = (r: number) =>
+    20 * Math.log10(r / refRangeM) + (ALPHA_DB_PER_KM * (r - refRangeM)) / 1000 - deltaDb
+  let lo: number
+  let hi: number
+  if (deltaDb > 0) {
+    lo = refRangeM
+    hi = refRangeM * 2
+    while (f(hi) < 0) hi *= 2
+  } else {
+    lo = refRangeM * 1e-9
+    hi = refRangeM
+  }
+  for (let i = 0; i < 80; i++) {
+    const mid = (lo + hi) / 2
+    if (f(mid) < 0) lo = mid
+    else hi = mid
+  }
+  return (lo + hi) / 2
+}
+
+/** Acoustic target term: the solved range over the quoted range. 1 for a planning basis or no target. */
+function acousticRangeFactor(spec: SensorSpec, quotedM: number, target: UasSpec | undefined): number {
+  if (!target || !targetScaled(spec) || !(quotedM > 0)) return 1
+  return acousticSolveM(quotedM, acousticDbFor(target) - refAcousticDbFor(spec)) / quotedM
+}
+
+/**
+ * Acoustic detect range against one target: the spreading-plus-absorption
+ * solution against the reference source level, then the wind, urban and
+ * rain multipliers (noise-floor effects) on top. Wind bearing is out of
+ * scope: the loss is applied as a scalar.
+ */
+export function acousticRangeM(
+  spec: SensorSpec,
+  target: UasSpec | undefined,
+  env: EnvironmentSpec,
+): number {
+  return (
+    spec.detectRangeM *
+    acousticRangeFactor(spec, spec.detectRangeM, target) *
+    sensorEnvFactor('acoustic', env)
+  )
+}
+
+// ---------------------------------------------------------------------------
+// RF
 
 /**
  * True when the UAS emits an RF control or video link a passive RF sensor can
@@ -83,4 +257,133 @@ export function rfDetectable(uas: UasSpec): boolean {
 /** True when a jammer has something to deny: an RF link or GNSS navigation. */
 export function jammable(uas: UasSpec): boolean {
   return uas.navMode === 'gps' || uas.navMode === 'rf-manual' || uas.navMode === 'mixed'
+}
+
+/** Bands an RF sensor receives. Absent means every band. */
+export function rfSensorBands(spec: SensorSpec): JamBand[] {
+  return spec.rfBands && spec.rfBands.length > 0 ? spec.rfBands : JAM_BANDS
+}
+
+/**
+ * True when the RF sensor can hear this threat: it emits at all, and one of
+ * its EMITTING link bands is inside the receiver's coverage. GNSS is a
+ * band the threat receives, never one it transmits, so it never counts.
+ */
+export function rfCanHear(spec: SensorSpec, uas: UasSpec): boolean {
+  if (!rfDetectable(uas)) return false
+  const rx = new Set(rfSensorBands(spec))
+  return targetLinkBands(uas).some((b) => b !== 'gnss' && rx.has(b))
+}
+
+/** True when the environment's urban override applies to this RF sensor. */
+function urbanOverride(spec: SensorSpec, env: EnvironmentSpec): boolean {
+  return (
+    spec.sensorType === 'rf' &&
+    spec.detectRangeM > 0 &&
+    env.apply &&
+    (env.emBackground ?? 'rural') === 'urban' &&
+    spec.urbanRangeM != null &&
+    Number.isFinite(spec.urbanRangeM) &&
+    spec.urbanRangeM > 0
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Cue rule and hold gate
+
+/** Roles that hold only a cued target (narrow field of view). */
+const CUED_EO_ROLES: ReadonlySet<SensorRole> = new Set([
+  'classification',
+  'fire-control',
+  'tracking',
+  'target-acquisition',
+])
+
+/**
+ * True when this EO/IR sensor needs a cue from another sensor before it
+ * holds a track (COURAGEOUS: narrow-FOV cameras verify and track cued
+ * targets, they do not search). Wide-area search sensors (surveillance,
+ * early-warning roles) hold without a cue and can cue others. Non-EO/IR
+ * sensors never need a cue.
+ */
+export function eoIrNeedsCue(spec: SensorSpec): boolean {
+  return spec.sensorType === 'eo-ir' && CUED_EO_ROLES.has(defaultSensorRole(spec))
+}
+
+export type SensorHoldGate = 'ok' | 'needs-cue' | 'rf-silent' | 'rf-band' | 'no-range'
+
+/**
+ * Why a sensor cannot hold this target regardless of geometry, or 'ok'. One
+ * gate for the sweep, the board and the inspector: a sensor gated
+ * rf-silent / rf-band / no-range never hits; needs-cue hits only when cued.
+ */
+export function sensorHoldGate(spec: SensorSpec, target: UasSpec | undefined): SensorHoldGate {
+  if (!(spec.detectRangeM > 0)) return 'no-range'
+  if (spec.sensorType === 'rf' && target) {
+    if (!rfDetectable(target)) return 'rf-silent'
+    if (!rfCanHear(spec, target)) return 'rf-band'
+  }
+  if (eoIrNeedsCue(spec)) return 'needs-cue'
+  return 'ok'
+}
+
+// ---------------------------------------------------------------------------
+// Effective ranges
+
+/**
+ * One quoted range (detect or classify) against one target: the target law
+ * for the technology, then environment, then the caps. `quotedM` is the
+ * placard figure at the reference condition.
+ */
+function effectiveRangeM(
+  spec: SensorSpec,
+  quotedM: number,
+  env: EnvironmentSpec,
+  target: UasSpec | undefined,
+): number {
+  let r: number
+  switch (spec.sensorType) {
+    case 'radar':
+      r = quotedM * rcsRangeFactor(spec, target) * sensorEnvFactor('radar', env)
+      break
+    case 'eo-ir':
+      r = quotedM * eoRangeFactor(spec, target, env) * sensorEnvFactor('eo-ir', env)
+      break
+    case 'acoustic':
+      r = quotedM * acousticRangeFactor(spec, quotedM, target) * sensorEnvFactor('acoustic', env)
+      break
+    case 'rf':
+      // A vendor-published urban range outranks the generic urban multiplier;
+      // the classify figure keeps its ratio to the detect figure.
+      r = urbanOverride(spec, env)
+        ? quotedM * (spec.urbanRangeM! / spec.detectRangeM) * envFactorImpl('rf', env, false)
+        : quotedM * sensorEnvFactor('rf', env)
+      break
+  }
+  return capVisibility(spec, env, capInstrumented(spec, r))
+}
+
+/**
+ * Detect range against one target after the technology's target law
+ * (radar RCS, EO/IR span and thermal class, acoustic source level, RF band
+ * coverage handled by the hold gate), environment derates, and the caps
+ * (instrumented range, meteorological visibility). Pass no target for the
+ * placard range against the reference condition.
+ */
+export function effectiveDetectRangeM(
+  spec: SensorSpec,
+  env: EnvironmentSpec,
+  target?: UasSpec,
+): number {
+  return effectiveRangeM(spec, spec.detectRangeM, env, target)
+}
+
+/** Classify range under the same effects. Null when the sensor cannot classify. */
+export function effectiveClassifyRangeM(
+  spec: SensorSpec,
+  env: EnvironmentSpec,
+  target?: UasSpec,
+): number | null {
+  if (spec.classifyRangeM == null) return null
+  return effectiveRangeM(spec, spec.classifyRangeM, env, target)
 }

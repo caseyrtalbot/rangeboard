@@ -26,6 +26,7 @@ const LAYER_ITEMS: { key: LayerKey; label: string }[] = [
   { key: 'sensorFootprints', label: 'Sensor footprints' },
   { key: 'classifyRings', label: 'Classify rings' },
   { key: 'effectorEnvelopes', label: 'Effector envelopes' },
+  { key: 'defendedAreas', label: 'Defended areas' },
   { key: 'threatWez', label: 'Threat WEZ' },
   { key: 'flightPaths', label: 'Flight paths' },
   { key: 'connections', label: 'Connections' },

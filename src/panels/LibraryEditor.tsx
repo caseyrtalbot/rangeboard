@@ -1,7 +1,16 @@
 import { useState } from 'react'
-import type { SensorRole, SpecModel, UasSpec } from '../model/types'
+import type { EoBand, IrSignature, RangeBasis, SensorRole, SpecModel, UasSpec } from '../model/types'
 import { JAM_BAND_LABEL, JAM_BANDS, SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
 import { jammerBands } from '../analysis/ewPhysics'
+import { rfSensorBands } from '../analysis/sensorEnv'
+import { RADAR_REF_RCS_M2, RCS_PLANNING_M2 } from '../model/rcsFactors'
+import {
+  ACOUSTIC_PLANNING_DB,
+  ACOUSTIC_REF_DB,
+  EO_REF_SPAN_M,
+  IR_SIGNATURE_FACTOR,
+  SPAN_PLANNING_M,
+} from '../model/signatureFactors'
 import { useStore } from '../state/store'
 import { formatDistance } from '../geometry/geo'
 import { EmptyState, ObjectHeader, Section } from './inspector/kit'
@@ -225,8 +234,9 @@ export function LibraryEditor() {
             label="Detect range (m)"
             value={sensor.detectRangeM}
             step={100}
+            min={0}
             list="detect-range-options"
-            onChange={(n) => patch({ sensor: { ...sensor, detectRangeM: n } })}
+            onChange={(n) => patch({ sensor: { ...sensor, detectRangeM: Math.max(0, n) } })}
           />
           <Options
             id="detect-range-options"
@@ -246,8 +256,25 @@ export function LibraryEditor() {
             label="Classify range (m, 0 = none)"
             value={sensor.classifyRangeM ?? 0}
             step={100}
+            min={0}
             onChange={(n) => patch({ sensor: { ...sensor, classifyRangeM: n > 0 ? n : null } })}
           />
+          <Field label="Range basis">
+            <select
+              value={sensor.rangeBasis ?? 'sourced'}
+              onChange={(e) =>
+                patch({ sensor: { ...sensor, rangeBasis: e.target.value as RangeBasis } })
+              }
+            >
+              <option value="sourced">sourced figure, target-scaled</option>
+              <option value="planning">planning figure, not target-scaled</option>
+            </select>
+          </Field>
+          <p className="muted small">
+            A sourced range is quoted against a reference target and scales to the threat on the
+            board. A planning figure names no target, so no physics runs on it: every threat gets
+            the same ring.
+          </p>
           <SectorField
             value={sensor.sectorDeg}
             onChange={(n) => patch({ sensor: { ...sensor, sectorDeg: Math.min(360, Math.max(5, n)) } })}
@@ -288,6 +315,128 @@ export function LibraryEditor() {
             step={10}
             onChange={(n) => patch({ sensor: { ...sensor, resolutionM: n > 0 ? n : null } })}
           />
+          <Num
+            label="Maximum reported range (m, 0 = no cap)"
+            value={sensor.instrumentedRangeM ?? 0}
+            step={1000}
+            min={0}
+            onChange={(n) =>
+              patch({ sensor: { ...sensor, instrumentedRangeM: n > 0 ? n : null } })
+            }
+          />
+          <p className="muted small">
+            A radar's instrumented range, or the top of a vendor's stated detection band. The
+            target-scaled range never exceeds it.
+          </p>
+          {sensor.sensorType === 'radar' && (
+            <>
+              <Num
+                label={`Reference RCS (m², 0 = ${RADAR_REF_RCS_M2})`}
+                value={sensor.refRcsM2 ?? 0}
+                step={0.01}
+                min={0}
+                onChange={(n) => patch({ sensor: { ...sensor, refRcsM2: n > 0 ? n : null } })}
+              />
+              <p className="muted small">
+                The detect range is quoted against the reference RCS. Against another threat the
+                range scales with the fourth root of the RCS ratio, then stops at the maximum
+                reported range. The board ring shows the reference-RCS range; select a threat to
+                see each radar's ring against that threat.
+              </p>
+            </>
+          )}
+          {sensor.sensorType === 'eo-ir' && (
+            <>
+              <div className="field-row">
+                <Field label="Band">
+                  <select
+                    value={sensor.eoBand ?? 'dual'}
+                    onChange={(e) =>
+                      patch({ sensor: { ...sensor, eoBand: e.target.value as EoBand } })
+                    }
+                  >
+                    <option value="dual">dual (visible by day, thermal at night)</option>
+                    <option value="visible">visible only</option>
+                    <option value="thermal">thermal only</option>
+                  </select>
+                </Field>
+                <Num
+                  label={`Reference span (m, 0 = ${EO_REF_SPAN_M})`}
+                  value={sensor.refSpanM ?? 0}
+                  step={0.1}
+                  min={0}
+                  onChange={(n) => patch({ sensor: { ...sensor, refSpanM: n > 0 ? n : null } })}
+                />
+              </div>
+              <p className="muted small">
+                The detect range is quoted against a target of the reference span. Against another
+                threat the range scales linearly with the span ratio (Johnson criteria), times the
+                thermal contrast class when the thermal channel carries, and stops at the
+                meteorological visibility. A visible-only sensor keeps 20 percent of its range at
+                night.
+              </p>
+            </>
+          )}
+          {sensor.sensorType === 'acoustic' && (
+            <>
+              <Num
+                label={`Reference source level (dB at 1 m, 0 = ${ACOUSTIC_REF_DB})`}
+                value={sensor.refAcousticDb ?? 0}
+                step={1}
+                min={0}
+                onChange={(n) =>
+                  patch({ sensor: { ...sensor, refAcousticDb: n > 0 ? n : null } })
+                }
+              />
+              <p className="muted small">
+                The detect range is quoted against a source of the reference level. A louder threat
+                is heard farther by spherical spreading plus atmospheric absorption; wind and urban
+                noise then multiply on top.
+              </p>
+            </>
+          )}
+          {sensor.sensorType === 'rf' && (
+            <>
+              <Field label="Receive bands">
+                <div className="field-row" style={{ flexWrap: 'wrap' }}>
+                  {JAM_BANDS.map((b) => {
+                    const bands = rfSensorBands(sensor)
+                    const on = bands.includes(b)
+                    return (
+                      <label key={b} className="small" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...bands, b]
+                              : bands.filter((x) => x !== b)
+                            // An empty band set would read back as "every band"
+                            // (the legacy default), so the last band stays on.
+                            if (next.length === 0) return
+                            patch({ sensor: { ...sensor, rfBands: next } })
+                          }}
+                        />
+                        {JAM_BAND_LABEL[b]}
+                      </label>
+                    )
+                  })}
+                </div>
+              </Field>
+              <Num
+                label="Urban range (m, 0 = generic urban factor)"
+                value={sensor.urbanRangeM ?? 0}
+                step={100}
+                min={0}
+                onChange={(n) => patch({ sensor: { ...sensor, urbanRangeM: n > 0 ? n : null } })}
+              />
+              <p className="muted small">
+                A passive receiver hears a threat only when one of its emitting link bands is inside
+                the receive bands (GNSS is received by the threat, never transmitted). A published
+                urban range replaces the generic urban multiplier in an urban EM background.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -433,6 +582,64 @@ export function LibraryEditor() {
               </select>
             </Field>
           </div>
+          <Num
+            label="Radar cross section (m², 0 = group planning factor)"
+            value={uas.rcsM2 ?? 0}
+            step={0.01}
+            min={0}
+            onChange={(n) => patch({ uas: { ...uas, rcsM2: n > 0 ? n : null } })}
+          />
+          <p className="muted small">
+            Planning factor, not signature data. Group tier when 0:{' '}
+            {([1, 2, 3, 4, 5] as const).map((g) => `G${g} ${RCS_PLANNING_M2[g]}`).join(', ')} m².
+            Each radar sees this threat at its quoted range times the fourth root of (this RCS /
+            the radar's reference RCS).
+          </p>
+          <div className="field-row">
+            <Num
+              label="Span (m, 0 = group planning factor)"
+              value={uas.spanM ?? 0}
+              step={0.1}
+              min={0}
+              onChange={(n) => patch({ uas: { ...uas, spanM: n > 0 ? n : null } })}
+            />
+            <Num
+              label="Acoustic level (dB at 1 m, 0 = group PF)"
+              value={uas.acousticDb ?? 0}
+              step={1}
+              min={0}
+              onChange={(n) => patch({ uas: { ...uas, acousticDb: n > 0 ? n : null } })}
+            />
+          </div>
+          <Field label="IR signature">
+            <select
+              value={uas.irSignature ?? ''}
+              onChange={(e) =>
+                patch({
+                  uas: {
+                    ...uas,
+                    irSignature: (e.target.value || undefined) as IrSignature | undefined,
+                  },
+                })
+              }
+            >
+              <option value="">by airframe (electric low, engine high)</option>
+              {(['low', 'medium', 'high'] as const).map((k) => (
+                <option key={k} value={k}>
+                  {k} (x{IR_SIGNATURE_FACTOR[k]})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <p className="muted small">
+            Planning factors. Span tier when 0:{' '}
+            {([1, 2, 3, 4, 5] as const).map((g) => `G${g} ${SPAN_PLANNING_M[g]}`).join(', ')} m
+            (wingspan, or motor-to-motor diagonal); EO/IR range scales linearly with the span
+            ratio. Acoustic tier when 0:{' '}
+            {([1, 2, 3, 4, 5] as const).map((g) => `G${g} ${ACOUSTIC_PLANNING_DB[g]}`).join(', ')}{' '}
+            dB; acoustic range follows spreading plus absorption against the sensor's reference
+            level. The IR class multiplies thermal-channel range.
+          </p>
           <div className="field-row">
             <Num
               label="Cruise (m/s)"

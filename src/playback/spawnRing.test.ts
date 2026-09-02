@@ -91,6 +91,23 @@ describe('spawnInRingViolations', () => {
     expect(spawnInRingViolations(scenario()).every((v) => v.uasId === uasId)).toBe(true)
   })
 
+  it('a wide-area EO/IR search sensor flags a spawn on its own', () => {
+    useStore.getState().addEntityFromModel('lib-wisp', { x: 0, y: 0 }) // surveillance role: no cue needed
+    const sensorId = scenario().entities.at(-1)!.id
+    const uasId = placeThreatAt('lib-mavic3', { x: 1500, y: 0 })
+    expect(spawnInRingViolations(scenario())).toEqual([{ uasId, sensorId }])
+  })
+
+  it('an RF sensor never flags a threat outside its bands', () => {
+    useStore.getState().addEntityFromModel('lib-rf360', { x: 0, y: 0 })
+    const sensor = scenario().entities.at(-1)!
+    const uasId = placeThreatAt('lib-fpv7', { x: 1000, y: 0 }) // 2.4 / 5.8 GHz link
+    expect(spawnInRingViolations(scenario())).toEqual([{ uasId, sensorId: sensor.id }])
+    const model = scenario().library.find((m) => m.id === sensor.specId)!
+    useStore.getState().updateModel(model.id, { sensor: { ...model.sensor!, rfBands: ['uhf-433'] } })
+    expect(spawnInRingViolations(scenario())).toEqual([])
+  })
+
   it('environment derate changes the verdict', () => {
     useStore.getState().addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // 10 km clear
     placeThreatAt('lib-mavic3', { x: 9500, y: 0 })

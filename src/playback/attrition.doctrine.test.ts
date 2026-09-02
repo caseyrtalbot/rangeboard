@@ -8,10 +8,12 @@ import { assessAllThreats, assessThreat } from './sim'
  * Doctrinal fire-control tests. Fixture geometry mirrors attrition.test.ts:
  * group 4 fixed-wing target (size penalty 1.0, no evasion), radar and
  * effector at known positions, target flying east at 40 m/s from x = -1210.
- * Detection at t = 0; hostile classification lands at t = 5.5 (the first
- * sample inside the 1000 m effector ring, nearestRatio <= 1); a 5 s track
- * firm time makes the stable track at t = 5; the 10 s declaration dwell puts
- * the doctrine gate at 15.5.
+ * Per-system factors (doctrineFactors.ts): the test radar's 'surveillance'
+ * role initiates a track in 6 s; hostile classification lands at t = 5.5
+ * (first sample inside the 1000 m effector ring); single-phenomenology ID
+ * pays the full 10 s declaration dwell, so the gate is max(5.5, 6) + 10 =
+ * 16; the sensor->effector link sets no latencyS, so doctrine charges the
+ * 2 s default hop and the first shot lands no earlier than t = 18.
  */
 
 const RADAR: SpecModel = {
@@ -156,13 +158,55 @@ describe('doctrine gate (sim.ts)', () => {
   it('radar hold: gate = max(hostileAtS, stable track) + declaration dwell', () => {
     const { scenario, uasId } = build(RADAR, [interceptor('tst-int', {})], [{ x: 0, y: 0 }])
     const a = assessThreat(scenario, uasId)
-    // Continuous radar hold from t = 0; firm at trackFirmS = 5.
-    expect(a.stableTrackAtS).toBe(5)
+    // Continuous radar hold from t = 0; surveillance role initiates in 6 s.
+    expect(a.stableTrackAtS).toBe(6)
     // Hostile at the first sample inside the effector ring (t = 5.5).
     expect(a.classificationAtS.hostileAtS).toBe(5.5)
-    expect(a.engageGateS).toBe(15.5)
-    expect(a.declaredHostileAtS).toBe(15.5)
+    expect(a.engageGateS).toBe(16)
+    expect(a.declaredHostileAtS).toBe(16)
+    expect(a.effectorGates?.length).toBe(1)
     expect(a.status).toBe('engageable')
+  })
+
+  it('spec trackInitS overrides the role table', () => {
+    const fastRadar: SpecModel = {
+      ...RADAR,
+      id: 'tst-radar-fast',
+      sensor: { ...RADAR.sensor!, trackInitS: 2 },
+    }
+    const { scenario, uasId } = build(fastRadar, [interceptor('tst-int', {})], [{ x: 0, y: 0 }])
+    const a = assessThreat(scenario, uasId)
+    expect(a.stableTrackAtS).toBe(2)
+    // Gate: max(hostile 5.5, firm 2) + 10.
+    expect(a.engageGateS).toBe(15.5)
+  })
+
+  it('route-aware: a firm track from an unrouted radar authorizes nothing', () => {
+    // RF sensor feeds the effector; the radar detects but connects to nothing,
+    // so its track file never reaches the shooter.
+    const { scenario, uasId } = build(RF_SENSOR, [interceptor('tst-int', {})], [{ x: 0, y: 0 }])
+    const radar = ent('sensor', RADAR.id, { x: 0, y: 0 })
+    scenario.library = [...scenario.library, RADAR]
+    scenario.entities = [...scenario.entities, radar]
+    const a = assessThreat(scenario, uasId)
+    // The radar track IS firm; it just reaches no shooter.
+    expect(a.stableTrackAtS).toBe(6)
+    expect(a.effectorGates?.length ?? 0).toBe(0)
+    expect(a.status).toBe('no-stable-track')
+    expect(resolveEngagements(scenario).totals.shotsFired).toBe(0)
+  })
+
+  it('two-phenomenology confirmation halves the declaration dwell', () => {
+    const { scenario, uasId } = build(RADAR, [interceptor('tst-int', {})], [{ x: 0, y: 0 }])
+    // Add an RF sensor: the rf-manual target is heard from t = 0, so the
+    // track is two-tech confirmed before declaration starts.
+    const rf = ent('sensor', RF_SENSOR.id, { x: 0, y: 0 })
+    scenario.library = [...scenario.library, RF_SENSOR]
+    scenario.entities = [...scenario.entities, rf]
+    const a = assessThreat(scenario, uasId)
+    expect(a.firstConfirmS).toBe(0)
+    // max(hostile 5.5, firm 6) + 10 * 0.5.
+    expect(a.engageGateS).toBe(11)
   })
 
   it('doctrine off keeps the legacy ROE-free gate', () => {
@@ -172,7 +216,7 @@ describe('doctrine gate (sim.ts)', () => {
     expect(a.engageGateS).toBe(0)
     expect(a.declaredHostileAtS).toBeNull()
     // Stable-track time stays informative even with doctrine off.
-    expect(a.stableTrackAtS).toBe(5)
+    expect(a.stableTrackAtS).toBe(6)
   })
 })
 
@@ -185,9 +229,36 @@ describe('doctrine fire control (attrition.ts)', () => {
     )
     const report = resolveEngagements(scenario)
     expect(report.events.length).toBe(2)
-    // Gate 15.5; second shot only after effect (25.5) + bdaS (10).
-    expect(report.events[0].tS).toBeCloseTo(15.5, 5)
-    expect(report.events[1].tS).toBeCloseTo(35.5, 5)
+    // Gate 16 + 2 s default link latency; second shot only after effect
+    // (28) + the interceptor BDA table dwell (10).
+    expect(report.events[0].tS).toBeCloseTo(18, 5)
+    expect(report.events[1].tS).toBeCloseTo(38, 5)
+  })
+
+  it('per-type factors: DE commits earlier and re-attacks faster', () => {
+    const de: SpecModel = {
+      id: 'tst-de',
+      name: 'tst-de',
+      kind: 'effector',
+      description: '',
+      color: '#fff',
+      builtin: false,
+      effector: {
+        effectorType: 'de',
+        minRangeM: 0,
+        maxRangeM: 1000,
+        engageTimeS: 5,
+        salvoCooldownS: 1,
+        pk: 0.45,
+      },
+    }
+    const { scenario } = build(RADAR, [de], [{ x: 0, y: 0 }])
+    const report = resolveEngagements(scenario)
+    // DE BDA is 3 s (type table): re-attack every engage (5) + BDA (3) = 8 s.
+    expect(report.events.length).toBeGreaterThan(1)
+    expect(report.events[0].tS).toBeCloseTo(18, 5)
+    expect(report.events[1].tS - report.events[0].tS).toBeCloseTo(8, 5)
+    expect(report.totals.deSalvos).toBe(report.events.length)
   })
 
   it('best-Pk shooter takes the shot; the other holds fire', () => {
@@ -217,10 +288,11 @@ describe('doctrine fire control (attrition.ts)', () => {
       [interceptor('tst-int', { engageTimeS: 10, salvoCooldownS: 1 })],
       [{ x: 0, y: 0 }],
     )
-    // Unreachable commit Pk: only the deadline can trigger the shot. With no
-    // asset, the deadline is the last launch whose effect stays inside the
-    // envelope window [5.5, 55]: t = 45.
-    scenario.doctrine = { ...scenario.doctrine!, pkCommit: 0.99 }
+    // Unreachable commit Pk (spec override): only the deadline can trigger
+    // the shot. With no asset, the deadline is the last launch whose effect
+    // stays inside the envelope window [5.5, 55]: t = 45.
+    const model = scenario.library.find((m) => m.id === 'tst-int')!
+    model.effector = { ...model.effector!, commitPk: 0.99 }
     const report = resolveEngagements(scenario)
     expect(report.events.length).toBe(1)
     expect(report.events[0].tS).toBeCloseTo(45, 5)

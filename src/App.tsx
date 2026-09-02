@@ -15,8 +15,10 @@ import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
 import { CommandPalette } from './panels/CommandPalette'
 import { toggleAnalysisRun } from './playback/runSession'
+import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 
-const RIGHT_W_KEY = 'rangeboard.rightpanel.width'
+const RIGHT_W_KEY = RIGHT_PANEL_WIDTH_KEY
+
 const RIGHT_MIN_W = 280
 const RIGHT_MAX_W = 560
 

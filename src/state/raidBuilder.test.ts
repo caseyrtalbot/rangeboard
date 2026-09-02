@@ -221,6 +221,49 @@ describe('tactic raid builder: commitRaid', () => {
     }
   })
 
+  it('honors a panel radar sector: a face turned away never pushes the standoff', () => {
+    const assetId = placeAsset()
+    const target = useStore.getState().scenario.entities.find((e) => e.id === assetId)!
+    const radarId = useStore.getState().addModel('sensor')
+    useStore.getState().updateModel(radarId, {
+      sensor: { sensorType: 'radar', detectRangeM: 100000, classifyRangeM: null, sectorDeg: 90 },
+    })
+    useStore.getState().addEntityFromModel(radarId, { x: 0, y: 0 })
+    const radar = useStore.getState().scenario.entities.at(-1)!
+    // Ingress bearing 0 (northbound) spawns south of the target. Face north
+    // (heading 0): the origins sit behind the panel, outside the wedge.
+    useStore.getState().updateEntity(radar.id, { headingDeg: 0 })
+    useStore.getState().armRaidDraft('RUS-TAC-02')
+    useStore.getState().commitRaid(null)
+    let ships = useStore.getState().scenario.entities.filter((e) => e.kind === 'uas')
+    expect(ships).toHaveLength(8)
+    for (const s of ships) expect(dist(target.pos, s.pos)).toBeLessThan(12000)
+    useStore.getState().undo()
+    // Face south (heading 180): every origin must clear the 100 km wedge.
+    useStore.getState().updateEntity(radar.id, { headingDeg: 180 })
+    useStore.getState().armRaidDraft('RUS-TAC-02')
+    useStore.getState().commitRaid(null)
+    ships = useStore.getState().scenario.entities.filter((e) => e.kind === 'uas')
+    expect(ships).toHaveLength(8)
+    for (const s of ships) expect(dist(target.pos, s.pos)).toBeGreaterThan(100000)
+  })
+
+  it('an RF sensor never pushes an RF-silent raid', () => {
+    const assetId = placeAsset()
+    const target = useStore.getState().scenario.entities.find((e) => e.id === assetId)!
+    const rfId = useStore.getState().addModel('sensor')
+    useStore.getState().updateModel(rfId, {
+      sensor: { sensorType: 'rf', detectRangeM: 100000, classifyRangeM: null, sectorDeg: 360 },
+    })
+    useStore.getState().addEntityFromModel(rfId, { x: 0, y: 0 })
+    // RUS-TAC-03: fiber-optic FPV cluster, 15 km standoff, no RF emissions.
+    useStore.getState().armRaidDraft('RUS-TAC-03')
+    useStore.getState().commitRaid(null)
+    const ships = useStore.getState().scenario.entities.filter((e) => e.kind === 'uas')
+    expect(ships.length).toBeGreaterThan(0)
+    for (const s of ships) expect(dist(target.pos, s.pos)).toBeLessThan(20000)
+  })
+
   it('a generic tactic with no platform is blocked until one is chosen', () => {
     const assetId = placeAsset()
     useStore.getState().armRaidDraft('GEN-WAVE')

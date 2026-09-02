@@ -166,6 +166,25 @@ describe('jammer vs jam-immune threat', () => {
   })
 })
 
+describe('jammer reach is the effective range against the target', () => {
+  it('a hardened link (jamResistDb) shortens the envelope the jammer fires inside', () => {
+    // 6 dB of link margin quarters the power ratio, so the 1000 m placard
+    // closes at 500 m. Flying east at 40 m/s from x = -1210, the first DT
+    // sample inside 500 m is t = 18 (x = -490); at full reach it is t = 5.5.
+    const jam = effectorModel('tst-jam', 'jammer', { pk: 0.5, salvoCooldownS: 2 })
+    const plain = resolveEngagements(scenarioWith(target({ navMode: 'gps' }), [jam]).scenario)
+    const hard = resolveEngagements(
+      scenarioWith(target({ navMode: 'gps', jamResistDb: 6 }), [jam]).scenario,
+    )
+    expect(plain.threats[0].firstShotS).toBeCloseTo(5.5, 5)
+    expect(hard.threats[0].firstShotS).toBeCloseTo(18, 5)
+    // A jam dwell is EW expenditure, never a kinetic round.
+    expect(hard.threats[0].shotsFired).toBe(0)
+    expect(hard.threats[0].jamSalvos).toBeGreaterThan(0)
+    expect(hard.threats[0].jamSalvos).toBeLessThan(plain.threats[0].jamSalvos)
+  })
+})
+
 describe('soft kill ends the approach (drift, return-home)', () => {
   it('soft-kills a GPS threat: flagged soft, not hard', () => {
     // One jam at t = 5.5, d = 990: Pk = 0.5 * 0.703 = 0.3515. Jammer

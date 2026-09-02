@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
+import { RCS_PLANNING_M2 } from '../model/rcsFactors'
 import type {
   Connection,
   EffectorSpec,
@@ -57,7 +58,12 @@ function flight(entityId: string, points: Vec2[], speedMps = 40): FlightPath {
   return { id: `path-${seq}`, entityId, points, speedMps, startDelayS: 0 }
 }
 
-/** Omni radar, classify null (no fire-control promotion path), exact range. */
+/**
+ * Omni radar, classify null (no fire-control promotion path), exact range:
+ * the range is quoted against the Group 4 target below (refRcsM2 = its RCS
+ * tier), so the RCS scaling factor is exactly 1 and the arithmetic in the
+ * cases stays spec-exact.
+ */
 function radarModel(id: string, detectRangeM = 50000): SpecModel {
   return {
     id,
@@ -72,6 +78,7 @@ function radarModel(id: string, detectRangeM = 50000): SpecModel {
       detectRangeM,
       classifyRangeM: null,
       sectorDeg: 360,
+      refRcsM2: RCS_PLANNING_M2[4],
     },
   }
 }

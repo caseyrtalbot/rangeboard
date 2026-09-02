@@ -262,17 +262,8 @@ export interface EngagementPicture {
  * object, so identity is a sound cache key and dead scenarios are collected
  * with their entries.
  */
-let pictureCache = new WeakMap<Scenario, EngagementPicture>()
+const pictureCache = new WeakMap<Scenario, EngagementPicture>()
 
-/**
- * Drop every memoized engagement picture. A clean run calls this before it
- * receives a new run id so no derived object from the prior run remains in
- * the live-analysis path. Scenario edits already create a new object key;
- * this explicit reset covers repeated runs of an unchanged configuration.
- */
-export function clearEngagementPictureCache(): void {
-  pictureCache = new WeakMap<Scenario, EngagementPicture>()
-}
 
 export function engagementPicture(scenario: Scenario): EngagementPicture {
   const hit = pictureCache.get(scenario)

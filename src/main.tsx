@@ -14,7 +14,8 @@ import '@fontsource/ibm-plex-mono/600.css'
 import './index.css'
 
 const saved = loadAutosave()
-if (saved) useStore.setState({ scenario: saved })
+if (saved) useStore.getState().loadScenario(saved)
+
 startAutosave()
 startTeAutosave()
 

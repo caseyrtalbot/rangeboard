@@ -16,6 +16,7 @@ export function defaultEnvironment(): EnvironmentSpec {
     precipitation: 'clear',
     light: 'day',
     emBackground: 'rural',
+    visibilityM: null,
     apply: true,
   }
 }
@@ -35,7 +36,9 @@ export function emptyScenario(): Scenario {
     name: 'Untitled scenario',
     library: SEED_LIBRARY.map((m) => ({ ...m })),
     systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
+    deletedSeedIds: [],
     environment: defaultEnvironment(),
+
     roe: 'tight',
     doctrine: { ...DEFAULT_FIRE_DOCTRINE },
     mcdaWeights: { warning: 3, coverage: 3, confirm: 2, engage: 3, attrition: 3 },

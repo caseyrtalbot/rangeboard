@@ -39,7 +39,64 @@ export interface SensorSpec {
   maxAltitudeFt?: number | null
   /** Minimum target separation the sensor splits into two tracks, meters. Null when unknown. */
   resolutionM?: number | null
+  /**
+   * Radar only: the target RCS, m2, at which detectRangeM is quoted. Absent
+   * means RADAR_REF_RCS_M2 (the Group 1 small-UAS planning factor) in
+   * src/model/rcsFactors.ts. Detection range against another target scales
+   * with the fourth root of the RCS ratio (radar range equation).
+   */
+  refRcsM2?: number | null
+  /**
+   * Maximum reported range, meters: a radar's instrumented range, or the
+   * top of a vendor's stated detection band for any other type. Caps the
+   * target-scaled detect range: no target is reported beyond it however
+   * large or loud it is. Null when the public record gives no figure (no cap).
+   */
+  instrumentedRangeM?: number | null
+  /**
+   * Doctrine: continuous hold this sensor needs to initiate a stable track
+   * file, seconds. Absent: the TRACK_INIT_S role table in doctrineFactors.ts.
+   */
+  trackInitS?: number
+  /**
+   * EO/IR only: the target characteristic dimension, meters, at which
+   * detectRangeM is quoted. Absent means SPAN_PLANNING_M[1] (Group 1) in
+   * src/model/signatureFactors.ts. Range against another target scales
+   * linearly with the span ratio (Johnson criteria).
+   */
+  refSpanM?: number | null
+  /** EO/IR only: imaging band. Absent means 'dual' (visible by day, thermal at night). */
+  eoBand?: EoBand
+  /**
+   * Acoustic only: the broadband source level, dB re 20 uPa at 1 m, that
+   * detectRangeM is quoted against. Absent means ACOUSTIC_PLANNING_DB[1].
+   */
+  refAcousticDb?: number | null
+  /** RF only: link bands the receiver covers. Absent means every band. */
+  rfBands?: JamBand[]
+  /**
+   * RF only: a vendor-published urban-background detect range, meters. When
+   * set and the environment is urban it replaces detectRangeM times the
+   * generic urban multiplier for this sensor. Null when not published.
+   */
+  urbanRangeM?: number | null
+  /**
+   * Where detectRangeM comes from. 'sourced' (default): a datasheet figure
+   * conditioned on a reference target, so target scaling (RCS, span, source
+   * level) applies. 'planning': a role-table or representative figure with no
+   * stated target, so no physics runs on it and target scaling returns 1.
+   */
+  rangeBasis?: RangeBasis
 }
+
+/** EO/IR imaging band. */
+export type EoBand = 'visible' | 'thermal' | 'dual'
+
+/** Detect-range provenance; see SensorSpec.rangeBasis. */
+export type RangeBasis = 'sourced' | 'planning'
+
+/** Thermal contrast class of a threat airframe; see UasSpec.irSignature. */
+export type IrSignature = 'low' | 'medium' | 'high'
 
 /** Representative detect ranges by role, used when a system's WEZ is unknown. */
 export const SENSOR_ROLE_DEFAULT_RANGE_M: Record<SensorRole, number> = {
@@ -85,6 +142,33 @@ export const JAM_BAND_LABEL: Record<JamBand, string> = {
 
 export interface UasSpec {
   group: UasGroup
+  /**
+   * PLANNING FACTOR radar cross section, m2 (X/Ku-band, nose-on class
+   * value). The threat study lists RCS by aspect and frequency as a data gap
+   * (section 18), so this is a representative tier value from
+   * src/model/rcsFactors.ts or a sourced datasheet class, never measured
+   * signature data. Absent means the group tier.
+   */
+  rcsM2?: number | null
+  /**
+   * PLANNING FACTOR characteristic dimension, meters: wingspan, or the
+   * motor-to-motor diagonal for a multirotor. Sets each EO/IR sensor's range
+   * against this threat by the Johnson criteria (linear in the span ratio).
+   * Absent means the group tier in src/model/signatureFactors.ts.
+   */
+  spanM?: number | null
+  /**
+   * Thermal contrast class. Absent means the airframe default in
+   * src/model/signatureFactors.ts: electric multirotor/FPV/VTOL low,
+   * fixed-wing and one-way-attack (engine) high.
+   */
+  irSignature?: IrSignature
+  /**
+   * PLANNING FACTOR broadband acoustic source level, dB re 20 uPa at 1 m.
+   * Sets each acoustic sensor's range against this threat by spherical
+   * spreading plus atmospheric absorption. Absent means the group tier.
+   */
+  acousticDb?: number | null
   airframe: 'quad' | 'fixed-wing' | 'vtol' | 'one-way-attack' | 'fpv'
   cruiseSpeedMps: number
   maxSpeedMps: number
@@ -177,6 +261,16 @@ export interface EffectorSpec {
    * (free-space inverse square). Absent means eirpW is the rated power.
    */
   ratedEirpW?: number
+  /**
+   * Doctrine: battle-damage-assessment dwell after this effector's salvo
+   * takes effect, seconds. Absent: the BDA_S type table in doctrineFactors.ts.
+   */
+  bdaS?: number
+  /**
+   * Doctrine: hold fire until predicted per-shot Pk reaches this. Absent:
+   * the PK_COMMIT type table in doctrineFactors.ts.
+   */
+  commitPk?: number
 }
 
 /** Threat employment intent, carried by threat/UAS models for cards and playback. */
@@ -377,6 +471,12 @@ export interface EnvironmentSpec {
   light?: LightLevel
   /** Absent on old saves; treat as 'rural'. Urban EM clutter derates RF and radar. */
   emBackground?: EmBackground
+  /**
+   * Meteorological visibility, meters. Caps EO/IR range (Koschmieder: the
+   * range where a high-contrast target falls to the 2 percent contrast
+   * threshold). Null derives it from precipitation (VISIBILITY_BY_PRECIP).
+   */
+  visibilityM?: number | null
   /** When false, all rings and analysis use calm standard-day performance. */
   apply: boolean
 }
@@ -414,7 +514,11 @@ export type Roe = 'hold' | 'tight' | 'free'
  *   reaches pkCommit, unless waiting longer would forfeit `opportunities`
  *   full engagement cycles (engage time + BDA) before the threat's arrival,
  *   in which case it fires at that deadline regardless of Pk.
- * All values are planning factors, editable per scenario.
+ * All values are planning factors, editable per scenario. trackFirmS, bdaS
+ * and pkCommit are the UNIFORM fallbacks: with doctrine enabled the engine
+ * derives per-system values instead (spec override, else the role/type
+ * tables in src/analysis/doctrineFactors.ts, else these), and links with no
+ * latencyS are charged the doctrineFactors default hop latency.
  */
 export interface FireDoctrine {
   enabled: boolean
@@ -652,8 +756,14 @@ export interface Scenario {
   name: string
   library: SpecModel[]
   systemPresets: SystemPreset[]
+  /**
+   * Builtin model and preset ids the user deleted. The load-time seed merge
+   * skips them, so a deleted seed stays deleted. Absent on old saves = none.
+   */
+  deletedSeedIds?: string[]
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
+
   engageOn?: EngagePolicy
   /** Absent on old saves; migrated from engageOn on load, default 'tight'. */
   roe?: Roe

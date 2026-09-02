@@ -3,8 +3,10 @@ import { scenarioDurationS, useStore } from '../../state/store'
 import type { ImpactSeverity, Scenario } from '../../model/types'
 import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
+import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
 
-const OPEN_KEY = 'rangeboard.engstrip.open'
+const OPEN_KEY = ENGSTRIP_OPEN_KEY
+
 const GUTTER_W = 150
 const LANE_H = 16
 /** Above this many lanes, same-named threats ("Shahed 1..12") collapse into groups. */

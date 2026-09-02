@@ -4,9 +4,11 @@ import { useStore } from '../state/store'
 import { exportLibrary, importLibraryFile } from '../io/persist'
 import { THREAT_TACTICS } from '../playback/tactics'
 import { Glyph } from './Glyph'
+import { PALETTE_COLLAPSED_KEY, PALETTE_WIDTH_KEY } from '../io/storageKeys'
 
-const WIDTH_KEY = 'rangeboard.palette.width'
-const COLLAPSE_KEY = 'rangeboard.palette.collapsed'
+const WIDTH_KEY = PALETTE_WIDTH_KEY
+const COLLAPSE_KEY = PALETTE_COLLAPSED_KEY
+
 const MIN_W = 180
 const MAX_W = 480
 

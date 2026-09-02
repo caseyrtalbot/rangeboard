@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { bumpCardVersion, savedLayers, useStore, scenarioDurationS } from './store'
+import { bumpCardVersion, savedLayers, savedRunSeq, useStore, scenarioDurationS } from './store'
 import type { LayerVisibility } from './store'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
+import { flushViewWrites, savedView } from '../io/viewState'
+import { RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
+import { useTeStore } from '../te/state/teStore'
 
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())
@@ -347,6 +350,8 @@ describe('run-scoped playback lifecycle', () => {
     expect(after.phase).toBe('ready')
     expect(after.resetReason).toBe('configuration-changed')
     expect(after.observedThroughS).toBe(0)
+    // Only a manual reset issues a new sequence number.
+    expect(after.runSeq).toBe(before.runSeq)
   })
 
   it('does not invalidate a completed run when saving a presentation frame', () => {
@@ -534,10 +539,9 @@ describe('connect suggestions', () => {
   })
 })
 
-// The node test env has no Web Storage, so the layer key needs a stand-in.
-function stubLayerStorage(seed: string | null): Map<string, string> {
-  const store = new Map<string, string>()
-  if (seed != null) store.set('rangeboard.layers.v1', seed)
+// The node test env has no Web Storage, so the storage keys need a stand-in.
+function stubStorage(entries: Record<string, string> = {}): Map<string, string> {
+  const store = new Map<string, string>(Object.entries(entries))
   vi.stubGlobal('localStorage', {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
@@ -546,13 +550,19 @@ function stubLayerStorage(seed: string | null): Map<string, string> {
   return store
 }
 
+function stubLayerStorage(seed: string | null): Map<string, string> {
+  return stubStorage(seed == null ? {} : { 'rangeboard.layers.v1': seed })
+}
+
 describe('layer visibility', () => {
+
   const FULL: LayerVisibility = {
     grid: true,
     boundaries: true,
     sensorFootprints: true,
     classifyRings: true,
     effectorEnvelopes: true,
+    defendedAreas: true,
     threatWez: false,
     flightPaths: true,
     connections: true,
@@ -567,6 +577,7 @@ describe('layer visibility', () => {
     sensorFootprints: true,
     classifyRings: true,
     effectorEnvelopes: true,
+    defendedAreas: true,
     threatWez: false,
     flightPaths: true,
     connections: true,
@@ -581,6 +592,7 @@ describe('layer visibility', () => {
     sensorFootprints: false,
     classifyRings: false,
     effectorEnvelopes: true,
+    defendedAreas: true,
     threatWez: false,
     flightPaths: true,
     connections: false,
@@ -595,6 +607,7 @@ describe('layer visibility', () => {
     sensorFootprints: false,
     classifyRings: false,
     effectorEnvelopes: false,
+    defendedAreas: false,
     threatWez: false,
     flightPaths: false,
     connections: false,
@@ -715,5 +728,276 @@ describe('layer visibility', () => {
   it('savedLayers falls back to the defaults on unreadable saved data', () => {
     stubLayerStorage('not json')
     expect(savedLayers()).toEqual(FULL)
+  })
+})
+
+describe('replaceScenario', () => {
+  beforeEach(reset)
+
+  it('clears every draft and interaction field, the tool, the selection, and history', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-mavic3', { x: 500, y: 0 })
+    const [sensor, uas] = useStore.getState().scenario.entities
+    useStore.getState().select({ entityIds: [sensor.id] })
+    useStore.getState().setTool('path')
+    useStore.getState().beginPath(uas.id)
+    useStore.getState().addDraftPoint({ x: 1, y: 1 })
+    useStore.setState((s) => ({
+      ui: {
+        ...s.ui,
+        connectFromId: sensor.id,
+        calibrateA: { x: 0, y: 0 },
+        calibrateB: { x: 1, y: 1 },
+        moveUnderlay: true,
+        contextMenu: { screen: { x: 1, y: 1 }, world: { x: 1, y: 1 }, entityId: null },
+        locationDialogOpen: true,
+        raidDraft: { tacticId: 't', platformSpecId: null, targetEntityId: null, shipCount: 1 },
+        connectSuggestion: {
+          entityId: sensor.id,
+          screen: { x: 0, y: 0 },
+          candidates: [],
+          autoConnected: [],
+        },
+      },
+    }))
+    useStore.getState().replaceScenario(emptyScenario())
+    const { ui, selection, past, future, playback } = useStore.getState()
+    expect(ui.tool).toBe('select')
+    expect(ui.draftPoints).toEqual([])
+    expect(ui.pathEntityId).toBeNull()
+    expect(ui.connectFromId).toBeNull()
+    expect(ui.calibrateA).toBeNull()
+    expect(ui.calibrateB).toBeNull()
+    expect(ui.moveUnderlay).toBe(false)
+    expect(ui.contextMenu).toBeNull()
+    expect(ui.locationDialogOpen).toBe(false)
+    expect(ui.raidDraft).toBeNull()
+    expect(ui.connectSuggestion).toBeNull()
+    expect(selection.entityIds).toEqual([])
+    expect(past).toEqual([])
+    expect(future).toEqual([])
+    expect(playback.phase).toBe('ready')
+    expect(playback.resetReason).toBe('scenario-loaded')
+  })
+
+  it('keeps the run sequence: a load is not a manual reset', () => {
+    const before = useStore.getState().playback.runSeq
+    useStore.getState().replaceScenario(emptyScenario())
+    expect(useStore.getState().playback.runSeq).toBe(before)
+  })
+})
+
+describe('undo selection', () => {
+  beforeEach(reset)
+
+  it('keeps a selection whose ids still exist after the step and drops the rest', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    const keep = useStore.getState().scenario.entities[0].id
+    st.addEntityFromModel('lib-mavic3', { x: 500, y: 0 })
+    const gone = useStore.getState().scenario.entities[1].id
+    useStore.getState().select({ entityIds: [keep, gone] })
+    useStore.getState().undo()
+    expect(useStore.getState().selection.entityIds).toEqual([keep])
+    useStore.getState().redo()
+    expect(useStore.getState().selection.entityIds).toEqual([keep])
+  })
+
+  it('drops a boundary selection when undo removes the boundary', () => {
+    const st = useStore.getState()
+    st.setTool('boundary')
+    st.addDraftPoint({ x: 0, y: 0 })
+    st.addDraftPoint({ x: 100, y: 0 })
+    st.addDraftPoint({ x: 100, y: 100 })
+    st.finishBoundary(true)
+    const id = useStore.getState().scenario.boundaries[0].id
+    useStore.getState().select({ boundaryId: id })
+    useStore.getState().undo()
+    expect(useStore.getState().selection.boundaryId).toBeNull()
+  })
+})
+
+describe('deleted seed ids', () => {
+  beforeEach(reset)
+
+  it('records a deleted builtin model and preset, and not a custom one', () => {
+    const st = useStore.getState()
+    const seedModel = useStore.getState().scenario.library.find((m) => m.builtin)!
+    const seedPreset = useStore.getState().scenario.systemPresets.find((p) => p.builtin)!
+    const customId = st.addModel('sensor')
+    st.deleteModel(seedModel.id)
+    useStore.getState().deleteSystemPreset(seedPreset.id)
+    useStore.getState().deleteModel(customId)
+    expect(useStore.getState().scenario.deletedSeedIds).toEqual([seedModel.id, seedPreset.id])
+  })
+})
+
+describe('view state', () => {
+  beforeEach(reset)
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('round-trips camera, basemap, right tab and workspace through localStorage', () => {
+    const store = stubStorage()
+    useStore.getState().setCamera({ x: 1, y: 1, scale: 1 })
+    useStore.getState().setCamera({ x: 12, y: -8, scale: 0.25 })
+    // The camera write is a trailing debounce: nothing lands until the flush.
+    expect(store.has(VIEW_KEY)).toBe(false)
+    flushViewWrites()
+    useStore.getState().setBasemap('sat')
+    useStore.getState().setRightTab('analysis')
+    useTeStore.getState().setWorkspace('ops')
+    expect(JSON.parse(store.get(VIEW_KEY)!)).toEqual({
+      camera: { x: 12, y: -8, scale: 0.25 },
+      basemap: 'sat',
+      rightTab: 'analysis',
+      workspace: 'ops',
+    })
+    expect(savedView()).toEqual({
+      camera: { x: 12, y: -8, scale: 0.25 },
+      basemap: 'sat',
+      rightTab: 'analysis',
+      workspace: 'ops',
+    })
+    useTeStore.getState().setWorkspace('board')
+  })
+
+  it('drops an invalid field and keeps the others', () => {
+    stubStorage({
+      [VIEW_KEY]: JSON.stringify({ camera: { x: 1, y: 2, scale: 0 }, basemap: 'sat', rightTab: 'nope' }),
+    })
+    expect(savedView()).toEqual({ basemap: 'sat' })
+  })
+
+  it('is empty on unreadable data', () => {
+    stubStorage({ [VIEW_KEY]: 'not json' })
+    expect(savedView()).toEqual({})
+  })
+
+  it('the camera debounce writes only the last camera after the delay', () => {
+    vi.useFakeTimers()
+    const store = stubStorage()
+    useStore.getState().setCamera({ x: 1, y: 1, scale: 1 })
+    useStore.getState().setCamera({ x: 2, y: 2, scale: 2 })
+    vi.advanceTimersByTime(249)
+    expect(store.has(VIEW_KEY)).toBe(false)
+    vi.advanceTimersByTime(1)
+    expect(savedView().camera).toEqual({ x: 2, y: 2, scale: 2 })
+    vi.useRealTimers()
+  })
+})
+
+describe('loadScenario camera fit', () => {
+  beforeEach(reset)
+  afterEach(() => vi.unstubAllGlobals())
+
+  function placed(): Scenario {
+    const s = emptyScenario()
+    s.entities.push({
+      id: 'ent-a',
+      name: 'A',
+      kind: 'asset',
+      specId: null,
+      pos: { x: 40000, y: 40000 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    })
+    return s
+  }
+
+  it('fits to the entities when no camera is saved', () => {
+    stubStorage()
+    const before = useStore.getState().camera
+    useStore.getState().loadScenario(placed())
+    expect(useStore.getState().camera).not.toEqual(before)
+  })
+
+  it('keeps a saved camera by default and fits with { fit: "always" }', () => {
+    const saved = { x: 5, y: 5, scale: 0.5 }
+    stubStorage({ [VIEW_KEY]: JSON.stringify({ camera: saved }) })
+    useStore.getState().setCamera(saved)
+    useStore.getState().loadScenario(placed())
+    expect(useStore.getState().camera).toEqual(saved)
+    useStore.getState().loadScenario(placed(), { fit: 'always' })
+    expect(useStore.getState().camera).not.toEqual(saved)
+  })
+
+  it('does not move the camera for an empty scenario', () => {
+    stubStorage()
+    const before = useStore.getState().camera
+    useStore.getState().loadScenario(emptyScenario(), { fit: 'always' })
+    expect(useStore.getState().camera).toEqual(before)
+  })
+})
+
+
+describe('run sequence persistence', () => {
+  beforeEach(reset)
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('reads the saved sequence and falls back to 1', () => {
+    stubStorage({ [RUNSEQ_KEY]: '7' })
+    expect(savedRunSeq()).toBe(7)
+    stubStorage({ [RUNSEQ_KEY]: 'x' })
+    expect(savedRunSeq()).toBe(1)
+    stubStorage()
+    expect(savedRunSeq()).toBe(1)
+  })
+
+  it('a manual reset writes the new sequence; a configuration change writes nothing', () => {
+    const store = stubStorage()
+    const seq = useStore.getState().playback.runSeq
+    useStore.getState().resetRun('manual')
+    expect(useStore.getState().playback.runSeq).toBe(seq + 1)
+    expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 1))
+    useStore.getState().startRun()
+    useStore.getState().advanceRun(5)
+    useStore.getState().updateEnvironment({ windSpeedMps: 9 })
+    expect(useStore.getState().playback.resetReason).toBe('configuration-changed')
+    expect(useStore.getState().playback.runSeq).toBe(seq + 1)
+    // The started run consumed its number: the next startup gets the one after.
+    expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 2))
+  })
+
+  it('the first start of a run reserves the next number for the next startup', () => {
+    const store = stubStorage()
+    const seq = useStore.getState().playback.runSeq
+    useStore.getState().startRun()
+    expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 1))
+    useStore.getState().pauseRun()
+    useStore.getState().startRun()
+    expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 1))
+  })
+})
+
+describe('applyFrame', () => {
+  beforeEach(reset)
+
+  it('extends the observation horizon so play resumes from the frame', () => {
+    const st = useStore.getState()
+    st.scrubTo(30)
+    st.saveFrame('mid-run')
+    const id = useStore.getState().scenario.frames[0].id
+    useStore.getState().scrubTo(0)
+    useStore.getState().applyFrame(id)
+    const p = useStore.getState().playback
+    expect(p.simTimeS).toBe(30)
+    expect(p.observedThroughS).toBe(30)
+    expect(p.phase).toBe('review')
+    expect(p.startedAtMs).not.toBeNull()
+    useStore.getState().startRun()
+    expect(useStore.getState().playback.simTimeS).toBe(30)
+    expect(useStore.getState().playback.phase).toBe('running')
+  })
+
+  it('keeps a T0 frame on a run that never started in the ready phase', () => {
+    useStore.getState().saveFrame('start')
+    const id = useStore.getState().scenario.frames[0].id
+    useStore.getState().applyFrame(id)
+    const p = useStore.getState().playback
+    expect(p.phase).toBe('ready')
+    expect(p.startedAtMs).toBeNull()
+    expect(p.observedThroughS).toBe(0)
   })
 })
