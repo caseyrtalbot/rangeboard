@@ -79,6 +79,12 @@
   --warn: var(--status-warning);
   /* EW/jam channel: the sensor-blue family, distinct from good/warn/danger. */
   --ew: #7da7c4;
+  /* Chart series slots, assigned by first detection (charts/tokens.ts). */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
   /* Directed-energy channel: muted steel, so a DE burst never reads as an EW
      salvo, as a plain denominator, or as a warning. */
   --de: #9aa8b0;
@@ -3514,6 +3520,106 @@ select.nu-unit {
 
 .engstrip-tip .name {
   color: var(--text);
+}
+
+/* ---------- Chart kit ---------- */
+
+.chart {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+}
+
+.chart-ylabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  padding-left: 30px;
+  line-height: 1.2;
+}
+
+.chart-scrub {
+  cursor: col-resize;
+}
+
+/* A mouse click focuses the Recharts surface; keep the ring for keyboard focus only. */
+.chart-plot .recharts-wrapper:focus:not(:focus-visible),
+.chart-plot .recharts-surface:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: var(--space-1);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.chart-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+
+.chart-tooltip {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.chart-tooltip-time {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.chart-tooltip-row i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+.chart-tooltip-row b {
+  margin-left: auto;
+  padding-left: var(--space-3);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-ladder {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-ladder-svg {
+  display: block;
+  max-width: 100%;
 }
 
 /* ---------- Analysis operational picture and run evidence ---------- */

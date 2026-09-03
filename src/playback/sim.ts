@@ -547,7 +547,8 @@ export interface ThreatAssessment {
   effectorWindows: Array<{ effectorId: string; intervals: Array<[number, number]> }>
 }
 
-const DT = 0.5
+/** Engine sample step, seconds. The one DT source for the sweep, the series builders and the chart kit. */
+export const DT = 0.5
 
 /** Tolerance for a nominal scan time landing on the DT grid, seconds. */
 const SCAN_EPS = 1e-6

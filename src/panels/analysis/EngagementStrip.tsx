@@ -4,6 +4,7 @@ import type { ImpactSeverity, Scenario } from '../../model/types'
 import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
 import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
+import { tickStepS } from '../../charts/timeAxis'
 
 const OPEN_KEY = ENGSTRIP_OPEN_KEY
 
@@ -118,13 +119,6 @@ function visibleLanes(lanes: Lane[], openGroups: Set<string>): Lane[] {
     if (openGroups.has(base)) out.push(...members)
   }
   return out
-}
-
-const TICK_STEPS = [10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600]
-
-function tickStepS(durationS: number, widthPx: number): number {
-  for (const s of TICK_STEPS) if ((s / durationS) * widthPx >= 70) return s
-  return 7200
 }
 
 function tipText(l: Lane): string {
