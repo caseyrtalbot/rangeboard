@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { EnvironmentSpec, SensorSpec, UasSpec } from '../model/types'
-import { defaultEnvironment } from '../model/seed'
-import { RADAR_REF_RCS_M2, RCS_PLANNING_M2, rcsM2For } from '../model/rcsFactors'
+import { defaultEnvironment, emptyScenario } from '../model/seed'
+import { RADAR_REF_RCS_M2, RCS_PLANNING_M2, rcsM2For, swerlingFor } from '../model/rcsFactors'
+import { groundRangeM } from '../geometry/slant'
+import { pdAtRange, rangeForPd, snrAtRange, snrForPd } from './radarPd'
 import {
   ACOUSTIC_PLANNING_DB,
   IR_SIGNATURE_FACTOR,
@@ -22,6 +24,9 @@ import {
   eoRangeFactor,
   jammable,
   NIGHT_VISIBLE_FACTOR,
+  pdContoursM,
+  radarCalibration,
+  radarPdAt,
   rcsRangeFactor,
   refRcsM2For,
   rfCanHear,
@@ -463,5 +468,128 @@ describe('vertical geometry gates', () => {
     expect(effectorGeometryGate({ ...eff, maxAltitudeFt: 20000 }, HIGH_M)).toBe('ok')
     expect(effectorGeometryGate({ ...eff, maxAltitudeFt: null }, HIGH_M)).toBe('ok')
     expect(effectorGeometryGate(eff, HIGH_M)).toBe('ok')
+  })
+})
+
+describe('radar Pd model', () => {
+  const clear = env({})
+  const rain = env({ precipitation: 'rain' })
+  const M_RAIN = SENSOR_ENV_MODEL.rain.radar
+  /** Today's law, before the Pd model: placard x fourth root of the RCS ratio x environment. */
+  const fourthRoot = (target: UasSpec | undefined, m: number) =>
+    RADAR.detectRangeM * (target ? Math.pow(rcsM2For(target) / RADAR_REF_RCS_M2, 0.25) : 1) * m
+  const relClose = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1e-9 * b)
+  const library = emptyScenario().library
+  const GIRAFFE = library.find((m) => m.id === 'lib-giraffe1x')!.sensor!
+  const MOHAJER = library.find((m) => m.id === 'lib-mohajer6')!.uas!
+
+  it('radarCalibration reads the placard: detect range, reference RCS, PF Pd, Pfa and case', () => {
+    expect(radarCalibration(RADAR)).toEqual({
+      r0M: 10000,
+      rcs0M2: 0.01,
+      pd0: 0.5,
+      pfa: 1e-6,
+      swerling0: 1,
+    })
+    expect(radarCalibration({ ...RADAR, refRcsM2: 0.1, placardPd: 0.8, pfa: 1e-4 })).toEqual({
+      r0M: 10000,
+      rcs0M2: 0.1,
+      pd0: 0.8,
+      pfa: 1e-4,
+      swerling0: 1,
+    })
+    // A Pd or Pfa outside (0, 1) is not a probability: the planning factor stands in.
+    expect(radarCalibration({ ...RADAR, placardPd: 1, pfa: 0 })).toMatchObject({ pd0: 0.5, pfa: 1e-6 })
+  })
+
+  it('with defaults, a Swerling 1 target returns the pre-slice fourth-root value to 1e-9 relative', () => {
+    // Quad airframes resolve to Swerling 1, the placard case, so the SNR ratio is exactly 1.
+    relClose(effectiveDetectRangeM(RADAR, clear), fourthRoot(undefined, 1))
+    relClose(effectiveDetectRangeM(RADAR, clear, uas({ group: 1 })), fourthRoot(uas({ group: 1 }), 1))
+    relClose(effectiveDetectRangeM(RADAR, clear, uas({ group: 3 })), fourthRoot(uas({ group: 3 }), 1))
+    relClose(effectiveDetectRangeM(RADAR, rain, uas({ group: 3 })), fourthRoot(uas({ group: 3 }), M_RAIN))
+    relClose(effectiveDetectRangeM(RADAR, clear, uas({ group: 3 }), 0.5), fourthRoot(uas({ group: 3 }), 1))
+  })
+
+  it('the environment multiplier enters the SNR as the fourth power', () => {
+    const t = uas({ group: 3 })
+    const cal = radarCalibration(RADAR)
+    expect(snrAtRange(cal, 0.2, 8000, M_RAIN)).toBeCloseTo(
+      snrAtRange(cal, 0.2, 8000, 1) * Math.pow(M_RAIN, 4),
+      9,
+    )
+    // Rain at R reads the same Pd as clear air at R / m.
+    expect(radarPdAt(RADAR, rain, t, 9000)).toBeCloseTo(radarPdAt(RADAR, clear, t, 9000 / M_RAIN)!, 9)
+  })
+
+  it('radarPdAt is null without a Pd model, 0 beyond the instrumented range, and falls with range', () => {
+    const t = uas({ group: 3 })
+    expect(radarPdAt(EO, clear, t, 1000)).toBeNull()
+    expect(radarPdAt({ ...RADAR, rangeBasis: 'planning' }, clear, t, 1000)).toBeNull()
+    expect(radarPdAt(RADAR, clear, undefined, 1000)).toBeNull()
+    const capped: SensorSpec = { ...RADAR, instrumentedRangeM: 12000 }
+    expect(radarPdAt(capped, clear, t, 12001)).toBe(0)
+    expect(radarPdAt(capped, clear, t, 12000)).toBeGreaterThan(0)
+    let last = 1
+    for (let r = 1000; r <= 30000; r += 1000) {
+      const pd = radarPdAt(RADAR, clear, t, r)!
+      expect(pd).toBeLessThan(last)
+      last = pd
+    }
+    // At the placard range against the placard target the placard Pd comes back.
+    expect(radarPdAt(RADAR, clear, uas({ group: 1 }), 10000)).toBeCloseTo(0.5, 12)
+  })
+
+  it('effectiveDetectRangeM at pd is rangeForPd; a planning-basis radar ignores pd', () => {
+    const t = uas({ group: 3 })
+    const cal = radarCalibration(RADAR)
+    expect(effectiveDetectRangeM(RADAR, rain, t, 0.9)).toBe(
+      rangeForPd(cal, rcsM2For(t), 0.9, M_RAIN, swerlingFor(t)),
+    )
+    expect(effectiveDetectRangeM(RADAR, clear, t, 0.9)).toBeLessThan(effectiveDetectRangeM(RADAR, clear, t))
+    const capped: SensorSpec = { ...RADAR, instrumentedRangeM: 9000 }
+    expect(effectiveDetectRangeM(capped, clear, t, 0.1)).toBe(9000)
+    const plan: SensorSpec = { ...RADAR, rangeBasis: 'planning' }
+    expect(effectiveDetectRangeM(plan, clear, t, 0.9)).toBe(10000)
+    expect(effectiveDetectRangeM(plan, clear, t, 0.1)).toBe(10000)
+    // A pd outside (0, 1) is not a contour: it reads as the placard Pd, never Infinity.
+    expect(effectiveDetectRangeM(RADAR, clear, t, 0)).toBe(effectiveDetectRangeM(RADAR, clear, t))
+    expect(pdContoursM(RADAR, clear, t, [0, 1])).toEqual([
+      effectiveDetectRangeM(RADAR, clear, t),
+      effectiveDetectRangeM(RADAR, clear, t),
+    ])
+  })
+
+  it('pdContoursM: Giraffe 1X vs Mohajer-6 at Pd 0.5 and 0.9', () => {
+    // Placard 4000 m at 0.01 m2, Pd 0.5, Pfa 1e-6, case 1: snr0 = ln(1e-6) / ln(0.5) - 1 = 18.9316.
+    // Mohajer-6: 1 m2 (ratio 100), fixed-wing so Swerling 3.
+    //   Pd 0.5 case 3 needs SNR 15.6809 (11.954 dB): R = 4000 * (100 * 18.9316 / 15.6809)^0.25 = 13,259.09 m.
+    //   Pd 0.9 case 3 needs SNR 53.6532 (17.296 dB): R = 4000 * (100 * 18.9316 / 53.6532)^0.25 = 9,748.95 m.
+    expect(swerlingFor(MOHAJER)).toBe(3)
+    const [r50, r90] = pdContoursM(GIRAFFE, clear, MOHAJER, [0.5, 0.9])
+    expect(r50).toBeCloseTo(13259.09, 2)
+    expect(r90).toBeCloseTo(9748.95, 2)
+    expect(snrForPd(0.5, 1e-6, 3)).toBeCloseTo(15.6809, 4)
+    expect(snrForPd(0.9, 1e-6, 3)).toBeCloseTo(53.6532, 4)
+    // Ground projection from a 4 m mast to 14,000 ft: 12,555.02 m and 8,767.39 m.
+    const dAlt = 14000 * FT_TO_M - 4
+    expect(groundRangeM(r50, dAlt)).toBeCloseTo(12555.02, 2)
+    expect(groundRangeM(r90, dAlt)).toBeCloseTo(8767.39, 2)
+    // Forced to the placard case the 0.5 contour is the fourth-root value, 12,649.11 m; 0.9 is 7,812.06 m.
+    const [c50, c90] = pdContoursM(GIRAFFE, clear, { ...MOHAJER, swerling: 1 }, [0.5, 0.9])
+    expect(c50).toBeCloseTo(4000 * Math.pow(100, 0.25), 9)
+    expect(c90).toBeCloseTo(7812.06, 2)
+    // EO/IR has no Pd model: every contour is the one effective range.
+    const eoM = effectiveDetectRangeM(EO, clear, MOHAJER)
+    expect(pdContoursM(EO, clear, MOHAJER, [0.5, 0.9])).toEqual([eoM, eoM])
+  })
+
+  it('a fixed-wing target (Swerling 3) reads 4.8 percent farther than the fourth-root law at Pd 0.5', () => {
+    // Intended model (D11): the placard is quoted for a case 1 target, and a case 3 target needs
+    // 11.954 dB instead of 12.772 dB for Pd 0.5 at Pfa 1e-6, so (18.9316 / 15.6809)^0.25 = 1.04822.
+    const fw = uas({ group: 3, airframe: 'fixed-wing' })
+    const ratio = effectiveDetectRangeM(RADAR, clear, fw) / fourthRoot(fw, 1)
+    expect(ratio).toBeCloseTo(1.04822, 5)
+    expect(pdAtRange(radarCalibration(RADAR), rcsM2For(fw), fourthRoot(fw, 1), 1, 3)).toBeCloseTo(0.586, 3)
   })
 })

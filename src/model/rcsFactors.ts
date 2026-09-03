@@ -17,7 +17,8 @@
  *   HENSOLDT SPEXER 2000: UAV (0.2 m2 per trade reporting) 9 km, micro-UAV
  *   6 km, which back-solves to about 0.04 m2 for the micro-UAV line.
  */
-import type { UasGroup, UasSpec } from './types'
+import type { SwerlingCase, UasGroup, UasSpec } from './types'
+import { PLACARD_SWERLING, SWERLING_BY_AIRFRAME } from './types'
 
 /**
  * The RCS at which seed radar detect ranges are quoted when the source names
@@ -38,4 +39,11 @@ export const RCS_PLANNING_M2: Record<UasGroup, number> = {
 export function rcsM2For(uas: UasSpec): number {
   if (uas.rcsM2 != null && Number.isFinite(uas.rcsM2) && uas.rcsM2 > 0) return uas.rcsM2
   return RCS_PLANNING_M2[uas.group] ?? RADAR_REF_RCS_M2
+}
+
+/** Fluctuation case for a threat: spec value first, then the airframe planning factor. */
+export function swerlingFor(uas: UasSpec): SwerlingCase {
+  const sw = uas.swerling
+  if (sw === 0 || sw === 1 || sw === 3) return sw
+  return SWERLING_BY_AIRFRAME[uas.airframe] ?? PLACARD_SWERLING
 }

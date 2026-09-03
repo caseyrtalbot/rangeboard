@@ -8,8 +8,14 @@ import type {
   SensorType,
   UasSpec,
 } from '../model/types'
-import { JAM_BANDS, defaultSensorRole } from '../model/types'
-import { RADAR_REF_RCS_M2, rcsM2For } from '../model/rcsFactors'
+import {
+  JAM_BANDS,
+  PLACARD_PD,
+  PLACARD_PFA,
+  PLACARD_SWERLING,
+  defaultSensorRole,
+} from '../model/types'
+import { RADAR_REF_RCS_M2, rcsM2For, swerlingFor } from '../model/rcsFactors'
 import {
   ACOUSTIC_REF_DB,
   EO_REF_SPAN_M,
@@ -20,6 +26,8 @@ import {
 } from '../model/signatureFactors'
 import { targetLinkBands } from './ewPhysics'
 import { elevationDeg, radioHorizonM } from '../geometry/slant'
+import type { RadarCalibration } from './radarPd'
+import { pdAtRange, rangeForPd } from './radarPd'
 
 /**
  * Sensor performance under environmental covariates and target effects.
@@ -118,10 +126,71 @@ export function rcsRangeFactor(spec: SensorSpec, target: UasSpec | undefined): n
   return Math.pow(rcsM2For(target) / refRcsM2For(spec), 0.25)
 }
 
+/** The instrumented range when the spec records one, else null. */
+function instrumentedM(spec: SensorSpec): number | null {
+  const cap = spec.instrumentedRangeM
+  return cap != null && Number.isFinite(cap) && cap > 0 ? cap : null
+}
+
 /** Cap at the radar's instrumented range: nothing is reported beyond what the radar processes. */
 function capInstrumented(spec: SensorSpec, rangeM: number): number {
-  const cap = spec.instrumentedRangeM
-  return cap != null && Number.isFinite(cap) && cap > 0 ? Math.min(rangeM, cap) : rangeM
+  const cap = instrumentedM(spec)
+  return cap != null ? Math.min(rangeM, cap) : rangeM
+}
+
+/** A probability strictly inside (0, 1), else the fallback. */
+function probabilityOr(p: number | null | undefined, fallback: number): number {
+  return p != null && Number.isFinite(p) && p > 0 && p < 1 ? p : fallback
+}
+
+/**
+ * Placard calibration of one radar: r0M = detectRangeM, rcs0M2 =
+ * refRcsM2For(spec), pd0 = placardPd ?? PLACARD_PD, pfa = pfa ?? PLACARD_PFA,
+ * swerling0 = PLACARD_SWERLING. A recorded Pd or Pfa outside (0, 1) falls
+ * back to the planning factor.
+ */
+export function radarCalibration(spec: SensorSpec): RadarCalibration {
+  return {
+    r0M: spec.detectRangeM,
+    rcs0M2: refRcsM2For(spec),
+    pd0: probabilityOr(spec.placardPd, PLACARD_PD),
+    pfa: probabilityOr(spec.pfa, PLACARD_PFA),
+    swerling0: PLACARD_SWERLING,
+  }
+}
+
+/**
+ * True when the Pd model applies: a radar whose detect range is a sourced
+ * figure, against a known target. A planning-basis radar skips the Pd model
+ * exactly as it skips RCS scaling.
+ */
+export function radarPdModeled(spec: SensorSpec, target: UasSpec | undefined): target is UasSpec {
+  return spec.sensorType === 'radar' && !!target && targetScaled(spec)
+}
+
+/**
+ * Single-scan Pd of one radar against one target at one slant range. Null
+ * when the sensor is not a radar, has a 'planning' range basis, or has no
+ * target. 0 beyond instrumentedRangeM. The environment multiplier enters
+ * the SNR as the fourth power (through sensorEnvFactor('radar', env)). The
+ * ONE Pd evaluation: the sweep, the board and the inspector all read it.
+ */
+export function radarPdAt(
+  spec: SensorSpec,
+  env: EnvironmentSpec,
+  target: UasSpec | undefined,
+  slantM: number,
+): number | null {
+  if (!radarPdModeled(spec, target)) return null
+  const cap = instrumentedM(spec)
+  if (cap != null && slantM > cap) return 0
+  return pdAtRange(
+    radarCalibration(spec),
+    rcsM2For(target),
+    slantM,
+    sensorEnvFactor('radar', env),
+    swerlingFor(target),
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -418,14 +487,46 @@ function effectiveRangeM(
  * (radar RCS, EO/IR span and thermal class, acoustic source level, RF band
  * coverage handled by the hold gate), environment derates, and the caps
  * (instrumented range, meteorological visibility). Pass no target for the
- * placard range against the reference condition.
+ * placard range against the reference condition. A sourced-basis radar with
+ * a target reads the Pd model: rangeForPd at `pd`, default the placard Pd,
+ * so a call with no `pd` returns the fourth-root law. Other technologies
+ * and planning-basis radars keep their law and ignore `pd`.
  */
 export function effectiveDetectRangeM(
   spec: SensorSpec,
   env: EnvironmentSpec,
   target?: UasSpec,
+  pd?: number,
 ): number {
+  if (radarPdModeled(spec, target)) {
+    // The placard is one point on the Pd curve; the range at `pd` follows
+    // from the calibration. At the placard Pd against a placard-case target
+    // this is exactly the fourth-root RCS law.
+    const cal = radarCalibration(spec)
+    const r = rangeForPd(
+      cal,
+      rcsM2For(target),
+      probabilityOr(pd, cal.pd0),
+      sensorEnvFactor('radar', env),
+      swerlingFor(target),
+    )
+    return capInstrumented(spec, r)
+  }
   return effectiveRangeM(spec, spec.detectRangeM, env, target)
+}
+
+/**
+ * Slant ranges of the Pd contours, one per entry of `pds`, capped like
+ * effectiveDetectRangeM. Non-radar and planning-basis sensors return the
+ * same effective range for every entry.
+ */
+export function pdContoursM(
+  spec: SensorSpec,
+  env: EnvironmentSpec,
+  target: UasSpec | undefined,
+  pds: number[],
+): number[] {
+  return pds.map((pd) => effectiveDetectRangeM(spec, env, target, pd))
 }
 
 /** Classify range under the same effects. Null when the sensor cannot classify. */

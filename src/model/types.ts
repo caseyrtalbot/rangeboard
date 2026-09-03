@@ -55,6 +55,10 @@ export interface SensorSpec {
    * large or loud it is. Null when the public record gives no figure (no cap).
    */
   instrumentedRangeM?: number | null
+  /** Radar only: Pd at which detectRangeM is quoted against refRcsM2. Absent: PLACARD_PD (PF). */
+  placardPd?: number | null
+  /** Radar only: false-alarm probability the placard assumes. Absent: PLACARD_PFA (PF). */
+  pfa?: number | null
   /**
    * Doctrine: continuous hold this sensor needs to initiate a stable track
    * file, seconds. Absent: the TRACK_INIT_S role table in doctrineFactors.ts.
@@ -96,6 +100,23 @@ export type EoBand = 'visible' | 'thermal' | 'dual'
 
 /** Detect-range provenance; see SensorSpec.rangeBasis. */
 export type RangeBasis = 'sourced' | 'planning'
+
+/**
+ * Radar target fluctuation model (Swerling, 1960): 0 = non-fluctuating,
+ * 1 = many equal scatterers, scan-to-scan decorrelated (chi-square, 2 dof),
+ * 3 = one dominant scatterer plus small ones (chi-square, 4 dof). Cases 2
+ * and 4 are pulse-to-pulse variants that a single-scan Pd does not separate.
+ */
+export type SwerlingCase = 0 | 1 | 3
+
+/** Pd at which a radar placard range is quoted when the source states none. PF. */
+export const PLACARD_PD = 0.5
+
+/** False-alarm probability a radar placard assumes when the source states none. PF. */
+export const PLACARD_PFA = 1e-6
+
+/** Fluctuation case of the placard's reference target (a Group 1 multirotor), PF until slice 9 verifies a datasheet. */
+export const PLACARD_SWERLING: SwerlingCase = 1
 
 /** Thermal contrast class of a threat airframe; see UasSpec.irSignature. */
 export type IrSignature = 'low' | 'medium' | 'high'
@@ -152,6 +173,8 @@ export interface UasSpec {
    * signature data. Absent means the group tier.
    */
   rcsM2?: number | null
+  /** Fluctuation model. Absent: SWERLING_BY_AIRFRAME[airframe] (PF). */
+  swerling?: SwerlingCase | null
   /**
    * PLANNING FACTOR characteristic dimension, meters: wingspan, or the
    * motor-to-motor diagonal for a multirotor. Sets each EO/IR sensor's range
@@ -235,6 +258,19 @@ export interface UasSpec {
 export function defaultJamBehavior(uas: UasSpec): JamBehavior {
   if (uas.jamBehavior) return uas.jamBehavior
   return uas.navMode === 'mixed' ? 'continue' : 'drift'
+}
+
+/**
+ * Fluctuation case by airframe when the model states none. PF: a multirotor
+ * or a small body returns many comparable scatterers (Swerling 1); a fixed
+ * wing carries one dominant scatterer, the fuselage or engine (Swerling 3).
+ */
+export const SWERLING_BY_AIRFRAME: Record<UasSpec['airframe'], SwerlingCase> = {
+  quad: 1,
+  vtol: 1,
+  'one-way-attack': 1,
+  fpv: 1,
+  'fixed-wing': 3,
 }
 
 export interface EffectorSpec {
@@ -818,6 +854,10 @@ export interface RequirementThresholds {
    * requirement, so the Detect gate scores detection only.
    */
   minWarningS: number | null
+  /** Single-scan Pd at which a radar contact counts as DETECT. */
+  pdDetect: number
+  /** M-of-N cumulative probability at which a radar contact counts as TRACK. */
+  pdTrackCumulative: number
 }
 
 /**
@@ -827,6 +867,8 @@ export interface RequirementThresholds {
 export const DEFAULT_REQUIREMENT_THRESHOLDS: RequirementThresholds = {
   maxResidualPerTrack: 0.1,
   minWarningS: null,
+  pdDetect: 0.5,
+  pdTrackCumulative: 0.9,
 }
 
 export interface Scenario {

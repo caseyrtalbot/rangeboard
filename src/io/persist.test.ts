@@ -211,22 +211,22 @@ describe('requirement threshold load fill', () => {
     const s = emptyScenario()
     delete (s as { requirements?: unknown }).requirements
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: null })
+    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: null, pdDetect: 0.5, pdTrackCumulative: 0.9 })
     expect(out.schemaVersion).toBe(1)
   })
 
   it('keeps saved thresholds', () => {
     const s = emptyScenario()
-    s.requirements = { maxResidualPerTrack: 0.02, minWarningS: 120 }
+    s.requirements = { maxResidualPerTrack: 0.02, minWarningS: 120, pdDetect: 0.8, pdTrackCumulative: 0.95 }
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.02, minWarningS: 120 })
+    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.02, minWarningS: 120, pdDetect: 0.8, pdTrackCumulative: 0.95 })
   })
 
   it('fills only the missing threshold when a save carries one of them', () => {
     const s = emptyScenario()
     s.requirements = { minWarningS: 90 } as Scenario['requirements']
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: 90 })
+    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: 90, pdDetect: 0.5, pdTrackCumulative: 0.9 })
   })
 })
 

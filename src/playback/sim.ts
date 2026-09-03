@@ -7,7 +7,13 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
+import {
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  defaultSensorRole,
+  effectiveDoctrine,
+  entityActive,
+  mountHeightOf,
+} from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
@@ -20,6 +26,8 @@ import {
   effectorGeometryGate,
   eoIrNeedsCue,
   jammable,
+  radarPdAt,
+  radarPdModeled,
   sensorGeometryGate,
   sensorHoldGate,
 } from '../analysis/sensorEnv'
@@ -100,17 +108,51 @@ export interface DetectionHit {
   resolved: boolean
   /** Slant range from the phase center to the nearest detected member, meters. */
   slantM: number
+  /** Single-scan Pd of the nearest detected member; null when the sensor has no Pd model. */
+  pd: number | null
+}
+
+/** Single-scan Pd a radar contact must reach to count as DETECT: the test's threshold, never an engine constant. */
+function pdDetectOf(scenario: Scenario): number {
+  const pd = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }.pdDetect
+  // A saved 0 would detect every admitted member out to the instrumented cap.
+  return pd > 0 && pd < 1 ? pd : DEFAULT_REQUIREMENT_THRESHOLDS.pdDetect
+}
+
+/**
+ * Slant ranges, ascending, of the members the vertical geometry gate
+ * (sensorGeometryGate: ceiling, radio horizon, elevation limits) and the
+ * azimuth wedge on the ground plane admit. The one member loop: the hit
+ * test and the Pd probe both read it.
+ */
+function admittedSlantsM(
+  sensor: Entity,
+  spec: SensorSpec,
+  altitudeFt: number,
+  members: Vec2[],
+): number[] {
+  const sensorHeightM = mountHeightOf(spec)
+  const altM = altitudeFt * FT_TO_M
+  const seen: number[] = []
+  for (const m of members) {
+    const groundM = dist(sensor.pos, m)
+    if (sensorGeometryGate(spec, sensorHeightM, altM, groundM) !== 'ok') continue
+    if (!pointInWedge(sensor.pos, sensor.headingDeg, spec.sectorDeg, m)) continue
+    seen.push(slantRangeM(groundM, altM - sensorHeightM))
+  }
+  return seen.sort((a, b) => a - b)
 }
 
 /**
  * One sensor's hit on one threat at an instant, or null.
  * The hold gate (sensorHoldGate) decides technology eligibility: RF silence,
  * RF band coverage, a zero range, and the EO/IR cue rule (a needs-cue sensor
- * holds only when cued=true). Then, per member, the vertical geometry gate
- * (sensorGeometryGate: ceiling, radio horizon, elevation limits), the
- * azimuth wedge on the ground plane, and the slant range from the phase
- * center against the effective range for this target (environment derates,
- * radar RCS, EO/IR span, acoustic level) decide geometry.
+ * holds only when cued=true). Then, per member, the geometry gate and the
+ * wedge (admittedSlantsM) decide who is in view, and the slant range from
+ * the phase center decides detection: a sourced-basis radar with a target
+ * reads the Pd model (radarPdAt at or above the test's pdDetect threshold);
+ * every other sensor compares slant range with the effective range for this
+ * target (environment derates, EO/IR span, acoustic level).
  */
 function sensorHit(
   sensor: Entity,
@@ -125,32 +167,51 @@ function sensorHit(
   const gate = sensorHoldGate(spec, uasSpec)
   if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
   const env = scenario.environment
-  const detectR = effectiveDetectRangeM(spec, env, uasSpec)
-  if (!(detectR > 0)) return null
-  const sensorHeightM = mountHeightOf(spec)
-  const altM = altitudeFt * FT_TO_M
-  // Members the sensor can see at all: geometry gate and wedge, with the
-  // slant range each one presents. The range tests read this list.
-  const seen: number[] = []
-  for (const m of members) {
-    const groundM = dist(sensor.pos, m)
-    if (sensorGeometryGate(spec, sensorHeightM, altM, groundM) !== 'ok') continue
-    if (!pointInWedge(sensor.pos, sensor.headingDeg, spec.sectorDeg, m)) continue
-    seen.push(slantRangeM(groundM, altM - sensorHeightM))
+  const seen = admittedSlantsM(sensor, spec, altitudeFt, members)
+  let detected: number[]
+  if (radarPdModeled(spec, uasSpec)) {
+    const pdDetect = pdDetectOf(scenario)
+    detected = seen.filter((slant) => radarPdAt(spec, env, uasSpec, slant)! >= pdDetect)
+  } else {
+    const detectR = effectiveDetectRangeM(spec, env, uasSpec)
+    if (!(detectR > 0)) return null
+    detected = seen.filter((slant) => slant <= detectR)
   }
-  const detected = seen.filter((slant) => slant <= detectR)
   if (detected.length === 0) return null
   const classifyR = effectiveClassifyRangeM(spec, env, uasSpec)
   const classified = classifyR != null && detected.some((slant) => slant <= classifyR)
   const f = formation
   const resolved = !(f && f.count > 1 && spec.resolutionM != null && f.spacingM < spec.resolutionM)
+  const slantM = detected[0]
   return {
     sensorId: sensor.id,
     sensorType: spec.sensorType,
     classified,
     resolved,
-    slantM: Math.min(...detected),
+    slantM,
+    pd: radarPdAt(spec, env, uasSpec, slantM),
   }
+}
+
+/**
+ * Single-scan Pd a radar reads on the nearest member the geometry gate and
+ * the wedge admit, whether or not it clears the detect threshold: 0 when no
+ * member is admitted or every admitted member is beyond the instrumented
+ * range. Null when the sensor has no Pd model. Feeds the sweep's pdSeries.
+ */
+function radarPdProbe(
+  sensor: Entity,
+  spec: SensorSpec,
+  scenario: Scenario,
+  uasSpec: UasSpec | undefined,
+  altitudeFt: number,
+  members: Vec2[],
+): number | null {
+  if (!radarPdModeled(spec, uasSpec)) return null
+  if (sensorHoldGate(spec, uasSpec) !== 'ok') return null
+  const seen = admittedSlantsM(sensor, spec, altitudeFt, members)
+  if (seen.length === 0) return 0
+  return radarPdAt(spec, scenario.environment, uasSpec, seen[0])
 }
 
 /**
@@ -324,6 +385,12 @@ export interface SensorObservation {
   minSlantM: number
   /** Inclusive 0.5 s hold intervals, split whenever the sensor loses the track. */
   intervals: Array<[number, number]>
+  /**
+   * Radar only: single-scan Pd at each DT step from firstDetectS, index 0 =
+   * firstDetectS, through the path end. Below-threshold steps included, so
+   * a chart shows the fade.
+   */
+  pdSeries?: number[]
 }
 
 /** Track continuity from first detection through closest approach/path end. */
@@ -695,6 +762,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const speed = pathSpeed(scenario, path)
   const duration = scenarioDurationS(scenario)
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
+  const sensorById = new Map(sensors.map((e) => [e.id, e]))
   const assets = scenario.entities.filter((e) => e.kind === 'asset')
   // Jammers cannot affect RF-silent, non-GNSS threats (fiber, inertial,
   // optical), and cannot affect a threat whose link bands they do not cover.
@@ -763,6 +831,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
           resolvedEver: false,
           minSlantM: hit.slantM,
           intervals: [],
+          pdSeries: hit.pd == null ? undefined : [],
         }
         sensorObservations.set(hit.sensorId, observation)
       }
@@ -782,6 +851,16 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
         base.firstDetectS = t
         base.firstDetectSensorId = hit.sensorId
       }
+    }
+    // Pd telemetry for every radar that has held this track: one value per
+    // step from first detection, hit or not, so the series shows the fade.
+    for (const observation of sensorObservations.values()) {
+      if (!observation.pdSeries) continue
+      const sensor = sensorById.get(observation.sensorId)
+      const spec = sensor ? modelFor(scenario, sensor)?.sensor : undefined
+      const pd =
+        sensor && spec ? radarPdProbe(sensor, spec, scenario, uasSpec, altitudeFt, members) : null
+      observation.pdSeries.push(pd ?? 0)
     }
     trackSamples.push({ tS: t, held: stepTechs.size > 0 })
     for (const tech of stepTechs) techsSeen.add(tech)

@@ -106,6 +106,8 @@ function uasModel(id: string, patch?: Partial<UasSpec>): SpecModel {
     uas: {
       group: 4,
       airframe: 'fixed-wing',
+      // Placard case, so the Pd model reproduces the fourth-root law exactly.
+      swerling: 1,
       cruiseSpeedMps: 40,
       maxSpeedMps: 60,
       enduranceMin: 60,

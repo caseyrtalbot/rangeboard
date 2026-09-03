@@ -8,7 +8,12 @@ import type {
   FlightPath,
   FormationShape,
 } from '../model/types'
-import { basisFor, entityActive, MOUNT_HEIGHT_M } from '../model/types'
+import {
+  basisFor,
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  entityActive,
+  MOUNT_HEIGHT_M,
+} from '../model/types'
 import { Actions, EmptyState, ObjectHeader, Row, Section, ShortcutList } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
@@ -19,6 +24,7 @@ import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
 import {
   effectiveDetectRangeM,
+  radarCalibration,
   refAcousticDbFor,
   refRcsM2For,
   refSpanMFor,
@@ -27,7 +33,7 @@ import {
 } from '../analysis/sensorEnv'
 import { GATE_WORD } from '../canvas/layers/footprintStyle'
 import type { SensorSpec, SpecModel } from '../model/types'
-import { rcsM2For } from '../model/rcsFactors'
+import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
 import { DEFAULT_DEFENDED_RADIUS_M, threatAltitudeFt } from '../playback/sim'
@@ -104,6 +110,58 @@ function referenceTitle(spec: SensorSpec): string | undefined {
   }
 }
 
+/**
+ * Provenance tag for one spec field. An absent value is always the planning
+ * factor; a recorded value shows the basis of the row that set it.
+ */
+function basisTag(model: SpecModel, field: string, absent: boolean, pfLabel = 'PF'): string {
+  if (absent) return pfLabel
+  const basis = basisFor(model, field)
+  return basis === 'pf' ? 'PF' : basis
+}
+
+/** False-alarm probability as a compact exponent, e.g. 1e-6. */
+function pfaText(pfa: number): string {
+  return pfa.toExponential(0).replace('+', '')
+}
+
+/**
+ * The detection point the placard range is quoted at. A radar range means
+ * nothing without the Pd, the false-alarm probability and the fluctuation
+ * case that go with it, because the range against any other Pd follows from
+ * them.
+ */
+function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
+  // The rows show the values the engine uses. A recorded value the
+  // calibration replaced (absent, or outside (0, 1)) shows as PF.
+  const cal = radarCalibration(spec)
+  return (
+    <>
+      <Row
+        label="Placard Pd"
+        value={cal.pd0}
+        unit={basisTag(model, 'placardPd', spec.placardPd !== cal.pd0)}
+        title="The placard range is quoted at this Pd against the reference RCS."
+        mono
+      />
+      <Row
+        label="Placard Pfa"
+        value={pfaText(cal.pfa)}
+        unit={basisTag(model, 'pfa', spec.pfa !== cal.pfa)}
+        title="False-alarm probability the placard assumes."
+        mono
+      />
+      <Row
+        label="Placard case"
+        value={`Swerling ${cal.swerling0}`}
+        unit="PF"
+        title="Fluctuation case of the reference target."
+        mono
+      />
+    </>
+  )
+}
+
 /** Effective detect range, or the gate word, for each distinct UAS model placed on the board. */
 function AgainstThreats({ spec }: { spec: SensorSpec }) {
   const scenario = useStore((s) => s.scenario)
@@ -118,14 +176,21 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
   }
   if (models.length === 0) return null
   const planning = !targetScaled(spec)
+  const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
+  // Only a target-scaled radar runs the Pd model, so only it names the threshold.
+  const atPd = spec.sensorType === 'radar' && !planning
   return (
     <>
-      <p className="muted small">Against threats on the board</p>
+      <p className="muted small">
+        {atPd
+          ? `Against threats on the board, at detect Pd ${thresholds.pdDetect}`
+          : 'Against threats on the board'}
+      </p>
       {models.map((m) => {
         const gate = sensorHoldGate(spec, m.uas)
         const label = m.threatProfile?.designator ?? m.name
         if (gate !== 'ok') return <Row key={m.id} label={label} value={GATE_WORD[gate]} muted />
-        const r = effectiveDetectRangeM(spec, scenario.environment, m.uas)
+        const r = effectiveDetectRangeM(spec, scenario.environment, m.uas, thresholds.pdDetect)
         return (
           <Row
             key={m.id}
@@ -668,6 +733,9 @@ function EntityInspector({ entity }: { entity: Entity }) {
                 : 'A role-table or representative figure with no stated target. No target scaling runs on it.'
             }
           />
+          {model.sensor.sensorType === 'radar' && targetScaled(model.sensor) && (
+            <RadarPlacard model={model} spec={model.sensor} />
+          )}
           <Row label="Azimuth coverage" value={`${model.sensor.sectorDeg}°`} mono />
           {model.sensor.sensorType === 'eo-ir' && (
             <Row label="Band" value={model.sensor.eoBand ?? 'dual'} unit={model.sensor.eoBand == null ? 'default' : undefined} />
@@ -756,6 +824,13 @@ function EntityInspector({ entity }: { entity: Entity }) {
             value={`${rcsM2For(model.uas)} m²`}
             unit={model.uas.rcsM2 == null ? 'group PF' : 'PF'}
             title="Planning factor, not measured signature data. Sets each radar's detection range against this threat by the fourth-root law."
+            mono
+          />
+          <Row
+            label="Fluctuation model"
+            value={`Swerling ${swerlingFor(model.uas)}`}
+            unit={basisTag(model, 'swerling', model.uas.swerling == null, 'airframe PF')}
+            title="Fluctuation case for radar. Multirotor, FPV and one-way attack airframes are Swerling 1. Fixed wing is Swerling 3 (planning factor)."
             mono
           />
           <Row

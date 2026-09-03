@@ -156,6 +156,7 @@ describe('systemTelemetryAt', () => {
             classified: true,
             resolved: true,
             slantM: 3000,
+            pd: null,
           },
         ],
       ],

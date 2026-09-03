@@ -1,10 +1,20 @@
 import { useState } from 'react'
-import type { EoBand, IrSignature, RangeBasis, SensorRole, SpecModel, UasSpec } from '../model/types'
+import type {
+  EoBand,
+  IrSignature,
+  RangeBasis,
+  SensorRole,
+  SpecModel,
+  SwerlingCase,
+  UasSpec,
+} from '../model/types'
 import {
   basisFor,
   JAM_BAND_LABEL,
   JAM_BANDS,
   MOUNT_HEIGHT_M,
+  PLACARD_PD,
+  PLACARD_PFA,
   SENSOR_ROLE_DEFAULT_RANGE_M,
 } from '../model/types'
 import { jammerBands } from '../analysis/ewPhysics'
@@ -32,6 +42,9 @@ const SENSOR_ROLES: SensorRole[] = [
 
 /** Standard sector widths used across the seed library, degrees. */
 const STANDARD_SECTORS = [60, 90, 120, 180, 270, 360]
+
+/** False-alarm probabilities a radar datasheet quotes a placard range at. */
+const PFA_CHOICES = ['1e-4', '1e-5', '1e-6', '1e-7', '1e-8']
 
 /** Designator airframe codes following the seed THR-G<group>-<code>-<seq> pattern. */
 const AIRFRAME_CODE: Record<UasSpec['airframe'], string> = {
@@ -391,6 +404,43 @@ export function LibraryEditor() {
                 reported range. The board ring shows the reference-RCS range; select a threat to
                 see each radar's ring against that threat.
               </p>
+              <div className="field-row">
+                <Num
+                  label={`Placard Pd (0 = planning factor ${PLACARD_PD})`}
+                  value={sensor.placardPd ?? 0}
+                  step={0.05}
+                  min={0}
+                  max={0.99}
+                  onChange={(n) =>
+                    patch({ sensor: { ...sensor, placardPd: n > 0 ? Math.min(0.99, n) : null } })
+                  }
+                />
+                <Field label="Placard Pfa">
+                  <select
+                    value={sensor.pfa == null ? '' : sensor.pfa.toExponential(0).replace('+', '')}
+                    onChange={(e) =>
+                      patch({
+                        sensor: {
+                          ...sensor,
+                          pfa: e.target.value === '' ? null : Number(e.target.value),
+                        },
+                      })
+                    }
+                  >
+                    <option value="">{`planning factor ${PLACARD_PFA.toExponential(0)}`}</option>
+                    {PFA_CHOICES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <p className="muted small">
+                The placard range is quoted at this Pd and Pfa against the reference RCS.
+                Detection at another range follows the radar range equation and the threat's
+                Swerling case. Empty fields keep the planning factors.
+              </p>
             </>
           )}
           {sensor.sensorType === 'eo-ir' && (
@@ -636,6 +686,25 @@ export function LibraryEditor() {
               </select>
             </Field>
           </div>
+          <Field label="Fluctuation model">
+            <select
+              value={uas.swerling == null ? '' : String(uas.swerling)}
+              onChange={(e) =>
+                patch({
+                  uas: {
+                    ...uas,
+                    swerling:
+                      e.target.value === '' ? null : (Number(e.target.value) as SwerlingCase),
+                  },
+                })
+              }
+            >
+              <option value="">by airframe, planning factor (multirotor Swerling 1, fixed wing Swerling 3)</option>
+              <option value="0">Swerling 0 (steady)</option>
+              <option value="1">Swerling 1</option>
+              <option value="3">Swerling 3</option>
+            </select>
+          </Field>
           <Num
             label="Radar cross section (m², 0 = group planning factor)"
             value={uas.rcsM2 ?? 0}

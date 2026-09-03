@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { pathSpeed, useStore } from '../state/store'
+import { pathSpeed, scenarioDurationS, useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
 import type { EntityKind, Roe, Scenario, SensorRole, SpecModel, Vec2 } from '../model/types'
 import { newId } from '../model/types'
 import type { LinkMedium } from '../model/integration'
 import { MEDIUM_LATENCY_S } from '../model/integration'
-import { FT_TO_M } from '../analysis/sensorEnv'
+import { FT_TO_M, radarCalibration, radarPdAt } from '../analysis/sensorEnv'
+import { rangeForPd } from '../analysis/radarPd'
+import { posAtTime } from '../geometry/geo'
+import { groundRangeM } from '../geometry/slant'
 import {
   assessThreat,
   DEFAULT_DEFENDED_RADIUS_M,
@@ -1140,3 +1143,196 @@ function legacyScenario(): ReturnType<typeof emptyScenario> {
   s.doctrine = { ...s.doctrine!, enabled: false }
   return s
 }
+
+describe('probability of detection', () => {
+  beforeEach(reset)
+
+  /** Giraffe 1X at the origin: 4 km at 0.01 m2, instrumented 75 km, sourced basis, PF Pd 0.5 / Pfa 1e-6. */
+  function placeGiraffe() {
+    useStore.getState().addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    const st = useStore.getState()
+    const sensor = st.scenario.entities.at(-1)!
+    return { sensorId: sensor.id, spec: st.scenario.library.find((m) => m.id === sensor.specId)!.sensor! }
+  }
+
+  /** Mohajer-6 (Group 4, 1 m2, fixed-wing, placed at 14,000 ft) standing at ground range x east. */
+  function placeMohajer(x: number, swerling?: 1) {
+    const st = useStore.getState()
+    if (swerling) {
+      const model = st.scenario.library.find((m) => m.id === 'lib-mohajer6')!
+      st.updateModel(model.id, { uas: { ...model.uas!, swerling } })
+    }
+    useStore.getState().addEntityFromModel('lib-mohajer6', { x, y: 0 })
+    return useStore.getState().scenario.entities.at(-1)!.id
+  }
+
+  const hitsAt = (uasId: string, pdDetect?: number) => {
+    const scenario = useStore.getState().scenario
+    const s =
+      pdDetect == null
+        ? scenario
+        : { ...scenario, requirements: { ...scenario.requirements, pdDetect } }
+    return detectionsAt(s, 0).get(uasId)
+  }
+
+  /** Height difference from the 4 m phase center to the placed Mohajer-6. */
+  const D_ALT = 14000 * FT_TO_M - 4
+
+  it('forced to the placard case, the detect boundary is the fourth-root slant range', () => {
+    const { spec } = placeGiraffe()
+    const cal = radarCalibration(spec)
+    // 4000 * 100^0.25 = 12,649.11 m slant, 11,909.04 m of ground at 4,263.2 m of height difference.
+    const slantB = rangeForPd(cal, 1, 0.5, 1, 1)
+    expect(slantB).toBeCloseTo(4000 * Math.pow(100, 0.25), 9)
+    const groundB = groundRangeM(slantB, D_ALT)
+    expect(groundB).toBeCloseTo(11909.04, 2)
+    const inside = placeMohajer(groundB - 20, 1)
+    const outside = placeMohajer(groundB + 20, 1)
+    const hit = hitsAt(inside)
+    expect(hit).toHaveLength(1)
+    expect(hit![0].slantM).toBeCloseTo(Math.hypot(groundB - 20, D_ALT), 6)
+    expect(hitsAt(outside)).toBeUndefined()
+  })
+
+  it('with the model default (Swerling 3) the boundary moves out to rangeForPd at case 3', () => {
+    const { spec } = placeGiraffe()
+    // Fixed-wing resolves to case 3: 13,259.09 m slant, 12,555.02 m of ground.
+    const groundB = groundRangeM(rangeForPd(radarCalibration(spec), 1, 0.5, 1, 3), D_ALT)
+    expect(groundB).toBeCloseTo(12555.02, 2)
+    const inside = placeMohajer(groundB - 20)
+    const outside = placeMohajer(groundB + 20)
+    const beyondCase1 = placeMohajer(11909.04 + 20)
+    expect(hitsAt(inside)).toHaveLength(1)
+    expect(hitsAt(outside)).toBeUndefined()
+    expect(hitsAt(beyondCase1)).toHaveLength(1)
+  })
+
+  it('requirements.pdDetect = 0.9 shrinks the detect range to rangeForPd at 0.9', () => {
+    const { spec } = placeGiraffe()
+    const cal = radarCalibration(spec)
+    // Case 1: Pd 0.9 needs SNR 130.126 vs 18.932 at the placard, so
+    // 12,649.11 / (130.126 / 18.932)^0.25 = 7,812.06 m slant, 6,546.25 m of ground.
+    const slant1 = rangeForPd(cal, 1, 0.9, 1, 1)
+    expect(slant1).toBeCloseTo(7812.06, 2)
+    const ground1 = groundRangeM(slant1, D_ALT)
+    expect(ground1).toBeCloseTo(6546.25, 2)
+    const in1 = placeMohajer(ground1 - 20, 1)
+    const out1 = placeMohajer(ground1 + 20, 1)
+    expect(hitsAt(in1)).toHaveLength(1)
+    expect(hitsAt(in1, 0.9)).toHaveLength(1)
+    expect(hitsAt(out1, 0.9)).toBeUndefined()
+    expect(hitsAt(out1)).toHaveLength(1)
+  })
+
+  it('requirements.pdDetect = 0.9 at the model default case 3', () => {
+    const { spec } = placeGiraffe()
+    // Case 3: Pd 0.9 needs SNR 53.653: 9,748.95 m slant, 8,767.39 m of ground.
+    const slant3 = rangeForPd(radarCalibration(spec), 1, 0.9, 1, 3)
+    expect(slant3).toBeCloseTo(9748.95, 2)
+    const ground3 = groundRangeM(slant3, D_ALT)
+    expect(ground3).toBeCloseTo(8767.39, 2)
+    const inside = placeMohajer(ground3 - 20)
+    const outside = placeMohajer(ground3 + 20)
+    expect(hitsAt(inside, 0.9)).toHaveLength(1)
+    expect(hitsAt(outside, 0.9)).toBeUndefined()
+    expect(hitsAt(outside)).toHaveLength(1)
+  })
+
+  it('hit.pd is radarPdAt at the hit slant range and clears pdDetect; null without a Pd model', () => {
+    const { spec } = placeGiraffe()
+    const uasId = placeMohajer(9000)
+    const scenario = useStore.getState().scenario
+    const uas = scenario.library.find((m) => m.id === 'lib-mohajer6')!.uas!
+    for (const pdDetect of [0.5, 0.6, 0.75]) {
+      const s = { ...scenario, requirements: { ...scenario.requirements, pdDetect } }
+      const hit = detectionsAt(s, 0).get(uasId)![0]
+      expect(hit.pd).toBe(radarPdAt(spec, scenario.environment, uas, hit.slantM))
+      expect(hit.pd!).toBeGreaterThanOrEqual(pdDetect)
+    }
+    // No Pd model: an acoustic sensor and a planning-basis radar hit on range alone.
+    for (const sensor of [
+      { sensorType: 'acoustic' as const, rangeBasis: 'sourced' as const },
+      { sensorType: 'radar' as const, rangeBasis: 'planning' as const },
+    ]) {
+      const modelId = useStore.getState().addModel('sensor')
+      useStore.getState().updateModel(modelId, {
+        sensor: {
+          role: 'surveillance',
+          detectRangeM: 50000,
+          classifyRangeM: null,
+          sectorDeg: 360,
+          ...sensor,
+        },
+      })
+      useStore.getState().addEntityFromModel(modelId, { x: 0, y: 0 })
+    }
+    const hits = detectionsAt(useStore.getState().scenario, 0).get(uasId)!
+    expect(hits.map((h) => h.pd == null)).toEqual([false, true, true])
+  })
+
+  it('pdSeries runs from first detection to the path end, below-threshold steps included', () => {
+    const { sensorId } = placeGiraffe()
+    // Straight through the ring, west to east, and out the far side.
+    const uasId = placeMohajer(-30000)
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 30000, y: 0 })
+    useStore.getState().finishPath()
+    const scenario = useStore.getState().scenario
+    const a = assessThreat(scenario, uasId)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+    const series = obs.pdSeries!
+    expect(obs.firstDetectS).toBe(a.firstDetectS)
+    expect(series[0]).toBeGreaterThanOrEqual(0.5)
+    expect(series[series.length - 1]).toBeLessThan(0.5)
+    // The sweep's own loop: DT steps from the start delay until the sample reports done.
+    const path = scenario.paths[0]
+    const speed = pathSpeed(scenario, path)
+    let steps = 0
+    for (let t = 0; t <= scenarioDurationS(scenario); t += 0.5) {
+      if (t >= obs.firstDetectS) steps += 1
+      if (posAtTime(path.points, speed, 0, t).done) break
+    }
+    expect(steps).toBeGreaterThan(2)
+    expect(series).toHaveLength(steps)
+    // Held steps sit at or above the threshold, the fade after lastDetectS below it.
+    const heldSteps = Math.round((obs.lastDetectS - obs.firstDetectS) / 0.5) + 1
+    expect(series.slice(0, heldSteps).every((pd) => pd >= 0.5)).toBe(true)
+    expect(series.slice(heldSteps).every((pd) => pd < 0.5)).toBe(true)
+    expect(Math.max(...series)).toBeLessThanOrEqual(1)
+  })
+
+  it('a saved pdDetect outside (0, 1) falls back to the default, so 0 never detects past the cap', () => {
+    placeGiraffe()
+    // 200 km is beyond the 75 km instrumented cap, where radarPdAt returns 0.
+    const far = placeMohajer(200000)
+    const near = placeMohajer(11909.04 - 20, 1)
+    expect(hitsAt(far, 0)).toBeUndefined()
+    expect(hitsAt(near, 0)).toHaveLength(1)
+    expect(hitsAt(near, 1)).toHaveLength(1)
+  })
+
+  it('a planning-basis radar records no pdSeries', () => {
+    const modelId = useStore.getState().addModel('sensor')
+    useStore.getState().updateModel(modelId, {
+      sensor: {
+        sensorType: 'radar',
+        role: 'surveillance',
+        detectRangeM: 15000,
+        classifyRangeM: null,
+        sectorDeg: 360,
+        rangeBasis: 'planning',
+      },
+    })
+    useStore.getState().addEntityFromModel(modelId, { x: 0, y: 0 })
+    const sensorId = useStore.getState().scenario.entities.at(-1)!.id
+    const uasId = placeMohajer(-30000)
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 30000, y: 0 })
+    useStore.getState().finishPath()
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+    expect(obs.heldSamples).toBeGreaterThan(0)
+    expect(obs.pdSeries).toBeUndefined()
+    expect(detectionsAt(useStore.getState().scenario, a.firstDetectS!).get(uasId)![0].pd).toBeNull()
+  })
+})
