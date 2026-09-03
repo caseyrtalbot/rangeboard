@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
+import { MOUNT_HEIGHT_M } from '../model/types'
+import { FT_TO_M } from './sensorEnv'
 import { assessAllThreats } from '../playback/sim'
 import { resolveEngagements } from '../playback/attrition'
 import { buildAarSummary } from './aar'
@@ -101,6 +103,14 @@ const HPM: SpecModel = {
   },
 }
 
+/**
+ * Fixture altitude: the threat flies at the default mount height, so the
+ * slant range equals the ground range and the hand-derived geometry below
+ * stays exact. Without the pin TARGET resolves to the altBandFt midpoint
+ * (2,500 ft), which lifts the 1,000 m effector envelope off the ground.
+ */
+const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+
 let seq = 0
 function ent(kind: Entity['kind'], specId: string, pos: Vec2, name?: string): Entity {
   seq += 1
@@ -113,6 +123,7 @@ function ent(kind: Entity['kind'], specId: string, pos: Vec2, name?: string): En
     headingDeg: 0,
     color: null,
     notes: '',
+    ...(kind === 'uas' ? { altitudeFt: FIXTURE_ALT_FT } : {}),
   }
 }
 
@@ -151,6 +162,10 @@ function mixedScenario(): {
   const a = ent('uas', TARGET.id, { x: -1210, y: 0 }, 'Threat A')
   const b = ent('uas', TARGET.id, { x: -1210, y: 10000 }, 'Threat B')
   const c = ent('uas', TARGET.id, { x: -1210, y: 20000 }, 'Threat C')
+  // Horizon: C's lane is 20 km out, past the 16.5 km radio horizon between
+  // two 4 m heights, so the detect-only lane flies at 300 ft and stays in
+  // line of sight. No effector reaches it, so its slant range is free.
+  c.altitudeFt = 300
   scenario.entities = [sensor, int, jam, a, b, c]
   scenario.connections = [link(sensor.id, int.id), link(sensor.id, jam.id)]
   scenario.paths = [flight(a.id, 0), flight(b.id, 10000), flight(c.id, 20000)]

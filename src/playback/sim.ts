@@ -1,14 +1,26 @@
-import type { Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive } from '../model/types'
+import type {
+  Entity,
+  Scenario,
+  SensorSpec,
+  SensorType,
+  SpecModel,
+  UasSpec,
+  Vec2,
+} from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
 import { profileFor } from '../model/integration'
-import { dist, formationOffsets, pointInSector, posAtTime } from '../geometry/geo'
+import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
+import { slantRangeM } from '../geometry/slant'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
 import { effectivePathDelayS } from './raid'
 import {
+  FT_TO_M,
   effectiveClassifyRangeM,
   effectiveDetectRangeM,
+  effectorGeometryGate,
   eoIrNeedsCue,
   jammable,
+  sensorGeometryGate,
   sensorHoldGate,
 } from '../analysis/sensorEnv'
 import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
@@ -60,21 +72,45 @@ export function entityPosAt(scenario: Scenario, entity: Entity, tS: number): Vec
   return liveTracks(scenario, tS).get(entity.id)?.pos ?? entity.pos
 }
 
+/** A library model's threat altitude, feet: the threat profile, else the altBandFt midpoint, else 0. */
+function modelAltitudeFt(model: SpecModel | undefined): number {
+  const profile = model?.threatProfile?.altitudeFt
+  if (profile != null && Number.isFinite(profile)) return profile
+  const band = model?.uas?.altBandFt
+  if (band) return (band[0] + band[1]) / 2
+  return 0
+}
+
+/**
+ * Threat altitude, feet AGL: Entity.altitudeFt, else the model's threat
+ * profile altitude, else the altBandFt midpoint, else 0. The one altitude
+ * resolver: every engine read of a threat altitude goes through here.
+ */
+export function threatAltitudeFt(scenario: Scenario, uas: Entity): number {
+  const own = uas.altitudeFt
+  if (own != null && Number.isFinite(own)) return own
+  return modelAltitudeFt(modelFor(scenario, uas))
+}
+
 export interface DetectionHit {
   sensorId: string
   sensorType: SensorType
   classified: boolean
   /** False when the formation spacing is below the sensor's track resolution. */
   resolved: boolean
+  /** Slant range from the phase center to the nearest detected member, meters. */
+  slantM: number
 }
 
 /**
  * One sensor's hit on one threat at an instant, or null.
  * The hold gate (sensorHoldGate) decides technology eligibility: RF silence,
  * RF band coverage, a zero range, and the EO/IR cue rule (a needs-cue sensor
- * holds only when cued=true). Then the effective range against this target
- * (environment derates, radar RCS, EO/IR span, acoustic level) and the
- * sector wedge decide geometry.
+ * holds only when cued=true). Then, per member, the vertical geometry gate
+ * (sensorGeometryGate: ceiling, radio horizon, elevation limits), the
+ * azimuth wedge on the ground plane, and the slant range from the phase
+ * center against the effective range for this target (environment derates,
+ * radar RCS, EO/IR span, acoustic level) decide geometry.
  */
 function sensorHit(
   sensor: Entity,
@@ -82,6 +118,7 @@ function sensorHit(
   scenario: Scenario,
   formation: Entity['formation'],
   uasSpec: UasSpec | undefined,
+  altitudeFt: number,
   members: Vec2[],
   cued: boolean,
 ): DetectionHit | null {
@@ -90,17 +127,30 @@ function sensorHit(
   const env = scenario.environment
   const detectR = effectiveDetectRangeM(spec, env, uasSpec)
   if (!(detectR > 0)) return null
-  const inDetect = members.some((m) =>
-    pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, detectR, m),
-  )
-  if (!inDetect) return null
+  const sensorHeightM = mountHeightOf(spec)
+  const altM = altitudeFt * FT_TO_M
+  // Members the sensor can see at all: geometry gate and wedge, with the
+  // slant range each one presents. The range tests read this list.
+  const seen: number[] = []
+  for (const m of members) {
+    const groundM = dist(sensor.pos, m)
+    if (sensorGeometryGate(spec, sensorHeightM, altM, groundM) !== 'ok') continue
+    if (!pointInWedge(sensor.pos, sensor.headingDeg, spec.sectorDeg, m)) continue
+    seen.push(slantRangeM(groundM, altM - sensorHeightM))
+  }
+  const detected = seen.filter((slant) => slant <= detectR)
+  if (detected.length === 0) return null
   const classifyR = effectiveClassifyRangeM(spec, env, uasSpec)
-  const classified =
-    classifyR != null &&
-    members.some((m) => pointInSector(sensor.pos, sensor.headingDeg, spec.sectorDeg, classifyR, m))
+  const classified = classifyR != null && detected.some((slant) => slant <= classifyR)
   const f = formation
   const resolved = !(f && f.count > 1 && spec.resolutionM != null && f.spacingM < spec.resolutionM)
-  return { sensorId: sensor.id, sensorType: spec.sensorType, classified, resolved }
+  return {
+    sensorId: sensor.id,
+    sensorType: spec.sensorType,
+    classified,
+    resolved,
+    slantM: Math.min(...detected),
+  }
 }
 
 /**
@@ -113,12 +163,14 @@ function sensorHit(
  * detectionsAt, assessThreat, spawnInRingViolations and the raid-builder
  * standoff clamp all sweep through here. `formation` is the threat's
  * formation (track-resolution test); pass undefined for a single point.
+ * `altitudeFt` is the threat altitude from threatAltitudeFt.
  */
 export function sweepSensorHits(
   scenario: Scenario,
   sensors: Entity[],
   formation: Entity['formation'],
   uasSpec: UasSpec | undefined,
+  altitudeFt: number,
   members: Vec2[],
 ): Array<{ spec: SensorSpec; hit: DetectionHit }> {
   const out: Array<{ spec: SensorSpec; hit: DetectionHit }> = []
@@ -128,7 +180,16 @@ export function sweepSensorHits(
       if (!spec) continue
       const cueSensor = eoIrNeedsCue(spec)
       if (pass === 'search' ? cueSensor : !cueSensor) continue
-      const hit = sensorHit(sensor, spec, scenario, formation, uasSpec, members, out.length > 0)
+      const hit = sensorHit(
+        sensor,
+        spec,
+        scenario,
+        formation,
+        uasSpec,
+        altitudeFt,
+        members,
+        out.length > 0,
+      )
       if (hit) out.push({ spec, hit })
     }
   }
@@ -136,18 +197,21 @@ export function sweepSensorHits(
 }
 
 /**
- * True when any of `sensors` holds a single ship of `uasSpec` standing at
+ * True when any of `sensors` holds a single ship of `model` standing at
  * `point`, under the full per-sensor rule set (sector, environment, target
  * scaling, RF silence and bands, the cue rule). The raid builder's spawn
- * standoff clamp uses this so it agrees with spawnInRingViolations.
+ * standoff clamp uses this so it agrees with spawnInRingViolations. The
+ * ship is not placed yet, so its altitude is the one placement will seed
+ * from the library model.
  */
 export function sensorHoldsPoint(
   scenario: Scenario,
   sensors: Entity[],
-  uasSpec: UasSpec | undefined,
+  model: SpecModel | undefined,
   point: Vec2,
 ): boolean {
-  return sweepSensorHits(scenario, sensors, undefined, uasSpec, [point]).length > 0
+  const altitudeFt = modelAltitudeFt(model)
+  return sweepSensorHits(scenario, sensors, undefined, model?.uas, altitudeFt, [point]).length > 0
 }
 
 /**
@@ -166,7 +230,8 @@ export function detectionsAt(scenario: Scenario, tS: number): Map<string, Detect
     const heading = track?.headingDeg ?? uas.headingDeg
     const members = memberPositions(uas, pos, heading)
     const uasSpec = modelFor(scenario, uas)?.uas
-    const hits = sweepSensorHits(scenario, sensors, uas.formation, uasSpec, members).map(
+    const altitudeFt = threatAltitudeFt(scenario, uas)
+    const hits = sweepSensorHits(scenario, sensors, uas.formation, uasSpec, altitudeFt, members).map(
       (s) => s.hit,
     )
     if (hits.length > 0) out.set(uas.id, hits)
@@ -201,7 +266,15 @@ export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
     const start = scenario.paths.find((p) => p.entityId === uas.id)?.points[0]
     if (!start) continue
     const uasSpec = modelFor(scenario, uas)?.uas
-    for (const { hit } of sweepSensorHits(scenario, sensors, uas.formation, uasSpec, [start])) {
+    const altitudeFt = threatAltitudeFt(scenario, uas)
+    for (const { hit } of sweepSensorHits(
+      scenario,
+      sensors,
+      uas.formation,
+      uasSpec,
+      altitudeFt,
+      [start],
+    )) {
       out.push({ uasId: uas.id, sensorId: hit.sensorId })
     }
   }
@@ -247,6 +320,8 @@ export interface SensorObservation {
   firstClassifyS: number | null
   heldSamples: number
   resolvedEver: boolean
+  /** Closest slant range from the phase center over every held sample, meters. */
+  minSlantM: number
   /** Inclusive 0.5 s hold intervals, split whenever the sensor loses the track. */
   intervals: Array<[number, number]>
 }
@@ -615,6 +690,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const uas = scenario.entities.find((e) => e.id === uasId)
   if (!uas) return base
   const uasSpec = modelFor(scenario, uas)?.uas
+  const altitudeFt = threatAltitudeFt(scenario, uas)
+  const altM = altitudeFt * FT_TO_M
   const speed = pathSpeed(scenario, path)
   const duration = scenarioDurationS(scenario)
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
@@ -663,7 +740,14 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
     const stepTechs = new Set<SensorType>()
     let fcClassifiedNow = false
-    for (const { spec, hit } of sweepSensorHits(scenario, sensors, uas.formation, uasSpec, members)) {
+    for (const { spec, hit } of sweepSensorHits(
+      scenario,
+      sensors,
+      uas.formation,
+      uasSpec,
+      altitudeFt,
+      members,
+    )) {
       stepTechs.add(hit.sensorType)
       detectingSensors.add(hit.sensorId)
       if (hit.resolved) anyResolved = true
@@ -677,6 +761,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
           firstClassifyS: hit.classified ? t : null,
           heldSamples: 0,
           resolvedEver: false,
+          minSlantM: hit.slantM,
           intervals: [],
         }
         sensorObservations.set(hit.sensorId, observation)
@@ -684,6 +769,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       observation.lastDetectS = t
       observation.heldSamples += 1
       observation.resolvedEver = observation.resolvedEver || hit.resolved
+      observation.minSlantM = Math.min(observation.minSlantM, hit.slantM)
       if (hit.classified && observation.firstClassifyS == null) observation.firstClassifyS = t
       const interval = observation.intervals[observation.intervals.length - 1]
       if (interval && Math.abs(interval[1] - (t - DT)) < DT / 2) interval[1] = t
@@ -748,21 +834,28 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     }
 
     // A threat is in-range of an effector when ANY formation member is inside
-    // the envelope (min range, max range, sector). Effector reach is physical
-    // geometry per ship; whether sensors can split the formation
-    // (swarmMerged) is a separate track-resolution question. A jammer's
-    // reach is its power-scaled effective range against this target, so the
-    // window, the attrition jam gate and the drawn cone agree.
+    // the envelope (min range, max range, sector), measured as slant range
+    // from the launcher, and the threat is under the effector's recorded
+    // ceiling. Effector reach is physical geometry per ship; whether sensors
+    // can split the formation (swarmMerged) is a separate track-resolution
+    // question. A jammer's reach is its power-scaled effective range against
+    // this target, so the window, the attrition jam gate and the drawn cone
+    // agree; a jammer's cone test takes slant range and nothing else.
     for (const eff of effectors) {
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
-      const reachM =
-        spec.effectorType === 'jammer' ? effectiveJamRangeM(spec, uasSpec) : spec.maxRangeM
-      const inRange = members.some(
-        (m) =>
-          dist(m, eff.pos) >= spec.minRangeM &&
-          pointInSector(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, reachM, m),
-      )
+      const isJammer = spec.effectorType === 'jammer'
+      if (!isJammer && effectorGeometryGate(spec, altM) !== 'ok') continue
+      const reachM = isJammer ? effectiveJamRangeM(spec, uasSpec) : spec.maxRangeM
+      const dAltM = altM - mountHeightOf(spec)
+      const inRange = members.some((m) => {
+        const slant = slantRangeM(dist(eff.pos, m), dAltM)
+        return (
+          slant >= spec.minRangeM &&
+          slant <= reachM &&
+          pointInWedge(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, m)
+        )
+      })
       const intervals = effectorInRange.get(eff.id) ?? []
       const last = intervals[intervals.length - 1]
       if (inRange) {

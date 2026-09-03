@@ -86,7 +86,11 @@ describe('assessRunValidity rollup', () => {
 describe('spawn-in-ring finding', () => {
   function spawnInRingScenario(): Scenario {
     const s = cleanScenario()
-    s.entities.push(entity('s1', 'sensor', 'lib-lstar', { x: 40000, y: 0 })) // 10 km omni radar
+    // Elevation: the LSTAR cone is [0, 30] deg, so the sensor stands 1 km off
+    // the spawn, not on it. A 300 ft Mavic 3 over the spawn is then at 5.0 deg
+    // from the 4 m phase center; directly overhead it is at 90 deg, in the
+    // cone of silence, and nothing is held.
+    s.entities.push(entity('s1', 'sensor', 'lib-lstar', { x: 40000, y: 1000 })) // 10 km omni radar
     return s
   }
 
@@ -187,7 +191,9 @@ describe('gate helpers', () => {
     const findings = assessRunValidity(
       (() => {
         const s = cleanScenario()
-        s.entities.push(entity('s1', 'sensor', 'lib-lstar', { x: 40000, y: 0 }))
+        // Elevation: 1 km off the spawn, so the 300 ft threat sits at 5.0 deg,
+        // inside the LSTAR [0, 30] deg cone. On the spawn it is at 90 deg.
+        s.entities.push(entity('s1', 'sensor', 'lib-lstar', { x: 40000, y: 1000 }))
         return s
       })(),
       [assessment('u1')],

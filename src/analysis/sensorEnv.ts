@@ -1,4 +1,5 @@
 import type {
+  EffectorSpec,
   EnvironmentSpec,
   JamBand,
   Precipitation,
@@ -18,6 +19,7 @@ import {
   spanMFor,
 } from '../model/signatureFactors'
 import { targetLinkBands } from './ewPhysics'
+import { elevationDeg, radioHorizonM } from '../geometry/slant'
 
 /**
  * Sensor performance under environmental covariates and target effects.
@@ -325,6 +327,54 @@ export function sensorHoldGate(spec: SensorSpec, target: UasSpec | undefined): S
   }
   if (eoIrNeedsCue(spec)) return 'needs-cue'
   return 'ok'
+}
+
+// ---------------------------------------------------------------------------
+// Vertical geometry
+
+/** Feet to meters. Altitudes are recorded in feet; the engine works in meters. */
+export const FT_TO_M = 0.3048
+
+/** A recorded altitude ceiling in meters, or null when the spec states none. */
+function ceilingM(maxAltitudeFt: number | null | undefined): number | null {
+  return maxAltitudeFt != null && Number.isFinite(maxAltitudeFt) && maxAltitudeFt > 0
+    ? maxAltitudeFt * FT_TO_M
+    : null
+}
+
+export type GeometryGate = 'ok' | 'below-horizon' | 'elevation' | 'ceiling'
+
+/**
+ * Vertical geometry gate for one sensor against one target position.
+ * Ceiling applies only when spec.maxAltitudeFt is recorded. Horizon (4/3
+ * earth radio line of sight between the phase center and the target)
+ * applies to radar, RF and EO/IR, never to acoustic, which needs no line
+ * of sight. Elevation applies only when spec.elevationDeg is recorded and
+ * tests the angle from the phase center to the target against [min, max].
+ * Heights are AGL over a flat plane, both measured from the same ground.
+ */
+export function sensorGeometryGate(
+  spec: SensorSpec,
+  sensorHeightM: number,
+  targetAltM: number,
+  groundM: number,
+): GeometryGate {
+  const ceiling = ceilingM(spec.maxAltitudeFt)
+  if (ceiling != null && targetAltM > ceiling) return 'ceiling'
+  if (spec.sensorType === 'acoustic') return 'ok'
+  if (groundM > radioHorizonM(sensorHeightM, targetAltM)) return 'below-horizon'
+  const el = spec.elevationDeg
+  if (el) {
+    const angle = elevationDeg(groundM, targetAltM - sensorHeightM)
+    if (angle < el[0] || angle > el[1]) return 'elevation'
+  }
+  return 'ok'
+}
+
+/** Effector ceiling gate: 'ceiling' when spec.maxAltitudeFt is recorded and the target is above it. */
+export function effectorGeometryGate(spec: EffectorSpec, targetAltM: number): 'ok' | 'ceiling' {
+  const ceiling = ceilingM(spec.maxAltitudeFt)
+  return ceiling != null && targetAltM > ceiling ? 'ceiling' : 'ok'
 }
 
 // ---------------------------------------------------------------------------

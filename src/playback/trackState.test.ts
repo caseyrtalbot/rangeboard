@@ -60,6 +60,9 @@ function observation(sensorId: string, intervals: Array<[number, number]>): Sens
     firstClassifyS: null,
     heldSamples: intervals.length,
     resolvedEver: true,
+    // Slant: hand-built observation, 2 km closest approach. trackStateAt
+    // reads the intervals, never the range.
+    minSlantM: 2000,
     intervals,
   }
 }

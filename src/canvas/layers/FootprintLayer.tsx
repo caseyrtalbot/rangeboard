@@ -1,15 +1,17 @@
 import { Circle, Group, Line } from 'react-konva'
 import type { Entity } from '../../model/types'
-import { entityActive } from '../../model/types'
+import { entityActive, mountHeightOf } from '../../model/types'
 import { useStore, modelFor } from '../../state/store'
 import { wedgePoints } from '../../geometry/geo'
+import { groundRangeM } from '../../geometry/slant'
 import {
   effectiveClassifyRangeM,
   effectiveDetectRangeM,
+  FT_TO_M,
   sensorHoldGate,
 } from '../../analysis/sensorEnv'
 import { effectiveJamRangeM } from '../../analysis/ewPhysics'
-import { defendedRadiusOf } from '../../playback/sim'
+import { defendedRadiusOf, threatAltitudeFt } from '../../playback/sim'
 import type { DetectionHit } from '../../playback/sim'
 import { CLASSIFY_DASH, PLACARD_DASH, sensorRingStyle } from './footprintStyle'
 
@@ -104,17 +106,23 @@ export function FootprintLayer({ detections }: Props) {
   const selectedIds = useStore((s) => s.selection.entityIds)
   const selectedUas = scenario.entities.find((e) => e.kind === 'uas' && selectedIds.includes(e.id))
   const target = selectedUas ? modelFor(scenario, selectedUas)?.uas : undefined
+  // The engine range is a slant range to the threat altitude, so the ring on
+  // a plan-view board is its ground projection. One value per selection, not
+  // one per entity: the mount height is the only per-sensor term.
+  const targetAltM = selectedUas ? threatAltitudeFt(scenario, selectedUas) * FT_TO_M : null
 
   function sensorFootprint(e: Entity) {
     const spec = modelFor(scenario, e)?.sensor
     if (!spec) return null
     if (!showSensors && !showClassify) return null
     const on = entityActive(e)
+    const scaledM = effectiveDetectRangeM(spec, scenario.environment, target)
+    const dAltM = targetAltM == null ? null : targetAltM - mountHeightOf(spec)
     const style = sensorRingStyle({
       gate: sensorHoldGate(spec, target),
       on,
       placardM: effectiveDetectRangeM(spec, scenario.environment),
-      scaledM: effectiveDetectRangeM(spec, scenario.environment, target),
+      scaledM: dAltM == null ? scaledM : groundRangeM(scaledM, dAltM),
       classifyM: effectiveClassifyRangeM(spec, scenario.environment, target),
     })
     const color = style.grey ? DISABLED_COLOR : (e.color ?? modelFor(scenario, e)?.color ?? '#7da7c4')

@@ -11,6 +11,7 @@ import {
   gridStepM,
   pathLength,
   pointInSector,
+  pointInWedge,
   posAlongPath,
   posAtTime,
   rotatePoint,
@@ -57,6 +58,12 @@ describe('pointInSector', () => {
 
   it('treats 360 as full circle', () => {
     expect(pointInSector(O, 0, 360, 1000, { x: 500, y: 500 })).toBe(true)
+  })
+
+  it('pointInWedge tests bearing only, at any range', () => {
+    expect(pointInWedge(O, 0, 90, { x: 0, y: -1e9 })).toBe(true)
+    expect(pointInWedge(O, 0, 90, destination(O, 46, 500))).toBe(false)
+    expect(pointInWedge(O, 0, 360, { x: 500, y: 500 })).toBe(true)
   })
 })
 

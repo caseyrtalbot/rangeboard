@@ -8,7 +8,7 @@ import type {
   FlightPath,
   FormationShape,
 } from '../model/types'
-import { entityActive } from '../model/types'
+import { basisFor, entityActive, MOUNT_HEIGHT_M } from '../model/types'
 import { Actions, EmptyState, ObjectHeader, Row, Section, ShortcutList } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
 import { useStore, modelFor } from '../state/store'
@@ -30,7 +30,7 @@ import type { SensorSpec, SpecModel } from '../model/types'
 import { rcsM2For } from '../model/rcsFactors'
 import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
-import { DEFAULT_DEFENDED_RADIUS_M } from '../playback/sim'
+import { DEFAULT_DEFENDED_RADIUS_M, threatAltitudeFt } from '../playback/sim'
 import { THREAT_TACTICS } from '../playback/tactics'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']
@@ -77,12 +77,6 @@ function Options({ id, values }: { id: string; values: Array<string | number> })
   )
 }
 
-/**
- * Spec values the library records but the engine never reads. The board is
- * plan view: no altitude, no slant range, so an elevation limit or an altitude
- * ceiling gates nothing. Printing them beside the modeled ranges reads as a
- * working constraint, so they get their own marked line instead.
- */
 /** Reference condition the placard detect range is quoted against, as a unit tag. */
 function referenceCondition(spec: SensorSpec): string | undefined {
   switch (spec.sensorType) {
@@ -146,18 +140,43 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
   )
 }
 
-function NotModeled({ values }: { values: Array<{ label: string; value: string } | null> }) {
-  const rows = values.filter((v): v is { label: string; value: string } => v != null)
-  if (rows.length === 0) return null
+/**
+ * Height above ground of a sensor phase centre or an effector launcher. The
+ * field edits the library model, so it applies to every entity placed from
+ * that model. The tag says where the value in use comes from: a provenance
+ * row, else the planning factor.
+ */
+function MountHeight({
+  model,
+  heightM,
+  onChange,
+  note,
+}: {
+  model: SpecModel
+  heightM: number | null | undefined
+  onChange: (m: number | null) => void
+  note: string
+}) {
+  const basis = heightM == null ? 'pf' : basisFor(model, 'mountHeightM')
   return (
     <>
-      {rows.map((r) => (
-        <Row key={r.label} label={r.label} value={r.value} unit="recorded" mono />
-      ))}
-      <p className="muted small">
-        Recorded, not modeled. The board is plan view, so altitude gates no detection and no
-        engagement.
-      </p>
+      <Field label="Mount height (m)">
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          placeholder={String(MOUNT_HEIGHT_M)}
+          value={heightM ?? ''}
+          onChange={(e) => onChange(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
+        />
+      </Field>
+      <Row
+        label="In use"
+        value={`${heightM ?? MOUNT_HEIGHT_M} m`}
+        unit={basis === 'pf' ? 'PF' : basis}
+        mono
+      />
+      <p className="muted small">{note}</p>
     </>
   )
 }
@@ -459,6 +478,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
   const units = useStore((s) => s.ui.units)
   const {
     updateEntity,
+    updateModel,
     deleteSelection,
     setTool,
     beginPath,
@@ -594,6 +614,32 @@ function EntityInspector({ entity }: { entity: Entity }) {
             />
           </div>
         </div>
+        {entity.kind === 'uas' && (
+          <>
+            <Field label="Altitude (ft AGL)">
+              <input
+                type="number"
+                min={0}
+                step={100}
+                placeholder={String(threatAltitudeFt(scenario, entity))}
+                value={entity.altitudeFt ?? ''}
+                onChange={(e) =>
+                  updateEntity(entity.id, {
+                    altitudeFt:
+                      e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
+                  })
+                }
+              />
+            </Field>
+            <Row
+              label="In use"
+              value={`${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`}
+              unit={entity.altitudeFt == null ? 'model default' : undefined}
+              title="The threat flies at this one altitude along the whole path. The engine measures the slant range to it and applies the elevation, ceiling and horizon gates. Leave the field empty to take the model threat profile, else the middle of the model altitude band."
+              mono
+            />
+          </>
+        )}
       </Section>
 
       {model?.sensor && (
@@ -646,21 +692,27 @@ function EntityInspector({ entity }: { entity: Entity }) {
             />
           )}
           <AgainstThreats spec={model.sensor} />
-          <NotModeled
-            values={[
-              model.sensor.elevationDeg
-                ? {
-                    label: 'Elevation coverage',
-                    value: `${model.sensor.elevationDeg[0]}° to ${model.sensor.elevationDeg[1]}°`,
-                  }
-                : null,
-              model.sensor.maxAltitudeFt
-                ? {
-                    label: 'Altitude ceiling',
-                    value: `${model.sensor.maxAltitudeFt.toLocaleString()} ft`,
-                  }
-                : null,
-            ]}
+          {model.sensor.elevationDeg != null && (
+            <Row
+              label="Elevation coverage"
+              value={`${model.sensor.elevationDeg[0]}° to ${model.sensor.elevationDeg[1]}°`}
+              title="The geometry gate reads these limits. A threat above or below the coverage is not detected."
+              mono
+            />
+          )}
+          {model.sensor.maxAltitudeFt != null && model.sensor.maxAltitudeFt > 0 && (
+            <Row
+              label="Altitude ceiling"
+              value={`${model.sensor.maxAltitudeFt.toLocaleString()} ft`}
+              title="The geometry gate reads this ceiling. A threat above it is not detected."
+              mono
+            />
+          )}
+          <MountHeight
+            model={model}
+            heightM={model.sensor.mountHeightM}
+            onChange={(m) => updateModel(model.id, { sensor: { ...model.sensor!, mountHeightM: m } })}
+            note="Height of the antenna phase centre above ground. The engine measures the slant range and the radio horizon from it. The value applies to every sensor placed from this model."
           />
         </Section>
       )}
@@ -678,15 +730,21 @@ function EntityInspector({ entity }: { entity: Entity }) {
           {(model.effector.sectorDeg ?? 360) < 360 && (
             <Row label="Azimuth coverage" value={`${model.effector.sectorDeg}°`} mono />
           )}
-          <NotModeled
-            values={[
-              model.effector.maxAltitudeFt
-                ? {
-                    label: 'Altitude ceiling',
-                    value: `${model.effector.maxAltitudeFt.toLocaleString()} ft`,
-                  }
-                : null,
-            ]}
+          {model.effector.maxAltitudeFt != null && model.effector.maxAltitudeFt > 0 && (
+            <Row
+              label="Altitude ceiling"
+              value={`${model.effector.maxAltitudeFt.toLocaleString()} ft`}
+              title="The geometry gate reads this ceiling. A threat above it has no engagement window."
+              mono
+            />
+          )}
+          <MountHeight
+            model={model}
+            heightM={model.effector.mountHeightM}
+            onChange={(m) =>
+              updateModel(model.id, { effector: { ...model.effector!, mountHeightM: m } })
+            }
+            note="Height of the launcher or the emitter above ground. The engine measures the slant range from it. The value applies to every effector placed from this model."
           />
         </Section>
       )}

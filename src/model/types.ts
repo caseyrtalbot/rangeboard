@@ -37,6 +37,8 @@ export interface SensorSpec {
   elevationDeg?: [number, number] | null
   /** Altitude coverage ceiling, feet. Null when unknown. */
   maxAltitudeFt?: number | null
+  /** Antenna phase-center height above ground, meters. Absent: MOUNT_HEIGHT_M (PF). */
+  mountHeightM?: number | null
   /** Minimum target separation the sensor splits into two tracks, meters. Null when unknown. */
   resolutionM?: number | null
   /**
@@ -241,6 +243,8 @@ export interface EffectorSpec {
   maxRangeM: number
   /** Engagement altitude ceiling, feet. Null when unknown. */
   maxAltitudeFt?: number | null
+  /** Launcher or emitter height above ground, meters. Absent: MOUNT_HEIGHT_M (PF). */
+  mountHeightM?: number | null
   /** Azimuth coverage in degrees. Absent means 360 (omni/trainable). */
   sectorDeg?: number
   /** Seconds from assignment to effect at a target inside the envelope. */
@@ -279,6 +283,20 @@ export interface EffectorSpec {
   targetS?: number
 }
 
+/**
+ * Height of a sensor phase center or an effector launcher above ground,
+ * meters, when the model does not state one. Planning factor: a vehicle or
+ * short-mast C-UAS system sits about this high. Override per model with
+ * SensorSpec.mountHeightM or EffectorSpec.mountHeightM.
+ */
+export const MOUNT_HEIGHT_M = 4
+
+/** Phase-center or launcher height of one spec, meters: the recorded value, else MOUNT_HEIGHT_M. */
+export function mountHeightOf(spec: { mountHeightM?: number | null }): number {
+  const h = spec.mountHeightM
+  return h != null && Number.isFinite(h) && h >= 0 ? h : MOUNT_HEIGHT_M
+}
+
 /** Threat employment intent, carried by threat/UAS models for cards and playback. */
 export interface ThreatProfile {
   designator: string
@@ -286,6 +304,17 @@ export interface ThreatProfile {
   altitudeFt: number
   speedMps: number
   count: number
+}
+
+/** One provenance row. `field` is the SensorSpec / UasSpec / EffectorSpec key it covers. */
+export interface Provenance {
+  field: string
+  value: string
+  source: string
+  url?: string | null
+  /** ISO date the source was read. */
+  date: string
+  basis: 'datasheet' | 'reference' | 'pf'
 }
 
 /** A library model. Exactly one of sensor/uas/effector is set (c2/asset/marker have none). */
@@ -300,6 +329,13 @@ export interface SpecModel {
   uas?: UasSpec
   effector?: EffectorSpec
   threatProfile?: ThreatProfile
+  /** Where each placard value comes from. A field with no row is a planning factor. */
+  provenance?: Provenance[]
+}
+
+/** Basis for one field: the provenance row, else 'pf'. */
+export function basisFor(model: SpecModel, field: string): Provenance['basis'] {
+  return model.provenance?.find((row) => row.field === field)?.basis ?? 'pf'
 }
 
 export type FormationShape = 'line' | 'wedge' | 'column' | 'echelon' | 'cluster'
@@ -326,6 +362,8 @@ export interface Entity {
   systemId?: string | null
   /** UAS only: swarm/formation configuration. */
   formation?: FormationSpec | null
+  /** UAS only: flight altitude, feet AGL, constant along the path. Absent: seeded on placement. */
+  altitudeFt?: number | null
   /** UAS only: draw the wind-adjusted range ring for this drone. */
   showRange?: boolean
   /**

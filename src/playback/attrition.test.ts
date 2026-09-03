@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
+import { MOUNT_HEIGHT_M } from '../model/types'
+import { FT_TO_M } from '../analysis/sensorEnv'
 import {
   distanceFalloff,
   expenditureChannel,
@@ -71,6 +73,14 @@ function interceptor(patch: Partial<NonNullable<SpecModel['effector']>>): SpecMo
   }
 }
 
+/**
+ * Fixture altitude: the threat flies at the default mount height, so the
+ * slant range equals the ground range and the hand-derived geometry below
+ * stays exact. The radio horizon between two 4 m heights is 16.5 km, beyond
+ * every play area here.
+ */
+const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+
 let seq = 0
 function ent(kind: Entity['kind'], specId: string, pos: Vec2, extra?: Partial<Entity>): Entity {
   seq += 1
@@ -83,6 +93,7 @@ function ent(kind: Entity['kind'], specId: string, pos: Vec2, extra?: Partial<En
     headingDeg: 0,
     color: null,
     notes: '',
+    ...(kind === 'uas' ? { altitudeFt: FIXTURE_ALT_FT } : {}),
     ...extra,
   }
 }
@@ -1016,6 +1027,39 @@ describe('raid partition', () => {
     expect(t.expectedNoArrival).toBe(0)
     expect(r.totals.reportedLeakers).toBe(1)
     expect(r.totals.expectedLeakers).toBeGreaterThan(r.totals.expectedLateKills)
+  })
+})
+
+describe('altitude geometry in the envelope', () => {
+  function atAltitude(scenario: Scenario, altitudeFt: number): void {
+    scenario.entities = scenario.entities.map((e) => (e.kind === 'uas' ? { ...e, altitudeFt } : e))
+  }
+
+  it('takes zero shots at a threat above the effector ceiling', () => {
+    const { scenario } = singleThreatScenario(
+      interceptor({ pk: 0.5, magazineSize: 10, salvoCooldownS: 1000, maxAltitudeFt: 3000 }),
+    )
+    atAltitude(scenario, 14000)
+    const r = resolveEngagements(scenario)
+    expect(r.threats[0].shotsFired).toBe(0)
+    expect(r.threats[0].expectedKills).toBe(0)
+  })
+
+  it('opens the window on slant range and charges the falloff at the slant', () => {
+    // 600 m above the 4 m mount: the 1000 m envelope is an 800 m ground ring.
+    // The threat crosses it at t = 10.25 (1210 - 800 = 410 m at 40 m/s), so
+    // the first DT-grid shot is at t = 10.5 with ground 790 m, slant
+    // hypot(790, 600) = 992.02 m; one step earlier the slant is 1008 m.
+    const { scenario } = singleThreatScenario(
+      interceptor({ pk: 0.5, magazineSize: 10, salvoCooldownS: 1000 }),
+    )
+    atAltitude(scenario, (600 + MOUNT_HEIGHT_M) / FT_TO_M)
+    const r = resolveEngagements(scenario)
+    const t = r.threats[0]
+    const slantM = Math.hypot(790, 600)
+    expect(t.shotsFired).toBe(1)
+    expect(t.firstShotS).toBeCloseTo(10.5, 6)
+    expect(t.expectedKills).toBeCloseTo(0.5 * (1 - 0.3 * (slantM / 1000)), 6)
   })
 })
 

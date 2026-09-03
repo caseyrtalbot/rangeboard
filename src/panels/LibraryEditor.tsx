@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import type { EoBand, IrSignature, RangeBasis, SensorRole, SpecModel, UasSpec } from '../model/types'
-import { JAM_BAND_LABEL, JAM_BANDS, SENSOR_ROLE_DEFAULT_RANGE_M } from '../model/types'
+import {
+  basisFor,
+  JAM_BAND_LABEL,
+  JAM_BANDS,
+  MOUNT_HEIGHT_M,
+  SENSOR_ROLE_DEFAULT_RANGE_M,
+} from '../model/types'
 import { jammerBands } from '../analysis/ewPhysics'
 import { rfSensorBands } from '../analysis/sensorEnv'
 import { RADAR_REF_RCS_M2, RCS_PLANNING_M2 } from '../model/rcsFactors'
@@ -148,6 +154,42 @@ function Num({
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </Field>
+  )
+}
+
+/**
+ * Height above ground of a sensor phase centre or an effector launcher, with
+ * the basis of the value in use: a provenance row, else the planning factor.
+ * An empty field keeps the planning factor.
+ */
+function MountHeight({
+  model,
+  heightM,
+  onChange,
+  note,
+}: {
+  model: SpecModel
+  heightM: number | null | undefined
+  onChange: (m: number | null) => void
+  note: string
+}) {
+  const basis = heightM == null ? 'pf' : basisFor(model, 'mountHeightM')
+  return (
+    <>
+      <Field label="Mount height (m, empty = planning factor)">
+        <input
+          type="number"
+          min={0}
+          step={0.5}
+          placeholder={String(MOUNT_HEIGHT_M)}
+          value={heightM ?? ''}
+          onChange={(e) => onChange(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
+        />
+      </Field>
+      <p className="muted small">
+        {note} In use: {heightM ?? MOUNT_HEIGHT_M} m ({basis === 'pf' ? 'PF' : basis}).
+      </p>
+    </>
   )
 }
 
@@ -306,9 +348,15 @@ export function LibraryEditor() {
             onChange={(n) => patch({ sensor: { ...sensor, maxAltitudeFt: n > 0 ? n : null } })}
           />
           <p className="muted small">
-            Recorded, not modeled: the elevation limits and the altitude ceiling. The board is
-            plan view, so they do not gate detection. Keep them as spec data.
+            The geometry gate reads the elevation limits and the altitude ceiling. A threat
+            outside either one is not detected. A ceiling of 0 records none.
           </p>
+          <MountHeight
+            model={model}
+            heightM={sensor.mountHeightM}
+            onChange={(m) => patch({ sensor: { ...sensor, mountHeightM: m } })}
+            note="Height of the antenna phase centre above ground. The engine measures the slant range and the radio horizon from it."
+          />
           <Num
             label="Track split distance (m, 0 = always splits)"
             value={sensor.resolutionM ?? 0}
@@ -490,9 +538,15 @@ export function LibraryEditor() {
             onChange={(n) => patch({ effector: { ...effector, maxAltitudeFt: n > 0 ? n : null } })}
           />
           <p className="muted small">
-            Recorded, not modeled: the altitude ceiling. The board is plan view, so it does not
-            gate an engagement. Keep it as spec data.
+            The geometry gate reads the altitude ceiling. A threat above it has no engagement
+            window. A ceiling of 0 records none.
           </p>
+          <MountHeight
+            model={model}
+            heightM={effector.mountHeightM}
+            onChange={(m) => patch({ effector: { ...effector, mountHeightM: m } })}
+            note="Height of the launcher or the emitter above ground. The engine measures the slant range from it."
+          />
           {effector.effectorType === 'jammer' && (
             <>
               <div className="panel-subtitle">Jam physics</div>
@@ -687,8 +741,9 @@ export function LibraryEditor() {
             />
           </div>
           <p className="muted small">
-            Recorded, not modeled: the altitude band. The board is plan view, so the band does
-            not change detection, engagement, or any analysis. Keep it as spec data.
+            The middle of this band is the flight altitude of a placed threat when neither the
+            entity nor the threat profile states one. Altitude sets the slant range and the
+            geometry gates.
           </p>
           <div className="field-row">
             <Num

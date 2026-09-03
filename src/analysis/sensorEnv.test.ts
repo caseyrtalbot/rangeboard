@@ -12,10 +12,12 @@ import {
 } from '../model/signatureFactors'
 import {
   ALPHA_DB_PER_KM,
+  FT_TO_M,
   acousticRangeM,
   acousticSolveM,
   effectiveClassifyRangeM,
   effectiveDetectRangeM,
+  effectorGeometryGate,
   eoIrNeedsCue,
   eoRangeFactor,
   jammable,
@@ -26,6 +28,7 @@ import {
   rfDetectable,
   SENSOR_ENV_MODEL,
   sensorEnvFactor,
+  sensorGeometryGate,
   sensorHoldGate,
   VISIBILITY_BY_PRECIP,
   visibilityMFor,
@@ -408,5 +411,57 @@ describe('cue rule and hold gate', () => {
     expect(sensorHoldGate(RF, undefined)).toBe('ok')
     expect(sensorHoldGate({ ...RADAR, detectRangeM: 0 }, uas({}))).toBe('no-range')
     expect(sensorHoldGate({ ...EO, detectRangeM: -5 }, undefined)).toBe('no-range')
+  })
+})
+
+describe('vertical geometry gates', () => {
+  const ACOUSTIC: SensorSpec = {
+    sensorType: 'acoustic',
+    detectRangeM: 4000,
+    classifyRangeM: null,
+    sectorDeg: 360,
+  }
+  /** Mohajer-6 cruise, 14,000 ft, meters. */
+  const HIGH_M = 14000 * FT_TO_M
+
+  it('ceiling applies only when maxAltitudeFt is recorded', () => {
+    expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: 10000 }, 4, HIGH_M, 5000)).toBe('ceiling')
+    expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: null }, 4, HIGH_M, 5000)).toBe('ok')
+    expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: 20000 }, 4, HIGH_M, 5000)).toBe('ok')
+    // The ceiling is a coverage limit, so it gates acoustic sensors too.
+    expect(sensorGeometryGate({ ...ACOUSTIC, maxAltitudeFt: 10000 }, 4, HIGH_M, 500)).toBe('ceiling')
+  })
+
+  it('a target beyond the 4/3 earth radio horizon is below-horizon', () => {
+    // 4 m mast to a 2 m target: 4120 * (2 + 1.414) = 14.07 km.
+    expect(sensorGeometryGate(RADAR, 4, 2, 60000)).toBe('below-horizon')
+    expect(sensorGeometryGate(RADAR, 4, 2, 14000)).toBe('ok')
+    expect(sensorGeometryGate({ ...RADAR, sensorType: 'rf' }, 4, 2, 60000)).toBe('below-horizon')
+    expect(sensorGeometryGate(EO, 4, 2, 60000)).toBe('below-horizon')
+  })
+
+  it('acoustic sensors need no line of sight, so the horizon never gates them', () => {
+    expect(sensorGeometryGate(ACOUSTIC, 4, 2, 60000)).toBe('ok')
+    expect(sensorGeometryGate({ ...ACOUSTIC, elevationDeg: [0, 30] }, 4, 100, 10)).toBe('ok')
+  })
+
+  it('elevation applies only when elevationDeg is recorded', () => {
+    const limited: SensorSpec = { ...RADAR, elevationDeg: [0, 30] }
+    // 104 m up at 100 m out: 45 deg, above the 30 deg limit (cone of silence).
+    expect(sensorGeometryGate(limited, 4, 104, 100)).toBe('elevation')
+    // 1 km out at ground level: -0.23 deg, below the 0 deg floor.
+    expect(sensorGeometryGate(limited, 4, 0, 1000)).toBe('elevation')
+    // 100 m up at 1 km: 5.5 deg, inside the band.
+    expect(sensorGeometryGate(limited, 4, 100, 1000)).toBe('ok')
+    expect(sensorGeometryGate(RADAR, 4, 104, 100)).toBe('ok')
+    expect(sensorGeometryGate({ ...RADAR, elevationDeg: null }, 4, 0, 1000)).toBe('ok')
+  })
+
+  it('effectorGeometryGate is the ceiling alone', () => {
+    const eff = { effectorType: 'interceptor' as const, minRangeM: 0, maxRangeM: 10000, engageTimeS: 0 }
+    expect(effectorGeometryGate({ ...eff, maxAltitudeFt: 3000 }, HIGH_M)).toBe('ceiling')
+    expect(effectorGeometryGate({ ...eff, maxAltitudeFt: 20000 }, HIGH_M)).toBe('ok')
+    expect(effectorGeometryGate({ ...eff, maxAltitudeFt: null }, HIGH_M)).toBe('ok')
+    expect(effectorGeometryGate(eff, HIGH_M)).toBe('ok')
   })
 })

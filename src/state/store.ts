@@ -752,6 +752,12 @@ export const useStore = create<Store>()((set, get) => {
           headingDeg: 0,
           color: null,
           notes: '',
+          // A threat flies at one altitude, seeded from the model profile so a
+          // fresh drop is not silently at ground level. Null keeps the
+          // threatAltitudeFt fallback (profile, else the band midpoint).
+          ...(model.kind === 'uas'
+            ? { altitudeFt: model.threatProfile?.altitudeFt ?? null }
+            : {}),
         }
         return { ...s, entities: [...s.entities, entity] }
       })
@@ -939,6 +945,9 @@ export const useStore = create<Store>()((set, get) => {
             color: null,
             notes: comp.purpose,
             systemId,
+            ...(model.kind === 'uas'
+              ? { altitudeFt: model.threatProfile?.altitudeFt ?? null }
+              : {}),
           }
         })
         const connections: Connection[] = []
@@ -1237,7 +1246,7 @@ export const useStore = create<Store>()((set, get) => {
         return members.map((_, j) => ({ x: origin.x + offsets[j].x, y: origin.y + offsets[j].y }))
       }
       const held = (members: number[], pts: Vec2[]): boolean =>
-        pts.some((p, j) => sensorHoldsPoint(scenario, sensors, specFor(members[j]).uas, p))
+        pts.some((p, j) => sensorHoldsPoint(scenario, sensors, specFor(members[j]), p))
       const clearLayout = (heading: number, members: number[]): Vec2[] => {
         let d = tactic.standoffM
         let pts = layoutFor(heading, members, d)
@@ -1288,6 +1297,7 @@ export const useStore = create<Store>()((set, get) => {
           headingDeg: headings[i],
           color: null,
           notes: `${tactic.id} ship ${i + 1} of ${shipCount}`,
+          altitudeFt: spec.threatProfile?.altitudeFt ?? null,
         })
         paths.push({
           id: newId('pth'),

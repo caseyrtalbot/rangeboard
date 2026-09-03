@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useStore } from '../state/store'
+import { pathSpeed, useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
-import type { EntityKind, Roe, Scenario, SensorRole, Vec2 } from '../model/types'
+import type { EntityKind, Roe, Scenario, SensorRole, SpecModel, Vec2 } from '../model/types'
 import { newId } from '../model/types'
 import type { LinkMedium } from '../model/integration'
 import { MEDIUM_LATENCY_S } from '../model/integration'
-import { assessThreat, DEFAULT_DEFENDED_RADIUS_M, detectionsAt, memberPositions } from './sim'
+import { FT_TO_M } from '../analysis/sensorEnv'
+import {
+  assessThreat,
+  DEFAULT_DEFENDED_RADIUS_M,
+  detectionsAt,
+  memberPositions,
+  threatAltitudeFt,
+} from './sim'
 
 function reset() {
   useStore.getState().replaceScenario(legacyScenario())
@@ -73,6 +80,110 @@ describe('enabled flag in analysis', () => {
     useStore.getState().updateEntity(effId, { enabled: false })
     const a = assessThreat(useStore.getState().scenario, uasId)
     expect(a.status).toBe('detect-only')
+  })
+})
+
+describe('altitude and slant range', () => {
+  beforeEach(reset)
+
+  /** Custom omni sensor at the origin; returns its entity id. */
+  function placeSensor(patch: Partial<NonNullable<SpecModel['sensor']>>): string {
+    const st = useStore.getState()
+    const modelId = st.addModel('sensor')
+    useStore.getState().updateModel(modelId, {
+      sensor: {
+        sensorType: 'radar',
+        role: 'surveillance',
+        detectRangeM: 50000,
+        classifyRangeM: null,
+        sectorDeg: 360,
+        rangeBasis: 'planning',
+        ...patch,
+      },
+    })
+    useStore.getState().addEntityFromModel(modelId, { x: 0, y: 0 })
+    return useStore.getState().scenario.entities.at(-1)!.id
+  }
+
+  it('threatAltitudeFt: entity field, else the threat profile, else the band midpoint, else 0', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mohajer6', { x: 0, y: 0 })
+    const uas = useStore.getState().scenario.entities.at(-1)!
+    const scenario = useStore.getState().scenario
+    expect(threatAltitudeFt(scenario, { ...uas, altitudeFt: null })).toBe(14000)
+    expect(threatAltitudeFt(scenario, { ...uas, altitudeFt: 500 })).toBe(500)
+    const model = scenario.library.find((m) => m.id === uas.specId)!
+    const noProfile = { ...scenario, library: [{ ...model, threatProfile: undefined }] }
+    expect(threatAltitudeFt(noProfile, { ...uas, altitudeFt: null })).toBe(13000) // [8000, 18000]
+    expect(threatAltitudeFt(scenario, { ...uas, specId: null, altitudeFt: null })).toBe(0)
+  })
+
+  it('a radar with a 10,000 ft ceiling never sees a Mohajer-6 at 14,000 ft', () => {
+    const sensorId = placeSensor({ maxAltitudeFt: 10000 })
+    useStore.getState().addEntityFromModel('lib-mohajer6', { x: 5000, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toBeUndefined()
+    const modelId = useStore.getState().scenario.entities.find((e) => e.id === sensorId)!.specId!
+    const spec = useStore.getState().scenario.library.find((m) => m.id === modelId)!.sensor!
+    useStore.getState().updateModel(modelId, { sensor: { ...spec, maxAltitudeFt: null } })
+    const hits = detectionsAt(useStore.getState().scenario, 0).get(uasId)
+    expect(hits).toHaveLength(1)
+    // Slant from a 4 m phase center to 14,000 ft (4267.2 m) at 5 km ground.
+    expect(hits![0].slantM).toBeCloseTo(Math.hypot(5000, 14000 * FT_TO_M - 4), 6)
+  })
+
+  it('a radar cannot see a low target beyond its radio horizon; an acoustic sensor can', () => {
+    // 4 m mast to a 2 m target: horizon 14.07 km, well inside the 100 km ring.
+    placeSensor({ detectRangeM: 100000 })
+    useStore.getState().addEntityFromModel('lib-mavic3', { x: 60000, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEntity(uasId, { altitudeFt: 2 / FT_TO_M })
+    expect(detectionsAt(useStore.getState().scenario, 0).get(uasId)).toBeUndefined()
+    placeSensor({ sensorType: 'acoustic', detectRangeM: 100000 })
+    const hits = detectionsAt(useStore.getState().scenario, 0).get(uasId)
+    expect(hits?.map((h) => h.sensorType)).toEqual(['acoustic'])
+  })
+
+  it('an effector with a 3,000 ft ceiling has no window against a 14,000 ft threat', () => {
+    const st = useStore.getState()
+    const effModelId = st.addModel('effector')
+    useStore.getState().updateModel(effModelId, {
+      effector: {
+        effectorType: 'interceptor',
+        minRangeM: 0,
+        maxRangeM: 10000,
+        engageTimeS: 0,
+        maxAltitudeFt: 3000,
+      },
+    })
+    useStore.getState().addEntityFromModel(effModelId, { x: 0, y: 0 })
+    const effId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().addEntityFromModel('lib-mohajer6', { x: -20000, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 20000, y: 0 })
+    useStore.getState().finishPath()
+    const windowsFor = () =>
+      assessThreat(useStore.getState().scenario, uasId).effectorWindows.find(
+        (w) => w.effectorId === effId,
+      )
+    expect(windowsFor()).toBeUndefined()
+    useStore.getState().updateModel(effModelId, {
+      effector: {
+        effectorType: 'interceptor',
+        minRangeM: 0,
+        maxRangeM: 10000,
+        engageTimeS: 0,
+        maxAltitudeFt: null,
+      },
+    })
+    // Slant 10 km at 4263 m of height difference is 9.05 km of ground range.
+    const w = windowsFor()!
+    expect(w.intervals).toHaveLength(1)
+    const groundM = Math.sqrt(10000 ** 2 - (14000 * FT_TO_M - 4) ** 2)
+    const scenario = useStore.getState().scenario
+    const speed = pathSpeed(scenario, scenario.paths[0])
+    expect(w.intervals[0][0]).toBeCloseTo(Math.ceil((20000 - groundM) / speed / 0.5) * 0.5, 9)
   })
 })
 

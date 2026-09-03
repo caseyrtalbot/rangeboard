@@ -30,6 +30,11 @@ export function pointInCircle(center: Vec2, rangeM: number, p: Vec2): boolean {
   return dist(center, p) <= rangeM
 }
 
+/** True when p lies inside the azimuth wedge of a sector, range ignored: a ground-plane bearing test. */
+export function pointInWedge(center: Vec2, headingDeg: number, sectorDeg: number, p: Vec2): boolean {
+  return pointInSector(center, headingDeg, sectorDeg, Number.POSITIVE_INFINITY, p)
+}
+
 /** True when p lies inside a sector footprint. sectorDeg >= 360 means a full circle. */
 export function pointInSector(
   center: Vec2,

@@ -10,11 +10,13 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
-import { defaultJamBehavior, effectiveDoctrine, entityActive } from '../model/types'
-import { dist, pointInSector, posAtTime } from '../geometry/geo'
+import { defaultJamBehavior, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
+import { dist, pointInWedge, posAtTime } from '../geometry/geo'
+import { slantRangeM } from '../geometry/slant'
 import { assessJam, effectiveJamRangeM } from '../analysis/ewPhysics'
+import { FT_TO_M, effectorGeometryGate } from '../analysis/sensorEnv'
 import type { ThreatAssessment } from './sim'
-import { assessAllThreats, killChainRoutes, memberPositions } from './sim'
+import { assessAllThreats, killChainRoutes, memberPositions, threatAltitudeFt } from './sim'
 import { effectivePathDelayS } from './raid'
 import { profileFor } from '../model/integration'
 import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
@@ -138,7 +140,8 @@ export const SIZE_PENALTY: Record<UasGroup, number> = { 1: 0.7, 2: 0.8, 3: 0.9, 
 export const EVASION_PENALTY = 0.7
 
 /** Distance falloff: 30% Pk reduction at max range (source formula). Zero
- *  beyond max range: no envelope means no kill probability at all. */
+ *  beyond max range: no envelope means no kill probability at all.
+ *  `distM` is the slant range from the launcher to the intercept point. */
 export function distanceFalloff(distM: number, maxRangeM: number): number {
   if (maxRangeM <= 0 || distM > maxRangeM) return 0
   return 1 - 0.3 * (distM / maxRangeM)
@@ -460,6 +463,8 @@ interface ThreatState {
   a: ThreatAssessment
   entity: Entity
   uasSpec: UasSpec | undefined
+  /** Flight altitude, meters AGL (threatAltitudeFt), constant along the path. */
+  altM: number
   path: FlightPath | undefined
   speedMps: number
   /** One expected-value state per ship in the formation. */
@@ -496,6 +501,8 @@ interface ThreatState {
 interface EffectorState {
   entity: Entity
   spec: EffectorSpec
+  /** Launcher or emitter height above ground, meters. */
+  mountM: number
   pk: number
   cooldownS: number
   /** Seconds from assignment to effect; 0 for pre-latency saves. */
@@ -601,6 +608,7 @@ export function resolveEngagements(
       a,
       entity,
       uasSpec,
+      altM: threatAltitudeFt(scenario, entity) * FT_TO_M,
       path,
       speedMps: path ? speedFor(scenario, path) : 15,
       ships: Array.from({ length: count }, () => ({
@@ -638,6 +646,7 @@ export function resolveEngagements(
     effectors.set(e.id, {
       entity: e,
       spec,
+      mountM: mountHeightOf(spec),
       pk: spec.pk ?? DEFAULT_PK[spec.effectorType],
       cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], DT),
       engageTimeS: spec.engageTimeS ?? 0,
@@ -830,19 +839,20 @@ export function resolveEngagements(
 
       const isJammer = es.spec.effectorType === 'jammer'
       // The in-range intervals are member-union geometry, so ship
-      // eligibility re-verifies the same min/max/sector test per ship. A
+      // eligibility re-verifies the same min/max/sector test per ship, on
+      // slant range from the launcher, under the effector ceiling. A
       // jammer's reach is its power-scaled effective range against this
       // target (jamResistDb included), the same figure the sim window and
-      // the drawn cone use.
-      const inEnvelope = (p: Vec2, uasSpec: UasSpec | undefined) =>
-        dist(es.entity.pos, p) >= es.spec.minRangeM &&
-        pointInSector(
-          es.entity.pos,
-          es.entity.headingDeg,
-          es.spec.sectorDeg ?? 360,
-          isJammer ? effectiveJamRangeM(es.spec, uasSpec) : es.spec.maxRangeM,
-          p,
+      // the drawn cone use; its cone test takes slant range and no ceiling.
+      const inEnvelope = (p: Vec2, ts: ThreatState) => {
+        if (!isJammer && effectorGeometryGate(es.spec, ts.altM) !== 'ok') return false
+        const slant = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
+        return (
+          slant >= es.spec.minRangeM &&
+          slant <= (isJammer ? effectiveJamRangeM(es.spec, ts.uasSpec) : es.spec.maxRangeM) &&
+          pointInWedge(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, p)
         )
+      }
       // Jam physics (band coverage, alignment, power out) decide whether a
       // jammer can affect this ship at all; a ship the physics cannot reach
       // is never a jam candidate, so the dwell is not wasted on it.
@@ -891,7 +901,7 @@ export function resolveEngagements(
 
         for (let i = 0; i < ts.ships.length; i++) {
           const p = members[Math.min(i, members.length - 1)]
-          if (!inEnvelope(p, ts.uasSpec)) continue
+          if (!inEnvelope(p, ts)) continue
           if (isJammer && jamFactor(ts.uasSpec, p) <= 0) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
@@ -931,7 +941,8 @@ export function resolveEngagements(
       if (isJammer) {
         pk = Math.min(1, Math.max(0, es.pk * jamFactor(target.uasSpec, shipPos)))
       } else {
-        const falloff = distanceFalloff(dist(es.entity.pos, shipPos), es.spec.maxRangeM)
+        const slant = slantRangeM(dist(es.entity.pos, shipPos), target.altM - es.mountM)
+        const falloff = distanceFalloff(slant, es.spec.maxRangeM)
         const size = target.uasSpec ? SIZE_PENALTY[target.uasSpec.group] : 1
         const evasion = target.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
         pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
@@ -976,9 +987,16 @@ export function resolveEngagements(
         // scenario uniform value (doctrineFactors.ts).
         const esBdaS = bdaSFor(es.spec, doctrine)
         const esCommitPk = commitPkFor(es.spec, doctrine)
-        const inEnvelope = (p: Vec2) =>
-          dist(es.entity.pos, p) >= es.spec.minRangeM &&
-          pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
+        // Slant range from the launcher, under the effector ceiling.
+        const inEnvelope = (p: Vec2, ts: ThreatState) => {
+          if (effectorGeometryGate(es.spec, ts.altM) !== 'ok') return false
+          const slant = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
+          return (
+            slant >= es.spec.minRangeM &&
+            slant <= es.spec.maxRangeM &&
+            pointInWedge(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, p)
+          )
+        }
         for (const ts of threats) {
           if (!ts.path) continue
           // This effector's own route-aware release-ready time; none, no shot.
@@ -1012,8 +1030,8 @@ export function resolveEngagements(
             if (t + EPS < ship.holdUntilS) continue
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
             const p = members[Math.min(i, members.length - 1)]
-            if (!inEnvelope(p)) continue
-            const interceptDistM = dist(es.entity.pos, p)
+            if (!inEnvelope(p, ts)) continue
+            const interceptDistM = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
             const falloff = distanceFalloff(interceptDistM, es.spec.maxRangeM)
             const size = ts.uasSpec ? SIZE_PENALTY[ts.uasSpec.group] : 1
             const evasion = ts.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1

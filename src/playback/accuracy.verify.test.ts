@@ -11,6 +11,8 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
+import { MOUNT_HEIGHT_M } from '../model/types'
+import { FT_TO_M } from '../analysis/sensorEnv'
 import { distanceFalloff, resolveEngagements } from './attrition'
 import { assessAllThreats } from './sim'
 import { buildAarSummary } from '../analysis/aar'
@@ -32,6 +34,14 @@ import { buildAarSummary } from '../analysis/aar'
  *   inside the interval set of the SAME effector.
  */
 
+/**
+ * Fixture altitude: the threat flies at the default mount height, so the
+ * slant range equals the ground range and the hand-derived geometry below
+ * stays exact. The radio horizon between two 4 m heights is 16.5 km, beyond
+ * every play area here.
+ */
+const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+
 let seq = 0
 function ent(kind: Entity['kind'], specId: string, pos: Vec2, extra?: Partial<Entity>): Entity {
   seq += 1
@@ -44,6 +54,7 @@ function ent(kind: Entity['kind'], specId: string, pos: Vec2, extra?: Partial<En
     headingDeg: 0,
     color: null,
     notes: '',
+    ...(kind === 'uas' ? { altitudeFt: FIXTURE_ALT_FT } : {}),
     ...extra,
   }
 }

@@ -3,6 +3,7 @@ import type { DisplayUnits } from '../geometry/geo'
 import { formatDistance, formatSpeed, formatTime, NM_M } from '../geometry/geo'
 import { modelFor, pathSpeed, useStore } from '../state/store'
 import { trackQualityAt } from '../analysis/threatAggregation'
+import { threatAltitudeFt } from '../playback/sim'
 import type { DetectionHit, LiveTrack, ThreatAssessment } from '../playback/sim'
 import { PHASE_STYLE } from '../playback/trackState'
 import type { TrackPhase, TrackFileState } from '../playback/trackState'
@@ -54,10 +55,10 @@ function axisText(m: number, units: DisplayUnits, plus: string, minus: string): 
  * a leader line to the track, so it never covers the inbound axis. Every
  * figure is derived from the planning sweep: nothing here is measured.
  *
- * Every row is a value at sim time t, with one exception: ALT BAND is spec
- * data, not state. The engine is plan view only, so it holds no altitude and
- * reads no altitude field. That row is marked in place, because an unmarked
- * altitude on a telemetry card reads as a modeled height.
+ * Every row is a value at sim time t, with one exception: ALT is constant
+ * along the path. The engine reads it (threatAltitudeFt) for the slant range
+ * and the geometry gates, so the row states the altitude in use and keeps the
+ * model band behind it as the envelope it sits in.
  */
 export function TrackFileReadout({ trackStates, detections, assessments, tracks, size }: Props) {
   const scenario = useStore((s) => s.scenario)
@@ -177,14 +178,15 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
     ['RESIDUAL', state ? `${state.residual.toFixed(2)} of ${state.shipCount} ships` : NA],
     ['CLOSEST', cpaText],
     ['ARRIVAL', arrivalText],
-    // Spec data, not state at t. The engine reads no altitude anywhere, so
-    // this row states the band the model records and says the model does not
-    // use it.
+    // Constant along the path, not a value at t. The engine reads it, so the
+    // altitude in use leads and the model band follows as the envelope.
     [
-      'ALT BAND',
-      uas
-        ? `${uas.altBandFt[0].toLocaleString()} - ${uas.altBandFt[1].toLocaleString()} ft AGL · spec envelope, not modeled`
-        : 'unknown',
+      'ALT',
+      `${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL${
+        uas
+          ? ` · band ${uas.altBandFt[0].toLocaleString()} - ${uas.altBandFt[1].toLocaleString()} ft`
+          : ''
+      }`,
     ],
   ]
 
@@ -234,7 +236,7 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
           ))}
         </div>
         <div className="ro-foot">
-          PLANNING MODEL · 0.5 S CADENCE · PLAN VIEW ONLY · NOT INSTRUMENTED
+          PLANNING MODEL · 0.5 S CADENCE · CONSTANT ALTITUDE · NOT INSTRUMENTED
         </div>
       </div>
     </div>

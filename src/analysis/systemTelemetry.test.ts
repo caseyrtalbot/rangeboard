@@ -30,6 +30,9 @@ function observation(sensorId: string, intervals: Array<[number, number]>): Sens
     firstClassifyS: firstDetectS + 3,
     heldSamples: Math.round((lastDetectS - firstDetectS) / 0.5) + 1,
     resolvedEver: true,
+    // Slant: hand-built observation. 3 km closest approach, a plausible hold
+    // for the seeded radar; systemTelemetryAt reads the intervals, not this.
+    minSlantM: 3000,
     intervals,
   }
 }
@@ -142,7 +145,20 @@ describe('systemTelemetryAt', () => {
   it('reports live sensor, C2, effector, effect, and capacity data by component', () => {
     const scenario = killChainScenario()
     const hits = new Map<string, DetectionHit[]>([
-      ['threat', [{ sensorId: 'sensor', sensorType: 'radar', classified: true, resolved: true }]],
+      [
+        'threat',
+        // Slant: hand-built hit, 3 km from the phase center. Nothing in
+        // systemTelemetryAt reads it; the hit's presence is what counts.
+        [
+          {
+            sensorId: 'sensor',
+            sensorType: 'radar',
+            classified: true,
+            resolved: true,
+            slantM: 3000,
+          },
+        ],
+      ],
     ])
     const groups = systemTelemetryAt(
       scenario,

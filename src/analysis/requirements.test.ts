@@ -67,6 +67,10 @@ function fixture() {
         firstClassifyS: 15,
         heldSamples: 61,
         resolvedEver: true,
+        // Slant: 1 km ground range to a 300 ft threat from a 4 m phase
+        // center, matching the sensor this fixture adds. The gate report
+        // reads the detect times, not the range.
+        minSlantM: 1004,
         intervals: [[10, 40]],
       },
     ],
@@ -115,14 +119,20 @@ function fixture() {
   return { scenario, assessment, report }
 }
 
-/** Sensor whose 10 km ring covers the fixture threat spawn at the origin. */
-function addSensorOverSpawn(scenario: Scenario): void {
+/**
+ * Sensor whose 10 km ring covers the fixture threat spawn at the origin.
+ * Elevation: the LSTAR cone is [0, 30] deg, so the sensor stands 1 km off
+ * the spawn, not on it. A 300 ft Mavic 3 over the spawn then sits at 5.0 deg
+ * from the 4 m phase center, inside the cone; directly overhead it is at
+ * 90 deg, in the cone of silence, and the sensor holds nothing.
+ */
+function addSensorCoveringSpawn(scenario: Scenario): void {
   scenario.entities.push({
     id: 's1',
     name: 'LSTAR',
     kind: 'sensor',
     specId: 'lib-lstar',
-    pos: { x: 0, y: 0 },
+    pos: { x: 0, y: 1000 },
     headingDeg: 0,
     color: null,
     notes: '',
@@ -220,7 +230,7 @@ describe('the Effect requirement is test-defined, not an engine constant', () =>
 describe('Detect is a performance test, not a presence test', () => {
   it('drops a spawn-in-ring track from the population and says why', () => {
     const { scenario, assessment, report } = fixture()
-    addSensorOverSpawn(scenario)
+    addSensorCoveringSpawn(scenario)
     const result = buildRequirementGateReport(scenario, [assessment], report)
     const detect = gateOf(result, 'detect')
     expect(detect.status).toBe('not-evaluated')

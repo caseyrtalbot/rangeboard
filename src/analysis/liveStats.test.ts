@@ -5,6 +5,8 @@ import { resolveEngagements } from '../playback/attrition'
 import { assessAllThreats } from '../playback/sim'
 import { emptyScenario } from '../model/seed'
 import type { Entity, SpecModel, Vec2 } from '../model/types'
+import { MOUNT_HEIGHT_M } from '../model/types'
+import { FT_TO_M } from './sensorEnv'
 import { buildLiveTimeline, liveKpisAt } from './liveStats'
 
 function assessment(over: Partial<ThreatAssessment>): ThreatAssessment {
@@ -516,6 +518,14 @@ describe('leakerShips converges to AttritionTotals.expectedLeakers', () => {
     },
   }
 
+  /**
+   * Fixture altitude: the threat flies at the default mount height, so the
+   * slant range equals the ground range and the 1,000 m interceptor envelope
+   * below stays exact. Without the pin TARGET resolves to the altBandFt
+   * midpoint (2,500 ft) and the envelope lifts off the ground.
+   */
+  const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+
   let seq = 0
   function ent(kind: Entity['kind'], specId: string | null, pos: Vec2): Entity {
     seq += 1
@@ -528,6 +538,7 @@ describe('leakerShips converges to AttritionTotals.expectedLeakers', () => {
       headingDeg: 0,
       color: null,
       notes: '',
+      ...(kind === 'uas' ? { altitudeFt: FIXTURE_ALT_FT } : {}),
     }
   }
 

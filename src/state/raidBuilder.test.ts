@@ -4,6 +4,17 @@ import { emptyScenario } from '../model/seed'
 import { fanAxes } from '../playback/tactics'
 import { bearingDeg, dist } from '../geometry/geo'
 
+/**
+ * Horizon: a 100 km ring only reaches 100 km when the geometry allows it.
+ * RUS-TAC-02 flies the FPV-7 at 80 ft (24.4 m), and the 4/3 earth radio
+ * horizon from a default 4 m mount to that height is 28.6 km, so a 4 m radar
+ * could never hold a ship past 28.6 km and the clamp would settle there
+ * instead of on the ring. 500 m of antenna height puts the horizon at
+ * 112.5 km, past every ground range these clamps explore (~106 km), so the
+ * RING is the binding constraint and each test measures what it names.
+ */
+const FIXTURE_MAST_M = 500
+
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())
 }
@@ -186,7 +197,13 @@ describe('tactic raid builder: commitRaid', () => {
     // A long-range early-warning radar close to the target.
     const radarId = useStore.getState().addModel('sensor')
     useStore.getState().updateModel(radarId, {
-      sensor: { sensorType: 'radar', detectRangeM: 100000, classifyRangeM: 50000, sectorDeg: 360 },
+      sensor: {
+        sensorType: 'radar',
+        detectRangeM: 100000,
+        classifyRangeM: 50000,
+        sectorDeg: 360,
+        mountHeightM: FIXTURE_MAST_M,
+      },
     })
     useStore.getState().addEntityFromModel(radarId, { x: 0, y: 0 })
     useStore.getState().armRaidDraft('RUS-TAC-02')
@@ -206,7 +223,13 @@ describe('tactic raid builder: commitRaid', () => {
     // from the SENSOR, not the target.
     const radarId = useStore.getState().addModel('sensor')
     useStore.getState().updateModel(radarId, {
-      sensor: { sensorType: 'radar', detectRangeM: 100000, classifyRangeM: 50000, sectorDeg: 360 },
+      sensor: {
+        sensorType: 'radar',
+        detectRangeM: 100000,
+        classifyRangeM: 50000,
+        sectorDeg: 360,
+        mountHeightM: FIXTURE_MAST_M,
+      },
     })
     useStore.getState().addEntityFromModel(radarId, { x: 0, y: -50000 })
     const sensor = useStore
@@ -226,7 +249,13 @@ describe('tactic raid builder: commitRaid', () => {
     const target = useStore.getState().scenario.entities.find((e) => e.id === assetId)!
     const radarId = useStore.getState().addModel('sensor')
     useStore.getState().updateModel(radarId, {
-      sensor: { sensorType: 'radar', detectRangeM: 100000, classifyRangeM: null, sectorDeg: 90 },
+      sensor: {
+        sensorType: 'radar',
+        detectRangeM: 100000,
+        classifyRangeM: null,
+        sectorDeg: 90,
+        mountHeightM: FIXTURE_MAST_M,
+      },
     })
     useStore.getState().addEntityFromModel(radarId, { x: 0, y: 0 })
     const radar = useStore.getState().scenario.entities.at(-1)!
