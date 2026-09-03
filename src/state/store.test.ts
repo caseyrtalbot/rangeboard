@@ -1,10 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { bumpCardVersion, savedLayers, savedRunSeq, useStore, scenarioDurationS } from './store'
+import {
+  bumpCardVersion,
+  DEFAULT_LAYERS,
+  ringVisible,
+  savedLayers,
+  savedRunSeq,
+  useStore,
+  scenarioDurationS,
+} from './store'
 import type { LayerVisibility } from './store'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
-import { flushViewWrites, savedView } from '../io/viewState'
-import { RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
+import { flushViewWrites, savedRingOverrides, savedView } from '../io/viewState'
+import { RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
 
 function reset() {
@@ -559,9 +567,13 @@ describe('layer visibility', () => {
   const FULL: LayerVisibility = {
     grid: true,
     boundaries: true,
-    sensorFootprints: true,
+    sensorPlacard: true,
+    sensorEnvelope: true,
+    sensorPdContours: true,
     classifyRings: true,
-    effectorEnvelopes: true,
+    effectorMaxRange: true,
+    effectorMinRange: true,
+    effectorDoctrinal: true,
     defendedAreas: true,
     threatWez: false,
     flightPaths: true,
@@ -572,49 +584,36 @@ describe('layer visibility', () => {
     trackTelemetry: true,
   }
   const PLANNING: LayerVisibility = {
-    grid: true,
-    boundaries: true,
-    sensorFootprints: true,
-    classifyRings: true,
-    effectorEnvelopes: true,
-    defendedAreas: true,
-    threatWez: false,
-    flightPaths: true,
-    connections: true,
-    rangeRings: true,
+    ...FULL,
+    sensorPdContours: false,
+    classifyRings: false,
+    effectorDoctrinal: false,
     engagements: false,
-    labels: true,
-    trackTelemetry: true,
   }
   const ENGAGEMENT: LayerVisibility = {
-    grid: true,
-    boundaries: true,
-    sensorFootprints: false,
+    ...FULL,
+    sensorEnvelope: false,
+    sensorPdContours: false,
     classifyRings: false,
-    effectorEnvelopes: true,
-    defendedAreas: true,
-    threatWez: false,
-    flightPaths: true,
+    effectorMinRange: false,
     connections: false,
     rangeRings: false,
-    engagements: true,
-    labels: true,
-    trackTelemetry: true,
   }
   const CLEAN: LayerVisibility = {
-    grid: true,
+    ...FULL,
     boundaries: false,
-    sensorFootprints: false,
+    sensorPlacard: false,
+    sensorEnvelope: false,
+    sensorPdContours: false,
     classifyRings: false,
-    effectorEnvelopes: false,
+    effectorMaxRange: false,
+    effectorMinRange: false,
+    effectorDoctrinal: false,
     defendedAreas: false,
-    threatWez: false,
     flightPaths: false,
     connections: false,
     rangeRings: false,
     engagements: false,
-    labels: true,
-    trackTelemetry: true,
   }
 
   beforeEach(() => {
@@ -626,17 +625,25 @@ describe('layer visibility', () => {
     vi.unstubAllGlobals()
   })
 
-  it('defaults to the full preset', () => {
-    expect(useStore.getState().ui.layers).toEqual(FULL)
+  it('defaults to DEFAULT_LAYERS: the placard and the effector max range, no other ring', () => {
+    expect(savedLayers()).toEqual(DEFAULT_LAYERS)
+    expect(DEFAULT_LAYERS).toEqual({
+      ...FULL,
+      sensorEnvelope: false,
+      sensorPdContours: false,
+      classifyRings: false,
+      effectorMinRange: false,
+      effectorDoctrinal: false,
+    })
   })
 
   it('setLayer writes one key and leaves the rest alone', () => {
-    useStore.getState().setLayer('sensorFootprints', false)
-    expect(useStore.getState().ui.layers.sensorFootprints).toBe(false)
+    useStore.getState().setLayer('sensorPlacard', false)
+    expect(useStore.getState().ui.layers.sensorPlacard).toBe(false)
     useStore.getState().setLayer('threatWez', true)
     expect(useStore.getState().ui.layers).toEqual({
       ...FULL,
-      sensorFootprints: false,
+      sensorPlacard: false,
       threatWez: true,
     })
   })
@@ -705,13 +712,13 @@ describe('layer visibility', () => {
     expect(useStore.getState().ui.layers).toEqual(CLEAN)
   })
 
-  it('savedLayers falls back to the full preset with no store', () => {
-    expect(savedLayers()).toEqual(FULL)
+  it('savedLayers falls back to DEFAULT_LAYERS with no store', () => {
+    expect(savedLayers()).toEqual(DEFAULT_LAYERS)
   })
 
   it('savedLayers spreads a partial saved object over the defaults', () => {
     stubLayerStorage(JSON.stringify({ grid: false, threatWez: true }))
-    expect(savedLayers()).toEqual({ ...FULL, grid: false, threatWez: true })
+    expect(savedLayers()).toEqual({ ...DEFAULT_LAYERS, grid: false, threatWez: true })
   })
 
   it('a layer action round-trips through localStorage', () => {
@@ -727,7 +734,127 @@ describe('layer visibility', () => {
 
   it('savedLayers falls back to the defaults on unreadable saved data', () => {
     stubLayerStorage('not json')
-    expect(savedLayers()).toEqual(FULL)
+    expect(savedLayers()).toEqual(DEFAULT_LAYERS)
+  })
+
+  it('savedLayers migrates the two pre-ring keys and keeps exactly 17 keys', () => {
+    stubLayerStorage(JSON.stringify({ sensorFootprints: false, effectorEnvelopes: false }))
+    const layers = savedLayers()
+    expect(layers).toEqual({ ...DEFAULT_LAYERS, sensorPlacard: false, effectorMaxRange: false })
+    expect(Object.keys(layers).sort()).toEqual(
+      [
+        'boundaries',
+        'classifyRings',
+        'connections',
+        'defendedAreas',
+        'effectorDoctrinal',
+        'effectorMaxRange',
+        'effectorMinRange',
+        'engagements',
+        'flightPaths',
+        'grid',
+        'labels',
+        'rangeRings',
+        'sensorEnvelope',
+        'sensorPdContours',
+        'sensorPlacard',
+        'threatWez',
+        'trackTelemetry',
+      ].sort(),
+    )
+  })
+
+  it('a saved record that already names the new key keeps it over the old one', () => {
+    stubLayerStorage(JSON.stringify({ sensorFootprints: false, sensorPlacard: true }))
+    const layers = savedLayers()
+    expect(layers.sensorPlacard).toBe(true)
+    expect('sensorFootprints' in layers).toBe(false)
+  })
+})
+
+describe('ring overrides', () => {
+  beforeEach(() => {
+    reset()
+    useStore.getState().applyLayerPreset('full')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('an override wins over the layer flag in both directions', () => {
+    useStore.getState().setLayer('sensorPlacard', true)
+    useStore.getState().setLayer('sensorEnvelope', false)
+    useStore.getState().setRingOverride('ent-1', 'sensorPlacard', false)
+    useStore.getState().setRingOverride('ent-1', 'sensorEnvelope', true)
+    const { ui } = useStore.getState()
+    expect(ringVisible(ui, 'ent-1', 'sensorPlacard')).toBe(false)
+    expect(ringVisible(ui, 'ent-1', 'sensorEnvelope')).toBe(true)
+    expect(ringVisible(ui, 'ent-1', 'effectorMaxRange')).toBe(true)
+    expect(ringVisible(ui, 'ent-2', 'sensorPlacard')).toBe(true)
+  })
+
+  it('clearing to null drops the key, and the record with its last key', () => {
+    const st = useStore.getState()
+    st.setRingOverride('ent-1', 'sensorPlacard', false)
+    st.setRingOverride('ent-1', 'classifyRings', true)
+    st.setRingOverride('ent-1', 'sensorPlacard', null)
+    expect(useStore.getState().ui.ringOverrides).toEqual({ 'ent-1': { classifyRings: true } })
+    useStore.getState().setRingOverride('ent-1', 'classifyRings', null)
+    expect(useStore.getState().ui.ringOverrides).toEqual({})
+  })
+
+  it('an override change pushes no undo history and never enters the scenario', () => {
+    useStore.getState().addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    const past = useStore.getState().past.length
+    const scenario = useStore.getState().scenario
+    useStore.getState().setRingOverride('ent-1', 'sensorPdContours', true)
+    expect(useStore.getState().past.length).toBe(past)
+    expect(useStore.getState().future.length).toBe(0)
+    expect(useStore.getState().scenario).toBe(scenario)
+    expect(JSON.stringify(scenario)).not.toContain('sensorPdContours')
+  })
+
+  it('deleting an entity prunes its overrides and leaves the others', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    st.addEntityFromModel('lib-coyote', { x: 500, y: 0 })
+    const [radar, eff] = useStore.getState().scenario.entities
+    useStore.getState().setRingOverride(radar.id, 'sensorPlacard', false)
+    useStore.getState().setRingOverride(eff.id, 'effectorMinRange', true)
+    useStore.getState().select({ entityIds: [radar.id] })
+    useStore.getState().deleteSelection()
+    expect(useStore.getState().ui.ringOverrides).toEqual({ [eff.id]: { effectorMinRange: true } })
+  })
+
+  it('loading a scenario prunes overrides for entities it does not hold', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    const [radar] = useStore.getState().scenario.entities
+    useStore.getState().setRingOverride(radar.id, 'sensorPlacard', false)
+    useStore.getState().replaceScenario(emptyScenario())
+    expect(useStore.getState().ui.ringOverrides).toEqual({})
+  })
+
+  it('an override round-trips through the rings storage key', () => {
+    const store = stubStorage()
+    useStore.getState().setRingOverride('ent-1', 'sensorPlacard', false)
+    expect(JSON.parse(store.get(RINGS_KEY)!)).toEqual({ 'ent-1': { sensorPlacard: false } })
+    expect(savedRingOverrides()).toEqual({ 'ent-1': { sensorPlacard: false } })
+  })
+
+  it('savedRingOverrides drops unreadable, non-boolean and unknown entries', () => {
+    stubStorage({ [RINGS_KEY]: 'not json' })
+    expect(savedRingOverrides()).toEqual({})
+    vi.unstubAllGlobals()
+    stubStorage({
+      [RINGS_KEY]: JSON.stringify({
+        'ent-1': { sensorPlacard: true, sensorEnvelope: 'yes', bogus: true },
+        'ent-2': {},
+        'ent-3': 5,
+      }),
+    })
+    expect(savedRingOverrides()).toEqual({ 'ent-1': { sensorPlacard: true } })
   })
 })
 

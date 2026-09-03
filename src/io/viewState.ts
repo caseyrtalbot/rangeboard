@@ -1,7 +1,8 @@
 import type { BasemapMode } from '../model/types'
-import type { Camera, RightTab } from '../state/store'
+import type { Camera, RightTab, RingKey, RingOverrides } from '../state/store'
+import { RING_KEYS } from '../state/store'
 import type { Workspace } from '../te/state/teStore'
-import { VIEW_KEY } from './storageKeys'
+import { RINGS_KEY, VIEW_KEY } from './storageKeys'
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
@@ -15,10 +16,6 @@ export interface SavedView {
   rightTab?: RightTab
   workspace?: Workspace
 }
-
-const BASEMAPS: BasemapMode[] = ['canvas', 'sat', 'airspace']
-const RIGHT_TABS: RightTab[] = ['inspect', 'cards', 'library', 'analysis']
-const WORKSPACES: Workspace[] = ['board', 'ops']
 
 function readRaw(): Record<string, unknown> {
   if (typeof localStorage === 'undefined') return {}
@@ -46,6 +43,11 @@ function oneOf<T extends string>(v: unknown, allowed: T[]): T | undefined {
 
 /** Validated view state from localStorage; a field the record lacks or that fails validation is absent. */
 export function savedView(): SavedView {
+  // The allowed sets stay inside the call: the store reads this during its own
+  // module evaluation, and store.ts and this file import each other.
+  const BASEMAPS: BasemapMode[] = ['canvas', 'sat', 'airspace']
+  const RIGHT_TABS: RightTab[] = ['inspect', 'cards', 'library', 'analysis']
+  const WORKSPACES: Workspace[] = ['board', 'ops']
   const raw = readRaw()
   const out: SavedView = {}
   const camera = validCamera(raw.camera)
@@ -66,6 +68,45 @@ export function writeView(patch: SavedView): void {
     localStorage.setItem(VIEW_KEY, JSON.stringify({ ...readRaw(), ...patch }))
   } catch {
     // View state is a convenience; a full store loses nothing the scenario holds.
+  }
+}
+
+function readRingsRaw(): Record<string, unknown> {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(RINGS_KEY) ?? '{}')
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Validated per-entity ring overrides from localStorage. An entity record keeps
+ * only known ring keys with a boolean value, and an empty record is dropped.
+ */
+export function savedRingOverrides(): RingOverrides {
+  const raw = readRingsRaw()
+  const out: RingOverrides = {}
+  for (const [entityId, record] of Object.entries(raw)) {
+    if (!record || typeof record !== 'object') continue
+    const entry: Partial<Record<RingKey, boolean>> = {}
+    for (const key of RING_KEYS) {
+      const v = (record as Record<string, unknown>)[key]
+      if (typeof v === 'boolean') entry[key] = v
+    }
+    if (Object.keys(entry).length > 0) out[entityId] = entry
+  }
+  return out
+}
+
+/** Replace the stored ring overrides with the whole current map. */
+export function writeRingOverrides(overrides: RingOverrides): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(RINGS_KEY, JSON.stringify(overrides))
+  } catch {
+    // Ring overrides are a convenience; the layer flags still answer for every entity.
   }
 }
 

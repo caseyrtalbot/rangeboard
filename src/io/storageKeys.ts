@@ -13,6 +13,8 @@ export const TE_KEY = 'rangeboard.te.v1'
 export const TE_RECOVERY_PREFIX = 'rangeboard.te.recovered.'
 /** Canvas layer visibility (`LayerVisibility`). */
 export const LAYERS_KEY = 'rangeboard.layers.v1'
+/** Per-entity ring overrides (`RingOverrides`). */
+export const RINGS_KEY = 'rangeboard.rings.v1'
 /** Display units, `metric` or `aviation`. */
 export const UNITS_KEY = 'rangeboard.units.v1'
 /** Camera, basemap, right tab and workspace (`SavedView`). */

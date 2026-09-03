@@ -26,7 +26,13 @@ import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
 import { sensorHoldsPoint } from '../playback/sim'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
-import { savedView, writeView, writeViewCamera } from '../io/viewState'
+import {
+  savedRingOverrides,
+  savedView,
+  writeRingOverrides,
+  writeView,
+  writeViewCamera,
+} from '../io/viewState'
 import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
@@ -87,9 +93,19 @@ export interface RaidDraft {
 export interface LayerVisibility {
   grid: boolean
   boundaries: boolean
-  sensorFootprints: boolean
+  /** Thin ring at the sensor placard detect range. */
+  sensorPlacard: boolean
+  /** Band between the smallest and largest effective detect range over the placed threats. */
+  sensorEnvelope: boolean
+  /** Pd contours for the selected threat. */
+  sensorPdContours: boolean
   classifyRings: boolean
-  effectorEnvelopes: boolean
+  /** Effector max-range ring. */
+  effectorMaxRange: boolean
+  /** Effector min-range ring. */
+  effectorMinRange: boolean
+  /** Release and commit-Pk rings for the selected threat. */
+  effectorDoctrinal: boolean
   /** Defended-area ring around every asset (Entity.defendedRadiusM, else the 500 m default). */
   defendedAreas: boolean
   threatWez: boolean
@@ -104,10 +120,41 @@ export interface LayerVisibility {
 /** Name of a single canvas layer toggle. */
 export type LayerKey = keyof LayerVisibility
 
+/** A ring one sensor or effector entity can draw. Every ring key is also a layer key. */
+export type RingKey =
+  | 'sensorPlacard'
+  | 'sensorEnvelope'
+  | 'sensorPdContours'
+  | 'classifyRings'
+  | 'effectorMaxRange'
+  | 'effectorMinRange'
+  | 'effectorDoctrinal'
+
+/** Ring keys that apply to a sensor entity, in display order. */
+export const SENSOR_RING_KEYS: readonly RingKey[] = [
+  'sensorPlacard',
+  'sensorEnvelope',
+  'sensorPdContours',
+  'classifyRings',
+]
+
+/** Ring keys that apply to an effector entity, in display order. */
+export const EFFECTOR_RING_KEYS: readonly RingKey[] = [
+  'effectorMaxRange',
+  'effectorMinRange',
+  'effectorDoctrinal',
+]
+
+/** The seven ring keys in display order. */
+export const RING_KEYS: readonly RingKey[] = [...SENSOR_RING_KEYS, ...EFFECTOR_RING_KEYS]
+
+/** Per-entity ring overrides. An absent key falls through to ui.layers. */
+export type RingOverrides = Record<string, Partial<Record<RingKey, boolean>>>
+
 /** Named declutter set applied to every layer at once. */
 export type LayerPreset = 'full' | 'planning' | 'engagement' | 'clean'
 
-interface UiState {
+export interface UiState {
   basemap: BasemapMode
   tool: Tool
   boundaryType: BoundaryType
@@ -121,8 +168,10 @@ interface UiState {
   rightTab: RightTab
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
-  /** Canvas layer visibility. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  /** Canvas layer visibility, 17 keys. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
   layers: LayerVisibility
+  /** Per-entity ring overrides. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  ringOverrides: RingOverrides
   /** Display units for distances and speeds. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
   units: DisplayUnits
   /** Open right-click menu; screen px within the canvas host, world meters. */
@@ -305,6 +354,8 @@ export interface Store {
   setLayer: (key: LayerKey, v: boolean) => void
   toggleLayer: (key: LayerKey) => void
   applyLayerPreset: (p: LayerPreset) => void
+  /** Force one ring on or off for one entity; null drops back to the layer flag. */
+  setRingOverride: (entityId: string, key: RingKey, on: boolean | null) => void
   setLocationDialogOpen: (v: boolean) => void
   setUnits: (v: DisplayUnits) => void
   setSaveState: (lastAutosaveAt: number | null, error: string | null) => void
@@ -322,14 +373,43 @@ export interface Store {
 }
 
 
-/** Declutter sets. `full` is also the default layer state. */
+/**
+ * Layer state a first run starts from and the fallback for a save that lacks a
+ * key. Two rings only: the sensor placard and the effector max range. The other
+ * five rings answer a narrower question, so the board opens uncluttered.
+ */
+export const DEFAULT_LAYERS: LayerVisibility = {
+  grid: true,
+  boundaries: true,
+  sensorPlacard: true,
+  sensorEnvelope: false,
+  sensorPdContours: false,
+  classifyRings: false,
+  effectorMaxRange: true,
+  effectorMinRange: false,
+  effectorDoctrinal: false,
+  defendedAreas: true,
+  threatWez: false,
+  flightPaths: true,
+  connections: true,
+  rangeRings: true,
+  engagements: true,
+  labels: true,
+  trackTelemetry: true,
+}
+
+/** Declutter sets. None of them is the default layer state; that is DEFAULT_LAYERS. */
 const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
   full: {
     grid: true,
     boundaries: true,
-    sensorFootprints: true,
+    sensorPlacard: true,
+    sensorEnvelope: true,
+    sensorPdContours: true,
     classifyRings: true,
-    effectorEnvelopes: true,
+    effectorMaxRange: true,
+    effectorMinRange: true,
+    effectorDoctrinal: true,
     defendedAreas: true,
     threatWez: false,
     flightPaths: true,
@@ -342,9 +422,13 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
   planning: {
     grid: true,
     boundaries: true,
-    sensorFootprints: true,
-    classifyRings: true,
-    effectorEnvelopes: true,
+    sensorPlacard: true,
+    sensorEnvelope: true,
+    sensorPdContours: false,
+    classifyRings: false,
+    effectorMaxRange: true,
+    effectorMinRange: true,
+    effectorDoctrinal: false,
     defendedAreas: true,
     threatWez: false,
     flightPaths: true,
@@ -357,9 +441,13 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
   engagement: {
     grid: true,
     boundaries: true,
-    sensorFootprints: false,
+    sensorPlacard: true,
+    sensorEnvelope: false,
+    sensorPdContours: false,
     classifyRings: false,
-    effectorEnvelopes: true,
+    effectorMaxRange: true,
+    effectorMinRange: false,
+    effectorDoctrinal: true,
     defendedAreas: true,
     threatWez: false,
     flightPaths: true,
@@ -372,9 +460,13 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
   clean: {
     grid: true,
     boundaries: false,
-    sensorFootprints: false,
+    sensorPlacard: false,
+    sensorEnvelope: false,
+    sensorPdContours: false,
     classifyRings: false,
-    effectorEnvelopes: false,
+    effectorMaxRange: false,
+    effectorMinRange: false,
+    effectorDoctrinal: false,
     defendedAreas: false,
     threatWez: false,
     flightPaths: false,
@@ -384,6 +476,24 @@ const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
     labels: true,
     trackTelemetry: true,
   },
+}
+
+/** Effective visibility of one ring for one entity: the override, else the layer flag. */
+export function ringVisible(ui: UiState, entityId: string, key: RingKey): boolean {
+  return ui.ringOverrides[entityId]?.[key] ?? ui.layers[key]
+}
+
+/**
+ * Drop overrides for entities the scenario no longer holds. Returns the same
+ * object when every id is still live, so a caller can skip the storage write.
+ */
+function pruneRingOverrides(overrides: RingOverrides, scenario: Scenario): RingOverrides {
+  const live = new Set(scenario.entities.map((e) => e.id))
+  const ids = Object.keys(overrides)
+  if (ids.every((id) => live.has(id))) return overrides
+  const next: RingOverrides = {}
+  for (const id of ids) if (live.has(id)) next[id] = overrides[id]
+  return next
 }
 
 export function formatRunLabel(seq: number): string {
@@ -539,16 +649,30 @@ function savedUnits(): DisplayUnits {
 }
 
 /**
- * Layer visibility from localStorage, spread over the `full` preset so a layer
- * key added after the save still gets a value.
+ * Layer visibility from localStorage, spread over DEFAULT_LAYERS so a layer key
+ * added after the save still gets a value. A save from before the ring split
+ * carries `sensorFootprints` and `effectorEnvelopes`: they seed the placard and
+ * the max-range ring, then both old keys go.
  */
 export function savedLayers(): LayerVisibility {
-  const defaults = { ...LAYER_PRESETS.full }
+  const defaults = { ...DEFAULT_LAYERS }
   if (typeof localStorage === 'undefined') return defaults
   const raw = localStorage.getItem(LAYERS_KEY)
   if (raw == null) return defaults
   try {
-    return { ...defaults, ...(JSON.parse(raw) as Partial<LayerVisibility>) }
+    const saved = JSON.parse(raw) as Partial<LayerVisibility> & {
+      sensorFootprints?: boolean
+      effectorEnvelopes?: boolean
+    }
+    if (typeof saved.sensorFootprints === 'boolean' && saved.sensorPlacard === undefined) {
+      saved.sensorPlacard = saved.sensorFootprints
+    }
+    if (typeof saved.effectorEnvelopes === 'boolean' && saved.effectorMaxRange === undefined) {
+      saved.effectorMaxRange = saved.effectorEnvelopes
+    }
+    delete saved.sensorFootprints
+    delete saved.effectorEnvelopes
+    return { ...defaults, ...saved }
   } catch {
     return defaults
   }
@@ -677,6 +801,7 @@ export const useStore = create<Store>()((set, get) => {
       rightTab: view.rightTab ?? 'inspect',
       moveUnderlay: false,
       layers: savedLayers(),
+      ringOverrides: savedRingOverrides(),
       units: savedUnits(),
       contextMenu: null,
       connectSuggestion: null,
@@ -715,15 +840,19 @@ export const useStore = create<Store>()((set, get) => {
       })
     },
 
-    replaceScenario: (s) =>
+    replaceScenario: (s) => {
+      const current = get().ui.ringOverrides
+      const ringOverrides = pruneRingOverrides(current, s)
+      if (ringOverrides !== current) writeRingOverrides(ringOverrides)
       set((st) => ({
         scenario: s,
         past: [],
         future: [],
         selection: EMPTY_SELECTION,
         playback: freshPlayback(st.playback.runSeq, st.playback.speedMult, 'scenario-loaded'),
-        ui: { ...st.ui, ...CLEARED_DRAFT, tool: 'select' },
-      })),
+        ui: { ...st.ui, ...CLEARED_DRAFT, tool: 'select', ringOverrides },
+      }))
+    },
 
     loadScenario: (s, opts) => {
       get().replaceScenario(s)
@@ -792,7 +921,7 @@ export const useStore = create<Store>()((set, get) => {
         return { ...s, entities: [...s.entities, copy] }
       }),
 
-    deleteSelection: () =>
+    deleteSelection: () => {
       mutate((s) => {
         const { entityIds, boundaryId, connectionId } = get().selection
         const ids = new Set(entityIds)
@@ -828,7 +957,14 @@ export const useStore = create<Store>()((set, get) => {
             ui: st.ui.connectSuggestion ? { ...st.ui, connectSuggestion: null } : st.ui,
           }))
         return next
-      }),
+      })
+      const { ui, scenario } = get()
+      const ringOverrides = pruneRingOverrides(ui.ringOverrides, scenario)
+      if (ringOverrides !== ui.ringOverrides) {
+        writeRingOverrides(ringOverrides)
+        set((st) => ({ ui: { ...st.ui, ringOverrides } }))
+      }
+    },
 
     beginConnect: (fromId) => set((st) => ({ ui: { ...st.ui, connectFromId: fromId } })),
 
@@ -1658,6 +1794,18 @@ export const useStore = create<Store>()((set, get) => {
       const layers = { ...LAYER_PRESETS[p] }
       writeLayers(layers)
       set((st) => ({ ui: { ...st.ui, layers } }))
+    },
+    setRingOverride: (entityId, key, on) => {
+      const current = get().ui.ringOverrides
+      const entry = { ...current[entityId] }
+      if (on == null) delete entry[key]
+      else entry[key] = on
+      const ringOverrides = { ...current }
+      // An entity with no forced ring left keeps no record at all.
+      if (Object.keys(entry).length === 0) delete ringOverrides[entityId]
+      else ringOverrides[entityId] = entry
+      writeRingOverrides(ringOverrides)
+      set((st) => ({ ui: { ...st.ui, ringOverrides } }))
     },
     setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
     setSaveState: (lastAutosaveAt, error) => set({ save: { lastAutosaveAt, error } }),

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore } from '../state/store'
-import type { LayerKey, LayerPreset } from '../state/store'
+import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS, useStore } from '../state/store'
+import type { LayerKey, LayerPreset, RingKey } from '../state/store'
 import type { BasemapMode } from '../model/types'
 import type { DisplayUnits } from '../geometry/geo'
 import { importUnderlayImage } from '../io/persist'
+import { RING_HINTS, RING_LABELS } from './ringLabels'
 
 const PRESETS: { id: LayerPreset; label: string; hint: string }[] = [
   { id: 'full', label: 'Full', hint: 'Show every layer' },
@@ -12,13 +13,17 @@ const PRESETS: { id: LayerPreset; label: string; hint: string }[] = [
   { id: 'clean', label: 'Clean', hint: 'Grid, labels and telemetry only' },
 ]
 
+/** Ring toggles for one kind, in key order, named from the shared table. */
+function ringLayers(keys: readonly RingKey[]): { id: LayerKey; label: string; hint?: string }[] {
+  return keys.map((k) => ({ id: k, label: RING_LABELS[k], hint: RING_HINTS[k] }))
+}
+
 const LAYER_GROUPS: { title: string; layers: { id: LayerKey; label: string; hint?: string }[] }[] = [
+  { title: 'Sensor', layers: ringLayers(SENSOR_RING_KEYS) },
+  { title: 'Effector', layers: ringLayers(EFFECTOR_RING_KEYS) },
   {
-    title: 'Coverage',
+    title: 'Areas',
     layers: [
-      { id: 'sensorFootprints', label: 'Sensor footprints' },
-      { id: 'classifyRings', label: 'Classify rings' },
-      { id: 'effectorEnvelopes', label: 'Effector envelopes' },
       { id: 'defendedAreas', label: 'Defended areas', hint: 'Show the protected boundary around each asset' },
       { id: 'threatWez', label: 'Threat WEZ', hint: 'Show threat weapon engagement zones' },
     ],
@@ -55,7 +60,7 @@ const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
 ]
 
 /**
- * Toolbar View dropdown. Holds the four layer presets, the thirteen layer
+ * Toolbar View dropdown. Holds the four layer presets, the seventeen layer
  * toggles, the basemap, the units, and the satellite underlay controls.
  * Layer visibility is view state, so nothing here is undoable.
  */

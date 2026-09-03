@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EntityKind } from '../model/types'
 import { entityActive } from '../model/types'
-import type { LayerKey, LayerPreset } from '../state/store'
-import { useStore, modelFor } from '../state/store'
+import type { LayerKey, LayerPreset, RingKey } from '../state/store'
+import {
+  EFFECTOR_RING_KEYS,
+  SENSOR_RING_KEYS,
+  modelFor,
+  ringVisible,
+  useStore,
+} from '../state/store'
+import { RING_LABELS } from '../panels/ringLabels'
 
 const MODEL_GROUPS: { kind: EntityKind; title: string }[] = [
   { kind: 'sensor', title: 'Sensor' },
@@ -20,12 +27,16 @@ const PRESET_ITEMS: { key: LayerPreset; label: string }[] = [
   { key: 'clean', label: 'Clean' },
 ]
 
+/** Layer rows for a set of ring keys, named from the shared table. */
+function ringItems(keys: readonly RingKey[]): { key: LayerKey; label: string }[] {
+  return keys.map((k) => ({ key: k, label: RING_LABELS[k] }))
+}
+
 const LAYER_ITEMS: { key: LayerKey; label: string }[] = [
   { key: 'grid', label: 'Grid' },
   { key: 'boundaries', label: 'Boundaries' },
-  { key: 'sensorFootprints', label: 'Sensor footprints' },
-  { key: 'classifyRings', label: 'Classify rings' },
-  { key: 'effectorEnvelopes', label: 'Effector envelopes' },
+  ...ringItems(SENSOR_RING_KEYS),
+  ...ringItems(EFFECTOR_RING_KEYS),
   { key: 'defendedAreas', label: 'Defended areas' },
   { key: 'threatWez', label: 'Threat WEZ' },
   { key: 'flightPaths', label: 'Flight paths' },
@@ -62,12 +73,41 @@ function ToggleItem({ label, checked, onPick }: { label: string; checked: boolea
   )
 }
 
+/** Tri-state cycle for one ring override: global, then on, then off, then global. */
+function nextOverride(current: boolean | null): boolean | null {
+  if (current == null) return true
+  return current ? false : null
+}
+
+// Ring variant of ToggleItem: the tick is the effective visibility and the
+// trailing word appears only while this entity overrides the global switch.
+function RingItem({
+  label,
+  checked,
+  override,
+  onPick,
+}: {
+  label: string
+  checked: boolean
+  override: boolean | null
+  onPick: () => void
+}) {
+  return (
+    <button className="ctx-item" onClick={onPick}>
+      <span className="ctx-check">{checked ? '✓' : ''}</span>
+      {label}
+      {override != null && <span className="ctx-note">{override ? 'on' : 'off'}</span>}
+    </button>
+  )
+}
+
 /** Right-click menu for the canvas. Rendered as DOM over the Konva stage. */
 export function ContextMenu() {
   const menu = useStore((s) => s.ui.contextMenu)
   const scenario = useStore((s) => s.scenario)
   const selection = useStore((s) => s.selection)
-  const layers = useStore((s) => s.ui.layers)
+  const ui = useStore((s) => s.ui)
+  const layers = ui.layers
   const closeContextMenu = useStore((s) => s.closeContextMenu)
   // Tied to the menu object identity so each freshly opened menu starts closed.
   const [submenuState, setSubmenuState] = useState<{ menu: unknown; value: string | null } | null>(
@@ -111,6 +151,39 @@ export function ContextMenu() {
                 onPick={() => st.toggleLayer(l.key)}
               />
             ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // A ring override is view state too: it goes through setRingOverride, so it
+  // pushes no undo step and it never enters the scenario.
+  function ringsFlyout(entityId: string, keys: readonly RingKey[]) {
+    const forced = ui.ringOverrides[entityId] ?? {}
+    const anyForced = keys.some((k) => forced[k] != null)
+    return (
+      <div className="ctx-sub" onMouseEnter={() => setSubmenu('rings')}>
+        <button className="ctx-item">Rings ▸</button>
+        {submenu === 'rings' && (
+          <div className="ctx-menu ctx-flyout">
+            {keys.map((k) => (
+              <RingItem
+                key={k}
+                label={RING_LABELS[k]}
+                checked={ringVisible(ui, entityId, k)}
+                override={forced[k] ?? null}
+                onPick={() => st.setRingOverride(entityId, k, nextOverride(forced[k] ?? null))}
+              />
+            ))}
+            {anyForced && (
+              <Item
+                label="Reset to global"
+                onPick={() => {
+                  for (const k of keys) st.setRingOverride(entityId, k, null)
+                }}
+              />
+            )}
           </div>
         )}
       </div>
@@ -197,6 +270,8 @@ export function ContextMenu() {
         {multi && (
           <Item label="Save selection as system" onPick={() => st.saveSelectionAsSystem('')} />
         )}
+        {entity.kind === 'sensor' && ringsFlyout(entity.id, SENSOR_RING_KEYS)}
+        {entity.kind === 'effector' && ringsFlyout(entity.id, EFFECTOR_RING_KEYS)}
         {displayFlyout()}
         <Item danger label="Delete" onPick={() => {
           st.select({ entityIds: [entity.id] })

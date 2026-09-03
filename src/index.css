@@ -1258,6 +1258,16 @@ p.muted.small {
   white-space: normal;
 }
 
+/* A ring row holds a control, not a value. The row centres on the control
+   box, and the value cell sizes to the control instead of filling the panel. */
+.insp-rings .insp-row {
+  align-items: center;
+}
+
+.insp-rings .insp-row-value {
+  flex: 0 0 auto;
+}
+
 /* ---------- Inspector: editable fields ---------- */
 
 .field {
@@ -1493,6 +1503,13 @@ p.muted.small {
 .te-header > .seg button {
   flex: 0 0 auto;
   padding: 4px 9px;
+}
+
+/* A ring control sits in an Inspector row, so it sizes to its three labels
+   instead of filling the panel. */
+.insp-rings .seg {
+  width: auto;
+  font-size: 11px;
 }
 
 /* ---------- Test cards ---------- */
@@ -1817,6 +1834,14 @@ p.muted.small {
   width: 1.375em;
   color: var(--accent);
   font-size: 10px;
+}
+
+/* Says that this entity forces the ring, so the global switch does not
+   apply to it. Sits after the ring name in the Rings flyout. */
+.ctx-note {
+  margin-left: 6px;
+  color: var(--text-dim);
+  font-size: 10.5px;
 }
 
 /* Presets carry no check, so pad them out to the same text start. Matching on

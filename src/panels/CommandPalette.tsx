@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { useStore } from '../state/store'
+import { RING_KEYS, useStore } from '../state/store'
 import { toggleAnalysisRun } from '../playback/runSession'
 import type { Tool } from '../state/store'
+import { RING_LABELS } from './ringLabels'
 import type { BasemapMode } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import {
@@ -55,6 +56,13 @@ const ACTIONS: Command[] = [
     label: 'Toggle threat WEZ overlay',
     run: () => useStore.getState().toggleLayer('threatWez'),
   },
+  ...RING_KEYS.map((key): Command => ({
+    id: `toggle-ring-${key}`,
+    category: 'View',
+    // Lower the first letter as the other entries do, but keep the Pd abbreviation.
+    label: `Toggle ${RING_LABELS[key].replace(/^(?!Pd)\w/, (c) => c.toLowerCase())}`,
+    run: () => useStore.getState().toggleLayer(key),
+  })),
   {
     id: 'toggle-units',
     category: 'View',

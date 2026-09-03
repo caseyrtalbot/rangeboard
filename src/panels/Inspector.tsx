@@ -17,8 +17,9 @@ import {
 } from '../model/types'
 import { Actions, EmptyState, ObjectHeader, Row, Section, ShortcutList } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
-import { useStore, modelFor } from '../state/store'
-import type { RaidDraft } from '../state/store'
+import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS, useStore, modelFor } from '../state/store'
+import type { RaidDraft, RingKey } from '../state/store'
+import { RING_HINTS, RING_LABELS } from './ringLabels'
 import { formatDistance, formatSpeed, pathLength } from '../geometry/geo'
 import { evaluateIntegration, integrationSummary } from '../model/integration'
 import type { IntegrationConfidence } from '../model/integration'
@@ -254,6 +255,47 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
         )
       })}
     </>
+  )
+}
+
+type RingChoice = 'global' | 'on' | 'off'
+
+const RING_CHOICES: Array<{ v: RingChoice; label: string }> = [
+  { v: 'global', label: 'Global' },
+  { v: 'on', label: 'On' },
+  { v: 'off', label: 'Off' },
+]
+
+/**
+ * Ring switches for one entity. Each row is tri-state: the ring follows the
+ * View menu, or this entity forces it on, or this entity forces it off. An
+ * override is view state, so no row here is undoable.
+ */
+function RingOverrideRows({ entityId, keys }: { entityId: string; keys: readonly RingKey[] }) {
+  const overrides = useStore((s) => s.ui.ringOverrides[entityId])
+  const { setRingOverride } = useStore.getState()
+  return (
+    <div className="insp-rings">
+      {keys.map((k) => {
+        const forced = overrides?.[k]
+        const choice: RingChoice = forced == null ? 'global' : forced ? 'on' : 'off'
+        return (
+          <Row
+            key={k}
+            label={RING_LABELS[k]}
+            title={RING_HINTS[k]}
+            value={
+              <Seg
+                value={choice}
+                options={RING_CHOICES}
+                label={`${RING_LABELS[k]} for this entity`}
+                onChange={(v) => setRingOverride(entityId, k, v === 'global' ? null : v === 'on')}
+              />
+            }
+          />
+        )
+      })}
+    </div>
   )
 }
 
@@ -837,6 +879,11 @@ function EntityInspector({ entity }: { entity: Entity }) {
           />
         </Section>
       )}
+      {entity.kind === 'sensor' && (
+        <Section label="Rings">
+          <RingOverrideRows entityId={entity.id} keys={SENSOR_RING_KEYS} />
+        </Section>
+      )}
       {model?.effector && (
         <Section label="Performance">
           <Row
@@ -867,6 +914,11 @@ function EntityInspector({ entity }: { entity: Entity }) {
             }
             note="Height of the launcher or the emitter above ground. The engine measures the slant range from it. The value applies to every effector placed from this model."
           />
+        </Section>
+      )}
+      {entity.kind === 'effector' && (
+        <Section label="Rings">
+          <RingOverrideRows entityId={entity.id} keys={EFFECTOR_RING_KEYS} />
         </Section>
       )}
       {model?.uas && (

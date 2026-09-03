@@ -139,12 +139,24 @@ export const SIZE_PENALTY: Record<UasGroup, number> = { 1: 0.7, 2: 0.8, 3: 0.9, 
  *  hand-flown and jink; every other airframe flies waypoints. */
 export const EVASION_PENALTY = 0.7
 
+/** Pk fraction lost at max range (PF, source formula: 30%). The falloff is
+ *  linear from 1 at the launcher to 1 - FALLOFF_AT_MAX at max range. */
+export const FALLOFF_AT_MAX = 0.3
+
 /** Distance falloff: 30% Pk reduction at max range (source formula). Zero
  *  beyond max range: no envelope means no kill probability at all.
  *  `distM` is the slant range from the launcher to the intercept point. */
 export function distanceFalloff(distM: number, maxRangeM: number): number {
   if (maxRangeM <= 0 || distM > maxRangeM) return 0
-  return 1 - 0.3 * (distM / maxRangeM)
+  return 1 - FALLOFF_AT_MAX * (distM / maxRangeM)
+}
+
+/** Inverse of distanceFalloff on [0, maxRangeM]: the slant range where the
+ *  falloff equals `factor`, clamped to the envelope. */
+export function falloffRangeM(factor: number, maxRangeM: number): number {
+  if (maxRangeM <= 0) return 0
+  const r = (maxRangeM * (1 - factor)) / FALLOFF_AT_MAX
+  return Math.min(maxRangeM, Math.max(0, r))
 }
 
 /**
