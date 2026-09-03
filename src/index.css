@@ -1495,39 +1495,6 @@ p.muted.small {
   padding: 4px 9px;
 }
 
-/* ---------- After-action report ---------- */
-
-.aar-threat-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-
-.aar-threat-table th {
-  text-align: left;
-  font-weight: 400;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
-  padding: 3px 6px;
-  border-bottom: 1px solid var(--border);
-}
-
-.aar-threat-table td {
-  padding: 3px 6px;
-  vertical-align: middle;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
-}
-
-.aar-threat-table tr.aar-group td {
-  background: color-mix(in srgb, var(--bg-input) 55%, transparent);
-}
-
-.aar-threat-table tr.aar-group:hover td {
-  background: var(--hover);
-}
-
 /* ---------- Test cards ---------- */
 
 .cards-panel {
@@ -1583,18 +1550,6 @@ p.muted.small {
 
 /* ---------- Analysis ---------- */
 
-.threat-row {
-  border-top: 1px solid var(--border-subtle);
-  padding: var(--space-3) 0 var(--space-1);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.threat-name {
-  font-weight: 600;
-}
-
 .status {
   display: inline-block;
   font-size: 10px;
@@ -1630,13 +1585,6 @@ p.muted.small {
   color: var(--text-dim);
   border-color: var(--border);
   background: color-mix(in srgb, var(--border) 22%, transparent);
-}
-
-/* EW channel: jam-degraded arrivals, distinct from kills/leakers/not-engaged. */
-.status.jam {
-  color: var(--ew);
-  border-color: color-mix(in srgb, var(--ew) 45%, transparent);
-  background: color-mix(in srgb, var(--ew) 10%, transparent);
 }
 
 /* Progressive disclosure: header row, sections, compact threat rows */
@@ -1722,67 +1670,6 @@ p.muted.small {
   letter-spacing: normal;
   cursor: pointer;
   white-space: nowrap;
-}
-
-.threat-row.compact {
-  padding: var(--space-2);
-  gap: 5px;
-}
-
-.threat-compact {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-  min-width: 0;
-}
-
-.threat-compact .threat-name {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Second row of a compact threat line: shots and kill/leak, aligned across rows. */
-.threat-substats {
-  padding-left: 16px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  user-select: none;
-}
-
-.iw-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--warn);
-  font-size: 11px;
-}
-
-.threat-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.threat-table td {
-  padding: 2px 4px;
-  vertical-align: top;
-}
-
-.threat-table td:first-child {
-  color: var(--text-dim);
-  white-space: nowrap;
-  width: 40%;
 }
 
 /* ---------- Timeline ---------- */
@@ -2182,44 +2069,6 @@ p.muted.small {
   text-overflow: ellipsis;
 }
 
-.threat-group-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-  min-width: 0;
-}
-
-.threat-group-head .threat-name {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.microbar {
-  flex: 1 1 40px;
-  min-width: 40px;
-  height: 6px;
-  display: flex;
-  gap: 2px;
-}
-
-.microbar span {
-  height: 6px;
-  border-radius: 2px;
-  min-width: 2px;
-}
-
-.threat-group-members {
-  margin-left: var(--panel-pad);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 /* ---------- Info affordance ---------- */
 
 /* Small "i" dot; opens a methodology popover so prose stays out of the flow. */
@@ -2341,54 +2190,6 @@ p.muted.small {
   background: color-mix(in srgb, var(--accent) 4%, transparent);
   pointer-events: none;
   z-index: 5;
-}
-
-/* ---------- AAR report layout ---------- */
-
-.aar-headline {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Stacked raid-outcome bar. Transparent 2px gaps read as panel background. */
-.aar-bar {
-  display: flex;
-  gap: 2px;
-  height: 8px;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.aar-bar div {
-  flex-basis: 0;
-}
-
-/* A narrow panel scrolls AAR tables sideways instead of wrapping cells. */
-.aar-table-wrap {
-  overflow-x: auto;
-}
-
-.aar-table-wrap th,
-.aar-table-wrap td {
-  white-space: nowrap;
-}
-
-.aar-threat-table td.num {
-  font-variant-numeric: tabular-nums;
-}
-
-.aar-threat-table .status {
-  margin-right: 3px;
-}
-
-.aar-threat-table tr.aar-group {
-  cursor: pointer;
-  user-select: none;
-}
-
-.aar-threat-table tr.aar-member td:first-child {
-  padding-left: 16px;
 }
 
 /* ---------- Typography ---------- */
