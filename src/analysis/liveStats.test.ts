@@ -533,7 +533,7 @@ describe('leakerShips converges to AttritionTotals.expectedLeakers', () => {
 
   /** Threat A runs the lane past a defended asset; threat B flies 5 km wide. */
   function run() {
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     scenario.library = [...scenario.library, RADAR, TARGET, INT]
     const sensor = ent('sensor', RADAR.id, { x: 0, y: 0 })
     const eff = ent('effector', INT.id, { x: 0, y: 0 })
@@ -576,3 +576,14 @@ describe('leakerShips converges to AttritionTotals.expectedLeakers', () => {
     expect(report.totals.raidSize).toBe(2)
   })
 })
+
+/**
+ * Legacy instant-release engine (doctrine off). These fixtures assert the
+ * pre-doctrine numbers: the ROE gate alone opens the window and every ready
+ * effector volleys. New scenarios default to the doctrinal sequence.
+ */
+function legacyScenario(): ReturnType<typeof emptyScenario> {
+  const s = emptyScenario()
+  s.doctrine = { ...s.doctrine!, enabled: false }
+  return s
+}

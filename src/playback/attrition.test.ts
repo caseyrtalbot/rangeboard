@@ -124,7 +124,7 @@ function singleThreatScenario(effectorModel: SpecModel): {
   effId: string
   uasId: string
 } {
-  const scenario = emptyScenario()
+  const scenario = legacyScenario()
   scenario.library = [...scenario.library, SENSOR, TARGET, effectorModel]
   const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
   const eff = ent('effector', effectorModel.id, { x: 0, y: 0 })
@@ -331,7 +331,7 @@ function longScenario(
   endX = 4000,
   targetModel: SpecModel = TARGET,
 ): { scenario: Scenario; effIds: string[]; uasId: string } {
-  const scenario = emptyScenario()
+  const scenario = legacyScenario()
   scenario.library = [...scenario.library, SENSOR, targetModel, ...effectorModels]
   const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
   const effs = effectorModels.map((m) => ent('effector', m.id, { x: 0, y: 0 }))
@@ -515,7 +515,7 @@ describe('fire distribution: survival cutoff', () => {
     //      later one HOLDS: ~22 window opportunities go unused.
     //   B: same three shots at 65.5/67.5/69.5 from the held rounds.
     // The pre-cutoff engine spent all 10 rounds on A and starved B.
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     const model = interceptor({ pk: 0.9, magazineSize: 10, salvoCooldownS: 2 })
     scenario.library = [...scenario.library, SENSOR, TARGET, model]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
@@ -595,7 +595,7 @@ describe('fire distribution: continue-jam saturation', () => {
     // probability 0.0412 < SHIP_DEAD_BELOW: the track is saturated and
     // every later opportunity holds.
     const jamModel = jammer({ pk: 0.9, salvoCooldownS: 2 })
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     scenario.library = [...scenario.library, SENSOR, TARGET_MIXED, jamModel]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
     const eff = ent('effector', jamModel.id, { x: 0, y: 0 })
@@ -626,7 +626,7 @@ describe('expenditure split: kinetic vs jam', () => {
     // before the jam this tick: kill = 0.5 * 0.703 = 0.3515.
     const jamModel = jammer({ pk: 0.5, salvoCooldownS: 1000 })
     const intModel = interceptor({ pk: 0.5, salvoCooldownS: 1000 })
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     scenario.library = [...scenario.library, SENSOR, TARGET_MIXED, intModel, jamModel]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
     const int = ent('effector', intModel.id, { x: 0, y: 0 })
@@ -856,7 +856,7 @@ describe('expenditure channel split', () => {
       },
     }
     const jamModel = jammer({ pk: 0.5, salvoCooldownS: 1000 })
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     scenario.library = [...scenario.library, SENSOR, TARGET_MIXED, intModel, deModel, jamModel]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
     const int = ent('effector', intModel.id, { x: 0, y: 0 })
@@ -902,7 +902,7 @@ describe('raid partition', () => {
     aId: string
     bId: string
   } {
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     const model = interceptor({ pk: 0.5, magazineSize: 1, salvoCooldownS: 1000 })
     scenario.library = [...scenario.library, SENSOR, TARGET, model]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
@@ -1018,3 +1018,14 @@ describe('raid partition', () => {
     expect(r.totals.expectedLeakers).toBeGreaterThan(r.totals.expectedLateKills)
   })
 })
+
+/**
+ * Legacy instant-release engine (doctrine off). These fixtures assert the
+ * pre-doctrine numbers: the ROE gate alone opens the window and every ready
+ * effector volleys. New scenarios default to the doctrinal sequence.
+ */
+function legacyScenario(): ReturnType<typeof emptyScenario> {
+  const s = emptyScenario()
+  s.doctrine = { ...s.doctrine!, enabled: false }
+  return s
+}

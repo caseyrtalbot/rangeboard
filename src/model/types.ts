@@ -271,6 +271,12 @@ export interface EffectorSpec {
    * the PK_COMMIT type table in doctrineFactors.ts.
    */
   commitPk?: number
+  /**
+   * Doctrine: weapon assignment and firing-solution dwell (the TARGET step)
+   * from engagement authority to release-ready, seconds. Absent: the
+   * TARGET_S type table in doctrineFactors.ts.
+   */
+  targetS?: number
 }
 
 /** Threat employment intent, carried by threat/UAS models for cards and playback. */
@@ -496,29 +502,54 @@ export type EngagePolicy = 'detected' | 'confirmed'
 export type Roe = 'hold' | 'tight' | 'free'
 
 /**
- * Doctrinal fire-control settings (detect -> track -> identify -> declare ->
- * engage -> assess). Disabled = legacy behavior: the ROE gate alone opens the
- * engagement and every ready effector volleys until the target is expected
- * dead. Enabled, three things change:
- *   GATE. A shot needs a STABLE FIRE-CONTROL TRACK (a radar or EO/IR sensor
- *   holding the track continuously for trackFirmS; RF and acoustic hits cue
- *   but cannot build a firing solution), hostile identification on the
- *   classification ladder, then a declareHostileS operator dwell after both.
- *   ROE 'free' vs 'tight' no longer changes the gate (both require the
- *   declaration); 'hold' still blocks everything.
- *   FIRE DISTRIBUTION. Shoot-look-shoot: one kill salvo in flight per ship,
- *   and after its effect a bdaS assessment dwell before anyone re-engages
- *   that ship. Among effectors able to shoot, the best predicted per-shot Pk
- *   wins the assignment.
- *   LAUNCH POINT. A shooter holds fire until its predicted Pk at effect time
- *   reaches pkCommit, unless waiting longer would forfeit `opportunities`
- *   full engagement cycles (engage time + BDA) before the threat's arrival,
- *   in which case it fires at that deadline regardless of Pk.
- * All values are planning factors, editable per scenario. trackFirmS, bdaS
- * and pkCommit are the UNIFORM fallbacks: with doctrine enabled the engine
- * derives per-system values instead (spec override, else the role/type
- * tables in src/analysis/doctrineFactors.ts, else these), and links with no
- * latencyS are charged the doctrineFactors default hop latency.
+ * Launch-point policy: WHERE in the effector envelope a shot is released once
+ * the doctrinal sequence has authorized it. Every policy still requires a
+ * positive predicted Pk, and every policy fires no later than the deadline
+ * that preserves `opportunities` engagement cycles before arrival (a closing
+ * in-range window is its own deadline). Test-and-evaluation use of each:
+ *   'max-range'      release at the first in-envelope opportunity. Exercises
+ *                    the maximum engagement range; Pk pays the full falloff.
+ *   'range-fraction' release once the intercept point is inside
+ *                    launchRangeFraction x max range (planning default 2/3,
+ *                    the effective-range rule of thumb). Exercises a
+ *                    mid-envelope shot with margin for a re-attack.
+ *   'pk-commit'      release once predicted per-shot Pk reaches the
+ *                    effector's commit Pk (doctrineFactors PK_COMMIT, spec
+ *                    override commitPk). Quality firing solution first.
+ *   'latest'         hold to the deadline itself: the last launch that still
+ *                    preserves the re-engagement depth. Exercises the
+ *                    minimum-range / last-chance shot.
+ */
+export type LaunchPolicy = 'max-range' | 'range-fraction' | 'pk-commit' | 'latest'
+
+/**
+ * Doctrinal fire-control settings: detect -> track -> identify -> target ->
+ * engage -> assess. Enabled (the default), the engine runs the sequence:
+ *   TRACK. A shot needs a STABLE FIRE-CONTROL TRACK (a radar or EO/IR sensor
+ *   holding the track continuously for its track initiation time; RF and
+ *   acoustic hits cue but cannot build a firing solution).
+ *   IDENTIFY. Hostile identification on the classification ladder, then a
+ *   declareHostileS operator dwell after both. ROE 'free' vs 'tight' no longer
+ *   changes the gate (both require the declaration); 'hold' still blocks.
+ *   TARGET. The declared track is routed to a shooter (kill-chain hop
+ *   latency) and that shooter needs its weapon assignment and firing
+ *   solution dwell (targetS; per type in doctrineFactors TARGET_S, spec
+ *   override EffectorSpec.targetS). The effector is release-ready only then.
+ *   ENGAGE. Shoot-look-shoot: one kill salvo in flight per ship, and among
+ *   effectors able to shoot the best predicted per-shot Pk wins. The
+ *   launchPolicy decides where in the envelope the shot is released; the
+ *   deadline that preserves `opportunities` full engagement cycles (engage
+ *   time + BDA) before arrival forces the shot regardless of policy.
+ *   ASSESS. A bdaS battle-damage-assessment dwell after each effect before
+ *   anyone re-engages that ship.
+ * Disabled = legacy instant release: the ROE gate alone opens the window and
+ * every ready effector volleys until the target is expected dead. Keep it for
+ * regression comparison, not for planning.
+ * All values are planning factors, editable per scenario. trackFirmS,
+ * targetS, bdaS and pkCommit are the UNIFORM fallbacks: with doctrine
+ * enabled the engine derives per-system values instead (spec override, else
+ * the role/type tables in src/analysis/doctrineFactors.ts, else these), and
+ * links with no latencyS are charged the doctrineFactors default hop latency.
  */
 export interface FireDoctrine {
   enabled: boolean
@@ -526,21 +557,30 @@ export interface FireDoctrine {
   trackFirmS: number
   /** Operator dwell from hostile ID (with firm track) to weapons release, s. */
   declareHostileS: number
+  /** Weapon assignment + firing-solution dwell (TARGET step) fallback, seconds. */
+  targetS: number
   /** Battle-damage-assessment dwell after a salvo's effect, seconds. */
   bdaS: number
   /** Hold fire until predicted per-shot Pk reaches this, deadline permitting. */
   pkCommit: number
   /** Engagement cycles to preserve before arrival (shoot-look-shoot depth). */
   opportunities: number
+  /** Where in the envelope a shot is released once authorized. */
+  launchPolicy: LaunchPolicy
+  /** 'range-fraction' policy: release inside this fraction of max range (0-1). */
+  launchRangeFraction: number
 }
 
 export const DEFAULT_FIRE_DOCTRINE: FireDoctrine = {
-  enabled: false,
+  enabled: true,
   trackFirmS: 5,
   declareHostileS: 10,
+  targetS: 5,
   bdaS: 10,
   pkCommit: 0.35,
   opportunities: 2,
+  launchPolicy: 'pk-commit',
+  launchRangeFraction: 2 / 3,
 }
 
 /** Scenario doctrine with defaults filled for fields older saves lack. */

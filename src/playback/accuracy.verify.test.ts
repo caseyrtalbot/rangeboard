@@ -126,7 +126,7 @@ function effModel(id: string, spec: Partial<EffectorSpec>): SpecModel {
 
 /** Empty scenario with environment effects OFF so all ranges are spec-exact. */
 function base(): Scenario {
-  const s = emptyScenario()
+  const s = legacyScenario()
   s.environment.apply = false
   return s
 }
@@ -997,3 +997,14 @@ describe('CLAIM 5 - route latency delays the trigger, not just the window', () =
     expect(r.effectors.find((x) => x.effectorId === effId)!.expectedRoundsRemaining).toBe(5)
   })
 })
+
+/**
+ * Legacy instant-release engine (doctrine off). These fixtures assert the
+ * pre-doctrine numbers: the ROE gate alone opens the window and every ready
+ * effector volleys. New scenarios default to the doctrinal sequence.
+ */
+function legacyScenario(): ReturnType<typeof emptyScenario> {
+  const s = emptyScenario()
+  s.doctrine = { ...s.doctrine!, enabled: false }
+  return s
+}

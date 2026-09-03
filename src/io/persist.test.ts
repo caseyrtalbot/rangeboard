@@ -437,6 +437,22 @@ describe('nested object load fill', () => {
     expect(filled.underlay).toEqual(empty.underlay)
     expect(filled.raid).toEqual({ waves: [] })
   })
+
+  it('a doctrine record saved before launch policies existed adopts the doctrinal sequence', () => {
+    const s = emptyScenario() as unknown as Record<string, unknown>
+    // Pre-launch-policy shape: enabled false was the default of the day.
+    s.doctrine = { enabled: false, trackFirmS: 5, declareHostileS: 10, bdaS: 10, pkCommit: 0.35, opportunities: 2 }
+    const filled = fillScenario(s as unknown as Scenario)
+    expect(filled.doctrine?.enabled).toBe(true)
+    expect(filled.doctrine?.launchPolicy).toBe('pk-commit')
+    expect(filled.doctrine?.declareHostileS).toBe(10)
+  })
+
+  it('a doctrine record with a launch policy keeps its enabled flag', () => {
+    const s = emptyScenario()
+    s.doctrine = { ...s.doctrine!, enabled: false }
+    expect(fillScenario(s).doctrine?.enabled).toBe(false)
+  })
 })
 
 // The node test env has no Web Storage or window; both get stand-ins.

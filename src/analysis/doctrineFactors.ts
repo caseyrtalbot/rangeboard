@@ -1,4 +1,11 @@
-import type { EffectorSpec, Entity, FireDoctrine, SensorRole, SensorSpec } from '../model/types'
+import type {
+  EffectorSpec,
+  Entity,
+  FireDoctrine,
+  LaunchPolicy,
+  SensorRole,
+  SensorSpec,
+} from '../model/types'
 import { defaultSensorRole } from '../model/types'
 
 /**
@@ -20,6 +27,12 @@ import { defaultSensorRole } from '../model/types'
  *   COMMIT PK follows cost per shot. A cheap, fast-recycling shot (DE, gun)
  *   is worth taking early at modest Pk; a counted interceptor holds for a
  *   quality firing solution.
+ *   TARGET DWELL is the weapon side of the kill chain between engagement
+ *   authority and release-ready: the shooter is assigned, the turret or
+ *   launcher slews onto the cue, its own tracker or seeker acquires, and the
+ *   firing solution settles. A turreted gun with an auto-tracker is quick; a
+ *   launcher-fired interceptor adds the launch sequence; a net or capture
+ *   drone must be launched and vectored.
  */
 
 /** Continuous hold needed to initiate a stable track file, by sensor role, s. */
@@ -40,6 +53,21 @@ export const BDA_S: Record<EffectorSpec['effectorType'], number> = {
   interceptor: 10,
   net: 20,
   jammer: 5,
+}
+
+/**
+ * Weapon assignment + firing-solution dwell (TARGET step) by effector type, s.
+ * Planning factors: charged after the declaration gate and the kill-chain
+ * hop latency, before the first possible release. A jammer is illumination,
+ * not a round, and stays on the legacy release path.
+ */
+export const TARGET_S: Record<EffectorSpec['effectorType'], number> = {
+  gun: 4,
+  de: 5,
+  hpm: 3,
+  interceptor: 8,
+  net: 6,
+  jammer: 0,
 }
 
 /** Hold-fire commit Pk by effector type: cheap fast shots commit earlier. */
@@ -84,4 +112,42 @@ export function bdaSFor(spec: EffectorSpec, doctrine: FireDoctrine): number {
 /** Commit Pk for one effector: spec override, type table, fallback. */
 export function commitPkFor(spec: EffectorSpec, doctrine: FireDoctrine): number {
   return spec.commitPk ?? PK_COMMIT[spec.effectorType] ?? doctrine.pkCommit
+}
+
+/** Target dwell for one effector: spec override, type table, fallback. */
+export function targetSFor(spec: EffectorSpec, doctrine: FireDoctrine): number {
+  return spec.targetS ?? TARGET_S[spec.effectorType] ?? doctrine.targetS
+}
+
+/**
+ * Launch-point policies in display order, one definition for the panel, the
+ * headline and any record that names the policy. `hint` is the one-line
+ * test-and-evaluation reading of the option.
+ */
+export const LAUNCH_POLICIES: ReadonlyArray<{ v: LaunchPolicy; label: string; hint: string }> = [
+  {
+    v: 'max-range',
+    label: 'Max range',
+    hint: 'Release at the first in-envelope opportunity. Exercises the maximum engagement range; Pk pays the full range falloff.',
+  },
+  {
+    v: 'range-fraction',
+    label: 'Range fraction',
+    hint: 'Release once the intercept point is inside the set fraction of max range (2/3 default). Mid-envelope shot with margin for a re-attack.',
+  },
+  {
+    v: 'pk-commit',
+    label: 'Pk commit',
+    hint: 'Release once predicted per-shot Pk reaches the effector commit Pk. Quality firing solution first; the deadline still forces the shot.',
+  },
+  {
+    v: 'latest',
+    label: 'Latest launch',
+    hint: 'Hold to the last launch that still preserves the re-engagement depth. Exercises the minimum-range, last-chance shot.',
+  },
+]
+
+/** Display label of a launch policy. */
+export function launchPolicyLabel(policy: LaunchPolicy): string {
+  return LAUNCH_POLICIES.find((p) => p.v === policy)?.label ?? policy
 }

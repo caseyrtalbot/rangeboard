@@ -21,8 +21,8 @@ const TOOLS = [
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
 
 const ROE_PILLS: Record<Roe, { label: string; cls: string; hint: string }> = {
-  free: { label: 'ROE Free', cls: 'pill-good', hint: 'ROE free: engage on first detection' },
-  tight: { label: 'ROE Tight', cls: 'pill-dim', hint: 'ROE tight: engage tracks classified hostile' },
+  free: { label: 'ROE Free', cls: 'pill-good', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
+  tight: { label: 'ROE Tight', cls: 'pill-dim', hint: 'ROE tight: engage tracks declared hostile' },
   hold: { label: 'ROE Hold', cls: 'pill-warn', hint: 'ROE hold: no engagements' },
 }
 

@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import type { EmBackground, LightLevel, Precipitation, Roe } from '../model/types'
+import type { EmBackground, LaunchPolicy, LightLevel, Precipitation, Roe } from '../model/types'
 import { effectiveDoctrine } from '../model/types'
 import { formatSpeed } from '../geometry/geo'
+import { LAUNCH_POLICIES, launchPolicyLabel } from '../analysis/doctrineFactors'
 import { visibilityMFor } from '../analysis/sensorEnv'
 import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
@@ -199,6 +200,104 @@ function EnvironmentInfo() {
   )
 }
 
+/** Doctrine section body: the scenario-level planning factors that bind. */
+function DoctrineBody() {
+  const scenario = useStore((state) => state.scenario)
+  const patchScenario = useStore((state) => state.patchScenario)
+  const doctrine = effectiveDoctrine(scenario)
+  const patch = (next: Partial<typeof doctrine>) =>
+    patchScenario({ doctrine: { ...doctrine, ...next } })
+  const policy = LAUNCH_POLICIES.find((p) => p.v === doctrine.launchPolicy)
+  const fractionPct = Math.round(doctrine.launchRangeFraction * 100)
+  return (
+    <>
+      <Field label="Launch point">
+        <Seg
+          value={doctrine.launchPolicy}
+          options={LAUNCH_POLICIES.map((p) => ({ v: p.v as LaunchPolicy, label: p.label }))}
+          onChange={(launchPolicy) => patch({ launchPolicy })}
+        />
+      </Field>
+      {policy ? <p className="muted analysis-empty">{policy.hint}</p> : null}
+      <div className="field-row">
+        <Field label={`Release inside ${fractionPct}% of max range`}>
+          <input
+            type="range"
+            min={10}
+            max={100}
+            step={5}
+            disabled={doctrine.launchPolicy !== 'range-fraction'}
+            value={fractionPct}
+            onChange={(event) => patch({ launchRangeFraction: Number(event.target.value) / 100 })}
+          />
+        </Field>
+        <Field label="Re-engagement depth (cycles before arrival)">
+          <input
+            type="number"
+            min={0}
+            max={5}
+            step={1}
+            value={doctrine.opportunities}
+            onChange={(event) =>
+              patch({ opportunities: Math.max(0, Math.round(Number(event.target.value))) })
+            }
+          />
+        </Field>
+      </div>
+      <div className="field-row">
+        <Field label="Hostile declaration dwell (s)">
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={doctrine.declareHostileS}
+            onChange={(event) =>
+              patch({ declareHostileS: Math.max(0, Number(event.target.value)) })
+            }
+          />
+        </Field>
+      </div>
+      <p className="muted analysis-empty">
+        Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role
+        and effector type tables in doctrineFactors, or the model's own override.
+      </p>
+    </>
+  )
+}
+
+function DoctrineInfo() {
+  return (
+    <Info label="About the fire-control sequence">
+      <p>
+        Detect, track, identify, target, engage, assess. A shot needs a stable radar or EO/IR
+        track from a sensor routed to the shooter, hostile identification, the declaration
+        dwell, the kill-chain hop latency, and the shooter's own target dwell. Only then is
+        the effector release-ready.
+      </p>
+      <p>
+        The launch point decides where in the envelope the authorized shot is released. Every
+        policy fires no later than the deadline that keeps the set re-engagement depth before
+        arrival, and every shot carries its predicted Pk at the effect point.
+      </p>
+      <p>
+        Doctrine off is the legacy instant-release engine: the ROE gate alone opens the window
+        and every ready effector volleys. Keep it for regression comparison.
+      </p>
+      <p>All timing values are planning factors, not measured system performance.</p>
+    </Info>
+  )
+}
+
+function doctrineHeadline(scenario: { doctrine?: ReturnType<typeof effectiveDoctrine> }): string {
+  const d = effectiveDoctrine(scenario)
+  if (!d.enabled) return 'off · instant release'
+  const policy =
+    d.launchPolicy === 'range-fraction'
+      ? `${launchPolicyLabel(d.launchPolicy)} ${Math.round(d.launchRangeFraction * 100)}%`
+      : launchPolicyLabel(d.launchPolicy)
+  return `${policy} · declare ${d.declareHostileS} s · depth ${d.opportunities}`
+}
+
 function AboutProjection() {
   return (
     <Info label="About the projection">
@@ -207,8 +306,9 @@ function AboutProjection() {
         only the current playback horizon.
       </p>
       <p>
-        Hold analyzes without engagement. Tight requires hostile classification. Free engages on
-        first detection.
+        Hold analyzes without engagement. With doctrine on, tight and free both require a stable
+        track, hostile declaration and a release-ready shooter. With doctrine off, tight requires
+        hostile classification and free engages on first detection.
       </p>
       <p>
         Track is evaluated at the first shot, target-window opening, or asset arrival. Effect
@@ -275,7 +375,7 @@ export function AnalysisPanel() {
         />
         <label
           className="adv-toggle"
-          title="Doctrinal fire control: firm radar track + hostile declaration before release, shoot-look-shoot with BDA, best-Pk shooter assignment"
+          title="Doctrinal fire control (default): stable track, hostile declaration, target dwell, launch-point policy, shoot-look-shoot with BDA. Off = legacy instant release."
         >
           <input
             type="checkbox"
@@ -334,6 +434,14 @@ export function AnalysisPanel() {
         }
       >
         <EnvironmentBody />
+      </AnalysisSection>
+
+      <AnalysisSection
+        title="Fire doctrine"
+        headline={doctrineHeadline(scenario)}
+        headerExtra={<DoctrineInfo />}
+      >
+        <DoctrineBody />
       </AnalysisSection>
 
       {threats.length > 0 && !complete && (

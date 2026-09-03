@@ -1,6 +1,7 @@
 import type {
   EffectorSpec,
   Entity,
+  FireDoctrine,
   FlightPath,
   JamBehavior,
   Scenario,
@@ -476,11 +477,12 @@ interface ThreatState {
   /** Time the required track quality was met; shots start no earlier. */
   gateS: number | null
   /**
-   * Doctrine: per-effector release gates from ThreatAssessment.effectorGates
-   * (route-aware firm track + declaration). Empty when doctrine is off. An
-   * effector with no entry cannot fire at this threat under doctrine.
+   * Doctrine: per-effector RELEASE-READY times from
+   * ThreatAssessment.effectorGates[].readyS (route-aware firm track +
+   * declaration + route latency + target dwell). Empty when doctrine is off.
+   * An effector with no entry cannot fire at this threat under doctrine.
    */
-  effectorGateS: Map<string, number>
+  effectorReadyS: Map<string, number>
   shotsFired: number
   deSalvos: number
   jamSalvos: number
@@ -521,6 +523,32 @@ interface PendingEffect {
 }
 
 const EPS = 1e-9
+
+/**
+ * Launch-point policy test for one candidate shot, evaluated at the effect
+ * point. True when the policy volunteers the shot now; the caller still fires
+ * at the deadline when this is false. 'latest' never volunteers.
+ */
+export function launchPolicyReleases(
+  doctrine: FireDoctrine,
+  pk: number,
+  commitPk: number,
+  interceptDistM: number,
+  maxRangeM: number,
+): boolean {
+  switch (doctrine.launchPolicy) {
+    case 'max-range':
+      return true
+    case 'range-fraction':
+      return interceptDistM <= doctrine.launchRangeFraction * maxRangeM + EPS
+    case 'pk-commit':
+      return pk >= commitPk - EPS
+    case 'latest':
+      return false
+    default:
+      return true
+  }
+}
 
 /**
  * Resolve every engagement window into expected kills, leakers, and magazine
@@ -592,7 +620,7 @@ export function resolveEngagements(
       windows,
       routeLatencyS,
       gateS: a.engageGateS,
-      effectorGateS: new Map((a.effectorGates ?? []).map((g) => [g.effectorId, g.gateS])),
+      effectorReadyS: new Map((a.effectorGates ?? []).map((g) => [g.effectorId, g.readyS])),
       shotsFired: 0,
       deSalvos: 0,
       jamSalvos: 0,
@@ -843,10 +871,14 @@ export function resolveEngagements(
         // The cue reaches this shooter routeLatencyS after the track became
         // engageable. Charging it from the gate (not from T0) keeps the delay
         // real when the ROE gate is later than the latency. Under doctrine
-        // the gate is this effector's own (route-aware) release time.
-        const gateBaseS = doctrine.enabled ? ts.effectorGateS.get(es.entity.id) : ts.gateS
-        if (gateBaseS == null) continue
-        if (t + EPS < gateBaseS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
+        // the effector's release-ready time already carries the latency and
+        // its target dwell.
+        const readyS = doctrine.enabled
+          ? ts.effectorReadyS.get(es.entity.id)
+          : ts.gateS == null
+            ? null
+            : ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)
+        if (readyS == null || t + EPS < readyS) continue
         const contains = (x: number) => intervals.some(([s0, s1]) => x >= s0 - EPS && x <= s1 + EPS)
         if (!contains(t) || !contains(tEffect)) continue
         const continueJam = softShot && ts.jamBehavior === 'continue'
@@ -909,18 +941,23 @@ export function resolveEngagements(
     }
 
     // DOCTRINE ASSIGNMENT PASS (kinetic and DE only). Doctrinal sequence:
-    // the gate in sim.ts already required a stable fire-control track,
-    // hostile ID, and the declaration dwell. Here the fire distribution is
-    // shoot-look-shoot: a ship with a kill salvo in flight, or inside its
-    // post-effect BDA dwell (ShipState.holdUntilS), draws no fire from
-    // anyone. Among the shooters that CAN engage a ship this tick, the best
-    // predicted per-shot Pk takes the shot (ties prefer unlimited magazines,
-    // then fuller magazines, then the threat closing soonest). A shooter
-    // holds fire until its Pk at effect time reaches pkCommit — the target
-    // is closing, so waiting buys accuracy — unless waiting past the
-    // deadline would forfeit `opportunities` full engagement cycles before
-    // the threat's arrival (CPA for a fly-by, window end when no asset
-    // exists), in which case it fires at the deadline regardless.
+    // sim.ts already required a stable fire-control track, hostile ID, the
+    // declaration dwell, the route latency and the shooter's target dwell
+    // (effectorReadyS). Here the fire distribution is shoot-look-shoot: a
+    // ship with a kill salvo in flight, or inside its post-effect BDA dwell
+    // (ShipState.holdUntilS), draws no fire from anyone. Among the shooters
+    // that CAN engage a ship this tick, the best predicted per-shot Pk takes
+    // the shot (ties prefer unlimited magazines, then fuller magazines, then
+    // the threat closing soonest). WHERE in the envelope the shot is released
+    // is the launch policy (FireDoctrine.launchPolicy): max-range releases at
+    // the first opportunity, range-fraction once the intercept point is
+    // inside launchRangeFraction x max range, pk-commit once the Pk at effect
+    // time reaches the effector's commit Pk (the target is closing, so
+    // waiting buys accuracy), latest never volunteers. Every policy fires at
+    // the deadline regardless: the last launch that still preserves
+    // `opportunities` full engagement cycles before the threat's arrival
+    // (CPA for a fly-by, window end when no asset exists), capped by the
+    // closing in-range window.
     if (doctrine.enabled) {
       interface Candidate {
         es: EffectorState
@@ -944,12 +981,12 @@ export function resolveEngagements(
           pointInSector(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, es.spec.maxRangeM, p)
         for (const ts of threats) {
           if (!ts.path) continue
-          // This effector's own route-aware release gate; no gate, no shot.
-          const gateBaseS = ts.effectorGateS.get(es.entity.id)
-          if (gateBaseS == null) continue
+          // This effector's own route-aware release-ready time; none, no shot.
+          const readyS = ts.effectorReadyS.get(es.entity.id)
+          if (readyS == null) continue
           const intervals = ts.windows.get(es.entity.id)
           if (!intervals) continue
-          if (t + EPS < gateBaseS + (ts.routeLatencyS.get(es.entity.id) ?? 0)) continue
+          if (t + EPS < readyS) continue
           const within = intervals.find(
             ([s0, s1]) => t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
           )
@@ -976,13 +1013,17 @@ export function resolveEngagements(
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
             const p = members[Math.min(i, members.length - 1)]
             if (!inEnvelope(p)) continue
-            const falloff = distanceFalloff(dist(es.entity.pos, p), es.spec.maxRangeM)
+            const interceptDistM = dist(es.entity.pos, p)
+            const falloff = distanceFalloff(interceptDistM, es.spec.maxRangeM)
             const size = ts.uasSpec ? SIZE_PENALTY[ts.uasSpec.group] : 1
             const evasion = ts.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
             const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
             if (pk <= 0) continue
-            // Hold fire below commit Pk while time still allows.
-            if (pk < esCommitPk - EPS && t + EPS < deadlineS) continue
+            // Launch policy: does this shooter volunteer the shot here? The
+            // deadline overrides a "no" from every policy.
+            if (!launchPolicyReleases(doctrine, pk, esCommitPk, interceptDistM, es.spec.maxRangeM)) {
+              if (t + EPS < deadlineS) continue
+            }
             candidates.push({ es, ts, shipIdx: i, pk, arrivalS })
           }
         }

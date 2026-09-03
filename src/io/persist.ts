@@ -61,13 +61,29 @@ export function fillScenario(parsed: Scenario): Scenario {
     environment: { ...empty.environment, ...parsed.environment },
     requirements: { ...empty.requirements, ...parsed.requirements },
     // emptyScenario() always sets these; the Scenario type keeps them optional for old saves.
-    doctrine: { ...(empty.doctrine as FireDoctrine), ...parsed.doctrine },
+    doctrine: fillDoctrine(empty.doctrine as FireDoctrine, parsed.doctrine),
     mcdaWeights: { ...(empty.mcdaWeights as McdaVector), ...parsed.mcdaWeights },
     underlay: { ...empty.underlay, ...parsed.underlay },
     raid: { ...(empty.raid as RaidPlan), ...parsed.raid },
 
     roe,
   }
+}
+
+/**
+ * Doctrine fill with one migration. Saves written before launch policies
+ * existed carry `enabled: false` only because that was the default of the
+ * day, never as a planning decision, so a doctrine record with no
+ * launchPolicy adopts the doctrinal sequence (the current default). A save
+ * that has a launchPolicy keeps its enabled flag as written.
+ */
+export function fillDoctrine(
+  empty: FireDoctrine,
+  saved: Partial<FireDoctrine> | undefined,
+): FireDoctrine {
+  if (!saved) return { ...empty }
+  const preLaunchPolicy = saved.launchPolicy == null
+  return { ...empty, ...saved, enabled: preLaunchPolicy ? empty.enabled : (saved.enabled ?? empty.enabled) }
 }
 
 /**

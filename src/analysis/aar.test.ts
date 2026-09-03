@@ -143,7 +143,7 @@ function mixedScenario(): {
   bId: string
   cId: string
 } {
-  const scenario = emptyScenario()
+  const scenario = legacyScenario()
   scenario.library = [...scenario.library, SENSOR, TARGET, INTERCEPTOR, JAMMER]
   const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
   const int = ent('effector', INTERCEPTOR.id, { x: 0, y: 0 }, 'Interceptor Alpha')
@@ -268,7 +268,7 @@ describe('buildAarSummary on a mixed hard-kill / soft-kill / leaker raid', () =>
 describe('AAR engagement-potential (I&W) fields', () => {
   /** OWA threat into a defended asset at the path end; no defenses. */
   function owaScenario(): { scenario: Scenario; uasId: string } {
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     const owa: SpecModel = {
       ...TARGET,
       id: 'tst-owa',
@@ -345,7 +345,7 @@ describe('AAR engagement-potential (I&W) fields', () => {
 describe('AAR directed-energy engagement', () => {
   /** The same lane as threat A, defended by an HPM emitter instead. */
   function hpmScenario(): { scenario: Scenario; hpmId: string; aId: string } {
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     scenario.library = [...scenario.library, SENSOR, TARGET, HPM]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
     const hpm = ent('effector', HPM.id, { x: 0, y: 0 }, 'HPM Charlie')
@@ -391,7 +391,7 @@ describe('AAR late intercepts', () => {
    * lands too late to have defended the asset.
    */
   function lateScenario(): { scenario: Scenario; uasId: string } {
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     const slow: SpecModel = {
       ...INTERCEPTOR,
       id: 'tst-slow-int',
@@ -462,7 +462,7 @@ describe('AarSummary pinned-shape tolerance', () => {
 
 describe('buildAarSummary edge cases', () => {
   it('summarizes an empty scenario without errors', () => {
-    const scenario = emptyScenario()
+    const scenario = legacyScenario()
     const aar = summarize(scenario)
     expect(aar.raidSize).toBe(0)
     expect(aar.leakProbability).toBeNull()
@@ -486,3 +486,14 @@ describe('buildAarSummary edge cases', () => {
     expect(a.outcome).toBe('leaker')
   })
 })
+
+/**
+ * Legacy instant-release engine (doctrine off). These fixtures assert the
+ * pre-doctrine numbers: the ROE gate alone opens the window and every ready
+ * effector volleys. New scenarios default to the doctrinal sequence.
+ */
+function legacyScenario(): ReturnType<typeof emptyScenario> {
+  const s = emptyScenario()
+  s.doctrine = { ...s.doctrine!, enabled: false }
+  return s
+}

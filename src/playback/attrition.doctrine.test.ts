@@ -13,7 +13,8 @@ import { assessAllThreats, assessThreat } from './sim'
  * (first sample inside the 1000 m effector ring); single-phenomenology ID
  * pays the full 10 s declaration dwell, so the gate is max(5.5, 6) + 10 =
  * 16; the sensor->effector link sets no latencyS, so doctrine charges the
- * 2 s default hop and the first shot lands no earlier than t = 18.
+ * 2 s default hop, then the interceptor's 8 s TARGET dwell (TARGET_S), so
+ * the effector is release-ready at t = 26 and no shot leaves earlier.
  */
 
 const RADAR: SpecModel = {
@@ -124,9 +125,12 @@ function build(sensorModel: SpecModel, effectorModels: SpecModel[], effPos: Vec2
     enabled: true,
     trackFirmS: 5,
     declareHostileS: 10,
+    targetS: 5,
     bdaS: 10,
     pkCommit: 0.35,
     opportunities: 2,
+    launchPolicy: 'pk-commit',
+    launchRangeFraction: 2 / 3,
   }
   scenario.library = [...scenario.library, sensorModel, TARGET, ...effectorModels]
   const sensor = ent('sensor', sensorModel.id, { x: 0, y: 0 })
@@ -165,7 +169,18 @@ describe('doctrine gate (sim.ts)', () => {
     expect(a.engageGateS).toBe(16)
     expect(a.declaredHostileAtS).toBe(16)
     expect(a.effectorGates?.length).toBe(1)
+    // TARGET: gate + 2 s default hop + 8 s interceptor target dwell.
+    expect(a.effectorGates?.[0].readyS).toBe(26)
+    // The usable window opens at release-ready, not at the declaration.
+    expect(a.windowS?.[0]).toBe(26)
     expect(a.status).toBe('engageable')
+  })
+
+  it('spec targetS overrides the TARGET_S type table', () => {
+    const { scenario, uasId } = build(RADAR, [interceptor('tst-int', { targetS: 1 })], [{ x: 0, y: 0 }])
+    const a = assessThreat(scenario, uasId)
+    expect(a.effectorGates?.[0].gateS).toBe(16)
+    expect(a.effectorGates?.[0].readyS).toBe(19)
   })
 
   it('spec trackInitS overrides the role table', () => {
@@ -224,15 +239,15 @@ describe('doctrine fire control (attrition.ts)', () => {
   it('shoot-look-shoot: one salvo in flight, re-engage after effect + BDA', () => {
     const { scenario } = build(
       RADAR,
-      [interceptor('tst-int', { engageTimeS: 10, salvoCooldownS: 1 })],
+      [interceptor('tst-int', { engageTimeS: 5, salvoCooldownS: 1 })],
       [{ x: 0, y: 0 }],
     )
     const report = resolveEngagements(scenario)
     expect(report.events.length).toBe(2)
-    // Gate 16 + 2 s default link latency; second shot only after effect
-    // (28) + the interceptor BDA table dwell (10).
-    expect(report.events[0].tS).toBeCloseTo(18, 5)
-    expect(report.events[1].tS).toBeCloseTo(38, 5)
+    // Gate 16 + 2 s default link latency + 8 s interceptor target dwell;
+    // second shot only after effect (31) + the interceptor BDA dwell (10).
+    expect(report.events[0].tS).toBeCloseTo(26, 5)
+    expect(report.events[1].tS).toBeCloseTo(41, 5)
   })
 
   it('per-type factors: DE commits earlier and re-attacks faster', () => {
@@ -254,9 +269,10 @@ describe('doctrine fire control (attrition.ts)', () => {
     }
     const { scenario } = build(RADAR, [de], [{ x: 0, y: 0 }])
     const report = resolveEngagements(scenario)
-    // DE BDA is 3 s (type table): re-attack every engage (5) + BDA (3) = 8 s.
+    // DE target dwell is 5 s (type table): release-ready at 16 + 2 + 5 = 23.
+    // DE BDA is 3 s: re-attack every engage (5) + BDA (3) = 8 s.
     expect(report.events.length).toBeGreaterThan(1)
-    expect(report.events[0].tS).toBeCloseTo(18, 5)
+    expect(report.events[0].tS).toBeCloseTo(23, 5)
     expect(report.events[1].tS - report.events[0].tS).toBeCloseTo(8, 5)
     expect(report.totals.deSalvos).toBe(report.events.length)
   })
@@ -319,5 +335,57 @@ describe('doctrine fire control (attrition.ts)', () => {
     // Both drive the single ship to expected-dead territory.
     expect(legacy.totals.expectedKills).toBeGreaterThan(0.9)
     expect(doctrinal.totals.expectedKills).toBeGreaterThan(0.9)
+  })
+})
+
+describe('launch policy (attrition.ts)', () => {
+  /**
+   * Zero fly-out interceptor at the origin, ring 1000 m: in range for
+   * t in [5.5, 55], release-ready at 26 (gate 16 + hop 2 + target 8). The
+   * threat is at x = -170 m at t = 26 and closes 20 m per sample.
+   */
+  const make = (patch: Partial<Scenario['doctrine'] & object>, commitPk?: number) => {
+    const built = build(RADAR, [interceptor('tst-int', { salvoCooldownS: 100 })], [{ x: 0, y: 0 }])
+    built.scenario.doctrine = { ...built.scenario.doctrine!, ...patch }
+    if (commitPk != null) {
+      const model = built.scenario.library.find((m) => m.id === 'tst-int')!
+      model.effector = { ...model.effector!, commitPk }
+    }
+    return resolveEngagements(built.scenario)
+  }
+
+  it('max-range releases at the first release-ready opportunity', () => {
+    // Commit Pk unreachable: only the policy (not Pk) can volunteer the shot.
+    const report = make({ launchPolicy: 'max-range' }, 0.99)
+    expect(report.events[0].tS).toBeCloseTo(26, 5)
+  })
+
+  it('range-fraction holds until the intercept point is inside the fraction of max range', () => {
+    // 0.1 x 1000 m = 100 m: the threat is 170 m out at 26, inside 100 m at
+    // t = 28 (x = -90 m).
+    const report = make({ launchPolicy: 'range-fraction', launchRangeFraction: 0.1 }, 0.99)
+    expect(report.events[0].tS).toBeCloseTo(28, 5)
+    // The default 2/3 rule is already satisfied at release-ready here.
+    expect(make({ launchPolicy: 'range-fraction' }, 0.99).events[0].tS).toBeCloseTo(26, 5)
+  })
+
+  it('pk-commit releases once the Pk at the effect point reaches the commit Pk', () => {
+    // Pk = 0.8 x (1 - 0.3 d/1000): 0.759 at 170 m, so a 0.76 commit holds
+    // one sample (150 m -> 0.764).
+    expect(make({ launchPolicy: 'pk-commit' }, 0.76).events[0].tS).toBeCloseTo(26.5, 5)
+    expect(make({ launchPolicy: 'pk-commit' }, 0.7).events[0].tS).toBeCloseTo(26, 5)
+  })
+
+  it('latest holds to the deadline: the last launch inside the window', () => {
+    const report = make({ launchPolicy: 'latest' })
+    expect(report.events.length).toBe(1)
+    expect(report.events[0].tS).toBeCloseTo(55, 5)
+  })
+
+  it('the deadline forces the shot under every policy', () => {
+    for (const launchPolicy of ['max-range', 'range-fraction', 'pk-commit', 'latest'] as const) {
+      const report = make({ launchPolicy, launchRangeFraction: 0.0001 }, 0.99)
+      expect(report.events.length, launchPolicy).toBeGreaterThan(0)
+    }
   })
 })

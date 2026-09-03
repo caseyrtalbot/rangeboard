@@ -114,7 +114,7 @@ function scenarioWith(
   targetModel: SpecModel,
   effectorModels: SpecModel[],
 ): { scenario: Scenario; effIds: string[]; uasId: string } {
-  const scenario = emptyScenario()
+  const scenario = legacyScenario()
   scenario.library = [...scenario.library, SENSOR, targetModel, ...effectorModels]
   const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
   const effs = effectorModels.map((m) => ent('effector', m.id, { x: 0, y: 0 }))
@@ -288,3 +288,14 @@ describe('continue behavior still leaks', () => {
     expect(t.killedBySoft).toBe(false)
   })
 })
+
+/**
+ * Legacy instant-release engine (doctrine off). These fixtures assert the
+ * pre-doctrine numbers: the ROE gate alone opens the window and every ready
+ * effector volleys. New scenarios default to the doctrinal sequence.
+ */
+function legacyScenario(): ReturnType<typeof emptyScenario> {
+  const s = emptyScenario()
+  s.doctrine = { ...s.doctrine!, enabled: false }
+  return s
+}

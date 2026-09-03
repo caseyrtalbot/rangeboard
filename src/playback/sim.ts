@@ -15,6 +15,7 @@ import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
 import {
   CONFIRMED_DECLARE_FACTOR,
   defaultLinkLatencyS,
+  targetSFor,
   trackInitSFor,
 } from '../analysis/doctrineFactors'
 
@@ -355,13 +356,16 @@ export interface ThreatAssessment {
   /** The doctrinal weapons-release time (the gate); null when doctrine is off. */
   declaredHostileAtS?: number | null
   /**
-   * Doctrine: per-effector release gates. Each effector opens only when a
-   * firm track from a sensor ROUTED TO IT exists, hostile ID is made, and
-   * the declaration dwell has run. An effector absent here can never fire at
+   * Doctrine: per-effector release gates. `gateS` is engagement authority:
+   * a firm track from a sensor ROUTED TO the effector exists, hostile ID is
+   * made, and the declaration dwell has run. `readyS` is release-ready (the
+   * TARGET step complete): gateS plus the kill-chain route latency to this
+   * effector plus its weapon assignment / firing-solution dwell (targetSFor).
+   * No shot leaves before readyS. An effector absent here can never fire at
    * this threat. Present only when doctrine is enabled; engageGateS carries
-   * the earliest of these.
+   * the earliest gateS.
    */
-  effectorGates?: Array<{ effectorId: string; gateS: number }>
+  effectorGates?: Array<{ effectorId: string; gateS: number; readyS: number }>
   /** Sensors that detected the threat at any time during the sweep. */
   detectingSensorIds: string[]
   /** Per-sensor detection/classification intervals retained for operator telemetry. */
@@ -857,6 +861,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   // at declaration start halves the dwell: correlated ID decides faster.
   const roe = scenario.roe ?? 'tight'
   const effectorGateS = new Map<string, number>()
+  // Doctrine: release-ready time per effector (gate + route latency + target
+  // dwell). The usable-window sweep and attrition both start from it.
+  const effectorReadyS = new Map<string, number>()
   let gateS: number | null = null
   if (roe === 'hold') {
     gateS = null
@@ -877,7 +884,15 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
         const declStartS = Math.max(hostileAtS, firmS)
         const confirmed = base.firstConfirmS != null && base.firstConfirmS <= declStartS
         const dwellS = doctrine.declareHostileS * (confirmed ? CONFIRMED_DECLARE_FACTOR : 1)
-        effectorGateS.set(effectorId, declStartS + dwellS)
+        const effGate = declStartS + dwellS
+        effectorGateS.set(effectorId, effGate)
+        // TARGET: the declared track reaches the shooter after the route
+        // latency, then the shooter needs its assignment / firing-solution
+        // dwell before it is release-ready.
+        const effEnt = effectors.find((e) => e.id === effectorId)
+        const effSpec = effEnt ? modelFor(scenario, effEnt)?.effector : undefined
+        const targetS = effSpec ? targetSFor(effSpec, doctrine) : doctrine.targetS
+        effectorReadyS.set(effectorId, effGate + route.latencyS + targetS)
       }
       for (const g of effectorGateS.values()) if (gateS == null || g < gateS) gateS = g
     }
@@ -885,17 +900,22 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     base.effectorGates = [...effectorGateS.entries()].map(([effectorId, g]) => ({
       effectorId,
       gateS: g,
+      readyS: effectorReadyS.get(effectorId) ?? g,
     }))
   } else {
     gateS = roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
   }
   base.engageGateS = gateS
   // A gated interval is USABLE for an effector when its gated length covers
-  // that effector's OWN engage time plus the route latency. The longest usable
-  // interval wins the windowS slot (ties: first in entity order). When no
-  // interval is usable but gated geometry exists, windowS carries the longest
-  // gated interval as informative geometry and the status below is
-  // window-too-short (or no-fc-uplink when the fc gate alone blocked it).
+  // that effector's OWN engage time plus the route latency. Under doctrine the
+  // interval opens at the effector's release-ready time instead (gate + route
+  // latency + target dwell already inside it), so the window start IS the
+  // first possible release and only the engage time must still fit. The
+  // longest usable interval wins the windowS slot (ties: first in entity
+  // order). When no interval is usable but gated geometry exists, windowS
+  // carries the longest gated interval as informative geometry and the status
+  // below is window-too-short (or no-fc-uplink when the fc gate alone blocked
+  // it).
   let anyUsable = false
   let fcBlockedUsable = false
   if (gateS != null) {
@@ -911,11 +931,12 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       if (!route) continue
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
-      // Doctrine: each effector opens at ITS OWN gate (route-aware firm
-      // track + declaration); an effector with no gate has no usable window.
-      const effGateS = doctrine.enabled ? effectorGateS.get(eff.id) : gateS
+      // Doctrine: each effector opens at ITS OWN release-ready time
+      // (route-aware firm track + declaration + route latency + target
+      // dwell); an effector with no gate has no usable window.
+      const effGateS = doctrine.enabled ? effectorReadyS.get(eff.id) : gateS
       if (effGateS == null) continue
-      const needS = (spec.engageTimeS ?? 0) + route.latencyS
+      const needS = (spec.engageTimeS ?? 0) + (doctrine.enabled ? 0 : route.latencyS)
       // A fully typed route to an fc-uplink effector needs a researched
       // fire-control sensor on the chain; without one its windows stay
       // geometry only.

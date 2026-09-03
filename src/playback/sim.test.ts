@@ -8,7 +8,7 @@ import { MEDIUM_LATENCY_S } from '../model/integration'
 import { assessThreat, DEFAULT_DEFENDED_RADIUS_M, detectionsAt, memberPositions } from './sim'
 
 function reset() {
-  useStore.getState().replaceScenario(emptyScenario())
+  useStore.getState().replaceScenario(legacyScenario())
 }
 
 /**
@@ -327,7 +327,7 @@ function ladderScenario(o: {
   pathToX: number
   roe?: Roe
 }): { scenario: Scenario; uasId: string } {
-  const s = emptyScenario()
+  const s = legacyScenario()
   if (o.roe) s.roe = o.roe
   const uasModelId = newId('m-uas')
   const sensorModelId = newId('m-sen')
@@ -601,7 +601,7 @@ describe('windows come only from effectors the detecting sensors can reach', () 
     nearId: string
     farId: string
   } {
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const uasModelId = newId('m-uas')
     const sensorModelId = newId('m-sen')
@@ -772,7 +772,7 @@ describe('typed kill-chain routing', () => {
    * wedge faces west, into the inbound leg.
    */
   function coyoteLaydown(withKurfs: boolean): { s: Scenario; uasId: string } {
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const radar = ent(s, 'sensor', 'lib-echoshield', 0, 270)
     const c2 = ent(s, 'c2', 'lib-faadc2', 500)
@@ -801,7 +801,7 @@ describe('typed kill-chain routing', () => {
   it('a cue-role pairing is not fire control: TPQ-50 cannot close a Coyote engagement', () => {
     // lib-lstar carries a documented 'cue' pair with Coyote (FS-LIDS
     // surveillance cueing); only fcSources / fc-uplink pairs may close it.
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const lstar = ent(s, 'sensor', 'lib-lstar', 0)
     const c2 = ent(s, 'c2', 'lib-faadc2', 500)
@@ -813,7 +813,7 @@ describe('typed kill-chain routing', () => {
   })
 
   it('Lattice satisfies the Coyote requiredC2 gate like FAAD C2 does', () => {
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const kurfs = ent(s, 'sensor', 'lib-kurfs', 0)
     const lattice = ent(s, 'c2', 'lib-lattice', 500)
@@ -827,7 +827,7 @@ describe('typed kill-chain routing', () => {
   })
 
   it('a standalone LPWS with no connections still completes the kill chain', () => {
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     ent(s, 'sensor', 'lib-lstar', 0)
     const lpws = ent(s, 'effector', 'lib-lpws', 0)
@@ -853,7 +853,7 @@ describe('typed kill-chain routing', () => {
   }
 
   it('routes sensor -> Lattice -> FAAD C2 -> effector across the c2-c2 link', () => {
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const lstar = ent(s, 'sensor', 'lib-lstar', 0)
     const lattice = ent(s, 'c2', 'lib-lattice', 500)
@@ -871,7 +871,7 @@ describe('typed kill-chain routing', () => {
   })
 
   it('the c2-c2 link routes against its stored direction (interop is mutual)', () => {
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const lstar = ent(s, 'sensor', 'lib-lstar', 0)
     const lattice = ent(s, 'c2', 'lib-lattice', 500)
@@ -887,7 +887,7 @@ describe('typed kill-chain routing', () => {
   it('mesh-radio hop latency shrinks the usable window', () => {
     // The gun ring crossing yields a ~99.5 s gated window: engage time 99
     // fits it bare (99.5 >= 99) but not plus two mesh-radio hops (99.5 < 101).
-    const s = emptyScenario()
+    const s = legacyScenario()
     s.roe = 'free'
     const radarModelId = newId('m-sen')
     s.library.push({
@@ -1018,3 +1018,14 @@ describe('arrival versus closest approach', () => {
     expect(a.arrivalS).toBeCloseTo(7.5, 9)
   })
 })
+
+/**
+ * Legacy instant-release engine (doctrine off). These fixtures assert the
+ * pre-doctrine numbers: the ROE gate alone opens the window and every ready
+ * effector volleys. New scenarios default to the doctrinal sequence.
+ */
+function legacyScenario(): ReturnType<typeof emptyScenario> {
+  const s = emptyScenario()
+  s.doctrine = { ...s.doctrine!, enabled: false }
+  return s
+}
