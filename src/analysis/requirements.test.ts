@@ -72,6 +72,8 @@ function fixture() {
         // reads the detect times, not the range.
         minSlantM: 1004,
         intervals: [[10, 40]],
+        trackInitAtS: null,
+        coastIntervals: [],
       },
     ],
     effectorWindows: [{ effectorId: 'e1', intervals: [[20, 40]] }],

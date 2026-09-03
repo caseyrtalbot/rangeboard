@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { pathSpeed, scenarioDurationS, useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
 import type { EntityKind, Roe, Scenario, SensorRole, SpecModel, Vec2 } from '../model/types'
-import { newId } from '../model/types'
+import { MOUNT_HEIGHT_M, newId } from '../model/types'
+import { TRACK_INIT_S } from '../analysis/doctrineFactors'
 import type { LinkMedium } from '../model/integration'
 import { MEDIUM_LATENCY_S } from '../model/integration'
 import { FT_TO_M, radarCalibration, radarPdAt } from '../analysis/sensorEnv'
@@ -1334,5 +1335,173 @@ describe('probability of detection', () => {
     expect(obs.heldSamples).toBeGreaterThan(0)
     expect(obs.pdSeries).toBeUndefined()
     expect(detectionsAt(useStore.getState().scenario, a.firstDetectS!).get(uasId)![0].pd).toBeNull()
+  })
+})
+
+describe('slice 3: scan-model track initiation, coast and drop', () => {
+  beforeEach(reset)
+
+  /** Threat altitude equal to the phase-center height, so slant range equals ground range. */
+  const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+
+  /**
+   * Sourced radar at the origin: 4 km against 0.01 m2 (the Mavic 3 planning
+   * RCS, so the RCS ratio is 1), PF placard Pd 0.5 / Pfa 1e-6, case 1.
+   */
+  function placeScanRadar(sensor: Partial<SpecModel['sensor']> & { updateRateS: number | null }) {
+    const st = useStore.getState()
+    const modelId = st.addModel('sensor')
+    st.updateModel(modelId, {
+      sensor: {
+        sensorType: 'radar',
+        role: 'surveillance',
+        rangeBasis: 'sourced',
+        detectRangeM: 4000,
+        refRcsM2: 0.01,
+        classifyRangeM: null,
+        sectorDeg: 360,
+        ...sensor,
+      },
+    })
+    useStore.getState().addEntityFromModel(modelId, { x: 0, y: 0 })
+    const sensorId = useStore.getState().scenario.entities.at(-1)!.id
+    return { sensorId, spec: useStore.getState().scenario.library.find((m) => m.id === modelId)!.sensor! }
+  }
+
+  /** Mavic 3 (quad, case 1) flying a short tangent north to south at ground range x, so Pd stays flat. */
+  function flyTangent(x: number, speedMps = 10) {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mavic3', { x, y: -50 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEntity(uasId, { altitudeFt: FIXTURE_ALT_FT })
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x, y: 50 })
+    useStore.getState().finishPath()
+    const scenario = useStore.getState().scenario
+    return {
+      uasId,
+      scenario: {
+        ...scenario,
+        paths: scenario.paths.map((p) => (p.entityId === uasId ? { ...p, speedMps } : p)),
+      },
+    }
+  }
+
+  /** Ground range at which the fixture radar reads single-scan Pd `pd` against the Mavic. */
+  const rangeAtPd = (spec: SpecModel['sensor'], pd: number) =>
+    rangeForPd(radarCalibration(spec!), 0.01, pd, 1, 1)
+
+  it('initiates at the third detecting scan when Pd holds at 0.85: firstDetectS + 2 s at rate 1', () => {
+    const { sensorId, spec } = placeScanRadar({ updateRateS: 1 })
+    const { uasId, scenario } = flyTangent(rangeAtPd(spec, 0.85) - 1)
+    const a = assessThreat(scenario, uasId)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+    expect(obs.firstDetectS).toBe(0)
+    // Scans at 0, 1, 2 s: two detections cannot satisfy 3-of-5; the third
+    // scan does, and mOfN(0.85, 3, 5) clears the 0.9 track threshold.
+    expect(obs.pdSeries!.slice(0, 5).every((pd) => pd >= 0.85)).toBe(true)
+    expect(obs.trackInitAtS).toBe(2)
+    expect(a.stableTrackAtS).toBe(2)
+    expect(obs.coastIntervals).toEqual([])
+    expect(obs.intervals).toHaveLength(1)
+    expect(obs.intervals[0][0]).toBe(0)
+  })
+
+  it('never initiates when Pd holds at 0.6: mOfN(0.6, 3, 5) = 0.68 stays under 0.9', () => {
+    const { sensorId, spec } = placeScanRadar({ updateRateS: 1 })
+    const { uasId, scenario } = flyTangent(rangeAtPd(spec, 0.6))
+    const a = assessThreat(scenario, uasId)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+    expect(a.firstDetectS).toBe(0)
+    expect(obs.firstDetectS).toBe(0)
+    expect(obs.pdSeries!.length).toBeGreaterThan(12)
+    expect(obs.pdSeries!.every((pd) => pd >= 0.59 && pd <= 0.61)).toBe(true)
+    expect(obs.trackInitAtS).toBeNull()
+    expect(a.stableTrackAtS).toBeNull()
+    // The same geometry initiates as soon as the test lowers the TRACK threshold under 0.68.
+    const eased = { ...scenario, requirements: { ...scenario.requirements, pdTrackCumulative: 0.65 } }
+    expect(assessThreat(eased, uasId).sensorObservations![0].trackInitAtS).toBe(2)
+  })
+
+  it('a rate below DT counts one scan per step: initiation at the third step', () => {
+    const { sensorId, spec } = placeScanRadar({ updateRateS: 0.1 })
+    const { uasId, scenario } = flyTangent(rangeAtPd(spec, 0.85) - 1)
+    const obs = assessThreat(scenario, uasId).sensorObservations!.find((o) => o.sensorId === sensorId)!
+    expect(obs.firstDetectS).toBe(0)
+    expect(obs.trackInitAtS).toBe(1)
+  })
+
+  /**
+   * Planning-basis radar (range test, no Pd model, so M-of-N is a count) with
+   * a 1 km ring. The Mavic starts at x = 497 m, flies east at 10 m/s to
+   * 1000 + d and back, so it leaves the ring after t = 50.3 and re-enters at
+   * t = (503 + 2d) / 10. Scans fall at whole seconds from the t = 0 detection.
+   */
+  function flyOutAndBack(d: number, sensor: Partial<SpecModel['sensor']> = {}) {
+    const { sensorId } = placeScanRadar({
+      rangeBasis: 'planning',
+      detectRangeM: 1000,
+      updateRateS: 1,
+      ...sensor,
+    })
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mavic3', { x: 497, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEntity(uasId, { altitudeFt: FIXTURE_ALT_FT })
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 1000 + d, y: 0 })
+    useStore.getState().addDraftPoint({ x: 497, y: 0 })
+    useStore.getState().finishPath()
+    const scenario = useStore.getState().scenario
+    const a = assessThreat(
+      { ...scenario, paths: scenario.paths.map((p) => ({ ...p, speedMps: 10 })) },
+      uasId,
+    )
+    return a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+  }
+
+  it('a 3 s gap coasts through three missed scans and keeps one hold interval', () => {
+    // Out at 50.5, turn at 51.8, back inside at 53.3: scans 51, 52, 53 miss, 54 detects.
+    const obs = flyOutAndBack(15)
+    expect(obs.firstDetectS).toBe(0)
+    expect(obs.pdSeries).toBeUndefined()
+    // Count rule: three detected scans at 0, 1, 2 s initiate at 2 s.
+    expect(obs.trackInitAtS).toBe(2)
+    expect(obs.coastIntervals).toEqual([[51, 53.5]])
+    expect(obs.intervals).toHaveLength(1)
+    expect(obs.intervals[0][0]).toBe(0)
+    expect(obs.intervals[0][1]).toBeGreaterThan(100)
+    // Coast is no measurement: lastDetectS is the detected scan after the gap or later.
+    expect(obs.lastDetectS).toBeGreaterThanOrEqual(54)
+  })
+
+  it('a 6 s gap drops at the fifth missed scan and splits the hold', () => {
+    // Out at 50.5, turn at 53.3, back inside at 56.3: scans 51 to 56 miss;
+    // the fifth miss (55) drops the track, 57 detects into a new interval.
+    const obs = flyOutAndBack(30)
+    expect(obs.trackInitAtS).toBe(2)
+    expect(obs.coastIntervals).toEqual([[51, 54.5]])
+    expect(obs.intervals).toHaveLength(2)
+    expect(obs.intervals[0]).toEqual([0, 54.5])
+    expect(obs.intervals[1][0]).toBe(57)
+  })
+
+  it('trackDropMisses on the spec moves the drop: 3 misses drop inside the 3 s gap', () => {
+    const obs = flyOutAndBack(15, { trackDropMisses: 3 })
+    expect(obs.coastIntervals).toEqual([[51, 52.5]])
+    expect(obs.intervals).toHaveLength(2)
+    expect(obs.intervals[0]).toEqual([0, 52.5])
+    expect(obs.intervals[1][0]).toBe(54)
+  })
+
+  it('a radar without updateRateS keeps the role table and writes the same time to trackInitAtS', () => {
+    const { radarId } = placeKillChain()
+    const uasId = placeThreat()
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === radarId)!
+    expect(obs.trackInitAtS).not.toBeNull()
+    expect(obs.trackInitAtS).toBe(a.stableTrackAtS)
+    expect(obs.trackInitAtS).toBe(obs.intervals[0][0] + TRACK_INIT_S['fire-control'])
+    expect(obs.coastIntervals).toEqual([])
   })
 })

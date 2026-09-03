@@ -576,12 +576,23 @@ const SENSORS: SpecModel[] = [
       detectRangeM: 4000,
       refRcsM2: 0.01, // 'lighter than a milk carton' nano/micro class
       instrumentedRangeM: 75000, // Saab layered-defence page, instrumented
+      updateRateS: 1,
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'updateRateS',
+        value: '1 s',
+        source: 'Giraffe 1X | Saab: "covers the entire search volume every second"',
+        url: 'https://www.saab.com/products/giraffe-1x',
+        date: '2026-09-03',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-spexer2000',

@@ -34,6 +34,8 @@ function observation(sensorId: string, intervals: Array<[number, number]>): Sens
     // for the seeded radar; systemTelemetryAt reads the intervals, not this.
     minSlantM: 3000,
     intervals,
+    trackInitAtS: null,
+    coastIntervals: [],
   }
 }
 

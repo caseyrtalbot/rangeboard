@@ -31,11 +31,16 @@ import {
   sensorGeometryGate,
   sensorHoldGate,
 } from '../analysis/sensorEnv'
+import { mOfN } from '../analysis/radarPd'
 import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
 import {
   CONFIRMED_DECLARE_FACTOR,
   defaultLinkLatencyS,
+  scanRateSFor,
   targetSFor,
+  trackDropMissesFor,
+  trackInitMFor,
+  trackInitNFor,
   trackInitSFor,
 } from '../analysis/doctrineFactors'
 
@@ -117,6 +122,13 @@ function pdDetectOf(scenario: Scenario): number {
   const pd = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }.pdDetect
   // A saved 0 would detect every admitted member out to the instrumented cap.
   return pd > 0 && pd < 1 ? pd : DEFAULT_REQUIREMENT_THRESHOLDS.pdDetect
+}
+
+/** M-of-N cumulative probability a radar contact must reach to count as TRACK: the test's threshold. */
+function pdTrackCumulativeOf(scenario: Scenario): number {
+  const pd = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }.pdTrackCumulative
+  // A saved 0 would initiate a track at the first detected scan.
+  return pd > 0 && pd <= 1 ? pd : DEFAULT_REQUIREMENT_THRESHOLDS.pdTrackCumulative
 }
 
 /**
@@ -383,8 +395,21 @@ export interface SensorObservation {
   resolvedEver: boolean
   /** Closest slant range from the phase center over every held sample, meters. */
   minSlantM: number
-  /** Inclusive 0.5 s hold intervals, split whenever the sensor loses the track. */
+  /** Inclusive 0.5 s hold intervals, split whenever the sensor loses the track. Coast included. */
   intervals: Array<[number, number]>
+  /**
+   * First time this sensor initiated a track: the M-of-N scan rule for a
+   * radar with an updateRateS, else the TRACK_INIT_S role table (radar and
+   * EO/IR). Null when it never did, and for RF and acoustic sensors, which
+   * initiate no fire-control track. Written once, never rewritten after a drop.
+   */
+  trackInitAtS: number | null
+  /**
+   * Scan model only: inclusive DT intervals the sensor held by extrapolation
+   * after a missed scan, before the next detection or the drop. Each one is
+   * also inside intervals; the ladder and firstConfirmS never read a coast.
+   */
+  coastIntervals: Array<[number, number]>
   /**
    * Radar only: single-scan Pd at each DT step from firstDetectS, index 0 =
    * firstDetectS, through the path end. Below-threshold steps included, so
@@ -523,6 +548,67 @@ export interface ThreatAssessment {
 }
 
 const DT = 0.5
+
+/** Tolerance for a nominal scan time landing on the DT grid, seconds. */
+const SCAN_EPS = 1e-6
+
+/** Extend the trailing inclusive DT interval to t, or open a new one after a break. */
+function extendIntervals(intervals: Array<[number, number]>, t: number): void {
+  const last = intervals[intervals.length - 1]
+  if (last && Math.abs(last[1] - (t - DT)) < DT / 2) last[1] = t
+  else intervals.push([t, t])
+}
+
+/**
+ * Scan-model state of one radar (scanRateSFor non-null) against one threat.
+ * Scans fall at firstDetectS + k * rateS, each snapped FORWARD to the first
+ * sweep step at or after it; a rate below DT lands several nominal scans on
+ * one step and counts one scan per step. Between scans the hold carries the
+ * last scan result: a detected scan holds with a measurement, a missed scan
+ * coasts (held for continuity, no measurement) until the next detection or
+ * the drop at the dropMisses-th consecutive miss.
+ */
+interface ScanState {
+  sensorType: SensorType
+  fcRole: boolean
+  rateS: number
+  m: number
+  n: number
+  dropMisses: number
+  originS: number
+  /** Scans taken so far; the next nominal scan is originS + scans * rateS. */
+  scans: number
+  /** Last n scan results, oldest first. */
+  window: Array<{ detected: boolean; pd: number }>
+  consecutiveMisses: number
+  /** Classified flag of the last detected scan, carried between scans. */
+  classifiedCarry: boolean
+  hold: 'detected' | 'coast' | 'dropped'
+}
+
+/**
+ * Record one scan and test the M-of-N initiation rule: at least m of the
+ * last n scans detected AND mOfN(mean single-scan Pd over those scans, m, n)
+ * reaches the test's pdTrackCumulative. Fewer than n scans so far: the mean
+ * runs over the scans taken, n unchanged. trackInitAtS is written once.
+ */
+function recordScan(
+  scan: ScanState,
+  observation: SensorObservation,
+  detected: boolean,
+  pd: number,
+  t: number,
+  pdTrack: number,
+): void {
+  scan.scans += 1
+  scan.window.push({ detected, pd })
+  if (scan.window.length > scan.n) scan.window.shift()
+  if (observation.trackInitAtS != null) return
+  const detections = scan.window.filter((w) => w.detected).length
+  if (detections < scan.m) return
+  const mean = scan.window.reduce((sum, w) => sum + w.pd, 0) / scan.window.length
+  if (mOfN(mean, scan.m, scan.n) >= pdTrack) observation.trackInitAtS = t
+}
 
 /**
  * One effector's best kill-chain route from the detecting sensors.
@@ -778,6 +864,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const detectingSensors = new Set<string>()
   const techsSeen = new Set<SensorType>()
   const sensorObservations = new Map<string, SensorObservation>()
+  const scanStates = new Map<string, ScanState>()
+  const pdTrack = pdTrackCumulativeOf(scenario)
   const trackSamples: Array<{ tS: number; held: boolean }> = []
   const effectorInRange = new Map<string, Array<[number, number]>>()
   // Classification ladder state (PicoGrid executeDetection promotion rules).
@@ -808,6 +896,11 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
 
     const stepTechs = new Set<SensorType>()
     let fcClassifiedNow = false
+    // A coasting scan radar holds the track file with no measurement: held
+    // for continuity (D16), invisible to stepTechs and the ladder.
+    let coastHeld = false
+    // Hits of scan-model radars already tracking wait for the scan pass below.
+    const scanHits = new Map<string, DetectionHit>()
     for (const { spec, hit } of sweepSensorHits(
       scenario,
       sensors,
@@ -816,6 +909,11 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       altitudeFt,
       members,
     )) {
+      const rateS = scanRateSFor(spec)
+      if (rateS != null && sensorObservations.has(hit.sensorId)) {
+        scanHits.set(hit.sensorId, hit)
+        continue
+      }
       stepTechs.add(hit.sensorType)
       detectingSensors.add(hit.sensorId)
       if (hit.resolved) anyResolved = true
@@ -831,6 +929,8 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
           resolvedEver: false,
           minSlantM: hit.slantM,
           intervals: [],
+          trackInitAtS: null,
+          coastIntervals: [],
           pdSeries: hit.pd == null ? undefined : [],
         }
         sensorObservations.set(hit.sensorId, observation)
@@ -840,16 +940,32 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       observation.resolvedEver = observation.resolvedEver || hit.resolved
       observation.minSlantM = Math.min(observation.minSlantM, hit.slantM)
       if (hit.classified && observation.firstClassifyS == null) observation.firstClassifyS = t
-      const interval = observation.intervals[observation.intervals.length - 1]
-      if (interval && Math.abs(interval[1] - (t - DT)) < DT / 2) interval[1] = t
-      else observation.intervals.push([t, t])
+      extendIntervals(observation.intervals, t)
       const role = defaultSensorRole(spec)
-      if (hit.classified && (role === 'fire-control' || role === 'classification')) {
-        fcClassifiedNow = true
-      }
+      const fcRole = role === 'fire-control' || role === 'classification'
+      if (hit.classified && fcRole) fcClassifiedNow = true
       if (base.firstDetectS == null) {
         base.firstDetectS = t
         base.firstDetectSensorId = hit.sensorId
+      }
+      if (rateS != null) {
+        // First detection is the scan origin and the first detected scan.
+        const scan: ScanState = {
+          sensorType: hit.sensorType,
+          fcRole,
+          rateS,
+          m: trackInitMFor(spec),
+          n: trackInitNFor(spec),
+          dropMisses: trackDropMissesFor(spec),
+          originS: t,
+          scans: 0,
+          window: [],
+          consecutiveMisses: 0,
+          classifiedCarry: hit.classified,
+          hold: 'detected',
+        }
+        scanStates.set(hit.sensorId, scan)
+        recordScan(scan, observation, true, hit.pd ?? 1, t, pdTrack)
       }
     }
     // Pd telemetry for every radar that has held this track: one value per
@@ -862,7 +978,47 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
         sensor && spec ? radarPdProbe(sensor, spec, scenario, uasSpec, altitudeFt, members) : null
       observation.pdSeries.push(pd ?? 0)
     }
-    trackSamples.push({ tS: t, held: stepTechs.size > 0 })
+    // Scan pass: at a scan step the per-step hit result is the scan result
+    // and its Pd is the probe value (1 on a hit and 0 on a miss without a Pd
+    // model, so M-of-N degenerates to a count). Every step then holds from
+    // the carried scan state.
+    for (const [sensorId, scan] of scanStates) {
+      const observation = sensorObservations.get(sensorId)!
+      if (observation.firstDetectS === t) continue
+      const hit = scanHits.get(sensorId)
+      if (scan.originS + scan.scans * scan.rateS <= t + SCAN_EPS) {
+        if (hit) {
+          scan.consecutiveMisses = 0
+          scan.hold = 'detected'
+          scan.classifiedCarry = hit.classified
+          if (hit.resolved) anyResolved = true
+          observation.lastDetectS = t
+          observation.resolvedEver = observation.resolvedEver || hit.resolved
+          observation.minSlantM = Math.min(observation.minSlantM, hit.slantM)
+          if (hit.classified && observation.firstClassifyS == null) observation.firstClassifyS = t
+          recordScan(scan, observation, true, hit.pd ?? 1, t, pdTrack)
+        } else {
+          scan.consecutiveMisses += 1
+          scan.hold = scan.consecutiveMisses >= scan.dropMisses ? 'dropped' : 'coast'
+          const series = observation.pdSeries
+          recordScan(scan, observation, false, series ? series[series.length - 1] : 0, t, pdTrack)
+        }
+        // One scan per step: skip every nominal scan the rate lands on this step.
+        while (scan.originS + scan.scans * scan.rateS <= t + SCAN_EPS) scan.scans += 1
+      }
+      if (scan.hold === 'detected') {
+        stepTechs.add(scan.sensorType)
+        if (scan.classifiedCarry && scan.fcRole) fcClassifiedNow = true
+        observation.heldSamples += 1
+        extendIntervals(observation.intervals, t)
+      } else if (scan.hold === 'coast') {
+        coastHeld = true
+        observation.heldSamples += 1
+        extendIntervals(observation.intervals, t)
+        extendIntervals(observation.coastIntervals, t)
+      }
+    }
+    trackSamples.push({ tS: t, held: stepTechs.size > 0 || coastHeld })
     for (const tech of stepTechs) techsSeen.add(tech)
     if (base.firstConfirmS == null && stepTechs.size >= 2) base.firstConfirmS = t
 
@@ -996,27 +1152,32 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
     }
   }
 
-  // Stable track file, PER SENSOR: the first time each fire-control-quality
-  // sensor (radar or EO/IR) has held the track continuously for its own
-  // initiation time (spec trackInitS, else the TRACK_INIT_S role table: a
-  // staring fire-control radar confirms in ~2 s, a rotating early-warning
-  // search radar needs several revolutions). Intervals are already split on
-  // every hold break, so an unbroken interval IS continuous hold.
-  // Informational when doctrine is off; the gate inputs when it is on.
+  // Stable track file, PER SENSOR, for the fire-control-quality sensors
+  // (radar or EO/IR). A scan-model radar wrote trackInitAtS in the sweep
+  // (M-of-N over its scans). Every other one initiates after continuous
+  // hold for its own initiation time (spec trackInitS, else the TRACK_INIT_S
+  // role table: a staring fire-control radar confirms in ~2 s, a rotating
+  // early-warning search radar needs several revolutions). Intervals are
+  // already split on every hold break, so an unbroken interval IS continuous
+  // hold. stableTrackAtS is the earliest over sensors: informational when
+  // doctrine is off, the gate input when it is on.
   const doctrine = effectiveDoctrine(scenario)
   const firmBySensor = new Map<string, number>()
   for (const obs of sensorObservations.values()) {
     if (obs.sensorType !== 'radar' && obs.sensorType !== 'eo-ir') continue
-    const sensorEnt = sensors.find((s) => s.id === obs.sensorId)
-    const spec = sensorEnt ? modelFor(scenario, sensorEnt)?.sensor : undefined
-    const initS = spec ? trackInitSFor(spec, doctrine) : doctrine.trackFirmS
-    for (const [s0, s1] of obs.intervals) {
-      if (s1 - s0 + DT / 2 < initS) continue
-      firmBySensor.set(obs.sensorId, s0 + initS)
-      break // intervals are in time order; the first long-enough one is earliest
+    if (!scanStates.has(obs.sensorId)) {
+      const sensorEnt = sensors.find((s) => s.id === obs.sensorId)
+      const spec = sensorEnt ? modelFor(scenario, sensorEnt)?.sensor : undefined
+      const initS = spec ? trackInitSFor(spec, doctrine) : doctrine.trackFirmS
+      for (const [s0, s1] of obs.intervals) {
+        if (s1 - s0 + DT / 2 < initS) continue
+        obs.trackInitAtS = s0 + initS
+        break // intervals are in time order; the first long-enough one is earliest
+      }
     }
-  }
-  for (const firmAt of firmBySensor.values()) {
+    const firmAt = obs.trackInitAtS
+    if (firmAt == null) continue
+    firmBySensor.set(obs.sensorId, firmAt)
     if (base.stableTrackAtS == null || firmAt < base.stableTrackAtS) base.stableTrackAtS = firmAt
   }
 

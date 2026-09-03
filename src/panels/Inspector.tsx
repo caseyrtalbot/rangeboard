@@ -11,6 +11,7 @@ import type {
 import {
   basisFor,
   DEFAULT_REQUIREMENT_THRESHOLDS,
+  effectiveDoctrine,
   entityActive,
   MOUNT_HEIGHT_M,
 } from '../model/types'
@@ -31,6 +32,13 @@ import {
   sensorHoldGate,
   targetScaled,
 } from '../analysis/sensorEnv'
+import {
+  scanRateSFor,
+  trackDropMissesFor,
+  trackInitMFor,
+  trackInitNFor,
+  trackInitSFor,
+} from '../analysis/doctrineFactors'
 import { GATE_WORD } from '../canvas/layers/footprintStyle'
 import type { SensorSpec, SpecModel } from '../model/types'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
@@ -156,6 +164,50 @@ function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
         value={`Swerling ${cal.swerling0}`}
         unit="PF"
         title="Fluctuation case of the reference target."
+        mono
+      />
+    </>
+  )
+}
+
+/**
+ * How the sensor builds a track file. A radar with a recorded scan period
+ * runs the M-of-N scan model and coasts through a missed scan. Every other
+ * sensor initiates on the sensor-role hold time.
+ */
+function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
+  const scenario = useStore((s) => s.scenario)
+  if (spec.sensorType !== 'radar') return null
+  const rate = scanRateSFor(spec)
+  if (rate == null)
+    return (
+      <Row
+        label="Scan period"
+        value={`role table · ${trackInitSFor(spec, effectiveDoctrine(scenario))} s`}
+        title="No scan period is recorded. Initiation follows the sensor-role table: the track initiates after this much continuous hold."
+      />
+    )
+  return (
+    <>
+      <Row
+        label="Scan period"
+        value={`${rate} s`}
+        unit={basisTag(model, 'updateRateS', false)}
+        title="One look at the full search volume. The initiation rule counts these scans."
+        mono
+      />
+      <Row
+        label="Track initiation"
+        value={`${trackInitMFor(spec)} of ${trackInitNFor(spec)} scans`}
+        unit={basisTag(model, 'trackInitM', spec.trackInitM == null || spec.trackInitN == null)}
+        title="A track initiates when M of the last N scans detect and the cumulative Pd reaches the test's track threshold."
+        mono
+      />
+      <Row
+        label="Track drop"
+        value={`${trackDropMissesFor(spec)} missed scans`}
+        unit={basisTag(model, 'trackDropMisses', spec.trackDropMisses == null)}
+        title="After a missed scan the track coasts. It drops after this many consecutive misses."
         mono
       />
     </>
@@ -760,6 +812,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
             />
           )}
           <AgainstThreats spec={model.sensor} />
+          <ScanModel model={model} spec={model.sensor} />
           {model.sensor.elevationDeg != null && (
             <Row
               label="Elevation coverage"

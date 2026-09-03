@@ -3,7 +3,7 @@ import { emptyScenario } from '../model/seed'
 import type { Entity, FlightPath } from '../model/types'
 import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attrition'
 import type { ThreatAssessment } from '../playback/sim'
-import { expectedDeadTimes, threatPictureAt } from './threatAggregation'
+import { expectedDeadTimes, threatPictureAt, trackQualityAt } from './threatAggregation'
 
 function addThreat(
   scenario: ReturnType<typeof emptyScenario>,
@@ -247,5 +247,31 @@ describe('expectedDeadTimes', () => {
   it('omits threats that never reach the cutoff', () => {
     const report = reportOf([event({ tS: 10, tEffectS: 20, killDelta: 0.5 })], [threatAtt('1', 1)])
     expect(expectedDeadTimes(report).has('1')).toBe(false)
+  })
+})
+
+describe('trackQualityAt', () => {
+  it('counts a coast inside the hold interval as held', () => {
+    // One radar holds [5, 20] with a coast over [10, 14]: continuity reads the
+    // intervals, so the coast leaves no gap (D16).
+    const a = assessment('1', {
+      sensorObservations: [
+        {
+          sensorId: 's1',
+          sensorType: 'radar',
+          firstDetectS: 5,
+          lastDetectS: 20,
+          firstClassifyS: null,
+          heldSamples: 31,
+          resolvedEver: true,
+          minSlantM: 2000,
+          intervals: [[5, 20]],
+          trackInitAtS: 7,
+          coastIntervals: [[10, 14]],
+        },
+      ],
+    })
+    expect(trackQualityAt(a, 12)).toEqual({ continuity: 1, longestGapS: 0 })
+    expect(trackQualityAt(a, 20)).toEqual({ continuity: 1, longestGapS: 0 })
   })
 })

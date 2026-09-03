@@ -65,6 +65,19 @@ export interface SensorSpec {
    */
   trackInitS?: number
   /**
+   * Radar only: scan or frame period, seconds. Present and positive: track
+   * initiation and drop follow the scan model (M-of-N over scans, coast on
+   * a miss). Absent or null: the TRACK_INIT_S role table governs initiation
+   * and the sensor holds per sample.
+   */
+  updateRateS?: number | null
+  /** M-of-N track initiation, scans that must detect. Absent: TRACK_INIT_M (PF). */
+  trackInitM?: number
+  /** M-of-N track initiation, scans in the window. Absent: TRACK_INIT_N (PF). */
+  trackInitN?: number
+  /** Consecutive missed scans before a coasting track drops. Absent: TRACK_DROP_MISSES (PF). */
+  trackDropMisses?: number
+  /**
    * EO/IR only: the target characteristic dimension, meters, at which
    * detectRangeM is quoted. Absent means SPAN_PLANNING_M[1] (Group 1) in
    * src/model/signatureFactors.ts. Range against another target scales
@@ -117,6 +130,15 @@ export const PLACARD_PFA = 1e-6
 
 /** Fluctuation case of the placard's reference target (a Group 1 multirotor), PF until slice 9 verifies a datasheet. */
 export const PLACARD_SWERLING: SwerlingCase = 1
+
+/** Scans that must detect inside the M-of-N window to initiate a track. PF. */
+export const TRACK_INIT_M = 3
+
+/** Scans in the M-of-N track initiation window. PF. */
+export const TRACK_INIT_N = 5
+
+/** Consecutive missed scans after which a coasting track drops. PF. */
+export const TRACK_DROP_MISSES = 5
 
 /** Thermal contrast class of a threat airframe; see UasSpec.irSignature. */
 export type IrSignature = 'low' | 'medium' | 'high'

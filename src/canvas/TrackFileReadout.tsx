@@ -87,6 +87,11 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
     state?.phase ??
     (hits.some((h) => h.classified) ? 'identified' : hits.length > 0 ? 'tracked' : 'undetected')
   const pill = PHASE_STYLE[phase]
+  // Coast is a hold with no measurement, not a phase: the word replaces the
+  // TRACKED or IDENTIFIED label, the phase colour stays. An engagement or a
+  // defeat outranks it, so those words keep the pill.
+  const pillLabel =
+    state?.coasting && (phase === 'tracked' || phase === 'identified') ? 'COAST' : pill.label
   // Undetected shows the entity color, resolved the way PathLayer and
   // RangeLayer resolve it, so the pill matches the glyph the canvas draws.
   const color = entity.color ?? model?.color ?? '#c46a5a'
@@ -223,7 +228,7 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
             className="ro-phase"
             style={{ color: pill.color ?? color, borderColor: pill.color ?? color }}
           >
-            {pill.label}
+            {pillLabel}
           </span>
         </div>
         {ghostLine && <div className="ro-ghost">{ghostLine}</div>}

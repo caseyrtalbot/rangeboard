@@ -98,6 +98,8 @@ export interface TrackFileState {
   /** A sensor holds it at t. */
   heldNow: boolean
   holdingSensorIds: string[]
+  /** Held at t, and every holding sensor is coasting: extrapolation after a missed scan, no measurement. */
+  coasting: boolean
   /** Ladder rung reached by t. */
   classification: ThreatClassification
   /** Inside a usable ROE-gated effector window at t. */
@@ -230,12 +232,18 @@ export function effectorEngagementMode(
   return effectorType ? TYPE_MODE[effectorType] : 'semi-active'
 }
 
-/** One sensor's hold history against one track, ascending. */
-interface HoldSeries {
-  sensorId: string
+/** Ascending, disjoint inclusive intervals with their start times, for the binary search. */
+interface IntervalSeries {
   intervals: Array<[number, number]>
-  /** Parallel to intervals: interval start times, for the binary search. */
+  /** Parallel to intervals: interval start times. */
   starts: number[]
+}
+
+/** One sensor's hold history against one track, ascending. */
+interface HoldSeries extends IntervalSeries {
+  sensorId: string
+  /** Spans inside intervals the sensor held by extrapolation after a missed scan. */
+  coast: IntervalSeries
 }
 
 /** Everything one threat needs, pre-sorted into prefix arrays. */
@@ -365,7 +373,7 @@ const RUNG_RANK: Record<ThreatClassification, number> = {
 }
 
 /** The 0.25 s tolerant hold test over one sensor's ascending, disjoint intervals. */
-function heldIn(series: HoldSeries, tS: number): boolean {
+function heldIn(series: IntervalSeries, tS: number): boolean {
   // Candidates are the intervals that already started; ends ascend with
   // starts, so the newest candidate carries the greatest end. The one before
   // it is checked as well in case the tolerance widens two neighbours across
@@ -544,7 +552,13 @@ export function buildTrackTimeline(
 
     const holds: HoldSeries[] = (a.sensorObservations ?? []).map((obs) => {
       const intervals = [...obs.intervals].sort((x, y) => x[0] - y[0])
-      return { sensorId: obs.sensorId, intervals, starts: intervals.map((iv) => iv[0]) }
+      const coast = [...(obs.coastIntervals ?? [])].sort((x, y) => x[0] - y[0])
+      return {
+        sensorId: obs.sensorId,
+        intervals,
+        starts: intervals.map((iv) => iv[0]),
+        coast: { intervals: coast, starts: coast.map((iv) => iv[0]) },
+      }
     })
 
     tracks.push({
@@ -652,8 +666,13 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
   const out = new Map<string, TrackFileState>()
   for (const tr of tl.tracks) {
     const holdingSensorIds: string[] = []
+    let coasting = false
     for (const series of tr.holds) {
-      if (heldIn(series, tS)) holdingSensorIds.push(series.sensorId)
+      if (!heldIn(series, tS)) continue
+      holdingSensorIds.push(series.sensorId)
+      const inCoast = heldIn(series.coast, tS)
+      // One sensor with a live measurement makes the track measured, not coasting.
+      coasting = holdingSensorIds.length === 1 ? inCoast : coasting && inCoast
     }
     const heldNow = holdingSensorIds.length > 0
     const detected = heldNow || (tr.firstDetectS != null && tr.firstDetectS <= tS)
@@ -699,6 +718,7 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
       detected,
       heldNow,
       holdingSensorIds,
+      coasting,
       classification,
       targetedNow,
       incomingSalvos,

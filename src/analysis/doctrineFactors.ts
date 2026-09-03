@@ -6,7 +6,12 @@ import type {
   SensorRole,
   SensorSpec,
 } from '../model/types'
-import { defaultSensorRole } from '../model/types'
+import {
+  TRACK_DROP_MISSES,
+  TRACK_INIT_M,
+  TRACK_INIT_N,
+  defaultSensorRole,
+} from '../model/types'
 
 /**
  * Per-system doctrine planning factors. The scenario-level FireDoctrine
@@ -102,6 +107,38 @@ export const CONFIRMED_DECLARE_FACTOR = 0.5
 /** Track initiation time for one sensor: spec override, role table, fallback. */
 export function trackInitSFor(spec: SensorSpec, doctrine: FireDoctrine): number {
   return spec.trackInitS ?? TRACK_INIT_S[defaultSensorRole(spec)] ?? doctrine.trackFirmS
+}
+
+/** A recorded scan count, whole and positive; else the planning factor. */
+function countOr(value: number | null | undefined, fallback: number): number {
+  if (value == null || !Number.isFinite(value) || value <= 0) return fallback
+  return Math.max(1, Math.round(value))
+}
+
+/**
+ * Scan period of a radar under the scan model, seconds, or null when the
+ * sensor keeps the per-sample hold and the role-table initiator: not a
+ * radar, or no finite positive updateRateS recorded.
+ */
+export function scanRateSFor(spec: SensorSpec): number | null {
+  if (spec.sensorType !== 'radar') return null
+  const rate = spec.updateRateS
+  return rate != null && Number.isFinite(rate) && rate > 0 ? rate : null
+}
+
+/** M of the M-of-N initiation rule for one sensor: spec override, else TRACK_INIT_M. */
+export function trackInitMFor(spec: SensorSpec): number {
+  return countOr(spec.trackInitM, TRACK_INIT_M)
+}
+
+/** N of the M-of-N initiation rule for one sensor: spec override, else TRACK_INIT_N. */
+export function trackInitNFor(spec: SensorSpec): number {
+  return countOr(spec.trackInitN, TRACK_INIT_N)
+}
+
+/** Consecutive missed scans that drop a coasting track: spec override, else TRACK_DROP_MISSES. */
+export function trackDropMissesFor(spec: SensorSpec): number {
+  return countOr(spec.trackDropMisses, TRACK_DROP_MISSES)
 }
 
 /** BDA dwell for one effector: spec override, type table, fallback. */

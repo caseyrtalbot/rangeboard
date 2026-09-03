@@ -51,7 +51,11 @@ function assessment(over: Partial<ThreatAssessment>): ThreatAssessment {
   }
 }
 
-function observation(sensorId: string, intervals: Array<[number, number]>): SensorObservation {
+function observation(
+  sensorId: string,
+  intervals: Array<[number, number]>,
+  coastIntervals: Array<[number, number]> = [],
+): SensorObservation {
   return {
     sensorId,
     sensorType: 'radar',
@@ -64,6 +68,8 @@ function observation(sensorId: string, intervals: Array<[number, number]>): Sens
     // reads the intervals, never the range.
     minSlantM: 2000,
     intervals,
+    trackInitAtS: null,
+    coastIntervals,
   }
 }
 
@@ -320,6 +326,28 @@ describe('phase transitions and precedence', () => {
     // Tolerance can lead first detection; detected must never lag heldNow.
     expect(stateAt(a, report, 9.75).detected).toBe(true)
     expect(stateAt(a, report, 9.75).phase).toBe('tracked')
+  })
+
+  it('coasts only while every holding sensor is inside one of its coast intervals', () => {
+    // s1 holds [10, 30] and coasts [20, 24.5] inside it; s2 measures over [22, 23].
+    const coast = assessment({
+      firstDetectS: 10,
+      sensorObservations: [observation('s1', [[10, 30]], [[20, 24.5]]), observation('s2', [[22, 23]])],
+    })
+    const empty = reportOf([])
+    expect(stateAt(coast, empty, 15).coasting).toBe(false)
+    expect(stateAt(coast, empty, 20).coasting).toBe(true)
+    expect(stateAt(coast, empty, 24.5).coasting).toBe(true)
+    // The coast test carries the 0.25 s hold tolerance.
+    expect(stateAt(coast, empty, 24.75).coasting).toBe(true)
+    expect(stateAt(coast, empty, 24.8).coasting).toBe(false)
+    // A second sensor with a live measurement makes the track measured.
+    expect(stateAt(coast, empty, 22.5).holdingSensorIds).toEqual(['s1', 's2'])
+    expect(stateAt(coast, empty, 22.5).coasting).toBe(false)
+    // Coast is held: the phase stays TRACKED, no new rung.
+    expect(stateAt(coast, empty, 20).heldNow).toBe(true)
+    expect(stateAt(coast, empty, 20).phase).toBe('tracked')
+    expect(stateAt(coast, empty, 35).coasting).toBe(false)
   })
 
   it('climbs the classification ladder and lists the holding sensors', () => {

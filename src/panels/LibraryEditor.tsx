@@ -16,6 +16,9 @@ import {
   PLACARD_PD,
   PLACARD_PFA,
   SENSOR_ROLE_DEFAULT_RANGE_M,
+  TRACK_DROP_MISSES,
+  TRACK_INIT_M,
+  TRACK_INIT_N,
 } from '../model/types'
 import { jammerBands } from '../analysis/ewPhysics'
 import { rfSensorBands } from '../analysis/sensorEnv'
@@ -440,6 +443,46 @@ export function LibraryEditor() {
                 The placard range is quoted at this Pd and Pfa against the reference RCS.
                 Detection at another range follows the radar range equation and the threat's
                 Swerling case. Empty fields keep the planning factors.
+              </p>
+              <Num
+                label="Scan period (s, 0 = role table)"
+                value={sensor.updateRateS ?? 0}
+                step={0.1}
+                min={0}
+                onChange={(n) => patch({ sensor: { ...sensor, updateRateS: n > 0 ? n : null } })}
+              />
+              <div className="field-row">
+                <Num
+                  label={`Initiation M (0 = PF ${TRACK_INIT_M})`}
+                  value={sensor.trackInitM ?? 0}
+                  step={1}
+                  min={0}
+                  onChange={(n) =>
+                    patch({ sensor: { ...sensor, trackInitM: n > 0 ? n : undefined } })
+                  }
+                />
+                <Num
+                  label={`Initiation N (0 = PF ${TRACK_INIT_N})`}
+                  value={sensor.trackInitN ?? 0}
+                  step={1}
+                  min={0}
+                  onChange={(n) =>
+                    patch({ sensor: { ...sensor, trackInitN: n > 0 ? n : undefined } })
+                  }
+                />
+              </div>
+              <Num
+                label={`Drop after misses (0 = PF ${TRACK_DROP_MISSES})`}
+                value={sensor.trackDropMisses ?? 0}
+                step={1}
+                min={0}
+                onChange={(n) =>
+                  patch({ sensor: { ...sensor, trackDropMisses: n > 0 ? n : undefined } })
+                }
+              />
+              <p className="muted small">
+                With a scan period the radar initiates a track by M of N scans and coasts through
+                missed scans. Without one the sensor-role table sets the hold time.
               </p>
             </>
           )}
