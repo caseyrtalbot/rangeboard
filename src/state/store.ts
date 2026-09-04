@@ -16,7 +16,7 @@ import type {
   TestCard,
   Vec2,
 } from '../model/types'
-import { entityActive, newId } from '../model/types'
+import { entityActive, newId, runSettings } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength, rotatePoint } from '../geometry/geo'
@@ -47,6 +47,10 @@ import {
   toggleCollapsed,
 } from './analysisLayout'
 import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
+// Types only: a value import of mcRun.ts would close the cycle
+// mcRun -> series -> impact -> attrition -> sim -> store.
+import type { McSummary, McWorkerMessage } from '../playback/mcRun'
+import { cancelMcRun, startMcRun } from '../playback/mcClient'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -246,6 +250,33 @@ export interface PlaybackState {
   resetReason: RunResetReason
 }
 
+/** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */
+export type McStatus = 'idle' | 'running' | 'done' | 'stale' | 'error'
+
+export interface McState {
+  /** playback.runId the summary belongs to; null while idle. */
+  runId: string | null
+  status: McStatus
+  /** Replicates done, and the total. After a run both equal summary.replicates. */
+  progress: number
+  total: number
+  summary: McSummary | null
+  /** analysisBasisSignature of the scenario the summary was computed on. */
+  basisSignature: string | null
+  error: string | null
+}
+
+/** The Monte Carlo slice before any run: no summary, no signature, no error. */
+export const IDLE_MC: McState = {
+  runId: null,
+  status: 'idle',
+  progress: 0,
+  total: 0,
+  summary: null,
+  basisSignature: null,
+  error: null,
+}
+
 export interface Store {
   scenario: Scenario
   past: Scenario[]
@@ -254,6 +285,8 @@ export interface Store {
   camera: Camera
   ui: UiState
   playback: PlaybackState
+  /** Monte Carlo run state. View state: never persisted, never in history. */
+  mc: McState
   save: SaveState
 
   // History
@@ -401,6 +434,12 @@ export interface Store {
   completeRun: (durationS: number) => void
   scrubTo: (t: number) => void
   resetRun: (reason?: RunResetReason) => void
+
+  // Monte Carlo
+  /** Launch the replicate run for the current scenario and run id (cancels an older one). */
+  runMonteCarlo: () => void
+  /** Worker message sink; a message whose runId is not mc.runId is ignored. */
+  mcMessage: (m: McWorkerMessage) => void
 }
 
 
@@ -562,6 +601,8 @@ export function analysisBasisSignature(s: Scenario): string {
     environment: s.environment,
     roe: s.roe,
     raid: s.raid,
+    // Run mode, seed and replicate count change every drawn outcome.
+    run: runSettings(s),
     library: s.library.map((m) => ({
       id: m.id,
       kind: m.kind,
@@ -603,6 +644,18 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
     return playback
   }
   return freshPlayback(playback.runSeq, playback.speedMult, 'configuration-changed')
+}
+
+/**
+ * The replicates describe the board they ran on. A configuration change makes
+ * them stale: the worker is stopped and the summary is kept for reference, but
+ * it is no longer the current answer. Bands read `status === 'done'` only.
+ */
+function mcForScenarioChange(mc: McState, next: Scenario): McState {
+  if (mc.status !== 'running' && mc.status !== 'done') return mc
+  if (mc.basisSignature === analysisBasisSignature(next)) return mc
+  cancelMcRun()
+  return { ...mc, status: 'stale' }
 }
 
 /**
@@ -811,7 +864,7 @@ export function bumpCardVersion(v: string): string {
 export const useStore = create<Store>()((set, get) => {
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
-    const { scenario, past, playback } = get()
+    const { scenario, past, playback, mc } = get()
     const next = fn(scenario)
     if (next === scenario) return
     set({
@@ -819,6 +872,7 @@ export const useStore = create<Store>()((set, get) => {
       past: [...past.slice(-HISTORY_LIMIT + 1), scenario],
       future: [],
       playback: playbackForScenarioChange(playback, next),
+      mc: mcForScenarioChange(mc, next),
     })
   }
 
@@ -868,10 +922,11 @@ export const useStore = create<Store>()((set, get) => {
       analysisCustomize: false,
     },
     playback: freshPlayback(savedRunSeq()),
+    mc: IDLE_MC,
     save: { lastAutosaveAt: null, error: null },
 
     undo: () => {
-      const { past, future, scenario, ui, playback, selection } = get()
+      const { past, future, scenario, ui, playback, selection, mc } = get()
       if (past.length === 0) return
       const restored = withObservedLens(past[past.length - 1], scenario)
       set({
@@ -880,13 +935,14 @@ export const useStore = create<Store>()((set, get) => {
         future: [scenario, ...future],
         selection: pruneSelection(selection, restored),
         playback: playbackForScenarioChange(playback, restored),
+        mc: mcForScenarioChange(mc, restored),
         // A restored scenario invalidates any open connect offer.
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
 
     redo: () => {
-      const { past, future, scenario, ui, playback, selection } = get()
+      const { past, future, scenario, ui, playback, selection, mc } = get()
       if (future.length === 0) return
       const restored = withObservedLens(future[0], scenario)
       set({
@@ -895,6 +951,7 @@ export const useStore = create<Store>()((set, get) => {
         future: future.slice(1),
         selection: pruneSelection(selection, restored),
         playback: playbackForScenarioChange(playback, restored),
+        mc: mcForScenarioChange(mc, restored),
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
@@ -903,12 +960,14 @@ export const useStore = create<Store>()((set, get) => {
       const current = get().ui.ringOverrides
       const ringOverrides = pruneRingOverrides(current, s)
       if (ringOverrides !== current) writeRingOverrides(ringOverrides)
+      cancelMcRun()
       set((st) => ({
         scenario: s,
         past: [],
         future: [],
         selection: EMPTY_SELECTION,
         playback: freshPlayback(st.playback.runSeq, st.playback.speedMult, 'scenario-loaded'),
+        mc: IDLE_MC,
         ui: { ...st.ui, ...CLEARED_DRAFT, tool: 'select', ringOverrides },
       }))
     },
@@ -1896,7 +1955,7 @@ export const useStore = create<Store>()((set, get) => {
     setSimTime: (t) => get().scrubTo(t),
     setSpeedMult: (m) => set((st) => ({ playback: { ...st.playback, speedMult: m } })),
 
-    startRun: () =>
+    startRun: () => {
       set((st) => {
         if (st.playback.completedAtMs != null) return st
         // A preview beyond the observed horizon is never silently promoted
@@ -1916,7 +1975,17 @@ export const useStore = create<Store>()((set, get) => {
               st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
           },
         }
-      }),
+      })
+      // The replicates belong to the run that just started, so the launch
+      // follows the playback update. A current summary is reused, not redrawn.
+      const st = get()
+      if (runSettings(st.scenario).runMode !== 'monte-carlo') return
+      const current =
+        (st.mc.status === 'running' || st.mc.status === 'done') &&
+        st.mc.runId === st.playback.runId &&
+        st.mc.basisSignature === analysisBasisSignature(st.scenario)
+      if (!current) st.runMonteCarlo()
+    },
 
     pauseRun: () =>
       set((st) => ({
@@ -1976,14 +2045,60 @@ export const useStore = create<Store>()((set, get) => {
         }
       }),
 
-    resetRun: (reason = 'manual') =>
+    resetRun: (reason = 'manual') => {
+      cancelMcRun()
       set((st) => {
         const runSeq = reason === 'manual' ? st.playback.runSeq + 1 : st.playback.runSeq
         if (reason === 'manual') writeRunSeq(runSeq)
         return {
           ...observedPatch(st),
           playback: freshPlayback(runSeq, st.playback.speedMult, reason),
+          mc: IDLE_MC,
         }
+      })
+    },
+
+    runMonteCarlo: () => {
+      const st = get()
+      const { runMode, replicates } = runSettings(st.scenario)
+      if (runMode === 'deterministic') return
+      const basisSignature = analysisBasisSignature(st.scenario)
+      const runId = st.playback.runId
+      const ok = startMcRun(st.scenario, runId, (m) => get().mcMessage(m))
+      set({
+        mc: {
+          runId,
+          status: ok ? 'running' : 'error',
+          progress: 0,
+          total: replicates,
+          summary: null,
+          basisSignature,
+          error: ok ? null : 'Web Worker unavailable',
+        },
+      })
+    },
+
+    mcMessage: (m) =>
+      set((st) => {
+        // A message from a cancelled or superseded run describes another board;
+        // so does a result that was already in flight when the basis changed.
+        if (m.runId !== st.mc.runId || st.mc.status === 'stale') return st
+        if (m.type === 'progress') {
+          return { mc: { ...st.mc, progress: m.done, total: m.total } }
+        }
+        if (m.type === 'done') {
+          return {
+            mc: {
+              ...st.mc,
+              status: 'done',
+              summary: m.summary,
+              progress: m.summary.replicates,
+              total: m.summary.replicates,
+              error: null,
+            },
+          }
+        }
+        return { mc: { ...st.mc, status: 'error', error: m.message } }
       }),
 
   }

@@ -8,6 +8,7 @@ import type {
 } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attrition'
+import type { McSummary } from '../playback/mcRun'
 import type { RequirementGateReport } from '../analysis/requirements'
 import { buildRequirementGateReport } from '../analysis/requirements'
 import type { RunValidityAssessment } from '../analysis/runValidity'
@@ -211,10 +212,13 @@ export interface RunRecordMeta {
 export interface RunExport {
   rangeboardRun: 1
   dataBasis: {
-    kind: 'deterministic-planning-model'
+    kind: 'deterministic-planning-model' | 'monte-carlo'
     sampleStepS: 0.5
     independentlyInstrumented: false
     runScoped: true
+    /** Monte Carlo only: the base seed and the replicate count behind mcSummary. */
+    seed?: number
+    replicates?: number
   }
   /**
    * Whether the run can carry the evidence it looks like it carries, and
@@ -228,6 +232,8 @@ export interface RunExport {
   attrition: AttritionReport
   requirements: RequirementGateReport
   summary: AarSummary
+  /** The replicate summary, present only for a Monte Carlo run. */
+  mcSummary?: McSummary
 }
 
 /** Pure builder for tests and alternate storage targets. */
@@ -237,16 +243,26 @@ export function runExportObject(
   assessments: ThreatAssessment[],
   attrition: AttritionReport,
   summary: AarSummary,
+  mc: McSummary | null = null,
 ): RunExport {
   const validity = assessRunValidity(scenario, assessments)
-  return {
+  const out: RunExport = {
     rangeboardRun: 1,
-    dataBasis: {
-      kind: 'deterministic-planning-model',
-      sampleStepS: 0.5,
-      independentlyInstrumented: false,
-      runScoped: true,
-    },
+    dataBasis: mc
+      ? {
+          kind: 'monte-carlo',
+          sampleStepS: 0.5,
+          independentlyInstrumented: false,
+          runScoped: true,
+          seed: mc.seed,
+          replicates: mc.replicates,
+        }
+      : {
+          kind: 'deterministic-planning-model',
+          sampleStepS: 0.5,
+          independentlyInstrumented: false,
+          runScoped: true,
+        },
     validity,
     run,
     scenario,
@@ -255,6 +271,8 @@ export function runExportObject(
     requirements: buildRequirementGateReport(scenario, assessments, attrition, validity),
     summary,
   }
+  if (mc) out.mcSummary = mc
+  return out
 }
 
 export function exportRunRecord(
@@ -263,9 +281,10 @@ export function exportRunRecord(
   assessments: ThreatAssessment[],
   attrition: AttritionReport,
   summary: AarSummary,
+  mc: McSummary | null = null,
 ): void {
   downloadJson(
-    runExportObject(scenario, run, assessments, attrition, summary),
+    runExportObject(scenario, run, assessments, attrition, summary, mc),
     `${safeName(scenario.name)}.${run.label.toLowerCase()}.run.json`,
   )
 }

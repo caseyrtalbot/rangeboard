@@ -1,5 +1,6 @@
 import type { Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attrition'
+import type { BandSeries, McSummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
 import { formatTime } from '../../geometry/geo'
 import {
@@ -9,6 +10,13 @@ import {
   totalSalvos,
 } from '../headlines'
 import { SURVIVAL_LABELS } from './widgets/labels'
+import { countSub, timeSub } from './widgets/mc'
+
+/** The p10 to p90 sub of a band at its last step: the full-run replicate spread. */
+function lastStepSub(band: BandSeries): string | null {
+  const i = band.mean.length - 1
+  return i < 0 ? null : countSub(band.p10[i], band.p90[i])
+}
 
 function expectedCount(value: number): string {
   if (value === 0) return '0'
@@ -55,10 +63,13 @@ export function OutcomeSummary({
   scenario,
   assessments,
   report,
+  mc = null,
 }: {
   scenario: Scenario
   assessments: ThreatAssessment[]
   report: AttritionReport
+  /** The finished replicate summary of this run, when the run mode is Monte Carlo. */
+  mc?: McSummary | null
 }) {
   const totals = report.totals
   const raid = totals.raidSize
@@ -91,14 +102,17 @@ export function OutcomeSummary({
         <Metric
           label="Defeat"
           value={`${defeatPct.toFixed(1)}%`}
-          sub={`${expectedCount(totals.expectedKills)} of ${raid} ships`}
+          sub={
+            (mc && lastStepSub(mc.kills)) ??
+            `${expectedCount(totals.expectedKills)} of ${raid} ships`
+          }
           cls="good"
           title="Expected kill mass whose effect landed at or before the threat reached the defended asset. Late intercepts are not counted here."
         />
         <Metric
           label={SURVIVAL_LABELS.leakers}
           value={residual.value}
-          sub={residual.sub}
+          sub={(mc && totals.reportedLeakers != null && lastStepSub(mc.leakers)) || residual.sub}
           cls={residual.bad ? 'bad' : ''}
           title="Expected ship mass that reached a defended asset. Not measurable when the laydown places no asset."
         />
@@ -112,7 +126,7 @@ export function OutcomeSummary({
         <Metric
           label="First detect"
           value={firstDetect == null ? '—' : formatTime(firstDetect)}
-          sub="earliest track"
+          sub={(mc && timeSub(mc.firstDetectS)) ?? 'earliest track'}
         />
         <Metric
           label="First effect"
@@ -123,7 +137,7 @@ export function OutcomeSummary({
         <Metric
           label="Min warning"
           value={minWarning == null ? '—' : formatTime(minWarning)}
-          sub="worst threat"
+          sub={(mc && timeSub(mc.minWarningS)) ?? 'worst threat'}
         />
         <Metric
           label="Salvos"

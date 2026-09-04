@@ -1,5 +1,6 @@
 import type {
   Entity,
+  RequirementThresholds,
   Scenario,
   SensorSpec,
   SensorType,
@@ -19,6 +20,8 @@ import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo
 import { slantRangeM } from '../geometry/slant'
 import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
 import { effectivePathDelayS } from './raid'
+import type { DrawPolicy } from './policy'
+import { deterministicPolicy } from './policy'
 import {
   FT_TO_M,
   effectiveClassifyRangeM,
@@ -117,11 +120,9 @@ export interface DetectionHit {
   pd: number | null
 }
 
-/** Single-scan Pd a radar contact must reach to count as DETECT: the test's threshold, never an engine constant. */
-function pdDetectOf(scenario: Scenario): number {
-  const pd = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }.pdDetect
-  // A saved 0 would detect every admitted member out to the instrumented cap.
-  return pd > 0 && pd < 1 ? pd : DEFAULT_REQUIREMENT_THRESHOLDS.pdDetect
+/** The test's thresholds with the defaults filled: the one resolution the draw policy reads. */
+function resolvedThresholds(scenario: Scenario): RequirementThresholds {
+  return { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
 }
 
 /** M-of-N cumulative probability a radar contact must reach to count as TRACK: the test's threshold. */
@@ -162,7 +163,8 @@ function admittedSlantsM(
  * holds only when cued=true). Then, per member, the geometry gate and the
  * wedge (admittedSlantsM) decide who is in view, and the slant range from
  * the phase center decides detection: a sourced-basis radar with a target
- * reads the Pd model (radarPdAt at or above the test's pdDetect threshold);
+ * reads the Pd model through the draw policy (deterministic: radarPdAt at or
+ * above the test's pdDetect threshold; Monte Carlo: one draw per member);
  * every other sensor compares slant range with the effective range for this
  * target (environment derates, EO/IR span, acoustic level).
  */
@@ -175,6 +177,9 @@ function sensorHit(
   altitudeFt: number,
   members: Vec2[],
   cued: boolean,
+  policy: DrawPolicy,
+  uasId: string,
+  tS: number,
 ): DetectionHit | null {
   const gate = sensorHoldGate(spec, uasSpec)
   if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
@@ -182,8 +187,9 @@ function sensorHit(
   const seen = admittedSlantsM(sensor, spec, altitudeFt, members)
   let detected: number[]
   if (radarPdModeled(spec, uasSpec)) {
-    const pdDetect = pdDetectOf(scenario)
-    detected = seen.filter((slant) => radarPdAt(spec, env, uasSpec, slant)! >= pdDetect)
+    detected = seen.filter((slant) =>
+      policy.detect(radarPdAt(spec, env, uasSpec, slant)!, sensor.id, uasId, tS),
+    )
   } else {
     const detectR = effectiveDetectRangeM(spec, env, uasSpec)
     if (!(detectR > 0)) return null
@@ -236,7 +242,9 @@ function radarPdProbe(
  * detectionsAt, assessThreat, spawnInRingViolations and the raid-builder
  * standoff clamp all sweep through here. `formation` is the threat's
  * formation (track-resolution test); pass undefined for a single point.
- * `altitudeFt` is the threat altitude from threatAltitudeFt.
+ * `altitudeFt` is the threat altitude from threatAltitudeFt. A bare call
+ * (no policy) is a deterministic board view; assessThreat passes its run
+ * policy with the threat id and the sample time.
  */
 export function sweepSensorHits(
   scenario: Scenario,
@@ -245,7 +253,11 @@ export function sweepSensorHits(
   uasSpec: UasSpec | undefined,
   altitudeFt: number,
   members: Vec2[],
+  policy?: DrawPolicy,
+  uasId = '',
+  tS = 0,
 ): Array<{ spec: SensorSpec; hit: DetectionHit }> {
+  const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const out: Array<{ spec: SensorSpec; hit: DetectionHit }> = []
   for (const pass of ['search', 'cued'] as const) {
     for (const sensor of sensors) {
@@ -262,6 +274,9 @@ export function sweepSensorHits(
         altitudeFt,
         members,
         out.length > 0,
+        draw,
+        uasId,
+        tS,
       )
       if (hit) out.push({ spec, hit })
     }
@@ -810,8 +825,15 @@ function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean
   return connectedEffectorIds(scenario, sensorIds).size > 0
 }
 
-/** Full timeline analysis of one threat by sampling the scenario at DT steps. */
-export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessment {
+/**
+ * Full timeline analysis of one threat by sampling the scenario at DT steps.
+ * A missing policy is the deterministic expected-value run.
+ */
+export function assessThreat(
+  scenario: Scenario,
+  uasId: string,
+  policy?: DrawPolicy,
+): ThreatAssessment {
   const base: ThreatAssessment = {
     uasId,
     status: 'no-path',
@@ -867,6 +889,7 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   const sensorObservations = new Map<string, SensorObservation>()
   const scanStates = new Map<string, ScanState>()
   const pdTrack = pdTrackCumulativeOf(scenario)
+  const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const trackSamples: Array<{ tS: number; held: boolean }> = []
   const effectorInRange = new Map<string, Array<[number, number]>>()
   // Classification ladder state (PicoGrid executeDetection promotion rules).
@@ -909,6 +932,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
       uasSpec,
       altitudeFt,
       members,
+      draw,
+      uasId,
+      t,
     )) {
       const rateS = scanRateSFor(spec)
       if (rateS != null && sensorObservations.has(hit.sensorId)) {
@@ -1336,8 +1362,9 @@ export function assessThreat(scenario: Scenario, uasId: string): ThreatAssessmen
   return base
 }
 
-export function assessAllThreats(scenario: Scenario): ThreatAssessment[] {
+/** assessThreat over every active threat, one policy threaded through. */
+export function assessAllThreats(scenario: Scenario, policy?: DrawPolicy): ThreatAssessment[] {
   return scenario.entities
     .filter((e) => e.kind === 'uas' && entityActive(e))
-    .map((e) => assessThreat(scenario, e.id))
+    .map((e) => assessThreat(scenario, e.id, policy))
 }

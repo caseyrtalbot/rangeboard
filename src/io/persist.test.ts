@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { AarSummary, EngagePolicy, Entity, Scenario, ScorecardSnap } from '../model/types'
+import { runSettings } from '../model/types'
 import type { AttritionReport } from '../playback/attrition'
+import type { McSummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {
   aarExportObject,
@@ -206,6 +208,52 @@ describe('AAR export payload', () => {
   })
 })
 
+describe('run export Monte Carlo basis', () => {
+  function mcSummary(): McSummary {
+    const stat: Stat = { mean: 1, p10: 1, p90: 1, p025: 1, p975: 1, n: 5 }
+    const band = { mean: [0, 1], p10: [0, 1], p90: [0, 1], p025: [0, 1], p975: [0, 1] }
+    return {
+      seed: 77,
+      replicates: 5,
+      durationS: 0.5,
+      kills: band,
+      leakers: band,
+      detected: band,
+      tracked: band,
+      engaged: band,
+      firstDetectS: stat,
+      minWarningS: stat,
+      perThreat: {},
+      perEffector: {},
+      elapsedMs: 12,
+    }
+  }
+
+  it('labels a replicate run with its seed and count and carries the summary', () => {
+    const summary = mcSummary()
+    const out = runExportObject(
+      emptyScenario(),
+      runMeta(),
+      [],
+      emptyAttrition(),
+      sampleSummary(),
+      summary,
+    )
+    expect(out.dataBasis.kind).toBe('monte-carlo')
+    expect(out.dataBasis.seed).toBe(77)
+    expect(out.dataBasis.replicates).toBe(5)
+    expect(out.mcSummary).toBe(summary)
+    expect(JSON.parse(JSON.stringify(out))).toEqual(out)
+  })
+
+  it('keeps the deterministic basis and no mcSummary key without a summary', () => {
+    const out = runExportObject(emptyScenario(), runMeta(), [], emptyAttrition(), sampleSummary())
+    expect(out.dataBasis.kind).toBe('deterministic-planning-model')
+    expect('seed' in out.dataBasis).toBe(false)
+    expect('mcSummary' in out).toBe(false)
+  })
+})
+
 describe('requirement threshold load fill', () => {
   it('fills the defaults on a save made before requirements existed', () => {
     const s = emptyScenario()
@@ -227,6 +275,18 @@ describe('requirement threshold load fill', () => {
     s.requirements = { minWarningS: 90 } as Scenario['requirements']
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
     expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: 90, pdDetect: 0.5, pdTrackCumulative: 0.9 })
+  })
+})
+
+describe('run settings load fill', () => {
+  it('fills the run mode, seed and replicate count on a save made before they existed', () => {
+    const s = emptyScenario()
+    delete s.runMode
+    delete s.seed
+    delete s.replicates
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(runSettings(out)).toEqual({ runMode: 'deterministic', seed: 4821, replicates: 100 })
+    expect(out.schemaVersion).toBe(1)
   })
 })
 

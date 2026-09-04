@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { FT_TO_M } from '../../../analysis/sensorEnv'
-import { phaseLadderRow, threatSeries, trackMarks } from '../../../analysis/series'
+import { phaseLadderRow, threatSeries, trackMarks, withBands } from '../../../analysis/series'
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
 import type { ChartMark, Series } from '../../../charts/types'
@@ -13,8 +13,9 @@ import { entityPosAt, threatAltitudeFt } from '../../../playback/sim'
 import { PHASE_STYLE } from '../../../playback/trackState'
 import type { TrackPhase } from '../../../playback/trackState'
 import { buildTrackTimeline, trackStatesAt } from '../../../playback/trackState'
-import { modelFor, pathSpeed } from '../../../state/store'
+import { modelFor, pathSpeed, useStore } from '../../../state/store'
 import { SURVIVAL_LABELS } from '../widgets/labels'
+import { currentSummary } from '../widgets/mc'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -35,6 +36,8 @@ const NO_ASSET = 'no defended asset placed'
 export function ThreatDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
   const { scenario, runId, setSimTime, units, assessments, report, t, durationS } = run
+  const mc = useStore((s) => s.mc)
+  const summary = currentSummary(mc, runId)
   const model = modelFor(scenario, entity)
   const uasSpec = model?.uas
   const color = entity.color ?? model?.color ?? '#c46a5a'
@@ -59,8 +62,11 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
   const residual = series.find((s) => s.id === 'residual')
   const shipCount = report.threats.find((x) => x.uasId === entity.id)?.shipCount ?? 1
   const survival = useMemo<Series | null>(
-    () => (residual ? { ...residual, label: SURVIVAL_LABELS.survives } : null),
-    [residual],
+    () =>
+      residual
+        ? withBands([{ ...residual, label: SURVIVAL_LABELS.survives }], summary, entity.id)[0]
+        : null,
+    [residual, summary, entity.id],
   )
   const survivalMarks = useMemo<ChartMark[]>(() => {
     void runId
@@ -205,7 +211,11 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
           <p className="muted small">No radar Pd model observed this track.</p>
         )}
       </DetailSection>
-      <DetailSection id="survival" title="Survival" meta="deterministic">
+      <DetailSection
+        id="survival"
+        title="Survival"
+        meta={summary ? 'mean · 80% band' : 'deterministic'}
+      >
         {survival ? (
           <TimeSeries
             series={[survival]}

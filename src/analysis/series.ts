@@ -23,9 +23,10 @@ import { pathLength } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import type { Entity, Scenario, SpecModel } from '../model/types'
 import { entityActive, mountHeightOf } from '../model/types'
-import type { EngagementEvent } from '../playback/attrition'
+import type { AttritionReport, EngagementEvent } from '../playback/attrition'
 import { effectivePathDelayS } from '../playback/raid'
 import type { SensorObservation, ThreatAssessment } from '../playback/sim'
+import type { BandSeries, McSummary } from '../playback/mcRun'
 import { DT, entityPosAt, killChainRoutes, threatAltitudeFt } from '../playback/sim'
 import { buildTrackTimeline, PHASE_STYLE, trackStatesAt } from '../playback/trackState'
 import type { TrackPhase } from '../playback/trackState'
@@ -47,6 +48,25 @@ const PHASE_INDEX: Record<TrackPhase, number> = Object.fromEntries(
 /** Sample count on the DT grid from t = 0 through scenarioDurationS: ceil(duration / DT) + 1. */
 export function sampleCount(scenario: Scenario): number {
   return Math.ceil(scenarioDurationS(scenario) / DT) + 1
+}
+
+/**
+ * Ships alive per step: the ship count, stepping down by killDelta at each
+ * kill event's effect time. The threat pane's residual and the Monte Carlo
+ * per-threat band read this one rule.
+ */
+export function residualOnGrid(report: AttritionReport, uasId: string, n: number): number[] {
+  const shipCount = report.threats.find((x) => x.uasId === uasId)?.shipCount ?? 1
+  const residual = new Array<number>(n).fill(shipCount)
+  const effects = report.events
+    .filter((ev) => ev.uasId === uasId && ev.killDelta > 0)
+    .sort((x, y) => x.tEffectS - y.tEffectS)
+  let landed = 0
+  for (const ev of effects) {
+    landed += ev.killDelta
+    holdFrom(residual, ev.tEffectS, shipCount - landed)
+  }
+  return residual
 }
 
 /** A fresh grid of NaN. */
@@ -179,7 +199,7 @@ function pdOnGrid(obs: SensorObservation, n: number): number[] | null {
 }
 
 /** 0/1 hold flag per step: 1 inside any of the observation's inclusive intervals. */
-function heldOnGrid(obs: SensorObservation, n: number): number[] {
+export function heldOnGrid(obs: SensorObservation, n: number): number[] {
   const values = new Array<number>(n).fill(0)
   for (const [startS, endS] of obs.intervals) {
     const last = Math.min(n - 1, Math.floor(endS / DT + EPS))
@@ -359,17 +379,7 @@ export function threatSeries(scenario: Scenario, uasId: string): Series[] {
     slot += 1
   }
 
-  const att = report.threats.find((x) => x.uasId === uasId)
-  const shipCount = att?.shipCount ?? 1
-  const residual = new Array<number>(n).fill(shipCount)
-  const effects = report.events
-    .filter((ev) => ev.uasId === uasId && ev.killDelta > 0)
-    .sort((x, y) => x.tEffectS - y.tEffectS)
-  let landed = 0
-  for (const ev of effects) {
-    landed += ev.killDelta
-    holdFrom(residual, ev.tEffectS, shipCount - landed)
-  }
+  const residual = residualOnGrid(report, uasId, n)
   out.push({
     id: 'residual',
     label: 'Residual ships',
@@ -810,4 +820,44 @@ export function phaseLadderRow(scenario: Scenario, uasId: string): LadderRow {
     startI = i
   }
   return row
+}
+
+/** The summary band a series id maps to; null when the summary carries none for it. */
+function bandFor(summary: McSummary, id: string, uasId?: string): BandSeries | null {
+  switch (id) {
+    case 'kpi.expectedKills':
+      return summary.kills
+    case 'kpi.leakerShips':
+      return summary.leakers
+    case 'kpi.detected':
+      return summary.detected
+    case 'kpi.engaged':
+      return summary.engaged
+    case 'tracksHeld':
+      return summary.tracked
+    case 'residual':
+      return uasId ? (summary.perThreat[uasId]?.residual ?? null) : null
+    default:
+      return null
+  }
+}
+
+/**
+ * Attach the Monte Carlo bands to the series the summary covers and replace the line by the
+ * replicate mean, so the line, the band and the tile agree. Series without a match, or a
+ * null summary, pass through unchanged. `uasId` selects the per-threat residual band.
+ */
+export function withBands(series: Series[], summary: McSummary | null, uasId?: string): Series[] {
+  if (!summary) return series
+  return series.map((s) => {
+    const band = bandFor(summary, s.id, uasId)
+    // A band on another grid is a mismatch, not a partial fit: the series stays deterministic.
+    if (!band || band.mean.length !== s.values.length) return s
+    return {
+      ...s,
+      values: band.mean,
+      band80: [band.p10, band.p90],
+      band95: [band.p025, band.p975],
+    }
+  })
 }

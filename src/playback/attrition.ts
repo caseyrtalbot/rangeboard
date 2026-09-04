@@ -10,13 +10,21 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
-import { defaultJamBehavior, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
+import {
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  defaultJamBehavior,
+  effectiveDoctrine,
+  entityActive,
+  mountHeightOf,
+} from '../model/types'
 import { dist, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { assessJam, effectiveJamRangeM } from '../analysis/ewPhysics'
 import { FT_TO_M, effectorGeometryGate } from '../analysis/sensorEnv'
 import type { ThreatAssessment } from './sim'
-import { assessAllThreats, killChainRoutes, memberPositions, threatAltitudeFt } from './sim'
+import { DT, assessAllThreats, killChainRoutes, memberPositions, threatAltitudeFt } from './sim'
+import type { DrawPolicy } from './policy'
+import { deterministicPolicy } from './policy'
 import { effectivePathDelayS } from './raid'
 import { profileFor } from '../model/integration'
 import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
@@ -109,8 +117,6 @@ import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
  * expected-kill mass the effect removed — so shots-so-far, kills-so-far, and
  * per-threat state at any sim time can be prefix-aggregated from it.
  */
-
-const DT = 0.5
 
 /** Type-baseline single-shot Pk for specs saved before the pk field existed. */
 export const DEFAULT_PK: Record<EffectorSpec['effectorType'], number> = {
@@ -586,8 +592,13 @@ export function launchPolicyReleases(
 export function resolveEngagements(
   scenario: Scenario,
   precomputed?: ThreatAssessment[],
+  policy?: DrawPolicy,
 ): AttritionReport {
-  const assessments = (precomputed ?? assessAllThreats(scenario)).filter(
+  // A missing policy is the deterministic expected-value run.
+  const draw =
+    policy ??
+    deterministicPolicy({ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements })
+  const assessments = (precomputed ?? assessAllThreats(scenario, draw)).filter(
     (a) => a.status !== 'no-path',
   )
   const doctrine = effectiveDoctrine(scenario)
@@ -695,8 +706,9 @@ export function resolveEngagements(
       // recovered while the target was outside the beam.
       const idx = intervalIndexAt(fx.target.windows.get(fx.effectorId), fx.tEffectS)
       const hold = ship.jamBy.get(fx.effectorId)
-      if (hold && hold.intervalIdx === idx) hold.value += (1 - hold.value) * fx.pk
-      else ship.jamBy.set(fx.effectorId, { value: fx.pk, intervalIdx: idx })
+      const p = draw.jam(fx.pk, fx.effectorId, fx.target.a.uasId, fx.tEffectS)
+      if (hold && hold.intervalIdx === idx) hold.value += (1 - hold.value) * p
+      else ship.jamBy.set(fx.effectorId, { value: p, intervalIdx: idx })
       if (fx.target.lastJamEffectS == null || fx.tEffectS > fx.target.lastJamEffectS) {
         fx.target.lastJamEffectS = fx.tEffectS
       }
@@ -704,8 +716,10 @@ export function resolveEngagements(
       // Kill shot; a track jam-degraded AT THE EFFECT TIME worsens the
       // firing solution. A target that already flew out of the jam cone has
       // its link back, so it takes no degrade.
+      const pEff = fx.pk * (1 - CONTINUE_TRACK_DEGRADE * jammedAt(fx.target, ship, fx.tEffectS))
       const kill =
-        ship.alive * fx.pk * (1 - CONTINUE_TRACK_DEGRADE * jammedAt(fx.target, ship, fx.tEffectS))
+        ship.alive *
+        draw.kill(pEff, fx.effectorId, fx.target.a.uasId, fx.shipIdx, fx.tEffectS)
       ship.alive -= kill
       // Survival math is unchanged. Only the credit splits: mass removed
       // after the threat was already over the asset destroyed an airframe

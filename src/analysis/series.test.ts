@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type { LadderSpan } from '../charts/types'
+import type { LadderSpan, Series } from '../charts/types'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
 import { MOUNT_HEIGHT_M } from '../model/types'
 import { DT } from '../playback/sim'
@@ -28,7 +28,9 @@ import {
   trackLadderRows,
   trackMarks,
   trackSlots,
+  withBands,
 } from './series'
+import type { BandSeries, McSummary, Stat } from '../playback/mcRun'
 
 /** Planning-basis radar: no RCS scaling and no Pd model, so detection is the range test. */
 function radar(detectRangeM: number): SpecModel {
@@ -666,5 +668,90 @@ describe('sensorSeries Pd per track', () => {
     expect(pd).toHaveLength(2)
     expect(pd.map((s) => s.color)).toEqual([CHART_SLOT_TOKENS[0], CHART_SLOT_TOKENS[1]])
     expect(pd.find((s) => s.id === `pd.${far.id}`)!.color).toBe(CHART_SLOT_TOKENS[1])
+  })
+})
+
+describe('withBands', () => {
+  const stat: Stat = { mean: 1, p10: 0, p90: 2, p025: 0, p975: 2, n: 3 }
+  function band(n: number, base: number): BandSeries {
+    const fill = (v: number) => new Array<number>(n).fill(v)
+    return {
+      mean: fill(base),
+      p10: fill(base - 1),
+      p90: fill(base + 1),
+      p025: fill(base - 2),
+      p975: fill(base + 2),
+    }
+  }
+  function summaryOf(n: number): McSummary {
+    return {
+      seed: 1,
+      replicates: 3,
+      durationS: (n - 1) * DT,
+      kills: band(n, 10),
+      leakers: band(n, 20),
+      detected: band(n, 30),
+      tracked: band(n, 40),
+      engaged: band(n, 50),
+      firstDetectS: stat,
+      minWarningS: stat,
+      perThreat: {
+        'uas-1': {
+          killed: stat,
+          leaked: stat,
+          firstDetectS: stat,
+          arrivalS: null,
+          shipCount: 1,
+          residual: band(n, 60),
+        },
+      },
+      perEffector: {},
+      elapsedMs: 0,
+    }
+  }
+  function series(id: string, n: number): Series {
+    const values = new Array<number>(n).fill(7)
+    return { id, label: id, unit: null, values, color: 'accent', kind: 'step' }
+  }
+
+  it('maps every covered id to its band and replaces the values by the mean', () => {
+    const n = 5
+    const ids: Array<[string, number]> = [
+      ['kpi.expectedKills', 10],
+      ['kpi.leakerShips', 20],
+      ['kpi.detected', 30],
+      ['kpi.engaged', 50],
+      ['tracksHeld', 40],
+    ]
+    const out = withBands(ids.map(([id]) => series(id, n)), summaryOf(n))
+    ids.forEach(([id, base], i) => {
+      expect(out[i].id).toBe(id)
+      expect(out[i].values).toEqual(new Array(n).fill(base))
+      expect(out[i].band80).toEqual([new Array(n).fill(base - 1), new Array(n).fill(base + 1)])
+      expect(out[i].band95).toEqual([new Array(n).fill(base - 2), new Array(n).fill(base + 2)])
+    })
+  })
+
+  it('selects the per-threat residual band by uasId and passes an unknown threat through', () => {
+    const n = 4
+    const [withUas] = withBands([series('residual', n)], summaryOf(n), 'uas-1')
+    expect(withUas.values).toEqual([60, 60, 60, 60])
+    expect(withUas.band80).toEqual([[59, 59, 59, 59], [61, 61, 61, 61]])
+    const [noUas] = withBands([series('residual', n)], summaryOf(n))
+    expect(noUas.values).toEqual([7, 7, 7, 7])
+    expect(noUas.band80).toBeUndefined()
+    const [unknown] = withBands([series('residual', n)], summaryOf(n), 'uas-9')
+    expect(unknown.band80).toBeUndefined()
+  })
+
+  it('passes an unmatched id, a length mismatch and a null summary through unchanged', () => {
+    const n = 5
+    const other = series('meanPd', n)
+    expect(withBands([other], summaryOf(n))[0]).toBe(other)
+    const short = series('kpi.detected', n)
+    expect(withBands([short], summaryOf(n + 1))[0]).toBe(short)
+    expect(withBands([short], summaryOf(n - 1))[0]).toBe(short)
+    const list = [series('kpi.detected', n)]
+    expect(withBands(list, null)).toBe(list)
   })
 })

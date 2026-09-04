@@ -1,5 +1,10 @@
 import type { EnvironmentSpec, RequirementThresholds, Scenario, Underlay } from './types'
-import { DEFAULT_FIRE_DOCTRINE, DEFAULT_REQUIREMENT_THRESHOLDS } from './types'
+import {
+  DEFAULT_FIRE_DOCTRINE,
+  DEFAULT_REPLICATES,
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  DEFAULT_SEED,
+} from './types'
 import { SEED_LIBRARY } from './seedLibrary'
 import { SEED_SYSTEMS } from './seedSystems'
 
@@ -38,6 +43,9 @@ export function emptyScenario(): Scenario {
     systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
     deletedSeedIds: [],
     observedPresetId: null,
+    runMode: 'deterministic',
+    seed: DEFAULT_SEED,
+    replicates: DEFAULT_REPLICATES,
     environment: defaultEnvironment(),
 
     roe: 'tight',

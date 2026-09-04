@@ -2425,6 +2425,42 @@ p.muted.small {
   color: var(--text-dim);
 }
 
+/* The chip opens the run mode popover, so it is a control and takes the
+   control border. It keeps the chip type, not the button type. */
+button.chip {
+  background: none;
+  border-color: var(--border-control);
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.chip.mc {
+  color: var(--accent);
+}
+
+.chip.warn {
+  color: var(--warn);
+}
+
+/* Run mode, seed and replicate count. Opens under the run header. */
+.mc-pop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--panel-pad);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-pop);
+}
+
+.mc-run {
+  align-self: flex-start;
+  border-color: var(--border-control);
+  font-size: 11px;
+}
+
 /* ---------- I&W strip, threat groups ---------- */
 
 .iw-strip {

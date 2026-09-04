@@ -14,6 +14,7 @@ import { defaultAnalysisView } from './analysisLayout'
 import type { AnalysisViewState } from './analysisLayout'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
+import type { McSummary } from '../playback/mcRun'
 import { flushViewWrites, savedAnalysis, savedRingOverrides, savedView } from '../io/viewState'
 import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
@@ -1288,5 +1289,159 @@ describe('applyFrame', () => {
     expect(p.phase).toBe('ready')
     expect(p.startedAtMs).toBeNull()
     expect(p.observedThroughS).toBe(0)
+  })
+})
+
+describe('monte carlo slice', () => {
+  beforeEach(reset)
+
+  const ZERO_STAT = { mean: 0, p10: 0, p90: 0, p025: 0, p975: 0, n: 1 }
+  const ZERO_BAND = { mean: [0], p10: [0], p90: [0], p025: [0], p975: [0] }
+
+  function fakeSummary(replicates = 4): McSummary {
+    return {
+      seed: 1,
+      replicates,
+      durationS: 60,
+      kills: ZERO_BAND,
+      leakers: ZERO_BAND,
+      detected: ZERO_BAND,
+      tracked: ZERO_BAND,
+      engaged: ZERO_BAND,
+      firstDetectS: ZERO_STAT,
+      minWarningS: ZERO_STAT,
+      perThreat: {},
+      perEffector: {},
+      elapsedMs: 12,
+    }
+  }
+
+  /** Monte Carlo mode, one launch (no Worker in node), then a done message. */
+  function primeDone(replicates = 4): McSummary {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    useStore.getState().runMonteCarlo()
+    const runId = useStore.getState().mc.runId as string
+    const summary = fakeSummary(replicates)
+    useStore.getState().mcMessage({ type: 'done', runId, summary })
+    return summary
+  }
+
+  it('a done message fills the summary and the progress', () => {
+    const summary = primeDone(7)
+    const mc = useStore.getState().mc
+    expect(mc.status).toBe('done')
+    expect(mc.summary).toBe(summary)
+    expect(mc.progress).toBe(7)
+    expect(mc.total).toBe(7)
+  })
+
+  it('resetRun returns the slice to idle', () => {
+    primeDone()
+    useStore.getState().resetRun('manual')
+    expect(useStore.getState().mc).toEqual({
+      runId: null,
+      status: 'idle',
+      progress: 0,
+      total: 0,
+      summary: null,
+      basisSignature: null,
+      error: null,
+    })
+  })
+
+  it('replaceScenario clears the slice', () => {
+    primeDone()
+    useStore.getState().replaceScenario(emptyScenario())
+    expect(useStore.getState().mc.status).toBe('idle')
+    expect(useStore.getState().mc.summary).toBeNull()
+  })
+
+  it('a basis change marks the summary stale and keeps it', () => {
+    const summary = primeDone()
+    useStore.getState().patchScenario({ seed: 99 })
+    const mc = useStore.getState().mc
+    expect(mc.status).toBe('stale')
+    expect(mc.summary).toBe(summary)
+  })
+
+  it('undo and redo across a basis change mark the summary stale', () => {
+    useStore.getState().patchScenario({ seed: 99 })
+    const summary = primeDone()
+    useStore.getState().undo()
+    expect(useStore.getState().mc.status).toBe('stale')
+    expect(useStore.getState().mc.summary).toBe(summary)
+    useStore.getState().redo()
+    expect(useStore.getState().mc.status).toBe('stale')
+  })
+
+  it('a done message after a stale mark is ignored', () => {
+    const summary = primeDone()
+    useStore.getState().patchScenario({ seed: 99 })
+    const runId = useStore.getState().mc.runId as string
+    useStore.getState().mcMessage({ type: 'done', runId, summary: fakeSummary(9) })
+    expect(useStore.getState().mc.status).toBe('stale')
+    expect(useStore.getState().mc.summary).toBe(summary)
+  })
+
+  it('a change outside the basis leaves the summary current', () => {
+    primeDone()
+    useStore.getState().setScenarioName('Renamed board')
+    expect(useStore.getState().mc.status).toBe('done')
+  })
+
+  it('a message from another run id is ignored', () => {
+    primeDone()
+    useStore.getState().mcMessage({ type: 'error', runId: 'other-run', message: 'boom' })
+    expect(useStore.getState().mc.status).toBe('done')
+    expect(useStore.getState().mc.error).toBeNull()
+  })
+
+  it('runMonteCarlo is a no-op under deterministic mode', () => {
+    useStore.getState().runMonteCarlo()
+    expect(useStore.getState().mc.status).toBe('idle')
+    expect(useStore.getState().mc.runId).toBeNull()
+  })
+
+  it('runMonteCarlo reports the missing Worker as an error', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo', replicates: 20 })
+    useStore.getState().runMonteCarlo()
+    const st = useStore.getState()
+    expect(st.mc.status).toBe('error')
+    expect(st.mc.error).toBe('Web Worker unavailable')
+    expect(st.mc.runId).toBe(st.playback.runId)
+    expect(st.mc.total).toBe(20)
+    expect(st.mc.basisSignature).toBe(analysisBasisSignature(st.scenario))
+  })
+
+  it('startRun launches the replicates under monte-carlo mode only', () => {
+    useStore.getState().startRun()
+    expect(useStore.getState().mc.status).toBe('idle')
+    useStore.getState().resetRun('manual')
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    useStore.getState().startRun()
+    const st = useStore.getState()
+    expect(st.mc.status).toBe('error')
+    expect(st.mc.runId).toBe(st.playback.runId)
+  })
+
+  it('the slice stays out of the scenario and the history', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    const past = useStore.getState().past.length
+    useStore.getState().runMonteCarlo()
+    const runId = useStore.getState().mc.runId as string
+    useStore.getState().mcMessage({ type: 'done', runId, summary: fakeSummary() })
+    const st = useStore.getState()
+    expect(st.past.length).toBe(past)
+    expect(JSON.stringify(st.scenario)).not.toContain('summary')
+    expect('mc' in st.scenario).toBe(false)
+  })
+
+  it('the basis signature reads the run settings', () => {
+    const base = emptyScenario()
+    const sig = analysisBasisSignature(base)
+    expect(analysisBasisSignature({ ...base, seed: base.seed! + 1 })).not.toBe(sig)
+    expect(analysisBasisSignature({ ...base, replicates: 250 })).not.toBe(sig)
+    expect(analysisBasisSignature({ ...base, runMode: 'monte-carlo' })).not.toBe(sig)
+    expect(analysisBasisSignature({ ...base, name: 'Other' })).toBe(sig)
   })
 })

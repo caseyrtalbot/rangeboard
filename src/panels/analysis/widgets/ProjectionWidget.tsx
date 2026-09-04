@@ -7,6 +7,7 @@ import { Info } from '../Info'
 import { OutcomeSummary } from '../OutcomeSummary'
 import { ThreatPicture } from '../ThreatPicture'
 import { useEngagement } from './controls'
+import { currentSummary } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -41,6 +42,8 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
+  const mc = useStore((s) => s.mc)
+  const summary = currentSummary(mc, runId)
   const { assessments, report } = useEngagement(scenario, runId)
   const projectionGroups = useMemo(
     () => threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map()),
@@ -64,7 +67,12 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
         <p className="muted small">No threats with flight paths.</p>
       ) : (
         <>
-          <OutcomeSummary scenario={scenario} assessments={assessments} report={report} />
+          <OutcomeSummary
+            scenario={scenario}
+            assessments={assessments}
+            report={report}
+            mc={summary}
+          />
           <AnalysisSection
             title="Projected threat outcome"
             headline={residualSectionHeadline(report.totals)}

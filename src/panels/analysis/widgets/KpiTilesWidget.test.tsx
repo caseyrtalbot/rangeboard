@@ -2,8 +2,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../../../model/seed'
 import type { Entity, Scenario } from '../../../model/types'
+import { sampleCount } from '../../../analysis/series'
+import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
-import { useStore } from '../../../state/store'
+import { IDLE_MC, useStore } from '../../../state/store'
 import { KpiTilesWidget } from './KpiTilesWidget'
 import { KPI_LABELS } from './labels'
 
@@ -25,6 +27,49 @@ function threatScenario(): Scenario {
     { id: 'path-1', entityId: uas.id, points: [{ x: -3000, y: 0 }, { x: 3000, y: 0 }], speedMps: 20, startDelayS: 0 },
   ]
   return scenario
+}
+
+/** A flat band on the scenario grid: mean, p10 and p90 constant over every step. */
+function band(n: number, mean: number, p10: number, p90: number): BandSeries {
+  const fill = (v: number) => new Array<number>(n).fill(v)
+  return { mean: fill(mean), p10: fill(p10), p90: fill(p90), p025: fill(p10), p975: fill(p90) }
+}
+
+/** A hand-built summary of 100 replicates over the current scenario's grid. */
+function summaryOf(scenario: Scenario): McSummary {
+  const n = sampleCount(scenario)
+  const stat: Stat = { mean: 12, p10: 10, p90: 15, p025: 9, p975: 16, n: 100 }
+  return {
+    seed: 4821,
+    replicates: 100,
+    durationS: (n - 1) * 0.5,
+    kills: band(n, 0.8, 0, 1),
+    leakers: band(n, 0.2, 0, 1),
+    detected: band(n, 4.5, 4, 5),
+    tracked: band(n, 4, 4, 4),
+    engaged: band(n, 1, 1, 1),
+    firstDetectS: stat,
+    minWarningS: stat,
+    perThreat: {},
+    perEffector: {},
+    elapsedMs: 0,
+  }
+}
+
+/** Install a summary in the mc slice for the current run id under `status`. */
+function setMc(status: 'done' | 'stale'): void {
+  const st = useStore.getState()
+  useStore.setState({
+    mc: {
+      ...IDLE_MC,
+      status,
+      runId: st.playback.runId,
+      summary: summaryOf(st.scenario),
+      basisSignature: 'test',
+      total: 100,
+      progress: 100,
+    },
+  })
 }
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
@@ -74,6 +119,29 @@ describe('KpiTilesWidget', () => {
     expect(html).toContain('class="params"')
     for (const key of KPI_KEYS) expect(html).toContain(KPI_LABELS[key].label)
     expect(html).not.toContain('tiles c3')
+  })
+
+  it('reads the replicate mean and the p10 to p90 sub from a finished summary', () => {
+    useStore.getState().advanceRun(1)
+    useStore.getState().pauseRun()
+    setMc('done')
+    const html = render({ tiles: ['detect', 'killEk', 'firstDetect'] })
+    expect(html).toContain('4.5<small>/1</small>')
+    expect(html).toContain('p10 to p90 · 4 to 5')
+    expect(html).toContain('p10 to p90 · 0 to 1')
+    expect(html).toContain('3 of 13 · mean of 100')
+    // A time tile stays "not yet" until the cursor reaches the mean.
+    expect(html).toContain('not yet')
+    useStore.setState({ mc: IDLE_MC })
+  })
+
+  it('draws no sub and no replicate meta from a stale summary', () => {
+    setMc('stale')
+    const html = render({ tiles: ['detect'] })
+    expect(html).not.toContain('p10 to p90')
+    expect(html).not.toContain('mean of')
+    expect(html).toContain('1 of 13')
+    useStore.setState({ mc: IDLE_MC })
   })
 
   it('says so when no threat has a flight path', () => {

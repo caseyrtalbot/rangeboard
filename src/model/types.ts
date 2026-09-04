@@ -895,6 +895,15 @@ export const DEFAULT_REQUIREMENT_THRESHOLDS: RequirementThresholds = {
   pdTrackCumulative: 0.9,
 }
 
+/** Engine run mode: expected-value arithmetic, or seeded replicate draws. */
+export type RunMode = 'deterministic' | 'monte-carlo'
+
+/** Seed of a fresh scenario. Fixed so an old save refilled by fillScenario keeps one seed. */
+export const DEFAULT_SEED = 4821
+
+/** Replicate count of a fresh scenario. */
+export const DEFAULT_REPLICATES = 100
+
 export interface Scenario {
   schemaVersion: 1
   name: string
@@ -907,6 +916,12 @@ export interface Scenario {
   deletedSeedIds?: string[]
   /** Lens preset id active when the current run was reset or started. Null before any run. */
   observedPresetId?: string | null
+  /** Run mode. Absent on old saves = deterministic. */
+  runMode?: RunMode
+  /** Monte Carlo base seed; replicate i uses seed + i. Absent on old saves = DEFAULT_SEED. */
+  seed?: number
+  /** Replicate count. Absent on old saves = DEFAULT_REPLICATES. */
+  replicates?: number
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
 
@@ -932,6 +947,18 @@ export interface Scenario {
   underlay: Underlay
   /** Lat/lon of world (0,0) for satellite tiles. Null until the user sets one. */
   geoRef: GeoRef | null
+}
+
+/** The one reader of the three run fields with their defaults applied. */
+export function runSettings(s: Scenario): { runMode: RunMode; seed: number; replicates: number } {
+  const seed = s.seed
+  const reps = s.replicates
+  return {
+    runMode: s.runMode ?? 'deterministic',
+    seed: Number.isInteger(seed) ? (seed as number) : DEFAULT_SEED,
+    replicates:
+      Number.isInteger(reps) && (reps as number) >= 1 ? (reps as number) : DEFAULT_REPLICATES,
+  }
 }
 
 let counter = 0

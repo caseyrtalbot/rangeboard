@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attrition'
+import type { McSummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
 import { detectionsAt } from '../../playback/sim'
 import { buildRequirementGateReport } from '../../analysis/requirements'
@@ -20,6 +21,7 @@ import { RequirementGates } from './RequirementGates'
 import { SystemStatus } from './SystemStatus'
 import { ThreatPicture } from './ThreatPicture'
 import { EventLedgerList } from './widgets/EventLedgerWidget'
+import { currentSummary } from './widgets/mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './widgets/RunValidityWidget'
 
 function RunActions({
@@ -28,12 +30,14 @@ function RunActions({
   report,
   aar,
   durationS,
+  mc,
 }: {
   scenario: Scenario
   assessments: ThreatAssessment[]
   report: AttritionReport
   aar: AarSummary
   durationS: number
+  mc: McSummary | null
 }) {
   const startedAtMs = useStore((state) => state.playback.startedAtMs)!
   const completedAtMs = useStore((state) => state.playback.completedAtMs)!
@@ -66,7 +70,7 @@ function RunActions({
     <div className="debrief-actions">
       <button
         className="primary"
-        onClick={() => exportRunRecord(scenario, runMeta, assessments, report, aar)}
+        onClick={() => exportRunRecord(scenario, runMeta, assessments, report, aar, mc)}
       >
         Export debrief JSON
       </button>
@@ -126,6 +130,9 @@ export function DebriefRecord({
   const startedAtMs = useStore((state) => state.playback.startedAtMs)
   const observedThroughS = useStore((state) => state.playback.observedThroughS)
   const runSeq = useStore((state) => state.playback.runSeq)
+  const runId = useStore((state) => state.playback.runId)
+  const mcState = useStore((state) => state.mc)
+  const mc = currentSummary(mcState, runId)
   const complete =
     completedAtMs != null &&
     startedAtMs != null &&
@@ -193,8 +200,9 @@ export function DebriefRecord({
         report={report}
         aar={aar}
         durationS={durationS}
+        mc={mc}
       />
-      <OutcomeSummary scenario={scenario} assessments={assessments} report={report} />
+      <OutcomeSummary scenario={scenario} assessments={assessments} report={report} mc={mc} />
       <AnalysisSection
         title="Requirement record"
         headline={`${requirements.met}/${requirements.required} met`}

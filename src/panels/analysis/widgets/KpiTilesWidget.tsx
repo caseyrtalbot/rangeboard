@@ -1,12 +1,14 @@
 import { useMemo } from 'react'
 import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../../analysis/liveStats'
 import { formatTime } from '../../../geometry/geo'
+import type { BandSeries, McSummary } from '../../../playback/mcRun'
 import { detectionsAt } from '../../../playback/sim'
 import type { KpiKey } from '../../../state/analysisLayout'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { useEngagement, useRunCursor } from './controls'
 import { KPI_LABELS } from './labels'
+import { bandStep, countSub, currentSummary, formatCount, timeSub } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -45,9 +47,34 @@ function minOf(values: Array<number | null | undefined>): number | null {
 }
 
 /** Time tile: the value once the cursor reaches it, else a dash and "not yet". */
-function timeTile(key: KpiKey, value: number | null, reachedAtS: number | null, t: number): Tile {
+function timeTile(
+  key: KpiKey,
+  value: number | null,
+  reachedAtS: number | null,
+  t: number,
+  sub?: string | null,
+): Tile {
   const reached = value != null && reachedAtS != null && t >= reachedAtS
-  return reached ? { key, value: formatTime(value) } : { key, value: '—', sub: 'not yet' }
+  return reached
+    ? { key, value: formatTime(value), sub: sub ?? undefined }
+    : { key, value: '—', sub: 'not yet' }
+}
+
+/** The replicate mean at the cursor step and its p10 to p90 sub. */
+function bandAt(band: BandSeries, t: number): { mean: number; sub: string } {
+  const i = bandStep(t, band.mean.length)
+  return { mean: band.mean[i], sub: countSub(band.p10[i], band.p90[i]) }
+}
+
+/** A count tile over n: the replicate mean with its band sub. */
+function bandCountTile(key: KpiKey, band: BandSeries, t: number, n: number): Tile {
+  const at = bandAt(band, t)
+  return { key, value: <>{formatCount(at.mean)}<small>/{n}</small></>, sub: at.sub }
+}
+
+/** A finite Stat mean, else null (a Stat over no sample is NaN). */
+function meanOf(stat: McSummary['firstDetectS']): number | null {
+  return stat.n > 0 && Number.isFinite(stat.mean) ? stat.mean : null
 }
 
 function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
@@ -79,8 +106,11 @@ function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
 export function KpiTilesWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
+  const mc = useStore((s) => s.mc)
   const { assessments, report } = useEngagement(scenario, runId)
   const { t, untouched } = useRunCursor(scenario)
+  // Nothing is observed before the first play: the replicate means wait too.
+  const summary = untouched ? null : currentSummary(mc, runId)
   const tiles = useMemo(() => tilesOf(params), [params])
   const tl = useMemo(() => buildLiveTimeline(assessments, report), [assessments, report])
   const threats = useMemo(
@@ -113,14 +143,17 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
   const tile = (key: KpiKey): Tile => {
     switch (key) {
       case 'detect':
+        if (summary) return bandCountTile(key, summary.detected, t, n)
         return { key, value: <>{k.detected}<small>/{n}</small></> }
       case 'trackNow':
+        if (summary) return bandCountTile(key, summary.tracked, t, n)
         return { key, value: <>{tracking}<small>/{n}</small></> }
       case 'idClass':
         return { key, value: <>{k.classified}<small>/{n}</small></> }
       case 'targetNow':
         return { key, value: <>{k.targetable}<small>/{n}</small></> }
       case 'engaged':
+        if (summary) return bandCountTile(key, summary.engaged, t, n)
         return { key, value: <>{k.engaged}<small>/{n}</small></> }
       case 'salvos':
         return {
@@ -133,16 +166,27 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
             </>
           ),
         }
-      case 'killEk':
-        return { key, value: k.expectedKills.toFixed(1) }
+      case 'killEk': {
+        if (!summary) return { key, value: k.expectedKills.toFixed(1) }
+        const at = bandAt(summary.kills, t)
+        return { key, value: formatCount(at.mean), sub: at.sub }
+      }
       case 'lateEk':
         return { key, value: k.lateKills.toFixed(1) }
-      case 'leakEn':
-        return report.totals.reportedLeakers == null
-          ? { key, value: '—', sub: 'no defended asset' }
-          : { key, value: k.leakerShips.toFixed(1), cls: leakCls }
-      case 'firstDetect':
-        return timeTile(key, firstDetect, firstDetect, cursor)
+      case 'leakEn': {
+        if (report.totals.reportedLeakers == null) {
+          return { key, value: '—', sub: 'no defended asset' }
+        }
+        if (!summary) return { key, value: k.leakerShips.toFixed(1), cls: leakCls }
+        const at = bandAt(summary.leakers, t)
+        const cls = at.mean >= 1 ? 'bad' : at.mean > 0.05 ? 'warn' : ''
+        return { key, value: formatCount(at.mean), sub: at.sub, cls }
+      }
+      case 'firstDetect': {
+        if (!summary) return timeTile(key, firstDetect, firstDetect, cursor)
+        const mean = meanOf(summary.firstDetectS)
+        return timeTile(key, mean, mean, cursor, timeSub(summary.firstDetectS))
+      }
       case 'firstEffect':
         return timeTile(key, firstEffect, firstEffect, cursor)
       case 'detectToEffect': {
@@ -151,8 +195,12 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         const reachedAt = both ? Math.max(firstDetect, firstEffect) : null
         return timeTile(key, value, reachedAt, cursor)
       }
-      case 'minWarning':
-        return timeTile(key, warningHolder?.warningS ?? null, warningHolder?.arrivalS ?? null, cursor)
+      case 'minWarning': {
+        const arrivalS = warningHolder?.arrivalS ?? null
+        if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
+        const mean = meanOf(summary.minWarningS)
+        return timeTile(key, mean, arrivalS, cursor, timeSub(summary.minWarningS))
+      }
     }
   }
 
@@ -180,7 +228,9 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
       id={id}
       type="kpi-tiles"
       title="KPI tiles"
-      meta={`${tiles.length} of ${KPI_KEYS.length}`}
+      meta={`${tiles.length} of ${KPI_KEYS.length}${
+        summary ? ` · mean of ${summary.replicates}` : ''
+      }`}
       collapsed={collapsed}
       customize={customize}
       index={index}

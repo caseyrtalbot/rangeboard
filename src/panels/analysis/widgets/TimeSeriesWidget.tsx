@@ -7,6 +7,7 @@ import {
   kpiSeries,
   meanHeldPdSeries,
   salvosInFlightSeries,
+  withBands,
 } from '../../../analysis/series'
 import type { Scenario } from '../../../model/types'
 import { DT } from '../../../playback/sim'
@@ -14,6 +15,7 @@ import type { ThreatAssessment } from '../../../playback/sim'
 import type { TimeSeriesPreset } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { useEngagement, useRunCursor } from './controls'
+import { currentSummary } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -80,6 +82,8 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
   const setSimTime = useStore((s) => s.setSimTime)
+  const mc = useStore((s) => s.mc)
+  const summary = currentSummary(mc, runId)
   const { assessments, report } = useEngagement(scenario, runId)
   const { t } = useRunCursor(scenario)
   const preset = presetOf(params)
@@ -92,17 +96,20 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
     // engagementPicture is a WeakMap cache cleared on reset: runId keys the memo.
     void runId
     if (threats === 0) return []
-    switch (preset) {
-      case 'sensors':
-        return sensorsCharts(scenario, threats)
-      case 'effectors':
-        return effectorsCharts(scenario)
-      case 'threat':
-        return threatCharts(scenario, raidSize)
-      default:
-        return idsCharts(scenario, idsKey.split(',').filter(Boolean), assessments, raidSize)
-    }
-  }, [scenario, runId, preset, idsKey, threats, raidSize, assessments])
+    const built = (() => {
+      switch (preset) {
+        case 'sensors':
+          return sensorsCharts(scenario, threats)
+        case 'effectors':
+          return effectorsCharts(scenario)
+        case 'threat':
+          return threatCharts(scenario, raidSize)
+        default:
+          return idsCharts(scenario, idsKey.split(',').filter(Boolean), assessments, raidSize)
+      }
+    })()
+    return built.map((chart) => ({ ...chart, series: withBands(chart.series, summary) }))
+  }, [scenario, runId, preset, idsKey, threats, raidSize, assessments, summary])
 
   const title =
     preset === 'sensors'
@@ -120,7 +127,7 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
       id={id}
       type="time-series"
       title={title}
-      meta={`${DT} s`}
+      meta={summary ? `${DT} s · bands 80 and 95%` : `${DT} s`}
       collapsed={collapsed}
       customize={customize}
       index={index}
