@@ -1295,13 +1295,18 @@ describe('applyFrame', () => {
 describe('monte carlo slice', () => {
   beforeEach(reset)
 
-  const ZERO_STAT = { mean: 0, p10: 0, p90: 0, p025: 0, p975: 0, n: 1 }
+  const ZERO_STAT = {
+    mean: 0, sd: 0, se: 0, lo: 0, hi: 0, conf: 0.95,
+    p10: 0, p90: 0, p025: 0, p975: 0, n: 1, total: 1,
+    defined: { p: 1, lo: 0.2, hi: 1 },
+  }
   const ZERO_BAND = { mean: [0], p10: [0], p90: [0], p025: [0], p975: [0] }
 
   function fakeSummary(replicates = 4): McSummary {
     return {
       seed: 1,
       replicates,
+      stopped: { rule: 'replicates', at: replicates },
       durationS: 60,
       kills: ZERO_BAND,
       leakers: ZERO_BAND,

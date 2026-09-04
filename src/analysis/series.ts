@@ -182,7 +182,8 @@ export function kpiSeries(scenario: Scenario): Series[] {
 
 /**
  * Single-scan Pd on the t = 0 grid. `pdSeries[k]` sits at
- * `firstDetectS + k * DT`; NaN before first detection and after the series ends.
+ * `pdSeriesStartS + k * DT` (the first scan taken; `firstDetectS` for a radar
+ * with no scan model); NaN before that step and after the series ends.
  * The sweep grid starts at the path delay, so an off-grid delay puts every
  * observation time between two t = 0 steps; `stepIndex` is the one rule that
  * places it, shared with the hold flag so both series land on the same step.
@@ -190,7 +191,7 @@ export function kpiSeries(scenario: Scenario): Series[] {
 function pdOnGrid(obs: SensorObservation, n: number): number[] | null {
   if (!obs.pdSeries) return null
   const values = grid(n)
-  const offset = stepIndex(obs.firstDetectS)
+  const offset = stepIndex(obs.pdSeriesStartS ?? obs.firstDetectS)
   obs.pdSeries.forEach((pd, k) => {
     const i = offset + k
     if (i >= 0 && i < n) values[i] = pd

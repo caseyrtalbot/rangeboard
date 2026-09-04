@@ -29,6 +29,10 @@ const RADAR: SpecModel = {
   sensor: {
     sensorType: 'radar',
     role: 'surveillance',
+    // Planning basis: these tests pin the doctrine gate arithmetic on the
+    // TRACK_INIT_S role table. A Pd-modeled radar would scan at SCAN_S
+    // (2 s) and initiate at its third scan (refactor slice 1).
+    rangeBasis: 'planning',
     detectRangeM: 50000,
     classifyRangeM: null,
     sectorDeg: 360,

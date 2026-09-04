@@ -35,13 +35,26 @@ function band(n: number, mean: number, p10: number, p90: number): BandSeries {
   return { mean: fill(mean), p10: fill(p10), p90: fill(p90), p025: fill(p10), p975: fill(p90) }
 }
 
+/**
+ * A time Stat with mean 12 s, a 10 to 14 interval (half-width 2 s) and
+ * `n` finite samples of 100 replicates.
+ */
+function timeStat(n: number): Stat {
+  return {
+    mean: 12, sd: 10, se: 1, lo: 10, hi: 14, conf: 0.95,
+    p10: 10, p90: 15, p025: 9, p975: 16, n, total: 100,
+    defined: { p: n / 100, lo: 0, hi: 1 },
+  }
+}
+
 /** A hand-built summary of 100 replicates over the current scenario's grid. */
-function summaryOf(scenario: Scenario): McSummary {
+function summaryOf(scenario: Scenario, detectedIn = 100): McSummary {
   const n = sampleCount(scenario)
-  const stat: Stat = { mean: 12, p10: 10, p90: 15, p025: 9, p975: 16, n: 100 }
+  const stat = timeStat(detectedIn)
   return {
     seed: 4821,
     replicates: 100,
+    stopped: { rule: 'replicates', at: 100 },
     durationS: (n - 1) * 0.5,
     kills: band(n, 0.8, 0, 1),
     leakers: band(n, 0.2, 0, 1),
@@ -57,14 +70,14 @@ function summaryOf(scenario: Scenario): McSummary {
 }
 
 /** Install a summary in the mc slice for the current run id under `status`. */
-function setMc(status: 'done' | 'stale'): void {
+function setMc(status: 'done' | 'stale', detectedIn = 100): void {
   const st = useStore.getState()
   useStore.setState({
     mc: {
       ...IDLE_MC,
       status,
       runId: st.playback.runId,
-      summary: summaryOf(st.scenario),
+      summary: summaryOf(st.scenario, detectedIn),
       basisSignature: 'test',
       total: 100,
       progress: 100,
@@ -132,6 +145,20 @@ describe('KpiTilesWidget', () => {
     expect(html).toContain('3 of 13 · mean of 100')
     // A time tile stays "not yet" until the cursor reaches the mean.
     expect(html).toContain('not yet')
+    useStore.setState({ mc: IDLE_MC })
+  })
+
+  it('reads the half-width sub and the defined count on a time Stat tile', () => {
+    // Cursor past the 12 s mean, so the time tile shows its value and sub.
+    useStore.getState().advanceRun(13)
+    useStore.getState().pauseRun()
+    setMc('done')
+    const full = render({ tiles: ['firstDetect'] })
+    expect(full).toContain('±2.0 s (95%) · 100')
+    expect(full).not.toContain('detected in')
+    setMc('done', 98)
+    const partial = render({ tiles: ['firstDetect'] })
+    expect(partial).toContain('±2.0 s (95%) · 98 · detected in 98 of 100')
     useStore.setState({ mc: IDLE_MC })
   })
 

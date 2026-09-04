@@ -803,6 +803,17 @@ export function LibraryEditor() {
             value={effector.engageTimeS}
             onChange={(n) => patch({ effector: { ...effector, engageTimeS: n } })}
           />
+          <Num
+            label="Flyout speed (m/s)"
+            value={effector.flyoutSpeedMps ?? 0}
+            step={10}
+            min={0}
+            onChange={(n) => patch({ effector: { ...effector, flyoutSpeedMps: n > 0 ? n : null } })}
+          />
+          <p className="muted small">
+            Average interceptor or round speed to the target. The engine adds the time of flight
+            to the engagement time. A speed of 0 records none.
+          </p>
           <SectorField
             value={effector.sectorDeg ?? 360}
             onChange={(n) =>

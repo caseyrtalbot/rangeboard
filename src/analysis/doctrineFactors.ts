@@ -116,14 +116,30 @@ function countOr(value: number | null | undefined, fallback: number): number {
 }
 
 /**
- * Scan period of a radar under the scan model, seconds, or null when the
- * sensor keeps the per-sample hold and the role-table initiator: not a
- * radar, or no finite positive updateRateS recorded.
+ * Scan period by role for a Pd-modeled radar with no stated updateRateS,
+ * seconds. PF: a staring fire-control radar revisits twice a second, a
+ * rotating early-warning search radar once per revolution.
  */
-export function scanRateSFor(spec: SensorSpec): number | null {
+export const SCAN_S: Record<SensorRole, number> = {
+  'fire-control': 0.5,
+  tracking: 1,
+  'target-acquisition': 2,
+  classification: 2,
+  surveillance: 2,
+  'early-warning': 6,
+}
+
+/**
+ * The one scan period: updateRateS when stated (any radar), else SCAN_S by
+ * role for a Pd-modeled radar, else null (a threshold radar with no stated
+ * period, EO/IR, RF, acoustic). A null period keeps the per-sample hold and
+ * the role-table initiator.
+ */
+export function scanPeriodS(spec: SensorSpec, pdModeled: boolean): number | null {
   if (spec.sensorType !== 'radar') return null
   const rate = spec.updateRateS
-  return rate != null && Number.isFinite(rate) && rate > 0 ? rate : null
+  if (rate != null && Number.isFinite(rate) && rate > 0) return rate
+  return pdModeled ? SCAN_S[defaultSensorRole(spec)] : null
 }
 
 /** M of the M-of-N initiation rule for one sensor: spec override, else TRACK_INIT_M. */

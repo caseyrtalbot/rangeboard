@@ -26,6 +26,13 @@ describe('LibraryEditor sources', () => {
     expect(html).not.toContain('src-add')
   })
 
+  it('edits the flyout speed of an effector model', () => {
+    useStore.getState().select({ libraryId: 'lib-skyranger30' })
+    const html = render()
+    expect(html).toContain('Flyout speed (m/s)')
+    expect(html).toContain('value="1075"')
+  })
+
   it('offers the add form and the empty line on a custom model', () => {
     const id = useStore.getState().addModel('sensor')
     useStore.getState().select({ libraryId: id })

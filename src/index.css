@@ -4084,6 +4084,21 @@ select.nu-unit {
   max-width: 100%;
 }
 
+.chart-tornado {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-tornado-svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* The gutter tag rides in a foreignObject; it must not add box spacing of its own. */
+.chart-tornado-svg foreignObject > * {
+  margin: 0;
+}
+
 /* ---------- Analysis KPI tiles and run evidence ---------- */
 
 .analysis-empty {

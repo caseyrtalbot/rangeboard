@@ -8,7 +8,7 @@ import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { useEngagement, useRunCursor } from './controls'
 import { KPI_LABELS } from './labels'
-import { bandStep, countSub, currentSummary, formatCount, timeSub } from './mc'
+import { bandStep, countSub, currentSummary, formatCount, timeStatSub } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -185,7 +185,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
       case 'firstDetect': {
         if (!summary) return timeTile(key, firstDetect, firstDetect, cursor)
         const mean = meanOf(summary.firstDetectS)
-        return timeTile(key, mean, mean, cursor, timeSub(summary.firstDetectS))
+        return timeTile(key, mean, mean, cursor, timeStatSub(summary.firstDetectS))
       }
       case 'firstEffect':
         return timeTile(key, firstEffect, firstEffect, cursor)
@@ -199,7 +199,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         const arrivalS = warningHolder?.arrivalS ?? null
         if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
         const mean = meanOf(summary.minWarningS)
-        return timeTile(key, mean, arrivalS, cursor, timeSub(summary.minWarningS))
+        return timeTile(key, mean, arrivalS, cursor, timeStatSub(summary.minWarningS))
       }
     }
   }

@@ -254,6 +254,8 @@ export interface RunExport {
     /** Monte Carlo only: the base seed and the replicate count behind mcSummary. */
     seed?: number
     replicates?: number
+    /** Monte Carlo only: why the replicate loop ended. */
+    stopped?: McSummary['stopped']
   }
   /**
    * Whether the run can carry the evidence it looks like it carries, and
@@ -291,6 +293,7 @@ export function runExportObject(
           runScoped: true,
           seed: mc.seed,
           replicates: mc.replicates,
+          stopped: mc.stopped,
         }
       : {
           kind: 'deterministic-planning-model',

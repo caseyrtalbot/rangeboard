@@ -10,7 +10,7 @@ import {
   totalSalvos,
 } from '../headlines'
 import { SURVIVAL_LABELS } from './widgets/labels'
-import { countSub, timeSub } from './widgets/mc'
+import { countSub, timeStatSub } from './widgets/mc'
 
 /** The p10 to p90 sub of a band at its last step: the full-run replicate spread. */
 function lastStepSub(band: BandSeries): string | null {
@@ -126,7 +126,7 @@ export function OutcomeSummary({
         <Metric
           label="First detect"
           value={firstDetect == null ? '—' : formatTime(firstDetect)}
-          sub={(mc && timeSub(mc.firstDetectS)) ?? 'earliest track'}
+          sub={(mc && timeStatSub(mc.firstDetectS)) ?? 'earliest track'}
         />
         <Metric
           label="First effect"
@@ -137,7 +137,7 @@ export function OutcomeSummary({
         <Metric
           label="Min warning"
           value={minWarning == null ? '—' : formatTime(minWarning)}
-          sub={(mc && timeSub(mc.minWarningS)) ?? 'worst threat'}
+          sub={(mc && timeStatSub(mc.minWarningS)) ?? 'worst threat'}
         />
         <Metric
           label="Salvos"

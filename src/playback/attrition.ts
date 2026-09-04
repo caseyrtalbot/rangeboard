@@ -57,7 +57,9 @@ import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
  * still pays the full delay.
  *
  * Assignment-to-effect latency: a salvo assigned (fired) at t takes effect at
- * tEffect = t + engageTimeS. The shot is only valid when some in-range
+ * tEffect = t + engageTimeS + timeOfFlightS, the flight time from a stated
+ * flyoutSpeedMps to the predicted intercept point (interceptAt; 0 with no
+ * stated speed). The shot is only valid when some in-range
  * interval of the same effector still contains tEffect — a target that exits
  * the envelope before the effect arrives cannot be engaged by that
  * assignment, so the salvo is never fired. Kill math (target position,
@@ -163,6 +165,23 @@ export function falloffRangeM(factor: number, maxRangeM: number): number {
   if (maxRangeM <= 0) return 0
   const r = (maxRangeM * (1 - factor)) / FALLOFF_AT_MAX
   return Math.min(maxRangeM, Math.max(0, r))
+}
+
+/**
+ * The one kinetic per-shot Pk: basePk * distanceFalloff(slantM, maxRangeM) *
+ * SIZE_PENALTY[group] * (EVASION_PENALTY for an fpv airframe), clamped to
+ * [0, 1]. Pure; the footprint style imports it for the commit ring.
+ */
+export function kineticPk(
+  basePk: number,
+  maxRangeM: number,
+  uas: UasSpec | undefined,
+  slantM: number,
+): number {
+  const falloff = distanceFalloff(slantM, maxRangeM)
+  const size = uas ? SIZE_PENALTY[uas.group] : 1
+  const evasion = uas?.airframe === 'fpv' ? EVASION_PENALTY : 1
+  return Math.min(1, Math.max(0, basePk * falloff * size * evasion))
 }
 
 /**
@@ -334,7 +353,7 @@ export interface AttritionTotals {
 export interface EngagementEvent {
   /** Assignment (trigger) time; magazine, cooldown, and counts land here. */
   tS: number
-  /** Effect time: tS + engageTimeS; kill or jam math lands here. */
+  /** Effect time: tS + engageTimeS + the flyout (interceptAt); kill or jam math lands here. */
   tEffectS: number
   effectorId: string
   uasId: string
@@ -477,7 +496,8 @@ function retirePending(set: Set<PendingEffect>, discount: number, fx: PendingEff
   return p
 }
 
-interface ThreatState {
+/** Engine-internal state of one threat during the attrition sweep. */
+export interface ThreatState {
   a: ThreatAssessment
   entity: Entity
   uasSpec: UasSpec | undefined
@@ -485,6 +505,8 @@ interface ThreatState {
   altM: number
   path: FlightPath | undefined
   speedMps: number
+  /** Effective path start delay, seconds (effectivePathDelayS). */
+  delayS: number
   /** One expected-value state per ship in the formation. */
   ships: ShipState[]
   /** Response to a successful jam; spec value or nav-mode default. */
@@ -516,14 +538,15 @@ interface ThreatState {
   killContrib: Map<string, number>
 }
 
-interface EffectorState {
+/** Engine-internal state of one effector during the attrition sweep. */
+export interface EffectorState {
   entity: Entity
   spec: EffectorSpec
   /** Launcher or emitter height above ground, meters. */
   mountM: number
   pk: number
   cooldownS: number
-  /** Seconds from assignment to effect; 0 for pre-latency saves. */
+  /** Seconds from assignment to release; 0 for pre-latency saves. */
   engageTimeS: number
   /** Null = unlimited. */
   rounds: number | null
@@ -531,6 +554,51 @@ interface EffectorState {
   shotsFired: number
   deSalvos: number
   jamSalvos: number
+}
+
+/** Seconds of flight to a slant range; 0 when the effector states no speed. */
+export function timeOfFlightS(spec: EffectorSpec, slantM: number): number {
+  const v = spec.flyoutSpeedMps
+  // A jammer, DE or HPM effect arrives with the beam: no flyout even if a speed is stored.
+  if (v == null || !(v > 0) || expenditureChannel(spec.effectorType) !== 'kinetic') return 0
+  return slantM / v
+}
+
+/** Formation member positions of a threat at one sim time. */
+function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
+  const s = posAtTime(ts.path!.points, ts.speedMps, ts.delayS, tS)
+  return memberPositions(ts.entity, s.pos, s.headingDeg)
+}
+
+/**
+ * Predicted intercept for one ship: the target position at tS + engageTimeS + timeOfFlight,
+ * solved by three fixed-point passes (flight time from the slant at the previous pass).
+ * The returned position and slant are sampled at the returned tEffectS. With no stated
+ * speed the flight time is 0 and the result is the position at tS + engageTimeS.
+ * `membersAt` lets the sweep supply its per-tick geometry cache; the default samples the path.
+ */
+export function interceptAt(
+  ts: ThreatState,
+  es: EffectorState,
+  tS: number,
+  memberIdx: number,
+  membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
+): { pos: Vec2; slantM: number; tEffectS: number } {
+  const dAltM = ts.altM - es.mountM
+  let tofS = 0
+  let tEffectS = tS + es.engageTimeS
+  let pos = es.entity.pos
+  let slantM = 0
+  for (let pass = 0; pass < 3; pass++) {
+    tEffectS = tS + es.engageTimeS + tofS
+    const members = membersAt(ts, tEffectS)
+    pos = members[Math.min(memberIdx, members.length - 1)]
+    slantM = slantRangeM(dist(es.entity.pos, pos), dAltM)
+    const next = timeOfFlightS(es.spec, slantM)
+    if (next === tofS) break
+    tofS = next
+  }
+  return { pos, slantM, tEffectS }
 }
 
 /** A salvo in flight: assigned, magazine spent, effect not yet applied. */
@@ -581,7 +649,7 @@ export function launchPolicyReleases(
  * per salvoCooldownS at the eligible ship with the highest effective
  * survival across the whole raid (eligible = threat gate met AND the route
  * latency to this effector elapsed since that gate, this effector's window
- * contains t and tEffect = t + engageTimeS, ship inside this effector's
+ * contains t and tEffect = t + engageTimeS + flyout, ship inside this effector's
  * envelope at tEffect, ship above the SHIP_DEAD_BELOW cutoffs; no eligible
  * ship = hold fire: no magazine spend, no cooldown), until the windows close
  * or the magazine is empty. The salvo's effect (kill or jam) lands at tEffect
@@ -634,6 +702,7 @@ export function resolveEngagements(
       altM: threatAltitudeFt(scenario, entity) * FT_TO_M,
       path,
       speedMps: path ? speedFor(scenario, path) : 15,
+      delayS: path ? effectivePathDelayS(scenario, path) : 0,
       ships: Array.from({ length: count }, () => ({
         alive: 1,
         hard: 0,
@@ -756,17 +825,17 @@ export function resolveEngagements(
   // Per-tick cache of interpolated threat geometry keyed by (threat, tEffect):
   // effectors sharing an engageTimeS all land at the same tEffect, so the
   // path sample and formation member positions compute once, not per effector.
-  type ThreatGeom = { sample: ReturnType<typeof posAtTime>; members: Vec2[] }
-  const geomAt = (cache: Map<ThreatState, Map<number, ThreatGeom>>, ts: ThreatState, tEffect: number): ThreatGeom => {
-    let byT = cache.get(ts)
+  // A flyout pass lands on a ship-specific tEffect, which simply misses.
+  let tickGeom = new Map<ThreatState, Map<number, Vec2[]>>()
+  const membersAt = (ts: ThreatState, tEffect: number): Vec2[] => {
+    let byT = tickGeom.get(ts)
     if (!byT) {
       byT = new Map()
-      cache.set(ts, byT)
+      tickGeom.set(ts, byT)
     }
     let g = byT.get(tEffect)
     if (!g) {
-      const sample = posAtTime(ts.path!.points, ts.speedMps, effectivePathDelayS(scenario, ts.path!), tEffect)
-      g = { sample, members: memberPositions(ts.entity, sample.pos, sample.headingDeg) }
+      g = membersAtTime(ts, tEffect)
       byT.set(tEffect, g)
     }
     return g
@@ -775,16 +844,17 @@ export function resolveEngagements(
   // One salvo, committed: the event, the in-flight (or inline) effect, the
   // expenditure channel counts, the magazine decrement, and the cooldown.
   // Shared by the legacy volley loop and the doctrine assignment pass, so the
-  // bookkeeping cannot diverge between them.
+  // bookkeeping cannot diverge between them. `tEffect` is the interceptAt
+  // effect time of the chosen ship.
   const commitSalvo = (
     es: EffectorState,
     target: ThreatState,
     shipIdx: number,
     pk: number,
     t: number,
+    tEffect: number,
     continueJam: boolean,
   ) => {
-    const tEffect = t + es.engageTimeS
     const softShot = !isHardKill(es.spec.effectorType)
     const event: EngagementEvent = {
       tS: t,
@@ -816,7 +886,7 @@ export function resolveEngagements(
     // Zero-latency effects land inside the same step (preserves the
     // pre-latency same-tick jam-then-kill coupling); the rest wait in
     // flight and discount later aiming at the same ship.
-    if (es.engageTimeS <= 0) {
+    if (tEffect <= t + EPS) {
       applyEffect(fx)
     } else {
       const ship = target.ships[shipIdx]
@@ -851,7 +921,7 @@ export function resolveEngagements(
   for (let t = 0; t <= tEnd + EPS; t += DT) {
     // Effects due by now land before this step's assignments.
     applyDueEffects(t)
-    const tickGeom = new Map<ThreatState, Map<number, ThreatGeom>>()
+    tickGeom = new Map()
 
     for (const es of effectors.values()) {
       // Under doctrine, kinetic and DE fire moves to the assignment pass
@@ -860,7 +930,6 @@ export function resolveEngagements(
       if (doctrine.enabled && es.spec.effectorType !== 'jammer') continue
       if (t + EPS < es.nextReadyS) continue
       if (es.rounds != null && es.rounds <= 0) continue
-      const tEffect = t + es.engageTimeS
       const softShot = !isHardKill(es.spec.effectorType)
 
       const isJammer = es.spec.effectorType === 'jammer'
@@ -897,7 +966,7 @@ export function resolveEngagements(
       // first candidate win exact ties).
       let target: ThreatState | null = null
       let shipIdx = -1
-      let shipPos: Vec2 | null = null
+      let hit: ReturnType<typeof interceptAt> | null = null
       let bestWeight = 0
       let bestArrivalS = Number.POSITIVE_INFINITY
       for (const ts of threats) {
@@ -916,19 +985,19 @@ export function resolveEngagements(
             : ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)
         if (readyS == null || t + EPS < readyS) continue
         const contains = (x: number) => intervals.some(([s0, s1]) => x >= s0 - EPS && x <= s1 + EPS)
-        if (!contains(t) || !contains(tEffect)) continue
+        if (!contains(t)) continue
         const continueJam = softShot && ts.jamBehavior === 'continue'
-
-        // Geometry is evaluated where the effect lands, not where it is fired.
-        const { members } = geomAt(tickGeom, ts, tEffect)
         // Prefer the threat closing soonest. Arrival when it has one, else
         // closest approach, which is all the geometry a fly-by offers.
         const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
 
         for (let i = 0; i < ts.ships.length; i++) {
-          const p = members[Math.min(i, members.length - 1)]
-          if (!inEnvelope(p, ts)) continue
-          if (isJammer && jamFactor(ts.uasSpec, p) <= 0) continue
+          // Geometry is evaluated where the effect lands, not where it is
+          // fired: the predicted intercept of this ship.
+          const ic = interceptAt(ts, es, t, i, membersAt)
+          if (!contains(ic.tEffectS)) continue
+          if (!inEnvelope(ic.pos, ts)) continue
+          if (isJammer && jamFactor(ts.uasSpec, ic.pos) <= 0) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
           if (alive < SHIP_DEAD_BELOW) continue // expected dead: never targeted
@@ -938,7 +1007,7 @@ export function resolveEngagements(
             // the jam salvos already in flight. Illumination-bound: a hold on
             // a target that left the beam has lapsed, so the track is open to
             // fresh jamming again.
-            const unjammed = (1 - jammedAt(ts, s, tEffect)) * s.jamDiscount
+            const unjammed = (1 - jammedAt(ts, s, ic.tEffectS)) * s.jamDiscount
             if (unjammed < SHIP_DEAD_BELOW) continue // track saturated: hold
             weight = alive * unjammed
           }
@@ -949,7 +1018,7 @@ export function resolveEngagements(
           ) {
             target = ts
             shipIdx = i
-            shipPos = p
+            hit = ic
             bestWeight = weight
             bestArrivalS = arrivalS
           }
@@ -957,24 +1026,17 @@ export function resolveEngagements(
       }
       // No eligible ship anywhere on the raid: hold fire — no magazine
       // spend, no cooldown.
-      if (target == null || shipIdx < 0 || shipPos == null) continue
+      if (target == null || shipIdx < 0 || hit == null) continue
       const continueJam = softShot && target.jamBehavior === 'continue'
 
       // Jam Pk is link physics (band, alignment, power/range), not aiming:
       // airframe size and jinking do not protect a link, so a jammer takes
       // none of the kinetic penalties and all of the EW ones.
-      let pk: number
-      if (isJammer) {
-        pk = Math.min(1, Math.max(0, es.pk * jamFactor(target.uasSpec, shipPos)))
-      } else {
-        const slant = slantRangeM(dist(es.entity.pos, shipPos), target.altM - es.mountM)
-        const falloff = distanceFalloff(slant, es.spec.maxRangeM)
-        const size = target.uasSpec ? SIZE_PENALTY[target.uasSpec.group] : 1
-        const evasion = target.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
-        pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
-      }
+      const pk = isJammer
+        ? Math.min(1, Math.max(0, es.pk * jamFactor(target.uasSpec, hit.pos)))
+        : kineticPk(es.pk, es.spec.maxRangeM, target.uasSpec, hit.slantM)
 
-      commitSalvo(es, target, shipIdx, pk, t, continueJam)
+      commitSalvo(es, target, shipIdx, pk, t, hit.tEffectS, continueJam)
     }
 
     // DOCTRINE ASSIGNMENT PASS (kinetic and DE only). Doctrinal sequence:
@@ -1002,13 +1064,14 @@ export function resolveEngagements(
         shipIdx: number
         pk: number
         arrivalS: number
+        /** interceptAt effect time of this ship. */
+        tEffectS: number
       }
       const candidates: Candidate[] = []
       for (const es of effectors.values()) {
         if (es.spec.effectorType === 'jammer') continue
         if (t + EPS < es.nextReadyS) continue
         if (es.rounds != null && es.rounds <= 0) continue
-        const tEffect = t + es.engageTimeS
         // Per-system factors: spec override, else the type table, else the
         // scenario uniform value (doctrineFactors.ts).
         const esBdaS = bdaSFor(es.spec, doctrine)
@@ -1031,44 +1094,43 @@ export function resolveEngagements(
           const intervals = ts.windows.get(es.entity.id)
           if (!intervals) continue
           if (t + EPS < readyS) continue
-          const within = intervals.find(
-            ([s0, s1]) => t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
-          )
-          if (!within) continue
-          // Latest commit that still leaves the planned re-engagement depth,
-          // capped by the last launch whose effect still lands inside this
-          // in-range window: a closing window is its own deadline, so a high
-          // pkCommit can never hold fire past the final physical shot.
           const refS = ts.a.arrivalS ?? ts.a.cpaS
-          const windowDeadlineS = within[1] - es.engageTimeS
-          const deadlineS =
-            refS != null
-              ? Math.min(
-                  refS - doctrine.opportunities * (es.engageTimeS + esBdaS),
-                  windowDeadlineS,
-                )
-              : windowDeadlineS
-          const { members } = geomAt(tickGeom, ts, tEffect)
           const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
           for (let i = 0; i < ts.ships.length; i++) {
             const ship = ts.ships[i]
             // Shoot-look-shoot: in-flight salvo or BDA dwell locks the ship.
             if (t + EPS < ship.holdUntilS) continue
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
-            const p = members[Math.min(i, members.length - 1)]
-            if (!inEnvelope(p, ts)) continue
-            const interceptDistM = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
-            const falloff = distanceFalloff(interceptDistM, es.spec.maxRangeM)
-            const size = ts.uasSpec ? SIZE_PENALTY[ts.uasSpec.group] : 1
-            const evasion = ts.uasSpec?.airframe === 'fpv' ? EVASION_PENALTY : 1
-            const pk = Math.min(1, Math.max(0, es.pk * falloff * size * evasion))
+            // Predicted intercept of this ship: its effect time carries the
+            // flyout, so the window test and the deadline read it per ship.
+            const ic = interceptAt(ts, es, t, i, membersAt)
+            const tEffect = ic.tEffectS
+            const within = intervals.find(
+              ([s0, s1]) =>
+                t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
+            )
+            if (!within) continue
+            // Assignment-to-effect time: engage time plus the flyout. Exact 0
+            // flyout with no stated speed, so the legacy arithmetic is kept.
+            const flightS = es.engageTimeS + (tEffect - (t + es.engageTimeS))
+            // Latest commit that still leaves the planned re-engagement depth,
+            // capped by the last launch whose effect still lands inside this
+            // in-range window: a closing window is its own deadline, so a high
+            // pkCommit can never hold fire past the final physical shot.
+            const windowDeadlineS = within[1] - flightS
+            const deadlineS =
+              refS != null
+                ? Math.min(refS - doctrine.opportunities * (flightS + esBdaS), windowDeadlineS)
+                : windowDeadlineS
+            if (!inEnvelope(ic.pos, ts)) continue
+            const pk = kineticPk(es.pk, es.spec.maxRangeM, ts.uasSpec, ic.slantM)
             if (pk <= 0) continue
             // Launch policy: does this shooter volunteer the shot here? The
             // deadline overrides a "no" from every policy.
-            if (!launchPolicyReleases(doctrine, pk, esCommitPk, interceptDistM, es.spec.maxRangeM)) {
+            if (!launchPolicyReleases(doctrine, pk, esCommitPk, ic.slantM, es.spec.maxRangeM)) {
               if (t + EPS < deadlineS) continue
             }
-            candidates.push({ es, ts, shipIdx: i, pk, arrivalS })
+            candidates.push({ es, ts, shipIdx: i, pk, arrivalS, tEffectS: tEffect })
           }
         }
       }
@@ -1092,8 +1154,8 @@ export function resolveEngagements(
         // A better candidate may already have taken this ship this tick.
         if (t + EPS < ship.holdUntilS) continue
         if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
-        commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, false)
-        ship.holdUntilS = t + c.es.engageTimeS + bdaSFor(c.es.spec, doctrine)
+        commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, c.tEffectS, false)
+        ship.holdUntilS = c.tEffectS + bdaSFor(c.es.spec, doctrine)
         firedThisTick.add(c.es)
       }
     }

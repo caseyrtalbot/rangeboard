@@ -5,6 +5,7 @@ import { DEFAULT_REQUIREMENT_THRESHOLDS, newId } from '../model/types'
 import { mulberry32 } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
 import { assessAllThreats } from './sim'
+import type { DrawPolicy } from './policy'
 import { deterministicPolicy, monteCarloPolicy } from './policy'
 
 const T = DEFAULT_REQUIREMENT_THRESHOLDS
@@ -12,8 +13,8 @@ const T = DEFAULT_REQUIREMENT_THRESHOLDS
 describe('deterministicPolicy', () => {
   it('detects at the pdDetect threshold and not below it', () => {
     const p = deterministicPolicy(T)
-    expect(p.detect(0.5, 's', 'u', 0)).toBe(true)
-    expect(p.detect(0.49, 's', 'u', 0)).toBe(false)
+    expect(p.detect(0.5, 's', 'u', 0, 0)).toBe(true)
+    expect(p.detect(0.49, 's', 'u', 0, 0)).toBe(false)
   })
 
   it('returns pk and p unchanged as mass', () => {
@@ -25,15 +26,19 @@ describe('deterministicPolicy', () => {
   it('reads the default pdDetect when the saved threshold is outside (0, 1)', () => {
     for (const pdDetect of [0, 1.5]) {
       const p = deterministicPolicy({ ...T, pdDetect })
-      expect(p.detect(0.5, 's', 'u', 0)).toBe(true)
-      expect(p.detect(0.49, 's', 'u', 0)).toBe(false)
+      expect(p.detect(0.5, 's', 'u', 0, 0)).toBe(true)
+      expect(p.detect(0.49, 's', 'u', 0, 0)).toBe(false)
     }
   })
 
   it('reads a saved threshold inside (0, 1)', () => {
     const p = deterministicPolicy({ ...T, pdDetect: 0.8 })
-    expect(p.detect(0.79, 's', 'u', 0)).toBe(false)
-    expect(p.detect(0.8, 's', 'u', 0)).toBe(true)
+    expect(p.detect(0.79, 's', 'u', 0, 0)).toBe(false)
+    expect(p.detect(0.8, 's', 'u', 0, 0)).toBe(true)
+  })
+
+  it('has scan phase 0', () => {
+    expect(deterministicPolicy(T).phase('s')).toBe(0)
   })
 })
 
@@ -49,7 +54,7 @@ describe('monteCarloPolicy', () => {
   it('draws rng() < p for each outcome with a fixed sequence', () => {
     const { rng } = fixedRng([0.2, 0.9, 0.5])
     const p = monteCarloPolicy(rng, T)
-    expect(p.detect(0.5, 's', 'u', 0)).toBe(true)
+    expect(p.detect(0.5, 's', 'u', 0, 0)).toBe(true)
     expect(p.kill(0.5, 'e', 'u', 0, 1)).toBe(0)
     expect(p.jam(0.5, 'e', 'u', 1)).toBe(0)
   })
@@ -57,12 +62,23 @@ describe('monteCarloPolicy', () => {
   it('consumes exactly one rng call per draw', () => {
     const { rng, calls } = fixedRng([0.2, 0.9, 0.5])
     const p = monteCarloPolicy(rng, T)
-    p.detect(0.5, 's', 'u', 0)
+    p.detect(0.5, 's', 'u', 0, 0)
     expect(calls()).toBe(1)
     p.kill(0.5, 'e', 'u', 0, 1)
     expect(calls()).toBe(2)
     p.jam(0.5, 'e', 'u', 1)
     expect(calls()).toBe(3)
+  })
+
+  it('draws the scan phase in [0, 1) with one rng call', () => {
+    const { rng, calls } = fixedRng([0.37, 0.999])
+    const p = monteCarloPolicy(rng, T)
+    expect(p.phase('s')).toBe(0.37)
+    expect(calls()).toBe(1)
+    const phase = p.phase('s')
+    expect(phase).toBeGreaterThanOrEqual(0)
+    expect(phase).toBeLessThan(1)
+    expect(calls()).toBe(2)
   })
 
   it('gives 0 or 1 for kill and jam', () => {
@@ -159,7 +175,13 @@ describe('draw policy engine regression', () => {
     coyote.effector = { ...coyote.effector!, pk: 1 }
     const giraffe = s.library.find((m) => m.id === 'lib-giraffe1x')!
     giraffe.sensor = { ...giraffe.sensor!, rangeBasis: 'planning' }
-    const mc = monteCarloPolicy(mulberry32(4821), thresholdsOf(s))
+    // Giraffe states updateRateS 1, so its one remaining draw is the scan
+    // phase; pin it to 0 (the deterministic origin) so the comparison isolates
+    // the Pd draw.
+    const mc: DrawPolicy = {
+      ...monteCarloPolicy(mulberry32(4821), thresholdsOf(s)),
+      phase: () => 0,
+    }
     const assessments = assessAllThreats(s, mc)
     expect(JSON.stringify(assessments)).toBe(JSON.stringify(assessAllThreats(s)))
     // The per-shot Pk still carries distanceFalloff below 1, so the kill draw

@@ -414,6 +414,16 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: 100,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '5000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-rf360',
@@ -433,6 +443,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: 100,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '2000 m for most drones in normal conditions; up to 5000 m in ideal conditions',
+        source: 'Dedrone RF-360 data sheet V2.0 (PDF)',
+        url: 'https://l.dedrone.com/hubfs/Downloads%20-%20PDFs/DS_RF360-360T_en_web.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg, omnidirectional',
+        source: 'Dedrone RF-360 data sheet V2.0 (PDF)',
+        url: 'https://l.dedrone.com/hubfs/Downloads%20-%20PDFs/DS_RF360-360T_en_web.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-discovair',
@@ -453,6 +481,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: 200,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '500 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'sectorDeg',
+        value: '105 deg in directional mode; 360 deg in hemispheric mode',
+        source: 'Squarehead Technology drone detection page (Discovair G2+)',
+        url: 'https://www.sqhead.com/drone-detection',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-acoustic-picket',
@@ -473,6 +519,16 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: 10000,
       resolutionM: 500,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '4000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-hdcmr',
@@ -490,10 +546,44 @@ const SENSORS: SpecModel[] = [
       detectRangeM: 3000,
       classifyRangeM: 1500,
       sectorDeg: 360,
-      elevationDeg: [-40, 60],
+      elevationDeg: [-35, 90],
       maxAltitudeFt: null,
       resolutionM: 20,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '3000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'eoBand',
+        value: 'dual: HD thermal imager plus a 1920 x 1080 HD colour TV camera',
+        source: 'Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl',
+        url: 'https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg azimuth range',
+        source: 'Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl',
+        url: 'https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '-35 to 90 deg elevation range',
+        source: 'Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl',
+        url: 'https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-teleidoscope',
@@ -515,6 +605,16 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: 15,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '2000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-wisp',
@@ -529,7 +629,7 @@ const SENSORS: SpecModel[] = [
       role: 'surveillance',
       eoBand: 'thermal', // wide-area infrared; searches without a cue (surveillance role)
       refSpanM: 0.4, // 'low, slow, small UAS' band: Group 1 span planning factor
-      detectRangeM: 4800,
+      detectRangeM: 4800, // Anduril Wisp page: 'UAS (20 km)', no size class
       instrumentedRangeM: 16000, // top of Anduril's stated 3-10 mile detection band
       classifyRangeM: 4800,
       sectorDeg: 360,
@@ -537,6 +637,32 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '4800 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'eoBand',
+        value: 'thermal: passive infrared detection and tracking',
+        source: 'Anduril Wisp product page (embedded page JSON, curl)',
+        url: 'https://www.anduril.com/wisp',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg horizontal field of view',
+        source: 'Anduril Wisp product page (embedded page JSON, curl)',
+        url: 'https://www.anduril.com/wisp',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-mxgcs',
@@ -558,6 +684,32 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '8000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'eoBand',
+        value: 'dual: mid-wave cooled thermal imager plus an HD daylight sensor',
+        source: 'L3Harris WESCAM MX-GCS product page',
+        url: 'https://www.l3harris.com/all-capabilities/wescam-mx-gcs-independent-stabilized-sighting-system',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg scanning, independent of the gun turret',
+        source: 'L3Harris WESCAM MX-GCS product page',
+        url: 'https://www.l3harris.com/all-capabilities/wescam-mx-gcs-independent-stabilized-sighting-system',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-spynel',
@@ -572,13 +724,47 @@ const SENSORS: SpecModel[] = [
       role: 'surveillance',
       eoBand: 'thermal', // rotating MWIR panorama; self-cueing (surveillance role)
       rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
-      detectRangeM: 5000,
+      detectRangeM: 5000, // HGH Spynel-S page: human up to 6 km; no UAV range stated
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: [-45, 45],
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '5000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'eoBand',
+        value: 'thermal: MWIR 640 x 512 focal plane array',
+        source: 'HGH Spynel-S product page (curl), Spynel-S 6000 column',
+        url: 'https://hgh-infrared.com/was/products/spynel-s/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg horizontal field of view',
+        source: 'HGH Spynel-S product page (curl), Spynel-S 6000 column',
+        url: 'https://hgh-infrared.com/was/products/spynel-s/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '-45 to 45 deg motorised tilt',
+        source: 'HGH Spynel-S product page (curl), Spynel-S 6000 column',
+        url: 'https://hgh-infrared.com/was/products/spynel-s/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-zvook',
@@ -599,6 +785,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: 'up to 5000 m on a drone; 7000 m on a cruise missile',
+        source: 'Militarnyi, NATO Shows Interest in Ukrainian Acoustic Detection Networks for Air Defense, citing The Times',
+        url: 'https://militarnyi.com/en/news/nato-shows-interest-in-ukrainian-acoustic-detection-networks-for-air-defense/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: 'about 200 deg coverage angle',
+        source: 'Militarnyi, NATO Shows Interest in Ukrainian Acoustic Detection Networks for Air Defense',
+        url: 'https://militarnyi.com/en/news/nato-shows-interest-in-ukrainian-acoustic-detection-networks-for-air-defense/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-zvooknw0',
@@ -619,6 +823,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '150 to 450 m on FPV drones; the lower bound is 150 m',
+        source: 'Militarnyi, Ukraine Develops Acoustic Detector for FPV Drones (ZVOOK NW0), quoting the company',
+        url: 'https://militarnyi.com/en/news/ukraine-develops-acoustic-detector-for-fpv-drones/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg coverage',
+        source: 'dev.ua, Ukrainian company ZVOOK has created an acoustic sensor to detect FPV drones by sound',
+        url: 'https://dev.ua/en/news/ukrainska-kompaniia-zvook-stvoryla-akustychnyi-sensor-dlia-vyiavlennia-fpv-droniv-za-zvukom-1769187556',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-kumrfs-m',
@@ -714,6 +936,16 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '6000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-cm262',
@@ -735,6 +967,40 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '5000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'eoBand',
+        value: 'dual: HD EO, HD MWIR, SWIR and a laser rangefinder',
+        source: 'CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF',
+        url: 'https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg continuous in azimuth',
+        source: 'CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF',
+        url: 'https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '-16 to 90 deg from the horizon',
+        source: 'CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF',
+        url: 'https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-drs-s3',
@@ -752,10 +1018,44 @@ const SENSORS: SpecModel[] = [
       detectRangeM: 2000,
       classifyRangeM: 1500,
       sectorDeg: 360,
-      elevationDeg: null,
+      elevationDeg: [-45, 85],
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '2000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'eoBand',
+        value: 'dual: cooled HD MWIR or uncooled HD LWIR plus an HD colour day channel',
+        source: 'Leonardo DRS S3 Stabilized Sight System datasheet (2022)',
+        url: 'https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg azimuth travel with a slip ring',
+        source: 'Leonardo DRS S3 Stabilized Sight System datasheet (2022)',
+        url: 'https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '-45 to 85 deg elevation travel',
+        source: 'Leonardo DRS S3 Stabilized Sight System datasheet (2022)',
+        url: 'https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-sentry-lr-fc',
@@ -1194,6 +1494,16 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '5000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-wingman',
@@ -1212,7 +1522,34 @@ const SENSORS: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rfBands: ['ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: 'up to 6000 m, no target class stated',
+        source: 'MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)',
+        url: 'https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'rfBands',
+        value: '2.4, 5.2 and 5.8 GHz as issued; 5.2 GHz has no band code',
+        source: 'MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)',
+        url: 'https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '90 deg horizontal as issued; 360 deg with the wideband antenna',
+        source: 'MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)',
+        url: 'https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-rfpatrol',
@@ -1233,6 +1570,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: 'up to 4000 m in a rural environment, no target class stated',
+        source: 'Army Recognition, Droneshield releases handheld RfPatrol Mk II drone detector (2020)',
+        url: 'https://www.armyrecognition.com/archives/archives-land-defense/land-defense-2020/droneshield-releases-handheld-rfpatrol-mk-ii-drone-detector',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg detection coverage',
+        source: 'DroneShield dismounted products page (RfPatrol Mk2)',
+        url: 'https://www.droneshield.com/products-dismounted',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-ardronis',
@@ -1251,7 +1606,26 @@ const SENSORS: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rfBands: ['uhf-433', 'ism-915', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: 'more than 5000 m, no target class stated',
+        source: 'Rohde & Schwarz ARDRONIS Locate Compact solution page',
+        url: 'https://www.rohde-schwarz.com/us/solutions/critical-infrastructure/countering-drones/ardronis-locate-compact-solution_256824.html',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'rfBands',
+        value: '400 MHz to 6 GHz monitored range',
+        source: 'Rohde & Schwarz ARDRONIS Locate Compact solution page',
+        url: 'https://www.rohde-schwarz.com/us/solutions/critical-infrastructure/countering-drones/ardronis-locate-compact-solution_256824.html',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-titan',
@@ -1272,6 +1646,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: 'more than 3000 m horizontal radius, no target class stated',
+        source: 'AeroVironment Titan C-UAS datasheet version 250501 (PDF)',
+        url: 'https://www.avinc.com/wp-content/uploads/2026/04/AV_TitanCUAS_Datasheet_250501.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'rfBands',
+        value: '2.4 and 5.8 GHz plus Wi-Fi (SF unit); 433, 868 and 915 MHz and 1.2 GHz (EF unit)',
+        source: 'AeroVironment Titan C-UAS datasheet version 250501 (PDF)',
+        url: 'https://www.avinc.com/wp-content/uploads/2026/04/AV_TitanCUAS_Datasheet_250501.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
 
 ]
@@ -1288,13 +1680,32 @@ const EFFECTORS: SpecModel[] = [
     effector: {
       effectorType: 'interceptor',
       minRangeM: 500,
-      maxRangeM: 15000,
+      maxRangeM: 10000,
       maxAltitudeFt: 20000,
       engageTimeS: 60,
       pk: 0.85,
       magazineSize: 4,
       salvoCooldownS: 30,
+      flyoutSpeedMps: 154,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'interception range 10 to 15 km; the lower bound is 10000 m',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'flyoutSpeedMps',
+        value: 'about 555 to 595 km/h; the lower bound is 154 m/s',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-roadrunner',
@@ -1314,6 +1725,16 @@ const EFFECTORS: SpecModel[] = [
       magazineSize: 4,
       salvoCooldownS: 30,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '15000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-anvil',
@@ -1333,6 +1754,16 @@ const EFFECTORS: SpecModel[] = [
       magazineSize: 2,
       salvoCooldownS: 60,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '4000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-merops',
@@ -1351,7 +1782,26 @@ const EFFECTORS: SpecModel[] = [
       pk: 0.8,
       magazineSize: 4,
       salvoCooldownS: 60,
+      flyoutSpeedMps: 78,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'range of roughly 5 to 20 km; 20000 m at the top of the envelope',
+        source: 'Defense News',
+        url: 'https://www.defensenews.com/unmanned/2026/04/20/us-army-turns-to-ukraine-tested-drones-to-counter-iranian-uav-threat/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'flyoutSpeedMps',
+        value: 'up to 280 km/h, a maximum (78 m/s)',
+        source: 'Defense News',
+        url: 'https://www.defensenews.com/unmanned/2026/04/20/us-army-turns-to-ukraine-tested-drones-to-counter-iranian-uav-threat/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-xm914',
@@ -1369,8 +1819,27 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 10,
       pk: 0.75,
       magazineSize: 30,
-      salvoCooldownS: 10,
+      salvoCooldownS: 10, // Northrop Grumman XM914 sheet: 200 shots per minute is a per-round rate
+      flyoutSpeedMps: 805,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '2000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'flyoutSpeedMps',
+        value: 'XM1211 HEP/PROX muzzle velocity (805 m/s)',
+        source: 'Northrop Grumman LW30x113 Ammunition Suite product brochure (PDF, 2020)',
+        url: 'https://media.northropgrumman.com/9f629332-bf99-4a89-bb0f-b3850037234a/LW30x113-Ammo-Suite-Product-Brochure_Original%20file.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-lpws',
@@ -1387,9 +1856,19 @@ const EFFECTORS: SpecModel[] = [
       maxAltitudeFt: 5000,
       engageTimeS: 5,
       pk: 0.7,
-      magazineSize: 20,
-      salvoCooldownS: 5,
+      magazineSize: 20, // Raytheon LPWS brochure: a 1500-round magazine; the seed counts bursts
+      salvoCooldownS: 5, // Raytheon LPWS brochure: 3000 or 4500 shots per minute, a per-round rate
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '1500 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-smash',
@@ -1402,13 +1881,23 @@ const EFFECTORS: SpecModel[] = [
     effector: {
       effectorType: 'gun',
       minRangeM: 10,
-      maxRangeM: 250,
+      maxRangeM: 200,
       maxAltitudeFt: 800,
       engageTimeS: 8,
       pk: 0.7,
       magazineSize: 24,
       salvoCooldownS: 10,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'small UAS kinetic elimination up to 200 m in day mode',
+        source: 'SMARTSHOOTER SMASH 3000 (SMASH 2000L) datasheet (PDF)',
+        url: 'https://www.smart-shooter.com/wp-content/uploads/2026/08/SMASH-3000.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-phel',
@@ -1426,6 +1915,16 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 15,
       salvoCooldownS: 15,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '3000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-demshorad',
@@ -1443,6 +1942,16 @@ const EFFECTORS: SpecModel[] = [
       engageTimeS: 15,
       salvoCooldownS: 10,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '5000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-leonidas',
@@ -1462,6 +1971,16 @@ const EFFECTORS: SpecModel[] = [
       pk: 0.7,
       salvoCooldownS: 5,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '1000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-thor',
@@ -1480,6 +1999,16 @@ const EFFECTORS: SpecModel[] = [
       pk: 0.7,
       salvoCooldownS: 5,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '800 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-dronebuster',
@@ -1492,7 +2021,7 @@ const EFFECTORS: SpecModel[] = [
     effector: {
       effectorType: 'jammer',
       minRangeM: 0,
-      maxRangeM: 1000,
+      maxRangeM: 1000, // DZYNE DB4 page: 1.5 km, a successor product; the seed is Block 3B
       maxAltitudeFt: null,
       sectorDeg: 60,
       engageTimeS: 5,
@@ -1501,6 +2030,16 @@ const EFFECTORS: SpecModel[] = [
       // "GNSS and control-link jammer".
       jamBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '1000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-modi',
@@ -1521,6 +2060,16 @@ const EFFECTORS: SpecModel[] = [
       // Public sources describe control-link disruption, not GNSS denial.
       jamBands: ['uhf-433', 'ism-915', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '2000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-enforceair',
@@ -1533,14 +2082,33 @@ const EFFECTORS: SpecModel[] = [
     effector: {
       effectorType: 'jammer',
       minRangeM: 0,
-      maxRangeM: 3500,
+      maxRangeM: 1200,
       maxAltitudeFt: null,
       engageTimeS: 20,
       pk: 0.7,
       salvoCooldownS: 20,
       // Takeover rides the drone's own control protocol, not GNSS.
       jamBands: ['ism-2400', 'ism-5800'],
+      sectorDeg: 360,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'typical mitigation range 1.2 to 4 km; the lower bound is 1200 m',
+        source: 'D-Fend Solutions EnforceAir2 product page',
+        url: 'https://d-fendsolutions.com/enforceair2-next-gen-c-uas/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg omni coverage',
+        source: 'D-Fend Solutions EnforceAir2 product page',
+        url: 'https://d-fendsolutions.com/enforceair2-next-gen-c-uas/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-amphel',
@@ -1557,6 +2125,16 @@ const EFFECTORS: SpecModel[] = [
       maxAltitudeFt: null,
       engageTimeS: 15,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '3000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-helios',
@@ -1573,6 +2151,16 @@ const EFFECTORS: SpecModel[] = [
       maxAltitudeFt: null,
       engageTimeS: 15,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '3000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-ironbeam',
@@ -1583,6 +2171,16 @@ const EFFECTORS: SpecModel[] = [
     color: '#9e6274',
     builtin: true,
     effector: { effectorType: 'de', minRangeM: 100, maxRangeM: 7000, maxAltitudeFt: null, engageTimeS: 5 },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '7000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-cuaews',
@@ -1604,6 +2202,16 @@ const EFFECTORS: SpecModel[] = [
       // Tailored link defeat plus a NAVWAR (GNSS) effect.
       jamBands: ['gnss', 'uhf-433', 'ism-915', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'EW effects ranging up to 8 km (8000 m)',
+        source: 'SRC LIDS Family of Systems brochure (PDF)',
+        url: 'https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-ninja',
@@ -1625,6 +2233,16 @@ const EFFECTORS: SpecModel[] = [
       // Intercepts the drone-operator link; no broadband or GNSS jamming.
       jamBands: ['ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '2000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
   },
   {
     id: 'lib-pulsar',
@@ -1639,13 +2257,31 @@ const EFFECTORS: SpecModel[] = [
       minRangeM: 0,
       maxRangeM: 2000,
       maxAltitudeFt: null,
-      sectorDeg: 90,
+      sectorDeg: 180,
       engageTimeS: 5,
       pk: 0.6,
       salvoCooldownS: 5,
       // Software-defined, selectable bands: control links and GNSS.
       jamBands: ['gnss', 'ism-915', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '2000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'sectorDeg',
+        value: '180 deg coverage for detect and defeat',
+        source: 'Anduril Pulsar hardware page (embedded JSON via curl)',
+        url: 'https://www.anduril.com/hardware/pulsar/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-pitbull',
@@ -1667,6 +2303,32 @@ const EFFECTORS: SpecModel[] = [
       // "Denies control, video and GNSS links".
       jamBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'up to 1000 m of jamming range',
+        source: 'MyDefence Pitbull 101 product page',
+        url: 'https://mydefence.com/products/pitbull/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'jamBands',
+        value: '1.6 GHz GNSS, 2.4, 5.2 and 5.8 GHz; 5.2 GHz has no band code',
+        source: 'MyDefence Pitbull 101 product page',
+        url: 'https://mydefence.com/products/pitbull/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '60 deg horizontal jamming coverage',
+        source: 'MyDefence Pitbull 101 product page',
+        url: 'https://mydefence.com/products/pitbull/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-stinger',
@@ -1685,7 +2347,34 @@ const EFFECTORS: SpecModel[] = [
       pk: 0.7,
       magazineSize: 4,
       salvoCooldownS: 10,
+      flyoutSpeedMps: 750,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'outward targeting range up to 4800 m',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'maxAltitudeFt',
+        value: '12500 ft (3800 m) against low-altitude threats',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'flyoutSpeedMps',
+        value: 'Mach 2.2 maximum (750 m/s)',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-eagls',
@@ -1698,14 +2387,41 @@ const EFFECTORS: SpecModel[] = [
     effector: {
       effectorType: 'interceptor',
       minRangeM: 500,
-      maxRangeM: 5000,
+      maxRangeM: 10000,
       maxAltitudeFt: null,
       sectorDeg: 360,
       engageTimeS: 15,
       pk: 0.7,
       magazineSize: 4,
       salvoCooldownS: 5,
+      flyoutSpeedMps: 739,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'ranges up to about 10 km (10000 m)',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/news/army-news/2026/u-s-army-live-fires-eagls-counter-drone-system-using-laser-guided-rockets-in-kuwait',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'magazineSize',
+        value: 'four-round 70 mm rocket launcher',
+        source: 'Army Recognition',
+        url: 'https://www.armyrecognition.com/news/army-news/2026/u-s-army-live-fires-eagls-counter-drone-system-using-laser-guided-rockets-in-kuwait',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'flyoutSpeedMps',
+        value: 'Hydra 70 rocket, APKWS airframe (739 m/s)',
+        source: 'Army Technology (Hydra 70 project page)',
+        url: 'https://www.army-technology.com/projects/hydra-70-rocket-system-us/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-skyranger30',
@@ -1723,9 +2439,44 @@ const EFFECTORS: SpecModel[] = [
       sectorDeg: 360,
       engageTimeS: 8,
       pk: 0.8,
-      magazineSize: 12,
+      magazineSize: 252,
       salvoCooldownS: 5,
+      flyoutSpeedMps: 1075,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: 'effective range up to 3000 m with the gun',
+        source: 'Rheinmetall Oerlikon Skyranger 30 brochure D994e0222',
+        url: 'https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'magazineSize',
+        value: '252 rounds of 30 mm ready to fire',
+        source: 'Rheinmetall Oerlikon Skyranger 30 brochure D994e0222',
+        url: 'https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg traverse arc',
+        source: 'Rheinmetall Oerlikon Skyranger 30 brochure D994e0222',
+        url: 'https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'flyoutSpeedMps',
+        value: 'mean muzzle velocity (1075 m/s)',
+        source: 'Rheinmetall Oerlikon Skyranger 30 brochure D994e0222',
+        url: 'https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-dronehunter',
@@ -1745,6 +2496,32 @@ const EFFECTORS: SpecModel[] = [
       pk: 0.85,
       salvoCooldownS: 180,
     },
+    provenance: [
+      {
+        field: 'maxRangeM',
+        value: '5000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'pk',
+        value: '85 percent success rate on mid-air captures',
+        source: 'Fortem Technologies blog (F700)',
+        url: 'https://fortemtech.com/blog/discussions/2022-10-11-f700-building-the-worlds-best-drone-interceptor/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'salvoCooldownS',
+        value: 'reloaded for back-to-back sorties in under 3 minutes (180 s)',
+        source: 'Fortem Technologies F700 product page',
+        url: 'https://fortemtech.com/products/dronehunter-f700/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
 
 ]
@@ -1859,7 +2636,7 @@ const THREATS: SpecModel[] = [
       airframe: 'quad',
       cruiseSpeedMps: 12,
       maxSpeedMps: 21,
-      enduranceMin: 45,
+      enduranceMin: 46,
       altBandFt: [50, 1200],
       navMode: 'mixed',
       emissionsNote: 'OcuSync 2.4/5.8 GHz link and video',
@@ -1874,7 +2651,50 @@ const THREATS: SpecModel[] = [
       standoffRangeM: null,
       weaponProfile: 'none',
       jamBehavior: 'return-home', // planning assumption for reusable COTS class (study silent on lost-link behavior); default for mixed nav is 'continue'
+      linkBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.01 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '21 m/s at sea level with no wind (19 m/s in the EU)',
+        source: 'DJI Mavic 3 Classic specs page (same airframe)',
+        url: 'https://www.dji.com/mavic-3-classic/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'enduranceMin',
+        value: '46 min maximum flight time',
+        source: 'DJI Mavic 3 Classic specs page (same airframe)',
+        url: 'https://www.dji.com/mavic-3-classic/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'linkBands',
+        value: 'link 2.4 and 5.8 GHz; GNSS from navMode',
+        source: 'DJI Mavic 3 Classic specs page (same airframe)',
+        url: 'https://www.dji.com/mavic-3-classic/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'controlLinkRangeM',
+        value: '15000 m maximum transmission distance (FCC)',
+        source: 'DJI Mavic 3 Classic specs page (same airframe)',
+        url: 'https://www.dji.com/mavic-3-classic/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G1-Q-01',
       routeIntent: 'Low overwatch orbit, then drop or spot for fires',
@@ -1903,7 +2723,7 @@ const THREATS: SpecModel[] = [
       altBandFt: [30, 800],
       navMode: 'mixed',
       emissionsNote: 'OcuSync 2.4/5.8 GHz, low power',
-      controlLinkRangeM: 10000,
+      controlLinkRangeM: 20000,
       operatingRadiusM: 5000,
       combatRadiusM: 4000,
       oneWay: false,
@@ -1914,7 +2734,50 @@ const THREATS: SpecModel[] = [
       standoffRangeM: null,
       weaponProfile: 'none',
       jamBehavior: 'return-home', // planning assumption for reusable COTS class (study silent on lost-link behavior); default for mixed nav is 'continue'
+      linkBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.005 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '16 m/s in S mode',
+        source: 'DJI Mini 4 Pro specs page',
+        url: 'https://www.dji.com/mini-4-pro/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'enduranceMin',
+        value: '34 min with the Intelligent Flight Battery',
+        source: 'DJI Mini 4 Pro specs page',
+        url: 'https://www.dji.com/mini-4-pro/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'linkBands',
+        value: 'link 2.4 and 5.8 GHz; GNSS from navMode; 5.2 GHz has no band code',
+        source: 'DJI Mini 4 Pro specs page',
+        url: 'https://www.dji.com/mini-4-pro/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'controlLinkRangeM',
+        value: '20000 m maximum transmission distance (FCC)',
+        source: 'DJI Mini 4 Pro specs page',
+        url: 'https://www.dji.com/mini-4-pro/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G1-Q-02',
       routeIntent: 'Short standoff recce, 1-5 km launch distance',
@@ -1954,6 +2817,16 @@ const THREATS: SpecModel[] = [
       standoffRangeM: null,
       weaponProfile: 'impact',
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.01 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G1-FPV-01',
       routeIntent: 'Terrain-masked attack along roads and treelines, 3-8 km launch',
@@ -1977,12 +2850,12 @@ const THREATS: SpecModel[] = [
       acousticDb: 75, // PF: 7-inch FPV class
       airframe: 'fpv',
       cruiseSpeedMps: 15,
-      maxSpeedMps: 25,
+      maxSpeedMps: 17,
       enduranceMin: 20,
       altBandFt: [10, 300],
       navMode: 'fiber',
       emissionsNote: 'None: fiber-optic control and video',
-      controlLinkRangeM: 20000,
+      controlLinkRangeM: 10000,
       operatingRadiusM: 15000,
       combatRadiusM: 15000,
       oneWay: true,
@@ -1994,6 +2867,32 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'impact',
       jamBehavior: 'continue', // fiber control is immune to RF jamming (study RUS-TAC-03); default for fiber would be 'drift'
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.01 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: 'up to 60 km/h for the class (17 m/s)',
+        source: 'RFE/RL, Fiber-Optic Drones The New Must-Have In Ukraine War (2025-03-12), globalsecurity.org mirror, quoting Serhiy Beskrestnov',
+        url: 'https://www.globalsecurity.org/wmd/library/news/ukraine/2025/03/ukraine-250312-rferl03.htm',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'controlLinkRangeM',
+        value: '10000 m of fibre for the class',
+        source: 'RFE/RL, Fiber-Optic Drones The New Must-Have In Ukraine War (2025-03-12), globalsecurity.org mirror, quoting Serhiy Beskrestnov',
+        url: 'https://www.globalsecurity.org/wmd/library/news/ukraine/2025/03/ukraine-250312-rferl03.htm',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G1-FPV-02',
       routeIntent: 'Terrain-hugging attack on rear-area targets, 5-20 km out',
@@ -2013,7 +2912,7 @@ const THREATS: SpecModel[] = [
     uas: {
       group: 2,
       rcsM2: 0.05, // planning factor (rcsFactors.ts): G2 tier; EchoGuard sees a Matrice 600 ~4x the Phantom energy (1.4 km vs 1 km)
-      spanM: 0.9, // public dimension: DJI M350 RTK diagonal wheelbase 895 mm
+      spanM: 0.895, // public dimension: DJI M350 RTK diagonal wheelbase 895 mm
       acousticDb: 78, // PF: industrial quad
       airframe: 'quad',
       cruiseSpeedMps: 15,
@@ -2033,7 +2932,58 @@ const THREATS: SpecModel[] = [
       standoffRangeM: null,
       weaponProfile: 'none',
       jamBehavior: 'return-home', // planning assumption for reusable COTS class (study silent on lost-link behavior); default for mixed nav is 'continue'
+      linkBands: ['gnss', 'ism-2400', 'ism-5800'],
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.05 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '0.895 m diagonal wheelbase',
+        source: 'DJI Matrice 350 RTK specs page',
+        url: 'https://enterprise.dji.com/matrice-350-rtk/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '23 m/s maximum horizontal speed',
+        source: 'DJI Matrice 350 RTK specs page',
+        url: 'https://enterprise.dji.com/matrice-350-rtk/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'enduranceMin',
+        value: '55 min maximum flight time with no payload',
+        source: 'DJI Matrice 350 RTK specs page',
+        url: 'https://enterprise.dji.com/matrice-350-rtk/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'linkBands',
+        value: 'link 2.4 and 5.8 GHz; GNSS from navMode',
+        source: 'DJI Matrice 350 RTK specs page',
+        url: 'https://enterprise.dji.com/matrice-350-rtk/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'controlLinkRangeM',
+        value: '20000 m maximum transmission distance (FCC)',
+        source: 'DJI Matrice 350 RTK specs page',
+        url: 'https://enterprise.dji.com/matrice-350-rtk/specs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G2-Q-01',
       routeIntent: 'Night ISR orbit with thermal payload',
@@ -2058,7 +3008,7 @@ const THREATS: SpecModel[] = [
       airframe: 'quad',
       cruiseSpeedMps: 12,
       maxSpeedMps: 20,
-      enduranceMin: 40,
+      enduranceMin: 40, // Army Recognition: 23 min for the SkyFall Vampire, one airframe of the class
       altBandFt: [100, 1500],
       navMode: 'mixed',
       emissionsNote: 'Custom links, often 700-900 MHz with repeater',
@@ -2075,6 +3025,16 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'none',
       jamBehavior: 'return-home', // planning assumption for the reusable heavy-bomber family (study silent); default for mixed nav is 'continue'
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.1 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G2-HB-01',
       routeIntent: 'Repeat night sorties, 300-1000 ft ingress',
@@ -2094,7 +3054,7 @@ const THREATS: SpecModel[] = [
     uas: {
       group: 2,
       rcsM2: 0.05, // planning factor (rcsFactors.ts): G2 tier
-      spanM: 3.5, // public dimension: JOUAV CW-15 wingspan 3.5 m
+      spanM: 3.54, // public dimension: JOUAV CW-15 wingspan 3.5 m
       acousticDb: 80, // PF: electric VTOL fixed-wing
       irSignature: 'low', // electric VTOL; same as the airframe default, stated for the record
       airframe: 'vtol',
@@ -2115,6 +3075,40 @@ const THREATS: SpecModel[] = [
       standoffRangeM: null,
       weaponProfile: 'none',
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.05 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '3.54 m wingspan',
+        source: 'JOUAV CW-15 product page',
+        url: 'https://www.jouav.com/products/cw-15.html',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '61 km/h cruise speed (16.9 m/s)',
+        source: 'JOUAV CW-15 product page',
+        url: 'https://www.jouav.com/products/cw-15.html',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'enduranceMin',
+        value: '180 min empty',
+        source: 'JOUAV CW-15 product page',
+        url: 'https://www.jouav.com/products/cw-15.html',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G2-V-01',
       routeIntent: 'Persistent standoff ISR racetrack',
@@ -2138,7 +3132,7 @@ const THREATS: SpecModel[] = [
       acousticDb: 75, // PF: electric pusher
       irSignature: 'low', // electric pusher: no engine exhaust; the one-way-attack default is high
       airframe: 'one-way-attack',
-      cruiseSpeedMps: 28,
+      cruiseSpeedMps: 22,
       maxSpeedMps: 83,
       enduranceMin: 40,
       altBandFt: [1000, 15000],
@@ -2150,11 +3144,37 @@ const THREATS: SpecModel[] = [
       oneWay: true,
       rangeNote: 'Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.',
       // Threat study [R08][R17]: 5 kg fragmentation/cumulative warhead.
-      warheadKg: 5,
+      warheadKg: 5, // Army Recognition: payload up to 3 kg is not a warhead mass
       effectRadiusM: 30, // = defaultEffectRadiusM(5); planning factor, not study-derived lethality (study 18.1)
       standoffRangeM: null,
       weaponProfile: 'impact',
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.05 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '80 to 110 km/h; the lower bound is 22 m/s',
+        source: 'Army Recognition Lancet-3 data fact sheet (2026-05-24)',
+        url: 'https://www.armyrecognition.com/military-products/army/unmanned-systems/unmanned-aerial-vehicles/lancet-3-loitering-munition-kamikaze-drone-russia-data-fact-sheet',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'enduranceMin',
+        value: '40 min endurance',
+        source: 'Army Recognition Lancet-3 data fact sheet (2026-05-24)',
+        url: 'https://www.armyrecognition.com/military-products/army/unmanned-systems/unmanned-aerial-vehicles/lancet-3-loitering-munition-kamikaze-drone-russia-data-fact-sheet',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G2-LM-01',
       routeIntent: 'ISR-cued strike, 20-40 km launch distance',
@@ -2195,6 +3215,56 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'none',
       jamBehavior: 'return-home', // planning assumption for reusable ISR class (study silent) [R11 profile]; default for mixed nav is 'continue'
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.1 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '3.1 m wingspan',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/uav/207',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '110 km/h cruising speed (30.6 m/s)',
+        source: 'Airforce Technology (Orlan-10 project page)',
+        url: 'https://www.airforce-technology.com/projects/orlan-10-unmanned-aerial-vehicle-uav/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '90 to 150 km/h; the upper bound is 41.7 m/s',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/uav/207',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'enduranceMin',
+        value: 'flight time up to 16 h (960 min)',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/uav/207',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'controlLinkRangeM',
+        value: '120000 m communication distance',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/uav/207',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G3-ISR-01',
       routeIntent: 'High orbit over target area, artillery cueing',
@@ -2229,12 +3299,47 @@ const THREATS: SpecModel[] = [
       oneWay: true,
       rangeNote: 'Strike routes 600-900+ km with evasive doglegs; Kometa anti-jam GNSS and jet-powered variants reported.',
       // Threat study 5.2.1 [R15][R16]: ~40 kg warhead per UN technical report; variants differ.
-      warheadKg: 40,
+      warheadKg: 40, // Janes: 50 kg per the IRGC poster; the seed keeps the cited UN figure
       effectRadiusM: 80, // = defaultEffectRadiusM(40); planning factor, not study-derived lethality (study 18.1)
       standoffRangeM: null,
       weaponProfile: 'impact',
       jamBehavior: 'continue', // hardened GNSS-INS / anti-jam variants press on (study 5.2.1); default for inertial is 'drift'
+      linkBands: ['gnss'],
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.2 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '2.5 m wingspan',
+        source: 'Janes',
+        url: 'https://www.janes.com/osint-insights/defence-news/air/irgc-confirms-specs-for-shahed-136-attack-uav',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '185 km/h from the MD550 engine (51.4 m/s), read as cruise',
+        source: 'Janes',
+        url: 'https://www.janes.com/osint-insights/defence-news/air/irgc-confirms-specs-for-shahed-136-attack-uav',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'linkBands',
+        value: 'GNSS: NASIR satellite receiver',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/page-shahed-136',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G3-OWA-01',
       routeIntent: 'Stream raid along a corridor, minutes apart',
@@ -2275,6 +3380,32 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'none',
       jamBehavior: 'continue', // GNSS/IMU nav recovered in exploitation (study [R02]); default for gps is 'drift'
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.2 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '2.5 m wingspan',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/uav/329',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '160 km/h maximum speed (44.4 m/s)',
+        source: 'Ukraine Defence Intelligence (HUR) War & Sanctions portal',
+        url: 'https://war-sanctions.gur.gov.ua/en/uav/329',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G2-DEC-01',
       routeIntent: 'Interleaved in OWA stream as decoy',
@@ -2297,9 +3428,9 @@ const THREATS: SpecModel[] = [
       spanM: 5.0, // public dimension: Mugin-5 wingspan 5.0 m
       acousticDb: 95, // PF: gasoline engine
       airframe: 'one-way-attack',
-      cruiseSpeedMps: 32,
+      cruiseSpeedMps: 30,
       maxSpeedMps: 40,
-      enduranceMin: 360,
+      enduranceMin: 300,
       altBandFt: [1000, 12000],
       navMode: 'gps',
       emissionsNote: 'RF silent on ingress',
@@ -2314,6 +3445,48 @@ const THREATS: SpecModel[] = [
       standoffRangeM: null,
       weaponProfile: 'impact',
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.2 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '5 m wingspan (5000 mm)',
+        source: 'Mugin UAV product page (Mugin-5 Pro carbon fiber)',
+        url: 'https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '30 to 35 m/s cruise speed; the lower bound is 30 m/s',
+        source: 'Mugin UAV product page',
+        url: 'https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '40 m/s maximum speed',
+        source: 'Mugin UAV product page',
+        url: 'https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'enduranceMin',
+        value: '5 to 7.5 h endurance; the lower bound is 300 min',
+        source: 'Mugin UAV product page',
+        url: 'https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G3-OWA-02',
       routeIntent: 'Autonomous waypoint attack at 1000-8000 ft',
@@ -2354,6 +3527,40 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'standoff',
       jamBehavior: 'return-home', // planning assumption for the recoverable UCAV class (study silent); default for mixed nav is 'continue'
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '1 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '10 m wingspan',
+        source: 'Defense Express',
+        url: 'https://en.defence-ua.com/weapon_and_tech/first_time_in_ukraine_shot_down_iranian_uav_mohajer_6-4318.html',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '200 km/h maximum speed (55.6 m/s)',
+        source: 'Defense Express',
+        url: 'https://en.defence-ua.com/weapon_and_tech/first_time_in_ukraine_shot_down_iranian_uav_mohajer_6-4318.html',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'enduranceMin',
+        value: '12 h endurance (720 min)',
+        source: 'Defense Express',
+        url: 'https://en.defence-ua.com/weapon_and_tech/first_time_in_ukraine_shot_down_iranian_uav_mohajer_6-4318.html',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G4-MALE-01',
       routeIntent: 'High ISR orbit with PGM release',
@@ -2373,14 +3580,14 @@ const THREATS: SpecModel[] = [
     uas: {
       group: 3,
       rcsM2: 0.2, // planning factor (rcsFactors.ts): G3 tier; jet variant keeps the Shahed airframe class
-      spanM: 2.5, // public dimension: Shahed airframe class, wingspan 2.5 m
+      spanM: 3, // public dimension: Shahed airframe class, wingspan 2.5 m
       acousticDb: 105, // PF: turbojet
       airframe: 'one-way-attack',
-      cruiseSpeedMps: 89,
+      cruiseSpeedMps: 97,
       maxSpeedMps: 97,
       // Study 5.2.1 [R03]: published endurance 2.2 h.
-      enduranceMin: 132,
-      altBandFt: [500, 13123],
+      enduranceMin: 150,
+      altBandFt: [328, 16404],
       navMode: 'mixed',
       emissionsNote: 'SADRA INS + 16-element CRPA anti-jam satnav, camera, mesh modem (study [R03])',
       controlLinkRangeM: null,
@@ -2395,6 +3602,56 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'impact',
       jamBehavior: 'continue', // anti-jam satnav plus INS presses on (study [R03])
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '0.2 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: 'about 3 m wingspan',
+        source: 'Militarnyi',
+        url: 'https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '350 to 500 km/h cruise; the lower bound is 97 m/s',
+        source: 'Militarnyi',
+        url: 'https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'enduranceMin',
+        value: 'about 2.5 h flight duration (150 min)',
+        source: 'Militarnyi',
+        url: 'https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'altBandFt',
+        value: '100 to 5000 m (328 to 16404 ft)',
+        source: 'Militarnyi',
+        url: 'https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'warheadKg',
+        value: '50 kg or more',
+        source: 'Militarnyi',
+        url: 'https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G3-JET-01',
       routeIntent: 'High-speed deep strike; compressed detect-to-engage timeline',
@@ -2419,8 +3676,8 @@ const THREATS: SpecModel[] = [
       airframe: 'fixed-wing',
       cruiseSpeedMps: 46,
       maxSpeedMps: 57,
-      enduranceMin: 1200,
-      altBandFt: [16000, 22000],
+      enduranceMin: 1080,
+      altBandFt: [16000, 20000],
       navMode: 'mixed',
       emissionsNote: 'LOS and BLOS datalinks; EO/IR/laser designator or surveillance radar (study [TUR02])',
       controlLinkRangeM: null,
@@ -2435,6 +3692,56 @@ const THREATS: SpecModel[] = [
       weaponProfile: 'standoff',
       jamBehavior: 'return-home',
     },
+    provenance: [
+      {
+        field: 'rcsM2',
+        value: '1 m2',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'spanM',
+        value: '12 m wingspan',
+        source: 'Baykar Technology TB2 page',
+        url: 'https://baykartech.com/en/uav/bayraktar-tb2/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'cruiseSpeedMps',
+        value: '90 KTAS travel speed (46.3 m/s)',
+        source: 'Baykar Technology TB2 page',
+        url: 'https://baykartech.com/en/uav/bayraktar-tb2/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'maxSpeedMps',
+        value: '110 KTAS maximum speed (56.6 m/s)',
+        source: 'Baykar Technology TB2 page',
+        url: 'https://baykartech.com/en/uav/bayraktar-tb2/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'enduranceMin',
+        value: '18+ hours endurance (1080 min)',
+        source: 'Baykar Technology TB2 page',
+        url: 'https://baykartech.com/en/uav/bayraktar-tb2/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'altBandFt',
+        value: '16000 ft operational altitude, 20000 ft service ceiling',
+        source: 'Baykar Technology TB2 page',
+        url: 'https://baykartech.com/en/uav/bayraktar-tb2/',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
     threatProfile: {
       designator: 'THR-G4-UCAV-01',
       routeIntent: 'Persistent medium-altitude ISR/strike orbit with standoff munition release',

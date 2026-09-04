@@ -9,18 +9,49 @@ import { SEED_LIBRARY } from './seed'
  */
 
 const RADARS = SEED_LIBRARY.filter((m) => m.sensor?.sensorType === 'radar')
+const SENSORS = SEED_LIBRARY.filter((m) => m.sensor != null)
+const EFFECTORS = SEED_LIBRARY.filter((m) => m.effector != null)
+const THREATS = SEED_LIBRARY.filter((m) => m.uas != null)
 const BASES = ['datasheet', 'reference', 'pf']
+
+/** Ids of the models that carry no row for `field`. */
+function missingRow(models: typeof SEED_LIBRARY, field: string): string[] {
+  return models.filter((m) => !m.provenance?.some((row) => row.field === field)).map((m) => m.id)
+}
 
 describe('seed library provenance', () => {
   it('carries the 19 radar models', () => {
     expect(RADARS).toHaveLength(19)
   })
 
+  it('carries the 38 sensor, 25 effector and 15 threat models', () => {
+    expect([SENSORS.length, EFFECTORS.length, THREATS.length]).toEqual([38, 25, 15])
+  })
+
   it('every radar records where its placard detect range comes from', () => {
-    const missing = RADARS.filter(
-      (m) => !m.provenance?.some((row) => row.field === 'detectRangeM'),
-    ).map((m) => m.id)
-    expect(missing).toEqual([])
+    expect(missingRow(RADARS, 'detectRangeM')).toEqual([])
+  })
+
+  it('every sensor records where its detect range comes from', () => {
+    expect(missingRow(SENSORS, 'detectRangeM')).toEqual([])
+  })
+
+  it('every effector records its maximum range', () => {
+    expect(missingRow(EFFECTORS, 'maxRangeM')).toEqual([])
+  })
+
+  it('every threat records its radar cross section basis', () => {
+    expect(missingRow(THREATS, 'rcsM2')).toEqual([])
+  })
+
+  it('every flyout speed carries a sourced row', () => {
+    const offenders: string[] = []
+    for (const model of SEED_LIBRARY) {
+      if (model.effector?.flyoutSpeedMps == null) continue
+      const row = model.provenance?.find((p) => p.field === 'flyoutSpeedMps')
+      if (!row || row.basis === 'pf') offenders.push(model.id)
+    }
+    expect(offenders).toEqual([])
   })
 
   it('every row carries an ISO date and a known basis', () => {

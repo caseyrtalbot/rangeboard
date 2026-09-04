@@ -98,6 +98,14 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
           tag: <PfTag model={model} field="engageTimeS" />,
         }
       : { label: 'Engage time', value: DASH },
+    spec?.flyoutSpeedMps != null
+      ? {
+          label: 'Flyout speed',
+          value: `${spec.flyoutSpeedMps}`,
+          unit: ' m/s',
+          tag: <PfTag model={model} field="flyoutSpeedMps" />,
+        }
+      : { label: 'Flyout speed', value: 'none recorded' },
     spec
       ? {
           label: 'BDA dwell',

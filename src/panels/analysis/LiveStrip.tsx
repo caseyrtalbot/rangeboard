@@ -36,12 +36,19 @@ function chipOf(
         text: `${head} · ${mc.progress}/${mc.total}`,
         title: 'Running replicates',
       }
-    case 'done':
+    case 'done': {
+      const summary = mc.summary
+      const early = summary != null && summary.stopped.rule === 'halfWidth'
       return {
         cls: 'chip mc',
-        text: seeded,
-        title: `${basis}, ${Math.round(mc.summary?.elapsedMs ?? 0)} ms`,
+        text: early ? `MC ${summary.replicates} of ${run.replicates} · seed ${run.seed}` : seeded,
+        title: early
+          ? `${basis}, stopped at ${summary.replicates} by the half-width rule, ${Math.round(
+              summary.elapsedMs,
+            )} ms`
+          : `${basis}, ${Math.round(summary?.elapsedMs ?? 0)} ms`,
       }
+    }
     case 'stale':
       return {
         cls: 'chip mc warn',
@@ -93,7 +100,43 @@ function IntInput({
   )
 }
 
-/** The run mode popover: mode, seed and replicate count, and the run button. */
+/**
+ * A decimal input that commits on blur or Enter, as `IntInput`. An empty
+ * field commits null; a value at or under zero is ignored.
+ */
+function DecimalInput({
+  value,
+  onCommit,
+}: {
+  value: number | null
+  onCommit: (v: number | null) => void
+}) {
+  const commit = (raw: string) => {
+    if (raw.trim() === '') {
+      if (value != null) onCommit(null)
+      return
+    }
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n <= 0) return
+    if (n !== value) onCommit(n)
+  }
+  return (
+    <input
+      key={value ?? 'none'}
+      type="number"
+      step="any"
+      min={0}
+      defaultValue={value ?? ''}
+      placeholder="none"
+      onBlur={(event) => commit(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') commit((event.target as HTMLInputElement).value)
+      }}
+    />
+  )
+}
+
+/** The run mode popover: mode, seed, replicate count, target half-width and the run button. */
 function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McState }) {
   const patchScenario = useStore((s) => s.patchScenario)
   const deterministic = run.runMode === 'deterministic'
@@ -115,6 +158,12 @@ function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McSta
           min={MIN_REPLICATES}
           max={MAX_REPLICATES}
           onCommit={(replicates) => patchScenario({ replicates })}
+        />
+      </Field>
+      <Field label="Target half-width">
+        <DecimalInput
+          value={run.targetHalfWidth}
+          onCommit={(targetHalfWidth) => patchScenario({ targetHalfWidth })}
         />
       </Field>
       <button

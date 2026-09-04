@@ -11,6 +11,15 @@ function render(): string {
   return renderToStaticMarkup(<Inspector />)
 }
 
+/** Place one model on the board and select the entity it makes. */
+function selectFromModel(modelId: string): void {
+  const st = useStore.getState()
+  st.replaceScenario(emptyScenario())
+  st.addEntityFromModel(modelId, { x: 0, y: 0 })
+  const entity = useStore.getState().scenario.entities[0]!
+  useStore.getState().select({ entityIds: [entity.id] })
+}
+
 describe('Inspector provenance tags', () => {
   beforeEach(() => {
     const st = useStore.getState()
@@ -29,5 +38,23 @@ describe('Inspector provenance tags', () => {
 
   it('marks an unsourced field PF', () => {
     expect(render()).toContain('<span class="pf" title="planning factor">')
+  })
+})
+
+describe('Inspector effector and threat tags', () => {
+  it('tags a sourced effector range SRC and its unsourced Pk PF', () => {
+    selectFromModel('lib-skyranger30')
+    const html = render()
+    const wez = html.slice(html.indexOf('WEZ'), html.indexOf('Engagement time'))
+    expect(wez).toContain('class="pf src"')
+    const pk = html.slice(html.indexOf('Single-shot Pk'), html.indexOf('Magazine'))
+    expect(pk).toContain('<span class="pf" title="planning factor">')
+  })
+
+  it('tags the threat radar cross section row', () => {
+    selectFromModel('lib-mavic3')
+    const html = render()
+    const rcs = html.slice(html.indexOf('Radar cross section'), html.indexOf('Fluctuation model'))
+    expect(rcs).toContain('<span class="pf" title="planning factor">')
   })
 })

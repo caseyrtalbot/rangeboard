@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { pathSpeed, scenarioDurationS, useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
-import type { EntityKind, Roe, Scenario, SensorRole, SpecModel, Vec2 } from '../model/types'
+import type {
+  EntityKind,
+  Roe,
+  Scenario,
+  SensorRole,
+  SensorSpec,
+  SpecModel,
+  Vec2,
+} from '../model/types'
 import { MOUNT_HEIGHT_M, newId } from '../model/types'
 import { TRACK_INIT_S } from '../analysis/doctrineFactors'
 import type { LinkMedium } from '../model/integration'
@@ -10,6 +18,7 @@ import { FT_TO_M, radarCalibration, radarPdAt } from '../analysis/sensorEnv'
 import { rangeForPd } from '../analysis/radarPd'
 import { posAtTime } from '../geometry/geo'
 import { groundRangeM } from '../geometry/slant'
+import type { DrawPolicy } from './policy'
 import {
   assessThreat,
   DEFAULT_DEFENDED_RADIUS_M,
@@ -647,7 +656,10 @@ describe('classification ladder promotions', () => {
       pathToX: 0,
     })
     const a = assessThreat(scenario, uasId)
-    near(a.classificationAtS.hostileAtS, 100)
+    // A Pd-modeled classification radar scans every SCAN_S 2 s from t = 0, so
+    // the crossing at 100 s (slant still above 2000 m on that step) is first
+    // seen at the 102 s scan.
+    expect(a.classificationAtS.hostileAtS).toBe(102)
   })
 
   it('the same classified hit from an early-warning sensor does not go hostile', () => {
@@ -1279,7 +1291,7 @@ describe('probability of detection', () => {
     expect(hits.map((h) => h.pd == null)).toEqual([false, true, true])
   })
 
-  it('pdSeries runs from first detection to the path end, below-threshold steps included', () => {
+  it('pdSeries runs from the first scan; scan steps clear the threshold only while held', () => {
     const { sensorId } = placeGiraffe()
     // Straight through the ring, west to east, and out the far side.
     const uasId = placeMohajer(-30000)
@@ -1291,22 +1303,31 @@ describe('probability of detection', () => {
     const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
     const series = obs.pdSeries!
     expect(obs.firstDetectS).toBe(a.firstDetectS)
-    expect(series[0]).toBeGreaterThanOrEqual(0.5)
+    // Giraffe states updateRateS 1: phase 0 puts the first scan at the sweep
+    // start, so the series opens far out at t = 0 and first detection lands
+    // on a whole second.
+    expect(obs.pdSeriesStartS).toBe(0)
+    expect(series[0]).toBeLessThan(0.5)
+    expect(obs.firstDetectS % 1).toBe(0)
+    expect(obs.firstDetectS).toBeGreaterThan(0)
     expect(series[series.length - 1]).toBeLessThan(0.5)
-    // The sweep's own loop: DT steps from the start delay until the sample reports done.
+    // The sweep's own loop: DT steps from the first scan until the sample reports done.
     const path = scenario.paths[0]
     const speed = pathSpeed(scenario, path)
     let steps = 0
     for (let t = 0; t <= scenarioDurationS(scenario); t += 0.5) {
-      if (t >= obs.firstDetectS) steps += 1
+      steps += 1
       if (posAtTime(path.points, speed, 0, t).done) break
     }
     expect(steps).toBeGreaterThan(2)
     expect(series).toHaveLength(steps)
-    // Held steps sit at or above the threshold, the fade after lastDetectS below it.
-    const heldSteps = Math.round((obs.lastDetectS - obs.firstDetectS) / 0.5) + 1
-    expect(series.slice(0, heldSteps).every((pd) => pd >= 0.5)).toBe(true)
-    expect(series.slice(heldSteps).every((pd) => pd < 0.5)).toBe(true)
+    // At every scan step (whole seconds) the Pd sits at or above the threshold
+    // exactly while the radar is between first and last detection.
+    for (let k = 0; k < series.length; k += 2) {
+      const t = k * 0.5
+      const held = t >= obs.firstDetectS && t <= obs.lastDetectS
+      expect(series[k] >= 0.5).toBe(held)
+    }
     expect(Math.max(...series)).toBeLessThanOrEqual(1)
   })
 
@@ -1502,14 +1523,214 @@ describe('slice 3: scan-model track initiation, coast and drop', () => {
     expect(obs.intervals[1][0]).toBe(54)
   })
 
-  it('a radar without updateRateS keeps the role table and writes the same time to trackInitAtS', () => {
+  it('a threshold radar without updateRateS keeps the role table and writes trackInitAtS', () => {
     const { radarId } = placeKillChain()
     const uasId = placeThreat()
-    const a = assessThreat(useStore.getState().scenario, uasId)
+    // KuRFS is Pd-modeled and would scan at SCAN_S 0.5 s under M-of-N; a
+    // planning basis keeps the per-step hold and the role table.
+    const st = useStore.getState().scenario
+    const scenario = {
+      ...st,
+      library: st.library.map((m) =>
+        m.id === 'lib-kurfs'
+          ? { ...m, sensor: { ...m.sensor!, rangeBasis: 'planning' as const } }
+          : m,
+      ),
+    }
+    const a = assessThreat(scenario, uasId)
     const obs = a.sensorObservations!.find((o) => o.sensorId === radarId)!
     expect(obs.trackInitAtS).not.toBeNull()
     expect(obs.trackInitAtS).toBe(a.stableTrackAtS)
     expect(obs.trackInitAtS).toBe(obs.intervals[0][0] + TRACK_INIT_S['fire-control'])
     expect(obs.coastIntervals).toEqual([])
+  })
+})
+
+describe('slice 1: one draw per scan', () => {
+  /** Threat altitude equal to the phase-center height, so slant range equals ground range. */
+  const ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+
+  /**
+   * Hand-built Pd-modeled radar at the origin (4 km against 0.01 m2, PF
+   * placard Pd 0.5 / Pfa 1e-6, period 4 s unless overridden) and one quad
+   * (0.01 m2, Swerling 1 pinned) on `path`. Environment off, so Pd is the
+   * bare closed form.
+   */
+  function scanScenario(f: {
+    radar?: Partial<SensorSpec>
+    heading?: number
+    path: Vec2[]
+    speedMps: number
+    startDelayS?: number
+    formationCount?: number
+  }) {
+    const s = legacyScenario()
+    s.environment = { ...s.environment, apply: false }
+    const spec: SensorSpec = {
+      sensorType: 'radar',
+      role: 'surveillance',
+      detectRangeM: 4000,
+      refRcsM2: 0.01,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      updateRateS: 4,
+      ...f.radar,
+    }
+    s.library.push(
+      {
+        id: 'tst-scan-radar',
+        name: 'Scan radar',
+        kind: 'sensor',
+        description: '',
+        color: '#0f0',
+        builtin: false,
+        sensor: spec,
+      },
+      {
+        id: 'tst-scan-uas',
+        name: 'Scan quad',
+        kind: 'uas',
+        description: '',
+        color: '#f00',
+        builtin: false,
+        uas: {
+          group: 1,
+          airframe: 'quad',
+          cruiseSpeedMps: f.speedMps,
+          maxSpeedMps: f.speedMps,
+          enduranceMin: 60,
+          altBandFt: [0, 400],
+          navMode: 'gps',
+          emissionsNote: '',
+          rcsM2: 0.01,
+          swerling: 1,
+        },
+      },
+    )
+    const sensorId = 'e-scan-radar'
+    const uasId = 'e-scan-uas'
+    const common = { color: null, notes: '' }
+    s.entities.push(
+      {
+        id: sensorId,
+        name: 'R1',
+        kind: 'sensor',
+        specId: 'tst-scan-radar',
+        pos: { x: 0, y: 0 },
+        headingDeg: f.heading ?? 0,
+        ...common,
+      },
+      {
+        id: uasId,
+        name: 'T1',
+        kind: 'uas',
+        specId: 'tst-scan-uas',
+        pos: f.path[0],
+        headingDeg: 0,
+        altitudeFt: ALT_FT,
+        formation: f.formationCount
+          ? { shape: 'line', count: f.formationCount, spacingM: 10 }
+          : null,
+        ...common,
+      },
+    )
+    s.paths.push({
+      id: 'p-scan',
+      entityId: uasId,
+      points: f.path,
+      speedMps: f.speedMps,
+      startDelayS: f.startDelayS ?? 0,
+    })
+    return { scenario: s, sensorId, uasId, spec }
+  }
+
+  /** A policy that counts detect calls and never detects; kill and jam are mass, phase 0. */
+  function countingPolicy(): DrawPolicy & { calls: number; pds: number[] } {
+    const p: DrawPolicy & { calls: number; pds: number[] } = {
+      calls: 0,
+      pds: [],
+      detect(pd) {
+        p.calls += 1
+        p.pds.push(pd)
+        return false
+      },
+      kill: (pk) => pk,
+      jam: (x) => x,
+      phase: () => 0,
+    }
+    return p
+  }
+
+  it('(a) draws once per admitted member per scan: members * scans detect calls', () => {
+    // Tangent at the range where Pd is 0.45: 100 m north to south at 5 m/s is
+    // 20 s, so the sweep runs t = 0 .. 20 and the 4 s period lands scans at
+    // 0, 4, 8, 12, 16, 20: six scans. Three ships in line abreast.
+    const spec = scanScenario({ path: [{ x: 0, y: 0 }], speedMps: 1 }).spec
+    const r45 = rangeForPd(radarCalibration(spec), 0.01, 0.45, 1, 1)
+    const { scenario, uasId } = scanScenario({
+      path: [
+        { x: r45, y: -50 },
+        { x: r45, y: 50 },
+      ],
+      speedMps: 5,
+      formationCount: 3,
+    })
+    const policy = countingPolicy()
+    const a = assessThreat(scenario, uasId, policy)
+    expect(a.firstDetectS).toBeNull()
+    expect(policy.calls).toBe(3 * 6)
+    // Ten metres of formation offset at 4.2 km moves the Pd by well under 0.02.
+    for (const pd of policy.pds) expect(Math.abs(pd - 0.45)).toBeLessThan(0.02)
+  })
+
+  it('(b) a deterministic run first-detects on a scan time; the board view holds each step', () => {
+    // Approach along the x axis at 90 m/s after a 1.5 s delay: x(t) = -8000 +
+    // 90 (t - 1.5). Pd reaches 0.5 at 4000 m, t - 1.5 = 44.44 s (grid step
+    // 46.0 with x = -3995). Scans at 1.5 + 4k: k = 11 (t = 45.5, x = -4040)
+    // misses, k = 12 (t = 49.5, x = -3680) detects.
+    const delayS = 1.5
+    const { scenario, uasId, sensorId } = scanScenario({
+      path: [
+        { x: -8000, y: 0 },
+        { x: 0, y: 0 },
+      ],
+      speedMps: 90,
+      startDelayS: delayS,
+    })
+    const a = assessThreat(scenario, uasId)
+    expect(a.firstDetectS).toBe(49.5)
+    expect(((a.firstDetectS! - delayS) % 4 + 4) % 4).toBeLessThan(1e-6)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+    expect(obs.pdSeriesStartS).toBe(delayS)
+    // Between scans the board view (no steering: every step is a scan step)
+    // holds the target at 46.0 s, where the sweep took no scan.
+    expect(detectionsAt(scenario, 46).get(uasId)).toHaveLength(1)
+    expect(obs.intervals[0][0]).toBe(49.5)
+  })
+
+  it('(c) the M-of-N window opens at the first admitted scan, not at the first scan', () => {
+    // 90 deg wedge facing north; the quad flies west to east 2000 m north of
+    // the radar from x = -6100 at 100 m/s and enters the wedge at x = -2000
+    // (t = 41 s). Scans at 0, 4, ..., 40 see nothing admitted (Pd 0, out of
+    // the window); the first admitted scan is 44 s, and with M = 3 the third
+    // detected scan initiates at 52 s. Had the 11 pre-admission misses
+    // entered the window, the mean Pd over the last five scans would hold
+    // initiation to the fifth detected scan (60 s).
+    const { scenario, uasId, sensorId } = scanScenario({
+      radar: { sectorDeg: 90, detectRangeM: 8000 },
+      path: [
+        { x: -6100, y: -2000 },
+        { x: 0, y: -2000 },
+      ],
+      speedMps: 100,
+    })
+    const a = assessThreat(scenario, uasId)
+    const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
+    expect(a.firstDetectS).toBe(44)
+    expect(obs.trackInitAtS).toBe(52)
+    expect(obs.trackInitAtS!).toBeGreaterThanOrEqual(44 + 2 * 4)
+    expect(obs.pdSeriesStartS).toBe(0)
+    expect(obs.pdSeries![0]).toBe(0)
+    expect(obs.pdSeries![Math.round(44 / 0.5)]).toBeGreaterThan(0.9)
   })
 })

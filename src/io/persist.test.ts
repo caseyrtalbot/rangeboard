@@ -219,11 +219,16 @@ describe('AAR export payload', () => {
 
 describe('run export Monte Carlo basis', () => {
   function mcSummary(): McSummary {
-    const stat: Stat = { mean: 1, p10: 1, p90: 1, p025: 1, p975: 1, n: 5 }
+    const stat: Stat = {
+      mean: 1, sd: 0, se: 0, lo: 1, hi: 1, conf: 0.95,
+      p10: 1, p90: 1, p025: 1, p975: 1, n: 5, total: 5,
+      defined: { p: 1, lo: 0.57, hi: 1 },
+    }
     const band = { mean: [0, 1], p10: [0, 1], p90: [0, 1], p025: [0, 1], p975: [0, 1] }
     return {
       seed: 77,
       replicates: 5,
+      stopped: { rule: 'replicates', at: 5 },
       durationS: 0.5,
       kills: band,
       leakers: band,
@@ -251,6 +256,7 @@ describe('run export Monte Carlo basis', () => {
     expect(out.dataBasis.kind).toBe('monte-carlo')
     expect(out.dataBasis.seed).toBe(77)
     expect(out.dataBasis.replicates).toBe(5)
+    expect(out.dataBasis.stopped).toEqual({ rule: 'replicates', at: 5 })
     expect(out.mcSummary).toBe(summary)
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
@@ -294,8 +300,21 @@ describe('run settings load fill', () => {
     delete s.seed
     delete s.replicates
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(runSettings(out)).toEqual({ runMode: 'deterministic', seed: 4821, replicates: 100 })
+    expect(runSettings(out)).toEqual({
+      runMode: 'deterministic',
+      seed: 4821,
+      replicates: 100,
+      targetHalfWidth: null,
+    })
     expect(out.schemaVersion).toBe(1)
+  })
+
+  it('reads a null target half-width through runSettings on a save without the field', () => {
+    const s = emptyScenario()
+    delete s.targetHalfWidth
+    const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
+    expect(runSettings(out).targetHalfWidth).toBeNull()
+    expect(runSettings({ ...out, targetHalfWidth: 0.2 }).targetHalfWidth).toBe(0.2)
   })
 })
 

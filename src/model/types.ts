@@ -339,6 +339,8 @@ export interface EffectorSpec {
    * TARGET_S type table in doctrineFactors.ts.
    */
   targetS?: number
+  /** Kinetic only: average interceptor or round speed to the target, m/s. Absent: no flyout term. */
+  flyoutSpeedMps?: number | null
 }
 
 /**
@@ -364,6 +366,17 @@ export interface ThreatProfile {
   count: number
 }
 
+/**
+ * Epistemic spread of one planning factor around its nominal value. Lognormal
+ * for multiplicative quantities (RCS, ranges, power), triangular for additive
+ * bounds (latencies, dwells), beta for a probability stated as successes over
+ * trials (Pk, placard Pd).
+ */
+export type Spread =
+  | { kind: 'lognormal'; sigmaDb: number }
+  | { kind: 'triangular'; lo: number; hi: number }
+  | { kind: 'beta'; successes: number; trials: number }
+
 /** One provenance row. `field` is the SensorSpec / UasSpec / EffectorSpec key it covers. */
 export interface Provenance {
   field: string
@@ -373,6 +386,8 @@ export interface Provenance {
   /** ISO date the source was read. */
   date: string
   basis: 'datasheet' | 'reference' | 'pf'
+  /** Spread of the value. Absent: the PF spread table by field. Null: fixed (pinned). */
+  spread?: Spread | null
 }
 
 /** A library model. Exactly one of sensor/uas/effector is set (c2/asset/marker have none). */
@@ -922,6 +937,11 @@ export interface Scenario {
   seed?: number
   /** Replicate count. Absent on old saves = DEFAULT_REPLICATES. */
   replicates?: number
+  /**
+   * Stop the replicate loop when the 95 percent half-width of the end-of-run leaker mean
+   * is under this. Null or absent: run every replicate.
+   */
+  targetHalfWidth?: number | null
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
 
@@ -950,14 +970,21 @@ export interface Scenario {
 }
 
 /** The one reader of the three run fields with their defaults applied. */
-export function runSettings(s: Scenario): { runMode: RunMode; seed: number; replicates: number } {
+export function runSettings(s: Scenario): {
+  runMode: RunMode
+  seed: number
+  replicates: number
+  targetHalfWidth: number | null
+} {
   const seed = s.seed
   const reps = s.replicates
+  const half = s.targetHalfWidth
   return {
     runMode: s.runMode ?? 'deterministic',
     seed: Number.isInteger(seed) ? (seed as number) : DEFAULT_SEED,
     replicates:
       Number.isInteger(reps) && (reps as number) >= 1 ? (reps as number) : DEFAULT_REPLICATES,
+    targetHalfWidth: typeof half === 'number' && Number.isFinite(half) && half > 0 ? half : null,
   }
 }
 

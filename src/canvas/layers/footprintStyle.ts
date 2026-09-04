@@ -1,7 +1,7 @@
 import type { SensorHoldGate } from '../../analysis/sensorEnv'
 import type { FireDoctrine, UasSpec } from '../../model/types'
 import type { RingKey } from '../../state/store'
-import { EVASION_PENALTY, falloffRangeM, SIZE_PENALTY } from '../../playback/attrition'
+import { falloffRangeM, kineticPk } from '../../playback/attrition'
 
 /**
  * One style source for every ring the board draws. Each ring is either a
@@ -248,29 +248,22 @@ export function effectorRingStyle(input: EffectorRingInput): EffectorRingStyle {
   return { maxM, minM: min, releaseM: release, commitM: commit, grey: false }
 }
 
-/** Size and evasion terms attrition applies to a kinetic shot; 1 with no target. */
-export function kineticPkPenalty(uas: UasSpec | undefined): number {
-  if (!uas) return 1
-  const evasion = uas.airframe === 'fpv' ? EVASION_PENALTY : 1
-  return SIZE_PENALTY[uas.group] * evasion
-}
-
 /**
- * Slant range where shot Pk falls to commitPk, or null when the effector
- * never commits against this target. Shot Pk is basePk x falloff x penalty,
- * so the ring sits where the falloff equals commitPk / (basePk x penalty).
+ * Slant range where the shot Pk falls to commitPk, or null when the effector
+ * never commits against this target. The shot Pk is kineticPk, so the ring
+ * inverts it: the falloff must equal commitPk / (the Pk at the launcher).
  * Below the falloff at max range the effector commits everywhere and the
  * result is maxRangeM.
  */
 export function commitRangeM(input: {
   basePk: number
-  penalty: number
+  uas: UasSpec | undefined
   commitPk: number
   maxRangeM: number
 }): number | null {
-  const { basePk, penalty, commitPk, maxRangeM } = input
+  const { basePk, uas, commitPk, maxRangeM } = input
   if (maxRangeM <= 0) return null
-  const peak = basePk * penalty
+  const peak = kineticPk(basePk, maxRangeM, uas, 0)
   if (peak <= 0 || peak < commitPk) return null
   return falloffRangeM(commitPk / peak, maxRangeM)
 }

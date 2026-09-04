@@ -3,12 +3,14 @@ import { emptyScenario } from '../model/seed'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
 import { MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
+import { posAtTime } from '../geometry/geo'
 import {
   distanceFalloff,
   expenditureChannel,
   isHardKill,
   resolveEngagements,
   SHIP_DEAD_BELOW,
+  timeOfFlightS,
 } from './attrition'
 import { assessAllThreats } from './sim'
 
@@ -1073,3 +1075,91 @@ function legacyScenario(): ReturnType<typeof emptyScenario> {
   s.doctrine = { ...s.doctrine!, enabled: false }
   return s
 }
+
+describe('flyout kinematics (flyoutSpeedMps)', () => {
+  const base = {
+    effectorType: 'interceptor' as const,
+    minRangeM: 0,
+    maxRangeM: 5000,
+    engageTimeS: 0,
+  }
+
+  it('timeOfFlightS is slant over speed, and 0 with no speed or a non-kinetic effector', () => {
+    // 4000 m at 200 m/s = 20 s.
+    expect(timeOfFlightS({ ...base, flyoutSpeedMps: 200 }, 4000)).toBe(20)
+    expect(timeOfFlightS(base, 4000)).toBe(0)
+    expect(timeOfFlightS({ ...base, flyoutSpeedMps: null }, 4000)).toBe(0)
+    expect(timeOfFlightS({ ...base, flyoutSpeedMps: 0 }, 4000)).toBe(0)
+    for (const effectorType of ['jammer', 'de', 'hpm'] as const) {
+      expect(timeOfFlightS({ ...base, effectorType, flyoutSpeedMps: 200 }, 4000)).toBe(0)
+    }
+  })
+
+  it('lands the effect at t + engageTimeS + flight time to the predicted intercept', () => {
+    // Launcher at the origin, 4600 m envelope, engage time 10 s, 200 m/s
+    // interceptor. Threat closes radially from x = 4700 at 20 m/s (west),
+    // so x(tau) = 4700 - 20 tau and the slant equals x while x > 0.
+    // Window opens at x = 4600: tau = 5, a grid point, so the one shot is
+    // assigned at t = 5. Three fixed-point passes from a 0 flight time:
+    //   pass 0: tEffect 15,   x 4400, flight 4400/200 = 22
+    //   pass 1: tEffect 37,   x 3960, flight 19.8
+    //   pass 2: tEffect 34.8, x 4004 (slant used for the falloff)
+    // so tEffectS = 5 + 10 + 19.8 = 34.8, within one DT of t + E + 20 (the
+    // exact fixed point is 4400 / (200 + 20) = 20 s at 4000 m). Pk at the
+    // intercept: 0.5 * (1 - 0.3 * 4004/4600).
+    const scenario = legacyScenario()
+    const eff = interceptor({
+      pk: 0.5,
+      maxRangeM: 4600,
+      engageTimeS: 10,
+      flyoutSpeedMps: 200,
+      magazineSize: 1,
+      salvoCooldownS: 1000,
+    })
+    scenario.library = [...scenario.library, SENSOR, TARGET, eff]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const launcher = ent('effector', eff.id, { x: 0, y: 0 })
+    const uas = ent('uas', TARGET.id, { x: 4700, y: 0 })
+    scenario.entities = [sensor, launcher, uas]
+    scenario.connections = [link(sensor.id, launcher.id)]
+    const points = [
+      { x: 4700, y: 0 },
+      { x: -1000, y: 0 },
+    ]
+    scenario.paths = [flight(uas.id, points, 20)]
+
+    const r = resolveEngagements(scenario)
+    expect(r.events).toHaveLength(1)
+    const ev = r.events[0]
+    expect(ev.tS).toBeCloseTo(5, 9)
+    expect(ev.tEffectS).toBeCloseTo(34.8, 9)
+    expect(Math.abs(ev.tEffectS - (5 + 10 + 20))).toBeLessThan(0.5)
+    // The intercept point is where posAtTime puts the target at tEffectS.
+    const at = posAtTime(points, 20, 0, ev.tEffectS).pos
+    expect(at.x).toBeCloseTo(4004, 6)
+    expect(at.y).toBeCloseTo(0, 9)
+    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (4004 / 4600)), 9)
+    expect(r.threats[0].expectedKills).toBeCloseTo(ev.pk, 9)
+  })
+
+  it('no stated speed: the ledger is the flyout-free ledger under doctrine', () => {
+    // Doctrine on, engage time 10 s, no speed: every effect lands at exactly
+    // tS + engageTimeS, and a null speed equals an absent one field for field.
+    const { scenario } = singleThreatScenario(
+      interceptor({ pk: 0.5, engageTimeS: 10, magazineSize: 4, salvoCooldownS: 5 }),
+    )
+    scenario.roe = 'free'
+    scenario.doctrine = { ...scenario.doctrine!, enabled: true }
+    const withNull: Scenario = {
+      ...scenario,
+      library: scenario.library.map((m) =>
+        m.effector ? { ...m, effector: { ...m.effector, flyoutSpeedMps: null } } : m,
+      ),
+    }
+    const absent = resolveEngagements(scenario)
+    const nulled = resolveEngagements(withNull)
+    expect(absent.events.length).toBeGreaterThan(0)
+    expect(nulled).toEqual(absent)
+    for (const ev of absent.events) expect(ev.tEffectS).toBe(ev.tS + 10)
+  })
+})

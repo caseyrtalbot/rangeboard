@@ -2,18 +2,23 @@ import type { RequirementThresholds } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../model/types'
 
 /**
- * The engine's three probabilistic outcomes, resolved by one policy per run.
+ * The engine's four probabilistic outcomes, resolved by one policy per run.
  * The deterministic policy keeps the expected-value arithmetic; the Monte
- * Carlo policy draws each outcome from a seeded stream. The id and time
- * arguments are unused by both (reserved for a correlated policy).
+ * Carlo policy draws each outcome from a seeded stream. The id, time and
+ * index arguments are unused by both (reserved for a correlated policy).
  */
 export interface DrawPolicy {
-  /** Radar scan outcome. Deterministic: pd >= pdDetect. MC: rng() < pd. */
-  detect(pd: number, sensorId: string, uasId: string, tS: number): boolean
+  /**
+   * Radar scan outcome for one admitted member (memberIdx: its index in the
+   * admitted list, nearest first). Deterministic: pd >= pdDetect. MC: rng() < pd.
+   */
+  detect(pd: number, sensorId: string, uasId: string, tS: number, memberIdx: number): boolean
   /** Salvo outcome. Deterministic: returns pk as mass. MC: 0 or 1. */
   kill(pk: number, effectorId: string, uasId: string, shipIdx: number, tS: number): number
   /** Jam dwell outcome, same shape. */
   jam(p: number, effectorId: string, uasId: string, tS: number): number
+  /** Scan phase as a fraction of the period, in [0, 1). Deterministic: 0. MC: one uniform draw. */
+  phase(sensorId: string): number
 }
 
 /**
@@ -33,6 +38,7 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
     detect: (pd) => pd >= pdDetect,
     kill: (pk) => pk,
     jam: (p) => p,
+    phase: () => 0,
   }
 }
 
@@ -45,5 +51,6 @@ export function monteCarloPolicy(
     detect: (pd) => rng() < pd,
     kill: (pk) => (rng() < pk ? 1 : 0),
     jam: (p) => (rng() < p ? 1 : 0),
+    phase: () => rng(),
   }
 }

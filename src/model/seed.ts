@@ -46,6 +46,7 @@ export function emptyScenario(): Scenario {
     runMode: 'deterministic',
     seed: DEFAULT_SEED,
     replicates: DEFAULT_REPLICATES,
+    targetHalfWidth: null,
     environment: defaultEnvironment(),
 
     roe: 'tight',

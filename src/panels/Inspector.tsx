@@ -42,13 +42,14 @@ import {
   targetScaled,
 } from '../analysis/sensorEnv'
 import {
-  scanRateSFor,
+  scanPeriodS,
   trackDropMissesFor,
   trackInitMFor,
   trackInitNFor,
   trackInitSFor,
 } from '../analysis/doctrineFactors'
 import { GATE_WORD } from '../canvas/layers/footprintStyle'
+import { DEFAULT_PK, EVASION_PENALTY, SIZE_PENALTY } from '../playback/attrition'
 import type { SensorSpec, SpecModel } from '../model/types'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
@@ -165,15 +166,16 @@ function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
 }
 
 /**
- * How the sensor builds a track file. A radar with a recorded scan period
- * runs the M-of-N scan model and coasts through a missed scan. Every other
- * sensor initiates on the sensor-role hold time.
+ * How the sensor builds a track file. A radar with a recorded scan period,
+ * or a Pd-modeled radar on the SCAN_S role period, runs the M-of-N scan
+ * model and coasts through a missed scan. Every other sensor initiates on
+ * the sensor-role hold time.
  */
 function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
   const scenario = useStore((s) => s.scenario)
   if (spec.sensorType !== 'radar') return null
-  const rate = scanRateSFor(spec)
-  if (rate == null)
+  const period = scanPeriodS(spec, targetScaled(spec))
+  if (period == null)
     return (
       <Row
         label="Scan period"
@@ -185,10 +187,13 @@ function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
     <>
       <Row
         label="Scan period"
-        value={rate}
+        value={period}
         unit="s"
-        tag={<PfTag model={model} field="updateRateS" />}
-        title="One look at the full search volume. The initiation rule counts these scans."
+        tag={<PfTag model={model} field="updateRateS" absent={spec.updateRateS == null} />}
+        title={
+          'One look at the full search volume. The initiation rule counts these scans. ' +
+          'With no recorded period a Pd-modeled radar scans on the role planning factor.'
+        }
         mono
       />
       <Row
@@ -816,6 +821,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
             <Row
               label="Classification range"
               value={formatDistance(model.sensor.classifyRangeM, units)}
+              tag={<PfTag model={model} field="classifyRangeM" />}
               mono
             />
           )}
@@ -838,7 +844,12 @@ function EntityInspector({ entity }: { entity: Entity }) {
             mono
           />
           {model.sensor.sensorType === 'eo-ir' && (
-            <Row label="Band" value={model.sensor.eoBand ?? 'dual'} unit={model.sensor.eoBand == null ? 'default' : undefined} />
+            <Row
+              label="Band"
+              value={model.sensor.eoBand ?? 'dual'}
+              unit={model.sensor.eoBand == null ? 'default' : undefined}
+              tag={<PfTag model={model} field="eoBand" />}
+            />
           )}
           {model.sensor.instrumentedRangeM != null && (
             <Row
@@ -901,17 +912,60 @@ function EntityInspector({ entity }: { entity: Entity }) {
               model.effector.maxRangeM,
               units,
             )}`}
+            tag={<PfTag model={model} field="maxRangeM" />}
             mono
           />
-          <Row label="Engagement time" value={model.effector.engageTimeS} unit="s" mono />
+          <Row
+            label="Engagement time"
+            value={model.effector.engageTimeS}
+            unit="s"
+            tag={<PfTag model={model} field="engageTimeS" />}
+            mono
+          />
+          <Row
+            label="Single-shot Pk"
+            value={model.effector.pk ?? DEFAULT_PK[model.effector.effectorType]}
+            unit={model.effector.pk == null ? 'type PF' : undefined}
+            tag={<PfTag model={model} field="pk" absent={model.effector.pk == null} />}
+            mono
+          />
+          <Row
+            label="Magazine"
+            value={model.effector.magazineSize ?? 'unlimited'}
+            tag={
+              <PfTag
+                model={model}
+                field="magazineSize"
+                absent={model.effector.magazineSize == null}
+              />
+            }
+            mono
+          />
+          {model.effector.flyoutSpeedMps != null &&
+            Number.isFinite(model.effector.flyoutSpeedMps) &&
+            model.effector.flyoutSpeedMps > 0 && (
+              <Row
+                label="Flyout speed"
+                value={`${model.effector.flyoutSpeedMps} m/s`}
+                title="Average interceptor or round speed to the target. The engine adds the time of flight to the engagement time."
+                tag={<PfTag model={model} field="flyoutSpeedMps" />}
+                mono
+              />
+            )}
           {(model.effector.sectorDeg ?? 360) < 360 && (
-            <Row label="Azimuth coverage" value={`${model.effector.sectorDeg}°`} mono />
+            <Row
+              label="Azimuth coverage"
+              value={`${model.effector.sectorDeg}°`}
+              tag={<PfTag model={model} field="sectorDeg" />}
+              mono
+            />
           )}
           {model.effector.maxAltitudeFt != null && model.effector.maxAltitudeFt > 0 && (
             <Row
               label="Altitude ceiling"
               value={`${model.effector.maxAltitudeFt.toLocaleString()} ft`}
               title="The geometry gate reads this ceiling. A threat above it has no engagement window."
+              tag={<PfTag model={model} field="maxAltitudeFt" />}
               mono
             />
           )}
@@ -936,7 +990,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
           <Row
             label="Radar cross section"
             value={`${rcsM2For(model.uas)} m²`}
-            unit={model.uas.rcsM2 == null ? 'group PF' : 'PF'}
+            tag={<PfTag model={model} field="rcsM2" absent={model.uas.rcsM2 == null} />}
             title="Planning factor, not measured signature data. Sets each radar's detection range against this threat by the fourth-root law."
             mono
           />
@@ -950,14 +1004,14 @@ function EntityInspector({ entity }: { entity: Entity }) {
           <Row
             label="Span"
             value={`${spanMFor(model.uas)} m`}
-            unit={model.uas.spanM == null ? 'group PF' : 'PF'}
+            tag={<PfTag model={model} field="spanM" absent={model.uas.spanM == null} />}
             title="Planning factor: wingspan or motor-to-motor diagonal. Sets each EO/IR sensor's range against this threat linearly (Johnson criteria)."
             mono
           />
           <Row
             label="Acoustic level"
             value={`${acousticDbFor(model.uas)} dB`}
-            unit={model.uas.acousticDb == null ? 'group PF' : 'PF'}
+            tag={<PfTag model={model} field="acousticDb" absent={model.uas.acousticDb == null} />}
             title="Planning factor: broadband source level at 1 m. Sets each acoustic sensor's range by spreading plus absorption."
             mono
           />
@@ -965,9 +1019,32 @@ function EntityInspector({ entity }: { entity: Entity }) {
             label="IR signature"
             value={irSignatureFor(model.uas)}
             unit={model.uas.irSignature == null ? 'default' : undefined}
+            tag={
+              <PfTag model={model} field="irSignature" absent={model.uas.irSignature == null} />
+            }
             title="Thermal contrast class. Multiplies EO/IR range when the thermal channel carries."
           />
-          <Row label="Cruise speed" value={formatSpeed(model.uas.cruiseSpeedMps, units)} mono />
+          <Row
+            label="Cruise speed"
+            value={formatSpeed(model.uas.cruiseSpeedMps, units)}
+            tag={<PfTag model={model} field="cruiseSpeedMps" />}
+            mono
+          />
+          <Row
+            label="Kinetic size factor"
+            value={SIZE_PENALTY[model.uas.group]}
+            tag={<PfTag model={model} field="sizePenalty" absent />}
+            title="Planning factor on every kinetic per-shot Pk against this group."
+            mono
+          />
+          {model.uas.airframe === 'fpv' && (
+            <Row
+              label="Evasion factor"
+              value={EVASION_PENALTY}
+              tag={<PfTag model={model} field="evasionPenalty" absent />}
+              mono
+            />
+          )}
           <Row label="Navigation" value={model.uas.navMode} />
         </Section>
       )}

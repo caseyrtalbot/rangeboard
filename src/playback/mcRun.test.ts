@@ -150,7 +150,27 @@ interface Built {
   effId: string
 }
 
-function build(pk: number, from: Vec2 = { x: -1210, y: 0 }): Built {
+/**
+ * Defended asset at the path end with a 200 m boundary. With it, a ship the
+ * one salvo misses arrives, so the end-of-run leaker count is Bernoulli(1 - Pk)
+ * and the stopping rule has a variance to work on.
+ */
+function asset(pos: Vec2): Entity {
+  seq += 1
+  return {
+    id: `asset-${seq}`,
+    name: `asset-${seq}`,
+    kind: 'asset',
+    specId: null,
+    pos,
+    headingDeg: 0,
+    color: null,
+    notes: '',
+    defendedRadiusM: 200,
+  }
+}
+
+function build(pk: number, from: Vec2 = { x: -1210, y: 0 }, withAsset = false): Built {
   const scenario = emptyScenario()
   scenario.roe = 'free'
   const eff = interceptor(pk)
@@ -159,6 +179,7 @@ function build(pk: number, from: Vec2 = { x: -1210, y: 0 }): Built {
   const effector = ent('effector', eff.id, { x: 0, y: 0 })
   const uas = ent('uas', TARGET.id, from)
   scenario.entities = [sensor, effector, uas]
+  if (withAsset) scenario.entities.push(asset({ x: from.x + 4210, y: from.y }))
   scenario.connections = [link(sensor.id, effector.id)]
   scenario.paths = [flight(uas.id, [from, { x: from.x + 4210, y: from.y }])]
   return { scenario, uasId: uas.id, effId: effector.id }
@@ -240,6 +261,35 @@ describe('runReplicates', () => {
     expect(summary.perThreat[uasId].killed.p90).toBe(1)
     expect(summary.perEffector[effId].salvos.mean).toBe(1)
     expect(summary.perEffector[effId].kills.mean).toBe(kills)
+    // Bernoulli(0.5): sd near 0.5, se = sd / sqrt(200) near 0.035, and the
+    // 95 percent t-interval on the mean is symmetric with half-width near 0.07.
+    const killed = summary.perThreat[uasId].killed
+    expect(Math.abs(killed.sd - 0.5)).toBeLessThan(0.05)
+    expect(killed.se).toBeCloseTo(killed.sd / Math.sqrt(200), 12)
+    expect(killed.conf).toBe(0.95)
+    expect(killed.hi - killed.mean).toBeCloseTo(killed.mean - killed.lo, 12)
+    expect(Math.abs((killed.hi - killed.lo) / 2 - 0.07)).toBeLessThan(0.01)
+    expect(killed.total).toBe(200)
+    expect(killed.defined).toEqual({ p: 1, lo: expect.any(Number), hi: 1 })
+    expect(summary.stopped).toEqual({ rule: 'replicates', at: 200 })
+  })
+
+  it('one replicate gives a Stat with lo = hi = mean and se 0', () => {
+    const { scenario, uasId, effId } = build(1 / (1 - FALLOFF_AT_MAX))
+    scenario.replicates = 1
+    const summary = runReplicates(scenario)
+    for (const stat of [summary.perThreat[uasId].killed, summary.perEffector[effId].salvos]) {
+      expect(stat.n).toBe(1)
+      expect(stat.total).toBe(1)
+      expect(stat.mean).toBe(1)
+      expect(stat.lo).toBe(1)
+      expect(stat.hi).toBe(1)
+      expect(stat.sd).toBe(0)
+      expect(stat.se).toBe(0)
+      expect(stat.p10).toBe(1)
+      expect(stat.p975).toBe(1)
+      expect(stat.defined.p).toBe(1)
+    }
   })
 
   it('each replicate keeps the raid partition', () => {
@@ -300,13 +350,74 @@ describe('runReplicates', () => {
     const summary = runReplicates(scenario)
     const stat = summary.perThreat[uasId].firstDetectS
     expect(stat.n).toBe(0)
-    for (const v of [stat.mean, stat.p10, stat.p90, stat.p025, stat.p975]) {
+    expect(stat.total).toBe(10)
+    const numeric = [stat.mean, stat.sd, stat.se, stat.lo, stat.hi]
+    for (const v of [...numeric, stat.p10, stat.p90, stat.p025, stat.p975]) {
       expect(Number.isNaN(v)).toBe(true)
     }
+    // wilson(0, 10): p 0, lo 0, hi = z^2 / (n + z^2) = 3.8416 / 13.8416.
+    expect(stat.defined.p).toBe(0)
+    expect(stat.defined.lo).toBe(0)
+    expect(stat.defined.hi).toBeCloseTo(3.8416 / 13.8416, 6)
     expect(summary.firstDetectS.n).toBe(0)
     expect(Number.isNaN(summary.firstDetectS.mean)).toBe(true)
     expect(last(summary.detected.mean)).toBe(0)
     expect(last(summary.tracked.mean)).toBe(0)
     expect(summary.perThreat[uasId].killed.mean).toBe(0)
+  })
+
+  describe('stopping rule', () => {
+    // End-of-run leakers with one Pk 0.5 salvo and an asset: Bernoulli(0.5),
+    // sd about 0.5, so the 95 percent half-width is about 0.98 / sqrt(n)
+    // (t about 1.98 at n near 100). The rule checks at 30, 40, 50, ...; a
+    // target of 0.1156 is crossed near n 75 (0.98 / sqrt(75) = 0.113), so the
+    // loop stops at 70 or 80 with the sample sd where it lands; 3 SE on p-hat
+    // at n 70 moves the sd by under 7 percent, which keeps the stop in 50 to 110.
+    const TARGET_H = 0.1156
+
+    it('stops before the cap once the leaker half-width is under the target', () => {
+      const { scenario, uasId } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 1000
+      scenario.targetHalfWidth = TARGET_H
+      const calls: Array<[number, number]> = []
+      const summary = runReplicates(scenario, (done, total) => calls.push([done, total]))
+      expect(summary.stopped.rule).toBe('halfWidth')
+      const at = summary.stopped.at
+      expect(at % 10).toBe(0)
+      expect(at).toBeGreaterThanOrEqual(50)
+      expect(at).toBeLessThanOrEqual(110)
+      expect(summary.replicates).toBe(at)
+      const leaked = summary.perThreat[uasId].leaked
+      expect(leaked.n).toBe(at)
+      expect(leaked.total).toBe(at)
+      expect((leaked.hi - leaked.lo) / 2).toBeLessThan(TARGET_H)
+      expect(Math.abs(leaked.mean - 0.5)).toBeLessThan(3 * 0.5 / Math.sqrt(at))
+      expect(last(summary.leakers.mean)).toBe(leaked.mean)
+      expect(summary.kills.mean).toHaveLength(sampleCount(scenario))
+      // Progress keeps the configured total and ends at the stop.
+      expect(calls[calls.length - 1]).toEqual([at, 1000])
+      expect(calls.every(([, total]) => total === 1000)).toBe(true)
+    })
+
+    it('never stops before 30: a loose target stops at exactly 30', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 1000
+      scenario.targetHalfWidth = 10
+      const summary = runReplicates(scenario)
+      expect(summary.stopped).toEqual({ rule: 'halfWidth', at: 30 })
+      expect(summary.replicates).toBe(30)
+      expect(summary.leakers.mean).toHaveLength(sampleCount(scenario))
+    })
+
+    it('runs every replicate under a null target or one the loop never reaches', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 40
+      const all = runReplicates(scenario)
+      expect(all.stopped).toEqual({ rule: 'replicates', at: 40 })
+      scenario.targetHalfWidth = 0.001
+      const tight = runReplicates(scenario)
+      expect(tight.stopped).toEqual({ rule: 'replicates', at: 40 })
+      expect(tight.replicates).toBe(40)
+    })
   })
 })

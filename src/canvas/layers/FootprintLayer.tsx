@@ -33,7 +33,6 @@ import {
   EFFECTOR_RING_COLOR,
   effectorRingStyle,
   envelopeBandM,
-  kineticPkPenalty,
   PD_CONTOUR_HIGH,
   PD_HIGH_DASH,
   releaseRangeM,
@@ -380,9 +379,13 @@ function buildRings(scenario: Scenario, ui: UiState, selectedUasId: string | nul
       // doctrinal ring at all.
       if (target && doctrinalOn && doctrine.enabled) {
         const basePk = spec.pk ?? DEFAULT_PK[spec.effectorType]
-        const penalty = kineticPkPenalty(target)
         commitPk = commitPkFor(spec, doctrine)
-        const commitSlantM = commitRangeM({ basePk, penalty, commitPk, maxRangeM: spec.maxRangeM })
+        const commitSlantM = commitRangeM({
+          basePk,
+          uas: target,
+          commitPk,
+          maxRangeM: spec.maxRangeM,
+        })
         const releaseSlantM = releaseRangeM(doctrine, spec.maxRangeM, commitSlantM)
         commitM = commitSlantM == null ? null : project(commitSlantM)
         releaseM = releaseSlantM == null ? null : project(releaseSlantM)

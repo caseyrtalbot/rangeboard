@@ -327,7 +327,12 @@ describe('sensorSeries', () => {
     expect(obs.pdSeries!.length).toBeGreaterThan(10)
     expect(obs.firstDetectS).toBeGreaterThan(0)
     const pd = sensorSeries(scenario, sensorId).find((s) => s.id === `pd.${uasId}`)!
-    const offset = Math.round(obs.firstDetectS / DT)
+    // pdSeries[0] sits at pdSeriesStartS, the first scan taken (Giraffe
+    // states updateRateS 1: phase 0 puts it at the sweep start, before
+    // first detection), so the grid offset reads that field.
+    expect(obs.pdSeriesStartS).toBe(0)
+    expect(obs.pdSeriesStartS!).toBeLessThan(obs.firstDetectS)
+    const offset = Math.round(obs.pdSeriesStartS! / DT)
     for (let i = 0; i < offset; i += 1) expect(pd.values[i]).toBeNaN()
     for (const k of [0, 5, obs.pdSeries!.length - 1]) {
       expect(pd.values[offset + k]).toBe(obs.pdSeries![k])
@@ -679,7 +684,11 @@ describe('sensorSeries Pd per track', () => {
 })
 
 describe('withBands', () => {
-  const stat: Stat = { mean: 1, p10: 0, p90: 2, p025: 0, p975: 2, n: 3 }
+  const stat: Stat = {
+    mean: 1, sd: 1, se: 0.577, lo: 0, hi: 2, conf: 0.95,
+    p10: 0, p90: 2, p025: 0, p975: 2, n: 3, total: 3,
+    defined: { p: 1, lo: 0.44, hi: 1 },
+  }
   function band(n: number, base: number): BandSeries {
     const fill = (v: number) => new Array<number>(n).fill(v)
     return {
@@ -694,6 +703,7 @@ describe('withBands', () => {
     return {
       seed: 1,
       replicates: 3,
+      stopped: { rule: 'replicates', at: 3 },
       durationS: (n - 1) * DT,
       kills: band(n, 10),
       leakers: band(n, 20),

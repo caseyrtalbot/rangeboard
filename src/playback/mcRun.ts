@@ -14,22 +14,42 @@ import { heldOnGrid, residualOnGrid, sampleCount } from '../analysis/series'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
+import { meanInterval, quantile, wilson } from '../te/calc/stats'
 import { resolveEngagements } from './attrition'
 import { monteCarloPolicy } from './policy'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats, DT } from './sim'
 
-/** Summary statistics over the finite samples of one quantity. */
+/**
+ * Summary statistics over the finite samples of one quantity. Every numeric
+ * field is NaN when n is 0; `n`, `total` and `defined` always read.
+ */
 export interface Stat {
-  /** Over the finite samples. NaN when n is 0. */
   mean: number
+  sd: number
+  /** Standard error of the mean, sd / sqrt(n); 0 with one sample. */
+  se: number
+  /** t-interval on the mean at conf (meanInterval from src/te/calc/stats.ts). */
+  lo: number
+  hi: number
+  conf: number
   p10: number
   p90: number
   p025: number
   p975: number
-  /** Count of finite samples. */
+  /** Finite samples, and replicates run. */
   n: number
+  total: number
+  /** The defined fraction n / total with its Wilson interval (wilson from stats.ts). */
+  defined: { p: number; lo: number; hi: number }
 }
+
+/** Confidence level of every Stat interval. */
+const STAT_CONF = 0.95
+
+/** First replicate count the stopping rule checks, then every STOP_EVERY after it. */
+const STOP_FIRST = 30
+const STOP_EVERY = 10
 
 /** Per DT step from t = 0 to scenarioDurationS inclusive (series.ts sampleCount). */
 export interface BandSeries {
@@ -83,6 +103,8 @@ export interface McSummary {
   perEffector: Record<string, McEffectorSummary>
   /** Wall time in the worker, ms; 0 when run outside the worker. */
   elapsedMs: number
+  /** Why the loop ended: every replicate, or the half-width rule at replicate `at`. */
+  stopped: { rule: 'replicates' | 'halfWidth'; at: number }
 }
 
 /** One run request to the worker: plain JSON, never a store reference. */
@@ -98,36 +120,51 @@ export type McWorkerMessage =
   | { type: 'done'; runId: string; summary: McSummary }
   | { type: 'error'; runId: string; message: string }
 
-/**
- * Quantile with linear interpolation between order statistics (type 7), on
- * an ascending array. The formula of src/te/calc/stats.ts `quantile`; copied
- * because src/te/ is a separate workspace and out of this slice's imports.
- */
-function quantileSorted(sorted: number[], q: number): number {
-  const n = sorted.length
-  if (n === 0) return NaN
-  const pos = Math.min(Math.max(q, 0), 1) * (n - 1)
-  const base = Math.floor(pos)
-  const frac = pos - base
-  if (base + 1 >= n) return sorted[n - 1]
-  return sorted[base] + frac * (sorted[base + 1] - sorted[base])
+/** The defined fraction with its Wilson interval; p 0 and the full unit interval with no run. */
+function definedOf(n: number, total: number): Stat['defined'] {
+  if (total === 0) return { p: 0, lo: 0, hi: 1 }
+  const w = wilson(n, total)
+  return { p: w.p, lo: w.lo, hi: w.hi }
 }
 
-/** Stat over the finite entries of `samples`; all NaN with n 0. */
+/**
+ * Stat over the finite entries of `samples`; `total` is the sample count
+ * before the finite filter. Sorted once here; `quantile` sorts its input
+ * again, and that second sort of an ascending array is accepted.
+ */
 function statOf(samples: number[]): Stat {
+  const total = samples.length
   const sorted = samples.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
   const n = sorted.length
-  if (n === 0) return { mean: NaN, p10: NaN, p90: NaN, p025: NaN, p975: NaN, n: 0 }
-  let sum = 0
-  for (const v of sorted) sum += v
-  return {
-    mean: sum / n,
-    p10: quantileSorted(sorted, 0.1),
-    p90: quantileSorted(sorted, 0.9),
-    p025: quantileSorted(sorted, 0.025),
-    p975: quantileSorted(sorted, 0.975),
-    n,
+  const defined = definedOf(n, total)
+  if (n === 0) {
+    return {
+      mean: NaN, sd: NaN, se: NaN, lo: NaN, hi: NaN, conf: STAT_CONF,
+      p10: NaN, p90: NaN, p025: NaN, p975: NaN, n: 0, total, defined,
+    }
   }
+  const { mean, sd, lo, hi } = meanInterval(sorted, STAT_CONF)
+  return {
+    mean,
+    sd,
+    se: sd / Math.sqrt(n),
+    lo,
+    hi,
+    conf: STAT_CONF,
+    p10: quantile(sorted, 0.1),
+    p90: quantile(sorted, 0.9),
+    p025: quantile(sorted, 0.025),
+    p975: quantile(sorted, 0.975),
+    n,
+    total,
+    defined,
+  }
+}
+
+/** Half-width of the 95 percent t-interval on the mean of `values`. */
+function halfWidthOf(values: number[]): number {
+  const { lo, hi } = meanInterval(values, STAT_CONF)
+  return (hi - lo) / 2
 }
 
 /** The same Stat per step over `rows` (one row per replicate, one entry per step). */
@@ -181,14 +218,18 @@ function minOf(acc: number, v: number): number {
 
 /**
  * Run `runSettings(scenario).replicates` replicates from the scenario's seed
- * and summarize them. `onProgress` fires after every 10th replicate and
- * after the last. `elapsedMs` is 0 here; the worker fills it.
+ * and summarize them. With `targetHalfWidth` set, the loop checks the 95
+ * percent half-width of the end-of-run leaker mean after 30 replicates and
+ * every 10 after that, and stops once it is under the target; `replicates`
+ * on the summary is then the count run. `onProgress` fires after every 10th
+ * replicate and after the last, with the configured count as `total`.
+ * `elapsedMs` is 0 here; the worker fills it.
  */
 export function runReplicates(
   scenario: Scenario,
   onProgress?: (done: number, total: number) => void,
 ): McSummary {
-  const { seed, replicates } = runSettings(scenario)
+  const { seed, replicates, targetHalfWidth } = runSettings(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const n = sampleCount(scenario)
   const enabledSensorIds = new Set(
@@ -216,6 +257,7 @@ export function runReplicates(
     else map.set(id, [v])
   }
 
+  let stopped: McSummary['stopped'] = { rule: 'replicates', at: replicates }
   for (let i = 0; i < replicates; i += 1) {
     const policy = monteCarloPolicy(mulberry32(seed + i), thresholds)
     const assessments = assessAllThreats(scenario, policy)
@@ -269,6 +311,15 @@ export function runReplicates(
 
     const done = i + 1
     if (done % 10 === 0 || done === replicates) onProgress?.(done, replicates)
+    if (
+      targetHalfWidth != null &&
+      done >= STOP_FIRST &&
+      (done - STOP_FIRST) % STOP_EVERY === 0 &&
+      halfWidthOf(leakers.map((row) => row[n - 1])) < targetHalfWidth
+    ) {
+      stopped = { rule: 'halfWidth', at: done }
+      break
+    }
   }
 
   const perThreat: Record<string, McThreatSummary> = {}
@@ -292,7 +343,7 @@ export function runReplicates(
 
   return {
     seed,
-    replicates,
+    replicates: stopped.at,
     // The duration is an integer number of seconds and DT divides one, so
     // the grid recovers it exactly without a store import.
     durationS: (n - 1) * DT,
@@ -306,5 +357,6 @@ export function runReplicates(
     perThreat,
     perEffector,
     elapsedMs: 0,
+    stopped,
   }
 }

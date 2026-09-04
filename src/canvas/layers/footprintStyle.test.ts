@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_FIRE_DOCTRINE } from '../../model/types'
 import type { UasSpec } from '../../model/types'
-import { distanceFalloff, falloffRangeM } from '../../playback/attrition'
+import { distanceFalloff, falloffRangeM, kineticPk } from '../../playback/attrition'
 import { RING_KEYS } from '../../state/store'
 import {
   COMMIT_DASH,
@@ -15,7 +15,6 @@ import {
   commitRangeM,
   effectorRingStyle,
   envelopeBandM,
-  kineticPkPenalty,
   releaseRangeM,
   ringKindFor,
   sensorRingStyle,
@@ -215,29 +214,57 @@ describe('effectorRingStyle', () => {
   })
 })
 
-describe('kineticPkPenalty', () => {
-  it('multiplies the size and evasion terms attrition applies', () => {
-    expect(kineticPkPenalty({ group: 3, airframe: 'quad' } as UasSpec)).toBeCloseTo(0.9, 12)
-    expect(kineticPkPenalty({ group: 1, airframe: 'fpv' } as UasSpec)).toBeCloseTo(0.49, 12)
-    expect(kineticPkPenalty(undefined)).toBe(1)
+/** Group 3 quad: size 0.9, no evasion. */
+const QUAD_G3 = { group: 3, airframe: 'quad' } as UasSpec
+/** Group 1 fpv: size 0.7 x evasion 0.7 = 0.49. */
+const FPV_G1 = { group: 1, airframe: 'fpv' } as UasSpec
+
+describe('kineticPk', () => {
+  it('is the size and evasion product at the launcher, 1 with no target', () => {
+    // basePk 1 at slant 0: falloff 1, so the value is the penalty product.
+    expect(kineticPk(1, 10000, QUAD_G3, 0)).toBeCloseTo(0.9, 12)
+    expect(kineticPk(1, 10000, FPV_G1, 0)).toBeCloseTo(0.49, 12)
+    expect(kineticPk(1, 10000, undefined, 0)).toBe(1)
+    expect(kineticPk(1, 10000, { group: 4, airframe: 'fixed-wing' } as UasSpec, 0)).toBe(1)
+  })
+
+  it('applies the falloff at the slant and clamps to [0, 1]', () => {
+    // 0.8 * (1 - 0.3 * 5000/10000) * 0.9 = 0.8 * 0.85 * 0.9 = 0.612.
+    expect(kineticPk(0.8, 10000, QUAD_G3, 5000)).toBeCloseTo(0.612, 12)
+    expect(kineticPk(0.8, 10000, QUAD_G3, 10001)).toBe(0)
+    expect(kineticPk(2, 10000, undefined, 0)).toBe(1)
   })
 })
 
 describe('commitRangeM', () => {
   it('is the slant range where the falloff brings Pk down to commitPk', () => {
-    const r = commitRangeM({ basePk: 0.8, penalty: 0.9, commitPk: 0.6, maxRangeM: 10000 })
+    // Peak 0.8 * 0.9 = 0.72; falloff must be 0.6 / 0.72; r = 10000 * (1 - 0.6/0.72) / 0.3.
+    const r = commitRangeM({ basePk: 0.8, uas: QUAD_G3, commitPk: 0.6, maxRangeM: 10000 })
     expect(r).toBeCloseTo((10000 * (1 - 0.6 / 0.72)) / 0.3, 6)
     expect(r).toBeCloseTo(5555.56, 1)
   })
 
+  it('is the inverse of kineticPk at the commit Pk', () => {
+    for (const [basePk, uas, commitPk] of [
+      [0.8, QUAD_G3, 0.6],
+      [0.85, FPV_G1, 0.35],
+      [0.7, undefined, 0.5],
+    ] as Array<[number, UasSpec | undefined, number]>) {
+      const r = commitRangeM({ basePk, uas, commitPk, maxRangeM: 8000 })!
+      expect(r).not.toBeNull()
+      expect(kineticPk(basePk, 8000, uas, r)).toBeCloseTo(commitPk, 12)
+    }
+  })
+
   it('is null when the effector never commits, or has no envelope', () => {
-    expect(commitRangeM({ basePk: 0.8, penalty: 0.49, commitPk: 0.6, maxRangeM: 10000 })).toBeNull()
-    expect(commitRangeM({ basePk: 0.8, penalty: 0, commitPk: 0.6, maxRangeM: 10000 })).toBeNull()
-    expect(commitRangeM({ basePk: 0.8, penalty: 1, commitPk: 0.6, maxRangeM: 0 })).toBeNull()
+    // 0.8 * 0.49 = 0.392 < 0.6: never commits.
+    expect(commitRangeM({ basePk: 0.8, uas: FPV_G1, commitPk: 0.6, maxRangeM: 10000 })).toBeNull()
+    expect(commitRangeM({ basePk: 0, uas: QUAD_G3, commitPk: 0.6, maxRangeM: 10000 })).toBeNull()
+    expect(commitRangeM({ basePk: 0.8, uas: undefined, commitPk: 0.6, maxRangeM: 0 })).toBeNull()
   })
 
   it('is the max range when the effector commits everywhere', () => {
-    expect(commitRangeM({ basePk: 1, penalty: 1, commitPk: 0.5, maxRangeM: 10000 })).toBe(10000)
+    expect(commitRangeM({ basePk: 1, uas: undefined, commitPk: 0.5, maxRangeM: 10000 })).toBe(10000)
   })
 })
 

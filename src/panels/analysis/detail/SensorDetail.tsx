@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import {
-  scanRateSFor,
+  scanPeriodS,
   trackDropMissesFor,
   trackInitMFor,
   trackInitNFor,
@@ -13,6 +13,7 @@ import {
   refRcsM2For,
   sensorGeometryGate,
   sensorHoldGate,
+  targetScaled,
 } from '../../../analysis/sensorEnv'
 import {
   scanLoadSeries,
@@ -127,7 +128,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   }
 
   const cal = radarCalibration(spec)
-  const scanRate = scanRateSFor(spec)
+  const scanRate = scanPeriodS(spec, targetScaled(spec))
   const scan = scanRate != null
   const initM = trackInitMFor(spec)
   const initN = trackInitNFor(spec)
@@ -153,7 +154,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
           label: 'Scan period',
           value: `${scanRate}`,
           unit: ' s',
-          tag: <PfTag model={model} field="updateRateS" />,
+          tag: <PfTag model={model} field="updateRateS" absent={spec.updateRateS == null} />,
         }
       : {
           label: 'Scan period',

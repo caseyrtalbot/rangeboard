@@ -77,7 +77,7 @@ function regularizedIncompleteBeta(x: number, a: number, b: number): number {
 }
 
 /** Beta distribution quantile by bisection on the regularized incomplete beta. */
-function betaQuantile(p: number, a: number, b: number): number {
+export function betaQuantile(p: number, a: number, b: number): number {
   if (p <= 0) return 0
   if (p >= 1) return 1
   let lo = 0

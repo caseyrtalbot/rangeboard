@@ -335,9 +335,12 @@ describe('CLAIM 1 refutation (b) - no kill before gate + engageTimeS', () => {
     })
     const { scenario } = crossing([model])
     scenario.roe = 'free'
-    // Shrink the radar to 400 m (environment apply is off, so exact).
+    // Shrink the radar to 400 m (environment apply is off, so exact). A
+    // planning basis keeps the per-step range gate; the Pd-modeled surveillance
+    // radar would scan at SCAN_S 2 s and first detect at the 42 s scan.
     const radarSpec = scenario.library.find((m) => m.sensor && m.id.startsWith('vr-radar'))!
     radarSpec.sensor!.detectRangeM = 400
+    radarSpec.sensor!.rangeBasis = 'planning'
 
     const a = assessAllThreats(scenario)[0]
     expect(a.firstDetectS).toBeCloseTo(40.5, 9)
