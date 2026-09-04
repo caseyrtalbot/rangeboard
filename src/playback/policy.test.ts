@@ -4,7 +4,8 @@ import type { Entity, EntityKind, Scenario, Vec2 } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, newId } from '../model/types'
 import { mulberry32 } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
-import { assessAllThreats } from './sim'
+import type { ScanSteering } from './sim'
+import { assessAllThreats, sweepSensorHits } from './sim'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy, monteCarloPolicy } from './policy'
 
@@ -151,6 +152,18 @@ describe('draw policy engine regression', () => {
     const report = resolveEngagements(s)
     expect(report.events.length).toBeGreaterThan(0)
     expect(JSON.stringify(report)).toBe(JSON.stringify(resolveEngagements(s, undefined, policy)))
+  })
+
+  it('a bare sweep takes every step as a scan step; steered off a scan, no radar hit', () => {
+    const s = laydown()
+    const sensors = s.entities.filter((e) => e.kind === 'sensor')
+    const mavic = s.library.find((m) => m.id === 'lib-mavic3')!
+    const members = [{ x: 0, y: -1500 }]
+    const at = (scan?: ScanSteering) =>
+      sweepSensorHits(s, sensors, undefined, mavic.uas, 300, members, undefined, 'u', 0.5, scan)
+    expect(at().map((h) => h.hit.sensorType)).toEqual(['radar'])
+    const off: ScanSteering = { scanStep: () => false, holding: () => false }
+    expect(at(off)).toHaveLength(0)
   })
 
   it('the Monte Carlo policy gives discrete outcomes and keeps the raid partition', () => {

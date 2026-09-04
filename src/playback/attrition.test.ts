@@ -1103,10 +1103,11 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // assigned at t = 5. Three fixed-point passes from a 0 flight time:
     //   pass 0: tEffect 15,   x 4400, flight 4400/200 = 22
     //   pass 1: tEffect 37,   x 3960, flight 19.8
-    //   pass 2: tEffect 34.8, x 4004 (slant used for the falloff)
-    // so tEffectS = 5 + 10 + 19.8 = 34.8, within one DT of t + E + 20 (the
-    // exact fixed point is 4400 / (200 + 20) = 20 s at 4000 m). Pk at the
-    // intercept: 0.5 * (1 - 0.3 * 4004/4600).
+    //   pass 2: tEffect 34.8, x 4004, flight 20.02
+    // so tEffectS = 5 + 10 + 20.02 = 35.02 and the intercept is sampled
+    // there, x 3999.6 (the slant used for the falloff), within one DT of
+    // t + E + 20 (the exact fixed point is 4400 / (200 + 20) = 20 s at
+    // 4000 m). Pk at the intercept: 0.5 * (1 - 0.3 * 3999.6/4600).
     const scenario = legacyScenario()
     const eff = interceptor({
       pk: 0.5,
@@ -1132,13 +1133,13 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     expect(r.events).toHaveLength(1)
     const ev = r.events[0]
     expect(ev.tS).toBeCloseTo(5, 9)
-    expect(ev.tEffectS).toBeCloseTo(34.8, 9)
+    expect(ev.tEffectS).toBeCloseTo(35.02, 9)
     expect(Math.abs(ev.tEffectS - (5 + 10 + 20))).toBeLessThan(0.5)
     // The intercept point is where posAtTime puts the target at tEffectS.
     const at = posAtTime(points, 20, 0, ev.tEffectS).pos
-    expect(at.x).toBeCloseTo(4004, 6)
+    expect(at.x).toBeCloseTo(3999.6, 6)
     expect(at.y).toBeCloseTo(0, 9)
-    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (4004 / 4600)), 9)
+    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (3999.6 / 4600)), 9)
     expect(r.threats[0].expectedKills).toBeCloseTo(ev.pk, 9)
   })
 

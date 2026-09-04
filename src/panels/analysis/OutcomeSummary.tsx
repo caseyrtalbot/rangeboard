@@ -12,10 +12,10 @@ import {
 import { SURVIVAL_LABELS } from './widgets/labels'
 import { countSub, timeStatSub } from './widgets/mc'
 
-/** The p10 to p90 sub of a band at its last step: the full-run replicate spread. */
-function lastStepSub(band: BandSeries): string | null {
+/** The half-width sub of a band at its last step: the end-of-run interval. */
+function lastStepSub(band: BandSeries, reps: number): string | null {
   const i = band.mean.length - 1
-  return i < 0 ? null : countSub(band.p10[i], band.p90[i])
+  return i < 0 ? null : countSub(band, i, reps)
 }
 
 function expectedCount(value: number): string {
@@ -103,7 +103,7 @@ export function OutcomeSummary({
           label="Defeat"
           value={`${defeatPct.toFixed(1)}%`}
           sub={
-            (mc && lastStepSub(mc.kills)) ??
+            (mc && lastStepSub(mc.kills, mc.replicates)) ??
             `${expectedCount(totals.expectedKills)} of ${raid} ships`
           }
           cls="good"
@@ -112,7 +112,10 @@ export function OutcomeSummary({
         <Metric
           label={SURVIVAL_LABELS.leakers}
           value={residual.value}
-          sub={(mc && totals.reportedLeakers != null && lastStepSub(mc.leakers)) || residual.sub}
+          sub={
+            (mc && totals.reportedLeakers != null && lastStepSub(mc.leakers, mc.replicates)) ||
+            residual.sub
+          }
           cls={residual.bad ? 'bad' : ''}
           title="Expected ship mass that reached a defended asset. Not measurable when the laydown places no asset."
         />

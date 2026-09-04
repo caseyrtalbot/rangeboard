@@ -4,7 +4,8 @@
  * the run finished and it belongs to the run id on the playhead; a stale,
  * running or idle slice reads as no summary.
  */
-import type { McSummary, Stat } from '../../../playback/mcRun'
+import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
+import { STAT_CONF } from '../../../playback/mcRun'
 import { DT } from '../../../playback/sim'
 import type { McState } from '../../../state/store'
 
@@ -18,9 +19,10 @@ export function formatCount(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1)
 }
 
-/** Sub line for a count band at one step: `p10 to p90 · 4 to 5`. */
-export function countSub(lo: number, hi: number): string {
-  return `p10 to p90 · ${formatCount(lo)} to ${formatCount(hi)}`
+/** Sub line for a count band at one step: `±0.4 (95%) · 100`, half-width then replicates. */
+export function countSub(band: BandSeries, i: number, n: number): string {
+  const h = (band.hi[i] - band.lo[i]) / 2
+  return `±${formatCount(h)} (${Math.round(STAT_CONF * 100)}%) · ${n}`
 }
 
 /** Half-width of a Stat interval in its unit: seconds `±12 s`, else `formatCount`. */
@@ -34,13 +36,13 @@ function halfWidthText(stat: Stat, unit: 'time' | 'count'): string {
  * Sub line for a Stat mean: `±12 s (95%) · 100` (half-width at the Stat's
  * confidence, then the finite sample count); null with no finite sample.
  */
-export function statSub(stat: Stat, unit: 'time' | 'count'): string | null {
+function statSub(stat: Stat, unit: 'time' | 'count'): string | null {
   if (stat.n === 0) return null
   return `${halfWidthText(stat, unit)} (${Math.round(stat.conf * 100)}%) · ${stat.n}`
 }
 
 /** `detected in n of total` when some replicate had no value; null when every one did. */
-export function definedSub(stat: Stat): string | null {
+function definedSub(stat: Stat): string | null {
   return stat.n < stat.total ? `detected in ${stat.n} of ${stat.total}` : null
 }
 

@@ -693,6 +693,8 @@ describe('withBands', () => {
     const fill = (v: number) => new Array<number>(n).fill(v)
     return {
       mean: fill(base),
+      lo: fill(base - 0.5),
+      hi: fill(base + 0.5),
       p10: fill(base - 1),
       p90: fill(base + 1),
       p025: fill(base - 2),

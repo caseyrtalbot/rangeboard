@@ -1300,7 +1300,7 @@ describe('monte carlo slice', () => {
     p10: 0, p90: 0, p025: 0, p975: 0, n: 1, total: 1,
     defined: { p: 1, lo: 0.2, hi: 1 },
   }
-  const ZERO_BAND = { mean: [0], p10: [0], p90: [0], p025: [0], p975: [0] }
+  const ZERO_BAND = { mean: [0], lo: [0], hi: [0], p10: [0], p90: [0], p025: [0], p975: [0] }
 
   function fakeSummary(replicates = 4): McSummary {
     return {
@@ -1468,6 +1468,20 @@ describe('resetModelToSeed', () => {
     const m = model('lib-giraffe1x')
     expect(m?.name).toBe('Giraffe 1X 3D radar (Saab)')
     expect(m?.provenance?.map((r) => r.field)).toContain('updateRateS')
+  })
+
+  it('updateModel drops the row of a spec field it changes and keeps the rest', () => {
+    const before = model('lib-coyote')!
+    expect(before.provenance?.map((r) => r.field)).toContain('maxRangeM')
+    useStore.getState().updateModel('lib-coyote', {
+      effector: { ...before.effector!, maxRangeM: 9000 },
+    })
+    const fields = model('lib-coyote')?.provenance?.map((r) => r.field) ?? []
+    expect(fields).not.toContain('maxRangeM')
+    expect(fields).toContain('flyoutSpeedMps')
+    // A patch outside the spec keeps every row.
+    useStore.getState().updateModel('lib-coyote', { name: 'Edited' })
+    expect(model('lib-coyote')?.provenance?.map((r) => r.field)).toEqual(fields)
   })
 
   it('pushes no history entry when the model already equals the seed', () => {

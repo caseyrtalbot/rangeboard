@@ -255,6 +255,21 @@ describe('emissions and detection technology rules', () => {
     expect(hits.map((h) => h.sensorType).sort()).toEqual(['eo-ir', 'radar'])
   })
 
+  it('a radar that cues a camera at the same step keeps the first-detection credit', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-lstar', { x: 0, y: 0 }) // radar cue
+    const radarId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().addEntityFromModel('lib-hdcmr', { x: 0, y: 0 }) // cued EO/IR
+    useStore.getState().addEntityFromModel('lib-mavic3', { x: 1500, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: -1500, y: 0 })
+    useStore.getState().finishPath()
+    const a = assessThreat(useStore.getState().scenario, uasId)
+    expect(a.firstDetectS).toBe(0)
+    expect(a.firstDetectSensorId).toBe(radarId)
+  })
+
   it('a wide-area EO/IR search sensor holds without a cue and cues a narrow camera', () => {
     const st = useStore.getState()
     st.addEntityFromModel('lib-wisp', { x: 0, y: 0 }) // surveillance role, 4.8 km thermal

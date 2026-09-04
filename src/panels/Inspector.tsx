@@ -947,7 +947,10 @@ function EntityInspector({ entity }: { entity: Entity }) {
               <Row
                 label="Flyout speed"
                 value={`${model.effector.flyoutSpeedMps} m/s`}
-                title="Average interceptor or round speed to the target. The engine adds the time of flight to the engagement time."
+                title={
+                  'Average interceptor or round speed to the target. ' +
+                  'The engine adds the time of flight to the engagement time.'
+                }
                 tag={<PfTag model={model} field="flyoutSpeedMps" />}
                 mono
               />

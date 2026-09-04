@@ -224,7 +224,9 @@ describe('run export Monte Carlo basis', () => {
       p10: 1, p90: 1, p025: 1, p975: 1, n: 5, total: 5,
       defined: { p: 1, lo: 0.57, hi: 1 },
     }
-    const band = { mean: [0, 1], p10: [0, 1], p90: [0, 1], p025: [0, 1], p975: [0, 1] }
+    const band = {
+      mean: [0, 1], lo: [0, 1], hi: [0, 1], p10: [0, 1], p90: [0, 1], p025: [0, 1], p975: [0, 1],
+    }
     return {
       seed: 77,
       replicates: 5,

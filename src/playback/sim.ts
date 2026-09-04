@@ -1019,6 +1019,9 @@ export function assessThreat(
     // A coasting scan radar holds the track file with no measurement: held
     // for continuity (D16), invisible to stepTechs and the ladder.
     let coastHeld = false
+    // The first detecting sensor of this step in sweep order (search sensors,
+    // then cued EO/IR), credited after both passes.
+    let stepFirstId: string | null = null
     scanSteps.clear()
     scanHits.clear()
     for (const [sensorId, scan] of scanStates) if (scanDue(scan, t)) scanSteps.add(sensorId)
@@ -1037,9 +1040,13 @@ export function assessThreat(
       // A scan radar's hit is a scan result only at its scan step; a
       // threshold radar's hit between scans is dropped and the hold carries.
       if (scanStates.has(hit.sensorId)) {
-        if (scanSteps.has(hit.sensorId)) scanHits.set(hit.sensorId, hit)
+        if (scanSteps.has(hit.sensorId)) {
+          scanHits.set(hit.sensorId, hit)
+          if (stepFirstId == null) stepFirstId = hit.sensorId
+        }
         continue
       }
+      if (stepFirstId == null) stepFirstId = hit.sensorId
       stepTechs.add(hit.sensorType)
       detectingSensors.add(hit.sensorId)
       if (hit.resolved) anyResolved = true
@@ -1069,10 +1076,6 @@ export function assessThreat(
       const role = defaultSensorRole(spec)
       if (hit.classified && (role === 'fire-control' || role === 'classification')) {
         fcClassifiedNow = true
-      }
-      if (base.firstDetectS == null) {
-        base.firstDetectS = t
-        base.firstDetectSensorId = hit.sensorId
       }
     }
     // Scan pass. At a scan step the fresh hit is the scan result: detected,
@@ -1118,10 +1121,6 @@ export function assessThreat(
             }
             sensorObservations.set(sensorId, observation)
           }
-          if (base.firstDetectS == null) {
-            base.firstDetectS = t
-            base.firstDetectSensorId = sensorId
-          }
           scan.consecutiveMisses = 0
           scan.hold = 'detected'
           scan.classifiedCarry = hit.classified
@@ -1160,6 +1159,10 @@ export function assessThreat(
         extendIntervals(observation.intervals, t)
         extendIntervals(observation.coastIntervals, t)
       }
+    }
+    if (base.firstDetectS == null && stepFirstId != null) {
+      base.firstDetectS = t
+      base.firstDetectSensorId = stepFirstId
     }
     trackSamples.push({ tS: t, held: stepTechs.size > 0 || coastHeld })
     for (const tech of stepTechs) techsSeen.add(tech)

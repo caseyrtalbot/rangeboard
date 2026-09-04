@@ -44,8 +44,8 @@ export interface Stat {
   defined: { p: number; lo: number; hi: number }
 }
 
-/** Confidence level of every Stat interval. */
-const STAT_CONF = 0.95
+/** Confidence level of every Stat interval and band interval. */
+export const STAT_CONF = 0.95
 
 /** First replicate count the stopping rule checks, then every STOP_EVERY after it. */
 const STOP_FIRST = 30
@@ -54,6 +54,9 @@ const STOP_EVERY = 10
 /** Per DT step from t = 0 to scenarioDurationS inclusive (series.ts sampleCount). */
 export interface BandSeries {
   mean: number[]
+  /** t-interval on the mean at STAT_CONF, per step. */
+  lo: number[]
+  hi: number[]
   p10: number[]
   p90: number[]
   p025: number[]
@@ -169,12 +172,14 @@ function halfWidthOf(values: number[]): number {
 
 /** The same Stat per step over `rows` (one row per replicate, one entry per step). */
 function bandOf(rows: number[][], n: number): BandSeries {
-  const band: BandSeries = { mean: [], p10: [], p90: [], p025: [], p975: [] }
+  const band: BandSeries = { mean: [], lo: [], hi: [], p10: [], p90: [], p025: [], p975: [] }
   const column = new Array<number>(rows.length)
   for (let k = 0; k < n; k += 1) {
     for (let i = 0; i < rows.length; i += 1) column[i] = rows[i][k]
     const s = statOf(column)
     band.mean.push(s.mean)
+    band.lo.push(s.lo)
+    band.hi.push(s.hi)
     band.p10.push(s.p10)
     band.p90.push(s.p90)
     band.p025.push(s.p025)

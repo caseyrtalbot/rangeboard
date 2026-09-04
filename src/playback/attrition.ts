@@ -585,20 +585,20 @@ export function interceptAt(
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
 ): { pos: Vec2; slantM: number; tEffectS: number } {
   const dAltM = ts.altM - es.mountM
-  let tofS = 0
-  let tEffectS = tS + es.engageTimeS
-  let pos = es.entity.pos
-  let slantM = 0
-  for (let pass = 0; pass < 3; pass++) {
-    tEffectS = tS + es.engageTimeS + tofS
+  const sampleAt = (tEffectS: number) => {
     const members = membersAt(ts, tEffectS)
-    pos = members[Math.min(memberIdx, members.length - 1)]
-    slantM = slantRangeM(dist(es.entity.pos, pos), dAltM)
-    const next = timeOfFlightS(es.spec, slantM)
+    const pos = members[Math.min(memberIdx, members.length - 1)]
+    return { pos, slantM: slantRangeM(dist(es.entity.pos, pos), dAltM) }
+  }
+  let tofS = 0
+  for (let pass = 0; pass < 3; pass++) {
+    const next = timeOfFlightS(es.spec, sampleAt(tS + es.engageTimeS + tofS).slantM)
     if (next === tofS) break
     tofS = next
   }
-  return { pos, slantM, tEffectS }
+  // The geometry is sampled at the returned time, so the last update is kept.
+  const tEffectS = tS + es.engageTimeS + tofS
+  return { ...sampleAt(tEffectS), tEffectS }
 }
 
 /** A salvo in flight: assigned, magazine spent, effect not yet applied. */

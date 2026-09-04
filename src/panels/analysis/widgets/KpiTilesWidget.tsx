@@ -60,15 +60,15 @@ function timeTile(
     : { key, value: '—', sub: 'not yet' }
 }
 
-/** The replicate mean at the cursor step and its p10 to p90 sub. */
-function bandAt(band: BandSeries, t: number): { mean: number; sub: string } {
+/** The replicate mean at the cursor step and its half-width sub over `reps` replicates. */
+function bandAt(band: BandSeries, t: number, reps: number): { mean: number; sub: string } {
   const i = bandStep(t, band.mean.length)
-  return { mean: band.mean[i], sub: countSub(band.p10[i], band.p90[i]) }
+  return { mean: band.mean[i], sub: countSub(band, i, reps) }
 }
 
 /** A count tile over n: the replicate mean with its band sub. */
-function bandCountTile(key: KpiKey, band: BandSeries, t: number, n: number): Tile {
-  const at = bandAt(band, t)
+function bandCountTile(key: KpiKey, band: BandSeries, t: number, n: number, reps: number): Tile {
+  const at = bandAt(band, t, reps)
   return { key, value: <>{formatCount(at.mean)}<small>/{n}</small></>, sub: at.sub }
 }
 
@@ -143,17 +143,17 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
   const tile = (key: KpiKey): Tile => {
     switch (key) {
       case 'detect':
-        if (summary) return bandCountTile(key, summary.detected, t, n)
+        if (summary) return bandCountTile(key, summary.detected, t, n, summary.replicates)
         return { key, value: <>{k.detected}<small>/{n}</small></> }
       case 'trackNow':
-        if (summary) return bandCountTile(key, summary.tracked, t, n)
+        if (summary) return bandCountTile(key, summary.tracked, t, n, summary.replicates)
         return { key, value: <>{tracking}<small>/{n}</small></> }
       case 'idClass':
         return { key, value: <>{k.classified}<small>/{n}</small></> }
       case 'targetNow':
         return { key, value: <>{k.targetable}<small>/{n}</small></> }
       case 'engaged':
-        if (summary) return bandCountTile(key, summary.engaged, t, n)
+        if (summary) return bandCountTile(key, summary.engaged, t, n, summary.replicates)
         return { key, value: <>{k.engaged}<small>/{n}</small></> }
       case 'salvos':
         return {
@@ -168,7 +168,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         }
       case 'killEk': {
         if (!summary) return { key, value: k.expectedKills.toFixed(1) }
-        const at = bandAt(summary.kills, t)
+        const at = bandAt(summary.kills, t, summary.replicates)
         return { key, value: formatCount(at.mean), sub: at.sub }
       }
       case 'lateEk':
@@ -178,7 +178,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
           return { key, value: '—', sub: 'no defended asset' }
         }
         if (!summary) return { key, value: k.leakerShips.toFixed(1), cls: leakCls }
-        const at = bandAt(summary.leakers, t)
+        const at = bandAt(summary.leakers, t, summary.replicates)
         const cls = at.mean >= 1 ? 'bad' : at.mean > 0.05 ? 'warn' : ''
         return { key, value: formatCount(at.mean), sub: at.sub, cls }
       }

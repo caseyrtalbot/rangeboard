@@ -13,6 +13,7 @@ import type { RequirementGateReport } from '../analysis/requirements'
 import { buildRequirementGateReport } from '../analysis/requirements'
 import type { RunValidityAssessment } from '../analysis/runValidity'
 import { assessRunValidity } from '../analysis/runValidity'
+import { specFields } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { notifyRecovery, stashUnreadableSave } from './recovery'
@@ -32,12 +33,6 @@ function mergeSeeds<T extends { id: string }>(
   if (!Array.isArray(saved)) return seeds
   const have = new Set(saved.map((x) => x.id))
   return [...saved, ...seeds.filter((x) => !have.has(x.id) && !deleted.has(x.id))]
-}
-
-/** The capability object a provenance field indexes into, keyed by field name. */
-function specFields(model: SpecModel): Record<string, unknown> {
-  const spec = model.sensor ?? model.uas ?? model.effector
-  return (spec ?? {}) as unknown as Record<string, unknown>
 }
 
 /**

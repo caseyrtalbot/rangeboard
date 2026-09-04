@@ -231,6 +231,8 @@ describe('runReplicates', () => {
         expect(band.p90[k]).toBe(band.mean[k])
         expect(band.p025[k]).toBe(band.mean[k])
         expect(band.p975[k]).toBe(band.mean[k])
+        expect(band.lo[k]).toBe(band.mean[k])
+        expect(band.hi[k]).toBe(band.mean[k])
       }
     }
     const det = resolveEngagements(scenario)
@@ -327,6 +329,8 @@ describe('runReplicates', () => {
       expect(band.p90).toHaveLength(n)
       expect(band.p025).toHaveLength(n)
       expect(band.p975).toHaveLength(n)
+      expect(band.lo).toHaveLength(n)
+      expect(band.hi).toHaveLength(n)
     }
     const ids = s.entities.filter((e) => e.kind === 'uas').map((e) => e.id)
     expect(Object.keys(summary.perThreat).sort()).toEqual([...ids].sort())

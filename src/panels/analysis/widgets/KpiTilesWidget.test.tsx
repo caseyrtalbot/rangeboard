@@ -32,7 +32,10 @@ function threatScenario(): Scenario {
 /** A flat band on the scenario grid: mean, p10 and p90 constant over every step. */
 function band(n: number, mean: number, p10: number, p90: number): BandSeries {
   const fill = (v: number) => new Array<number>(n).fill(v)
-  return { mean: fill(mean), p10: fill(p10), p90: fill(p90), p025: fill(p10), p975: fill(p90) }
+  return {
+    mean: fill(mean), lo: fill(p10), hi: fill(p90),
+    p10: fill(p10), p90: fill(p90), p025: fill(p10), p975: fill(p90),
+  }
 }
 
 /**
@@ -134,14 +137,15 @@ describe('KpiTilesWidget', () => {
     expect(html).not.toContain('tiles c3')
   })
 
-  it('reads the replicate mean and the p10 to p90 sub from a finished summary', () => {
+  it('reads the replicate mean and the half-width sub from a finished summary', () => {
     useStore.getState().advanceRun(1)
     useStore.getState().pauseRun()
     setMc('done')
     const html = render({ tiles: ['detect', 'killEk', 'firstDetect'] })
     expect(html).toContain('4.5<small>/1</small>')
-    expect(html).toContain('p10 to p90 · 4 to 5')
-    expect(html).toContain('p10 to p90 · 0 to 1')
+    // Count bands carry lo 4, hi 5 (and 0, 1): half-width 0.5 over 100 replicates.
+    expect(html).toContain('±0.5 (95%) · 100')
+    expect(html).not.toContain('p10 to p90')
     expect(html).toContain('3 of 13 · mean of 100')
     // A time tile stays "not yet" until the cursor reaches the mean.
     expect(html).toContain('not yet')

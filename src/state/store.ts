@@ -16,7 +16,7 @@ import type {
   TestCard,
   Vec2,
 } from '../model/types'
-import { entityActive, newId, runSettings } from '../model/types'
+import { dropEditedProvenance, entityActive, newId, runSettings } from '../model/types'
 import { emptyScenario, SEED_LIBRARY } from '../model/seed'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength, rotatePoint } from '../geometry/geo'
@@ -1692,7 +1692,9 @@ export const useStore = create<Store>()((set, get) => {
     updateModel: (id, patch) =>
       mutate((s) => ({
         ...s,
-        library: s.library.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+        library: s.library.map((m) =>
+          m.id === id ? dropEditedProvenance(m, { ...m, ...patch }) : m,
+        ),
       })),
 
     deleteModel: (id) =>

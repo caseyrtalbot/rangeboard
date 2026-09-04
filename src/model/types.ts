@@ -339,7 +339,10 @@ export interface EffectorSpec {
    * TARGET_S type table in doctrineFactors.ts.
    */
   targetS?: number
-  /** Kinetic only: average interceptor or round speed to the target, m/s. Absent: no flyout term. */
+  /**
+   * Kinetic only: average interceptor or round speed to the target, m/s.
+   * Absent: no flyout term.
+   */
   flyoutSpeedMps?: number | null
 }
 
@@ -409,6 +412,25 @@ export interface SpecModel {
 /** Basis for one field: the provenance row, else 'pf'. */
 export function basisFor(model: SpecModel, field: string): Provenance['basis'] {
   return model.provenance?.find((row) => row.field === field)?.basis ?? 'pf'
+}
+
+/** The spec fields a provenance row can name: the sensor, uas or effector spec. */
+export function specFields(model: SpecModel): Record<string, unknown> {
+  const spec = model.sensor ?? model.uas ?? model.effector
+  return (spec ?? {}) as unknown as Record<string, unknown>
+}
+
+/**
+ * `after` without the provenance rows of every spec field whose value differs
+ * from `before`: an edited field takes no row and stays a planning factor.
+ */
+export function dropEditedProvenance(before: SpecModel, after: SpecModel): SpecModel {
+  const rows = after.provenance
+  if (!rows || rows.length === 0) return after
+  const b = specFields(before)
+  const a = specFields(after)
+  const kept = rows.filter((r) => JSON.stringify(a[r.field]) === JSON.stringify(b[r.field]))
+  return kept.length === rows.length ? after : { ...after, provenance: kept }
 }
 
 export type FormationShape = 'line' | 'wedge' | 'column' | 'echelon' | 'cluster'
