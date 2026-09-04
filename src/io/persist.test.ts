@@ -1,12 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type { AarSummary, EngagePolicy, Entity, Scenario, ScorecardSnap } from '../model/types'
+import type {
+  AarSummary,
+  EngagePolicy,
+  Entity,
+  Provenance,
+  Scenario,
+  ScorecardSnap,
+  SpecModel,
+} from '../model/types'
 import { runSettings } from '../model/types'
 import type { AttritionReport } from '../playback/attrition'
 import type { McSummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {
   aarExportObject,
+  adoptSeedProvenance,
   fillScenario,
   loadAutosave,
   runExportObject,
@@ -586,5 +595,120 @@ describe('scenarioHasWork', () => {
     expect(scenarioHasWork(s)).toBe(false)
     expect(scenarioHasWork({ ...s, boundaries: [{ id: 'b', name: 'b', type: 'range', points: [], closed: true, altBandFt: null }] })).toBe(true)
     expect(scenarioHasWork({ ...s, paths: [{ id: 'p', entityId: 'e', points: [], speedMps: null, startDelayS: 0 }] })).toBe(true)
+  })
+})
+
+/** A sensor model with two spec fields and one source row on updateRateS. */
+function seedModel(): SpecModel {
+  return {
+    id: 'lib-x',
+    name: 'X radar',
+    kind: 'sensor',
+    description: '',
+    color: '#888888',
+    builtin: true,
+    sensor: {
+      sensorType: 'radar',
+      role: 'surveillance',
+      detectRangeM: 4000,
+      classifyRangeM: null,
+      sectorDeg: 360,
+      elevationDeg: null,
+      maxAltitudeFt: null,
+      resolutionM: null,
+      updateRateS: 1,
+    },
+    provenance: [
+      {
+        field: 'updateRateS',
+        value: '1 s',
+        source: 'a maker page',
+        url: 'https://example.test/x',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'detectRangeM',
+        value: '4000 m',
+        source: 'a maker page',
+        url: 'https://example.test/x',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
+  }
+}
+
+describe('adoptSeedProvenance', () => {
+  it('gives an unedited field the seed row', () => {
+    const seed = seedModel()
+    const saved: SpecModel = { ...seed, provenance: undefined }
+    const out = adoptSeedProvenance(saved, seed)
+    expect(out.provenance?.map((r) => r.field)).toEqual(['updateRateS', 'detectRangeM'])
+  })
+
+  it('gives an edited field no row', () => {
+    const seed = seedModel()
+    const saved: SpecModel = {
+      ...seed,
+      sensor: { ...seed.sensor!, updateRateS: 4 },
+      provenance: undefined,
+    }
+    const out = adoptSeedProvenance(saved, seed)
+    expect(out.provenance?.map((r) => r.field)).toEqual(['detectRangeM'])
+  })
+
+  it('keeps a saved row over the seed row for the same field', () => {
+    const seed = seedModel()
+    const mine: Provenance = {
+      field: 'updateRateS',
+      value: '1 s',
+      source: 'my note',
+      url: null,
+      date: '2026-01-01',
+      basis: 'pf',
+    }
+    const out = adoptSeedProvenance({ ...seed, provenance: [mine] }, seed)
+    expect(out.provenance?.find((r) => r.field === 'updateRateS')).toEqual(mine)
+    expect(out.provenance).toHaveLength(2)
+  })
+
+  it('returns a custom model unchanged', () => {
+    const seed = seedModel()
+    const saved: SpecModel = { ...seed, builtin: false, provenance: undefined }
+    expect(adoptSeedProvenance(saved, seed)).toBe(saved)
+  })
+
+  it('returns the same object when every seed row is already there', () => {
+    const seed = seedModel()
+    const saved: SpecModel = { ...seed }
+    expect(adoptSeedProvenance(saved, seed)).toBe(saved)
+  })
+})
+
+describe('seed provenance reaches an existing save', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  /** A save whose Giraffe 1X copy predates the provenance rows. */
+  function saveWithoutGiraffeRows(): Scenario {
+    const s = emptyScenario()
+    s.library = s.library.map((m) =>
+      m.id === 'lib-giraffe1x' ? { ...m, provenance: undefined } : m,
+    )
+    return s
+  }
+
+  it('fillScenario adopts the updateRateS row', () => {
+    const filled = fillScenario(saveWithoutGiraffeRows())
+    const giraffe = filled.library.find((m) => m.id === 'lib-giraffe1x')
+    expect(giraffe?.provenance?.map((r) => r.field)).toContain('updateRateS')
+  })
+
+  it('loads that save without writing a recovery key', () => {
+    const store = stubStorage(JSON.stringify(saveWithoutGiraffeRows()))
+    const loaded = loadAutosave()
+    const giraffe = loaded?.library.find((m) => m.id === 'lib-giraffe1x')
+    expect(giraffe?.provenance?.some((r) => r.field === 'updateRateS')).toBe(true)
+    expect([...store.keys()].filter((k) => k.startsWith(SCENARIO_RECOVERY_PREFIX))).toHaveLength(0)
   })
 })

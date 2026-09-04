@@ -9,13 +9,21 @@ import type {
   FormationShape,
 } from '../model/types'
 import {
-  basisFor,
   DEFAULT_REQUIREMENT_THRESHOLDS,
   effectiveDoctrine,
   entityActive,
   MOUNT_HEIGHT_M,
 } from '../model/types'
-import { Actions, EmptyState, ObjectHeader, Row, Section, ShortcutList } from './inspector/kit'
+import {
+  Actions,
+  EmptyState,
+  ObjectHeader,
+  PfTag,
+  pfaText,
+  Row,
+  Section,
+  ShortcutList,
+} from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
 import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS, useStore, modelFor } from '../state/store'
 import type { RaidDraft, RingKey } from '../state/store'
@@ -120,21 +128,6 @@ function referenceTitle(spec: SensorSpec): string | undefined {
 }
 
 /**
- * Provenance tag for one spec field. An absent value is always the planning
- * factor; a recorded value shows the basis of the row that set it.
- */
-function basisTag(model: SpecModel, field: string, absent: boolean, pfLabel = 'PF'): string {
-  if (absent) return pfLabel
-  const basis = basisFor(model, field)
-  return basis === 'pf' ? 'PF' : basis
-}
-
-/** False-alarm probability as a compact exponent, e.g. 1e-6. */
-function pfaText(pfa: number): string {
-  return pfa.toExponential(0).replace('+', '')
-}
-
-/**
  * The detection point the placard range is quoted at. A radar range means
  * nothing without the Pd, the false-alarm probability and the fluctuation
  * case that go with it, because the range against any other Pd follows from
@@ -149,14 +142,14 @@ function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
       <Row
         label="Placard Pd"
         value={cal.pd0}
-        unit={basisTag(model, 'placardPd', spec.placardPd !== cal.pd0)}
+        tag={<PfTag model={model} field="placardPd" absent={spec.placardPd !== cal.pd0} />}
         title="The placard range is quoted at this Pd against the reference RCS."
         mono
       />
       <Row
         label="Placard Pfa"
         value={pfaText(cal.pfa)}
-        unit={basisTag(model, 'pfa', spec.pfa !== cal.pfa)}
+        tag={<PfTag model={model} field="pfa" absent={spec.pfa !== cal.pfa} />}
         title="False-alarm probability the placard assumes."
         mono
       />
@@ -192,22 +185,29 @@ function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
     <>
       <Row
         label="Scan period"
-        value={`${rate} s`}
-        unit={basisTag(model, 'updateRateS', false)}
+        value={rate}
+        unit="s"
+        tag={<PfTag model={model} field="updateRateS" />}
         title="One look at the full search volume. The initiation rule counts these scans."
         mono
       />
       <Row
         label="Track initiation"
         value={`${trackInitMFor(spec)} of ${trackInitNFor(spec)} scans`}
-        unit={basisTag(model, 'trackInitM', spec.trackInitM == null || spec.trackInitN == null)}
+        tag={
+          <PfTag
+            model={model}
+            field="trackInitM"
+            absent={spec.trackInitM == null || spec.trackInitN == null}
+          />
+        }
         title="A track initiates when M of the last N scans detect and the cumulative Pd reaches the test's track threshold."
         mono
       />
       <Row
         label="Track drop"
         value={`${trackDropMissesFor(spec)} missed scans`}
-        unit={basisTag(model, 'trackDropMisses', spec.trackDropMisses == null)}
+        tag={<PfTag model={model} field="trackDropMisses" absent={spec.trackDropMisses == null} />}
         title="After a missed scan the track coasts. It drops after this many consecutive misses."
         mono
       />
@@ -316,7 +316,6 @@ function MountHeight({
   onChange: (m: number | null) => void
   note: string
 }) {
-  const basis = heightM == null ? 'pf' : basisFor(model, 'mountHeightM')
   return (
     <>
       <Field label="Mount height (m)">
@@ -331,8 +330,9 @@ function MountHeight({
       </Field>
       <Row
         label="In use"
-        value={`${heightM ?? MOUNT_HEIGHT_M} m`}
-        unit={basis === 'pf' ? 'PF' : basis}
+        value={heightM ?? MOUNT_HEIGHT_M}
+        unit="m"
+        tag={<PfTag model={model} field="mountHeightM" absent={heightM == null} />}
         mono
       />
       <p className="muted small">{note}</p>
@@ -809,6 +809,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
             value={formatDistance(model.sensor.detectRangeM, units)}
             unit={referenceCondition(model.sensor)}
             title={referenceTitle(model.sensor)}
+            tag={<PfTag model={model} field="detectRangeM" />}
             mono
           />
           {model.sensor.classifyRangeM != null && (
@@ -830,7 +831,12 @@ function EntityInspector({ entity }: { entity: Entity }) {
           {model.sensor.sensorType === 'radar' && targetScaled(model.sensor) && (
             <RadarPlacard model={model} spec={model.sensor} />
           )}
-          <Row label="Azimuth coverage" value={`${model.sensor.sectorDeg}°`} mono />
+          <Row
+            label="Azimuth coverage"
+            value={`${model.sensor.sectorDeg}°`}
+            tag={<PfTag model={model} field="sectorDeg" />}
+            mono
+          />
           {model.sensor.sensorType === 'eo-ir' && (
             <Row label="Band" value={model.sensor.eoBand ?? 'dual'} unit={model.sensor.eoBand == null ? 'default' : undefined} />
           )}
@@ -839,6 +845,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
               label="Maximum reported range"
               value={formatDistance(model.sensor.instrumentedRangeM, units)}
               title="Instrumented range or the top of the vendor's detection band. Caps the target-scaled detection range."
+              tag={<PfTag model={model} field="instrumentedRangeM" />}
               mono
             />
           )}
@@ -860,6 +867,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
               label="Elevation coverage"
               value={`${model.sensor.elevationDeg[0]}° to ${model.sensor.elevationDeg[1]}°`}
               title="The geometry gate reads these limits. A threat above or below the coverage is not detected."
+              tag={<PfTag model={model} field="elevationDeg" />}
               mono
             />
           )}
@@ -868,6 +876,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
               label="Altitude ceiling"
               value={`${model.sensor.maxAltitudeFt.toLocaleString()} ft`}
               title="The geometry gate reads this ceiling. A threat above it is not detected."
+              tag={<PfTag model={model} field="maxAltitudeFt" />}
               mono
             />
           )}
@@ -934,8 +943,8 @@ function EntityInspector({ entity }: { entity: Entity }) {
           <Row
             label="Fluctuation model"
             value={`Swerling ${swerlingFor(model.uas)}`}
-            unit={basisTag(model, 'swerling', model.uas.swerling == null, 'airframe PF')}
-            title="Fluctuation case for radar. Multirotor, FPV and one-way attack airframes are Swerling 1. Fixed wing is Swerling 3 (planning factor)."
+            tag={<PfTag model={model} field="swerling" absent={model.uas.swerling == null} />}
+            title="Fluctuation case for radar. Multirotor, FPV and one-way attack airframes are Swerling 1. Fixed wing is Swerling 3. An unrecorded case is the airframe planning factor."
             mono
           />
           <Row

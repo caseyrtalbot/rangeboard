@@ -1445,3 +1445,53 @@ describe('monte carlo slice', () => {
     expect(analysisBasisSignature({ ...base, name: 'Other' })).toBe(sig)
   })
 })
+
+describe('resetModelToSeed', () => {
+  beforeEach(reset)
+
+  /** The library copy of a seed model, by id. */
+  function model(id: string) {
+    return useStore.getState().scenario.library.find((m) => m.id === id)
+  }
+
+  it('restores an edited seed model and pushes one history entry', () => {
+    const st = useStore.getState()
+    st.updateModel('lib-giraffe1x', { name: 'Edited', provenance: [] })
+    const past = useStore.getState().past.length
+    useStore.getState().resetModelToSeed('lib-giraffe1x')
+    expect(useStore.getState().past.length).toBe(past + 1)
+    const m = model('lib-giraffe1x')
+    expect(m?.name).toBe('Giraffe 1X 3D radar (Saab)')
+    expect(m?.provenance?.map((r) => r.field)).toContain('updateRateS')
+  })
+
+  it('pushes no history entry when the model already equals the seed', () => {
+    const past = useStore.getState().past.length
+    useStore.getState().resetModelToSeed('lib-giraffe1x')
+    expect(useStore.getState().past.length).toBe(past)
+  })
+
+  it('undo puts the edit back', () => {
+    useStore.getState().updateModel('lib-giraffe1x', { name: 'Edited' })
+    useStore.getState().resetModelToSeed('lib-giraffe1x')
+    useStore.getState().undo()
+    expect(model('lib-giraffe1x')?.name).toBe('Edited')
+  })
+
+  it('leaves a custom model alone', () => {
+    const id = useStore.getState().addModel('sensor')
+    useStore.getState().updateModel(id, { name: 'Mine' })
+    const past = useStore.getState().past.length
+    useStore.getState().resetModelToSeed(id)
+    expect(useStore.getState().past.length).toBe(past)
+    expect(model(id)?.name).toBe('Mine')
+  })
+
+  it('does not share the seed object with the library', () => {
+    useStore.getState().updateModel('lib-giraffe1x', { name: 'Edited' })
+    useStore.getState().resetModelToSeed('lib-giraffe1x')
+    useStore.getState().updateModel('lib-giraffe1x', { description: 'changed again' })
+    reset()
+    expect(model('lib-giraffe1x')?.description).not.toBe('changed again')
+  })
+})

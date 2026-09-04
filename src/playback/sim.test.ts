@@ -1148,9 +1148,17 @@ function legacyScenario(): ReturnType<typeof emptyScenario> {
 describe('probability of detection', () => {
   beforeEach(reset)
 
-  /** Giraffe 1X at the origin: 4 km at 0.01 m2, instrumented 75 km, sourced basis, PF Pd 0.5 / Pfa 1e-6. */
+  /**
+   * Giraffe 1X at the origin: 4 km at 0.01 m2, instrumented 75 km, sourced basis, PF Pd 0.5 /
+   * Pfa 1e-6. The vertical window is pinned open: the threat stands at 14,000 ft at short
+   * ground range, above the seed's sourced 0 to 70 deg coverage.
+   */
   function placeGiraffe() {
     useStore.getState().addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    const giraffe = useStore.getState().scenario.library.find((m) => m.id === 'lib-giraffe1x')!
+    useStore
+      .getState()
+      .updateModel(giraffe.id, { sensor: { ...giraffe.sensor!, elevationDeg: null } })
     const st = useStore.getState()
     const sensor = st.scenario.entities.at(-1)!
     return { sensorId: sensor.id, spec: st.scenario.library.find((m) => m.id === sensor.specId)!.sensor! }

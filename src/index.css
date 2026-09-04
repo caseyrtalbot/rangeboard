@@ -1346,6 +1346,18 @@ p.muted.small {
   gap: var(--space-2);
 }
 
+/* The source add form stacks like the rest of the editor. The button sizes to
+   its label so it never reads as the primary action of the panel. */
+.src-add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.src-add button[type='submit'] {
+  align-self: flex-start;
+}
+
 /* Prose and derived read-outs. A left rule, not a box: the panel should read
    as one continuous surface. */
 .spec-summary {
@@ -1996,6 +2008,63 @@ p.muted.small {
 
 .tb td:not(:first-child) {
   font-family: var(--font-mono);
+}
+
+/* Sources table. Five short columns in a 320 px panel, plus a remove column
+   on a custom model. The field key, the value and the date are machine data;
+   the source name is prose, so it leaves the table monospace and wraps
+   instead of clipping to nothing. */
+.src-tb {
+  font-size: 10.5px;
+}
+
+.tb.src-tb th:nth-child(1) {
+  width: 22%;
+}
+
+.tb.src-tb th:nth-child(2) {
+  width: 18%;
+}
+
+.tb.src-tb th:nth-child(3) {
+  width: 12%;
+}
+
+.tb.src-tb th:nth-child(5) {
+  width: 20%;
+}
+
+.tb.src-tb th:nth-child(6) {
+  width: var(--space-5);
+}
+
+/* `.tb td:not(:first-child)` is monospace, so these carry the same class count
+   and win on order; the two mono columns take it back by class. */
+.tb.src-tb td {
+  font-family: var(--font-ui);
+  vertical-align: top;
+}
+
+.tb.src-tb td.mono {
+  font-family: var(--font-mono);
+}
+
+.src-tb td:nth-child(4) {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.src-tb .pf {
+  margin-left: 0;
+}
+
+.src-tb a {
+  color: var(--accent);
+}
+
+.src-tb button.mini {
+  margin-left: 0;
+  padding: 0 var(--space-1);
 }
 
 /* Customize rows */

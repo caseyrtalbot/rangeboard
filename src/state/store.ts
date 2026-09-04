@@ -17,7 +17,7 @@ import type {
   Vec2,
 } from '../model/types'
 import { entityActive, newId, runSettings } from '../model/types'
-import { emptyScenario } from '../model/seed'
+import { emptyScenario, SEED_LIBRARY } from '../model/seed'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength, rotatePoint } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
@@ -377,6 +377,8 @@ export interface Store {
   duplicateModel: (id: string) => string
   updateModel: (id: string, patch: Partial<SpecModel>) => void
   deleteModel: (id: string) => void
+  /** Restore a builtin model to its seed definition. A custom model is left as it is. */
+  resetModelToSeed: (id: string) => void
   mergeLibrary: (models: SpecModel[]) => void
 
   // Test cards
@@ -1700,6 +1702,16 @@ export const useStore = create<Store>()((set, get) => {
         deletedSeedIds: withDeletedSeed(s, id, s.library.find((m) => m.id === id)?.builtin),
         entities: s.entities.map((e) => (e.specId === id ? { ...e, specId: null } : e)),
       })),
+
+    resetModelToSeed: (id) =>
+      mutate((s) => {
+        const model = s.library.find((m) => m.id === id)
+        const seed = SEED_LIBRARY.find((m) => m.id === id)
+        if (!model || !seed || !model.builtin) return s
+        if (JSON.stringify(model) === JSON.stringify(seed)) return s
+        const copy: SpecModel = JSON.parse(JSON.stringify(seed))
+        return { ...s, library: s.library.map((m) => (m.id === id ? copy : m)) }
+      }),
 
     mergeLibrary: (models) =>
       mutate((s) => {

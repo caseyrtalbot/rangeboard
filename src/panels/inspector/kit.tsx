@@ -13,6 +13,8 @@
  */
 
 import type { ReactNode } from 'react'
+import type { SpecModel } from '../../model/types'
+import { basisFor } from '../../model/types'
 
 /** Semantic state of an object or a measurement. Drives colour, nothing else. */
 export type StatusTone = 'nominal' | 'warning' | 'critical' | 'inactive'
@@ -46,11 +48,13 @@ export function Section({
  * number in the secondary text step so it never competes with it, and `muted`
  * drops the value a step for information that is negative or incidental. A
  * string value carries a title attribute so a truncated value stays readable.
+ * `tag` follows the unit and carries the basis of the value.
  */
 export function Row({
   label,
   value,
   unit,
+  tag,
   mono,
   stacked,
   muted,
@@ -59,6 +63,7 @@ export function Row({
   label: string
   value: ReactNode
   unit?: string
+  tag?: ReactNode
   mono?: boolean
   stacked?: boolean
   muted?: boolean
@@ -85,9 +90,44 @@ export function Row({
       >
         {empty ? '—' : value}
         {!empty && unit && <span className="unit">{unit}</span>}
+        {tag}
       </span>
     </div>
   )
+}
+
+/**
+ * The provenance tag of one spec field. A planning factor reads PF; a
+ * datasheet or reference row reads SRC with its basis, source and date. An
+ * absent value, or no model at all, is always PF.
+ */
+export function PfTag({
+  model,
+  field,
+  absent = false,
+}: {
+  model: SpecModel | undefined
+  field: string
+  absent?: boolean
+}) {
+  const row = model?.provenance?.find((p) => p.field === field)
+  if (absent || !model || basisFor(model, field) === 'pf' || !row) {
+    return (
+      <span className="pf" title="planning factor">
+        PF
+      </span>
+    )
+  }
+  return (
+    <span className="pf src" title={`${row.basis} · ${row.source} · ${row.date}`}>
+      SRC
+    </span>
+  )
+}
+
+/** False-alarm probability as a compact exponent, e.g. 1e-6. */
+export function pfaText(pfa: number): string {
+  return pfa.toExponential(0).replace('+', '')
 }
 
 /** Compact object identity line: what it is, what type, and its state. */

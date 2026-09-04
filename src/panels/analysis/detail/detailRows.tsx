@@ -4,8 +4,7 @@ import type { ComponentTelemetry } from '../../../analysis/systemTelemetry'
 import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { readTokens, resolveColor } from '../../../charts/tokens'
 import type { DisplayUnits } from '../../../geometry/geo'
-import type { Scenario, SpecModel } from '../../../model/types'
-import { basisFor } from '../../../model/types'
+import type { Scenario } from '../../../model/types'
 import type { AttritionReport } from '../../../playback/attrition'
 import type { ThreatAssessment } from '../../../playback/sim'
 import { useStore } from '../../../state/store'
@@ -75,34 +74,8 @@ export function Rows({ rows }: { rows: DetailRow[] }) {
   )
 }
 
-/**
- * The provenance tag of one spec field. A planning factor reads PF; a
- * datasheet or reference row reads SRC with its source and date. An absent
- * value, or no model at all, is always PF.
- */
-export function PfTag({
-  model,
-  field,
-  absent = false,
-}: {
-  model: SpecModel | undefined
-  field: string
-  absent?: boolean
-}) {
-  const row = model?.provenance?.find((p) => p.field === field)
-  if (absent || !model || basisFor(model, field) === 'pf' || !row) {
-    return (
-      <span className="pf" title="planning factor">
-        PF
-      </span>
-    )
-  }
-  return (
-    <span className="pf src" title={`${row.source} · ${row.date}`}>
-      SRC
-    </span>
-  )
-}
+// The provenance tag lives in the Inspector kit: one tag for the whole app.
+export { PfTag } from '../../inspector/kit'
 
 /** A compact table: short headers, one row per record. */
 export function DetailTable({ head, rows }: { head: string[]; rows: ReactNode[][] }) {

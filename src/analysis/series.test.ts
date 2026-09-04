@@ -166,7 +166,14 @@ function pdScenario(): { scenario: Scenario; sensorId: string; uasId: string } {
     builtin: false,
     uas: { ...mohajer.uas!, swerling: 1 },
   }
-  scenario.library = [...scenario.library, target]
+  // The threat flies over the radar at 14,000 ft, so the fixture pins the full
+  // vertical window the seed carried before its elevation coverage was sourced.
+  scenario.library = [
+    ...scenario.library.map((m) =>
+      m.id === 'lib-giraffe1x' ? { ...m, sensor: { ...m.sensor!, elevationDeg: null } } : m,
+    ),
+    target,
+  ]
   const sensor = ent('sensor', 'lib-giraffe1x', { x: 0, y: 0 })
   const uas = ent('uas', 'tst-mohajer', { x: -15000, y: 0 })
   scenario.entities = [sensor, uas]

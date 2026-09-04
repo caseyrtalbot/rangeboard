@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type {
   EoBand,
   IrSignature,
+  Provenance,
   RangeBasis,
   SensorRole,
   SpecModel,
@@ -32,7 +33,7 @@ import {
 } from '../model/signatureFactors'
 import { useStore } from '../state/store'
 import { formatDistance } from '../geometry/geo'
-import { EmptyState, ObjectHeader, Section } from './inspector/kit'
+import { EmptyState, ObjectHeader, PfTag, Section } from './inspector/kit'
 
 const SENSOR_ROLES: SensorRole[] = [
   'early-warning',
@@ -209,12 +210,196 @@ function MountHeight({
   )
 }
 
+/** The bases a source row can carry, in the order the form offers them. */
+const BASIS_CHOICES: Provenance['basis'][] = ['datasheet', 'reference', 'pf']
+
+/** One source row being written in the add form. */
+interface SourceDraft {
+  field: string
+  value: string
+  source: string
+  url: string
+  date: string
+  basis: Provenance['basis']
+}
+
+/** A blank draft, dated today, because today is the day the source is read. */
+function emptyDraft(): SourceDraft {
+  return {
+    field: '',
+    value: '',
+    source: '',
+    url: '',
+    date: new Date().toISOString().slice(0, 10),
+    basis: 'datasheet',
+  }
+}
+
+/**
+ * Where each recorded value of the model comes from. A field with no row is
+ * a planning factor. A seed model is read only: the Reset to seed action
+ * restores its rows. A custom model adds and removes rows, one row per field.
+ */
+function Sources({
+  model,
+  onChange,
+}: {
+  model: SpecModel
+  onChange: (rows: Provenance[]) => void
+}) {
+  const [draft, setDraft] = useState(emptyDraft)
+  const rows = model.provenance ?? []
+  const custom = !model.builtin
+  const spec = model.sensor ?? model.uas ?? model.effector
+  const fields = [...new Set([...Object.keys(spec ?? {}), ...rows.map((r) => r.field)])].sort()
+  const ready = draft.field !== '' && draft.value.trim() !== '' && draft.source.trim() !== ''
+
+  // One row per field: a new row for a field that already has one replaces it.
+  function add() {
+    const row: Provenance = {
+      field: draft.field,
+      value: draft.value.trim(),
+      source: draft.source.trim(),
+      url: draft.url.trim() || null,
+      date: draft.date,
+      basis: draft.basis,
+    }
+    const has = rows.some((r) => r.field === row.field)
+    onChange(has ? rows.map((r) => (r.field === row.field ? row : r)) : [...rows, row])
+    setDraft(emptyDraft())
+  }
+
+  return (
+    <div className="subsection src">
+      <div className="panel-subtitle">Sources</div>
+      {rows.length === 0 ? (
+        <p className="muted small">No source is recorded. Every value is a planning factor.</p>
+      ) : (
+        <table className="tb src-tb">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Value</th>
+              <th>Basis</th>
+              <th>Source</th>
+              <th>Date</th>
+              {custom && <th aria-label="Remove" />}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.field}>
+                <td className="mono">{row.field}</td>
+                <td className="mono">{row.value}</td>
+                <td>
+                  <PfTag model={model} field={row.field} />
+                </td>
+                <td>
+                  {row.url && row.url.startsWith('http') ? (
+                    <a href={row.url} target="_blank" rel="noreferrer">
+                      {row.source}
+                    </a>
+                  ) : (
+                    row.source
+                  )}
+                </td>
+                <td className="mono">{row.date}</td>
+                {custom && (
+                  <td>
+                    <button
+                      className="mini"
+                      aria-label={`Delete source for ${row.field}`}
+                      onClick={() => onChange(rows.filter((r) => r.field !== row.field))}
+                    >
+                      ×
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {custom && (
+        <form
+          className="src-add"
+          onSubmit={(e) => {
+            e.preventDefault()
+            add()
+          }}
+        >
+          <div className="field-row">
+            <Field label="Field">
+              <select
+                value={draft.field}
+                onChange={(e) => setDraft({ ...draft, field: e.target.value })}
+              >
+                <option value="">select a field</option>
+                {fields.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Value with unit">
+              <input
+                value={draft.value}
+                onChange={(e) => setDraft({ ...draft, value: e.target.value })}
+              />
+            </Field>
+          </div>
+          <Field label="Source">
+            <input
+              value={draft.source}
+              onChange={(e) => setDraft({ ...draft, source: e.target.value })}
+            />
+          </Field>
+          <Field label="URL">
+            <input
+              value={draft.url}
+              onChange={(e) => setDraft({ ...draft, url: e.target.value })}
+            />
+          </Field>
+          <div className="field-row">
+            <Field label="Date read">
+              <input
+                type="date"
+                value={draft.date}
+                onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+              />
+            </Field>
+            <Field label="Basis">
+              <select
+                value={draft.basis}
+                onChange={(e) =>
+                  setDraft({ ...draft, basis: e.target.value as Provenance['basis'] })
+                }
+              >
+                {BASIS_CHOICES.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <button type="submit" disabled={!ready}>
+            Add source
+          </button>
+        </form>
+      )}
+    </div>
+  )
+}
+
 /** Right-panel editor for the selected library model. All capability fields are editable. */
 export function LibraryEditor() {
   const scenario = useStore((s) => s.scenario)
   const units = useStore((s) => s.ui.units)
   const libraryId = useStore((s) => s.selection.libraryId)
-  const { updateModel, duplicateModel, deleteModel, select } = useStore.getState()
+  const { updateModel, duplicateModel, deleteModel, resetModelToSeed, select } =
+    useStore.getState()
 
   const model = scenario.library.find((m) => m.id === libraryId)
   if (!model) {
@@ -991,7 +1176,17 @@ export function LibraryEditor() {
         </div>
       )}
 
+      <Sources key={model.id} model={model} onChange={(rows) => patch({ provenance: rows })} />
+
       <div className="inspector-actions">
+        {model.builtin && (
+          <button
+            title="Put every value and every source of this model back to the shipped seed."
+            onClick={() => resetModelToSeed(model.id)}
+          >
+            Reset to seed
+          </button>
+        )}
         <button onClick={() => select({ libraryId: duplicateModel(model.id) })}>Duplicate</button>
         <button
           className="danger"

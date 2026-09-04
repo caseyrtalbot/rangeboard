@@ -30,6 +30,7 @@ import type { Entity } from '../../../model/types'
 import { defaultSensorRole, effectiveDoctrine, mountHeightOf } from '../../../model/types'
 import { DT, entityPosAt, threatAltitudeFt } from '../../../playback/sim'
 import { modelFor } from '../../../state/store'
+import { pfaText } from '../../inspector/kit'
 import { STATE_LABEL, stateClass } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
@@ -46,12 +47,6 @@ import {
 } from './detailRows'
 
 const LADDER_KINDS = ['search', 'init', 'track', 'coast', 'drop'] as const
-
-/** False-alarm probability as a compact exponent, e.g. 1e-6. */
-function pfaText(pfa: number): string {
-  return pfa.toExponential(0).replace('+', '')
-}
-
 
 /** The sensor pane: Pd and slant per track, the track ladder, load, and the gates by threat. */
 export function SensorDetail({ entity }: { entity: Entity }) {

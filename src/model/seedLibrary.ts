@@ -28,14 +28,57 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'target-acquisition',
-      detectRangeM: 8000,
+      detectRangeM: 5000, // RADA USA, Breaking Defense 2022: Group 1 out to 5 km
       refRcsM2: 0.01, // nano/mini-UAS class figures
+      instrumentedRangeM: 30000, // DRS MHR datasheet: 30 km instrumented
       classifyRangeM: 5000,
       sectorDeg: 90,
-      elevationDeg: [0, 90],
+      elevationDeg: [-10, 70], // DRS MHR datasheet
       maxAltitudeFt: 30000,
       resolutionM: 50,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '5000 m against Group 1 (Raven, WASP, Puma class)',
+        source: 'Breaking Defense, RADA sponsored post (2022-10-31)',
+        url: 'https://breakingdefense.com/2022/10/why-countering-small-uas-and-swarms-demands-highly-capable-radars/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '30000 m',
+        source: 'DRS MHR family datasheet (04-2017)',
+        url: 'https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '-10 to 70 deg',
+        source: 'DRS MHR family datasheet (04-2017)',
+        url: 'https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'maxAltitudeFt',
+        value: '30000 ft',
+        source: 'DRS MHR family datasheet (04-2017)',
+        url: 'https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '90 deg',
+        source: 'DRS MHR family datasheet (04-2017)',
+        url: 'https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-rps62',
@@ -48,14 +91,31 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'surveillance',
-      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
-      detectRangeM: 15000,
+      detectRangeM: 3000, // EDR Magazine 2019: RADA nano-UAV maximum range
       classifyRangeM: 8000,
       sectorDeg: 90,
       elevationDeg: [0, 90],
       maxAltitudeFt: 30000,
       resolutionM: 50,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '3000 m against nano-UAV (15 km medium UAV, 22 km fighter)',
+        source: 'EDR Magazine, DSEI 2019 RADA report',
+        url: 'https://www.edrmagazine.eu/dsei-2019-rada-two-new-radars-from-israel',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: '90 deg',
+        source: 'EDR Magazine, DSEI 2019 RADA report',
+        url: 'https://www.edrmagazine.eu/dsei-2019-rada-two-new-radars-from-israel',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-kurfs',
@@ -75,6 +135,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: 30,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '15000 m against the smallest class of drones (beyond 15 km)',
+        source: 'Defense News, Raytheon native content (2022-11-24)',
+        url: 'https://www.defensenews.com/native/raytheon-missiles-defense/2022/11/22/birds-planes-drones-kurfs-radar-can-spot-them-all/',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Raytheon KuRFS product page (rtx.com)',
+        url: 'https://www.rtx.com/raytheon/lang/ro/capabilities/products/counter-uas/sensors/kurfs',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-echoshield',
@@ -87,7 +165,7 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'tracking',
-      detectRangeM: 4000,
+      detectRangeM: 3000, // Echodyne sheet: Group 1 lower bound of the 3 to 5.3 km band
       refRcsM2: 0.01, // Group 1 UAS line
       classifyRangeM: 2500,
       sectorDeg: 130,
@@ -95,6 +173,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: 30,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '3000 m against Group 1 (-20 to -10 dBsm), typical tracking 3 to 5.3 km',
+        source: 'Echodyne EchoShield spec sheet (6JL, 2026)',
+        url: 'https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a5558f970a01479ae2a92b7_TS-EchoShield-Echodyne_6JL.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '130 deg',
+        source: 'Echodyne EchoShield spec sheet (6JL, 2026)',
+        url: 'https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a5558f970a01479ae2a92b7_TS-EchoShield-Echodyne_6JL.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-lstar',
@@ -116,6 +212,40 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '10000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '35000 m',
+        source: 'SRC AN/TPQ-50 product sheet (2026)',
+        url: 'https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '0 to 30 deg',
+        source: 'SRC AN/TPQ-50 product sheet (2026)',
+        url: 'https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'SRC AN/TPQ-50 product sheet (2026)',
+        url: 'https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-tpq53',
@@ -136,6 +266,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '15000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Lockheed Martin TPQ-53 product page',
+        url: 'https://www.lockheedmartin.com/en-us/products/tpq-53.html',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-iris',
@@ -148,15 +296,49 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'classification',
-      rangeBasis: 'planning', // role-table / representative ring, no stated target: no target scaling
-      detectRangeM: 5000,
+      detectRangeM: 3100, // Robin IRIS sheet: C1 Micro 0.9 kg class
       instrumentedRangeM: 5000, // 5 km is the instrumented range in this mode
+      updateRateS: 1, // Robin IRIS sheet: 30 rpm, one turn per second
       classifyRangeM: 3000,
       sectorDeg: 360,
       elevationDeg: [0, 60],
       maxAltitudeFt: null,
       resolutionM: 50,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '3100 m against C1 Micro 0.9 kg (nano 1100, mini 3700, small 7600)',
+        source: 'Robin Radar IRIS product sheet (2026-04)',
+        url: 'https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '5000 m',
+        source: 'Robin Radar IRIS product sheet (2026-04)',
+        url: 'https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'updateRateS',
+        value: '1 s',
+        source: 'Robin Radar IRIS product sheet (2026-04)',
+        url: 'https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Robin Radar IRIS product sheet (2026-04)',
+        url: 'https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-r8ss',
@@ -169,13 +351,49 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'surveillance',
-      detectRangeM: 2000,
+      detectRangeM: 1200, // FLIR R8SS-3D specsheet: MicroUAS class
+      instrumentedRangeM: 7800, // FLIR R8SS-3D specsheet
+      updateRateS: 0.5, // FLIR R8SS-3D specsheet: 2 Hz scan (4 Hz mode also stated)
       classifyRangeM: null,
-      sectorDeg: 120,
+      sectorDeg: 90, // FLIR R8SS-3D specsheet: 90 deg azimuth per panel
       elevationDeg: [-40, 40],
       maxAltitudeFt: null,
       resolutionM: 50,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '1200 m against MicroUAS (MiniUAS 2100, Small UAS 4000)',
+        source: 'FLIR R8SS-3D specsheet (2019), cctv-systems.se copy',
+        url: 'https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '7800 m',
+        source: 'FLIR R8SS-3D specsheet (2019), cctv-systems.se copy',
+        url: 'https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'updateRateS',
+        value: '0.5 s (2 Hz; 4 Hz mode stated)',
+        source: 'FLIR R8SS-3D specsheet (2019), cctv-systems.se copy',
+        url: 'https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '90 deg',
+        source: 'FLIR R8SS-3D specsheet (2019), cctv-systems.se copy',
+        url: 'https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-rfone',
@@ -420,6 +638,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '7000 m against UAS Group 1 to 3 (beyond 7 km)',
+        source: 'SRC LIDS family brochure',
+        url: 'https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'SRC LIDS family brochure',
+        url: 'https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-xbaeu',
@@ -440,6 +676,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '8000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'RTX news release (2024-10-14)',
+        url: 'https://www.rtx.com/news/news-center/2024/10/14/rtxs-raytheon-demos-kurfs-and-coyote-performance-against-complex-uas-threats',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-cuaews-df',
@@ -514,13 +768,31 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'fire-control',
-      detectRangeM: 15000,
+      detectRangeM: 2000, // Anduril Sentry page: Group 1 lower bound of the 2 to 4 km band
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '2000 m against Group 1 (2 to 4 km; 15 km for Group 3+)',
+        source: 'Anduril Sentry product page',
+        url: 'https://www.anduril.com/sentry',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Anduril Sentry product page',
+        url: 'https://www.anduril.com/sentry',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-sentinela4',
@@ -541,6 +813,32 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '15000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'elevationDeg',
+        value: '-15 to 90 deg',
+        source: 'Lockheed Martin Sentinel A4 product card (2024)',
+        url: 'https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Lockheed Martin Sentinel A4 product card (2024)',
+        url: 'https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-gator',
@@ -561,6 +859,24 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '40000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Northrop Grumman G/ATOR product page',
+        url: 'https://www.northropgrumman.com/what-we-do/mission-solutions/radars/an-tps-80-ground-air-task-oriented-radar-g-ator',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-giraffe1x',
@@ -575,22 +891,54 @@ const SENSORS: SpecModel[] = [
       role: 'surveillance',
       detectRangeM: 4000,
       refRcsM2: 0.01, // 'lighter than a milk carton' nano/micro class
-      instrumentedRangeM: 75000, // Saab layered-defence page, instrumented
+      instrumentedRangeM: 75000, // Saab 2014 leaflet: instrumented range 75 km
       updateRateS: 1,
       classifyRangeM: null,
       sectorDeg: 360,
-      elevationDeg: null,
+      elevationDeg: [0, 70], // Saab Giraffe 1X leaflet (2014)
       maxAltitudeFt: null,
       resolutionM: null,
     },
     provenance: [
       {
+        field: 'detectRangeM',
+        value: '4000 m against a UAV lighter than a milk carton',
+        source: 'Saab Giraffe 1X product page',
+        url: 'https://www.saab.com/products/giraffe-1x',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '75000 m',
+        source: 'Saab Giraffe 1X leaflet (2014), radartutorial.eu copy',
+        url: 'https://www.radartutorial.eu/19.kartei/04.battle/pubs/giraffe_1x.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
         field: 'updateRateS',
         value: '1 s',
-        source: 'Giraffe 1X | Saab: "covers the entire search volume every second"',
+        source: 'Saab Giraffe 1X product page',
         url: 'https://www.saab.com/products/giraffe-1x',
-        date: '2026-09-03',
-        basis: 'reference',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'elevationDeg',
+        value: '0 to 70 deg',
+        source: 'Saab Giraffe 1X leaflet (2014), radartutorial.eu copy',
+        url: 'https://www.radartutorial.eu/19.kartei/04.battle/pubs/giraffe_1x.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '360 deg',
+        source: 'Saab layered-defence page',
+        url: 'https://www.saab.com/markets/eu-nato-affairs/layered-defence-against-the-drone-threat',
+        date: '2026-09-04',
+        basis: 'datasheet',
       },
     ],
   },
@@ -607,12 +955,39 @@ const SENSORS: SpecModel[] = [
       role: 'target-acquisition',
       detectRangeM: 6000,
       refRcsM2: 0.04, // back-solved: 9 km at 0.2 m2 (trade reporting) scales to 6 km at 0.04 m2
+      instrumentedRangeM: 40000, // EDR Magazine 2020: 40 km instrumented
       classifyRangeM: null,
       sectorDeg: 120,
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '6000 m against Micro UAV (UAV 9 km)',
+        source: 'HENSOLDT SPEXER 2000 datasheet (2020)',
+        url: 'https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '40000 m',
+        source: 'EDR Magazine, SPEXER 2000 3rd Gen (2020-06-22)',
+        url: 'https://www.edrmagazine.eu/hensoldt-unveils-its-new-spexer-2000-3rd-gen-radar-for-c-uas-and-not-only',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'sectorDeg',
+        value: '120 deg',
+        source: 'HENSOLDT SPEXER 2000 datasheet (2020)',
+        url: 'https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-echoguard',
@@ -634,6 +1009,32 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '1000 m against sUAV Phantom 4 (Matrice 600 1400 m)',
+        source: 'Echodyne EchoGuard spec sheet (6JL, 2026)',
+        url: 'https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '6000 m',
+        source: 'Echodyne EchoGuard spec sheet (6JL, 2026)',
+        url: 'https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '120 deg',
+        source: 'Echodyne EchoGuard spec sheet (6JL, 2026)',
+        url: 'https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-spyglass',
@@ -646,13 +1047,31 @@ const SENSORS: SpecModel[] = [
     sensor: {
       sensorType: 'radar',
       role: 'surveillance',
-      detectRangeM: 3500,
+      detectRangeM: 6000, // Anduril Spyglass page: Group 1 UAS
       classifyRangeM: null,
       sectorDeg: 90,
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '6000 m against Group 1 UAS (Group 3 12 km)',
+        source: 'Anduril Spyglass product page',
+        url: 'https://www.anduril.com/spyglass',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '90 deg',
+        source: 'Anduril Spyglass product page',
+        url: 'https://www.anduril.com/spyglass',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-a422',
@@ -674,6 +1093,40 @@ const SENSORS: SpecModel[] = [
       maxAltitudeFt: null,
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '2730 m at 0.01 m2 RCS, free space, M10S antennas',
+        source: 'Blighter A400 series datasheet (BSS-1311, 2025)',
+        url: 'https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'refRcsM2',
+        value: '0.01 m2',
+        source: 'Blighter A400 series datasheet (BSS-1311, 2025)',
+        url: 'https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '20000 m',
+        source: 'Blighter A400 series datasheet (BSS-1311, 2025)',
+        url: 'https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+      {
+        field: 'sectorDeg',
+        value: '180 deg',
+        source: 'Blighter A400 series datasheet (BSS-1311, 2025)',
+        url: 'https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf',
+        date: '2026-09-04',
+        basis: 'datasheet',
+      },
+    ],
   },
   {
     id: 'lib-gm200mmc',
@@ -692,9 +1145,35 @@ const SENSORS: SpecModel[] = [
       classifyRangeM: null,
       sectorDeg: 360,
       elevationDeg: null,
-      maxAltitudeFt: null,
+      maxAltitudeFt: 100000, // Army Recognition 2025: ceiling 100000 ft
       resolutionM: null,
     },
+    provenance: [
+      {
+        field: 'detectRangeM',
+        value: '40000 m',
+        source: 'planning factor',
+        url: null,
+        date: '2026-09-04',
+        basis: 'pf',
+      },
+      {
+        field: 'instrumentedRangeM',
+        value: '400000 m',
+        source: 'Army Recognition, GM200 MM/C Sweden (2025-04-08)',
+        url: 'https://www.armyrecognition.com/news/army-news/2025/sweden-becomes-fifth-nato-country-to-procure-the-french-thales-gm200-mm-c-radar',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+      {
+        field: 'maxAltitudeFt',
+        value: '100000 ft',
+        source: 'Army Recognition, GM200 MM/C Sweden (2025-04-08)',
+        url: 'https://www.armyrecognition.com/news/army-news/2025/sweden-becomes-fifth-nato-country-to-procure-the-french-thales-gm200-mm-c-radar',
+        date: '2026-09-04',
+        basis: 'reference',
+      },
+    ],
   },
   {
     id: 'lib-corian',

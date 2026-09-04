@@ -34,6 +34,34 @@ function mergeSeeds<T extends { id: string }>(
   return [...saved, ...seeds.filter((x) => !have.has(x.id) && !deleted.has(x.id))]
 }
 
+/** The capability object a provenance field indexes into, keyed by field name. */
+function specFields(model: SpecModel): Record<string, unknown> {
+  const spec = model.sensor ?? model.uas ?? model.effector
+  return (spec ?? {}) as unknown as Record<string, unknown>
+}
+
+/**
+ * Give a saved builtin model the seed's provenance rows for every field the user
+ * has not edited. A saved row is kept as it is. A field whose saved value differs
+ * from the seed value gets no row (it stays a planning factor). A custom model is
+ * returned unchanged.
+ */
+export function adoptSeedProvenance(saved: SpecModel, seed: SpecModel): SpecModel {
+  if (!saved.builtin) return saved
+  const rows = seed.provenance
+  if (!rows || rows.length === 0) return saved
+  const savedSpec = specFields(saved)
+  const seedSpec = specFields(seed)
+  const have = new Set((saved.provenance ?? []).map((r) => r.field))
+  const add = rows.filter(
+    (r) =>
+      !have.has(r.field) &&
+      JSON.stringify(savedSpec[r.field]) === JSON.stringify(seedSpec[r.field]),
+  )
+  if (add.length === 0) return saved
+  return { ...saved, provenance: [...(saved.provenance ?? []), ...add] }
+}
+
 /**
  * Fill fields added after a save was written and migrate the legacy engageOn
  * policy to an ROE posture ('detected' -> 'free', 'confirmed' -> 'tight').
@@ -53,10 +81,17 @@ export function fillScenario(parsed: Scenario): Scenario {
     (parsed.engageOn === 'detected' ? 'free' : parsed.engageOn === 'confirmed' ? 'tight' : empty.roe)
   const deletedSeedIds = Array.isArray(parsed.deletedSeedIds) ? parsed.deletedSeedIds : []
   const deleted = new Set(deletedSeedIds)
+  // A seed row added after a save was written never reaches that save through
+  // mergeSeeds, which keeps the saved copy whole. Adopt the rows here instead.
+  const seedById = new Map(empty.library.map((m) => [m.id, m]))
+  const library = mergeSeeds(parsed.library, empty.library, deleted).map((m) => {
+    const seed = m.builtin ? seedById.get(m.id) : undefined
+    return seed ? adoptSeedProvenance(m, seed) : m
+  })
   return {
     ...empty,
     ...parsed,
-    library: mergeSeeds(parsed.library, empty.library, deleted),
+    library,
     systemPresets: mergeSeeds(parsed.systemPresets, empty.systemPresets, deleted),
     deletedSeedIds,
     environment: { ...empty.environment, ...parsed.environment },
