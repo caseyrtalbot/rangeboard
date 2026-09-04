@@ -129,7 +129,7 @@ export function OutcomeSummary({
         <Metric
           label="First detect"
           value={firstDetect == null ? '—' : formatTime(firstDetect)}
-          sub={(mc && timeStatSub(mc.firstDetectS)) ?? 'earliest track'}
+          sub={(mc && timeStatSub(mc.firstDetectS, 'detected')) ?? 'earliest track'}
         />
         <Metric
           label="First effect"
@@ -140,7 +140,7 @@ export function OutcomeSummary({
         <Metric
           label="Min warning"
           value={minWarning == null ? '—' : formatTime(minWarning)}
-          sub={(mc && timeStatSub(mc.minWarningS)) ?? 'worst threat'}
+          sub={(mc && timeStatSub(mc.minWarningS, 'warning')) ?? 'worst threat'}
         />
         <Metric
           label="Salvos"

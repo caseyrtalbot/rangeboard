@@ -1,11 +1,13 @@
 import { useMemo, type ReactNode } from 'react'
 import {
+  SCAN_S,
   scanPeriodS,
   trackDropMissesFor,
   trackInitMFor,
   trackInitNFor,
   trackInitSFor,
 } from '../../../analysis/doctrineFactors'
+import { modelsForEntity } from '../../../analysis/fidelity'
 import {
   FT_TO_M,
   radarCalibration,
@@ -121,15 +123,24 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   if (!spec) {
     return (
       <div className="detail" data-detail="sensor">
-        <DetailHeader entity={entity} color={color} pill={pill} modelLine={modelLine} />
+        <DetailHeader
+          entity={entity}
+          color={color}
+          pill={pill}
+          modelLine={modelLine}
+          tags={modelsForEntity(scenario, entity.id)}
+        />
         <p className="muted small">No model linked.</p>
       </div>
     )
   }
 
   const cal = radarCalibration(spec)
-  const scanRate = scanPeriodS(spec, targetScaled(spec))
-  const scan = scanRate != null
+  const scanRate = scanPeriodS(spec, false)
+  // No stated period: a target with an RCS still makes the radar Pd-modeled, so
+  // it scans on the role period. The panel names no threat, so it says so.
+  const rolePeriod = scanRate == null ? scanPeriodS(spec, targetScaled(spec)) : null
+  const scan = scanRate != null || rolePeriod != null
   const initM = trackInitMFor(spec)
   const initN = trackInitNFor(spec)
   // Legend words are lower case as in the mockup; the builder's labels are title case.
@@ -149,18 +160,23 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const instrumented = spec.instrumentedRangeM
   const loadRows: DetailRow[] = [
     { label: 'Tracks per scan', value: `${loadNow}` },
-    scan
+    scanRate != null
       ? {
           label: 'Scan period',
           value: `${scanRate}`,
           unit: ' s',
           tag: <PfTag model={model} field="updateRateS" absent={spec.updateRateS == null} />,
         }
-      : {
-          label: 'Scan period',
-          value: 'role table',
-          unit: ` · ${trackInitSFor(spec, doctrine)} s hold`,
-        },
+      : rolePeriod != null
+        ? {
+            label: 'Scan period',
+            value: `by role · ${SCAN_S[defaultSensorRole(spec)]} s`,
+          }
+        : {
+            label: 'Scan period',
+            value: 'role table',
+            unit: ` · ${trackInitSFor(spec, doctrine)} s hold`,
+          },
     { label: 'Hold clock (union)', value: component ? formatTime(component.holdSeconds) : DASH },
     {
       label: 'Track seconds (sum)',
@@ -195,7 +211,13 @@ export function SensorDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="sensor">
-      <DetailHeader entity={entity} color={color} pill={pill} modelLine={modelLine} />
+      <DetailHeader
+        entity={entity}
+        color={color}
+        pill={pill}
+        modelLine={modelLine}
+        tags={modelsForEntity(scenario, entity.id)}
+      />
       <DetailSection
         id="pd"
         title="Pd per track"

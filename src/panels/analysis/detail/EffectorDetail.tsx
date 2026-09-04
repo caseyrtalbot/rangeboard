@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import { bdaSFor, commitPkFor, launchPolicyLabel } from '../../../analysis/doctrineFactors'
+import { modelsForEntity } from '../../../analysis/fidelity'
 import { effectorSeries, releaseLadderRows, salvoMarks } from '../../../analysis/series'
 import { boardDesignator } from '../../../canvas/labelLayout'
 import { Ladder } from '../../../charts/Ladder'
@@ -125,7 +126,13 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="effector">
-      <DetailHeader entity={entity} color={color} pill={pill} modelLine={modelLine} />
+      <DetailHeader
+        entity={entity}
+        color={color}
+        pill={pill}
+        modelLine={modelLine}
+        tags={modelsForEntity(scenario, entity.id)}
+      />
       <DetailSection id="pk" title="Pk per track">
         {pk.length > 0 ? (
           <TimeSeries series={pk} tS={t} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pk" />

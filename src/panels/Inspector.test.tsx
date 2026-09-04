@@ -58,3 +58,16 @@ describe('Inspector effector and threat tags', () => {
     expect(rcs).toContain('<span class="pf" title="planning factor">')
   })
 })
+
+describe('Inspector flyout speed rows', () => {
+  it('quotes the stated speed and 0.7 of it as the average, tagged PF', () => {
+    selectFromModel('lib-coyote')
+    const html = render()
+    const rows = html.slice(html.indexOf('Flyout speed'), html.indexOf('Altitude ceiling'))
+    // Coyote Block 2: 154 m/s stated, so 154 x 0.7 = 107.8, shown as 108 m/s.
+    expect(rows).toContain('154 m/s')
+    expect(rows).toContain('Average flyout speed')
+    expect(rows).toContain('108 m/s')
+    expect(rows).toContain('<span class="pf" title="planning factor">')
+  })
+})

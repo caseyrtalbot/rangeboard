@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
+import { modelsForEntity } from '../../../analysis/fidelity'
 import { formatTime } from '../../../geometry/geo'
 import type { Entity, Scenario } from '../../../model/types'
 import { entityActive } from '../../../model/types'
@@ -85,7 +86,13 @@ export function SystemDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="system">
-      <DetailHeader entity={entity} color={color} pill={pill} modelLine={modelLine} />
+      <DetailHeader
+        entity={entity}
+        color={color}
+        pill={pill}
+        modelLine={modelLine}
+        tags={modelsForEntity(scenario, entity.id)}
+      />
       <DetailSection id="hops" title="Kill-chain hops">
         {hopRows.length > 0 ? (
           <DetailTable head={['Effector', 'Via', 'Medium', 'Latency']} rows={hopRows} />

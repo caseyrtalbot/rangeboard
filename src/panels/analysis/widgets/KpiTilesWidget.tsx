@@ -185,7 +185,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
       case 'firstDetect': {
         if (!summary) return timeTile(key, firstDetect, firstDetect, cursor)
         const mean = meanOf(summary.firstDetectS)
-        return timeTile(key, mean, mean, cursor, timeStatSub(summary.firstDetectS))
+        return timeTile(key, mean, mean, cursor, timeStatSub(summary.firstDetectS, 'detected'))
       }
       case 'firstEffect':
         return timeTile(key, firstEffect, firstEffect, cursor)
@@ -199,7 +199,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         const arrivalS = warningHolder?.arrivalS ?? null
         if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
         const mean = meanOf(summary.minWarningS)
-        return timeTile(key, mean, arrivalS, cursor, timeStatSub(summary.minWarningS))
+        return timeTile(key, mean, arrivalS, cursor, timeStatSub(summary.minWarningS, 'warning'))
       }
     }
   }

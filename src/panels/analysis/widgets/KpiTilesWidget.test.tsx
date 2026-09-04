@@ -29,6 +29,20 @@ function threatScenario(): Scenario {
   return scenario
 }
 
+/** The same laydown plus a defended asset and a radar, so a warning time exists. */
+function warningScenario(): Scenario {
+  const scenario = threatScenario()
+  const at = (id: string, kind: Entity['kind'], specId: string, x: number, y: number): Entity => ({
+    id, name: id.toUpperCase(), kind, specId, pos: { x, y }, headingDeg: 0, color: null, notes: '',
+  })
+  scenario.entities = [
+    ...scenario.entities,
+    at('a1', 'asset', 'lib-asset', 0, 0),
+    at('s1', 'sensor', 'lib-giraffe1x', 0, 2000),
+  ]
+  return scenario
+}
+
 /** A flat band on the scenario grid: mean, p10 and p90 constant over every step. */
 function band(n: number, mean: number, p10: number, p90: number): BandSeries {
   const fill = (v: number) => new Array<number>(n).fill(v)
@@ -163,6 +177,25 @@ describe('KpiTilesWidget', () => {
     setMc('done', 98)
     const partial = render({ tiles: ['firstDetect'] })
     expect(partial).toContain('±2.0 s (95%) · 98 · detected in 98 of 100')
+    useStore.setState({ mc: IDLE_MC })
+  })
+
+  it('words an undefined warning replicate as warning time, and drops the sub at n 0', () => {
+    // R-F-13: a replicate with no warning time had no defended asset, which is
+    // not a detection miss. The tile needs an arrival, so the laydown gains a
+    // defended asset and a radar; the threat crosses the 500 m boundary at
+    // 125 s, so the cursor sits past it.
+    useStore.getState().replaceScenario(warningScenario())
+    useStore.getState().advanceRun(130)
+    useStore.getState().pauseRun()
+    setMc('done', 40)
+    const partial = render({ tiles: ['minWarning'] })
+    expect(partial).toContain('±2.0 s (95%) · 40 · warning time in 40 of 100')
+    expect(partial).not.toContain('detected in')
+    setMc('done', 0)
+    const none = render({ tiles: ['minWarning'] })
+    expect(none).not.toContain('warning time in')
+    expect(none).not.toContain('(95%)')
     useStore.setState({ mc: IDLE_MC })
   })
 

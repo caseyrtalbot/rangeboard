@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, EntityKind, Scenario, Vec2 } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, newId } from '../model/types'
-import { mulberry32 } from '../geometry/prng'
+import { hashU01, idHash } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
 import type { ScanSteering } from './sim'
-import { assessAllThreats, sweepSensorHits } from './sim'
+import { assessAllThreats, stepIndex, sweepSensorHits } from './sim'
 import type { DrawPolicy } from './policy'
-import { deterministicPolicy, monteCarloPolicy } from './policy'
+import { deterministicPolicy, DRAW_KIND, monteCarloPolicy } from './policy'
 
 const T = DEFAULT_REQUIREMENT_THRESHOLDS
 
@@ -20,7 +20,7 @@ describe('deterministicPolicy', () => {
 
   it('returns pk and p unchanged as mass', () => {
     const p = deterministicPolicy(T)
-    expect(p.kill(0.37, 'e', 'u', 0, 1)).toBe(0.37)
+    expect(p.kill(0.37, 'e', 'u', 0, 0, 1)).toBe(0.37)
     expect(p.jam(0.62, 'e', 'u', 1)).toBe(0.62)
   })
 
@@ -44,51 +44,93 @@ describe('deterministicPolicy', () => {
 })
 
 describe('monteCarloPolicy', () => {
-  function fixedRng(values: number[]): { rng: () => number; calls: () => number } {
-    let i = 0
-    return {
-      rng: () => values[i++ % values.length],
-      calls: () => i,
+  const SEED = 4821
+  // The four keys of contract 1.2, built by hand from the parts.
+  const uDetect = (rep: number, sensor: string, uas: string, tS: number, memberIdx: number) =>
+    hashU01(SEED, rep, DRAW_KIND.detect, idHash(sensor), idHash(uas), memberIdx, stepIndex(tS))
+  const uKill = (rep: number, eff: string, uas: string, shipIdx: number, salvoIdx: number) =>
+    hashU01(SEED, rep, DRAW_KIND.kill, idHash(eff), idHash(uas), shipIdx, salvoIdx)
+  const uJam = (rep: number, eff: string, uas: string, tS: number) =>
+    hashU01(SEED, rep, DRAW_KIND.jam, idHash(eff), idHash(uas), 0, stepIndex(tS))
+  const uPhase = (rep: number, sensor: string) =>
+    hashU01(SEED, rep, DRAW_KIND.phase, idHash(sensor), 0, 0, 0)
+  const TINY = 1e-9
+
+  it('detect draws u < pd from the detect key; the same key gives the same value', () => {
+    const p = monteCarloPolicy(SEED, 0, T)
+    const u = uDetect(0, 's', 'u', 3, 0)
+    expect(u).toBeGreaterThanOrEqual(0)
+    expect(u).toBeLessThan(1)
+    expect(p.detect(u + TINY, 's', 'u', 3, 0)).toBe(true)
+    expect(p.detect(u - TINY, 's', 'u', 3, 0)).toBe(false)
+    // A second instance, and a second call on the same instance: no stream state.
+    expect(monteCarloPolicy(SEED, 0, T).detect(u + TINY, 's', 'u', 3, 0)).toBe(true)
+    expect(p.detect(u - TINY, 's', 'u', 3, 0)).toBe(false)
+  })
+
+  it('a changed replicate, memberIdx or step changes the detect draw', () => {
+    const u = uDetect(0, 's', 'u', 3, 0)
+    for (const [rep, memberIdx, tS] of [
+      [1, 0, 3],
+      [0, 1, 3],
+      [0, 0, 3.5],
+    ] as const) {
+      const v = uDetect(rep, 's', 'u', tS, memberIdx)
+      expect(v).not.toBe(u)
+      const p = monteCarloPolicy(SEED, rep, T)
+      expect(p.detect(v + TINY, 's', 'u', tS, memberIdx)).toBe(true)
+      expect(p.detect(v - TINY, 's', 'u', tS, memberIdx)).toBe(false)
     }
-  }
-
-  it('draws rng() < p for each outcome with a fixed sequence', () => {
-    const { rng } = fixedRng([0.2, 0.9, 0.5])
-    const p = monteCarloPolicy(rng, T)
-    expect(p.detect(0.5, 's', 'u', 0, 0)).toBe(true)
-    expect(p.kill(0.5, 'e', 'u', 0, 1)).toBe(0)
-    expect(p.jam(0.5, 'e', 'u', 1)).toBe(0)
+    // Two samples DT apart never share a step, on or off the grid.
+    expect(stepIndex(3.25)).not.toBe(stepIndex(3.75))
   })
 
-  it('consumes exactly one rng call per draw', () => {
-    const { rng, calls } = fixedRng([0.2, 0.9, 0.5])
-    const p = monteCarloPolicy(rng, T)
-    p.detect(0.5, 's', 'u', 0, 0)
-    expect(calls()).toBe(1)
-    p.kill(0.5, 'e', 'u', 0, 1)
-    expect(calls()).toBe(2)
-    p.jam(0.5, 'e', 'u', 1)
-    expect(calls()).toBe(3)
+  it('kill draws from the kill key: shipIdx and salvoIdx move it, tS does not', () => {
+    const p = monteCarloPolicy(SEED, 0, T)
+    const u = uKill(0, 'e', 'u', 0, 0)
+    expect(p.kill(u + TINY, 'e', 'u', 0, 0, 5)).toBe(1)
+    expect(p.kill(u - TINY, 'e', 'u', 0, 0, 5)).toBe(0)
+    expect(p.kill(u + TINY, 'e', 'u', 0, 0, 99)).toBe(1)
+    expect(p.kill(u - TINY, 'e', 'u', 0, 0, 99)).toBe(0)
+    for (const [shipIdx, salvoIdx] of [
+      [1, 0],
+      [0, 1],
+    ] as const) {
+      const v = uKill(0, 'e', 'u', shipIdx, salvoIdx)
+      expect(v).not.toBe(u)
+      expect(p.kill(v + TINY, 'e', 'u', shipIdx, salvoIdx, 5)).toBe(1)
+      expect(p.kill(v - TINY, 'e', 'u', shipIdx, salvoIdx, 5)).toBe(0)
+    }
+    expect(uKill(1, 'e', 'u', 0, 0)).not.toBe(u)
   })
 
-  it('draws the scan phase in [0, 1) with one rng call', () => {
-    const { rng, calls } = fixedRng([0.37, 0.999])
-    const p = monteCarloPolicy(rng, T)
-    expect(p.phase('s')).toBe(0.37)
-    expect(calls()).toBe(1)
+  it('jam draws from the jam key at the effect step', () => {
+    const p = monteCarloPolicy(SEED, 0, T)
+    const u = uJam(0, 'e', 'u', 12.5)
+    expect(p.jam(u + TINY, 'e', 'u', 12.5)).toBe(1)
+    expect(p.jam(u - TINY, 'e', 'u', 12.5)).toBe(0)
+    expect(uJam(0, 'e', 'u', 13)).not.toBe(u)
+    // The jam key is not the kill key of the same effector and step.
+    expect(uKill(0, 'e', 'u', 0, stepIndex(12.5))).not.toBe(u)
+  })
+
+  it('draws the scan phase in [0, 1) from the phase key, the same on every call', () => {
+    const p = monteCarloPolicy(SEED, 0, T)
     const phase = p.phase('s')
+    expect(phase).toBe(uPhase(0, 's'))
     expect(phase).toBeGreaterThanOrEqual(0)
     expect(phase).toBeLessThan(1)
-    expect(calls()).toBe(2)
+    expect(p.phase('s')).toBe(phase)
+    expect(monteCarloPolicy(SEED, 1, T).phase('s')).not.toBe(phase)
+    expect(p.phase('s2')).not.toBe(phase)
   })
 
   it('gives 0 or 1 for kill and jam', () => {
-    const { rng } = fixedRng([0.2, 0.9])
-    const p = monteCarloPolicy(rng, T)
-    expect(p.kill(0.5, 'e', 'u', 0, 1)).toBe(1)
-    expect(p.kill(0.5, 'e', 'u', 0, 1)).toBe(0)
-    expect(p.jam(0.5, 'e', 'u', 1)).toBe(1)
-    expect(p.jam(0.5, 'e', 'u', 1)).toBe(0)
+    const p = monteCarloPolicy(SEED, 0, T)
+    for (let i = 0; i < 20; i += 1) {
+      expect([0, 1]).toContain(p.kill(0.5, 'e', 'u', 0, i, 1))
+      expect([0, 1]).toContain(p.jam(0.5, 'e', 'u', i * 0.5))
+    }
   })
 })
 
@@ -169,7 +211,7 @@ describe('draw policy engine regression', () => {
   it('the Monte Carlo policy gives discrete outcomes and keeps the raid partition', () => {
     const s = laydown()
     for (const seed of [4821, 4822, 4823]) {
-      const policy = monteCarloPolicy(mulberry32(seed), thresholdsOf(s))
+      const policy = monteCarloPolicy(seed, 0, thresholdsOf(s))
       const assessments = assessAllThreats(s, policy)
       const report = resolveEngagements(s, assessments, policy)
       for (const e of report.events) expect([0, 1]).toContain(e.killDelta)
@@ -177,7 +219,7 @@ describe('draw policy engine regression', () => {
       const { expectedKills, expectedLeakers, expectedNoArrival, raidSize } = report.totals
       expect(expectedKills + expectedLeakers + expectedNoArrival).toBeCloseTo(raidSize, 9)
     }
-    const policy = monteCarloPolicy(mulberry32(4821), thresholdsOf(s))
+    const policy = monteCarloPolicy(4821, 0, thresholdsOf(s))
     const report = resolveEngagements(s, assessAllThreats(s, policy), policy)
     expect(report.events.length).toBeGreaterThan(0)
   })
@@ -192,7 +234,7 @@ describe('draw policy engine regression', () => {
     // phase; pin it to 0 (the deterministic origin) so the comparison isolates
     // the Pd draw.
     const mc: DrawPolicy = {
-      ...monteCarloPolicy(mulberry32(4821), thresholdsOf(s)),
+      ...monteCarloPolicy(4821, 0, thresholdsOf(s)),
       phase: () => 0,
     }
     const assessments = assessAllThreats(s, mc)

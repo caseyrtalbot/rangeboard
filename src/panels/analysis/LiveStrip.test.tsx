@@ -39,6 +39,7 @@ describe('LiveStrip mode chip', () => {
     expect(el).toContain('class="chip det"')
     expect(el).toContain('>DET<')
     expect(el).toContain('aria-expanded="false"')
+    expect(render()).toContain('<span class="chip-meta">envelope · Pd threshold</span>')
     expect(render()).not.toContain('mc-pop')
   })
 
@@ -48,6 +49,7 @@ describe('LiveStrip mode chip', () => {
     expect(el).toContain('class="chip mc"')
     expect(el).toContain('MC 100 · seed 4821')
     expect(el).toContain('Not run yet')
+    expect(render()).toContain('<span class="chip-meta">estimate · 100 replicates</span>')
   })
 
   it('shows the progress while running', () => {

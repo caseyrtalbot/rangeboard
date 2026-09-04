@@ -41,15 +41,30 @@ function statSub(stat: Stat, unit: 'time' | 'count'): string | null {
   return `${halfWidthText(stat, unit)} (${Math.round(stat.conf * 100)}%) · ${stat.n}`
 }
 
-/** `detected in n of total` when some replicate had no value; null when every one did. */
-function definedSub(stat: Stat): string | null {
-  return stat.n < stat.total ? `detected in ${stat.n} of ${stat.total}` : null
+/** What a time Stat measures, so an undefined replicate is worded for that quantity. */
+export type StatQuantity = 'detected' | 'warning'
+
+const QUANTITY_WORD: Record<StatQuantity, string> = {
+  detected: 'detected',
+  warning: 'warning time',
 }
 
-/** The Stat sub and the defined sub joined, for a time Stat tile; null with neither. */
-export function timeStatSub(stat: Stat): string | null {
-  const parts = [statSub(stat, 'time'), definedSub(stat)].filter((x) => x != null)
-  return parts.length > 0 ? parts.join(' · ') : null
+/**
+ * `detected in n of total` or `warning time in n of total` when some replicate
+ * had no value; null when every one did. A replicate with no warning time had
+ * no defended asset, which is not a detection miss.
+ */
+function definedSub(stat: Stat, quantity: StatQuantity): string | null {
+  if (stat.n >= stat.total) return null
+  return `${QUANTITY_WORD[quantity]} in ${stat.n} of ${stat.total}`
+}
+
+/** The Stat sub and the defined sub joined, for a time Stat tile; null with no finite sample. */
+export function timeStatSub(stat: Stat, quantity: StatQuantity): string | null {
+  const sub = statSub(stat, 'time')
+  if (sub == null) return null
+  const defined = definedSub(stat, quantity)
+  return defined == null ? sub : `${sub} · ${defined}`
 }
 
 /** The band index of sim time t, clamped to the band length. */

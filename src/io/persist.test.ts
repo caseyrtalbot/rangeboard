@@ -204,6 +204,7 @@ describe('AAR export payload', () => {
     expect(out.rangeboardRun).toBe(1)
     expect(out.dataBasis).toEqual({
       kind: 'deterministic-planning-model',
+      semantics: 'planning-envelope',
       sampleStepS: 0.5,
       independentlyInstrumented: false,
       runScoped: true,
@@ -213,6 +214,8 @@ describe('AAR export payload', () => {
     expect(out.requirements.overall).toBe('not-evaluated')
     expect(out.requirements.gates).toHaveLength(6)
     expect(out.validity.validity).toBe('pending')
+    // The empty-laydown models: environment on and fire doctrine on.
+    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine'])
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 })
@@ -245,10 +248,25 @@ describe('run export Monte Carlo basis', () => {
     }
   }
 
+  it('exports a replicate-mode scenario with no finished run as the envelope', () => {
+    const scenario = emptyScenario()
+    scenario.runMode = 'monte-carlo'
+    const out = runExportObject(scenario, runMeta(), [], emptyAttrition(), sampleSummary())
+    expect(out.dataBasis.kind).toBe('deterministic-planning-model')
+    expect(out.dataBasis.semantics).toBe('planning-envelope')
+    expect(out.models.map((m) => m.id)).not.toContain('draw-policy')
+    expect(out.validity.findings.map((f) => f.id)).toContain('planning-envelope')
+    expect(out.scenario.runMode).toBe('monte-carlo')
+  })
+
   it('labels a replicate run with its seed and count and carries the summary', () => {
     const summary = mcSummary()
+    // The run mode is a scenario fact, and `models` reads it, so the fixture
+    // sets it as a replicate run would.
+    const scenario = emptyScenario()
+    scenario.runMode = 'monte-carlo'
     const out = runExportObject(
-      emptyScenario(),
+      scenario,
       runMeta(),
       [],
       emptyAttrition(),
@@ -256,16 +274,20 @@ describe('run export Monte Carlo basis', () => {
       summary,
     )
     expect(out.dataBasis.kind).toBe('monte-carlo')
+    expect(out.dataBasis.semantics).toBe('estimate')
     expect(out.dataBasis.seed).toBe(77)
     expect(out.dataBasis.replicates).toBe(5)
     expect(out.dataBasis.stopped).toEqual({ rule: 'replicates', at: 5 })
     expect(out.mcSummary).toBe(summary)
+    // The empty laydown under Monte Carlo: environment, fire doctrine, draw policy.
+    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine', 'draw-policy'])
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 
   it('keeps the deterministic basis and no mcSummary key without a summary', () => {
     const out = runExportObject(emptyScenario(), runMeta(), [], emptyAttrition(), sampleSummary())
     expect(out.dataBasis.kind).toBe('deterministic-planning-model')
+    expect(out.dataBasis.semantics).toBe('planning-envelope')
     expect('seed' in out.dataBasis).toBe(false)
     expect('mcSummary' in out).toBe(false)
   })
@@ -417,9 +439,10 @@ describe('run export validity record', () => {
   it('does not score the detect gate on the invalidated track', () => {
     const detect = spawnInRingRun().requirements.gates.find((g) => g.id === 'detect')!
     expect(detect.status).toBe('not-evaluated')
-    // Both findings that bear on Detect: the invalidating spawn and the
-    // limiting laydown with no defended asset.
-    expect(detect.caveats).toHaveLength(2)
+    // Every finding that bears on Detect: the invalidating spawn, the limiting
+    // laydown with no defended asset, the deterministic envelope and the
+    // unvalidated models.
+    expect(detect.caveats).toHaveLength(4)
     expect(detect.caveats[0]).toContain('1 track not scored here')
     expect(detect.notEvaluatedReason).toBe('every track is invalidated by a run validity finding')
   })
@@ -428,6 +451,7 @@ describe('run export validity record', () => {
     const out = spawnInRingRun()
     expect(out.dataBasis).toEqual({
       kind: 'deterministic-planning-model',
+      semantics: 'planning-envelope',
       sampleStepS: 0.5,
       independentlyInstrumented: false,
       runScoped: true,

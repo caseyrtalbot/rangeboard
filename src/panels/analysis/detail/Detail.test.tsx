@@ -109,6 +109,11 @@ describe('DetailPane', () => {
     ])
     expect(bodyRows(section(html, 'gates'))).toBe(1)
     expect(section(html, 'load')).toContain('Tracks per scan')
+    // The models behind this sensor, tier and validation status on each chip.
+    expect(html).toContain('class="fid-tags"')
+    expect(html).toContain('data-tier="physics" data-validation="analytic"')
+    expect(html).toContain('Horizon · physics · analytic')
+    expect(html).not.toContain('Kinetic Pk ·')
     expectNoControls(html)
   })
 
@@ -127,6 +132,7 @@ describe('DetailPane', () => {
     ])
     expect(bodyRows(section(html, 'doctrine'))).toBe(1)
     expect(section(html, 'capacity')).toContain('BDA dwell')
+    expect(html).toContain('Kinetic Pk · planning · none')
     expectNoControls(html)
   })
 

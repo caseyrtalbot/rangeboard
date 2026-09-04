@@ -9,11 +9,13 @@ import type {
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attrition'
 import type { McSummary } from '../playback/mcRun'
+import type { ModelTag } from '../analysis/fidelity'
+import { modelsUsed } from '../analysis/fidelity'
 import type { RequirementGateReport } from '../analysis/requirements'
 import { buildRequirementGateReport } from '../analysis/requirements'
 import type { RunValidityAssessment } from '../analysis/runValidity'
 import { assessRunValidity } from '../analysis/runValidity'
-import { specFields } from '../model/types'
+import { specFields, runSettings } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { notifyRecovery, stashUnreadableSave } from './recovery'
@@ -243,6 +245,8 @@ export interface RunExport {
   rangeboardRun: 1
   dataBasis: {
     kind: 'deterministic-planning-model' | 'monte-carlo'
+    /** What the numbers are: a threshold envelope, or a replicate estimate. */
+    semantics: 'planning-envelope' | 'estimate'
     sampleStepS: 0.5
     independentlyInstrumented: false
     runScoped: true
@@ -258,6 +262,8 @@ export interface RunExport {
    * inside a sensor ring is not a detect result, and the record has to say so.
    */
   validity: RunValidityAssessment
+  /** Every model the laydown exercises, with its tier and validation status. */
+  models: ModelTag[]
   run: RunRecordMeta
   scenario: Scenario
   assessments: ThreatAssessment[]
@@ -277,12 +283,20 @@ export function runExportObject(
   summary: AarSummary,
   mc: McSummary | null = null,
 ): RunExport {
-  const validity = assessRunValidity(scenario, assessments)
+  // A package with no replicate summary carries deterministic numbers, so its
+  // validity and its model list read the envelope even under a Monte Carlo
+  // run setting; the scenario itself is exported unchanged.
+  const basisScenario: Scenario =
+    mc || runSettings(scenario).runMode === 'deterministic'
+      ? scenario
+      : { ...scenario, runMode: 'deterministic' }
+  const validity = assessRunValidity(basisScenario, assessments)
   const out: RunExport = {
     rangeboardRun: 1,
     dataBasis: mc
       ? {
           kind: 'monte-carlo',
+          semantics: 'estimate',
           sampleStepS: 0.5,
           independentlyInstrumented: false,
           runScoped: true,
@@ -292,11 +306,13 @@ export function runExportObject(
         }
       : {
           kind: 'deterministic-planning-model',
+          semantics: 'planning-envelope',
           sampleStepS: 0.5,
           independentlyInstrumented: false,
           runScoped: true,
         },
     validity,
+    models: modelsUsed(basisScenario),
     run,
     scenario,
     assessments,

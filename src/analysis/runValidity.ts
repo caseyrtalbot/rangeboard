@@ -1,7 +1,9 @@
 import type { RunValidity, Scenario } from '../model/types'
-import { entityActive } from '../model/types'
+import { entityActive, runSettings } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import { spawnInRingViolations } from '../playback/sim'
+import type { ModelId, ModelTag } from './fidelity'
+import { MODEL_TAGS, modelsUsed } from './fidelity'
 import type { RequirementGateId } from './requirements'
 
 /**
@@ -25,6 +27,8 @@ export type RunValidityFindingId =
   | 'no-defended-asset'
   | 'environment-not-applied'
   | 'threat-without-path'
+  | 'planning-envelope'
+  | 'unvalidated-model'
 
 /**
  * 'invalidating' = the listed gates cannot be scored for the listed tracks.
@@ -113,6 +117,7 @@ function spawnInRingFinding(scenario: Scenario): RunValidityFinding | null {
 export function assessRunValidity(
   scenario: Scenario,
   assessments: ThreatAssessment[],
+  table: Record<ModelId, ModelTag> = MODEL_TAGS,
 ): RunValidityAssessment {
   const findings: RunValidityFinding[] = []
 
@@ -159,6 +164,30 @@ export function assessRunValidity(
       uasIds: [...noPath],
       gates: ALL_GATES,
       message: `These threats have no flight path, so every gate excludes them: ${names.join(', ')}.`,
+    })
+  }
+
+  // A deterministic run reports the threshold envelope, not an estimate, so it
+  // is at best valid-limited however clean the laydown is.
+  if (runSettings(scenario).runMode === 'deterministic') {
+    findings.push({
+      id: 'planning-envelope',
+      severity: 'limiting',
+      uasIds: [],
+      gates: ALL_GATES,
+      message: 'Point values from the threshold envelope. Run Monte Carlo for an interval.',
+    })
+  }
+
+  const unvalidated = modelsUsed(scenario, table).filter((t) => t.validation === 'none')
+  if (unvalidated.length > 0) {
+    const labels = unvalidated.map((t) => t.label).join(', ')
+    findings.push({
+      id: 'unvalidated-model',
+      severity: 'limiting',
+      uasIds: [],
+      gates: ALL_GATES,
+      message: `These models are not validated: ${labels}. Their outputs are planning factors.`,
     })
   }
 

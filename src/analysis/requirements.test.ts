@@ -152,7 +152,9 @@ describe('non-compensating requirement gates', () => {
     expect(result.overall).toBe('pass')
     expect(result.met).toBe(6)
     expect(result.gates.every((gate) => gate.status === 'pass')).toBe(true)
-    expect(result.gates.every((gate) => gate.caveats.length === 0)).toBe(true)
+    // A deterministic run carries the planning-envelope and unvalidated-model
+    // caveats on every gate (wave 2); no other caveat applies here.
+    expect(result.gates.every((gate) => gate.caveats.length === 2)).toBe(true)
     expect(result.gates.every((gate) => gate.notEvaluatedReason === null)).toBe(true)
   })
 
@@ -240,7 +242,8 @@ describe('Detect is a performance test, not a presence test', () => {
     expect(detect.notEvaluatedReason).toBe(
       'every track is invalidated by a run validity finding',
     )
-    expect(detect.caveats).toHaveLength(1)
+    // The spawn caveat, then the two run-basis caveats of a deterministic run.
+    expect(detect.caveats).toHaveLength(3)
     expect(detect.caveats[0]).toBe(
       '1 track not scored here. Flight paths start inside a detect ring (detected at T0): Threat 1 held by LSTAR',
     )

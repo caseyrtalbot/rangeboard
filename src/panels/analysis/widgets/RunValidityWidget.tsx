@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { modelsUsed } from '../../../analysis/fidelity'
 import type { RunValidityFinding } from '../../../analysis/runValidity'
 import { assessRunValidity } from '../../../analysis/runValidity'
 import type { RunValidity } from '../../../model/types'
@@ -54,6 +55,7 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
   const runId = useStore((s) => s.playback.runId)
   const { assessments } = useEngagement(scenario, runId)
   const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
+  const tags = useMemo(() => modelsUsed(scenario), [scenario])
   const text = VALIDITY_TEXT[validity.validity]
 
   return (
@@ -70,6 +72,19 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
       <div className="valid">
         <span className={`status ${text.cls}`}>{text.pill}</span>
         <span>{text.line}</span>
+      </div>
+      <div className="fid-tags">
+        {tags.map((tag) => (
+          <span
+            className="fid-tag"
+            key={tag.id}
+            data-tier={tag.tier}
+            data-validation={tag.validation}
+            title={tag.note}
+          >
+            {tag.label} · {tag.tier} · {tag.validation}
+          </span>
+        ))}
       </div>
       {validity.findings.map((finding) => (
         <div className="validity-finding" key={finding.id}>

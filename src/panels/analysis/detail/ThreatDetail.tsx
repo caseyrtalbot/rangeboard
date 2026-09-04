@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { modelsForEntity } from '../../../analysis/fidelity'
 import { FT_TO_M } from '../../../analysis/sensorEnv'
 import { phaseLadderRow, threatSeries, trackMarks, withBands } from '../../../analysis/series'
 import { Ladder } from '../../../charts/Ladder'
@@ -192,7 +193,13 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="threat">
-      <DetailHeader entity={entity} color={color} pill={pill} modelLine={modelLine} />
+      <DetailHeader
+        entity={entity}
+        color={color}
+        pill={pill}
+        modelLine={modelLine}
+        tags={modelsForEntity(scenario, entity.id)}
+      />
       <DetailSection id="file" title="Track file">
         <Rows rows={fileRows} />
       </DetailSection>

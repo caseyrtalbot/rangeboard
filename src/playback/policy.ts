@@ -1,23 +1,41 @@
 import type { RequirementThresholds } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../model/types'
+import { hashU01, idHash } from '../geometry/prng'
+import { stepIndex } from './sim'
+
+/** Draw kinds, one integer per engine draw point; `param` is reserved for wave 3. */
+export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5 } as const
+export type DrawKind = keyof typeof DRAW_KIND
 
 /**
  * The engine's four probabilistic outcomes, resolved by one policy per run.
  * The deterministic policy keeps the expected-value arithmetic; the Monte
- * Carlo policy draws each outcome from a seeded stream. The id, time and
- * index arguments are unused by both (reserved for a correlated policy).
+ * Carlo policy draws each outcome from a counter key built from the id, time
+ * and index arguments, so the same draw point gives the same value whatever
+ * else the run does (common random numbers across laydowns).
  */
 export interface DrawPolicy {
   /**
    * Radar scan outcome for one admitted member (memberIdx: its index in the
-   * admitted list, nearest first). Deterministic: pd >= pdDetect. MC: rng() < pd.
+   * admitted list, nearest first). Deterministic: pd >= pdDetect. MC: u < pd.
    */
   detect(pd: number, sensorId: string, uasId: string, tS: number, memberIdx: number): boolean
-  /** Salvo outcome. Deterministic: returns pk as mass. MC: 0 or 1. */
-  kill(pk: number, effectorId: string, uasId: string, shipIdx: number, tS: number): number
-  /** Jam dwell outcome, same shape. */
+  /**
+   * Salvo outcome. salvoIdx: the count of salvos this effector committed
+   * before this one. Deterministic: returns pk as mass. MC: 0 or 1. tS is
+   * unused by both.
+   */
+  kill(
+    pk: number,
+    effectorId: string,
+    uasId: string,
+    shipIdx: number,
+    salvoIdx: number,
+    tS: number,
+  ): number
+  /** Jam dwell outcome, same shape, keyed by the effect step. */
   jam(p: number, effectorId: string, uasId: string, tS: number): number
-  /** Scan phase as a fraction of the period, in [0, 1). Deterministic: 0. MC: one uniform draw. */
+  /** Scan phase as a fraction of the period, in [0, 1). Deterministic: 0. MC: one uniform. */
   phase(sensorId: string): number
 }
 
@@ -42,15 +60,35 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
   }
 }
 
-/** Replicate policy: one rng() call per draw, in engine order; outcomes are 0 or 1. */
+/**
+ * Counter-based replicate policy. No stream: every draw is a pure function
+ * of its key (seed, replicate, kind, the ids, the indices, the step), so a
+ * draw point reads the same uniform in every laydown that reaches it, and
+ * replicate i depends on i only. Outcomes are 0 or 1.
+ */
 export function monteCarloPolicy(
-  rng: () => number,
+  seed: number,
+  replicate: number,
   _thresholds: RequirementThresholds,
 ): DrawPolicy {
+  const hashes = new Map<string, number>()
+  const h = (id: string): number => {
+    let v = hashes.get(id)
+    if (v === undefined) {
+      v = idHash(id)
+      hashes.set(id, v)
+    }
+    return v
+  }
+  const u = (kind: number, a: string, b: number, c: number, d: number) =>
+    hashU01(seed, replicate, kind, h(a), b, c, d)
   return {
-    detect: (pd) => rng() < pd,
-    kill: (pk) => (rng() < pk ? 1 : 0),
-    jam: (p) => (rng() < p ? 1 : 0),
-    phase: () => rng(),
+    detect: (pd, sensorId, uasId, tS, memberIdx) =>
+      u(DRAW_KIND.detect, sensorId, h(uasId), memberIdx, stepIndex(tS)) < pd,
+    kill: (pk, effectorId, uasId, shipIdx, salvoIdx) =>
+      u(DRAW_KIND.kill, effectorId, h(uasId), shipIdx, salvoIdx) < pk ? 1 : 0,
+    jam: (p, effectorId, uasId, tS) =>
+      u(DRAW_KIND.jam, effectorId, h(uasId), 0, stepIndex(tS)) < p ? 1 : 0,
+    phase: (sensorId) => u(DRAW_KIND.phase, sensorId, 0, 0, 0),
   }
 }

@@ -1,6 +1,8 @@
 /**
- * Monte Carlo replicate loop. Replicate i seeds `mulberry32(seed + i)`, runs
- * the sweep and the attrition with `monteCarloPolicy`, and records the same
+ * Monte Carlo replicate loop. Replicate i runs the sweep and the attrition
+ * with `monteCarloPolicy(seed, i, thresholds)`, a counter-based policy whose
+ * every draw is a pure function of its key (seed, replicate, draw kind, the
+ * ids, the indices, the step), and records the same
  * per-step counts the live panels read from the deterministic ledger. The
  * summary holds per-step bands and per-replicate scalars, never a replicate
  * ledger. Pure TS, no DOM, no store import at the value level, and it never
@@ -9,7 +11,6 @@
  * The grid is the chart grid: `sampleCount(scenario)` steps at DT from t = 0
  * through `scenarioDurationS`, index k is t = k * DT.
  */
-import { mulberry32 } from '../geometry/prng'
 import { heldOnGrid, residualOnGrid, sampleCount } from '../analysis/series'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import type { Scenario } from '../model/types'
@@ -264,7 +265,7 @@ export function runReplicates(
 
   let stopped: McSummary['stopped'] = { rule: 'replicates', at: replicates }
   for (let i = 0; i < replicates; i += 1) {
-    const policy = monteCarloPolicy(mulberry32(seed + i), thresholds)
+    const policy = monteCarloPolicy(seed, i, thresholds)
     const assessments = assessAllThreats(scenario, policy)
     const report = resolveEngagements(scenario, assessments, policy)
     const tracks = assessments.filter((a) => a.status !== 'no-path')

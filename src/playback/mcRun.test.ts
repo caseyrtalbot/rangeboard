@@ -12,10 +12,10 @@ import type {
 import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M, newId } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { heldTracksSeries, kpiSeries, sampleCount, threatSeries } from '../analysis/series'
-import { mulberry32 } from '../geometry/prng'
 import { FALLOFF_AT_MAX, resolveEngagements } from './attrition'
 import { runReplicates } from './mcRun'
 import type { BandSeries, McSummary } from './mcRun'
+import type { DrawPolicy } from './policy'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
 
@@ -297,11 +297,170 @@ describe('runReplicates', () => {
   it('each replicate keeps the raid partition', () => {
     const s = laydown()
     for (const seed of [4821, 4822, 4823]) {
-      const policy = monteCarloPolicy(mulberry32(seed), thresholdsOf(s))
+      const policy = monteCarloPolicy(seed, 0, thresholdsOf(s))
       const { totals } = resolveEngagements(s, assessAllThreats(s, policy), policy)
       const { expectedKills, expectedLeakers, expectedNoArrival, raidSize } = totals
       expect(expectedKills + expectedLeakers + expectedNoArrival).toBeCloseTo(raidSize, 9)
     }
+  })
+
+  it('replicate i depends on i only: direct policies reproduce the summary', () => {
+    // Three replicates of the regression laydown, built directly with
+    // monteCarloPolicy(seed, i, thresholds): their kill totals are the three
+    // samples behind the summary's end-of-run kills band and per-threat killed
+    // Stats, so the band mean is their mean and the Stat sd their sample sd.
+    const s = laydown()
+    s.replicates = 3
+    s.seed = 4821
+    const direct = [0, 1, 2].map((i) => {
+      const policy = monteCarloPolicy(4821, i, thresholdsOf(s))
+      return resolveEngagements(s, assessAllThreats(s, policy), policy)
+    })
+    const summary = runReplicates(s)
+    const totals = direct.map((r) => r.totals.expectedKills)
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+    const sd = (xs: number[]) => {
+      const m = mean(xs)
+      return Math.sqrt(xs.reduce((a, b) => a + (b - m) * (b - m), 0) / (xs.length - 1))
+    }
+    expect(last(summary.kills.mean)).toBeCloseTo(mean(totals), 12)
+    for (const t of direct[0].threats) {
+      const killed = direct.map((r) => r.threats.find((x) => x.uasId === t.uasId)!.expectedKills)
+      expect(summary.perThreat[t.uasId].killed.mean).toBeCloseTo(mean(killed), 12)
+      expect(summary.perThreat[t.uasId].killed.sd).toBeCloseTo(sd(killed), 12)
+    }
+    // Replicate 1 reads the same whether or not replicate 0 ran first.
+    const p1 = monteCarloPolicy(4821, 1, thresholdsOf(s))
+    const again = resolveEngagements(s, assessAllThreats(s, p1), p1)
+    expect(again).toEqual(direct[1])
+    // Replicates differ from one another somewhere in the sweep or the events.
+    const texts = direct.map((r) => JSON.stringify(r))
+    expect(new Set(texts).size).toBeGreaterThan(1)
+  })
+
+  it('common random numbers: an extra effector leaves the shared radar draws unchanged', () => {
+    // The regression laydown, then the same scenario object plus one of:
+    // a second Coyote at (300, -5000) on the Mohajer path (10 km envelope)
+    // linked through the C2; a second Giraffe at (200, 0), whose phase and
+    // detect draws interleave with the first radar's in engine order (a
+    // stream policy would shift every later draw); a second Mohajer on a
+    // parallel path at x = 400. Entity ids are shared, so every detect key of
+    // the first Giraffe against the shared threats (sensor, uas, member,
+    // step) and its phase key are the same parts in every run and read the
+    // same uniforms; only the draws of the new entity are new.
+    type DetectRecord = [string, string, number, number, boolean]
+    const recording = (
+      base: DrawPolicy,
+      detects: DetectRecord[],
+      phases: Array<[string, number]>,
+    ): DrawPolicy => ({
+      ...base,
+      detect: (pd: number, sensorId: string, uasId: string, tS: number, memberIdx: number) => {
+        const r = base.detect(pd, sensorId, uasId, tS, memberIdx)
+        detects.push([sensorId, uasId, memberIdx, tS, r])
+        return r
+      },
+      phase: (sensorId: string) => {
+        const r = base.phase(sensorId)
+        phases.push([sensorId, r])
+        return r
+      },
+    })
+    const run = (s: Scenario) => {
+      const detects: DetectRecord[] = []
+      const phases: Array<[string, number]> = []
+      const policy = recording(monteCarloPolicy(4821, 0, thresholdsOf(s)), detects, phases)
+      const report = resolveEngagements(s, assessAllThreats(s, policy), policy)
+      return { detects, phases, report }
+    }
+    const base = laydown()
+    const c2 = base.entities.find((e) => e.kind === 'c2')!
+    const extraId = 'e-extra-coyote'
+    const extra: Scenario = {
+      ...base,
+      entities: [
+        ...base.entities,
+        {
+          id: extraId,
+          name: 'lib-coyote',
+          kind: 'effector',
+          specId: 'lib-coyote',
+          pos: { x: 300, y: -5000 },
+          headingDeg: 0,
+          color: null,
+          notes: '',
+        },
+      ],
+      connections: [
+        ...base.connections,
+        { id: 'c-extra', fromId: c2.id, toId: extraId, label: 'track data' },
+      ],
+    }
+    const radarId = base.entities.find((e) => e.kind === 'sensor')!.id
+    const uasIds = new Set(base.entities.filter((e) => e.kind === 'uas').map((e) => e.id))
+    const withSensor: Scenario = {
+      ...base,
+      entities: [
+        ...base.entities,
+        {
+          ...base.entities.find((e) => e.id === radarId)!,
+          id: 'e-extra-radar',
+          pos: { x: 200, y: 0 },
+        },
+      ],
+      connections: [
+        ...base.connections,
+        { id: 'c-extra-radar', fromId: 'e-extra-radar', toId: c2.id, label: 'track data' },
+      ],
+    }
+    const mohajer = base.entities.find((e) => e.specId === 'lib-mohajer6')!
+    const withThreat: Scenario = {
+      ...base,
+      entities: [...base.entities, { ...mohajer, id: 'e-extra-uas', pos: { x: 400, y: -14000 } }],
+      paths: [
+        ...base.paths,
+        {
+          id: 'p-extra-uas',
+          entityId: 'e-extra-uas',
+          points: [
+            { x: 400, y: -14000 },
+            { x: 400, y: -800 },
+          ],
+          speedMps: 0,
+          startDelayS: 0,
+        },
+      ],
+    }
+    const shared = (r: ReturnType<typeof run>) => ({
+      detects: r.detects.filter((d) => d[0] === radarId && uasIds.has(d[1])),
+      phases: r.phases.filter((p) => p[0] === radarId),
+    })
+    const a = run(base)
+    expect(a.detects.length).toBeGreaterThan(0)
+    expect(a.detects.every((d) => d[0] === radarId)).toBe(true)
+    expect(a.phases.length).toBeGreaterThan(0)
+
+    const b = run(extra)
+    expect(shared(b)).toEqual(shared(a))
+    // The extra effector took part, so the runs are not the same run.
+    expect(b.report.events.some((e) => e.effectorId === extraId)).toBe(true)
+    expect(a.report.events.some((e) => e.effectorId === extraId)).toBe(false)
+
+    const c = run(withSensor)
+    expect(shared(c)).toEqual(shared(a))
+    // The second radar drew its own phase and detects, interleaved with the first.
+    expect(c.phases.some((p) => p[0] === 'e-extra-radar')).toBe(true)
+    expect(c.detects.some((d) => d[0] === 'e-extra-radar')).toBe(true)
+    expect(c.detects.length).toBeGreaterThan(a.detects.length)
+
+    // The phase is drawn once per (radar, threat) scan state from a key with
+    // no threat part, so the third threat adds a third copy of the same value.
+    const d = run(withThreat)
+    expect(shared(d).detects).toEqual(shared(a).detects)
+    const phi = shared(a).phases.map((p) => p[1])
+    expect(phi).toHaveLength(uasIds.size)
+    expect(shared(d).phases.map((p) => p[1])).toEqual([...phi, phi[0]])
+    expect(d.detects.some((r) => r[1] === 'e-extra-uas')).toBe(true)
   })
 
   it('reports progress after every 10th replicate and after the last', () => {

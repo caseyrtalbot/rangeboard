@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, Scenario, Vec2 } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
+import type { ModelId, ModelTag } from './fidelity'
+import { MODEL_TAGS } from './fidelity'
 import { assessRunValidity, findingsForGate, invalidatedTracksForGate } from './runValidity'
+
+/** MODEL_TAGS with every model checked, so unvalidated-model never fires. */
+const VALIDATED = Object.fromEntries(
+  Object.entries(MODEL_TAGS).map(([id, tag]) => [id, { ...tag, validation: 'analytic' }]),
+) as Record<ModelId, ModelTag>
 
 function entity(id: string, kind: Entity['kind'], specId: string | null, pos: Vec2): Entity {
   return {
@@ -64,8 +71,10 @@ function cleanScenario(): Scenario {
 }
 
 describe('assessRunValidity rollup', () => {
-  it('reports a clean laydown as valid with no findings', () => {
-    const result = assessRunValidity(cleanScenario(), [assessment('u1')])
+  it('reports a clean Monte Carlo laydown with validated models as valid', () => {
+    const s = cleanScenario()
+    s.runMode = 'monte-carlo'
+    const result = assessRunValidity(s, [assessment('u1')], VALIDATED)
     expect(result.validity).toBe('valid')
     expect(result.findings).toHaveLength(0)
   })
@@ -79,7 +88,11 @@ describe('assessRunValidity rollup', () => {
     addThreat(s, 'u1', { x: 40000, y: 0 })
     const result = assessRunValidity(s, [assessment('u1')])
     expect(result.validity).toBe('valid-limited')
-    expect(result.findings.map((f) => f.id)).toEqual(['no-defended-asset'])
+    expect(result.findings.map((f) => f.id)).toEqual([
+      'no-defended-asset',
+      'planning-envelope',
+      'unvalidated-model',
+    ])
   })
 })
 
@@ -200,6 +213,49 @@ describe('gate helpers', () => {
     ).findings
     expect([...invalidatedTracksForGate(findings, 'detect')]).toEqual(['u1'])
     expect([...invalidatedTracksForGate(findings, 'track')]).toEqual([])
-    expect(findingsForGate(findings, 'detect').map((f) => f.id)).toEqual(['spawn-in-ring'])
+    expect(findingsForGate(findings, 'detect').map((f) => f.id)).toEqual([
+      'spawn-in-ring',
+      'planning-envelope',
+      'unvalidated-model',
+    ])
+  })
+})
+
+describe('run basis findings', () => {
+  it('limits every gate under the deterministic mode and clears under Monte Carlo', () => {
+    const det = assessRunValidity(cleanScenario(), [assessment('u1')]).findings
+    const finding = det.find((f) => f.id === 'planning-envelope')!
+    expect(finding.severity).toBe('limiting')
+    expect(finding.uasIds).toEqual([])
+    expect(finding.gates).toHaveLength(6)
+    expect(finding.message).toBe(
+      'Point values from the threshold envelope. Run Monte Carlo for an interval.',
+    )
+    const s = cleanScenario()
+    s.runMode = 'monte-carlo'
+    expect(assessRunValidity(s, [assessment('u1')]).findings.map((f) => f.id)).not.toContain(
+      'planning-envelope',
+    )
+  })
+
+  it('names every unvalidated model the laydown uses', () => {
+    const s = cleanScenario()
+    s.entities.push(entity('e1', 'effector', 'lib-coyote', { x: 0, y: 0 }))
+    const finding = assessRunValidity(s, [assessment('u1')]).findings.find(
+      (f) => f.id === 'unvalidated-model',
+    )!
+    expect(finding.severity).toBe('limiting')
+    expect(finding.gates).toHaveLength(6)
+    expect(finding.message).toBe(
+      'These models are not validated: Environment, Doctrine, Kinetic Pk. ' +
+        'Their outputs are planning factors.',
+    )
+  })
+
+  it('is absent when the table marks every used model validated', () => {
+    const ids = assessRunValidity(cleanScenario(), [assessment('u1')], VALIDATED).findings.map(
+      (f) => f.id,
+    )
+    expect(ids).not.toContain('unvalidated-model')
   })
 })

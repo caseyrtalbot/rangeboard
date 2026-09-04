@@ -4,7 +4,6 @@ import type { Scenario, SensorSpec } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M, radarCalibration, radarPdAt } from '../analysis/sensorEnv'
 import { rangeForPd } from '../analysis/radarPd'
-import { mulberry32 } from '../geometry/prng'
 import { assessAllThreats } from './sim'
 import { monteCarloPolicy } from './policy'
 
@@ -119,7 +118,7 @@ describe('scan model replicate curve', () => {
     let detected = 0
     let phased = 0
     for (let i = 0; i < REPLICATES; i += 1) {
-      const policy = monteCarloPolicy(mulberry32(SEED + i), DEFAULT_REQUIREMENT_THRESHOLDS)
+      const policy = monteCarloPolicy(SEED, i, DEFAULT_REQUIREMENT_THRESHOLDS)
       const a = assessAllThreats(scenario, policy)[0]
       if (a.firstDetectS == null) continue
       detected += 1

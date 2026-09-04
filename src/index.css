@@ -2511,6 +2511,15 @@ button.chip {
   color: var(--warn);
 }
 
+/* What kind of number the run produces, beside the mode chip. */
+.chip-meta {
+  margin-left: var(--space-1);
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 /* Run mode, seed and replicate count. Opens under the run header. */
 .mc-pop {
   display: flex;
@@ -4804,6 +4813,31 @@ select.nu-unit {
   color: var(--text-dim);
   font-size: 10px;
   text-transform: uppercase;
+}
+
+/* Fidelity tags: the models behind a result, with tier and validation status.
+   The run validity widget and the detail header both draw this block. */
+.fid-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.fid-tag {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-size: 10px;
+}
+
+.fid-tag[data-tier='physics'] {
+  color: var(--text);
+}
+
+.fid-tag[data-validation='none'] {
+  color: var(--warn);
 }
 
 .telemetry-note {

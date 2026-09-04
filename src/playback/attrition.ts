@@ -147,6 +147,13 @@ export const SIZE_PENALTY: Record<UasGroup, number> = { 1: 0.7, 2: 0.8, 3: 0.9, 
  *  hand-flown and jink; every other airframe flies waypoints. */
 export const EVASION_PENALTY = 0.7
 
+/**
+ * Average flyout speed as a fraction of the stated speed (PF). Every stated
+ * flyoutSpeedMps is a maximum or a muzzle velocity, not the mean speed to the
+ * target, so the flight time is charged at this fraction of it.
+ */
+export const FLYOUT_SPEED_FACTOR = 0.7
+
 /** Pk fraction lost at max range (PF, source formula: 30%). The falloff is
  *  linear from 1 at the launcher to 1 - FALLOFF_AT_MAX at max range. */
 export const FALLOFF_AT_MAX = 0.3
@@ -379,6 +386,12 @@ export interface EngagementEvent {
   pk: number
   /** Expected-kill mass removed when the effect applied; 0 for 'continue' jams. */
   killDelta: number
+  /**
+   * Present only when the flight time was capped at the end of the in-range
+   * window: the target would have left the envelope before the interceptor
+   * arrived, so the effect lands at the window end (R-F-7).
+   */
+  flightCapped?: true
 }
 
 export interface AttritionReport {
@@ -556,12 +569,15 @@ export interface EffectorState {
   jamSalvos: number
 }
 
-/** Seconds of flight to a slant range; 0 when the effector states no speed. */
+/**
+ * Seconds of flight to a slant range at the average flyout speed (the stated
+ * speed times FLYOUT_SPEED_FACTOR); 0 when the effector states no speed.
+ */
 export function timeOfFlightS(spec: EffectorSpec, slantM: number): number {
   const v = spec.flyoutSpeedMps
   // A jammer, DE or HPM effect arrives with the beam: no flyout even if a speed is stored.
   if (v == null || !(v > 0) || expenditureChannel(spec.effectorType) !== 'kinetic') return 0
-  return slantM / v
+  return slantM / (v * FLYOUT_SPEED_FACTOR)
 }
 
 /** Formation member positions of a threat at one sim time. */
@@ -576,6 +592,10 @@ function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
  * The returned position and slant are sampled at the returned tEffectS. With no stated
  * speed the flight time is 0 and the result is the position at tS + engageTimeS.
  * `membersAt` lets the sweep supply its per-tick geometry cache; the default samples the path.
+ * `capS` is the end of the in-range interval that contains tS: a target faster than the
+ * interceptor recedes and the passes never close, so a flight past the cap is held at
+ * the cap, sampled there, and reported `capped` (R-F-7). Only the flight is capped: a
+ * release at or before the cap with a flight past it; a release after the cap is not.
  */
 export function interceptAt(
   ts: ThreatState,
@@ -583,7 +603,8 @@ export function interceptAt(
   tS: number,
   memberIdx: number,
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
-): { pos: Vec2; slantM: number; tEffectS: number } {
+  capS = Number.POSITIVE_INFINITY,
+): { pos: Vec2; slantM: number; tEffectS: number; capped: boolean } {
   const dAltM = ts.altM - es.mountM
   const sampleAt = (tEffectS: number) => {
     const members = membersAt(ts, tEffectS)
@@ -597,8 +618,13 @@ export function interceptAt(
     tofS = next
   }
   // The geometry is sampled at the returned time, so the last update is kept.
-  const tEffectS = tS + es.engageTimeS + tofS
-  return { ...sampleAt(tEffectS), tEffectS }
+  // The cap trims the flight only: a release (tS + engageTimeS) already past
+  // the window end is not a flight to cap, and without a stated speed there
+  // is no flight, so the flyout-free arithmetic is unchanged.
+  const releaseS = tS + es.engageTimeS
+  const capped = releaseS <= capS && releaseS + tofS > capS
+  const tEffectS = capped ? capS : releaseS + tofS
+  return { ...sampleAt(tEffectS), tEffectS, capped }
 }
 
 /** A salvo in flight: assigned, magazine spent, effect not yet applied. */
@@ -607,6 +633,8 @@ interface PendingEffect {
   effectorId: string
   target: ThreatState
   shipIdx: number
+  /** Salvos this effector committed before this one, every channel together: the kill draw key. */
+  salvoIdx: number
   /** Geometry Pk evaluated at tEffect (position, falloff, size, evasion). */
   pk: number
   softShot: boolean
@@ -788,7 +816,7 @@ export function resolveEngagements(
       const pEff = fx.pk * (1 - CONTINUE_TRACK_DEGRADE * jammedAt(fx.target, ship, fx.tEffectS))
       const kill =
         ship.alive *
-        draw.kill(pEff, fx.effectorId, fx.target.a.uasId, fx.shipIdx, fx.tEffectS)
+        draw.kill(pEff, fx.effectorId, fx.target.a.uasId, fx.shipIdx, fx.salvoIdx, fx.tEffectS)
       ship.alive -= kill
       // Survival math is unchanged. Only the credit splits: mass removed
       // after the threat was already over the asset destroyed an airframe
@@ -845,7 +873,7 @@ export function resolveEngagements(
   // expenditure channel counts, the magazine decrement, and the cooldown.
   // Shared by the legacy volley loop and the doctrine assignment pass, so the
   // bookkeeping cannot diverge between them. `tEffect` is the interceptAt
-  // effect time of the chosen ship.
+  // effect time of the chosen ship; `capped` is its flight-time cap flag.
   const commitSalvo = (
     es: EffectorState,
     target: ThreatState,
@@ -854,8 +882,11 @@ export function resolveEngagements(
     t: number,
     tEffect: number,
     continueJam: boolean,
+    capped: boolean,
   ) => {
     const softShot = !isHardKill(es.spec.effectorType)
+    // Read before the channel counter below increments: the kill draw key.
+    const salvoIdx = es.shotsFired + es.deSalvos + es.jamSalvos
     const event: EngagementEvent = {
       tS: t,
       tEffectS: tEffect,
@@ -870,6 +901,7 @@ export function resolveEngagements(
       lateEffect: target.a.arrivalS != null && tEffect > target.a.arrivalS + EPS,
       pk,
       killDelta: 0,
+      ...(capped ? { flightCapped: true as const } : {}),
     }
     events.push(event)
 
@@ -878,6 +910,7 @@ export function resolveEngagements(
       effectorId: es.entity.id,
       target,
       shipIdx,
+      salvoIdx,
       pk,
       softShot,
       continueJam,
@@ -985,7 +1018,8 @@ export function resolveEngagements(
             : ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)
         if (readyS == null || t + EPS < readyS) continue
         const contains = (x: number) => intervals.some(([s0, s1]) => x >= s0 - EPS && x <= s1 + EPS)
-        if (!contains(t)) continue
+        const within = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
+        if (!within) continue
         const continueJam = softShot && ts.jamBehavior === 'continue'
         // Prefer the threat closing soonest. Arrival when it has one, else
         // closest approach, which is all the geometry a fly-by offers.
@@ -994,7 +1028,7 @@ export function resolveEngagements(
         for (let i = 0; i < ts.ships.length; i++) {
           // Geometry is evaluated where the effect lands, not where it is
           // fired: the predicted intercept of this ship.
-          const ic = interceptAt(ts, es, t, i, membersAt)
+          const ic = interceptAt(ts, es, t, i, membersAt, within[1])
           if (!contains(ic.tEffectS)) continue
           if (!inEnvelope(ic.pos, ts)) continue
           if (isJammer && jamFactor(ts.uasSpec, ic.pos) <= 0) continue
@@ -1036,7 +1070,7 @@ export function resolveEngagements(
         ? Math.min(1, Math.max(0, es.pk * jamFactor(target.uasSpec, hit.pos)))
         : kineticPk(es.pk, es.spec.maxRangeM, target.uasSpec, hit.slantM)
 
-      commitSalvo(es, target, shipIdx, pk, t, hit.tEffectS, continueJam)
+      commitSalvo(es, target, shipIdx, pk, t, hit.tEffectS, continueJam, hit.capped)
     }
 
     // DOCTRINE ASSIGNMENT PASS (kinetic and DE only). Doctrinal sequence:
@@ -1064,8 +1098,9 @@ export function resolveEngagements(
         shipIdx: number
         pk: number
         arrivalS: number
-        /** interceptAt effect time of this ship. */
+        /** interceptAt effect time of this ship, and its flight-time cap flag. */
         tEffectS: number
+        capped: boolean
       }
       const candidates: Candidate[] = []
       for (const es of effectors.values()) {
@@ -1102,8 +1137,11 @@ export function resolveEngagements(
             if (t + EPS < ship.holdUntilS) continue
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
             // Predicted intercept of this ship: its effect time carries the
-            // flyout, so the window test and the deadline read it per ship.
-            const ic = interceptAt(ts, es, t, i, membersAt)
+            // flyout, capped at the end of the window that contains t, so
+            // the window test and the deadline read it per ship.
+            const at = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
+            if (!at) continue
+            const ic = interceptAt(ts, es, t, i, membersAt, at[1])
             const tEffect = ic.tEffectS
             const within = intervals.find(
               ([s0, s1]) =>
@@ -1130,7 +1168,15 @@ export function resolveEngagements(
             if (!launchPolicyReleases(doctrine, pk, esCommitPk, ic.slantM, es.spec.maxRangeM)) {
               if (t + EPS < deadlineS) continue
             }
-            candidates.push({ es, ts, shipIdx: i, pk, arrivalS, tEffectS: tEffect })
+            candidates.push({
+              es,
+              ts,
+              shipIdx: i,
+              pk,
+              arrivalS,
+              tEffectS: tEffect,
+              capped: ic.capped,
+            })
           }
         }
       }
@@ -1154,7 +1200,7 @@ export function resolveEngagements(
         // A better candidate may already have taken this ship this tick.
         if (t + EPS < ship.holdUntilS) continue
         if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
-        commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, c.tEffectS, false)
+        commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, c.tEffectS, false, c.capped)
         ship.holdUntilS = c.tEffectS + bdaSFor(c.es.spec, doctrine)
         firedThisTick.add(c.es)
       }

@@ -168,7 +168,8 @@ function admittedSlantsM(
  * and only when `scanStep` says this step is one of its scans (between scans
  * it has no hit of its own; assessThreat carries its hold); every other
  * sensor compares slant range with the effective range for this target
- * (environment derates, EO/IR span, acoustic level) at every step.
+ * (environment derates, EO/IR span, acoustic level) at every step, or, for
+ * a threshold radar with a stated period, at its scan steps only.
  */
 function sensorHit(
   sensor: Entity,
@@ -186,10 +187,13 @@ function sensorHit(
 ): DetectionHit | null {
   const gate = sensorHoldGate(spec, uasSpec)
   if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
+  // Between its scans a scan radar (Pd-modeled or a threshold radar with a
+  // stated period) has no hit of its own and cues nothing; the steering's
+  // carried hold is the only cue. A sensor with no scan state answers true.
+  if (!scanStep) return null
   const env = scenario.environment
   let detected: number[]
   if (radarPdModeled(spec, uasSpec)) {
-    if (!scanStep) return null
     const seen = admittedSlantsM(sensor, spec, altitudeFt, members)
     detected = seen.filter((slant, i) =>
       policy.detect(radarPdAt(spec, env, uasSpec, slant)!, sensor.id, uasId, tS, i),
@@ -244,7 +248,7 @@ function radarPdProbe(
  * hold is carried.
  */
 export interface ScanSteering {
-  /** True when this radar takes a scan at this step. */
+  /** True when this radar takes a scan at this step; true for a sensor with no scan state. */
   scanStep(sensorId: string): boolean
   /** True when this radar holds from its last detected scan; it cues EO/IR between scans. */
   holding(sensorId: string): boolean
@@ -600,6 +604,16 @@ export interface ThreatAssessment {
 
 /** Engine sample step, seconds. The one DT source for the sweep, the series builders and the chart kit. */
 export const DT = 0.5
+
+/**
+ * DT step count of a sample time, rounded; two samples DT apart never share
+ * it. The engine's samples can sit off the grid (t = delayS + k * DT), so a
+ * rounded count, not a grid placement, keys a draw (series.ts keeps its own
+ * grid placement, a different question).
+ */
+export function stepIndex(tS: number): number {
+  return Math.round(tS / DT)
+}
 
 /** Tolerance for a nominal scan time landing on the DT grid, seconds. */
 const SCAN_EPS = 1e-6
@@ -984,7 +998,7 @@ export function assessThreat(
   const scanSteps = new Set<string>()
   const scanHits = new Map<string, DetectionHit>()
   const steering: ScanSteering = {
-    scanStep: (sensorId) => scanSteps.has(sensorId),
+    scanStep: (sensorId) => !scanStates.has(sensorId) || scanSteps.has(sensorId),
     holding: (sensorId) => scanStates.get(sensorId)?.hold === 'detected',
   }
   const trackSamples: Array<{ tS: number; held: boolean }> = []

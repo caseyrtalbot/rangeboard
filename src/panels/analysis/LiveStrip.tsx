@@ -18,8 +18,27 @@ const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
 const MIN_REPLICATES = 1
 const MAX_REPLICATES = 10000
 
-/** The mode chip: class, text and title per run mode and replicate state. */
+/** Seed bounds: the draw key reads the seed as a 32-bit unsigned integer (hashU01). */
+const MIN_SEED = 0
+const MAX_SEED = 4294967295
+
+/** What kind of number the run produces: an envelope point, or a replicate estimate. */
+function chipMeta(run: ReturnType<typeof runSettings>, mc: McState): string {
+  if (run.runMode === 'deterministic') return 'envelope · Pd threshold'
+  const done = mc.status === 'done' ? mc.summary : null
+  return `estimate · ${done?.replicates ?? run.replicates} replicates`
+}
+
+/** The mode chip: class, text, title and the basis meta beside it. */
 function chipOf(
+  run: ReturnType<typeof runSettings>,
+  mc: McState,
+): { cls: string; text: string; title: string; meta: string } {
+  return { ...modeChip(run, mc), meta: chipMeta(run, mc) }
+}
+
+/** Class, text and title per run mode and replicate state. */
+function modeChip(
   run: ReturnType<typeof runSettings>,
   mc: McState,
 ): { cls: string; text: string; title: string } {
@@ -150,7 +169,12 @@ function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McSta
         dataRole="run-mode"
       />
       <Field label="Seed">
-        <IntInput value={run.seed} onCommit={(seed) => patchScenario({ seed })} />
+        <IntInput
+          value={run.seed}
+          min={MIN_SEED}
+          max={MAX_SEED}
+          onCommit={(seed) => patchScenario({ seed })}
+        />
       </Field>
       <Field label="Replicates">
         <IntInput
@@ -268,6 +292,7 @@ export function LiveStrip() {
         >
           {chip.text}
         </button>
+        <span className="chip-meta">{chip.meta}</span>
         <span className="live-state">{state}</span>
         <button
           className="mini run-reset"

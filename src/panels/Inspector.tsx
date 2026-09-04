@@ -10,6 +10,7 @@ import type {
 } from '../model/types'
 import {
   DEFAULT_REQUIREMENT_THRESHOLDS,
+  defaultSensorRole,
   effectiveDoctrine,
   entityActive,
   MOUNT_HEIGHT_M,
@@ -42,6 +43,7 @@ import {
   targetScaled,
 } from '../analysis/sensorEnv'
 import {
+  SCAN_S,
   scanPeriodS,
   trackDropMissesFor,
   trackInitMFor,
@@ -49,7 +51,12 @@ import {
   trackInitSFor,
 } from '../analysis/doctrineFactors'
 import { GATE_WORD } from '../canvas/layers/footprintStyle'
-import { DEFAULT_PK, EVASION_PENALTY, SIZE_PENALTY } from '../playback/attrition'
+import {
+  DEFAULT_PK,
+  EVASION_PENALTY,
+  FLYOUT_SPEED_FACTOR,
+  SIZE_PENALTY,
+} from '../playback/attrition'
 import type { SensorSpec, SpecModel } from '../model/types'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
@@ -174,8 +181,22 @@ function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
 function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
   const scenario = useStore((s) => s.scenario)
   if (spec.sensorType !== 'radar') return null
-  const period = scanPeriodS(spec, targetScaled(spec))
-  if (period == null)
+  const period = scanPeriodS(spec, false)
+  if (period == null) {
+    // A target with an RCS makes the radar Pd-modeled, so it scans on the role
+    // period. The panel names no threat, so it says which rule applies.
+    if (targetScaled(spec))
+      return (
+        <Row
+          label="Scan period"
+          value={`by role · ${SCAN_S[defaultSensorRole(spec)]} s`}
+          tag={<PfTag model={model} field="updateRateS" absent />}
+          title={
+            'A target with an RCS takes the role scan period. ' +
+            'A target with no RCS takes the sensor-role hold time.'
+          }
+        />
+      )
     return (
       <Row
         label="Scan period"
@@ -183,6 +204,7 @@ function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
         title="No scan period is recorded. Initiation follows the sensor-role table: the track initiates after this much continuous hold."
       />
     )
+  }
   return (
     <>
       <Row
@@ -952,6 +974,20 @@ function EntityInspector({ entity }: { entity: Entity }) {
                   'The engine adds the time of flight to the engagement time.'
                 }
                 tag={<PfTag model={model} field="flyoutSpeedMps" />}
+                mono
+              />
+            )}
+          {model.effector.flyoutSpeedMps != null &&
+            Number.isFinite(model.effector.flyoutSpeedMps) &&
+            model.effector.flyoutSpeedMps > 0 && (
+              <Row
+                label="Average flyout speed"
+                value={`${Math.round(model.effector.flyoutSpeedMps * FLYOUT_SPEED_FACTOR)} m/s`}
+                title={
+                  'Stated speed times the planning factor 0.7. ' +
+                  'Every stated speed is a maximum or a muzzle velocity.'
+                }
+                tag={<PfTag model={model} field="flyoutSpeedFactor" absent />}
                 mono
               />
             )}

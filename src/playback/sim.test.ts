@@ -1559,6 +1559,49 @@ describe('slice 3: scan-model track initiation, coast and drop', () => {
     expect(obs.trackInitAtS).toBe(obs.intervals[0][0] + TRACK_INIT_S['fire-control'])
     expect(obs.coastIntervals).toEqual([])
   })
+
+  it('a threshold scan radar cues a camera through its carried hold only, never off-scan', () => {
+    // Planning-basis radar at the origin, 4 km, period 4 s: scans at 0, 4, 8,
+    // ... (phase 0, no path delay). A narrow cued camera (HD CMR, 3 km,
+    // classification role) sits at x = 3800. The Mavic flies west from
+    // x = 4005 at 10 m/s at the mount height, so slant equals ground range:
+    //   t = 0 (scan):     x 4005, outside 4 km, the scan misses
+    //   t = 1 (off-scan): x 3995, inside 4 km, but no scan: no radar hit
+    //   t = 4 (scan):     x 3965, the first detected scan
+    // The camera is 205 m from the target from t = 0, so only the cue gates
+    // it: before R-F-9 the radar's off-scan range test at t = 1 cued it and
+    // the camera took first detection at 1 s; now the hold from the scan at
+    // 4 s is the one cue, so both observations start at 4 and the radar
+    // keeps the credit. Between scans (4.5 to 7.5) the carried hold keeps
+    // the camera on the target.
+    const { sensorId: radarId } = placeScanRadar({ updateRateS: 4, rangeBasis: 'planning' })
+    useStore.getState().addEntityFromModel('lib-hdcmr', { x: 3800, y: 0 })
+    const cameraId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().addEntityFromModel('lib-mavic3', { x: 4005, y: 0 })
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEntity(uasId, { altitudeFt: FIXTURE_ALT_FT })
+    useStore.getState().beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 3000, y: 0 })
+    useStore.getState().finishPath()
+    const st = useStore.getState().scenario
+    const scenario = {
+      ...st,
+      paths: st.paths.map((p) => (p.entityId === uasId ? { ...p, speedMps: 10 } : p)),
+    }
+    const a = assessThreat(scenario, uasId)
+    expect(a.firstDetectS).toBe(4)
+    expect(a.firstDetectSensorId).toBe(radarId)
+    const radar = a.sensorObservations!.find((o) => o.sensorId === radarId)!
+    const camera = a.sensorObservations!.find((o) => o.sensorId === cameraId)!
+    expect(radar.intervals[0][0]).toBe(4)
+    expect(camera.firstDetectS).toBe(4)
+    expect(camera.intervals[0][0]).toBe(4)
+    expect(camera.intervals[0][1]).toBeGreaterThanOrEqual(8)
+    // The board view (a bare sweep, every step a scan step) still sees the
+    // radar hit at t = 1: the steering, not the range test, is what changed.
+    const at1 = detectionsAt(scenario, 1).get(uasId)!
+    expect(at1.map((h) => h.sensorType).sort()).toEqual(['eo-ir', 'radar'])
+  })
 })
 
 describe('slice 1: one draw per scan', () => {

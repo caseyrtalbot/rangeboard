@@ -7,6 +7,7 @@ import { posAtTime } from '../geometry/geo'
 import {
   distanceFalloff,
   expenditureChannel,
+  FLYOUT_SPEED_FACTOR,
   isHardKill,
   resolveEngagements,
   SHIP_DEAD_BELOW,
@@ -1084,9 +1085,11 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     engageTimeS: 0,
   }
 
-  it('timeOfFlightS is slant over speed, and 0 with no speed or a non-kinetic effector', () => {
-    // 4000 m at 200 m/s = 20 s.
-    expect(timeOfFlightS({ ...base, flyoutSpeedMps: 200 }, 4000)).toBe(20)
+  it('timeOfFlightS is slant over the average speed; 0 without a speed or a kinetic type', () => {
+    // A stated 200 m/s is a maximum; the average is 200 * 0.7 = 140 m/s, so
+    // 4000 m takes 4000 / 140 = 28.5714 s.
+    expect(FLYOUT_SPEED_FACTOR).toBe(0.7)
+    expect(timeOfFlightS({ ...base, flyoutSpeedMps: 200 }, 4000)).toBeCloseTo(4000 / 140, 12)
     expect(timeOfFlightS(base, 4000)).toBe(0)
     expect(timeOfFlightS({ ...base, flyoutSpeedMps: null }, 4000)).toBe(0)
     expect(timeOfFlightS({ ...base, flyoutSpeedMps: 0 }, 4000)).toBe(0)
@@ -1097,17 +1100,20 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
 
   it('lands the effect at t + engageTimeS + flight time to the predicted intercept', () => {
     // Launcher at the origin, 4600 m envelope, engage time 10 s, 200 m/s
-    // interceptor. Threat closes radially from x = 4700 at 20 m/s (west),
-    // so x(tau) = 4700 - 20 tau and the slant equals x while x > 0.
+    // stated interceptor speed, so 140 m/s average (FLYOUT_SPEED_FACTOR 0.7).
+    // Threat closes radially from x = 4700 at 20 m/s (west), so
+    // x(tau) = 4700 - 20 tau and the slant equals x while x > 0.
     // Window opens at x = 4600: tau = 5, a grid point, so the one shot is
     // assigned at t = 5. Three fixed-point passes from a 0 flight time:
-    //   pass 0: tEffect 15,   x 4400, flight 4400/200 = 22
-    //   pass 1: tEffect 37,   x 3960, flight 19.8
-    //   pass 2: tEffect 34.8, x 4004, flight 20.02
-    // so tEffectS = 5 + 10 + 20.02 = 35.02 and the intercept is sampled
-    // there, x 3999.6 (the slant used for the falloff), within one DT of
-    // t + E + 20 (the exact fixed point is 4400 / (200 + 20) = 20 s at
-    // 4000 m). Pk at the intercept: 0.5 * (1 - 0.3 * 3999.6/4600).
+    //   pass 0: tEffect 15,      x 4400,    flight 4400/140 = 31.4286
+    //   pass 1: tEffect 46.4286, x 3771.43, flight 26.9388
+    //   pass 2: tEffect 41.9388, x 3861.22, flight 27.5802
+    // so tEffectS = 5 + 10 + 27.5802 = 42.5802 and the intercept is sampled
+    // there, x 4700 - 20 * 42.5802 = 3848.40 (the slant used for the
+    // falloff), within one DT of t + E + 27.5 (the exact fixed point is
+    // 4400 / (140 + 20) = 27.5 s at 3850 m). Pk at the intercept:
+    // 0.5 * (1 - 0.3 * 3848.40/4600). Moved at wave 2 from 35.02 s at the
+    // stated 200 m/s.
     const scenario = legacyScenario()
     const eff = interceptor({
       pk: 0.5,
@@ -1133,14 +1139,90 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     expect(r.events).toHaveLength(1)
     const ev = r.events[0]
     expect(ev.tS).toBeCloseTo(5, 9)
-    expect(ev.tEffectS).toBeCloseTo(35.02, 9)
-    expect(Math.abs(ev.tEffectS - (5 + 10 + 20))).toBeLessThan(0.5)
+    const tof2 = (4700 - 20 * (15 + (4700 - 20 * (15 + 4400 / 140)) / 140)) / 140
+    expect(tof2).toBeCloseTo(27.5802, 4)
+    expect(ev.tEffectS).toBeCloseTo(15 + tof2, 9)
+    expect(Math.abs(ev.tEffectS - (5 + 10 + 27.5))).toBeLessThan(0.5)
+    expect(ev.flightCapped).toBeUndefined()
     // The intercept point is where posAtTime puts the target at tEffectS.
     const at = posAtTime(points, 20, 0, ev.tEffectS).pos
-    expect(at.x).toBeCloseTo(3999.6, 6)
+    const xAt = 4700 - 20 * (15 + tof2)
+    expect(xAt).toBeCloseTo(3848.4, 1)
+    expect(at.x).toBeCloseTo(xAt, 6)
     expect(at.y).toBeCloseTo(0, 9)
-    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (3999.6 / 4600)), 9)
+    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (xAt / 4600)), 9)
     expect(r.threats[0].expectedKills).toBeCloseTo(ev.pk, 9)
+  })
+
+  it('caps the flight at the window end for a receding target faster than the interceptor', () => {
+    // Launcher at the origin, 4000 m envelope, engage time 0, 78 m/s stated
+    // (Merops-like), so 78 * 0.7 = 54.6 m/s average. Threat flies away east
+    // from x = 1100 at 97 m/s: x(tau) = 1100 + 97 tau, slant = x. Window from
+    // t = 0 (ROE free, detection at 0) until x > 4000 at tau = 2900/97 =
+    // 29.90, so the last in-range grid sample is s1 = 29.5 (x = 3961.5).
+    // Legacy pass, one shot at t = 0. The passes never close:
+    //   pass 0: tEffect 0,     x 1100,    flight 1100/54.6 = 20.15
+    //   pass 1: tEffect 20.15, x 3054.21, flight 55.94
+    //   pass 2: tEffect 55.94, x 6525.98, flight 119.52
+    // 0 + 0 + 119.52 > 29.5, so the effect lands at the cap, 29.5, sampled
+    // there: x 3961.5, Pk = 0.5 * (1 - 0.3 * 3961.5/4000) = 0.35144375, and
+    // the event carries flightCapped. Under doctrine the shot fires once the
+    // track is firm, still inside the window, and the same cap applies.
+    const eff = interceptor({
+      pk: 0.5,
+      maxRangeM: 4000,
+      flyoutSpeedMps: 78,
+      magazineSize: 1,
+      salvoCooldownS: 1000,
+    })
+    const away = [
+      { x: 1100, y: 0 },
+      { x: 8000, y: 0 },
+    ]
+    const build = (doctrineOn: boolean) => {
+      const scenario = legacyScenario()
+      scenario.roe = 'free'
+      scenario.doctrine = { ...scenario.doctrine!, enabled: doctrineOn }
+      scenario.library = [...scenario.library, SENSOR, TARGET, eff]
+      const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+      const launcher = ent('effector', eff.id, { x: 0, y: 0 })
+      const uas = ent('uas', TARGET.id, away[0])
+      scenario.entities = [sensor, launcher, uas]
+      scenario.connections = [link(sensor.id, launcher.id)]
+      scenario.paths = [flight(uas.id, away, 97)]
+      return scenario
+    }
+    const legacy = resolveEngagements(build(false))
+    expect(legacy.events).toHaveLength(1)
+    const ev = legacy.events[0]
+    expect(ev.tS).toBe(0)
+    expect(ev.tEffectS).toBe(29.5)
+    expect(ev.flightCapped).toBe(true)
+    expect(posAtTime(away, 97, 0, 29.5).pos.x).toBeCloseTo(3961.5, 6)
+    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (3961.5 / 4000)), 9)
+    expect(ev.pk).toBeCloseTo(0.35144375, 9)
+
+    const doctrine = resolveEngagements(build(true))
+    expect(doctrine.events).toHaveLength(1)
+    expect(doctrine.events[0].tS).toBeGreaterThan(0)
+    expect(doctrine.events[0].tS).toBeLessThanOrEqual(29.5)
+    expect(doctrine.events[0].tEffectS).toBe(29.5)
+    expect(doctrine.events[0].flightCapped).toBe(true)
+
+    // A closing target at the same speeds lands its effect in flight: no flag.
+    const closing = build(false)
+    const toward = [
+      { x: 3900, y: 0 },
+      { x: -1000, y: 0 },
+    ]
+    closing.entities = closing.entities.map((e) =>
+      e.kind === 'uas' ? { ...e, pos: toward[0] } : e,
+    )
+    closing.paths = [flight(closing.entities[2].id, toward, 40)]
+    const closed = resolveEngagements(closing)
+    expect(closed.events).toHaveLength(1)
+    expect(closed.events[0].flightCapped).toBeUndefined()
+    expect(closed.events[0].tEffectS).toBeGreaterThan(closed.events[0].tS)
   })
 
   it('no stated speed: the ledger is the flyout-free ledger under doctrine', () => {

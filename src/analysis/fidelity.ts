@@ -6,6 +6,13 @@
  * is true today, not what is planned. `standard` quotes a row of the standards table in
  * `docs/engine-refactor/PLAN.md` section 12 where a published method applies.
  */
+import type {
+  Entity, EntityKind, Scenario, SensorSpec, SpecModel, UasSpec,
+} from '../model/types'
+import { effectiveDoctrine, entityActive, runSettings } from '../model/types'
+import { expenditureChannel } from '../playback/attrition'
+import { scanPeriodS } from './doctrineFactors'
+import { radarPdModeled } from './sensorEnv'
 
 /** Every model the engine runs. */
 export type ModelId =
@@ -36,9 +43,12 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     id: 'radar-pd',
     label: 'Radar Pd',
     tier: 'physics',
-    validation: 'analytic',
+    validation: 'datasheet',
     standard: 'Radar: Swerling cases evaluated with Marcum-Q and Shnidman',
-    note: 'Closed-form Pd. The Marcum-Q values are pinned in radarPd.test.ts.',
+    note:
+      'Closed-form Pd. Marcum-Q values are pinned in radarPd.test.ts. The range law is ' +
+      'checked against the Blighter A400 series datasheet and the Echodyne EchoShield ' +
+      'and EchoGuard sheets in validation.verify.test.ts.',
   },
   'radar-scan': {
     id: 'radar-scan',
@@ -135,4 +145,109 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     validation: 'none',
     note: 'Spread shapes and widths are planning factors until a trial count replaces them.',
   },
+}
+
+/** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
+const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
+  sensor: [
+    'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect',
+    'environment', 'horizon', 'track-init',
+  ],
+  effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
+  uas: ['radar-pd', 'environment', 'kinetic-pk'],
+  c2: ['doctrine'],
+}
+
+/** Tag order every reader gets: the order MODEL_TAGS declares. */
+const MODEL_ORDER = Object.keys(MODEL_TAGS) as ModelId[]
+
+/**
+ * Specs of the active entities of one kind. `entityId` narrows the scan to
+ * one entity; the spec resolves through the scenario library, as impact.ts
+ * does, because this module must not import the store.
+ */
+function activeSpecs<T>(
+  scenario: Scenario,
+  kind: EntityKind,
+  pick: (m: SpecModel) => T | undefined,
+  entityId?: string,
+): T[] {
+  const out: T[] = []
+  for (const e of scenario.entities) {
+    if (e.kind !== kind || !entityActive(e)) continue
+    if (entityId != null && e.id !== entityId) continue
+    const model = scenario.library.find((m) => m.id === e.specId)
+    const spec = model ? pick(model) : undefined
+    if (spec != null) out.push(spec)
+  }
+  return out
+}
+
+/**
+ * Scan period of one sensor against each active target. With no target the
+ * sensor runs no Pd model, so it takes the one unmodeled look.
+ */
+function scanPeriods(spec: SensorSpec, targets: UasSpec[]): Array<number | null> {
+  if (targets.length === 0) return [scanPeriodS(spec, false)]
+  return targets.map((t) => scanPeriodS(spec, radarPdModeled(spec, t)))
+}
+
+/** Every model id the laydown exercises. `entity` narrows one side of each pair. */
+function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
+  const sensors = activeSpecs(
+    scenario, 'sensor', (m) => m.sensor, entity?.kind === 'sensor' ? entity.id : undefined,
+  )
+  const effectors = activeSpecs(
+    scenario, 'effector', (m) => m.effector, entity?.kind === 'effector' ? entity.id : undefined,
+  )
+  const targets = activeSpecs(
+    scenario, 'uas', (m) => m.uas, entity?.kind === 'uas' ? entity.id : undefined,
+  )
+  const kinetic = effectors.filter((e) => expenditureChannel(e.effectorType) === 'kinetic')
+  // The engine reads kineticPk for every non-jammer effector (DE and HPM
+  // included); only the flyout term is confined to the kinetic channel.
+  const aimed = effectors.filter((e) => e.effectorType !== 'jammer')
+  const out = new Set<ModelId>()
+  const add = (id: ModelId, when: boolean): void => {
+    if (when) out.add(id)
+  }
+  add('radar-pd', sensors.some((s) => targets.some((t) => radarPdModeled(s, t))))
+  add('radar-scan', sensors.some((s) => scanPeriods(s, targets).some((p) => p != null)))
+  add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
+  add('acoustic-range', sensors.some((s) => s.sensorType === 'acoustic'))
+  add('rf-detect', sensors.some((s) => s.sensorType === 'rf'))
+  add('jam', effectors.some((e) => e.effectorType === 'jammer'))
+  add('environment', scenario.environment.apply)
+  // sensorGeometryGate answers before the horizon test for an acoustic sensor.
+  add('horizon', sensors.some((s) => s.sensorType !== 'acoustic'))
+  add('track-init', sensors.some((s) => scanPeriods(s, targets).every((p) => p == null)))
+  add('doctrine', effectiveDoctrine(scenario).enabled)
+  add('kinetic-pk', aimed.length > 0)
+  add('flyout', kinetic.some((e) => (e.flyoutSpeedMps ?? 0) > 0))
+  add('draw-policy', runSettings(scenario).runMode === 'monte-carlo')
+  // parameter-spread stays out until the uncertainty setting exists.
+  return out
+}
+
+/** The models a laydown exercises, in MODEL_TAGS order. Pure; reads the scenario only. */
+export function modelsUsed(
+  scenario: Scenario,
+  table: Record<ModelId, ModelTag> = MODEL_TAGS,
+): ModelTag[] {
+  const ids = usedIds(scenario)
+  return MODEL_ORDER.filter((id) => ids.has(id)).map((id) => table[id])
+}
+
+/** The models behind one entity, in MODEL_TAGS order; empty for an asset or an unknown id. */
+export function modelsForEntity(
+  scenario: Scenario,
+  entityId: string,
+  table: Record<ModelId, ModelTag> = MODEL_TAGS,
+): ModelTag[] {
+  const entity = scenario.entities.find((e) => e.id === entityId)
+  if (!entity || !entityActive(entity)) return []
+  const allowed = ENTITY_MODELS[entity.kind]
+  if (!allowed) return []
+  const ids = usedIds(scenario, entity)
+  return MODEL_ORDER.filter((id) => allowed.includes(id) && ids.has(id)).map((id) => table[id])
 }
