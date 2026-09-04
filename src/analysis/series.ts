@@ -12,22 +12,29 @@
  * detection take `CHART_SLOT_TOKENS`, the rest fold into `OTHER_TOKEN`. A
  * consumer filters AFTER that map, so a hidden track keeps its slot. Status
  * tokens color marks only, never a series.
+ *
+ * A builder may return `LadderRow[]` instead: spans are in seconds on the
+ * same grid, and an inclusive DT interval [a, b] covers [a, b + DT) on the
+ * ladder so a one-sample hold has width DT.
  */
-import type { ChartMark, Series } from '../charts/types'
+import type { ChartMark, LadderRow, LadderSpan, Series } from '../charts/types'
 import { CHART_SLOT_TOKENS, OTHER_TOKEN } from '../charts/tokens'
+import { pathLength } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import type { Entity, Scenario, SpecModel } from '../model/types'
-import { mountHeightOf } from '../model/types'
+import { entityActive, mountHeightOf } from '../model/types'
 import type { EngagementEvent } from '../playback/attrition'
+import { effectivePathDelayS } from '../playback/raid'
 import type { SensorObservation, ThreatAssessment } from '../playback/sim'
 import { DT, entityPosAt, killChainRoutes, threatAltitudeFt } from '../playback/sim'
 import { buildTrackTimeline, PHASE_STYLE, trackStatesAt } from '../playback/trackState'
 import type { TrackPhase } from '../playback/trackState'
-import { modelFor, scenarioDurationS } from '../state/store'
+import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
 import { engagementPicture } from './impact'
 import { buildLiveTimeline, liveKpisAt } from './liveStats'
 import type { LiveKpis } from './liveStats'
 import { FT_TO_M } from './sensorEnv'
+import { threatPictureAt } from './threatAggregation'
 
 /** Grid-snap tolerance: an event time a rounding error before a step still lands on it. */
 const EPS = 1e-9
@@ -434,4 +441,373 @@ export function systemSeries(scenario: Scenario): Series[] {
     }
   }
   return out
+}
+
+/** One legend entry of the sensor track ladder. */
+export interface LadderStyle {
+  label: string
+  color: string
+}
+
+/** The span kinds of the sensor track ladder. */
+type TrackLadderKind = 'search' | 'init' | 'track' | 'coast' | 'drop'
+
+/**
+ * The one style table of the sensor track ladder. search takes the
+ * `PHASE_STYLE.searching` color, init 'warn', track 'danger', coast the
+ * mockup COAST grey (`PHASE_STYLE` has no coast entry) and drop 'accent'.
+ * Color is a token name or a hex, as `Series.color`.
+ */
+export const TRACK_LADDER_STYLE: Record<TrackLadderKind, LadderStyle> = {
+  search: { label: 'Search', color: PHASE_STYLE.searching.color },
+  init: { label: 'Init', color: 'warn' },
+  track: { label: 'Track', color: 'danger' },
+  coast: { label: 'Coast', color: '#5b6a74' },
+  drop: { label: 'Drop', color: 'accent' },
+}
+
+/**
+ * Start and end time of a track's path: the effective delay (path plus wave,
+ * the same start the sweep uses) and the delay plus the flight time. Null
+ * for a track with no path.
+ */
+function pathWindow(scenario: Scenario, uasId: string): [number, number] | null {
+  const path = scenario.paths.find((p) => p.entityId === uasId)
+  if (!path) return null
+  const startS = effectivePathDelayS(scenario, path)
+  return [startS, startS + pathLength(path.points) / pathSpeed(scenario, path)]
+}
+
+function trackSpan(kind: TrackLadderKind, startS: number, endS: number): LadderSpan {
+  return { startS, endS, color: TRACK_LADDER_STYLE[kind].color, label: kind }
+}
+
+/**
+ * The spans of `kind` over [fromS, toS) minus every coast window in `coasts`
+ * (each already widened to the ladder rule). Emits nothing for an empty range.
+ */
+function minusCoasts(
+  kind: TrackLadderKind,
+  fromS: number,
+  toS: number,
+  coasts: Array<[number, number]>,
+): LadderSpan[] {
+  const out: LadderSpan[] = []
+  let cursor = fromS
+  for (const [ca, cb] of coasts) {
+    if (cb <= cursor || ca >= toS) continue
+    if (ca > cursor) out.push(trackSpan(kind, cursor, ca))
+    cursor = Math.max(cursor, cb)
+  }
+  if (cursor < toS) out.push(trackSpan(kind, cursor, toS))
+  return out
+}
+
+/**
+ * Ladder spans of one observation. The partition rule:
+ *   search: [pathStartS, firstDetectS) when firstDetectS > pathStartS.
+ *   init:   [firstDetectS, trackInitAtS) when trackInitAtS is non-null and
+ *           later than firstDetectS, minus any coast inside it (M-of-N lets
+ *           a missed scan precede initiation, so the engine does put one there).
+ *   track:  each hold interval, clipped to start at trackInitAtS (else at
+ *           firstDetectS), minus every coast.
+ *   coast:  each coast interval as is.
+ *   drop:   a zero-width span at the ladder end of every interval that ends
+ *           more than DT before the path end.
+ * Every span end is clamped to the duration; the sweep samples one step past
+ * the path end.
+ */
+function observationSpans(
+  obs: SensorObservation,
+  pathStartS: number,
+  pathEndS: number,
+  durationS: number,
+): LadderSpan[] {
+  const clamp = (t: number) => Math.min(t, durationS)
+  const coasts = obs.coastIntervals.map(([a, b]): [number, number] => [a, clamp(b + DT)])
+  const init = obs.trackInitAtS
+  const trackFromS = init ?? obs.firstDetectS
+  const spans: LadderSpan[] = []
+  if (obs.firstDetectS > pathStartS) {
+    spans.push(trackSpan('search', pathStartS, clamp(obs.firstDetectS)))
+  }
+  // The M-of-N window can span a drop, so init fills only where the sensor held the track.
+  if (init != null && init > obs.firstDetectS) {
+    for (const [a, b] of obs.intervals) {
+      const startS = Math.max(a, obs.firstDetectS)
+      const endS = Math.min(clamp(b + DT), clamp(init))
+      if (endS > startS) spans.push(...minusCoasts('init', startS, endS, coasts))
+    }
+  }
+  for (const [a, b] of obs.intervals) {
+    const endS = clamp(b + DT)
+    spans.push(...minusCoasts('track', Math.max(a, trackFromS), endS, coasts))
+    if (b < pathEndS - DT) spans.push(trackSpan('drop', endS, endS))
+  }
+  for (const [a, b] of coasts) spans.push(trackSpan('coast', a, b))
+  // Stable: a drop at the same time as a following span draws first.
+  return spans.sort((x, y) => x.startS - y.startS || (x.endS - x.startS) - (y.endS - y.startS))
+}
+
+/**
+ * One row per track this sensor observed (assessment order, as `sensorSeries`).
+ * Row id = uasId, label = the entity name. Spans partition the observation
+ * per `observationSpans` and never overlap; each takes
+ * `TRACK_LADDER_STYLE[kind].color` and carries the kind as its label. A track
+ * with no path gives no row.
+ */
+export function trackLadderRows(scenario: Scenario, sensorId: string): LadderRow[] {
+  const { assessments } = engagementPicture(scenario)
+  const durationS = scenarioDurationS(scenario)
+  const rows: LadderRow[] = []
+  for (const a of assessments) {
+    const obs = a.sensorObservations?.find((o) => o.sensorId === sensorId)
+    if (!obs) continue
+    const window = pathWindow(scenario, a.uasId)
+    if (!window) continue
+    rows.push({
+      id: a.uasId,
+      label: nameOf(scenario, a.uasId),
+      spans: observationSpans(obs, window[0], window[1], durationS),
+    })
+  }
+  return rows
+}
+
+/**
+ * Tracks this sensor holds per step: `scanLoad` (`step`, tracks, chart-1),
+ * the count of this sensor's observations whose `held.<uasId>` flag is 1.
+ * Zeros, never NaN, when the sensor observed nothing or the id is unknown.
+ */
+export function scanLoadSeries(scenario: Scenario, sensorId: string): Series {
+  const values = new Array<number>(sampleCount(scenario)).fill(0)
+  for (const s of sensorSeries(scenario, sensorId)) {
+    if (!s.id.startsWith('held.')) continue
+    s.values.forEach((v, i) => {
+      if (v === 1) values[i] += 1
+    })
+  }
+  return {
+    id: 'scanLoad',
+    label: 'Tracks held',
+    unit: 'tracks',
+    values,
+    color: 'chart-1',
+    kind: 'step',
+  }
+}
+
+const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v)
+
+/**
+ * One pass over `sensorSeries` of every active sensor.
+ *
+ * Tracks held: at step i, the count of tracks whose `held.<uasId>` flag is 1
+ * for at least one enabled sensor. Mean Pd: at step i, over those held
+ * tracks, take per track the largest finite `pd.<uasId>` among the sensors
+ * holding it, then the mean over tracks; NaN when no held track has a
+ * finite Pd at that step.
+ */
+function heldPass(scenario: Scenario): { tracks: number[]; meanPd: number[] } {
+  const n = sampleCount(scenario)
+  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
+  const held = new Map<string, number[][]>()
+  const pd = new Map<string, number[][]>()
+  for (const sensor of sensors) {
+    for (const s of sensorSeries(scenario, sensor.id)) {
+      const dot = s.id.indexOf('.')
+      const kind = s.id.slice(0, dot)
+      const uasId = s.id.slice(dot + 1)
+      const target = kind === 'held' ? held : kind === 'pd' ? pd : null
+      if (!target || !uasId) continue
+      const list = target.get(uasId) ?? []
+      list.push(s.values)
+      target.set(uasId, list)
+    }
+  }
+  const tracks = new Array<number>(n).fill(0)
+  const meanPd = grid(n)
+  for (let i = 0; i < n; i += 1) {
+    let count = 0
+    let pdSum = 0
+    let pdCount = 0
+    for (const [uasId, flags] of held) {
+      if (!flags.some((f) => f[i] === 1)) continue
+      count += 1
+      let best = Number.NaN
+      for (const values of pd.get(uasId) ?? []) {
+        const v = values[i]
+        if (finite(v) && (!finite(best) || v > best)) best = v
+      }
+      if (finite(best)) {
+        pdSum += best
+        pdCount += 1
+      }
+    }
+    tracks[i] = count
+    if (pdCount > 0) meanPd[i] = pdSum / pdCount
+  }
+  return { tracks, meanPd }
+}
+
+/**
+ * `tracksHeld` (`step`, tracks, chart-1): at step i, the count of tracks
+ * whose `held.<uasId>` flag is 1 for at least one enabled sensor.
+ */
+export function heldTracksSeries(scenario: Scenario): Series {
+  const { tracks } = heldPass(scenario)
+  return {
+    id: 'tracksHeld',
+    label: 'Tracks held',
+    unit: 'tracks',
+    values: tracks,
+    color: 'chart-1',
+    kind: 'step',
+  }
+}
+
+/**
+ * `meanPd` (`line`, Pd, chart-4): at step i, over the held tracks, take per
+ * track the largest finite `pd.<uasId>` among the sensors holding it, then
+ * the mean over tracks; NaN when no held track has a finite Pd at that step.
+ */
+export function meanHeldPdSeries(scenario: Scenario): Series {
+  const { meanPd } = heldPass(scenario)
+  return {
+    id: 'meanPd',
+    label: 'Mean Pd of held tracks',
+    unit: 'Pd',
+    values: meanPd,
+    color: 'chart-4',
+    kind: 'line',
+  }
+}
+
+/** `salvosInFlight` (`step`, chart-2): at step i, events with tS <= t < tEffectS. */
+export function salvosInFlightSeries(scenario: Scenario): Series {
+  const { report } = engagementPicture(scenario)
+  const n = sampleCount(scenario)
+  const inFlight = new Array<number>(n).fill(0)
+  for (let i = 0; i < n; i += 1) {
+    const t = i * DT
+    inFlight[i] = report.events.filter((ev) => ev.tS <= t && t < ev.tEffectS).length
+  }
+  return {
+    id: 'salvosInFlight',
+    label: 'Salvos in flight',
+    unit: null,
+    values: inFlight,
+    color: 'chart-2',
+    kind: 'step',
+  }
+}
+
+/**
+ * One `step` series per threat group (`threatPictureAt` over the whole run):
+ * `group.<groupId>`, the element-wise sum of its members' residual ships,
+ * colored by group index through `CHART_SLOT_TOKENS`.
+ */
+export function groupResidualSeries(scenario: Scenario): Series[] {
+  const { assessments, report } = engagementPicture(scenario)
+  const n = sampleCount(scenario)
+  const groups = threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map())
+  return groups.map((group, index) => {
+    const values = grid(n)
+    for (const member of group.members) {
+      const residual = threatSeries(scenario, member.uasId).find((s) => s.id === 'residual')
+      if (!residual) continue
+      for (let i = 0; i < n; i += 1) {
+        const v = residual.values[i]
+        if (!finite(v)) continue
+        values[i] = finite(values[i]) ? values[i] + v : v
+      }
+    }
+    return {
+      id: `group.${group.id}`,
+      label: group.label,
+      unit: 'ships',
+      values,
+      color: CHART_SLOT_TOKENS[index] ?? OTHER_TOKEN,
+      kind: 'step',
+    }
+  })
+}
+
+/** This effector's events in release order. */
+function effectorEvents(scenario: Scenario, effectorId: string): EngagementEvent[] {
+  const { report } = engagementPicture(scenario)
+  return report.events.filter((ev) => ev.effectorId === effectorId).sort((a, b) => a.tS - b.tS)
+}
+
+/**
+ * Salvo marks of one effector in time order: per event `REL` at tS (accent)
+ * and `FX` at tEffectS (danger, or ew for a jam salvo).
+ */
+export function salvoMarks(scenario: Scenario, effectorId: string): ChartMark[] {
+  const marks: ChartMark[] = []
+  for (const ev of effectorEvents(scenario, effectorId)) {
+    marks.push({ tS: ev.tS, label: 'REL', color: 'accent' })
+    marks.push({ tS: ev.tEffectS, label: 'FX', color: ev.channel === 'jam' ? 'ew' : 'danger' })
+  }
+  return marks.sort((a, b) => a.tS - b.tS)
+}
+
+/**
+ * Release-to-effect ladder of one effector: one row per engaged track in
+ * first-event order, id = uasId, label = the entity name, one span per event
+ * [tS, tEffectS] in the track's hue slot, label 'salvo'. A zero-flight-time
+ * event gives startS === endS.
+ */
+export function releaseLadderRows(scenario: Scenario, effectorId: string): LadderRow[] {
+  const slots = trackSlots(scenario)
+  const rows = new Map<string, LadderRow>()
+  for (const ev of effectorEvents(scenario, effectorId)) {
+    let row = rows.get(ev.uasId)
+    if (!row) {
+      row = { id: ev.uasId, label: nameOf(scenario, ev.uasId), spans: [] }
+      rows.set(ev.uasId, row)
+    }
+    row.spans.push({
+      startS: ev.tS,
+      endS: ev.tEffectS,
+      color: slots.get(ev.uasId) ?? OTHER_TOKEN,
+      label: 'salvo',
+    })
+  }
+  return [...rows.values()]
+}
+
+/**
+ * The phase ladder of one track: one row, id = uasId, label 'Phase'.
+ * Consecutive steps with the same `trackStatesAt` phase form one span
+ * [i * DT, (j + 1) * DT) clamped to the duration; 'undetected' draws no
+ * span; every other phase takes the `PHASE_STYLE` color and label. A row
+ * with no spans for an unknown id.
+ */
+export function phaseLadderRow(scenario: Scenario, uasId: string): LadderRow {
+  const row: LadderRow = { id: uasId, label: 'Phase', spans: [] }
+  const { assessments, report } = engagementPicture(scenario)
+  if (!assessments.some((a) => a.uasId === uasId)) return row
+  const tl = buildTrackTimeline(scenario, assessments, report)
+  const n = sampleCount(scenario)
+  const durationS = scenarioDurationS(scenario)
+  let current: TrackPhase = 'undetected'
+  let startI = 0
+  for (let i = 0; i <= n; i += 1) {
+    const phase: TrackPhase =
+      i < n ? (trackStatesAt(tl, i * DT).get(uasId)?.phase ?? 'undetected') : 'undetected'
+    if (i < n && phase === current) continue
+    const style = PHASE_STYLE[current]
+    if (style.color != null) {
+      row.spans.push({
+        startS: startI * DT,
+        endS: Math.min(i * DT, durationS),
+        color: style.color,
+        label: style.label,
+      })
+    }
+    current = phase
+    startI = i
+  }
+  return row
 }

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import type { ComponentTelemetry, SystemTelemetryGroup } from '../../analysis/systemTelemetry'
 import { formatTime } from '../../geometry/geo'
 
-const STATE_LABEL: Record<ComponentTelemetry['state'], string> = {
+/** Pill word per component state. The one name table; the detail header reads it too. */
+export const STATE_LABEL: Record<ComponentTelemetry['state'], string> = {
   disabled: 'OFFLINE',
   searching: 'SEARCH',
   tracking: 'TRACK',
@@ -13,7 +14,8 @@ const STATE_LABEL: Record<ComponentTelemetry['state'], string> = {
   depleted: 'EMPTY',
 }
 
-function stateClass(state: ComponentTelemetry['state']): string {
+/** `.status` modifier per component state. */
+export function stateClass(state: ComponentTelemetry['state']): string {
   if (state === 'disabled' || state === 'depleted') return 'bad'
   if (state === 'tracking' || state === 'routing' || state === 'target') return 'good'
   if (state === 'cooldown') return 'warn'

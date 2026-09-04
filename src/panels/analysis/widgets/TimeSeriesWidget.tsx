@@ -1,12 +1,14 @@
 import { useMemo } from 'react'
 import { TimeSeries } from '../../../charts/TimeSeries'
-import { CHART_SLOT_TOKENS, OTHER_TOKEN } from '../../../charts/tokens'
 import type { ChartMark, Series } from '../../../charts/types'
-import { kpiSeries, sampleCount, sensorSeries, threatSeries } from '../../../analysis/series'
-import { threatPictureAt } from '../../../analysis/threatAggregation'
+import {
+  groupResidualSeries,
+  heldTracksSeries,
+  kpiSeries,
+  meanHeldPdSeries,
+  salvosInFlightSeries,
+} from '../../../analysis/series'
 import type { Scenario } from '../../../model/types'
-import { entityActive } from '../../../model/types'
-import type { AttritionReport } from '../../../playback/attrition'
 import { DT } from '../../../playback/sim'
 import type { ThreatAssessment } from '../../../playback/sim'
 import type { TimeSeriesPreset } from '../../../state/analysisLayout'
@@ -34,123 +36,25 @@ function seriesIdsOf(params: Record<string, unknown>): string[] {
   return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : []
 }
 
-const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v)
-
-/**
- * The sensors preset, derived from the per-sensor series.
- *
- * Tracks held: at step i, the count of tracks whose `held.<uasId>` flag is 1
- * for at least one enabled sensor. Mean Pd: at step i, over those held
- * tracks, take per track the largest finite `pd.<uasId>` among the sensors
- * holding it, then the mean over tracks; NaN when no held track has a
- * finite Pd at that step.
- */
+/** The sensors preset: tracks held and the mean Pd of held tracks (`series.ts`). */
 function sensorsCharts(scenario: Scenario, trackCount: number): Chart[] {
-  const n = sampleCount(scenario)
-  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
-  const held = new Map<string, number[][]>()
-  const pd = new Map<string, number[][]>()
-  for (const sensor of sensors) {
-    for (const s of sensorSeries(scenario, sensor.id)) {
-      const dot = s.id.indexOf('.')
-      const kind = s.id.slice(0, dot)
-      const uasId = s.id.slice(dot + 1)
-      const target = kind === 'held' ? held : kind === 'pd' ? pd : null
-      if (!target || !uasId) continue
-      const list = target.get(uasId) ?? []
-      list.push(s.values)
-      target.set(uasId, list)
-    }
-  }
-  const tracks = new Array<number>(n).fill(0)
-  const meanPd = new Array<number>(n).fill(Number.NaN)
-  for (let i = 0; i < n; i += 1) {
-    let count = 0
-    let pdSum = 0
-    let pdCount = 0
-    for (const [uasId, flags] of held) {
-      if (!flags.some((f) => f[i] === 1)) continue
-      count += 1
-      let best = Number.NaN
-      for (const values of pd.get(uasId) ?? []) {
-        const v = values[i]
-        if (finite(v) && (!finite(best) || v > best)) best = v
-      }
-      if (finite(best)) {
-        pdSum += best
-        pdCount += 1
-      }
-    }
-    tracks[i] = count
-    if (pdCount > 0) meanPd[i] = pdSum / pdCount
-  }
   return [
-    {
-      series: [
-        { id: 'tracksHeld', label: 'Tracks held', unit: 'tracks', values: tracks, color: 'chart-1', kind: 'step' },
-      ],
-      yDomain: [0, Math.max(1, trackCount)],
-    },
-    {
-      series: [
-        { id: 'meanPd', label: 'Mean Pd of held tracks', unit: 'Pd', values: meanPd, color: 'chart-4', kind: 'line' },
-      ],
-      yDomain: [0, 1],
-    },
+    { series: [heldTracksSeries(scenario)], yDomain: [0, Math.max(1, trackCount)] },
+    { series: [meanHeldPdSeries(scenario)], yDomain: [0, 1] },
   ]
 }
 
-/** Expected kills plus salvos in flight: at step i, events with tS <= t < tEffectS. */
-function effectorsCharts(scenario: Scenario, report: AttritionReport): Chart[] {
-  const n = sampleCount(scenario)
-  const inFlight = new Array<number>(n).fill(0)
-  for (let i = 0; i < n; i += 1) {
-    const t = i * DT
-    inFlight[i] = report.events.filter((ev) => ev.tS <= t && t < ev.tEffectS).length
-  }
+/** The effectors preset: expected kills plus salvos in flight. */
+function effectorsCharts(scenario: Scenario): Chart[] {
   const kills = kpiSeries(scenario).find((s) => s.id === 'kpi.expectedKills')
   const series: Series[] = kills ? [kills] : []
-  series.push({
-    id: 'salvosInFlight',
-    label: 'Salvos in flight',
-    unit: null,
-    values: inFlight,
-    color: 'chart-2',
-    kind: 'step',
-  })
+  series.push(salvosInFlightSeries(scenario))
   return [{ series }]
 }
 
-/** One step series per threat group: the element-wise sum of its members' residual ships. */
-function threatCharts(
-  scenario: Scenario,
-  assessments: ThreatAssessment[],
-  report: AttritionReport,
-  raidSize: number,
-): Chart[] {
-  const n = sampleCount(scenario)
-  const groups = threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map())
-  const series: Series[] = groups.map((group, index) => {
-    const values = new Array<number>(n).fill(Number.NaN)
-    for (const member of group.members) {
-      const residual = threatSeries(scenario, member.uasId).find((s) => s.id === 'residual')
-      if (!residual) continue
-      for (let i = 0; i < n; i += 1) {
-        const v = residual.values[i]
-        if (!finite(v)) continue
-        values[i] = finite(values[i]) ? values[i] + v : v
-      }
-    }
-    return {
-      id: `group.${group.id}`,
-      label: group.label,
-      unit: 'ships',
-      values,
-      color: CHART_SLOT_TOKENS[index] ?? OTHER_TOKEN,
-      kind: 'step',
-    }
-  })
-  return [{ series, yDomain: [0, raidSize] }]
+/** The threat preset: one step series per threat group. */
+function threatCharts(scenario: Scenario, raidSize: number): Chart[] {
+  return [{ series: groupResidualSeries(scenario), yDomain: [0, raidSize] }]
 }
 
 function idsCharts(
@@ -192,13 +96,13 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
       case 'sensors':
         return sensorsCharts(scenario, threats)
       case 'effectors':
-        return effectorsCharts(scenario, report)
+        return effectorsCharts(scenario)
       case 'threat':
-        return threatCharts(scenario, assessments, report, raidSize)
+        return threatCharts(scenario, raidSize)
       default:
         return idsCharts(scenario, idsKey.split(',').filter(Boolean), assessments, raidSize)
     }
-  }, [scenario, runId, preset, idsKey, threats, raidSize, assessments, report])
+  }, [scenario, runId, preset, idsKey, threats, raidSize, assessments])
 
   const title =
     preset === 'sensors'

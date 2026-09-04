@@ -67,6 +67,8 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
   const show = useStore((s) => s.ui.layers.trackTelemetry)
   const selectedIds = useStore((s) => s.selection.entityIds)
   const simTimeS = useStore((s) => s.playback.simTimeS)
+  const select = useStore((s) => s.select)
+  const setRightTab = useStore((s) => s.setRightTab)
 
   if (!show || selectedIds.length !== 1) return null
   const entity = scenario.entities.find((e) => e.id === selectedIds[0])
@@ -241,7 +243,17 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
           ))}
         </div>
         <div className="ro-foot">
-          PLANNING MODEL · 0.5 S CADENCE · CONSTANT ALTITUDE · NOT INSTRUMENTED
+          <span>PLANNING MODEL · 0.5 S CADENCE · CONSTANT ALTITUDE · NOT INSTRUMENTED</span>
+          <button
+            className="mini ro-details"
+            title="Details in Analysis"
+            onClick={() => {
+              select({ entityIds: [entity.id] })
+              setRightTab('analysis')
+            }}
+          >
+            Details
+          </button>
         </div>
       </div>
     </div>

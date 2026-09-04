@@ -18,12 +18,23 @@ export interface LadderProps {
   rowHeight?: number
 }
 
-const GUTTER_W = 64
+/**
+ * The gutter holds a board designator such as `DJI MAVIC 3 1`: 13 characters of
+ * 10 px mono at about 6 px each, plus the 6 px inset. A longer label is cut to the
+ * budget with an ellipsis rather than clipped by the SVG edge.
+ */
+const GUTTER_W = 84
+const LABEL_CHARS = 13
 const RIGHT_PAD = 8
 const SPAN_H = 6
 const SPAN_MIN_W = 1.5
 const TICK_H = 16
 const FALLBACK_W = 312
+
+/** A gutter label cut to LABEL_CHARS, ellipsis included. */
+function gutterLabel(label: string): string {
+  return label.length > LABEL_CHARS ? `${label.slice(0, LABEL_CHARS - 1)}…` : label
+}
 
 /**
  * The phase ladder: one row per track, spans as short rounded bars, the playhead, and
@@ -87,7 +98,7 @@ export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14 }: 
                 dominantBaseline="middle"
                 style={{ ...font, fill: tokens.color('text') }}
               >
-                {r.label}
+                {gutterLabel(r.label)}
               </text>
               <line x1={GUTTER_W} y1={mid} x2={w - RIGHT_PAD} y2={mid} stroke={tokens.grid} />
               {r.spans.map((sp, k) => {

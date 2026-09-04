@@ -3,27 +3,10 @@ import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
 import { BUILTIN_LENSES, WIDGET_TYPES } from '../state/analysisLayout'
 import { scenarioDurationS, useStore } from '../state/store'
-import { AnalysisSection } from './analysis/AnalysisSection'
 import { DebriefRecord } from './analysis/DebriefRecord'
+import { DetailPane, hasDetailPane } from './analysis/detail'
 import { LiveStrip } from './analysis/LiveStrip'
-import { AboutProjection } from './analysis/widgets/ProjectionWidget'
 import { WIDGETS } from './analysis/widgets/registry'
-
-/**
- * Explicit boundary around conditional full-run output. Live and completed
- * evidence remain separate so a future event never reads as observed data.
- */
-export function FullRunProjection({ children }: { children: React.ReactNode }) {
-  return (
-    <AnalysisSection
-      title="Full-run projection"
-      headline="not live · conditional"
-      headerExtra={<AboutProjection />}
-    >
-      {children}
-    </AnalysisSection>
-  )
-}
 
 /** Lens bar: the built-in lenses, the user presets, then the customize toggle. */
 function LensBar() {
@@ -128,9 +111,12 @@ function SavePresetRow() {
 /**
  * Run header, lens bar, then the widget stack the active lens defines. Each
  * widget computes what it shows, so this panel holds no analysis of its own.
+ * One selected entity with a pane replaces the stack with its detail. The
+ * selection is view state, so it never writes the lens or the preset id.
  */
 export function AnalysisPanel() {
   const scenario = useStore((state) => state.scenario)
+  const entityIds = useStore((state) => state.selection.entityIds)
   const runId = useStore((state) => state.playback.runId)
   const completedAtMs = useStore((state) => state.playback.completedAtMs)
   const observedThroughS = useStore((state) => state.playback.observedThroughS)
@@ -149,11 +135,31 @@ export function AnalysisPanel() {
   const noPath = assessments.length - threats.length
   const complete = completedAtMs != null && durationS > 0 && observedThroughS >= durationS
 
+  // Every hook above runs on each render. The branch stays after them.
+  const selected =
+    entityIds.length === 1 ? scenario.entities.find((e) => e.id === entityIds[0]) : undefined
+  const detailId = selected && hasDetailPane(selected.kind) ? selected.id : null
+
+  if (detailId) {
+    return (
+      <div className="inspector-body analysis-panel">
+        <LiveStrip />
+        <DetailPane entityId={detailId} />
+      </div>
+    )
+  }
+
   return (
     <div className="inspector-body analysis-panel">
       <LiveStrip />
 
       <LensBar />
+
+      {entityIds.length >= 2 && (
+        <p className="muted analysis-empty">
+          {entityIds.length} entities selected. Select one for its detail.
+        </p>
+      )}
 
       {assessments.length === 0 && (
         <p className="muted analysis-empty">Place a UAS threat on the canvas to analyze it.</p>

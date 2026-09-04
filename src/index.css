@@ -737,12 +737,31 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .ro-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-top: 9px;
   padding-top: 6px;
   border-top: 1px solid var(--border);
   color: var(--text-dim);
   font-size: 10px;
   letter-spacing: 0.11em;
+}
+
+.ro-foot > span {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The readout is a pass-through overlay (.ro-host), so this control turns the
+   pointer back on for itself only, and keeps the 10 px foot size. */
+.ro-details {
+  flex: none;
+  align-self: center;
+  margin-left: 0;
+  font-size: 10px;
+  letter-spacing: 0;
+  pointer-events: auto;
 }
 
 /* ---------- Palette ---------- */
@@ -1816,6 +1835,167 @@ p.muted.small {
   flex-direction: column;
   gap: var(--space-2);
   padding: 2px 0 var(--space-3);
+}
+
+/* ---------- Analysis: selection detail ---------- */
+
+/* One selected entity replaces the widget stack. The pane reuses the widget
+   frame (.wg), so only the header, the row stacks and the tables are new. */
+.detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.det-h {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.det-back {
+  flex: none;
+  align-self: center;
+  margin-left: 0;
+}
+
+.det-n {
+  /* A zero basis: a wrapping row breaks on base sizes, so a long name would
+     push the pill to its own line before it ever shrank. */
+  flex: 1 1 0%;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.det-pill {
+  flex: none;
+  margin-left: auto;
+}
+
+/* The model line takes its own row under the name, so a long name never
+   pushes the state pill off the header. */
+.det-m {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.det-s:last-child {
+  border-bottom: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11.5px;
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.rl {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-dim);
+}
+
+.rv {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rv em {
+  color: var(--text-dim);
+  font-size: 10.5px;
+  font-style: normal;
+}
+
+/* Provenance tag: PF for a planning factor, SRC for a sourced value. */
+.pf {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  color: var(--warn);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  line-height: 14px;
+  vertical-align: 1px;
+}
+
+.pf.src {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+/* Four columns in a 320 px panel: fixed layout, so every cell clips instead
+   of pushing the panel sideways. */
+.tb {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.tb th {
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  border-bottom: 1px solid var(--border-default);
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The name column takes the slack; the three data columns hold their labels. */
+.tb th:first-child {
+  width: 34%;
+}
+
+.tb td {
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.tb td:not(:first-child) {
+  font-family: var(--font-mono);
 }
 
 /* Customize rows */
