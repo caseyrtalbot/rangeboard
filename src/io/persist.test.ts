@@ -423,6 +423,17 @@ describe('deleted seed ids on load', () => {
   })
 })
 
+describe('observed lens preset on load', () => {
+  it('defaults to null on an older save and keeps a saved lens id', () => {
+    const s = emptyScenario()
+    delete s.observedPresetId
+    expect(fillScenario(s).observedPresetId).toBeNull()
+    const observed = emptyScenario()
+    observed.observedPresetId = 'sensors'
+    expect(fillScenario(observed).observedPresetId).toBe('sensors')
+  })
+})
+
 describe('nested object load fill', () => {
   it('fills doctrine, mcda weights, underlay, and raid fields an old save lacks', () => {
     const s = emptyScenario() as unknown as Record<string, unknown>

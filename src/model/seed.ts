@@ -37,6 +37,7 @@ export function emptyScenario(): Scenario {
     library: SEED_LIBRARY.map((m) => ({ ...m })),
     systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
     deletedSeedIds: [],
+    observedPresetId: null,
     environment: defaultEnvironment(),
 
     roe: 'tight',

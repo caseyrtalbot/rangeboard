@@ -1,15 +1,16 @@
 import { useMemo } from 'react'
-import { detectionsAt } from '../../playback/sim'
 import { scenarioDurationS, formatRunLabel, useStore } from '../../state/store'
 import { engagementPicture } from '../../analysis/impact'
-import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../analysis/liveStats'
+import { buildLiveTimeline } from '../../analysis/liveStats'
 import { formatTime } from '../../geometry/geo'
 import { resetAnalysisRun } from '../../playback/runSession'
+import { useSimTimeStep } from './widgets/controls'
 
 /**
- * Run-scoped kill-chain state. Only rAF playback advances the observed
- * horizon; dragging either timeline creates a clearly labeled preview/replay
- * and can never complete a run or promote future events into live telemetry.
+ * Run header: run id, cursor time, phase, mode chip and the clean reset.
+ * Only rAF playback advances the observed horizon; dragging either timeline
+ * creates a clearly labeled preview/replay and can never complete a run or
+ * promote future events into live telemetry.
  */
 export function LiveStrip() {
   const scenario = useStore((s) => s.scenario)
@@ -19,7 +20,7 @@ export function LiveStrip() {
   const observedThroughS = useStore((s) => s.playback.observedThroughS)
   const completedAtMs = useStore((s) => s.playback.completedAtMs)
   const resetReason = useStore((s) => s.playback.resetReason)
-  const qt = useStore((s) => Math.round(s.playback.simTimeS * 2) / 2)
+  const qt = useSimTimeStep()
 
   // A reset changes runId and explicitly clears engagementPicture's cache,
   // so an unchanged scenario is rebuilt for each clean run.
@@ -34,23 +35,6 @@ export function LiveStrip() {
 
   const t = Math.min(qt, durationS)
   const untouched = phase === 'ready'
-  const k: LiveKpis = untouched
-    ? {
-        detected: 0,
-        classified: 0,
-        targetable: 0,
-        engaged: 0,
-        kineticShots: 0,
-        deSalvos: 0,
-        jamSalvos: 0,
-        expectedKills: 0,
-        lateKills: 0,
-        arrivedTracks: 0,
-        leakerShips: 0,
-      }
-    : liveKpisAt(tl, t)
-  const hits = untouched ? null : detectionsAt(scenario, t)
-  const tracking = untouched ? 0 : tl.trackIds.filter((id) => hits!.has(id)).length
   const preview =
     phase === 'review' && completedAtMs == null && t > observedThroughS + 0.25
   const tag = untouched
@@ -75,7 +59,6 @@ export function LiveStrip() {
         : completedAtMs != null
           ? 'full run observed'
           : `observed through ${formatTime(observedThroughS)}`
-  const leakCls = k.leakerShips >= 1 ? ' bad' : k.leakerShips > 0.05 ? ' warn' : ''
 
   function cleanReset() {
     if (
@@ -95,6 +78,9 @@ export function LiveStrip() {
         <span className="live-time">
           {formatRunLabel(runSeq)} · {untouched ? 'T+0:00' : `T+${formatTime(t)}`}
         </span>
+        <span className="chip det" title="Deterministic expected-value run">
+          DET
+        </span>
         <span className="live-state">{state}</span>
         <button
           className="mini run-reset"
@@ -103,87 +89,6 @@ export function LiveStrip() {
         >
           Clean reset
         </button>
-      </div>
-      <div className="live-cells">
-        <div className="live-cell" title="Threats first detected by the current cursor time">
-          <span className="live-label">Detect</span>
-          <span className="live-value">
-            {k.detected}<span className="live-of">/{tl.trackCount}</span>
-          </span>
-        </div>
-        <div
-          className="live-cell"
-          title="Threats currently held by one or more enabled sensors at the cursor time"
-        >
-          <span className="live-label">Track now</span>
-          <span className="live-value">
-            {tracking}<span className="live-of">/{tl.trackCount}</span>
-          </span>
-        </div>
-        <div
-          className="live-cell"
-          title="Threats promoted to hostile by the modeled classification ladder"
-        >
-          <span className="live-label">ID / class</span>
-          <span className="live-value">
-            {k.classified}<span className="live-of">/{tl.trackCount}</span>
-          </span>
-        </div>
-        <div
-          className="live-cell"
-          title="Threats inside a usable ROE-gated effector window right now, ghost tracks excluded"
-        >
-          <span className="live-label">Target now</span>
-          <span className="live-value">
-            {k.targetable}<span className="live-of">/{tl.trackCount}</span>
-          </span>
-        </div>
-        <div
-          className="live-cell"
-          title="Threats with at least one salvo of any channel assigned by now"
-        >
-          <span className="live-label">Engaged</span>
-          <span className="live-value">
-            {k.engaged}<span className="live-of">/{tl.trackCount}</span>
-          </span>
-        </div>
-        <div
-          className="live-cell"
-          title="Salvos committed by assignment time, by what each one costs: kinetic rounds, then d for directed-energy bursts, then j for EW jam salvos"
-        >
-          <span className="live-label">Salvos</span>
-          <span className="live-value">
-            {k.kineticShots}
-            {k.deSalvos > 0 && <span className="live-de"> · {k.deSalvos}d</span>}
-            {k.jamSalvos > 0 && <span className="live-jam"> · {k.jamSalvos}j</span>}
-          </span>
-        </div>
-        <div
-          className="live-cell"
-          title="Expected kill mass from effects that landed at or before the threat reached the defended asset. This is the defeat number."
-        >
-          <span className="live-label">Kill E[k]</span>
-          <span className="live-value">{k.expectedKills.toFixed(1)}</span>
-        </div>
-        <div
-          className="live-cell"
-          title="Expected kill mass intercepted after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is not a defeat and it does not reduce the leaker count."
-        >
-          <span className="live-label">Late E[k]</span>
-          <span className="live-value">{k.lateKills.toFixed(1)}</span>
-        </div>
-        <div
-          className="live-cell"
-          title="Expected ship mass that reached the defended asset. A kill that lands after the threat is over the asset never reduces this."
-        >
-          <span className="live-label">Leak E[n]</span>
-          <span className={`live-value${leakCls}`}>{k.leakerShips.toFixed(1)}</span>
-        </div>
-      </div>
-      <div className="live-basis">
-        <span>SIM MODEL</span>
-        <span>deterministic</span>
-        <span>0.5 s cadence</span>
       </div>
     </div>
   )

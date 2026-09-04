@@ -1,0 +1,192 @@
+import { useMemo } from 'react'
+import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../../analysis/liveStats'
+import { formatTime } from '../../../geometry/geo'
+import { detectionsAt } from '../../../playback/sim'
+import type { KpiKey } from '../../../state/analysisLayout'
+import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
+import { useStore } from '../../../state/store'
+import { useEngagement, useRunCursor } from './controls'
+import { KPI_LABELS } from './labels'
+import type { WidgetProps } from './registry'
+import { WidgetFrame } from './WidgetFrame'
+
+const ZERO_KPIS: LiveKpis = {
+  detected: 0,
+  classified: 0,
+  targetable: 0,
+  engaged: 0,
+  kineticShots: 0,
+  deSalvos: 0,
+  jamSalvos: 0,
+  expectedKills: 0,
+  lateKills: 0,
+  arrivedTracks: 0,
+  leakerShips: 0,
+}
+
+interface Tile {
+  key: KpiKey
+  value: React.ReactNode
+  sub?: string
+  cls?: string
+}
+
+/** The tile keys from params: unknown keys dropped, an empty list falls back to the default. */
+function tilesOf(params: Record<string, unknown>): KpiKey[] {
+  const raw = Array.isArray(params.tiles) ? params.tiles : []
+  const kept = KPI_KEYS.filter((key) => raw.includes(key))
+  return kept.length > 0 ? kept : [...DEFAULT_KPI_TILES]
+}
+
+function minOf(values: Array<number | null | undefined>): number | null {
+  let min: number | null = null
+  for (const v of values) if (v != null && (min == null || v < min)) min = v
+  return min
+}
+
+/** Time tile: the value once the cursor reaches it, else a dash and "not yet". */
+function timeTile(key: KpiKey, value: number | null, reachedAtS: number | null, t: number): Tile {
+  const reached = value != null && reachedAtS != null && t >= reachedAtS
+  return reached ? { key, value: formatTime(value) } : { key, value: '—', sub: 'not yet' }
+}
+
+function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
+  const setParams = useStore((s) => s.setAnalysisWidgetParams)
+  return (
+    <div className="params">
+      {KPI_KEYS.map((key) => {
+        const checked = tiles.includes(key)
+        return (
+          <label key={key}>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(event) => {
+                const next = KPI_KEYS.filter((k) => (k === key ? event.target.checked : tiles.includes(k)))
+                // An empty selection is never committed: the widget keeps one tile.
+                if (next.length > 0) setParams(id, { tiles: next })
+              }}
+            />
+            {KPI_LABELS[key].label}
+          </label>
+        )
+      })}
+    </div>
+  )
+}
+
+/** KPI tiles at the cursor time: the run header's counters, one tile per chosen key. */
+export function KpiTilesWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+  const scenario = useStore((s) => s.scenario)
+  const runId = useStore((s) => s.playback.runId)
+  const { assessments, report } = useEngagement(scenario, runId)
+  const { t, untouched } = useRunCursor(scenario)
+  const tiles = useMemo(() => tilesOf(params), [params])
+  const tl = useMemo(() => buildLiveTimeline(assessments, report), [assessments, report])
+  const threats = useMemo(
+    () => assessments.filter((a) => a.status !== 'no-path'),
+    [assessments],
+  )
+  const wantsTracking = tiles.includes('trackNow')
+  const tracking = useMemo(() => {
+    if (untouched || !wantsTracking) return 0
+    const hits = detectionsAt(scenario, t)
+    return tl.trackIds.filter((uasId) => hits.has(uasId)).length
+  }, [scenario, t, untouched, wantsTracking, tl])
+  const k = untouched ? ZERO_KPIS : liveKpisAt(tl, t)
+  const n = tl.trackCount
+  const cursor = untouched ? -1 : t
+
+  const firstDetect = minOf(threats.map((a) => a.firstDetectS))
+  const firstEffect = minOf(
+    report.events.filter((ev) => ev.killDelta > 0).map((ev) => ev.tEffectS),
+  )
+  const warningHolder = threats.reduce<{ warningS: number; arrivalS: number } | null>(
+    (best, a) =>
+      a.warningS != null && a.arrivalS != null && (best == null || a.warningS < best.warningS)
+        ? { warningS: a.warningS, arrivalS: a.arrivalS }
+        : best,
+    null,
+  )
+  const leakCls = k.leakerShips >= 1 ? 'bad' : k.leakerShips > 0.05 ? 'warn' : ''
+
+  const tile = (key: KpiKey): Tile => {
+    switch (key) {
+      case 'detect':
+        return { key, value: <>{k.detected}<small>/{n}</small></> }
+      case 'trackNow':
+        return { key, value: <>{tracking}<small>/{n}</small></> }
+      case 'idClass':
+        return { key, value: <>{k.classified}<small>/{n}</small></> }
+      case 'targetNow':
+        return { key, value: <>{k.targetable}<small>/{n}</small></> }
+      case 'engaged':
+        return { key, value: <>{k.engaged}<small>/{n}</small></> }
+      case 'salvos':
+        return {
+          key,
+          value: (
+            <>
+              {k.kineticShots}
+              {k.deSalvos > 0 && <small className="de"> · {k.deSalvos}d</small>}
+              {k.jamSalvos > 0 && <small className="ew"> · {k.jamSalvos}j</small>}
+            </>
+          ),
+        }
+      case 'killEk':
+        return { key, value: k.expectedKills.toFixed(1) }
+      case 'lateEk':
+        return { key, value: k.lateKills.toFixed(1) }
+      case 'leakEn':
+        return report.totals.reportedLeakers == null
+          ? { key, value: '—', sub: 'no defended asset' }
+          : { key, value: k.leakerShips.toFixed(1), cls: leakCls }
+      case 'firstDetect':
+        return timeTile(key, firstDetect, firstDetect, cursor)
+      case 'firstEffect':
+        return timeTile(key, firstEffect, firstEffect, cursor)
+      case 'detectToEffect': {
+        const both = firstDetect != null && firstEffect != null
+        const value = both ? firstEffect - firstDetect : null
+        const reachedAt = both ? Math.max(firstDetect, firstEffect) : null
+        return timeTile(key, value, reachedAt, cursor)
+      }
+      case 'minWarning':
+        return timeTile(key, warningHolder?.warningS ?? null, warningHolder?.arrivalS ?? null, cursor)
+    }
+  }
+
+  const body = customize ? (
+    <KpiParams id={id} tiles={tiles} />
+  ) : threats.length === 0 ? (
+    <p className="muted small">No threats with flight paths.</p>
+  ) : (
+    <div className={`tiles ${tiles.length <= 4 ? 'c2' : 'c3'}`}>
+      {tiles.map((key) => {
+        const item = tile(key)
+        return (
+          <div className="tile" key={key} title={KPI_LABELS[key].hint}>
+            <span className="tl">{KPI_LABELS[key].label}</span>
+            <span className={`tv${item.cls ? ` ${item.cls}` : ''}`}>{item.value}</span>
+            {item.sub ? <span className="ts">{item.sub}</span> : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+
+  return (
+    <WidgetFrame
+      id={id}
+      type="kpi-tiles"
+      title="KPI tiles"
+      meta={`${tiles.length} of ${KPI_KEYS.length}`}
+      collapsed={collapsed}
+      customize={customize}
+      index={index}
+      count={count}
+    >
+      {body}
+    </WidgetFrame>
+  )
+}

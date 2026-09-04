@@ -214,7 +214,9 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
 /** Engagement timeline lane strip: detection, classification, window, shot, arrival per threat. */
 export function EngagementStrip() {
   const scenario = useStore((s) => s.scenario)
-  const [open, setOpen] = useState(() => localStorage.getItem(OPEN_KEY) === '1')
+  const [open, setOpen] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem(OPEN_KEY) === '1',
+  )
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [hover, setHover] = useState<{ i: number; tipLeft: number; tipTop: number } | null>(null)
   const [w, setW] = useState(0)

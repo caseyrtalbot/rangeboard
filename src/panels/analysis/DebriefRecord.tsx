@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
-import type { AarSummary, RunValidity, Scenario } from '../../model/types'
+import { useMemo } from 'react'
+import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attrition'
 import type { ThreatAssessment } from '../../playback/sim'
 import { detectionsAt } from '../../playback/sim'
 import { buildRequirementGateReport } from '../../analysis/requirements'
-import type { RunValidityAssessment, RunValidityFinding } from '../../analysis/runValidity'
+import type { RunValidityAssessment } from '../../analysis/runValidity'
 import { assessRunValidity } from '../../analysis/runValidity'
 import { systemTelemetryAt } from '../../analysis/systemTelemetry'
 import { threatPictureAt } from '../../analysis/threatAggregation'
@@ -13,14 +13,14 @@ import { formatTime } from '../../geometry/geo'
 import { exportRunRecord } from '../../io/persist'
 import { downloadBoardFrame } from '../../te/io/frameCapture'
 import { resetAnalysisRun } from '../../playback/runSession'
-import { CHANNEL_LABEL, CHANNEL_SHORT, residualSectionHeadline, totalSalvos } from '../headlines'
+import { residualSectionHeadline, totalSalvos } from '../headlines'
 import { AnalysisSection } from './AnalysisSection'
 import { OutcomeSummary } from './OutcomeSummary'
 import { RequirementGates } from './RequirementGates'
 import { SystemStatus } from './SystemStatus'
 import { ThreatPicture } from './ThreatPicture'
-
-const EVENT_PAGE = 20
+import { EventLedgerList } from './widgets/EventLedgerWidget'
+import { SEVERITY_PILL, VALIDITY_TEXT } from './widgets/RunValidityWidget'
 
 function RunActions({
   scenario,
@@ -74,69 +74,6 @@ function RunActions({
       <button onClick={() => resetAnalysisRun('manual')}>New clean run</button>
     </div>
   )
-}
-
-function EventLedger({ scenario, report }: { scenario: Scenario; report: AttritionReport }) {
-  const [visible, setVisible] = useState(EVENT_PAGE)
-  const name = (id: string) => scenario.entities.find((entity) => entity.id === id)?.name ?? id
-  if (report.events.length === 0) return <p className="muted small">No engagement events recorded.</p>
-  return (
-    <div className="event-ledger">
-      {report.events.slice(0, visible).map((event, index) => (
-        <div className="event-row" key={`${event.effectorId}:${event.uasId}:${event.tS}:${index}`}>
-          <span className="event-time">
-            {formatTime(event.tS)} → {formatTime(event.tEffectS)}
-          </span>
-          <span className="event-route">
-            <strong>{name(event.effectorId)}</strong>
-            <small>
-              {name(event.uasId)} · ship {event.shipIdx + 1} ·{' '}
-              <span title={`${CHANNEL_LABEL[event.channelClass]} expenditure`}>
-                {CHANNEL_SHORT[event.channelClass]}
-              </span>
-            </small>
-          </span>
-          <span className="event-effect">
-            P {`${(event.pk * 100).toFixed(1)}%`}
-            <small>ΔE[k] {event.killDelta.toFixed(3)}</small>
-          </span>
-        </div>
-      ))}
-      {visible < report.events.length && (
-        <button className="load-more" onClick={() => setVisible((count) => count + EVENT_PAGE)}>
-          Show next {Math.min(EVENT_PAGE, report.events.length - visible)} · {report.events.length - visible} remaining
-        </button>
-      )}
-    </div>
-  )
-}
-
-const VALIDITY_TEXT: Record<RunValidity, { pill: string; line: string; cls: string }> = {
-  valid: {
-    pill: 'VALID',
-    line: 'No finding limits this run.',
-    cls: 'good',
-  },
-  'valid-limited': {
-    pill: 'VALID, LIMITED',
-    line: 'The results stand, with the caveats below.',
-    cls: 'warn',
-  },
-  invalid: {
-    pill: 'INVALID',
-    line: 'A gate below is not scored: the run never made that measurement.',
-    cls: 'bad',
-  },
-  pending: {
-    pill: 'PENDING',
-    line: 'No track was assessed, so nothing has been measured yet.',
-    cls: 'neutral',
-  },
-}
-
-const SEVERITY_PILL: Record<RunValidityFinding['severity'], { text: string; cls: string }> = {
-  invalidating: { text: 'INVALIDATES', cls: 'bad' },
-  limiting: { text: 'LIMITS', cls: 'warn' },
 }
 
 /**
@@ -287,7 +224,7 @@ export function DebriefRecord({
         title="Engagement event ledger"
         headline={`${report.events.length} events`}
       >
-        <EventLedger scenario={scenario} report={report} />
+        <EventLedgerList scenario={scenario} report={report} />
       </AnalysisSection>
     </div>
   )

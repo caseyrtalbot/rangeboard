@@ -4,22 +4,71 @@ import type {
   ThreatOperationalRow,
 } from '../../analysis/threatAggregation'
 import { formatTime } from '../../geometry/geo'
+import { SURVIVAL_LABELS } from './widgets/labels'
 
 const PAGE_SIZE = 12
 
-function Stage({ label, met, required, active = false }: { label: string; met: number; required: number; active?: boolean }) {
-  const complete = required > 0 && met === required
+type Mode = 'live' | 'projected' | 'debrief'
+
+/** One chip of the ladder: `on` once any track met it, `live` on the active track gate, `done` when every track met it. */
+function Chip({
+  label,
+  met,
+  required,
+  live = false,
+}: {
+  label: string
+  met: number
+  required: number
+  live?: boolean
+}) {
+  const done = required > 0 && met === required
+  const cls = `st${met > 0 ? ' on' : ''}${live ? ' live' : ''}${done ? ' done' : ''}`
   return (
-    <span className={`threat-stage${complete ? ' complete' : ''}${active ? ' active' : ''}`}>
-      {label} {met}/{required}
+    <span className={cls}>
+      <b>{label}</b>
+      {met}/{required}
     </span>
   )
 }
 
-function memberTimeline(
-  row: ThreatOperationalRow,
-  mode: 'live' | 'projected' | 'debrief',
-): string {
+interface LadderCounts {
+  required: number
+  detected: number
+  track: number
+  trackLive: boolean
+  identified: number
+  target: number
+  targetLive: boolean
+  engaged: number
+  effect: number
+}
+
+/** The kill-chain ladder in two rows: D TRK ID over TGT ENG FX. */
+function Ladder({ c }: { c: LadderCounts }) {
+  return (
+    <div className="ladder">
+      <div>
+        <Chip label="D" met={c.detected} required={c.required} />
+        <Chip label="TRK" met={c.track} required={c.required} live={c.trackLive} />
+        <Chip label="ID" met={c.identified} required={c.required} />
+      </div>
+      <div>
+        <Chip label="TGT" met={c.target} required={c.required} live={c.targetLive} />
+        <Chip label="ENG" met={c.engaged} required={c.required} />
+        <Chip label="FX" met={c.effect} required={c.required} />
+      </div>
+    </div>
+  )
+}
+
+/** Survival percent text: whole at 100, else one decimal, clamped to [0, 100]. */
+function survivesPct(residualPct: number): string {
+  const pct = Math.min(100, Math.max(0, residualPct))
+  return pct >= 100 ? '100' : pct.toFixed(1)
+}
+
+function memberTimeline(row: ThreatOperationalRow, mode: Mode): string {
   const visible = (reached: boolean, value: number | null) =>
     value != null && (mode !== 'live' || reached) ? formatTime(value) : '—'
   return [
@@ -41,11 +90,12 @@ function liveState(row: ThreatOperationalRow): string {
   return 'UNSEEN'
 }
 
-function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: 'live' | 'projected' | 'debrief' }) {
+function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) {
   const continuity =
     row.trackContinuity == null
       ? 'track —'
       : `track ${(row.trackContinuity * 100).toFixed(0)}% · max gap ${formatTime(row.longestTrackGapS ?? 0)}`
+  const tracked = mode === 'live' ? row.trackNow : row.trackedAtDecision
   return (
     <div className="threat-data-row">
       <div className="threat-data-head">
@@ -60,17 +110,23 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: 'live' |
                 : row.status.replaceAll('-', ' ').toUpperCase()}
         </span>
       </div>
-      <div className="threat-data-stages">
-        <span className={row.detected ? 'met' : ''}>D</span>
-        <span className={(mode === 'live' ? row.trackNow : row.trackedAtDecision) ? 'live' : ''}>TRK</span>
-        <span className={row.identified ? 'met' : ''}>ID</span>
-        <span className={row.targetAcquired ? 'met' : ''}>TGT</span>
-        <span className={row.engaged ? 'met' : ''}>ENG</span>
-        <span className={row.effectMet ? 'met' : ''}>FX</span>
-      </div>
+      <Ladder
+        c={{
+          required: 1,
+          detected: row.detected ? 1 : 0,
+          track: tracked ? 1 : 0,
+          trackLive: mode === 'live' && row.trackNow,
+          identified: row.identified ? 1 : 0,
+          target: row.targetAcquired ? 1 : 0,
+          targetLive: row.targetableNow,
+          engaged: row.engaged ? 1 : 0,
+          effect: row.effectMet ? 1 : 0,
+        }}
+      />
       <div className="threat-data-detail">
         {mode === 'live' ? `${continuity} · ` : ''}
-        {memberTimeline(row, mode)} · {row.salvos} salvos · {row.residualPct.toFixed(1)}% residual
+        {memberTimeline(row, mode)} · {row.salvos} salvos · {SURVIVAL_LABELS.survives}{' '}
+        {survivesPct(row.residualPct)}%
       </div>
     </div>
   )
@@ -79,23 +135,17 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: 'live' |
 function ThreatGroupCard({
   group,
   mode,
-  defaultOpen,
+  membersOpen,
 }: {
   group: ThreatOperationalGroup
-  mode: 'live' | 'projected' | 'debrief'
-  defaultOpen: boolean
+  mode: Mode
+  membersOpen: boolean
 }) {
-  const [open, setOpen] = useState(defaultOpen)
+  const [open, setOpen] = useState(membersOpen)
   const [visible, setVisible] = useState(PAGE_SIZE)
-  const liveTrackMetric =
-    mode === 'live'
-      ? `${group.trackNow}/${group.tracks} now`
-      : group.minimumTrackContinuity == null
-        ? 'continuity —'
-        : `${(group.minimumTrackContinuity * 100).toFixed(0)}% min continuity`
   const trackGate = mode === 'live' ? group.trackNow : group.trackedAtDecision
   return (
-    <div className="threat-data-group">
+    <div className="threat-data-group tg">
       <button className="threat-data-group-head" onClick={() => setOpen((value) => !value)}>
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
         <span className="threat-data-title" title={group.label}>
@@ -103,22 +153,30 @@ function ThreatGroupCard({
         </span>
         <span className="threat-data-count">{group.tracks} trk · {group.ships} ships</span>
       </button>
-      <div className="threat-stage-row">
-        <Stage label="D" met={group.detected} required={group.tracks} />
-        <Stage label="TRK" met={trackGate} required={group.tracks} active={mode === 'live' && group.trackNow > 0} />
-        <Stage label="ID" met={group.identified} required={group.tracks} />
-        <Stage label="TGT" met={group.targetAcquired} required={group.tracks} active={group.targetableNow > 0} />
-        <Stage label="ENG" met={group.engaged} required={group.tracks} />
-        <Stage label="FX" met={group.effectMet} required={group.tracks} />
-      </div>
-      <div className="threat-group-outcome">
-        <span>{liveTrackMetric}</span>
-        <span>{group.salvos} salvos</span>
-        <strong>{group.residualPct.toFixed(1)}% residual</strong>
-      </div>
-      <div className="threat-outcome-bar" title={`${group.expectedKills.toFixed(2)} expected kills · ${group.expectedResidual.toFixed(2)} expected residual ships`}>
-        <span className="defeat" style={{ flexGrow: group.expectedKills }} />
-        <span className="residual" style={{ flexGrow: group.expectedResidual }} />
+      <Ladder
+        c={{
+          required: group.tracks,
+          detected: group.detected,
+          track: trackGate,
+          trackLive: mode === 'live' && group.trackNow > 0,
+          identified: group.identified,
+          target: group.targetAcquired,
+          targetLive: group.targetableNow > 0,
+          engaged: group.engaged,
+          effect: group.effectMet,
+        }}
+      />
+      <div
+        className="tg-f"
+        title={`${group.expectedKills.toFixed(2)} expected kills · ${group.expectedResidual.toFixed(2)} expected surviving ships · ${group.salvos} salvos`}
+      >
+        <span className="bar">
+          <i className="defeat" style={{ flex: Math.max(group.expectedKills, 0.001) }} />
+          <i className="residual" style={{ flex: Math.max(group.expectedResidual, 0.001) }} />
+        </span>
+        <span className="tg-s">
+          {SURVIVAL_LABELS.survives} <b className="num">{survivesPct(group.residualPct)}%</b>
+        </span>
       </div>
       {open && (
         <div className="threat-data-members">
@@ -136,12 +194,19 @@ function ThreatGroupCard({
   )
 }
 
+/**
+ * Threat groups with one two-row chip ladder each. Members are collapsed
+ * unless `membersOpen`; the card remounts when that prop changes, so a
+ * widget param edit takes effect at once.
+ */
 export function ThreatPicture({
   groups,
   mode,
+  membersOpen = false,
 }: {
   groups: ThreatOperationalGroup[]
-  mode: 'live' | 'projected' | 'debrief'
+  mode: Mode
+  membersOpen?: boolean
 }) {
   const tracks = groups.reduce((sum, group) => sum + group.tracks, 0)
   if (tracks === 0) return <p className="muted small">No threats with flight paths.</p>
@@ -153,12 +218,12 @@ export function ThreatPicture({
           <span>Grouped by tactic, wave, and platform. Expand any group for paged track records.</span>
         </div>
       )}
-      {groups.map((group, index) => (
+      {groups.map((group) => (
         <ThreatGroupCard
-          key={group.id}
+          key={`${group.id}:${membersOpen}`}
           group={group}
           mode={mode}
-          defaultOpen={groups.length <= 3 && tracks <= PAGE_SIZE * 2 && index === 0}
+          membersOpen={membersOpen}
         />
       ))}
     </div>

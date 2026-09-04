@@ -1,8 +1,10 @@
 import type { BasemapMode } from '../model/types'
+import type { AnalysisViewState } from '../state/analysisLayout'
+import { defaultAnalysisView, sanitizeAnalysisView } from '../state/analysisLayout'
 import type { Camera, RightTab, RingKey, RingOverrides } from '../state/store'
 import { RING_KEYS } from '../state/store'
 import type { Workspace } from '../te/state/teStore'
-import { RINGS_KEY, VIEW_KEY } from './storageKeys'
+import { ANALYSIS_KEY, RINGS_KEY, VIEW_KEY } from './storageKeys'
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
@@ -107,6 +109,32 @@ export function writeRingOverrides(overrides: RingOverrides): void {
     localStorage.setItem(RINGS_KEY, JSON.stringify(overrides))
   } catch {
     // Ring overrides are a convenience; the layer flags still answer for every entity.
+  }
+}
+
+/**
+ * Validated analysis lens layout and user presets from localStorage. Builtin
+ * lenses are never stored: they come from `BUILTIN_LENSES` on every read.
+ */
+export function savedAnalysis(): AnalysisViewState {
+  if (typeof localStorage === 'undefined') return defaultAnalysisView()
+  try {
+    const raw = localStorage.getItem(ANALYSIS_KEY)
+    if (raw == null) return defaultAnalysisView()
+    return sanitizeAnalysisView(JSON.parse(raw))
+  } catch {
+    return defaultAnalysisView()
+  }
+}
+
+/** Replace the stored analysis view with the whole current layout and preset list. */
+export function writeAnalysis(state: AnalysisViewState): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    const { layout, userPresets } = state
+    localStorage.setItem(ANALYSIS_KEY, JSON.stringify({ layout, userPresets }))
+  } catch {
+    // The lens layout is a convenience; every widget still reads the live scenario.
   }
 }
 

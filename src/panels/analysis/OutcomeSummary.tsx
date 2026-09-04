@@ -8,6 +8,7 @@ import {
   residualHeadline,
   totalSalvos,
 } from '../headlines'
+import { SURVIVAL_LABELS } from './widgets/labels'
 
 function expectedCount(value: number): string {
   if (value === 0) return '0'
@@ -45,7 +46,7 @@ function Metric({
  * Three of the tiles carry a rule a reader cannot see in the number itself.
  * Defeat is PRE-ARRIVAL mass only. Late E[k] is destruction that landed after
  * the threat was already over the asset: real, but it defended nothing, so it
- * is shown apart and never added to the defeat. Residual reads the DISPLAY
+ * is shown apart and never added to the defeat. Leakers reads the DISPLAY
  * leaker figure (reportedLeakers), which is null when no defended asset is
  * placed; that run gets a dash and a reason, because printing the partition
  * term there would claim a perfect defence the run never demonstrated.
@@ -95,7 +96,7 @@ export function OutcomeSummary({
           title="Expected kill mass whose effect landed at or before the threat reached the defended asset. Late intercepts are not counted here."
         />
         <Metric
-          label="Residual"
+          label={SURVIVAL_LABELS.leakers}
           value={residual.value}
           sub={residual.sub}
           cls={residual.bad ? 'bad' : ''}
@@ -106,7 +107,7 @@ export function OutcomeSummary({
           value={expectedCount(totals.expectedLateKills)}
           sub="after arrival, not a defeat"
           cls={totals.expectedLateKills > 0.05 ? 'warn' : ''}
-          title="Expected kill mass intercepted after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is not a defeat and it does not reduce the residual."
+          title="Expected kill mass intercepted after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is not a defeat and it does not reduce the leaker count."
         />
         <Metric
           label="First detect"

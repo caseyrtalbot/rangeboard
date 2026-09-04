@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  analysisBasisSignature,
   bumpCardVersion,
   DEFAULT_LAYERS,
   ringVisible,
@@ -9,10 +10,12 @@ import {
   scenarioDurationS,
 } from './store'
 import type { LayerVisibility } from './store'
+import { defaultAnalysisView } from './analysisLayout'
+import type { AnalysisViewState } from './analysisLayout'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
-import { flushViewWrites, savedRingOverrides, savedView } from '../io/viewState'
-import { RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
+import { flushViewWrites, savedAnalysis, savedRingOverrides, savedView } from '../io/viewState'
+import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
 
 function reset() {
@@ -360,6 +363,63 @@ describe('run-scoped playback lifecycle', () => {
     expect(after.observedThroughS).toBe(0)
     // Only a manual reset issues a new sequence number.
     expect(after.runSeq).toBe(before.runSeq)
+  })
+
+  it('stamps the active lens on the scenario when a run is reset', () => {
+    useStore.getState().applyLens('sensors')
+    const past = useStore.getState().past.length
+    useStore.getState().resetRun('manual')
+    expect(useStore.getState().scenario.observedPresetId).toBe('sensors')
+    expect(useStore.getState().past.length).toBe(past)
+  })
+
+  it('stamps the lens on the first play and keeps it for the rest of the run', () => {
+    useStore.getState().applyLens('effectors')
+    useStore.getState().startRun()
+    expect(useStore.getState().scenario.observedPresetId).toBe('effectors')
+    // A lens switch mid-run is a view change; the run keeps the lens it began under.
+    useStore.getState().applyLens('threat')
+    expect(useStore.getState().scenario.observedPresetId).toBe('effectors')
+    useStore.getState().pauseRun()
+    useStore.getState().startRun()
+    expect(useStore.getState().scenario.observedPresetId).toBe('effectors')
+    expect(useStore.getState().past).toHaveLength(0)
+  })
+
+  it('advanceRun stamps the lens only on the first step of an unstarted run', () => {
+    useStore.getState().applyLens('iads')
+    useStore.getState().advanceRun(3)
+    expect(useStore.getState().scenario.observedPresetId).toBe('iads')
+    useStore.getState().applyLens('threat')
+    useStore.getState().advanceRun(6)
+    expect(useStore.getState().scenario.observedPresetId).toBe('iads')
+    expect(useStore.getState().past).toHaveLength(0)
+  })
+
+  it('the observed lens is not an analysis input, so it never invalidates a run', () => {
+    const before = analysisBasisSignature(useStore.getState().scenario)
+    useStore.getState().applyLens('threat')
+    useStore.getState().resetRun('manual')
+    const s = useStore.getState().scenario
+    expect(s.observedPresetId).toBe('threat')
+    expect(analysisBasisSignature(s)).toBe(before)
+  })
+
+  it('undo of an earlier edit keeps the lens the run was started under', () => {
+    useStore.getState().setScenarioName('renamed')
+    useStore.getState().applyLens('sensors')
+    useStore.getState().startRun()
+    useStore.getState().pauseRun()
+    useStore.getState().undo()
+    expect(useStore.getState().scenario.name).not.toBe('renamed')
+    expect(useStore.getState().scenario.observedPresetId).toBe('sensors')
+    useStore.getState().redo()
+    expect(useStore.getState().scenario.name).toBe('renamed')
+    expect(useStore.getState().scenario.observedPresetId).toBe('sensors')
+  })
+
+  it('a fresh scenario carries no observed lens', () => {
+    expect(emptyScenario().observedPresetId).toBeNull()
   })
 
   it('does not invalidate a completed run when saving a presentation frame', () => {
@@ -855,6 +915,108 @@ describe('ring overrides', () => {
       }),
     })
     expect(savedRingOverrides()).toEqual({ 'ent-1': { sensorPlacard: true } })
+  })
+})
+
+describe('analysis layout', () => {
+  beforeEach(() => {
+    reset()
+    useStore.setState((st) => ({
+      ui: { ...st.ui, analysis: defaultAnalysisView(), analysisCustomize: false },
+    }))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('every layout action writes the analysis key and pushes no history', () => {
+    const store = stubStorage()
+    const stored = (): AnalysisViewState => JSON.parse(store.get(ANALYSIS_KEY)!) as AnalysisViewState
+    const st = useStore.getState()
+
+    st.applyLens('sensors')
+    expect(stored().layout.presetId).toBe('sensors')
+    expect(savedAnalysis().layout.presetId).toBe('sensors')
+
+    st.addAnalysisWidget('environment')
+    const added = useStore.getState().ui.analysis.layout.widgets
+    expect(added).toHaveLength(5)
+    const wid = added[4].id
+    expect(stored().layout.widgets[4].type).toBe('environment')
+
+    st.moveAnalysisWidget(wid, 0)
+    expect(stored().layout.widgets[0].id).toBe(wid)
+
+    st.toggleAnalysisWidget(wid)
+    expect(stored().layout.widgets[0].collapsed).toBe(true)
+
+    st.setAnalysisWidgetParams('se-kpi', { tiles: ['salvos'] })
+    expect(stored().layout.widgets.find((w) => w.id === 'se-kpi')!.params).toEqual({
+      tiles: ['salvos'],
+    })
+
+    st.removeAnalysisWidget(wid)
+    expect(stored().layout.widgets).toHaveLength(4)
+
+    st.saveAnalysisPreset('  Wide look  ')
+    const presetId = useStore.getState().ui.analysis.userPresets[0].id
+    expect(stored().userPresets.map((p) => p.label)).toEqual(['Wide look'])
+    expect(stored().layout.presetId).toBe(presetId)
+
+    st.deleteAnalysisPreset(presetId)
+    expect(stored().userPresets).toEqual([])
+    expect(stored().layout.presetId).toBe('run-summary')
+    expect(savedAnalysis().layout.presetId).toBe('run-summary')
+
+    expect(useStore.getState().past).toHaveLength(0)
+    expect(useStore.getState().future).toHaveLength(0)
+  })
+
+  it('writes storage even when the reducer changes nothing', () => {
+    const store = stubStorage()
+    useStore.getState().applyLens('threat')
+    store.delete(ANALYSIS_KEY)
+    useStore.getState().removeAnalysisWidget('ghost')
+    expect(store.has(ANALYSIS_KEY)).toBe(true)
+    expect(savedAnalysis().layout.presetId).toBe('threat')
+  })
+
+  it('customize mode is ui only: no storage write and no history', () => {
+    const store = stubStorage()
+    useStore.getState().setAnalysisCustomize(true)
+    expect(useStore.getState().ui.analysisCustomize).toBe(true)
+    expect(store.has(ANALYSIS_KEY)).toBe(false)
+    expect(useStore.getState().past).toHaveLength(0)
+    useStore.getState().setAnalysisCustomize(false)
+    expect(useStore.getState().ui.analysisCustomize).toBe(false)
+  })
+
+  it('a lens change never enters the scenario', () => {
+    const scenario = useStore.getState().scenario
+    useStore.getState().applyLens('effectors')
+    expect(useStore.getState().scenario).toBe(scenario)
+    expect(JSON.stringify(scenario)).not.toContain('kpi-tiles')
+  })
+
+  it('savedAnalysis reads back what the constructor reads at startup', () => {
+    stubStorage({
+      [ANALYSIS_KEY]: JSON.stringify({
+        layout: {
+          presetId: 'iads',
+          widgets: [{ id: 'sos-lanes', type: 'engagement-lanes', params: {}, collapsed: false }],
+        },
+        userPresets: [],
+      }),
+    })
+    const saved = savedAnalysis()
+    expect(saved.layout.presetId).toBe('iads')
+    expect(saved.layout.widgets).toHaveLength(1)
+  })
+
+  it('savedAnalysis gives the default view on an unreadable record', () => {
+    stubStorage({ [ANALYSIS_KEY]: 'not json' })
+    expect(savedAnalysis()).toEqual(defaultAnalysisView())
   })
 })
 

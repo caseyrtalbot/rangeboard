@@ -1610,13 +1610,139 @@ p.muted.small {
   background: color-mix(in srgb, var(--border) 22%, transparent);
 }
 
-/* Progressive disclosure: header row, sections, compact threat rows */
+/* Progressive disclosure: a lens bar over a stack of widget frames. */
 
-.analysis-header {
+/* The analysis panel stacks its widgets edge to edge; each widget frames
+   its own rhythm with a hairline and its header padding. */
+.analysis-panel {
+  gap: 0;
+}
+
+.analysis-panel > .analysis-empty {
+  margin: var(--space-2) 0 0;
+}
+
+/* Lens bar: bleeds to the panel edges and scrolls sideways on its own, so the
+   panel body never scrolls horizontally. */
+.lens {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 0 2px;
+  margin: 0 calc(var(--panel-pad) * -1);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.lens-b {
+  flex: 0 0 auto;
+  padding: var(--space-1) 7px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lens-b:hover {
+  color: var(--text);
+}
+
+.lens-b.on {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.lens-b.user {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.lens-b.cust {
+  margin-left: auto;
+  color: var(--text-tertiary);
+}
+
+.lens-b.cust.on {
+  color: var(--warn);
+  border-bottom-color: var(--warn);
+}
+
+.lens-x {
+  margin-left: 5px;
+  color: var(--text-tertiary);
+  font-style: normal;
+}
+
+.lens-sp {
+  flex: none;
+  width: 1px;
+  height: 14px;
+  margin: 0 var(--space-1);
+  background: var(--border-default);
+}
+
+/* Widget frame */
+.wg {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.wg-h {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: var(--space-2) 0 var(--space-1);
+}
+
+.wg-toggle {
+  flex: none;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wg-t {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.wg-m {
+  flex: 0 1 auto;
+  max-width: 45%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wg-x {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .roe-label {
@@ -1626,10 +1752,118 @@ p.muted.small {
   text-transform: uppercase;
 }
 
-.analysis-header .seg {
-  flex: 1;
+/* The ROE control sits in a widget header: compact, never full width. */
+.wg-x .seg {
   width: auto;
-  min-width: 130px;
+  min-width: 0;
+}
+
+.wg-x .seg button {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.wh {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.wg-b .field input,
+.wg-b .field select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* The UA gives a range input 2 px side margins, which overflow a 320 px panel. */
+.wg-b .field input[type='range'] {
+  width: 100%;
+  margin: 0;
+}
+
+.wmv,
+.wx {
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wmv {
+  font-size: 11px;
+}
+
+.wmv:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.wx {
+  font-size: 14px;
+}
+
+.wmv:not(:disabled):hover,
+.wx:hover {
+  color: var(--text);
+}
+
+.wg-b {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 2px 0 var(--space-3);
+}
+
+/* Customize rows */
+.params {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-2);
+  font-size: 11px;
+}
+
+.params label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-dim);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.add {
+  padding: var(--space-3) 0 var(--space-2);
+}
+
+.cat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: 6px;
+}
+
+.cat button.mini,
+.save button.mini {
+  align-self: auto;
+  margin-left: 0;
+  font-size: 10px;
+}
+
+.save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 var(--space-3);
+}
+
+.save input {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .adv-toggle {
@@ -1928,10 +2162,10 @@ p.muted.small {
   border-color: var(--accent);
 }
 
-/* ---------- Live telemetry strip ---------- */
+/* ---------- Run header strip ---------- */
 
-/* The playback-time KPI row. The accent left edge marks it as the live layer;
-   the whole-run forecast tiles below it stay plain. */
+/* Run id, cursor time, phase and the clean reset. The accent left edge marks
+   it as the live layer; the widget frames below it stay plain. */
 .live-strip {
   display: flex;
   flex-direction: column;
@@ -1995,77 +2229,20 @@ p.muted.small {
   color: var(--good);
 }
 
-/* Nine cells in three even rows. A four-column track left the last row
-   half-empty and pushed the leak reading out of the reading order. */
-.live-cells {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.live-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.live-label {
-  color: var(--text-tertiary);
+/* The run header carries the model basis as a chip; the KPI readings moved
+   to the KPI tiles widget. */
+.chip {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
   font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.live-value {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-.live-value.warn {
-  color: var(--warn);
-}
-
-.live-value.bad {
-  color: var(--danger);
-}
-
-.live-of {
+.chip.det {
   color: var(--text-dim);
-  font-size: 11px;
-}
-
-.live-de {
-  color: var(--de);
-  font-size: 12px;
-}
-
-.live-jam {
-  color: var(--ew);
-  font-size: 12px;
-}
-
-.live-basis {
-  display: flex;
-  gap: var(--space-1) var(--space-3);
-  flex-wrap: wrap;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--border-subtle);
-  color: var(--text-tertiary);
-  font-size: 10px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.live-basis span:first-child {
-  color: var(--warn);
 }
 
 /* ---------- I&W strip, threat groups ---------- */
@@ -2111,7 +2288,7 @@ p.muted.small {
   border: 1px solid var(--border);
   border-radius: 50%;
   color: var(--text-dim);
-  font-size: 9px;
+  font-size: 10px;
   font-style: italic;
   line-height: 1;
   display: inline-flex;
@@ -2638,7 +2815,7 @@ input[type='number'] {
   border: 1px solid var(--text-dim);
   border-radius: 50%;
   color: var(--text-dim);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   text-transform: none;
   letter-spacing: normal;
@@ -3622,7 +3799,7 @@ select.nu-unit {
   max-width: 100%;
 }
 
-/* ---------- Analysis operational picture and run evidence ---------- */
+/* ---------- Analysis KPI tiles and run evidence ---------- */
 
 .analysis-empty {
   margin: 0;
@@ -3633,10 +3810,72 @@ select.nu-unit {
   color: var(--text-secondary);
 }
 
-.operational-picture {
+/* KPI tiles: the reading at the cursor time, two or three to a row. */
+.tiles {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tiles.c3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tiles.c2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tile {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tl {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.tv {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.tv small {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.tv small.de {
+  color: var(--de);
+}
+
+.tv small.ew {
+  color: var(--ew);
+}
+
+.tv.warn {
+  color: var(--warn);
+}
+
+.tv.bad {
+  color: var(--danger);
+}
+
+.ts {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .data-horizon-label,
@@ -3752,6 +3991,7 @@ select.nu-unit {
 .capacity-row small {
   grid-column: 1 / -1;
   color: var(--text-dim);
+  font-size: 10px;
 }
 
 /* Requirement gates do not compensate for one another. */
@@ -4000,6 +4240,7 @@ select.nu-unit {
 
 .threat-data-group {
   overflow: hidden;
+  padding: 0 0 6px;
   border: 0;
   border-top: 1px solid var(--border-subtle);
   border-radius: 0;
@@ -4010,7 +4251,7 @@ select.nu-unit {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-2) var(--space-1);
+  padding: var(--space-2) 0 0;
 }
 
 .threat-data-title,
@@ -4027,71 +4268,104 @@ select.nu-unit {
 .threat-data-count {
   color: var(--text-dim);
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 10px;
 }
 
-.threat-stage-row {
+/* Two-row chip ladder: D TRK ID over TGT ENG FX. Six chips on one row fall
+   below the type floor in a 320 px panel; three per row hold 10 px. */
+.ladder {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 2px;
-  padding: 2px var(--space-2) var(--space-1) var(--space-6);
+  grid-template-columns: 1fr;
+  gap: 3px;
+  margin-top: 5px;
 }
 
-.threat-stage {
-  overflow: hidden;
-  padding: 2px 1px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  color: var(--text-dim);
+.ladder > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.tg .ladder {
+  padding: 0 0 0 var(--space-4);
+}
+
+.st {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  color: var(--text-tertiary);
   font-family: var(--font-mono);
-  font-size: 7.5px;
-  text-align: center;
-  text-overflow: ellipsis;
+  font-size: 10px;
   white-space: nowrap;
 }
 
-.threat-stage.complete {
-  color: var(--good);
-  border-color: color-mix(in srgb, var(--good) 45%, var(--border));
+.st b {
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
-.threat-stage.active {
+.st.on {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.st.live {
   color: var(--accent);
   border-color: var(--accent);
 }
 
-.threat-group-outcome {
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 0 var(--space-2) var(--space-1) var(--space-6);
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 8.5px;
+.st.done {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 45%, var(--border-default));
 }
 
-.threat-group-outcome strong {
+/* Group footer: defeat versus residual mass, then the survival reading. */
+.tg-f {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding-left: var(--space-4);
+}
+
+.bar {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  height: 2px;
+}
+
+.bar i {
+  display: block;
+  height: 2px;
+}
+
+.bar i.defeat {
+  background: var(--good);
+}
+
+.bar i.residual {
+  background: var(--text-tertiary);
+}
+
+.tg-s {
+  flex: none;
+  color: var(--text-dim);
+  font-size: 10.5px;
+}
+
+.tg-s b {
   color: var(--text);
   font-weight: 500;
 }
 
-.threat-outcome-bar {
-  display: flex;
-  height: 2px;
-  background: var(--border);
-}
-
-.threat-outcome-bar .defeat {
-  min-width: 0;
-  background: var(--good);
-}
-
-.threat-outcome-bar .residual {
-  min-width: 0;
-  background: var(--danger);
-}
-
 .threat-data-members {
+  margin-top: 6px;
   border-top: 1px solid var(--border);
 }
 
@@ -4114,39 +4388,12 @@ select.nu-unit {
   white-space: nowrap;
 }
 
-.threat-data-stages {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 2px;
-  margin-top: 4px;
-}
-
-.threat-data-stages span {
-  padding: 1px 0;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 7.5px;
-  text-align: center;
-}
-
-.threat-data-stages span.met {
-  color: var(--good);
-  border-color: color-mix(in srgb, var(--good) 45%, var(--border));
-}
-
-.threat-data-stages span.live {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
 .threat-data-detail {
   margin-top: 3px;
   overflow: hidden;
   color: var(--text-dim);
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4228,6 +4475,18 @@ select.nu-unit {
   font-family: inherit;
   font-size: 10px;
   white-space: normal;
+}
+
+.valid {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 11px;
+}
+
+.valid .status,
+.validity-finding .status {
+  flex: none;
 }
 
 .validity-finding {

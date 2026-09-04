@@ -796,6 +796,8 @@ export interface AarEffectorShots {
  */
 export interface AarSummary {
   roe: Roe
+  /** Lens preset the run was observed under; absent on pins made before slice 6. */
+  observedPresetId?: string | null
   raidSize: number
   /** Pre-arrival hard-kill mass: destruction that defended the asset. */
   expectedHardKills: number
@@ -903,6 +905,8 @@ export interface Scenario {
    * skips them, so a deleted seed stays deleted. Absent on old saves = none.
    */
   deletedSeedIds?: string[]
+  /** Lens preset id active when the current run was reset or started. Null before any run. */
+  observedPresetId?: string | null
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
 

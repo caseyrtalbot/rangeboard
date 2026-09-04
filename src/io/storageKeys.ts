@@ -29,3 +29,5 @@ export const PALETTE_WIDTH_KEY = 'rangeboard.palette.width'
 export const PALETTE_COLLAPSED_KEY = 'rangeboard.palette.collapsed'
 /** Engagement strip open flag, '1' or '0'. */
 export const ENGSTRIP_OPEN_KEY = 'rangeboard.engstrip.open'
+/** Analysis lens layout and user presets (`AnalysisViewState`). */
+export const ANALYSIS_KEY = 'rangeboard.analysis.v1'

@@ -27,12 +27,25 @@ import { sensorHoldsPoint } from '../playback/sim'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
 import {
+  savedAnalysis,
   savedRingOverrides,
   savedView,
+  writeAnalysis,
   writeRingOverrides,
   writeView,
   writeViewCamera,
 } from '../io/viewState'
+import type { AnalysisViewState, WidgetType } from './analysisLayout'
+import {
+  addWidget,
+  applyPreset,
+  deletePreset,
+  moveWidget,
+  removeWidget,
+  saveAsPreset,
+  setWidgetParams,
+  toggleCollapsed,
+} from './analysisLayout'
 import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
@@ -191,6 +204,14 @@ export interface UiState {
   raidDraft: RaidDraft | null
   /** Sat basemap location dialog visibility. */
   locationDialogOpen: boolean
+  /**
+   * Analysis lens layout and user presets. Render state only: ui state, not
+   * undoable, kept in its own localStorage key. The builtin lenses come from
+   * `BUILTIN_LENSES` on every load and are never persisted.
+   */
+  analysis: AnalysisViewState
+  /** Analysis customize mode: remove and reorder handles on every widget. Not persisted. */
+  analysisCustomize: boolean
 }
 
 /**
@@ -357,6 +378,16 @@ export interface Store {
   /** Force one ring on or off for one entity; null drops back to the layer flag. */
   setRingOverride: (entityId: string, key: RingKey, on: boolean | null) => void
   setLocationDialogOpen: (v: boolean) => void
+  /** Replace the analysis widget stack with a lens; an unknown id gives run-summary. */
+  applyLens: (presetId: string) => void
+  addAnalysisWidget: (type: WidgetType, params?: Record<string, unknown>) => void
+  removeAnalysisWidget: (id: string) => void
+  moveAnalysisWidget: (id: string, toIndex: number) => void
+  toggleAnalysisWidget: (id: string) => void
+  setAnalysisWidgetParams: (id: string, params: Record<string, unknown>) => void
+  saveAnalysisPreset: (label: string) => void
+  deleteAnalysisPreset: (id: string) => void
+  setAnalysisCustomize: (on: boolean) => void
   setUnits: (v: DisplayUnits) => void
   setSaveState: (lastAutosaveAt: number | null, error: string | null) => void
 
@@ -595,6 +626,16 @@ function writeRunSeq(seq: number): void {
   }
 }
 
+/**
+ * The observed lens belongs to the run, not to the edit history: a snapshot
+ * restored by undo or redo keeps the stamp the current scenario carries.
+ */
+function withObservedLens(restored: Scenario, current: Scenario): Scenario {
+  const stamp = current.observedPresetId ?? null
+  if ((restored.observedPresetId ?? null) === stamp) return restored
+  return { ...restored, observedPresetId: stamp }
+}
+
 /** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
 function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined): string[] {
   const have = s.deletedSeedIds ?? []
@@ -781,6 +822,22 @@ export const useStore = create<Store>()((set, get) => {
     })
   }
 
+  /**
+   * Stamp the active lens on the scenario as the lens this run is observed
+   * under. It is run evidence the debrief export carries, so it goes through
+   * `set`: no undo entry, and no run invalidation (`analysisBasisSignature`
+   * never reads it).
+   */
+  function observedPatch(st: Store): { scenario: Scenario } {
+    return { scenario: { ...st.scenario, observedPresetId: st.ui.analysis.layout.presetId } }
+  }
+
+  /** Install an analysis view: eager storage write, ui only, never undo history. */
+  function setAnalysis(analysis: AnalysisViewState) {
+    writeAnalysis(analysis)
+    set((st) => ({ ui: { ...st.ui, analysis } }))
+  }
+
   const view = savedView()
 
   return {
@@ -807,6 +864,8 @@ export const useStore = create<Store>()((set, get) => {
       connectSuggestion: null,
       raidDraft: null,
       locationDialogOpen: false,
+      analysis: savedAnalysis(),
+      analysisCustomize: false,
     },
     playback: freshPlayback(savedRunSeq()),
     save: { lastAutosaveAt: null, error: null },
@@ -814,7 +873,7 @@ export const useStore = create<Store>()((set, get) => {
     undo: () => {
       const { past, future, scenario, ui, playback, selection } = get()
       if (past.length === 0) return
-      const restored = past[past.length - 1]
+      const restored = withObservedLens(past[past.length - 1], scenario)
       set({
         scenario: restored,
         past: past.slice(0, -1),
@@ -829,7 +888,7 @@ export const useStore = create<Store>()((set, get) => {
     redo: () => {
       const { past, future, scenario, ui, playback, selection } = get()
       if (future.length === 0) return
-      const restored = future[0]
+      const restored = withObservedLens(future[0], scenario)
       set({
         scenario: restored,
         past: [...past, scenario],
@@ -1808,6 +1867,20 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, ringOverrides } }))
     },
     setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
+
+    // Lens actions write storage on every call, a no-op reducer result
+    // included, so the stored record matches what is on screen. A stack
+    // emptied in customize mode reloads as run-summary (sanitizeAnalysisView).
+    applyLens: (presetId) => setAnalysis(applyPreset(get().ui.analysis, presetId)),
+    addAnalysisWidget: (type, params) => setAnalysis(addWidget(get().ui.analysis, type, params)),
+    removeAnalysisWidget: (id) => setAnalysis(removeWidget(get().ui.analysis, id)),
+    moveAnalysisWidget: (id, toIndex) => setAnalysis(moveWidget(get().ui.analysis, id, toIndex)),
+    toggleAnalysisWidget: (id) => setAnalysis(toggleCollapsed(get().ui.analysis, id)),
+    setAnalysisWidgetParams: (id, params) =>
+      setAnalysis(setWidgetParams(get().ui.analysis, id, params)),
+    saveAnalysisPreset: (label) => setAnalysis(saveAsPreset(get().ui.analysis, label)),
+    deleteAnalysisPreset: (id) => setAnalysis(deletePreset(get().ui.analysis, id)),
+    setAnalysisCustomize: (on) => set((st) => ({ ui: { ...st.ui, analysisCustomize: on } })),
     setSaveState: (lastAutosaveAt, error) => set({ save: { lastAutosaveAt, error } }),
     setUnits: (v) => {
       if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
@@ -1829,8 +1902,10 @@ export const useStore = create<Store>()((set, get) => {
         // A preview beyond the observed horizon is never silently promoted
         // to live data. Resume from the last actually observed instant.
         const simTimeS = Math.min(st.playback.simTimeS, st.playback.observedThroughS)
-        if (st.playback.startedAtMs == null) writeRunSeq(st.playback.runSeq + 1)
+        const first = st.playback.startedAtMs == null
+        if (first) writeRunSeq(st.playback.runSeq + 1)
         return {
+          ...(first ? observedPatch(st) : {}),
           playback: {
             ...st.playback,
             playing: true,
@@ -1855,8 +1930,10 @@ export const useStore = create<Store>()((set, get) => {
     advanceRun: (t) =>
       set((st) => {
         const simTimeS = Math.max(0, t)
-        if (st.playback.startedAtMs == null) writeRunSeq(st.playback.runSeq + 1)
+        const first = st.playback.startedAtMs == null
+        if (first) writeRunSeq(st.playback.runSeq + 1)
         return {
+          ...(first ? observedPatch(st) : {}),
           playback: {
             ...st.playback,
             playing: true,
@@ -1903,7 +1980,10 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => {
         const runSeq = reason === 'manual' ? st.playback.runSeq + 1 : st.playback.runSeq
         if (reason === 'manual') writeRunSeq(runSeq)
-        return { playback: freshPlayback(runSeq, st.playback.speedMult, reason) }
+        return {
+          ...observedPatch(st),
+          playback: freshPlayback(runSeq, st.playback.speedMult, reason),
+        }
       }),
 
   }

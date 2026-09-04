@@ -115,6 +115,7 @@ export function buildAarSummary(
   const undefeated = totals.expectedLeakers + totals.expectedNoArrival
   return {
     roe: scenario.roe ?? 'tight',
+    observedPresetId: scenario.observedPresetId ?? null,
     raidSize: totals.raidSize,
     expectedHardKills: totals.expectedHardKills,
     expectedSoftKills: totals.expectedSoftKills,
