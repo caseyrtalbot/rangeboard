@@ -14,7 +14,9 @@ These facts are about the Claude Code tool environment, not about the project.
   bootstrap. Run the dev server and every Playwright script with the sandbox disabled.
   Ports 5173 to 5200 have been used by old processes; take a higher port with
   `--strictPort`, start the server as one background command that writes its PID, and stop
-  only your own server.
+  only your own server. Stopping that server (`kill`) and running the Playwright probe also
+  need the sandbox disabled. Bash process substitution (`<(...)`) fails in the sandbox; write
+  temp files under `$TMPDIR` and diff those.
 - The Browser pane cannot render a `file://` page. Serve a local HTML file with
   `python3 -m http.server` on a high port with the sandbox disabled, load it by URL, and
   stop the server when done.
