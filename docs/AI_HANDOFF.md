@@ -4,7 +4,7 @@
 
 `analysis-hardening` at the commit that carries this file; `main` fast-forwarded to it on
 2026-09-05, moves at each wave boundary. Remote verified equal after each push. Tree carries
-the uncommitted design step 3 CSS fold (`src/index.css`) and untracked `.claude/`.
+the uncommitted E3 study (tests and the uncertainty crosswalk) and untracked `.claude/`.
 Contributor: Claude Fable under [AGENTS.md](../AGENTS.md).
 
 ## Verified
@@ -16,12 +16,15 @@ Contributor: Claude Fable under [AGENTS.md](../AGENTS.md).
 - E2 R-F-30 done: `assessJam` on slant range; layered fixture expectedKills 6.899127 to
   6.899306 (`e2-rf30-jam-2026-09-05/diff.md`). Wave 2 engine done at `a5d2ae3`: `store.ts`
   1,611 lines, `sim.ts` 922, `attrition.ts` 849, no re-exports, no `sim`/`policy` cycle.
-- Design step 2 at `171ba23`: fonts, type roles, floor and contrast.
+- Design step 3 part A at this commit: section 3 tokens, one 2 px control radius, no shadow,
+  blur, tint or tracked caps in `index.css`; contrast 3.8:1 to 14.4:1 on panel
+  (`evidence/design-step3-2026-09-05/`). Step 2 at `171ba23`.
 
 ## Next
 
-1. Design step 3: CSS fold (in flight), then the kit merge (state square, provenance mark,
-   field and segmented control once across `te/ui/kit.tsx` and `panels/inspector/kit.tsx`).
+1. Design step 3 part B: the kit merge (state square, provenance mark, field and segmented
+   control once across `te/ui/kit.tsx` and `panels/inspector/kit.tsx`, on the prepared
+   `.state-square` and `.prov-mark` classes).
 2. Design step 4 (F3 daylight theme, OS follow, switch in the top bar).
 3. Wave 3: next E2 family from PLAN section 5 with a before-and-after capture; E3 studies.
 4. Wave 4: design steps 6, 7, 9, 10, 13; then 8 (R-F-33), 11, 12; then 14 with R-F-34.

@@ -1,0 +1,222 @@
+{
+  "panelWidth": 319,
+  "tokens": {
+    "values": {
+      "--surface-board": "#121313",
+      "--surface-panel": "#191a1a",
+      "--surface-sunken": "#0e0f0f",
+      "--surface-hover": "#2a2c2b",
+      "--rule": "#2a2c2b",
+      "--rule-strong": "#454846",
+      "--text-primary": "#ebe9e3",
+      "--text-secondary": "#a9a9a3",
+      "--text-tertiary": "#74766f",
+      "--text-disabled": "#454846",
+      "--ink": "#121313",
+      "--status-nominal": "#7fc39a",
+      "--status-warning": "#e2ad55",
+      "--status-critical": "#e46f62",
+      "--radius-control": "2px",
+      "--dur-fast": "120ms",
+      "--dur": "140ms",
+      "--accent": "#ebe9e3",
+      "--border-focus": "#ebe9e3"
+    },
+    "boardBackground": "rgb(18, 19, 19)",
+    "boardGrain": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000…",
+    "grainDeclared": true
+  },
+  "contrast": [
+    {
+      "role": "text 1",
+      "token": "--text-primary",
+      "fg": "#ebe9e3",
+      "bg": "#191a1a",
+      "ratio": 14.37,
+      "floor": 4.5,
+      "pass": true,
+      "rendered_on": "button.active",
+      "sample": "Analysis"
+    },
+    {
+      "role": "text 2",
+      "token": "--text-secondary",
+      "fg": "#a9a9a3",
+      "bg": "#191a1a",
+      "ratio": 7.38,
+      "floor": 4.5,
+      "pass": true,
+      "rendered_on": "button.",
+      "sample": "Inspect"
+    },
+    {
+      "role": "text 3",
+      "token": "--text-tertiary",
+      "fg": "#74766f",
+      "bg": "#191a1a",
+      "ratio": 3.79,
+      "floor": 3,
+      "pass": true,
+      "rendered_on": "span.chip-meta",
+      "sample": "estimate · 30 replicates ·"
+    },
+    {
+      "role": "nominal",
+      "token": "--status-nominal",
+      "fg": "#7fc39a",
+      "bg": "#191a1a",
+      "ratio": 8.45,
+      "floor": 3,
+      "pass": true,
+      "rendered_on": "span.st",
+      "sample": "D1/1"
+    },
+    {
+      "role": "warning",
+      "token": "--status-warning",
+      "fg": "#e2ad55",
+      "bg": "#191a1a",
+      "ratio": 8.59,
+      "floor": 3,
+      "pass": true,
+      "rendered_on": "span.fid-tag",
+      "sample": "Environment · planning · n"
+    },
+    {
+      "role": "critical",
+      "token": "--status-critical",
+      "fg": "#e46f62",
+      "bg": "#191a1a",
+      "ratio": 5.61,
+      "floor": 3,
+      "pass": true,
+      "rendered_on": "span.status",
+      "sample": "INVALID"
+    }
+  ],
+  "floating": {
+    "ctxStyle": {
+      "background": "rgb(25, 26, 26)",
+      "border": "1px rgb(69, 72, 70)",
+      "boxShadow": "none",
+      "radius": "0px"
+    },
+    "cmdkStyle": {
+      "background": "rgb(25, 26, 26)",
+      "border": "1px rgb(69, 72, 70)",
+      "boxShadow": "none",
+      "radius": "0px",
+      "backdrop": "rgba(0, 0, 0, 0)"
+    },
+    "viewStyle": {
+      "background": "rgb(25, 26, 26)",
+      "border": "1px rgb(69, 72, 70)",
+      "boxShadow": "none",
+      "radius": "0px",
+      "pressedSegment": {
+        "background": "rgb(235, 233, 227)",
+        "color": "rgb(18, 19, 19)"
+      }
+    }
+  },
+  "sweep": {
+    "shadow": [],
+    "blur": [],
+    "caps": [],
+    "radius": [],
+    "translucent": []
+  },
+  "headline": {
+    "colouredFills": [],
+    "verdicts": [
+      {
+        "cls": "requirements-verdict verdict-pass",
+        "background": "rgb(127, 195, 154)",
+        "color": "rgb(18, 19, 19)",
+        "border": "0px"
+      },
+      {
+        "cls": "requirements-verdict verdict-fail",
+        "background": "rgb(228, 111, 98)",
+        "color": "rgb(18, 19, 19)",
+        "border": "0px"
+      },
+      {
+        "cls": "requirements-verdict verdict-not-run",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(235, 233, 227)",
+        "border": "0px"
+      }
+    ],
+    "marks": [
+      {
+        "cls": "state-square",
+        "box": "8x8",
+        "markWidth": "none",
+        "outline": "none",
+        "clip": "none"
+      },
+      {
+        "cls": "state-square hollow",
+        "box": "8x8",
+        "markWidth": "none",
+        "outline": "solid",
+        "clip": "none"
+      },
+      {
+        "cls": "state-square live",
+        "box": "8x8",
+        "markWidth": "none",
+        "outline": "none",
+        "clip": "circle(50%)"
+      },
+      {
+        "cls": "prov-mark",
+        "box": "36x14",
+        "markWidth": "8px",
+        "outline": "none",
+        "clip": "none"
+      },
+      {
+        "cls": "prov-mark pf",
+        "box": "36x14",
+        "markWidth": "8px",
+        "outline": "solid",
+        "clip": "none"
+      },
+      {
+        "cls": "prov-mark estimated",
+        "box": "36x14",
+        "markWidth": "8px",
+        "outline": "solid",
+        "clip": "none"
+      },
+      {
+        "cls": "prov-mark probable",
+        "box": "36x14",
+        "markWidth": "8px",
+        "outline": "dashed",
+        "clip": "none"
+      },
+      {
+        "cls": "prov-mark inferred",
+        "box": "36x14",
+        "markWidth": "8px",
+        "outline": "none",
+        "clip": "circle(50%)"
+      },
+      {
+        "cls": "prov-mark absent",
+        "box": "36x0",
+        "markWidth": "none",
+        "outline": "none",
+        "clip": "none"
+      }
+    ]
+  },
+  "teSweep": {
+    "shadow": [],
+    "caps": [],
+    "translucent": []
+  }
+}

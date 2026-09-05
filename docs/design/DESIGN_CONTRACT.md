@@ -59,11 +59,11 @@ mean threat, sensor and effector everywhere.
 | sunken | `#0e0f0f` | inputs only |
 | rule | `#2a2c2b` | row separators |
 | rule strong | `#454846` | section separators, control borders, floating edges |
-| text 1 | `#ebe9e3` | values, titles; 14.9:1 on panel |
-| text 2 | `#a9a9a3` | body, meta; 7.6:1 |
-| text 3 | `#74766f` | labels at 12 px weight 500 only; 3.9:1 |
+| text 1 | `#ebe9e3` | values, titles; 14.4:1 on panel, measured 2026-09-05 |
+| text 2 | `#a9a9a3` | body, meta; 7.4:1 |
+| text 3 | `#74766f` | labels at 12 px weight 500 only; 3.8:1 |
 | ink (on a filled control) | `#121313` | text on a pressed or primary control |
-| nominal | `#7fc39a` | state ink; 8.9:1 |
+| nominal | `#7fc39a` | state ink; 8.5:1 |
 | warning | `#e2ad55` | state ink |
 | critical | `#e46f62` | state ink |
 | threat, sensor, effector, C2 | `#e25b4e`, `#6cb0e6`, `#e4934f`, `#d3d5cf` | board channels, unchanged in meaning from `PHASE_STYLE` and the chart tokens |

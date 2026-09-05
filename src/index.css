@@ -39,41 +39,60 @@
 
 :root {
   /* ---------------------------------------------------------------
-     Design tokens. Two layers: a raw graphite ramp, then semantic
-     names. Components read the semantic names only, so a surface or a
-     status can be retuned in one place. The short --bg / --text / --border
-     aliases at the end are the names the rest of this sheet already uses.
+     Design tokens, design contract section 3. Warm graphite, not
+     blue-black: the chrome is monochrome, so red, blue and orange stay
+     free to mean threat, sensor and effector on the board. Components
+     read the semantic names; the short --bg / --text / --border aliases
+     at the end are the names the rest of this sheet already uses, so a
+     retune moves every rule that reads an alias with the token.
      --------------------------------------------------------------- */
 
-  /* Surfaces. The canvas sits one step below the panel so the Inspector
-     reads as a separate instrument surface with no heavy frame. */
-  --surface-canvas: #111315;
-  --surface-panel: #171a1d;
-  --surface-sunken: #101214;
-  --surface-hover: rgba(255, 255, 255, 0.035);
-  --surface-active: rgba(255, 255, 255, 0.055);
-  --surface-selected: rgba(255, 255, 255, 0.075);
+  /* Three surfaces and no fourth (rule 5). The board is the canvas
+     ground and carries the grain; the panel is every panel, flyout,
+     drawer and card; the sunken tone is for an input only. */
+  --surface-board: #121313;
+  --surface-panel: #191a1a;
+  --surface-sunken: #0e0f0f;
 
-  /* Borders. Translucent, so one value works on every surface tone. */
-  --border-subtle: rgba(255, 255, 255, 0.055);
-  --border-default: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  /* Boundary of an interactive control. 3.0:1 against the panel, which is
-     what identifies an input, a checkbox or a slider track. */
-  --border-control: rgba(255, 255, 255, 0.34);
-  --border-focus: #a9b4bd;
+  /* The board grain, so the ground reads as a material and not as flat
+     paint. An inline SVG turbulence at 3.5 percent: no file, no
+     dependency, and it tiles at 160 px. */
+  --board-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E");
 
-  /* Text ramp. Four steps, no fifth: label, value, metadata, disabled. */
-  --text-primary: rgba(255, 255, 255, 0.91);
-  --text-secondary: rgba(255, 255, 255, 0.61);
-  --text-tertiary: rgba(255, 255, 255, 0.46);
-  --text-disabled: rgba(255, 255, 255, 0.24);
+  /* Two rules and no third. The hairline separates rows; the strong rule
+     separates sections, draws a control border and edges a floating
+     surface. Both are opaque, so one value reads on every surface. */
+  --rule: #2a2c2b;
+  --rule-strong: #454846;
 
-  /* Semantic status. Colour appears only where it carries meaning. */
-  --status-nominal: #8fae7a;
-  --status-warning: #d98f41;
-  --status-critical: #c96458;
-  --status-inactive: #82887e;
+  /* Hover and selection are opaque (rule 3): the rule tone laid on the
+     surface, never a translucent wash over it. */
+  --surface-hover: var(--rule);
+
+  /* The border names the rest of the sheet reads, mapped onto the two
+     rules. Focus is a 2 px outline in text 1. */
+  --border-subtle: var(--rule);
+  --border-default: var(--rule);
+  --border-strong: var(--rule-strong);
+  --border-control: var(--rule-strong);
+  --border-focus: var(--text-primary);
+
+  /* Text ramp. Three steps: values and titles, body and meta, labels at
+     12 px weight 500. A disabled control drops to the control-rule ink. */
+  --text-primary: #ebe9e3;
+  --text-secondary: #a9a9a3;
+  --text-tertiary: #74766f;
+  --text-disabled: var(--rule-strong);
+
+  /* Ink on a filled control. A pressed control inverts to text 1 on ink. */
+  --ink: #121313;
+
+  /* State inks. A state is a text colour, a stroke or a solid 8 px
+     square; only the one headline judgement on a panel is a fill. */
+  --status-nominal: #7fc39a;
+  --status-warning: #e2ad55;
+  --status-critical: #e46f62;
+  --status-inactive: var(--text-tertiary);
 
   /* Spacing scale. Every margin and pad in the panel comes from here. */
   --space-1: 4px;
@@ -83,15 +102,6 @@
   --space-5: 20px;
   --space-6: 24px;
   --panel-pad: 14px;
-
-  /* Ink on an accent fill. Near-black, so a filled control never inverts to
-     a light-grey-on-grey. */
-  --text-on-accent: #121415;
-
-  /* Depth. Two recipes only: a surface that floats over the app, and a small
-     popover that sits just above its trigger. */
-  --shadow-float: 0 12px 30px rgba(0, 0, 0, 0.55);
-  --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.45);
 
   /* Motion. Short and linear: this is tooling, not a landing page. */
   --dur-fast: 120ms;
@@ -124,17 +134,22 @@
      and the KPI sub-line. The density control of step 6 will drive it. */
   --type-dense-size: 11px;
 
+  /* The one radius (rule 2). A container is square; a button, an input, a
+     segmented group and a checkbox are 2 px; nothing else is rounded. */
+  --radius-control: 2px;
+
   /* ---- Aliases used across the rest of this sheet ---- */
-  --bg: var(--surface-canvas);
+  --bg: var(--surface-board);
   --bg-panel: var(--surface-panel);
   --bg-input: var(--surface-sunken);
-  /* Opaque equivalents of the translucent tokens over --surface-panel.
-     Kept opaque because several rules use them as a fill, not a rule. */
-  --border: #2c2f31;
-  --hover: #1f2225;
+  --border: var(--rule);
+  --hover: var(--surface-hover);
   --text: var(--text-primary);
   --text-dim: var(--text-secondary);
-  --accent: #a9b4bd;
+  /* Chrome emphasis. Monochrome by design: an emphasis mark, a focus ring
+     and a filled control all read in text 1, so colour stays with the
+     channels and the states. */
+  --accent: var(--text-primary);
   --danger: var(--status-critical);
   --good: var(--status-nominal);
   --warn: var(--status-warning);
@@ -153,7 +168,6 @@
      The canvas ring and the DEFEATED pill read this value from PHASE_STYLE
      in src/playback/trackState.ts, which is the source of truth. */
   --ghost: #6a7178;
-  --radius: 3px;
 
   font-family: var(--font-ui);
   font-size: var(--type-body-size);
@@ -201,7 +215,6 @@ body,
 
 ::-webkit-scrollbar-thumb {
   background: var(--border-default);
-  border-radius: var(--radius);
 }
 
 *:hover > ::-webkit-scrollbar-thumb,
@@ -275,7 +288,6 @@ body,
   background: transparent;
   border: 0;
   border-bottom: 1px solid transparent;
-  border-radius: 0;
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
 }
@@ -303,7 +315,7 @@ button {
   background: transparent;
   color: var(--text-primary);
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   padding: 5px 10px;
   cursor: pointer;
   font: inherit;
@@ -321,7 +333,7 @@ textarea:focus-visible,
 [role='tab']:focus-visible,
 [role='tabpanel']:focus-visible,
 [role='separator']:focus-visible {
-  outline: 1px solid var(--border-focus);
+  outline: 2px solid var(--border-focus);
   outline-offset: 1px;
 }
 
@@ -331,7 +343,8 @@ button:hover {
 }
 
 button:active {
-  background: var(--surface-active);
+  background: var(--text-primary);
+  color: var(--ink);
 }
 
 button:disabled {
@@ -341,44 +354,38 @@ button:disabled {
   cursor: default;
 }
 
-/* Active reads as a raised surface plus weight. A filled accent block was
-   louder than the data it sits beside. */
+/* A toggled control reads as the opaque hover tone plus text 1. The
+   inversion is reserved for the segmented control the contract names. */
 button.active {
-  background: var(--surface-selected);
+  background: var(--surface-hover);
   color: var(--text-primary);
   font-weight: var(--type-label-weight);
 }
 
 button.danger {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  border-color: transparent;
 }
 
 button.danger:hover {
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
   border-color: var(--danger);
 }
 
 button.primary {
   background: var(--accent);
-  color: var(--text-on-accent);
+  color: var(--ink);
   font-weight: var(--type-label-weight);
 }
 
-button.primary:hover {
-  background: color-mix(in srgb, var(--accent) 88%, #ffffff);
-  color: var(--text-on-accent);
-}
-
 button.primary:disabled {
-  background: var(--surface-active);
+  background: var(--surface-hover);
   color: var(--text-disabled);
 }
 
 button.mini {
   align-self: flex-start;
   padding: 1px 7px;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-control);
   color: var(--text-secondary);
   font-size: var(--type-meta-size);
   margin-left: 6px;
@@ -386,7 +393,7 @@ button.mini {
 
 button.mini:hover {
   color: var(--text-primary);
-  border-color: var(--border-strong);
+  border-color: var(--text-secondary);
 }
 
 input,
@@ -395,7 +402,7 @@ select {
   background: var(--bg-input);
   color: var(--text-primary);
   border: 1px solid var(--border-control);
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
   padding: 4px 7px;
   font: inherit;
   font-size: var(--type-meta-size);
@@ -441,7 +448,7 @@ input[type='checkbox'] {
   margin: 0;
   padding: 0;
   border: 1px solid var(--border-control);
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   background: var(--bg-input);
   position: relative;
   cursor: pointer;
@@ -463,7 +470,7 @@ input[type='checkbox']:checked::after {
   top: 1px;
   width: 3px;
   height: 7px;
-  border: solid var(--text-on-accent);
+  border: solid var(--ink);
   border-width: 0 1.5px 1.5px 0;
   transform: rotate(42deg);
 }
@@ -485,7 +492,6 @@ input[type='range'] {
 input[type='range']::-webkit-slider-runnable-track {
   height: 2px;
   background: var(--border-control);
-  border-radius: 1px;
 }
 
 input[type='range']::-webkit-slider-thumb {
@@ -493,7 +499,7 @@ input[type='range']::-webkit-slider-thumb {
   width: 11px;
   height: 11px;
   margin-top: -4.5px;
-  border-radius: 50%;
+  border-radius: var(--radius-control);
   background: var(--text-secondary);
   transition: background-color var(--dur-fast) ease;
 }
@@ -511,7 +517,7 @@ input[type='range']::-moz-range-thumb {
   width: 11px;
   height: 11px;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-control);
   background: var(--text-secondary);
 }
 
@@ -522,8 +528,8 @@ input[type='color'] {
   width: 46px;
   height: 22px;
   padding: 0;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
   background: transparent;
   cursor: pointer;
 }
@@ -534,7 +540,6 @@ input[type='color']::-webkit-color-swatch-wrapper {
 
 input[type='color']::-webkit-color-swatch {
   border: 0;
-  border-radius: 1px;
 }
 
 /* Undo and redo carry a glyph, not a word. The title text names them. */
@@ -545,8 +550,8 @@ input[type='color']::-webkit-color-swatch {
   line-height: 1.15;
 }
 
-/* Toolbar dropdowns: View and the file overflow. Both float, so both keep a
-   shadow. Every other surface stays flat. */
+/* Toolbar dropdowns: View and the file overflow. Both float, so both are
+   opaque with one strong rule. Rule 4: depth is stacking order, not shadow. */
 .tb-menu-wrap {
   position: relative;
 }
@@ -556,7 +561,7 @@ input[type='color']::-webkit-color-swatch {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
 }
 
 .tb-menu.active {
@@ -584,10 +589,8 @@ input[type='color']::-webkit-color-swatch {
   max-height: calc(100vh - 92px);
   padding: 5px;
   overflow-y: auto;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-float);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
 }
 
 .tb-menu-right {
@@ -609,7 +612,7 @@ input[type='color']::-webkit-color-swatch {
   width: 100%;
   padding: 5px 8px;
   border: 0;
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text);
   font-size: var(--type-body-size);
@@ -658,15 +661,8 @@ input[type='color']::-webkit-color-swatch {
   position: relative;
   flex: 1;
   min-height: 0;
-  background: var(--bg);
-}
-
-.canvas-host.airspace {
-  background: #131619;
-}
-
-.canvas-host.sat {
-  background: #0e0f10;
+  background-color: var(--surface-board);
+  background-image: var(--board-grain);
 }
 
 .canvas-host.drawing {
@@ -684,11 +680,10 @@ input[type='color']::-webkit-color-swatch {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background: color-mix(in srgb, var(--surface-canvas) 90%, transparent);
-  border: 1px solid var(--border);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   color: var(--text-dim);
   padding: 5px 12px;
-  border-radius: var(--radius);
   white-space: nowrap;
 }
 
@@ -749,9 +744,8 @@ input[type='color']::-webkit-color-swatch {
   right: 14px;
   width: 292px;
   padding: 9px 11px 8px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
 }
 
 .ro-head {
@@ -770,12 +764,8 @@ input[type='color']::-webkit-color-swatch {
 
 .ro-phase {
   margin-left: auto;
-  padding: 1px 6px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
   font-size: var(--type-label-size);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-weight: var(--type-label-weight);
   white-space: nowrap;
 }
 
@@ -916,16 +906,15 @@ input[type='color']::-webkit-color-swatch {
 
 .palette-count {
   flex-shrink: 0;
+  color: var(--text-tertiary);
   font-size: var(--type-meta-size);
-  opacity: 0.8;
 }
 
 .palette-subhead {
   padding: 5px 10px 2px 26px;
-  color: var(--text-dim);
+  color: var(--text-tertiary);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
-  opacity: 0.75;
 }
 
 .palette-item {
@@ -962,7 +951,7 @@ input[type='color']::-webkit-color-swatch {
 
 .palette-footer button {
   flex: 1;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   font-size: var(--type-meta-size);
   padding: 4px 2px;
 }
@@ -972,36 +961,27 @@ input[type='color']::-webkit-color-swatch {
 .status-pills {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-3);
 }
 
-/* A hairline mono cluster. Only danger and warning carry a fill, because
-   only those two must read at a glance. */
+/* State is ink, never a box and never a tint: the word carries the state
+   colour and space separates one reading from the next. */
 .pill {
-  padding: 2px 7px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
   color: var(--text-dim);
   font-size: var(--type-label-size);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-weight: var(--type-label-weight);
   white-space: nowrap;
 }
 
 .pill-good {
-  border-color: color-mix(in srgb, var(--good) 45%, transparent);
   color: var(--good);
 }
 
 .pill-warn {
-  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
-  background: color-mix(in srgb, var(--warn) 12%, transparent);
   color: var(--warn);
 }
 
 .pill-danger {
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
 }
 
@@ -1009,12 +989,92 @@ input[type='color']::-webkit-color-swatch {
   color: var(--text-dim);
 }
 
+/* ---------- State square and provenance mark ---------- */
+
+/* Rule 3: a state is a text colour, a stroke or a solid 8 px square. The
+   square is an inline mark so it sits on the row's baseline, and it takes the
+   state ink from the colour of the element that carries it. A hollow mark is
+   drawn with an outline, not a border, so the border sweep of rule 1 stays
+   about enclosure. Part B swaps the pills onto these two classes. */
+.state-square {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  vertical-align: -1px;
+}
+
+/* Undecided, qualifying or not-yet-counted. */
+.state-square.hollow {
+  background: transparent;
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
+}
+
+/* Live. The only round state mark, clipped rather than rounded so rule 2
+   keeps one radius on controls alone. */
+.state-square.live {
+  clip-path: circle(50%);
+}
+
+/* Provenance replaces the PF, SRC, DOC and PROB pills: one 8 px shape in a
+   fixed 36 px column after the value, so its absence carries meaning too. */
+.prov-mark {
+  display: inline-block;
+  flex: none;
+  width: 36px;
+  color: var(--text-tertiary);
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Sourced: filled. */
+.prov-mark::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  vertical-align: -1px;
+}
+
+/* Planning factor: hollow. */
+.prov-mark.pf::before {
+  background: transparent;
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
+}
+
+/* Estimated: half. */
+.prov-mark.estimated::before {
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
+}
+
+/* Probable: dashed. */
+.prov-mark.probable::before {
+  background: transparent;
+  outline: 1px dashed currentColor;
+  outline-offset: -1px;
+}
+
+/* Inferred: circle. */
+.prov-mark.inferred::before {
+  clip-path: circle(50%);
+}
+
+/* No provenance recorded. The column stays; only the mark goes. */
+.prov-mark.absent::before {
+  content: none;
+}
+
 /* ---------- Inspector: panel shell ---------- */
 
 /* The Inspector is a persistent instrument surface, not a floating sidebar.
-   It sits one tone above the canvas, is separated by a single hairline, and
-   carries the only drop shadow in the application: a short directional wash
-   on its left boundary so the canvas reads as running underneath it. */
+   It sits one tone above the board and is separated by a single hairline.
+   Rule 4: no shadow anywhere, so the boundary is the rule alone. */
 .right-panel {
   position: relative;
   width: 320px;
@@ -1024,15 +1084,14 @@ input[type='color']::-webkit-color-swatch {
   flex-direction: column;
   background: var(--surface-panel);
   border-left: 1px solid var(--border-subtle);
-  box-shadow: -10px 0 18px -14px rgba(0, 0, 0, 0.75);
   min-height: 0;
 }
 
 /* ---------- Inspector: tab bar ---------- */
 
 /* Sticky by construction: the bar does not scroll because only the body
-   below it takes overflow. State is one 2 px bottom rule plus contrast,
-   never a pill and never a box. */
+   below it takes overflow. State is one 2 px underline plus contrast, drawn
+   as a mark so the tab box never changes height. */
 .tabs {
   display: flex;
   align-items: stretch;
@@ -1044,13 +1103,12 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .tabs button {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
   padding: 0 var(--space-1);
   border: 0;
-  border-radius: 0;
   background: transparent;
-  box-shadow: inset 0 -2px 0 transparent;
   color: var(--text-secondary);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
@@ -1058,7 +1116,18 @@ input[type='color']::-webkit-color-swatch {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color var(--dur) ease, box-shadow var(--dur) ease;
+  transition: color var(--dur) ease;
+}
+
+.tabs button::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--dur) ease;
 }
 
 .tabs button:hover {
@@ -1069,9 +1138,13 @@ input[type='color']::-webkit-color-swatch {
 .tabs button.active,
 .tabs button[aria-selected='true'] {
   background: transparent;
-  box-shadow: inset 0 -2px 0 var(--accent);
   color: var(--text-primary);
   font-weight: var(--type-label-weight);
+}
+
+.tabs button.active::after,
+.tabs button[aria-selected='true']::after {
+  background: var(--accent);
 }
 
 .tabs button:focus-visible {
@@ -1228,16 +1301,13 @@ p.muted.small {
   font-family: var(--font-ui);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .insp-status::before {
   content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 8px;
+  height: 8px;
   background: currentColor;
   flex: 0 0 auto;
 }
@@ -1260,7 +1330,8 @@ p.muted.small {
 
 .insp-status.inactive::before {
   background: transparent;
-  box-shadow: inset 0 0 0 1px currentColor;
+  outline: 1px solid currentColor;
+  outline-offset: -1px;
 }
 
 /* ---------- Inspector: property rows ---------- */
@@ -1276,7 +1347,6 @@ p.muted.small {
   min-height: 28px;
   margin: 0 calc(var(--panel-pad) * -1);
   padding: var(--space-1) var(--panel-pad);
-  border-radius: 0;
   transition: background-color var(--dur-fast) ease;
 }
 
@@ -1429,7 +1499,6 @@ p.muted.small {
   background: transparent;
   border: 0;
   border-left: 2px solid var(--border-default);
-  border-radius: 0;
   padding: 1px 0 1px var(--space-2);
   font-size: var(--type-body-size);
   line-height: 1.5;
@@ -1455,7 +1524,7 @@ p.muted.small {
 }
 
 .inspector-actions button.danger {
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  border-color: transparent;
 }
 
 /* A lone action sizes to its label; a full-width button reads as a primary
@@ -1502,7 +1571,7 @@ p.muted.small {
 }
 
 .insp-slew button {
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-control);
   padding: 4px 0;
   font-variant-numeric: tabular-nums;
 }
@@ -1549,27 +1618,43 @@ p.muted.small {
 /* ---------- Segmented control ---------- */
 
 /* One ruled block: no inner padding, no fill, hairline dividers. The divider
-   is a left box-shadow, not a border, because Tip wraps some segments in a
+   is a drawn mark, not a border, because Tip wraps some segments in a
    display:contents span and :first-child then stops being reliable. The
-   outer shadows land on the frame and overflow clips them. */
+   frame clips the first segment's mark, so no divider lands on the edge. */
 .seg {
   display: flex;
   align-items: stretch;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
 }
 
 .seg button {
+  position: relative;
   flex: 1;
   padding: 4px 2px;
   border: 0;
-  border-radius: 0;
   background: transparent;
-  box-shadow: -1px 0 0 var(--border-default);
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* A segment and the palette field sit flush inside a framed group, so the
+   group carries the one radius and they stay square. */
+.seg button,
+.cmdk-input {
+  border-radius: 0;
+}
+
+.seg button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 1px;
+  background: var(--border-default);
 }
 
 .seg button:hover {
@@ -1582,9 +1667,10 @@ p.muted.small {
   outline-offset: -1px;
 }
 
+/* The pressed segment inverts to text 1 on ink (contract section 5). */
 .seg button.active {
-  background: var(--surface-selected);
-  color: var(--text-primary);
+  background: var(--text-primary);
+  color: var(--ink);
   font-weight: var(--type-label-weight);
 }
 
@@ -1630,14 +1716,14 @@ p.muted.small {
 }
 
 .card-chip {
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-control);
   color: var(--text-secondary);
   font-size: var(--type-meta-size);
 }
 
 .card-chip:hover {
   color: var(--text-primary);
-  border-color: var(--border-strong);
+  border-color: var(--text-secondary);
 }
 
 .cards-list select.card-chip {
@@ -1647,8 +1733,8 @@ p.muted.small {
 }
 
 .card-chip.active {
-  background: var(--surface-selected);
-  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  border-color: var(--text-secondary);
   color: var(--text-primary);
   font-weight: var(--type-label-weight);
 }
@@ -1670,38 +1756,26 @@ p.muted.small {
 .status {
   display: inline-block;
   font-size: var(--type-label-size);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-weight: var(--type-label-weight);
   line-height: 15px;
-  padding: 0 5px;
-  border-radius: 2px;
-  border: 1px solid;
   white-space: nowrap;
   vertical-align: middle;
 }
 
 .status.good {
   color: var(--good);
-  border-color: color-mix(in srgb, var(--good) 45%, transparent);
-  background: color-mix(in srgb, var(--good) 10%, transparent);
 }
 
 .status.warn {
   color: var(--warn);
-  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
-  background: color-mix(in srgb, var(--warn) 10%, transparent);
 }
 
 .status.bad {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .status.neutral {
   color: var(--text-dim);
-  border-color: var(--border);
-  background: color-mix(in srgb, var(--border) 22%, transparent);
 }
 
 /* Progressive disclosure: a lens bar over a stack of widget frames. */
@@ -1733,7 +1807,6 @@ p.muted.small {
   padding: var(--space-1) 7px;
   border: 0;
   border-bottom: 2px solid transparent;
-  border-radius: 0;
   background: transparent;
   color: var(--text-dim);
   font-family: var(--font-ui);
@@ -1887,7 +1960,7 @@ p.muted.small {
 }
 
 .wmv:disabled {
-  opacity: 0.3;
+  color: var(--text-disabled);
   cursor: default;
 }
 
@@ -2010,9 +2083,6 @@ p.muted.small {
 .pf {
   display: inline-block;
   margin-left: var(--space-1);
-  padding: 0 var(--space-1);
-  border: 1px solid var(--warn);
-  border-radius: var(--radius);
   color: var(--warn);
   font-family: var(--font-mono);
   font-size: var(--type-dense-size);
@@ -2021,7 +2091,6 @@ p.muted.small {
 }
 
 .pf.src {
-  border-color: var(--good);
   color: var(--good);
 }
 
@@ -2264,7 +2333,7 @@ p.muted.small {
 }
 
 .timeline .play {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   width: 36px;
 }
 
@@ -2293,8 +2362,8 @@ p.muted.small {
 
 .frame-chip {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
 }
 
 .frame-chip button {
@@ -2317,16 +2386,14 @@ p.muted.small {
   top: 30%;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   padding: var(--panel-pad);
   width: 340px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   z-index: 20;
-  box-shadow: var(--shadow-float);
 }
 
 .dialog-title {
@@ -2343,14 +2410,12 @@ p.muted.small {
   position: absolute;
   min-width: 200px;
   max-width: 280px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   padding: 4px;
   z-index: 30;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-float);
 }
 
 .ctx-head {
@@ -2369,7 +2434,7 @@ p.muted.small {
   padding: 5px 10px;
   overflow: hidden;
   border: none;
-  border-radius: 2px;
+  border-radius: var(--radius-control);
   background: none;
   color: var(--text);
   font: inherit;
@@ -2463,13 +2528,9 @@ p.muted.small {
 }
 
 .suggest-badge {
-  padding: 0 4px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
+  color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: var(--type-machine-size);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .suggest-empty {
@@ -2481,7 +2542,6 @@ p.muted.small {
 /* Documented pairs wire themselves; this badge confirms it happened. */
 .suggest-auto {
   color: var(--accent);
-  border-color: var(--accent);
 }
 
 /* ---------- Run header strip ---------- */
@@ -2494,10 +2554,7 @@ p.muted.small {
   gap: 6px;
   margin: 0 calc(var(--panel-pad) * -1);
   padding: var(--space-3) var(--panel-pad);
-  background: var(--surface-sunken);
-  border: 0;
   border-left: 2px solid var(--accent);
-  border-radius: 0;
 }
 
 .live-head {
@@ -2553,9 +2610,6 @@ p.muted.small {
 /* The run header carries the model basis as a chip; the KPI readings moved
    to the KPI tiles widget. */
 .chip {
-  padding: 1px 6px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: var(--type-machine-size);
   white-space: nowrap;
@@ -2568,8 +2622,10 @@ p.muted.small {
 /* The chip opens the run mode popover, so it is a control and takes the
    control border. It keeps the chip type, not the button type. */
 button.chip {
+  padding: 1px 6px;
   background: none;
-  border-color: var(--border-control);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
   font-weight: inherit;
   line-height: inherit;
 }
@@ -2598,10 +2654,8 @@ button.chip {
   gap: var(--space-2);
   max-width: 100%;
   padding: var(--panel-pad);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
   background: var(--surface-panel);
-  box-shadow: var(--shadow-pop);
 }
 
 .mc-run {
@@ -2650,8 +2704,8 @@ button.chip {
   height: 15px;
   padding: 0;
   flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: 50%;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
   color: var(--text-dim);
   font-size: var(--type-meta-size);
   font-style: italic;
@@ -2671,14 +2725,12 @@ button.chip {
 .info-pop {
   position: fixed;
   z-index: 300;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   padding: 8px 10px;
   font-size: var(--type-body-size);
   line-height: 1.5;
   color: var(--text-dim);
-  box-shadow: var(--shadow-pop);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -2700,12 +2752,10 @@ button.chip {
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   font-size: var(--type-meta-size);
   color: var(--text);
-  box-shadow: var(--shadow-pop);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -2721,8 +2771,6 @@ button.chip {
   font-size: var(--type-machine-size);
   color: var(--text-secondary);
   background: var(--surface-hover);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
   white-space: nowrap;
 }
 
@@ -2753,14 +2801,14 @@ button.chip {
   color: var(--text-tertiary);
 }
 
-/* Overlay, not host styles: the Konva canvases would paint over an inset
-   shadow on the host itself. */
+/* Overlay, not host styles: the Konva canvases would paint over a stroke on
+   the host itself. State is the stroke alone, with no tint under it. */
 .canvas-host.drop-active::after {
   content: '';
   position: absolute;
   inset: 0;
-  box-shadow: inset 0 0 0 1px var(--accent);
-  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
   pointer-events: none;
   z-index: 5;
 }
@@ -2808,14 +2856,12 @@ input[type='number'] {
 .palette-resizer:hover,
 .right-resizer:hover,
 .right-resizer:focus-visible {
-  background: var(--accent);
-  opacity: 0.4;
+  background: var(--rule-strong);
 }
 
 .right-resizer:focus-visible {
-  outline: 1px solid var(--border-focus);
+  outline: 2px solid var(--border-focus);
   outline-offset: 0;
-  opacity: 0.7;
 }
 
 /* ---- T&E Operations workspace ---- */
@@ -2861,7 +2907,7 @@ input[type='number'] {
   text-align: left;
   padding: 8px 10px;
   color: var(--text-dim);
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
 }
 
 .te-nav button.active {
@@ -2906,14 +2952,12 @@ input[type='number'] {
   flex-direction: column;
   gap: 10px;
   padding: 24px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
 }
 
 .te-table-row {
   align-items: end;
-  border-bottom: 1px dotted var(--border);
+  border-bottom: 1px solid var(--border-subtle);
   padding-bottom: 6px;
 }
 
@@ -2936,9 +2980,8 @@ input[type='number'] {
 }
 
 .gate-item {
-  padding: var(--space-2);
-  border-left: 3px solid var(--warn);
-  background: var(--bg-input);
+  padding: 0 0 0 var(--space-2);
+  border-left: 2px solid var(--warn);
   font-size: var(--type-meta-size);
 }
 
@@ -2947,18 +2990,20 @@ input[type='number'] {
 }
 
 .card-chip.dim {
-  opacity: 0.5;
+  color: var(--text-tertiary);
 }
 
 /* ---- Print artifacts ---- */
 
+/* The print view takes the whole window, so it sits on the board ground
+   rather than a wash over the app. */
 .print-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
   flex-direction: column;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--surface-board);
 }
 
 .print-toolbar {
@@ -3140,15 +3185,13 @@ input[type='number'] {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 6px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
 }
 
+/* The only border on a non-control that is not a rule: a raster needs its
+   own edge or it bleeds into the panel. */
 .te-frame img {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
 }
 
 .p-figure {
@@ -3175,8 +3218,8 @@ input[type='number'] {
   width: 13px;
   height: 13px;
   margin-left: 5px;
-  border: 1px solid var(--text-dim);
-  border-radius: 50%;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-control);
   color: var(--text-dim);
   font-size: var(--type-meta-size);
   line-height: 1;
@@ -3197,9 +3240,8 @@ input[type='number'] {
   width: max-content;
   max-width: 280px;
   padding: 6px 9px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   color: var(--text);
   font-size: var(--type-body-size);
   font-weight: var(--type-body-weight);
@@ -3218,11 +3260,9 @@ input[type='number'] {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 7px 10px;
+  padding: 0 0 0 var(--space-2);
   margin-bottom: 8px;
-  background: var(--bg-panel);
-  border-left: 3px solid var(--accent);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-left: 2px solid var(--accent);
   font-size: var(--type-body-size);
 }
 
@@ -3237,11 +3277,10 @@ input[type='number'] {
 
 .step-dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   margin-right: 6px;
-  border-radius: 50%;
-  background: var(--border);
+  background: var(--rule-strong);
 }
 
 .step-dot.good {
@@ -3253,7 +3292,7 @@ input[type='number'] {
 }
 
 .step-dot.neutral {
-  background: var(--border);
+  background: var(--rule-strong);
 }
 
 /* ===== T&E strategist redesign (kit.tsx section-5 components) ===== */
@@ -3311,10 +3350,9 @@ input[type='number'] {
 
 .dg-dot {
   flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--border);
+  width: 8px;
+  height: 8px;
+  background: var(--rule-strong);
 }
 
 .dg-dot.done {
@@ -3326,7 +3364,7 @@ input[type='number'] {
 }
 
 .dg-dot.empty {
-  background: var(--border);
+  background: var(--rule-strong);
 }
 
 .dg-body {
@@ -3340,9 +3378,6 @@ input[type='number'] {
 
 .req-badge {
   flex: none;
-  padding: 1px 6px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
   color: var(--text-dim);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
@@ -3350,7 +3385,6 @@ input[type='number'] {
 }
 
 .req-badge.required {
-  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
   color: var(--warn);
 }
 
@@ -3395,10 +3429,8 @@ input[type='number'] {
   list-style: none;
   max-height: 220px;
   overflow-y: auto;
-  background: var(--bg-input);
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-pop);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
 }
 
 .te-combobox-option {
@@ -3406,13 +3438,12 @@ input[type='number'] {
   align-items: baseline;
   gap: var(--space-2);
   padding: 4px 7px;
-  border-radius: var(--radius);
   font-size: var(--type-body-size);
   cursor: pointer;
 }
 
 .te-combobox-option.active {
-  background: var(--surface-selected);
+  background: var(--surface-hover);
 }
 
 .te-combobox-option .te-opt-label {
@@ -3455,7 +3486,7 @@ input[type='number'] {
 
 .provenance.pending > .provenance-line .provenance-chip {
   color: var(--warn);
-  border-bottom-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  border-bottom-color: var(--warn);
 }
 
 /* ---- Sentence builder ---- */
@@ -3538,8 +3569,6 @@ input[type='number'] {
 
 .eh-illustrative {
   margin-left: 6px;
-  padding: 0 4px;
-  border: 1px dashed var(--warn);
   color: var(--warn);
   font-style: normal;
   font-size: var(--type-label-size);
@@ -3599,7 +3628,7 @@ select.nu-unit {
 
 .register-table td {
   padding: 2px 3px;
-  border-bottom: 1px dotted var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
   min-width: 90px;
   vertical-align: middle;
 }
@@ -3670,7 +3699,6 @@ select.nu-unit {
 .rr-bar {
   height: 3px;
   background: var(--border-subtle);
-  border-radius: 2px;
   overflow: hidden;
 }
 
@@ -3730,7 +3758,7 @@ select.nu-unit {
   align-items: baseline;
   gap: var(--space-3);
   min-height: 22px;
-  border-bottom: 1px dotted var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: var(--type-meta-size);
 }
 
@@ -3799,11 +3827,12 @@ select.nu-unit {
 
 /* ---------- Command palette ---------- */
 
+/* A click catcher, not a scrim: the palette is opaque with its own edge and
+   depth comes from stacking order. */
 .cmdk-backdrop {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(0, 0, 0, 0.45);
 }
 
 .cmdk-panel {
@@ -3815,19 +3844,16 @@ select.nu-unit {
   flex-direction: column;
   width: 480px;
   max-width: calc(100vw - 32px);
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-float);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   overflow: hidden;
 }
 
 .cmdk-input {
   padding: 9px 12px;
-  background: var(--bg-input);
+  background: var(--surface-sunken);
   border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
+  border-bottom: 1px solid var(--border-strong);
   color: var(--text);
   font-size: var(--type-body-size);
   outline: none;
@@ -4045,9 +4071,8 @@ select.nu-unit {
   position: absolute;
   z-index: 3;
   padding: 2px 7px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: var(--type-dense-size);
@@ -4105,16 +4130,13 @@ select.nu-unit {
   display: inline-block;
   width: 8px;
   height: 8px;
-  border-radius: 1px;
   margin-right: 5px;
   vertical-align: -1px;
 }
 
 .chart-tooltip {
   background: var(--surface-panel);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-pop);
+  border: 1px solid var(--border-strong);
   padding: var(--space-1) var(--space-2);
   font-family: var(--font-ui);
   font-size: var(--type-meta-size);
@@ -4139,7 +4161,6 @@ select.nu-unit {
   display: inline-block;
   width: 8px;
   height: 8px;
-  border-radius: 1px;
 }
 
 .chart-tooltip-row b {
@@ -4285,10 +4306,8 @@ select.nu-unit {
   min-width: 0;
   flex-direction: column;
   gap: 1px;
-  padding: var(--space-2);
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: var(--space-2) 0 var(--space-2);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .outcome-metric > span,
@@ -4341,16 +4360,14 @@ select.nu-unit {
 .capacity-list {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
 }
 
 .capacity-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1px 8px;
-  padding: var(--space-1) var(--space-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border-subtle);
   font-size: var(--type-dense-size);
 }
 
@@ -4382,15 +4399,14 @@ select.nu-unit {
   gap: 6px;
 }
 
+/* Rule 3 allows exactly one opaque fill for the single headline judgement on
+   a panel. This is it: the requirement verdict, in the state ink with ink
+   text. Every other state on the panel is a colour, a stroke or a square. */
 .requirements-verdict {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2);
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--text-dim);
-  border-radius: var(--radius);
-  background: var(--bg-input);
   font-size: var(--type-meta-size);
 }
 
@@ -4399,11 +4415,13 @@ select.nu-unit {
 }
 
 .requirements-verdict.verdict-pass {
-  border-left-color: var(--good);
+  background: var(--good);
+  color: var(--ink);
 }
 
 .requirements-verdict.verdict-fail {
-  border-left-color: var(--danger);
+  background: var(--danger);
+  color: var(--ink);
 }
 
 .requirement-grid {
@@ -4414,18 +4432,16 @@ select.nu-unit {
 
 .requirement-gate {
   min-width: 0;
-  padding: var(--space-2);
-  background: color-mix(in srgb, var(--bg-input) 78%, transparent);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: var(--space-2) 0;
+  border-top: 2px solid var(--rule-strong);
 }
 
 .requirement-gate.gate-pass {
-  border-top-color: color-mix(in srgb, var(--good) 70%, var(--border));
+  border-top-color: var(--good);
 }
 
 .requirement-gate.gate-fail {
-  border-top-color: color-mix(in srgb, var(--danger) 80%, var(--border));
+  border-top-color: var(--danger);
 }
 
 .gate-head {
@@ -4491,9 +4507,7 @@ select.nu-unit {
 
 .system-telemetry-card {
   overflow: hidden;
-  border: 0;
   border-top: 1px solid var(--border-subtle);
-  border-radius: 0;
   background: transparent;
 }
 
@@ -4502,7 +4516,6 @@ select.nu-unit {
   display: grid;
   width: 100%;
   border: 0;
-  border-radius: 0;
   text-align: left;
 }
 
@@ -4539,8 +4552,8 @@ select.nu-unit {
   grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
-  padding: var(--space-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .component-telemetry-row:last-child {
@@ -4552,8 +4565,6 @@ select.nu-unit {
   align-items: center;
   justify-content: center;
   height: 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   color: var(--text-dim);
   font-size: var(--type-meta-size);
 }
@@ -4607,10 +4618,8 @@ select.nu-unit {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-2);
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--accent) 5%, var(--bg-input));
+  padding: 0 0 0 var(--space-2);
+  border-left: 2px solid var(--border-strong);
   font-size: var(--type-meta-size);
 }
 
@@ -4622,9 +4631,7 @@ select.nu-unit {
 .threat-data-group {
   overflow: hidden;
   padding: 0 0 6px;
-  border: 0;
   border-top: 1px solid var(--border-subtle);
-  border-radius: 0;
   background: transparent;
 }
 
@@ -4676,9 +4683,8 @@ select.nu-unit {
   align-items: center;
   justify-content: space-between;
   min-width: 0;
-  padding: 2px 6px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius);
+  padding: 2px 2px 3px;
+  border-bottom: 2px solid var(--rule-strong);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: var(--type-dense-size);
@@ -4692,17 +4698,17 @@ select.nu-unit {
 
 .st.on {
   color: var(--text);
-  border-color: var(--border-strong);
+  border-bottom-color: var(--text-secondary);
 }
 
 .st.live {
   color: var(--accent);
-  border-color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .st.done {
   color: var(--good);
-  border-color: color-mix(in srgb, var(--good) 45%, var(--border-default));
+  border-bottom-color: var(--good);
 }
 
 /* Group footer: defeat versus residual mass, then the survival reading. */
@@ -4751,8 +4757,8 @@ select.nu-unit {
 }
 
 .threat-data-row {
-  padding: var(--space-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .threat-data-head {
@@ -4782,7 +4788,6 @@ select.nu-unit {
 .load-more {
   width: 100%;
   border: 0;
-  border-radius: 0;
   color: var(--accent);
   font-size: var(--type-meta-size);
 }
@@ -4792,11 +4797,8 @@ select.nu-unit {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--good) 50%, var(--border));
+  padding: 0 0 0 var(--space-2);
   border-left: 2px solid var(--good);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--good) 4%, var(--bg-panel));
 }
 
 .debrief-header {
@@ -4833,11 +4835,8 @@ select.nu-unit {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: var(--space-2);
-  border: 1px solid var(--border);
+  padding: 0 0 0 var(--space-2);
   border-left: 2px solid var(--text-dim);
-  border-radius: var(--radius);
-  background: var(--bg-input);
 }
 
 .run-validity.validity-valid {
@@ -4875,7 +4874,7 @@ select.nu-unit {
   align-items: flex-start;
   gap: 6px;
   padding-top: 5px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-top: 1px solid var(--border-subtle);
   color: var(--text-dim);
   font-size: var(--type-meta-size);
   line-height: 1.35;
@@ -4896,9 +4895,7 @@ select.nu-unit {
 }
 
 .fid-tag {
-  padding: 0 var(--space-1);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius);
+  padding: 0 var(--space-1) 0 0;
   color: var(--text-tertiary);
   font-family: var(--font-ui);
   font-size: var(--type-meta-size);
@@ -4924,7 +4921,7 @@ select.nu-unit {
 
 .debrief-actions button {
   padding: 4px 3px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   font-size: var(--type-meta-size);
 }
 
@@ -4934,8 +4931,6 @@ select.nu-unit {
 
 .event-ledger {
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
 }
 
 .event-row {
@@ -4943,8 +4938,8 @@ select.nu-unit {
   grid-template-columns: 70px minmax(0, 1fr) auto;
   align-items: center;
   gap: 7px;
-  padding: var(--space-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .event-time,
