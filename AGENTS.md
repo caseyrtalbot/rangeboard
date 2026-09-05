@@ -1,31 +1,23 @@
 # RangeBoard: working contract
 
-Current repository instructions for both contributors. `CLAUDE.md` points here; it is not a
-second engineering contract.
+Current repository instructions for the contributor named in the current handoff.
+`CLAUDE.md` points here; it is not a second engineering contract.
 
-## Contributors and ownership
+## Contributor and ownership
 
-Two models work in this repository in separate sessions. Casey holds product and acceptance
-decisions.
+One model works in this repository at a time. Casey holds product and acceptance
+decisions. [The current handoff](docs/AI_HANDOFF.md) names the contributor, the verified
+revision and the next exact task. Since `edb0da7` (2026-09-05) that contributor is Claude
+Fable, for the engineering plan in [docs/field-te/PLAN.md](docs/field-te/PLAN.md) and the
+[design contract](docs/design/DESIGN_CONTRACT.md) alike. Earlier slices by Astra are
+recorded in their completion records and in the register; they are history, not a second
+owner. If a second session is ever started, it takes a separate branch, not this tree.
 
-- **Astra** owns engineering: the field T&E plan as written in
-  [docs/field-te/PLAN.md](docs/field-te/PLAN.md) (R1, E2, E3, T1, A1), the engine, the
-  stores, persistence and the T&E record model. Paths: `src/state`, `src/playback`,
-  `src/analysis`, `src/io`, `src/model`, `src/geometry`, `src/te/model`, `src/te/io`,
-  `src/te/calc`, `src/te/seed`, `docs/field-te`, `docs/data-engine`.
-- **Claude Fable** owns design: the locked
-  [design contract](docs/design/DESIGN_CONTRACT.md), which is the U1 acceptance
-  specification, and its implementation steps 2 to 14 after R1 is published. Paths:
-  `src/index.css`, `src/assets`, `src/panels`, `src/canvas`, `src/charts`, `src/te/ui`,
-  `docs/design`.
-
-Design step 1 (fixed simulation tick and selector subscriptions, F1 in the contract) is
-part of Astra's R1 brief and is gated by R1 parity. A change that crosses the boundary
-above is requested through a register row, not made in the other owner's paths. No two
-sessions hold uncommitted edits in the same file; read `git status --short` first and stop
-if the other owner's paths are dirty. Both owners follow every rule below, update only
-their own block of the current handoff plus its shared header, and use the register as the
-single status authority.
+Areas of the code, for scoping a slice: engine and analysis in `src/playback`,
+`src/analysis`, `src/model`, `src/geometry`; stores and persistence in `src/state`,
+`src/io`; the T&E record layer in `src/te/model`, `src/te/io`, `src/te/calc`,
+`src/te/seed`; presentation in `src/index.css`, `src/assets`, `src/panels`, `src/canvas`,
+`src/charts`, `src/te/ui`. A slice names the areas it owns before editing.
 
 ## Start with the selected task
 
@@ -104,7 +96,9 @@ Follow existing code style: 2 spaces, no semicolons, single quotes, named export
 around 100 characters. No formatter, new dependency, speculative abstraction, TODO marker,
 or unused export. Add documentation only when requested or needed to keep an existing
 contract accurate. Use short active sentences and consistent domain terminology in UI copy;
-no em-dashes. Apply the reference's Konva, CSS-token, 10 px type-floor and 320 px panel rules.
+no em-dashes. Apply the reference's Konva, CSS-token and 320 px panel rules. The type
+floor, tokens and component forms follow the [design contract](docs/design/DESIGN_CONTRACT.md)
+once its steps 2 and 3 land; until then the source enforces the reference's 10 px floor.
 
 ## Verify the result
 

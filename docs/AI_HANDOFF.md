@@ -1,125 +1,101 @@
 # RangeBoard: current engineering handoff
 
-Status: CURRENT TRANSFER RECORD, 2026-09-05. R1 first leaf extraction verified against
-`74eb94d` on `analysis-hardening`. C4 remains published as `7f10c92` with publication
-record `9e1c5e2`. R1 as a whole is not complete or published. Casey authorized this first
-extraction commit on 2026-09-05; no push is authorized. This is the one handoff for both
-contributors; each owner updates its own block below and this header.
+Status: CURRENT TRANSFER RECORD, 2026-09-05. Contributor: Claude Fable 5.1, for the
+engineering plan and the design contract. Verified source revision `edb0da7` on
+`analysis-hardening`, three commits ahead of `origin/analysis-hardening`, not pushed.
+This record follows Astra's R1 first-extraction commit `7c9b577` and pilot-decision
+record `edb0da7`. It replaces the two-owner handoff (R-D-34).
 
 Marks: `[V]` verified; `[D]` documented direction; `[I]` inference; `[U]` unresolved.
-Read [AGENTS.md](../AGENTS.md) (contract and ownership by path), this record, the
-[register](data-engine/outstanding.md) and, for design, the
-[design contract](design/DESIGN_CONTRACT.md). Source and tests outrank documents.
+Read [AGENTS.md](../AGENTS.md), this record, the [register](data-engine/outstanding.md),
+the [design contract](design/DESIGN_CONTRACT.md) and, for engine work,
+[PLAN.md](field-te/PLAN.md). Source and tests outrank documents.
 
-## Shared state
+## Scope and ownership
 
-[V] R1 first extraction is committed as `7c9b577`, following Fable's `74eb94d`.
-Both commits were ahead of the origin tracking ref before this pilot-decision commit.
-This session did not fetch or push. The prior C4 remote verification remains historical
-evidence.
+[D] Casey transferred all remaining work to Claude Fable on 2026-09-05 (R-D-34): the rest
+of R1, E2, E3, R-F-30, R-F-31, T1, A1, and design steps 1 to 14. One contributor, one
+handoff block. Astra's slices C1 to C4, E1 and the first R1 extraction are history with
+their own records. A second session, if ever started, takes a separate branch.
 
-[D] Casey split ownership by domain on 2026-09-05 (R-D-32, second note). Astra keeps the
-engineering plan as written and absorbs design step 1 into R1. Claude Fable owns the locked
-design contract and implements its steps 2 to 14 after R1 is published. Paths per owner are
-in AGENTS.md, Contributors and ownership.
+[V] `git log` at transfer: `edb0da7 docs: record pilot decisions and refresh handoff
+status`, `7c9b577 refactor: extract R1 scenario helpers and ring constants`,
+`74eb94d docs: lock the design contract and split ownership between Astra and Fable`,
+`9e1c5e2 docs: record verified C4 publication`. `git log origin/analysis-hardening..HEAD`
+shows the first three. No push is authorized.
 
-[V] Documentation paths committed by the Fable session as `74eb94d` on 2026-09-05:
-`AGENTS.md` (title and the Contributors and ownership section), `docs/design/DESIGN_CONTRACT.md`
-(new), `docs/design/concepts.html` (new), `docs/README.md`, `docs/AI_HANDOFF.md`,
-`docs/field-te/PLAN.md` (status line, owner line, U1 row, section 7 status note, section 9
-bullet), `docs/field-te/BACKLOG_TRIAGE.md` (dated note on the U1 row),
-`docs/data-engine/outstanding.md` (row R-D-32 and its second note). `CLAUDE.md` was
-restored to `HEAD` on Casey's instruction after an accidental edit. No source file changed.
+[V] Working tree at transfer: clean except one untracked entry, `.claude/`, which holds
+local tool configuration and stays untracked. The four untracked data-engine mockup files
+(`build_mockup.py`, `build_mockup_te.py`, `mockup.html`, `mockup-te.html`), an earlier IBM
+Plex mockup superseded by the design contract, were deleted on Casey's instruction on
+2026-09-05. They were never in git.
 
-[V] R1 extraction gates: type-check, 1,360 tests in 80 files, lint with the identical
-74-warning baseline and zero errors, build with the existing chunk warning, schema drift
-check. Exact deterministic/seeded numerical parity and real-browser worker checks pass.
-See [R1 brief and evidence](field-te/R1_LEAF_EXTRACTION.md). The incoming baseline was
-1,355 tests in 77 files with the same warnings. The pilot-decision edits in this shared
-header, the register and PLAN section 9 are included in this separately authorized
-documentation commit; they were excluded from R1 implementation commit `7c9b577`.
+[D] Documentation paths changed by this session, uncommitted: `AGENTS.md` (single
+contributor section; type-floor sentence), `CLAUDE.md` (reading order; one environment
+note), `docs/README.md` (AGENTS row; R1 record row), `docs/AI_HANDOFF.md`,
+`docs/ENGINEERING_REFERENCE.md` (type floor and shadow bullets point at the design
+contract), `docs/field-te/PLAN.md` (owner line), `docs/design/DESIGN_CONTRACT.md` (owner
+line; step 1 owner; F10 and step 5 withdrawn), `docs/data-engine/outstanding.md` (row
+R-D-34). No source file changed.
 
-[U] Untracked and unowned at transfer: `.claude/settings.local.json`, `.claude/launch.json`,
-`docs/data-engine/build_mockup.py`, `docs/data-engine/build_mockup_te.py`,
-`docs/data-engine/mockup.html`, `docs/data-engine/mockup-te.html`. The four data-engine
-files are an earlier IBM Plex mockup of the data-engine slices; they are not a design
-authority and are superseded by the design contract. Casey decides whether to delete them or
-commit them as historical. `.claude/` files are local tool configuration.
+## Verified state
 
-[D] Casey authorized committing the pilot-decision record and four handoff status updates
-on 2026-09-05. This documentation commit does not implement or alter pilot requirements.
+[V] Astra's gates at `edb0da7`, as recorded in
+[R1_LEAF_EXTRACTION.md](field-te/R1_LEAF_EXTRACTION.md) and by Casey: type-check, 1,360
+tests in 80 files, lint with the 74-warning baseline and zero errors, build with the
+existing chunk warning, schema drift check. Four-replicate fixed-ID deterministic, aleatory
+MC, total MC and sensitivity outputs matched exactly across the extraction. The worker graph
+reaches no store, React, zustand, localStorage or panel module. Worker bundle 121.65 kB
+against a 288.46 kB baseline. `model/scenario.ts` owns `modelFor`, `pathSpeed` and
+`scenarioDurationS`; `state/rings.ts` owns ring keys and types; store re-exports preserve
+the public UI entrypoints with a removal condition in the R1 record. This session did not
+rerun the gates; its changes are documentation only.
 
-[D] Field pilot decisions are made (R-D-33, 2026-09-05). Platform: MacBook Pro 13 or 15
-inch, macOS, Retina, trackpad, no touch, offline, one operator; Chrome checked, Safari
-secondary. Reference question: at least 90 s usable warning time from the KuRFS, FAAD C2,
-Coyote Block 2 chain at a defended point against a Group 3 one-way attack, at detect Pd 0.5
-and track 0.9. Owner: Casey and the company; independent-operator acceptance is deferred.
-Product focus: simulation and modeling design and T&E, so E2/E3 come before T1 packaging.
-The reference laydown is the verified firing fixture plus a defended asset.
+[V] Persistence facts checked this session, which withdrew design item F10: both stores
+carry `schemaVersion` 1; storage keys are versioned in `src/io/storageKeys.ts`; runtime
+validation runs before adoption; an unreadable save is copied under a recovery prefix and
+autosave is suppressed. Remaining durability work is T1.
 
-## Astra: engineering
+[V] Field pilot decisions (R-D-33): MacBook Pro 13 or 15 inch, macOS, Retina, trackpad,
+no touch, offline, one operator; Chrome checked, Safari secondary. Reference question: at
+least 90 s usable warning time from the KuRFS, FAAD C2, Coyote Block 2 chain at a defended
+point against a Group 3 one-way attack, at detect Pd 0.5 and track 0.9. Owner: Casey and
+the company; independent-operator acceptance deferred. Product focus: simulation and
+modeling design and T&E. The reference laydown is the verified firing fixture plus a
+defended asset.
 
-[V] Casey selected the first R1 extraction through the supplied entry handoff on
-2026-09-05. `model/scenario.ts` owns the unchanged `modelFor`, `pathSpeed` and
-`scenarioDurationS`; `state/rings.ts` owns ring keys/types. Engine, validation and view-state
-consumers now use these leaves. Store re-exports preserve public UI entrypoints. No source
-under Fable ownership or `src/te` changed. The full owned-path list, temporary compatibility
-surface/removal condition and verification are in [the R1 brief](field-te/R1_LEAF_EXTRACTION.md).
+## Order of work
 
-[V] The worker graph reaches no store, React, zustand, localStorage or panel module;
-`runSession.ts` remains a main-thread store adapter. Existing chart tokens still enter
-through `series.ts`. The worker bundle is 121.65 kB (baseline 288.46 kB); this is size
-measurement, not runtime or render profiling. Four-replicate fixed-ID deterministic,
-aleatory MC, total MC and sensitivity outputs match exactly. Isolated browser MC,
-sensitivity and a fresh independent module worker match direct engine results, with
-four deterministic events, 13 sensitivity rows and no page exceptions. The fixture is
-integration evidence only. All final gates pass as recorded in the shared header.
+[D] Decided with Casey (R-D-34). R1 to completion first. Then design steps 2 to 4, which are
+stylesheet, fonts and theme. Then E2, E3 and R-F-30, because they change what the widgets
+show. Then design steps 6 to 14, so the panels present the corrected models once. Then T1
+packaging. Then A1. Every slice needs its own brief and Casey's selection.
 
-[D] Stop: this first extraction is verified and included in this user-authorized commit;
-all of R1 is not complete. No push, F1 UI implementation, budget implementation, E2/E3,
-jam geometry, F10 or design steps 2 to 14 are authorized.
+[U] R1 remaining obligations, from the R1 record: F1 cadence and selector brief with
+before-and-after render counts; R-F-31 measured execution budget and cancellation policy;
+larger store and sweep extractions; owned lint batches; the R-F-20 independently valid
+detection fixture. E2/E3 and R-F-30 numerical changes stay serial to parity-sensitive
+engine edits.
 
-[I] Next exact task: write the bounded F1 cadence/selector brief and capture baseline
-render counts on a named fixed fixture for TimelineBar, Inspector and named canvas
-consumers. Resolve exact cross-owner paths via R-D-32 before edits. Define the proposed
-10 Hz as wall-clock playback store publication cadence, including behavior at every
-playback speed, while preserving engine `DT = 0.5 s` and event horizons. Stop after the
-measured brief and ownership/cadence agreement. This recommendation is not execution
-authority for the UI changes.
+## Next exact task
 
-[U] Remaining R1 obligations: F1 before/after profiling and selector API, R-F-31 measured
-execution-budget/cancellation policy, larger store/sweep extractions, owned lint batches
-and the R-F-20 independently valid detection fixture. E2/E3 and R-F-30 numerical changes
-stay serial to parity-sensitive engine edits. Existing C3 already supplies schema version 1,
-validation, compatibility defaults, recovery copies and autosave suppression; F10's
-claimed absence is incorrect. Reconcile a concrete persistence gap and ownership before
-selecting a follow-on. Pilot decisions are recorded in R-D-33 and PLAN section 9 and
-included in this documentation commit, following R1 implementation commit `7c9b577`.
-
-## Claude Fable: design
-
-[D] Scope: the [design contract](design/DESIGN_CONTRACT.md), steps 2 to 14, in order,
-each with its own brief and Casey's selection. Step 2 (type floor, self-hosted fonts) and
-step 3 (surface rules, one kit) begin only after R1 is published on the remote and no
-session holds uncommitted edits under `src/panels`, `src/canvas`, `src/charts`, `src/te/ui`
-or `src/index.css`.
-
-[I] Next exact task, when R1 is published: write the **step 2 brief**. Owned paths:
-`src/index.css`, `src/assets`. Replace every `font-size` rule below 11 px with the label
-role; move headings from mono caps to sans sentence case; self-host Archivo 400/500 and
-JetBrains Mono 400/500 under `src/assets` the way IBM Plex is hosted today, and remove the
-IBM Plex packages only after no consumer remains. Acceptance: `git grep` shows zero
-`font-size` rules below 11 px; contrast measured on actual surfaces; 320 px and 200 percent
-zoom inspection; screenshots of every panel; full gate with no new warning. Before R1 lands,
-the design owner may only prepare briefs and browser check scripts. This is not
+[I] Write the **F1 cadence and selector brief**, inside R1. Areas: `src/state`,
+`src/playback` (main-thread adapters only), `src/panels/TimelineBar.tsx`,
+`src/panels/Inspector.tsx`, named canvas consumers. Steps: capture baseline render counts
+per simulated second for `TimelineBar`, `Inspector`, `AnalysisPanel` and the canvas layers
+on the verified firing fixture at 1x, 5x and 20x; define 10 Hz as the wall-clock store
+publication cadence at every playback speed with engine `DT = 0.5 s` and event horizons
+unchanged; define canvas interpolation between publications; list the store selectors the
+panels will subscribe to. Acceptance for the brief: the measurements exist as a manifest
+under `docs/field-te/evidence/`, the cadence rule is stated for every speed, and the parity
+gate is named. Stop after the brief. Implementation needs Casey's selection. This is not
 authorization.
 
-[U] Design items that wait on Astra: the cancel control (R-F-31) needs the worker budget
-API; the blocked-route row (R-F-20) needs `ThreatStatus` exposed to a panel; the daylight
-theme (step 4) needs the platform decision for its acceptance surface.
+[D] Before the first source edit of any slice: rerun the four gates and the schema drift
+check, compare the warning count with 74, and read `git status --short`.
 
 ## Not authorized by this record
 
 Any source edit, commit, push, schema version, storage key, draw point or raid partition
-change, new dependency, edit inside the other owner's paths, or implementation of any slice
-or design step without its own selection and brief.
+change, new dependency, or implementation of any slice or design step without its own
+selection and brief.

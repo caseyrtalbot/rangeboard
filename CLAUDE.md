@@ -6,8 +6,14 @@ invariants, one source per fact, the domain rules, the UI rules, the working con
 and the status of every document. Nothing in this file overrides it, and nothing from it is
 copied here.
 
-Then read `docs/AI_HANDOFF.md` (the state transfer, with `[V]` `[D]` `[I]` `[U]` marks) and
-`docs/data-engine/outstanding.md` (the live register).
+Then read, in this order:
+
+1. `docs/AI_HANDOFF.md`, the one current transfer record, with `[V]` `[D]` `[I]` `[U]` marks.
+   It names the contributor, the verified revision and the next exact task.
+2. `docs/data-engine/outstanding.md`, the live register and the only status authority.
+3. `docs/design/DESIGN_CONTRACT.md`, the locked design, before any presentation change.
+4. `docs/field-te/PLAN.md`, the engineering acceptance specification, before any engine,
+   store, persistence or T&E record change.
 
 ## Claude Code environment notes
 
@@ -18,6 +24,9 @@ These facts are about the Claude Code tool environment, not about the project.
   Ports 5173 to 5200 have been used by old processes; take a higher port with
   `--strictPort`, start the server as one background command that writes its PID, and stop
   only your own server.
+- The Browser pane cannot render a `file://` page. Serve a local HTML file with
+  `python3 -m http.server` on a high port with the sandbox disabled, load it by URL, and
+  stop the server when done.
 - The shell `grep` is ugrep (no `--exclude`). Use `git grep` (`--untracked` for new files).
 - `npx vite-node` is not installed. A scratch check that imports TypeScript runs as a
   vitest file under `src/` and is deleted after; report it.

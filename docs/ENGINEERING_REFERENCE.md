@@ -427,12 +427,16 @@ Design system (`src/index.css`):
 - **Monospace is machine data only:** ids, coordinates, timestamps, units, keys, numeric
   readouts, fixed abbreviation codes, chart axis ticks. Interface chrome and prose are
   `--font-ui`; mark a number in prose with `.num`.
-- **Type floor is 10 px.** The right panel is checked at 320 px width: no element under it
-  may overflow (`scrollWidth <= clientWidth`).
+- **Type floor is 10 px in the current source.** The right panel is checked at 320 px
+  width: no element under it may overflow (`scrollWidth <= clientWidth`). The
+  [design contract](design/DESIGN_CONTRACT.md) raises the floor to 11 px and replaces the
+  token, radius and shadow rules below when its steps 2 and 3 land; update this section in
+  that slice.
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
   rule and interaction state. `--radius` is 3 px. The only shadows are `--shadow-float`
   (menus, dialogs, palette), `--shadow-pop` (tooltips, popovers) and the wash on
-  `.right-panel`.
+  `.right-panel`. The design contract removes shadows and reduces the radius to 2 px on
+  controls and 0 elsewhere.
 - **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render and keeps
   `TOKEN_FALLBACK` equal to the sheet (a test proves it) for node and static markup.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,

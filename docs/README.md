@@ -8,7 +8,7 @@ Source, tests and recorded verification determine implemented behavior.
 
 | Document | Purpose |
 | --- | --- |
-| [AGENTS.md](../AGENTS.md) | Working contract for both contributors: Astra (engineering) and Claude Fable (design); ownership by path, task boundaries, verification and git rules |
+| [AGENTS.md](../AGENTS.md) | Working contract for the contributor named in the handoff (Claude Fable since `edb0da7`); task boundaries, invariants, verification and git rules |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | One current transfer record: state, evidence and next bounded task |
 | [Outstanding register](data-engine/outstanding.md) | Only decision and follow-up status authority |
 | [Engineering reference](ENGINEERING_REFERENCE.md) | Detailed architecture, equations, invariants, UI and T&E contracts |
@@ -22,6 +22,7 @@ Source, tests and recorded verification determine implemented behavior.
 | Document or directory | Purpose |
 | --- | --- |
 | [Ownership findings](field-te/OWNERSHIP_FINDINGS.md) | Dated source-linked findings; current resolution is in the register |
+| [R1 first extraction](field-te/R1_LEAF_EXTRACTION.md) | Brief, parity evidence and temporary compatibility surface of the first R1 leaf-module extraction (`7c9b577`) |
 | [C4 completion](field-te/C4_COMPLETION.md) | Record transition, evidence-purpose and isolated campaign acceptance rules/results |
 | [C1 completion](field-te/C1_COMPLETION.md) | Freshness input/consumer matrix, lifecycle checks and evidence |
 | [C2/C3/E1 completion](field-te/WAVE_C2_C3_E1_COMPLETION.md) | Integrated result/persistence work, model evidence and verification |

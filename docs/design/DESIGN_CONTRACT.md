@@ -6,9 +6,8 @@ in prose. The page is the visual reference. This document is the acceptance cont
 Implementation is not yet selected; see [AI_HANDOFF.md](../AI_HANDOFF.md) for the next
 exact task. This contract replaces the U1 layer table in
 [PLAN.md section 7](../field-te/PLAN.md#7-u1-ui-quality-with-measurable-acceptance).
-Owner: Casey (acceptance); Claude Fable 5.1 (design orchestration and implementation of
-steps 2 to 14); Astra (step 1, inside R1, with the rest of the engineering plan).
-Ownership by path is in [AGENTS.md, Contributors and ownership](../../AGENTS.md#contributors-and-ownership).
+Owner: Casey (acceptance); Claude Fable 5.1 (every step, and the engineering plan, since
+`edb0da7` on 2026-09-05). See [AGENTS.md, Contributor and ownership](../../AGENTS.md#contributor-and-ownership).
 
 ## 1. Why this exists
 
@@ -156,23 +155,23 @@ Found in source at `9e1c5e2`, not in screenshots.
 | F7 | Charts drawn to the board as one path per series with board line weights. | Recharts rebuilds its tree on each data change at run cadence and its defaults do not match the board. | `charts/TimeSeries` |
 | F8 | Inspector split by tab, one file per tab, each subscribing to its own slice. | One 1,579 line file that re-renders whole on any store change. | `Inspector` · `inspector/*` |
 | F9 | Library search: fuzzy across name, maker and role; recents first; numbered pins; one list behind the dock and ⌘K. | Substring filter only, a separate command palette. | `Palette` · `CommandPalette` |
-| F10 | Versioned persistence: schema version on the saved scenario, migration on load, export on save. | One localStorage key, no version, no recovery path. Any schema or storage-key change needs a decision row and Casey's instruction (AGENTS.md). | `io/persist` · `io/recovery` |
+| F10 | Withdrawn 2026-09-05. The claim "one localStorage key, no version, no recovery path" was wrong: C3 already supplies `schemaVersion` 1 on both stores, versioned storage keys, runtime validation before adoption, recovery copies of an unreadable save and autosave suppression (`src/io/storageKeys.ts`, `src/io/recovery.ts`, `src/io/validateScenario.ts`). Any remaining durability work, such as an automatic export on save, belongs to T1 (PLAN section 6) and needs its own decision row. | none | none |
 
 ## 8. Order of work and owners
 
 Each step stands alone and ships alone with its own gates. Owner effort classes follow the
 user's rule: Fable medium for delegated judgment work, Fable high only where semantics
 decide the outcome and always for orchestration and correctness review, Opus high or xhigh
-for mechanical work with a fixed contract. Astra owns step 1 inside R1. Fable orchestrates
-steps 2 to 14 and delegates mechanical work to Opus where the table says so.
+for mechanical work with a fixed contract. Fable orchestrates every step and delegates
+mechanical work to Opus where the table says so.
 
 | # | Step | Reach | Owner | Acceptance evidence |
 | --- | --- | --- | --- | --- |
-| 1 | F1 playback cadence and selectors, inside R1 | App | Astra (R1 brief) | Deterministic and seeded MC parity on fixed IDs; a profile on a named fixture showing per-tick render counts before and after; the store exposes the selectors the panels will subscribe to |
+| 1 | F1 playback cadence and selectors, inside R1 | App | Fable high (R1 continuation) | Deterministic and seeded MC parity on fixed IDs; a profile on a named fixture showing per-tick render counts before and after; the store exposes the selectors the panels will subscribe to; 10 Hz is the wall-clock store publication cadence at every playback speed, engine DT 0.5 s and event horizons unchanged |
 | 2 | Type floor and roles; self-host Archivo and JetBrains Mono; headings from mono caps to sans | Every panel | Opus high | `git grep` shows zero `font-size` rules below 11 px; contrast measured on actual surfaces; 320 px and 200 percent zoom inspection |
 | 3 | Surface rules and one kit (F2); tokens, one radius, no shadow or blur, state as ink, provenance mark | Every panel | Opus xhigh for the CSS fold, Fable medium for the kit merge | Counts of `border-radius`, `box-shadow`, `backdrop-filter`, `text-transform:uppercase` and `rgba(` tints in `index.css` and `kit.tsx`; browser screenshots of every panel |
 | 4 | F3 daylight theme | Every panel | Opus high | Both themes rendered for every panel; contrast table for both |
-| 5 | F10 versioned persistence | App | Fable medium | Decision row for the schema version; legacy save loads; malformed save rejected; export written on save; C3 tests pass |
+| 5 | Withdrawn with F10 on 2026-09-05; the number is kept so later references hold | none | none | none |
 | 6 | Widget row and scan strip; pin, focus, density; cancel affordance for an MC run (R-F-31) | Analysis | Fable medium | Every closed row shows its headline; pins persist per user; browser check at compact, standard, relaxed |
 | 7 | Gates as rows, caveats once; per-threat blocked-route explanation (R-F-20) | Analysis | Fable medium | Six gates in 200 px; caveat text appears once per widget; `no-fc-uplink` is named per threat |
 | 8 | F7 charts drawn to the board | Analysis | Opus high | Same series values as before on the fixed fixture; render cost per tick measured |
