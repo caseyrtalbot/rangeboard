@@ -335,11 +335,9 @@ For every implementation slice:
    links. Remove deprecated code only after its consumers and supported data migration
    needs are accounted for. Commit and push only on Casey's instruction.
 
-The current handoff always states: intent/scope; branch and verified source revision;
-working-tree ownership; completed work; actual gates and evidence; open risks/decisions;
-active plan and register IDs; exact next action; and actions not authorized. Preserve
-`[V]`, `[D]`, `[I]`, `[U]` evidence marks. Do not copy the full engineering contract or
-append another contradictory "current" summary. Use git history for superseded transfers.
+The current handoff follows the fixed template in `AGENTS.md`, Records: Revision, Verified,
+Next, Inputs Casey holds, Open findings, at most forty lines, rewritten whole. Do not copy
+the contract into it or append a second summary. Use git history for superseded text.
 
 ## 9. Decisions still needed, at the point they matter
 
