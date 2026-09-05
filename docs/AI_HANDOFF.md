@@ -16,8 +16,8 @@ Every statement carries one of four marks.
 
 Read order after this file: `CLAUDE.md` (127 lines, the one contract for the code), then
 `docs/engine-refactor/handoff-post-wave3.md`, then `docs/data-engine/handoff-orchestrator.md`,
-then `docs/data-engine/outstanding.md`. Those three files under `docs/data-engine/` and
-`docs/engine-refactor/` are untracked on purpose (section 2.3).
+then `docs/data-engine/outstanding.md`. Section 2.3 says which planning files are in git
+and which were left out.
 
 ## 1. Purpose
 
@@ -64,18 +64,16 @@ never deployed by any script in the repo.
 
 ### 2.3 Untracked files
 
-[V] `git status` shows exactly these untracked paths.
+[V] On 2026-09-04, after this file was written, the user chose which planning files enter
+git. Committed: `docs/data-engine/PLAN.md`, `outstanding.md`, `handoff-orchestrator.md`,
+`docs/engine-refactor/PLAN.md`, `handoff-post-wave3.md`. Left out on purpose:
+`docs/data-engine/HANDOFF.md` (the slice protocol for the agent teams that built the plan;
+its content is process, not code), `mockup.html`, `mockup-te.html`, `build_mockup.py`,
+`build_mockup_te.py` (visual targets for slices that are built; the code is the truth now).
+A reference to one of those five files points at nothing in the repo.
 
-- `docs/data-engine/` (8 files: `PLAN.md`, `HANDOFF.md`, `outstanding.md`,
-  `handoff-orchestrator.md`, `mockup.html`, `mockup-te.html`, `build_mockup.py`,
-  `build_mockup_te.py`).
-- `docs/engine-refactor/` (2 files: `PLAN.md`, `handoff-post-wave3.md`).
-- `src/playback/zz_rf20.scratch.test.ts`, `src/playback/zz_rf20b.scratch.test.ts`,
-  `src/playback/zz_rf20_scenario.json`.
-
-[D] The two `docs/` folders are the user's planning folders. Every orchestrator handoff says
-"never `git add` them". [U] The reason was never written down. The safe reading: the user
-decides when and whether they enter git.
+[V] Still untracked: `src/playback/zz_rf20.scratch.test.ts`,
+`src/playback/zz_rf20b.scratch.test.ts`, `src/playback/zz_rf20_scenario.json`.
 
 [V] The three `zz_rf20*` files are scratch tests from the session that was cut off (section
 12). They are not part of any commit. They pass. They add one lint warning. Delete them or
@@ -344,13 +342,13 @@ tokens, not literals, in CSS (`src/index.css`); monospace is machine data only; 
 | Path | Status | Use |
 | --- | --- | --- |
 | `CLAUDE.md` | tracked, current | the code contract; cite by heading and bullet, never by line |
-| `docs/data-engine/PLAN.md` | untracked, frozen | 23 settled decisions (D1 to D23), nine slice contracts. Its status header still says "not built"; that is stale by rule (the file is never edited; discrepancies go to `outstanding.md`). |
-| `docs/data-engine/HANDOFF.md` | untracked, frozen | the slice protocol, gate agents, ownership tables, report template. Same stale header. |
-| `docs/data-engine/outstanding.md` | untracked, live | the decision and follow-up log: D-1 to D-77 (no D-58), F-1 to F-72, R-D-1 to R-D-24, R-F-1 to R-F-23, M-1 to M-9. Append only. |
-| `docs/data-engine/handoff-orchestrator.md` | untracked, current as of slice 9 | protocol lessons, the browser recipe, the brief skeleton |
-| `docs/data-engine/mockup.html`, `build_mockup.py` | untracked | the approved visual target for slices 4 to 8; the mockup wins on appearance, PLAN wins on behavior |
-| `docs/engine-refactor/PLAN.md` | untracked, complete | ten decisions R-1 to R-10, eight slices, the wave schedule, the standards table |
-| `docs/engine-refactor/handoff-post-wave3.md` | untracked, current | the last orchestrator handoff; read first |
+| `docs/data-engine/PLAN.md` | tracked, frozen | 23 settled decisions (D1 to D23), nine slice contracts. Its status header still says "not built"; that is stale by rule (the file is never edited; discrepancies go to `outstanding.md`). |
+| `docs/data-engine/HANDOFF.md` | not in git | the slice protocol, gate agents, ownership tables, report template. Same stale header. |
+| `docs/data-engine/outstanding.md` | tracked, live | the decision and follow-up log: D-1 to D-77 (no D-58), F-1 to F-72, R-D-1 to R-D-24, R-F-1 to R-F-23, M-1 to M-9. Append only. |
+| `docs/data-engine/handoff-orchestrator.md` | tracked, current as of slice 9 | protocol lessons, the browser recipe, the brief skeleton |
+| `docs/data-engine/mockup.html`, `build_mockup.py` | not in git | the approved visual target for slices 4 to 8; the mockup wins on appearance, PLAN wins on behavior |
+| `docs/engine-refactor/PLAN.md` | tracked, complete | ten decisions R-1 to R-10, eight slices, the wave schedule, the standards table |
+| `docs/engine-refactor/handoff-post-wave3.md` | tracked, current | the last orchestrator handoff; read first |
 | `docs/inventory/` | tracked, history | the August 2026 source record behind the seed library. The current provenance record is `SpecModel.provenance` in `seedLibrary.ts`, not this folder. |
 | `docs/threat/` | tracked | the public-source UAS threat study |
 | `docs/te-plan.md`, `docs/te-compilation/` | tracked | the T&E Ops spec |
@@ -605,7 +603,6 @@ one-line pointer to it, or keep both identical; the content below is the recomme
    architecture map, Konva conventions, one source per fact, the T&E module rules, the
    design system, working conventions. It is already model-neutral.
 2. From the handoffs, the durable protocol facts that no code records:
-   - never `git add` `docs/data-engine/` or `docs/engine-refactor/` without the user's word;
    - never edit `docs/data-engine/PLAN.md` or `HANDOFF.md`; append discrepancies to
      `outstanding.md` as `D`, `F`, `R-D`, `R-F` or `M` rows, never delete a row, keep the
      numbering contiguous, update the "Committed so far" line after a commit or push;
