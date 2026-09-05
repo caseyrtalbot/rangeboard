@@ -72,8 +72,8 @@ its content is process, not code), `mockup.html`, `mockup-te.html`, `build_mocku
 `build_mockup_te.py` (visual targets for slices that are built; the code is the truth now).
 A reference to one of those five files points at nothing in the repo.
 
-[V] Still untracked: `src/playback/zz_rf20.scratch.test.ts`,
-`src/playback/zz_rf20b.scratch.test.ts`, `src/playback/zz_rf20_scenario.json`.
+[V] The three `zz_rf20*` scratch files named in sections 2.2 and 2.4 were deleted on
+2026-09-04. The lint count without them is 74. Section 12 keeps the R-F-20 finding.
 
 [V] The three `zz_rf20*` files are scratch tests from the session that was cut off (section
 12). They are not part of any commit. They pass. They add one lint warning. Delete them or
