@@ -462,6 +462,19 @@ describe('vertical geometry gates', () => {
     expect(sensorGeometryGate({ ...RADAR, elevationDeg: null }, 4, 0, 1000)).toBe('ok')
   })
 
+  it('the elevation gate carries a 0.001 degree tolerance at both edges', () => {
+    const limited: SensorSpec = { ...RADAR, elevationDeg: [0, 30] }
+    // 1e-9 m below the phase center at 1 km: about -6e-11 deg, inside the tolerance.
+    expect(sensorGeometryGate(limited, 4, 4 - 1e-9, 1000)).toBe('ok')
+    // -0.01 deg at 1 km is 0.1745 m below: outside.
+    expect(sensorGeometryGate(limited, 4, 4 - 1000 * Math.tan((0.01 * Math.PI) / 180), 1000))
+      .toBe('elevation')
+    // The upper edge: 30 deg plus 1e-6 is inside the tolerance, 30.01 is not.
+    const up = (deg: number) => 4 + 1000 * Math.tan((deg * Math.PI) / 180)
+    expect(sensorGeometryGate(limited, 4, up(30 + 1e-6), 1000)).toBe('ok')
+    expect(sensorGeometryGate(limited, 4, up(30.01), 1000)).toBe('elevation')
+  })
+
   it('effectorGeometryGate is the ceiling alone', () => {
     const eff = { effectorType: 'interceptor' as const, minRangeM: 0, maxRangeM: 10000, engageTimeS: 0 }
     expect(effectorGeometryGate({ ...eff, maxAltitudeFt: 3000 }, HIGH_M)).toBe('ceiling')

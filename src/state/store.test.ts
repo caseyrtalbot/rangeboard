@@ -3,6 +3,8 @@ import {
   analysisBasisSignature,
   bumpCardVersion,
   DEFAULT_LAYERS,
+  IDLE_MC,
+  IDLE_SENSITIVITY,
   ringVisible,
   savedLayers,
   savedRunSeq,
@@ -14,7 +16,7 @@ import { defaultAnalysisView } from './analysisLayout'
 import type { AnalysisViewState } from './analysisLayout'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
-import type { McSummary } from '../playback/mcRun'
+import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import { flushViewWrites, savedAnalysis, savedRingOverrides, savedView } from '../io/viewState'
 import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
@@ -1343,15 +1345,7 @@ describe('monte carlo slice', () => {
   it('resetRun returns the slice to idle', () => {
     primeDone()
     useStore.getState().resetRun('manual')
-    expect(useStore.getState().mc).toEqual({
-      runId: null,
-      status: 'idle',
-      progress: 0,
-      total: 0,
-      summary: null,
-      basisSignature: null,
-      error: null,
-    })
+    expect(useStore.getState().mc).toEqual(IDLE_MC)
   })
 
   it('replaceScenario clears the slice', () => {
@@ -1447,7 +1441,142 @@ describe('monte carlo slice', () => {
     expect(analysisBasisSignature({ ...base, seed: base.seed! + 1 })).not.toBe(sig)
     expect(analysisBasisSignature({ ...base, replicates: 250 })).not.toBe(sig)
     expect(analysisBasisSignature({ ...base, runMode: 'monte-carlo' })).not.toBe(sig)
+    expect(analysisBasisSignature({ ...base, uncertainty: 'total' })).not.toBe(sig)
     expect(analysisBasisSignature({ ...base, name: 'Other' })).toBe(sig)
+  })
+})
+
+describe('sensitivity slice', () => {
+  beforeEach(reset)
+
+  function fakeSensitivity(): SensitivitySummary {
+    return {
+      stat: 'leakers',
+      rows: [
+        { modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1 },
+        {
+          modelId: 'lib-mavic3',
+          field: 'rcsM2',
+          label: 'Mavic 3',
+          low: 1.4,
+          high: 1.6,
+          swing: 0.2,
+        },
+      ],
+      nominal: 1.5,
+      replicates: 20,
+      seed: 4821,
+      elapsedMs: 30,
+    }
+  }
+
+  /** Monte Carlo mode, one launch (no Worker in node), progress, then a done message. */
+  function primeSensitivity(): SensitivitySummary {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    useStore.getState().runSensitivity()
+    const runId = useStore.getState().mc.sensitivity.runId as string
+    const summary = fakeSensitivity()
+    useStore.getState().sensitivityMessage({ type: 'sens-progress', runId, done: 1, total: 2 })
+    useStore.getState().sensitivityMessage({ type: 'sens-done', runId, summary })
+    return summary
+  }
+
+  /** A finished replicate run beside the sensitivity run; the summary itself is not read. */
+  function markMcDone(): void {
+    useStore.setState((st) => ({
+      mc: {
+        ...st.mc,
+        runId: st.playback.runId,
+        status: 'done',
+        basisSignature: analysisBasisSignature(st.scenario),
+      },
+    }))
+  }
+
+  it('counts fields on progress and fills the summary on done', () => {
+    const summary = primeSensitivity()
+    const sens = useStore.getState().mc.sensitivity
+    expect(sens.status).toBe('done')
+    expect(sens.summary).toBe(summary)
+    expect(sens.progress).toBe(2)
+    expect(sens.total).toBe(2)
+  })
+
+  it('runSensitivity is a no-op under deterministic mode', () => {
+    useStore.getState().runSensitivity()
+    expect(useStore.getState().mc.sensitivity).toEqual(IDLE_SENSITIVITY)
+  })
+
+  it('reports the missing Worker as an error and starts with no field count', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    useStore.getState().runSensitivity()
+    const st = useStore.getState()
+    expect(st.mc.sensitivity.status).toBe('error')
+    expect(st.mc.sensitivity.error).toBe('Web Worker unavailable')
+    expect(st.mc.sensitivity.runId).toBe(st.playback.runId)
+    // The field count comes from the worker's first progress message.
+    expect(st.mc.sensitivity.total).toBe(0)
+    expect(st.mc.sensitivity.basisSignature).toBe(analysisBasisSignature(st.scenario))
+  })
+
+  it('the uncertainty mode changes the basis and marks both runs stale', () => {
+    const summary = primeSensitivity()
+    markMcDone()
+    const before = analysisBasisSignature(useStore.getState().scenario)
+    useStore.getState().patchScenario({ uncertainty: 'total' })
+    const st = useStore.getState()
+    expect(analysisBasisSignature(st.scenario)).not.toBe(before)
+    expect(st.mc.status).toBe('stale')
+    expect(st.mc.sensitivity.status).toBe('stale')
+    expect(st.mc.sensitivity.summary).toBe(summary)
+  })
+
+  it('runMonteCarlo keeps a finished sensitivity run', () => {
+    const summary = primeSensitivity()
+    useStore.getState().runMonteCarlo()
+    const sens = useStore.getState().mc.sensitivity
+    expect(sens.status).toBe('done')
+    expect(sens.summary).toBe(summary)
+  })
+
+  it('a done message from another run id is ignored', () => {
+    const summary = primeSensitivity()
+    useStore
+      .getState()
+      .sensitivityMessage({ type: 'sens-done', runId: 'other-run', summary: fakeSensitivity() })
+    expect(useStore.getState().mc.sensitivity.summary).toBe(summary)
+  })
+
+  it('a done message after a stale mark is ignored', () => {
+    const summary = primeSensitivity()
+    useStore.getState().patchScenario({ seed: 99 })
+    const runId = useStore.getState().mc.sensitivity.runId as string
+    useStore
+      .getState()
+      .sensitivityMessage({ type: 'sens-done', runId, summary: fakeSensitivity() })
+    const sens = useStore.getState().mc.sensitivity
+    expect(sens.status).toBe('stale')
+    expect(sens.summary).toBe(summary)
+  })
+
+  it('resetRun and replaceScenario clear the sensitivity run', () => {
+    primeSensitivity()
+    useStore.getState().resetRun('manual')
+    expect(useStore.getState().mc.sensitivity).toEqual(IDLE_SENSITIVITY)
+    primeSensitivity()
+    useStore.getState().replaceScenario(emptyScenario())
+    expect(useStore.getState().mc.sensitivity).toEqual(IDLE_SENSITIVITY)
+  })
+
+  it('stays out of the scenario and the history', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    const past = useStore.getState().past.length
+    useStore.getState().runSensitivity()
+    const runId = useStore.getState().mc.sensitivity.runId as string
+    useStore.getState().sensitivityMessage({ type: 'sens-done', runId, summary: fakeSensitivity() })
+    const st = useStore.getState()
+    expect(st.past.length).toBe(past)
+    expect(JSON.stringify(st.scenario)).not.toContain('sensitivity')
   })
 })
 

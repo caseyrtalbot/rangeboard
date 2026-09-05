@@ -41,6 +41,10 @@ describe('deterministicPolicy', () => {
   it('has scan phase 0', () => {
     expect(deterministicPolicy(T).phase('s')).toBe(0)
   })
+
+  it('samples every parameter at u 0.5, the nominal', () => {
+    expect(deterministicPolicy(T).param('lib-x', 'rcsM2')).toBe(0.5)
+  })
 })
 
 describe('monteCarloPolicy', () => {
@@ -54,6 +58,8 @@ describe('monteCarloPolicy', () => {
     hashU01(SEED, rep, DRAW_KIND.jam, idHash(eff), idHash(uas), 0, stepIndex(tS))
   const uPhase = (rep: number, sensor: string) =>
     hashU01(SEED, rep, DRAW_KIND.phase, idHash(sensor), 0, 0, 0)
+  const uParam = (rep: number, modelId: string, field: string) =>
+    hashU01(SEED, rep, DRAW_KIND.param, idHash(modelId), idHash(field), 0, 0)
   const TINY = 1e-9
 
   it('detect draws u < pd from the detect key; the same key gives the same value', () => {
@@ -123,6 +129,18 @@ describe('monteCarloPolicy', () => {
     expect(p.phase('s')).toBe(phase)
     expect(monteCarloPolicy(SEED, 1, T).phase('s')).not.toBe(phase)
     expect(p.phase('s2')).not.toBe(phase)
+  })
+
+  it('draws a parameter sample from the param key; two fields of one model differ', () => {
+    const p = monteCarloPolicy(SEED, 0, T)
+    const u = p.param('lib-x', 'rcsM2')
+    expect(u).toBe(uParam(0, 'lib-x', 'rcsM2'))
+    expect(u).toBeGreaterThanOrEqual(0)
+    expect(u).toBeLessThan(1)
+    expect(p.param('lib-x', 'rcsM2')).toBe(u)
+    expect(p.param('lib-x', 'detectRangeM')).not.toBe(u)
+    expect(p.param('lib-y', 'rcsM2')).not.toBe(u)
+    expect(monteCarloPolicy(SEED, 1, T).param('lib-x', 'rcsM2')).not.toBe(u)
   })
 
   it('gives 0 or 1 for kill and jam', () => {

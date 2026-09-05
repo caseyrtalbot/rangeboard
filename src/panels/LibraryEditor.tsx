@@ -23,6 +23,7 @@ import {
 } from '../model/types'
 import { jammerBands } from '../analysis/ewPhysics'
 import { rfSensorBands } from '../analysis/sensorEnv'
+import { spreadFor } from '../analysis/uncertainty'
 import { RADAR_REF_RCS_M2, RCS_PLANNING_M2 } from '../model/rcsFactors'
 import {
   ACOUSTIC_PLANNING_DB,
@@ -34,6 +35,7 @@ import {
 import { useStore } from '../state/store'
 import { formatDistance } from '../geometry/geo'
 import { EmptyState, ObjectHeader, PfTag, Section } from './inspector/kit'
+import { spreadText } from './inspector/spreadText'
 
 const SENSOR_ROLES: SensorRole[] = [
   'early-warning',
@@ -235,10 +237,18 @@ function emptyDraft(): SourceDraft {
   }
 }
 
+/** The Spread cell: the resolved spread, `pinned` on a null row, else `none`. */
+function spreadCell(model: SpecModel, row: Provenance): string {
+  const spread = spreadFor(model, row.field)
+  if (spread) return spreadText(spread)
+  return row.spread === null ? 'pinned' : 'none'
+}
+
 /**
  * Where each recorded value of the model comes from. A field with no row is
  * a planning factor. A seed model is read only: the Reset to seed action
  * restores its rows. A custom model adds and removes rows, one row per field.
+ * The Spread column reads what a total-uncertainty replicate samples.
  */
 function Sources({
   model,
@@ -281,6 +291,7 @@ function Sources({
               <th>Field</th>
               <th>Value</th>
               <th>Basis</th>
+              <th>Spread</th>
               <th>Source</th>
               <th>Date</th>
               {custom && <th aria-label="Remove" />}
@@ -294,6 +305,7 @@ function Sources({
                 <td>
                   <PfTag model={model} field={row.field} />
                 </td>
+                <td className="mono">{spreadCell(model, row)}</td>
                 <td>
                   {row.url && row.url.startsWith('http') ? (
                     <a href={row.url} target="_blank" rel="noreferrer">

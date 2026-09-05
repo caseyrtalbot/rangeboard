@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type {
   Connection,
@@ -12,12 +12,19 @@ import type {
 import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M, newId } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { heldTracksSeries, kpiSeries, sampleCount, threatSeries } from '../analysis/series'
+import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
+import * as uncertainty from '../analysis/uncertainty'
+import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
+import { betaQuantile } from '../te/calc/stats'
 import { FALLOFF_AT_MAX, resolveEngagements } from './attrition'
-import { runReplicates } from './mcRun'
+import { runReplicates, runSensitivity } from './mcRun'
 import type { BandSeries, McSummary } from './mcRun'
 import type { DrawPolicy } from './policy'
-import { monteCarloPolicy } from './policy'
-import { assessAllThreats } from './sim'
+import { deterministicPolicy, monteCarloPolicy } from './policy'
+import { assessAllThreats, DT } from './sim'
+
+// The module keeps its real behavior; the spy shows whether the loop called it.
+vi.mock('../analysis/uncertainty', { spy: true })
 
 /**
  * Regression laydown, as policy.test.ts: Giraffe 1X at the origin, Coyote
@@ -187,6 +194,29 @@ function build(pk: number, from: Vec2 = { x: -1210, y: 0 }, withAsset = false): 
 
 const thresholdsOf = (s: Scenario) => ({ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...s.requirements })
 
+/** Pin `fields` of a library model with `spread: null` rows, so no sample touches them. */
+function pin(model: SpecModel, fields: string[]): void {
+  const rows = (model.provenance ?? []).filter((r) => !fields.includes(r.field))
+  for (const field of fields) {
+    rows.push({ field, value: '', source: 'pinned', date: '2026-09-04', basis: 'pf', spread: null })
+  }
+  model.provenance = rows
+}
+
+/**
+ * The regression laydown with every spread pinned except the Mohajer
+ * `rcsM2` (the table's 6 dB). Connection latencies and the declaration
+ * dwell still sample from the PF table, and neither moves first detection.
+ */
+function rcsOnlyLaydown(): Scenario {
+  const s = laydown()
+  const lib = (id: string) => s.library.find((m) => m.id === id)!
+  pin(lib('lib-giraffe1x'), ['detectRangeM', 'trackInitS'])
+  pin(lib('lib-coyote'), ['pk', 'engageTimeS', 'targetS', 'bdaS'])
+  pin(lib('lib-mavic3'), ['rcsM2'])
+  return s
+}
+
 function bands(summary: McSummary): BandSeries[] {
   return [
     summary.kills,
@@ -294,14 +324,89 @@ describe('runReplicates', () => {
     }
   })
 
-  it('each replicate keeps the raid partition', () => {
+  it('each replicate keeps the raid partition, nominal and under total', () => {
     const s = laydown()
     for (const seed of [4821, 4822, 4823]) {
       const policy = monteCarloPolicy(seed, 0, thresholdsOf(s))
       const { totals } = resolveEngagements(s, assessAllThreats(s, policy), policy)
       const { expectedKills, expectedLeakers, expectedNoArrival, raidSize } = totals
       expect(expectedKills + expectedLeakers + expectedNoArrival).toBeCloseTo(raidSize, 9)
+      // The same replicate on the sampled scenario the total loop builds.
+      const sampled = sampleScenario(s, (m, f) => policy.param(m, f))
+      const t = resolveEngagements(sampled, assessAllThreats(sampled, policy), policy).totals
+      expect(t.expectedKills + t.expectedLeakers + t.expectedNoArrival).toBeCloseTo(t.raidSize, 9)
+      expect(t.raidSize).toBe(raidSize)
     }
+  })
+
+  describe('parameter uncertainty', () => {
+    afterEach(() => {
+      vi.mocked(uncertainty.sampleScenario).mockReset()
+    })
+
+    it('aleatory equals an absent setting and never samples the scenario', () => {
+      const s = laydown()
+      s.replicates = 20
+      const { uncertainty: _absent, ...rest } = s
+      const absent = rest as Scenario
+      const spy = vi.mocked(uncertainty.sampleScenario)
+      spy.mockClear()
+      const a = runReplicates(absent)
+      const b = runReplicates({ ...s, uncertainty: 'aleatory' })
+      expect(b).toEqual(a)
+      expect(spy).not.toHaveBeenCalled()
+      // The spy is live: a total run samples once per replicate.
+      runReplicates({ ...s, uncertainty: 'total' })
+      expect(spy).toHaveBeenCalledTimes(20)
+    })
+
+    it('total widens the Mohajer first-detection band', () => {
+      // Only the Mohajer rcsM2 samples (6 dB lognormal). The Giraffe Pd is
+      // SNR-driven and range scales by the fourth root of RCS: one sigma is
+      // a factor 4 in RCS, a factor 1.41 in range, so the range at Pd 0.5
+      // moves by about 40 percent each side across the p10 to p90 sample and
+      // the first detecting scan moves with it, on top of the Pd draw noise
+      // the aleatory band already holds.
+      const s = rcsOnlyLaydown()
+      s.replicates = 100
+      const m6 = s.entities.find((e) => e.specId === 'lib-mohajer6')!.id
+      const aleatory = runReplicates(s).perThreat[m6].firstDetectS
+      const total = runReplicates({ ...s, uncertainty: 'total' }).perThreat[m6].firstDetectS
+      expect(aleatory.n).toBe(100)
+      expect(total.n).toBe(100)
+      expect(total.p90 - total.p10).toBeGreaterThan(aleatory.p90 - aleatory.p10)
+    })
+
+    it('a field with spread null never changes under total', async () => {
+      const actual = await vi.importActual<typeof uncertainty>('../analysis/uncertainty')
+      const s = rcsOnlyLaydown()
+      s.replicates = 5
+      s.uncertainty = 'total'
+      const giraffe = s.library.find((m) => m.id === 'lib-giraffe1x')!
+      const nominalRange = giraffe.sensor!.detectRangeM
+      const keys: string[] = []
+      const spy = vi.mocked(uncertainty.sampleScenario)
+      spy.mockImplementation((scenario, u) =>
+        actual.sampleScenario(scenario, (m, f) => {
+          keys.push(`${m}.${f}`)
+          return u(m, f)
+        }),
+      )
+      runReplicates(s)
+      expect(spy).toHaveBeenCalledTimes(5)
+      expect(keys.length).toBeGreaterThan(0)
+      expect(keys).not.toContain('lib-giraffe1x.detectRangeM')
+      expect(keys).toContain('lib-mohajer6.rcsM2')
+      for (const r of spy.mock.results) {
+        const built = r.value as Scenario
+        expect(built.library.find((m) => m.id === 'lib-giraffe1x')!.sensor!.detectRangeM).toBe(
+          nominalRange,
+        )
+        expect(built.library.find((m) => m.id === 'lib-mohajer6')!.uas!.rcsM2).not.toBe(
+          s.library.find((m) => m.id === 'lib-mohajer6')!.uas!.rcsM2,
+        )
+      }
+    })
   })
 
   it('replicate i depends on i only: direct policies reproduce the summary', () => {
@@ -463,6 +568,86 @@ describe('runReplicates', () => {
     expect(d.detects.some((r) => r[1] === 'e-extra-uas')).toBe(true)
   })
 
+  it('common random numbers: an earlier extra threat leaves the shared kill keys unchanged', () => {
+    // The regression laydown plus a Mohajer-6 at (0, -2500) at 1000 ft on a
+    // path to (0, -100) at 15 m/s: inside the Coyote envelope from t = 0,
+    // large RCS so the Giraffe holds it from the first scans, closer to the
+    // Coyote than the Mavic (a higher Pk), and slow enough that the kill
+    // chain closes on it. The Coyote engages it before any shared threat.
+    // The kill key counts salvos per (effector, threat, ship), so the shared
+    // shots keep salvoIdx 0, 1, ... and read the same uniforms; under the
+    // wave 2 per-effector count the extra threat's earlier salvos would have
+    // shifted every shared salvoIdx by at least one. The busy Coyote can
+    // delay a shared shot, which moves its Pk and so its result under the
+    // same uniform, so the assertion is on the key, not the result.
+    type KillRecord = [string, string, number, number]
+    const recording = (base: DrawPolicy, kills: KillRecord[]): DrawPolicy => ({
+      ...base,
+      kill: (pk, effectorId, uasId, shipIdx, salvoIdx, tS) => {
+        kills.push([effectorId, uasId, shipIdx, salvoIdx])
+        return base.kill(pk, effectorId, uasId, shipIdx, salvoIdx, tS)
+      },
+    })
+    const run = (s: Scenario) => {
+      const kills: KillRecord[] = []
+      const policy = recording(monteCarloPolicy(4821, 0, thresholdsOf(s)), kills)
+      const report = resolveEngagements(s, assessAllThreats(s, policy), policy)
+      return { kills, report }
+    }
+    const base = laydown()
+    const extraId = 'e-extra-mohajer'
+    const extra: Scenario = {
+      ...base,
+      entities: [
+        ...base.entities,
+        {
+          id: extraId,
+          name: 'lib-mohajer6',
+          kind: 'uas',
+          specId: 'lib-mohajer6',
+          pos: { x: 0, y: -2500 },
+          headingDeg: 0,
+          color: null,
+          notes: '',
+          altitudeFt: 1000,
+        },
+      ],
+      paths: [
+        ...base.paths,
+        {
+          id: 'p-extra-mohajer',
+          entityId: extraId,
+          points: [
+            { x: 0, y: -2500 },
+            { x: 0, y: -100 },
+          ],
+          speedMps: 15,
+          startDelayS: 0,
+        },
+      ],
+    }
+    const a = run(base)
+    const b = run(extra)
+    const extraEvents = b.report.events.filter((e) => e.uasId === extraId)
+    const sharedEvents = b.report.events.filter((e) => e.uasId !== extraId)
+    expect(extraEvents.length).toBeGreaterThan(0)
+    expect(sharedEvents.length).toBeGreaterThan(0)
+    expect(extraEvents[0].tS).toBeLessThan(sharedEvents[0].tS)
+    // The extra threat's salvo was drawn before any shared salvo.
+    expect(b.kills[0][1]).toBe(extraId)
+    // Non-vacuous: at least one shared kill record on both sides.
+    const sharedB = b.kills.filter((k) => k[1] !== extraId)
+    expect(sharedB.length).toBeGreaterThanOrEqual(1)
+    expect(a.kills.length).toBeGreaterThanOrEqual(1)
+    const uasIds = new Set(sharedB.map((k) => k[1]))
+    for (const uasId of uasIds) {
+      const seqA = a.kills.filter((k) => k[1] === uasId).map((k) => [k[0], k[2], k[3]])
+      const seqB = sharedB.filter((k) => k[1] === uasId).map((k) => [k[0], k[2], k[3]])
+      expect(seqB[0][2]).toBe(0)
+      expect(seqB).toEqual(seqA.slice(0, seqB.length))
+    }
+  })
+
   it('reports progress after every 10th replicate and after the last', () => {
     const s = laydown()
     s.replicates = 25
@@ -582,5 +767,191 @@ describe('runReplicates', () => {
       expect(tight.stopped).toEqual({ rule: 'replicates', at: 40 })
       expect(tight.replicates).toBe(40)
     })
+  })
+})
+
+/**
+ * Sensitivity fixture: a target-scaled radar (rangeBasis absent, so RCS
+ * moves its range and the Pd model runs) with a 20 km placard at the origin,
+ * a group 4 fixed-wing target at the mount height inbound from 10 km west at
+ * 40 m/s to an asset at the origin, and one interceptor at the origin with a
+ * 3 km envelope, Pk 0.5 and one round, linked radar -> C2 -> interceptor,
+ * doctrine on, ROE free. The target enters the envelope about 175 s after
+ * the first scan, so first detection has no effect on the one shot.
+ */
+describe('runSensitivity', () => {
+  const SENS_RADAR: SpecModel = {
+    ...RADAR,
+    id: 'sens-radar',
+    name: 'sens radar',
+    sensor: { ...RADAR.sensor!, rangeBasis: undefined, detectRangeM: 20000 },
+  }
+  const SENS_INT: SpecModel = {
+    ...interceptor(0.5),
+    id: 'sens-int',
+    name: 'sens int',
+    effector: { ...interceptor(0.5).effector!, maxRangeM: 3000 },
+  }
+
+  // Fixed literal ids: the draw keys hash the ids, so the fixture's draws
+  // never depend on the file-level `seq` counter or on test order.
+  const fixedEnt = (id: string, kind: Entity['kind'], specId: string | null, pos: Vec2) => ({
+    ...ent(kind, specId ?? '', pos),
+    id,
+    name: id,
+    specId,
+  })
+
+  function fixture(): Scenario {
+    const s = emptyScenario()
+    s.roe = 'free'
+    s.library = [SENS_RADAR, TARGET, SENS_INT]
+    const radar = fixedEnt('sens-sensor', 'sensor', SENS_RADAR.id, { x: 0, y: 0 })
+    const c2 = fixedEnt('sens-c2', 'c2', null, { x: -300, y: 0 })
+    const eff = fixedEnt('sens-eff', 'effector', SENS_INT.id, { x: 0, y: 0 })
+    const uas = fixedEnt('sens-uas', 'uas', TARGET.id, { x: -10000, y: 0 })
+    const target = { ...asset({ x: 0, y: 0 }), id: 'sens-asset', name: 'sens-asset' }
+    s.entities = [radar, c2, eff, uas, target]
+    s.connections = [
+      { ...link(radar.id, c2.id), id: 'sens-l1' },
+      { ...link(c2.id, eff.id), id: 'sens-l2' },
+    ]
+    s.paths = [{ ...flight(uas.id, [{ x: -10000, y: 0 }, { x: 0, y: 0 }]), id: 'sens-path' }]
+    s.runMode = 'monte-carlo'
+    s.seed = 4821
+    s.replicates = 20
+    return s
+  }
+
+  const only = (s: Scenario, modelId: string, field: string, q: number) =>
+    sampleScenario(s, (m, f) => (m === modelId && f === field ? q : null))
+
+  it('ranks pk above rcsM2 and matches the nominal of runReplicates', () => {
+    const s = fixture()
+    // RCS: the p10 and p90 of a 6 dB lognormal are z = -1.28 and +1.28, a
+    // factor 10^(-0.77) = 0.17 to 10^(0.77) = 5.9 in RCS and, by the fourth
+    // root, 0.64 to 1.56 in range: the placard moves between about 12.8 km
+    // and 31 km, past the 10 km start, so first detection stays at the first
+    // scan and the leaker mean does not move.
+    const thresholds = thresholdsOf(s)
+    const det = deterministicPolicy(thresholds)
+    const firstDetectAt = (q: number) =>
+      assessAllThreats(only(s, TARGET.id, 'rcsM2', q), det)[0].firstDetectS
+    expect(firstDetectAt(0.1)).toBe(0)
+    expect(firstDetectAt(0.9)).toBe(0)
+
+    const summary = runSensitivity(s)
+    expect(summary.stat).toBe('leakers')
+    expect(summary.seed).toBe(4821)
+    expect(summary.replicates).toBe(20)
+    expect(summary.elapsedMs).toBe(0)
+    const base = { ...s, uncertainty: 'aleatory' as const, targetHalfWidth: null }
+    expect(summary.nominal).toBe(runReplicates(base).leakers.mean.at(-1))
+
+    const pkRow = summary.rows.find((r) => r.field === 'pk')!
+    const rcsRow = summary.rows.find((r) => r.field === 'rcsM2')!
+    expect(pkRow.label).toBe('sens int')
+    expect(rcsRow.label).toBe('test uas')
+    expect(rcsRow.swing).toBe(0)
+    expect(pkRow.swing).toBeGreaterThan(rcsRow.swing)
+    // Pk: the p10 and p90 of the pseudo beta at 0.5 with 20 pseudo-trials,
+    // Beta(10, 10), are about 0.36 and 0.64. The one shot lands at the
+    // distance falloff f of the deterministic event (the same slant in every
+    // replicate), so the paired swing is the fraction of kill uniforms in
+    // [f * 0.36, f * 0.64), expected f * 0.28 = about 0.22, within 3 SE =
+    // 3 * sqrt(0.22 * 0.78 / 20) = 0.28 at 20 replicates. More Pk, fewer
+    // leakers: the p10 mean is at or above the p90 mean.
+    const event = resolveEngagements(s, assessAllThreats(s, det), det).events[0]
+    const f = event.pk / 0.5
+    const q10 = betaQuantile(0.1, 10, 10)
+    const q90 = betaQuantile(0.9, 10, 10)
+    expect(Math.abs(q10 - 0.36)).toBeLessThan(0.01)
+    expect(Math.abs(q90 - 0.64)).toBeLessThan(0.01)
+    const expected = f * (q90 - q10)
+    const se = Math.sqrt((expected * (1 - expected)) / 20)
+    expect(Math.abs(pkRow.swing - expected)).toBeLessThan(3 * se)
+    expect(pkRow.low).toBeGreaterThanOrEqual(pkRow.high)
+    expect(pkRow.swing).toBe(Math.abs(pkRow.high - pkRow.low))
+  })
+
+  it('pairing by common random numbers lowers the swing variance', () => {
+    // The paired swing at one seed reads the same kill uniform on both sides
+    // of every replicate, so the draw noise cancels and only the parameter
+    // effect remains: the swing is the fraction of uniforms inside the p10
+    // to p90 Pk window, Bernoulli(p) with p = f * 0.28 = about 0.22 (see the
+    // ranking test), variance 0.17 / n. An unpaired swing takes two
+    // independent Bernoulli means at effective Pk 0.29 and 0.51 and carries
+    // both their noises, variance (0.20 + 0.25) / n = 0.45 / n. Over K seed
+    // pairs, d_j is the difference of two paired swings (sd 0.59 / sqrt n)
+    // and e_j the difference of two unpaired swings (sd 0.95 / sqrt n), a
+    // ratio r = 0.62 that does not depend on n. With normal d and e, mean |d|
+    // over K is 0.80 sd_d with sd 0.60 sd_d / sqrt K; the assertion
+    // mean |d| < mean |e| fails at z = 0.80 (1 - r) / (0.60 sqrt((1 + r^2) /
+    // K)) = 0.43 sqrt K, so K = 40 gives z = 2.7 and a failure probability
+    // of about 0.3 percent under that model. n = 10 keeps the cost bounded.
+    const K = 40
+    const n = 10
+    const s = { ...fixture(), replicates: n }
+    // End-of-run leaker mean over n replicates, the arithmetic of
+    // runReplicates(...).leakers.mean.at(-1) without the bands.
+    const meanAt = (seed: number, q: number) => {
+      const sq = only(s, SENS_INT.id, 'pk', q)
+      const tEndS = (sampleCount(sq) - 1) * DT
+      let sum = 0
+      for (let i = 0; i < n; i += 1) {
+        const policy = monteCarloPolicy(seed, i, thresholdsOf(sq))
+        const assessments = assessAllThreats(sq, policy)
+        const report = resolveEngagements(sq, assessments, policy)
+        sum += liveKpisAt(buildLiveTimeline(assessments, report), tEndS).leakerShips
+      }
+      return sum / n
+    }
+    // runSensitivity's pk swing is this paired swing at the same seed.
+    const swing = runSensitivity({ ...s, seed: 4821 }).rows.find((r) => r.field === 'pk')!.swing
+    expect(swing).toBeCloseTo(Math.abs(meanAt(4821, 0.9) - meanAt(4821, 0.1)), 12)
+    let sumD = 0
+    let sumE = 0
+    for (let j = 0; j < K; j += 1) {
+      const sa = 4821 + 2 * j
+      const sb = 4822 + 2 * j
+      const [lo10, lo90, hi10, hi90] = [
+        meanAt(sa, 0.1), meanAt(sa, 0.9), meanAt(sb, 0.1), meanAt(sb, 0.9),
+      ]
+      // Paired: each swing pairs its p10 and p90 means by seed and replicate.
+      sumD += Math.abs(Math.abs(lo90 - lo10) - Math.abs(hi90 - hi10))
+      // Unpaired: the p10 mean of one seed against the p90 mean of the other.
+      sumE += Math.abs(Math.abs(hi90 - lo10) - Math.abs(lo90 - hi10))
+    }
+    expect(sumD / K).toBeLessThan(sumE / K)
+  })
+
+  it('reports progress once per field and sorts rows by swing, ties in field order', () => {
+    const s = fixture()
+    const fields = uncertainFields(s)
+    expect(fields.length).toBeGreaterThan(2)
+    const calls: Array<[number, number]> = []
+    const summary = runSensitivity(s, (done, total) => calls.push([done, total]))
+    expect(calls).toEqual(fields.map((_, k) => [k + 1, fields.length]))
+    expect(summary.rows).toHaveLength(fields.length)
+    for (let i = 1; i < summary.rows.length; i += 1) {
+      expect(summary.rows[i - 1].swing).toBeGreaterThanOrEqual(summary.rows[i].swing)
+    }
+    // Only pk moves the one shot; every other row swings 0 and keeps the
+    // uncertainFields order behind it.
+    const key = (r: { modelId: string; field: string }) => `${r.modelId}.${r.field}`
+    expect(summary.rows[0].field).toBe('pk')
+    expect(summary.rows.slice(1).map(key)).toEqual(
+      fields.filter((f) => f.field !== 'pk').map(key),
+    )
+    expect(summary.rows.slice(1).every((r) => r.swing === 0)).toBe(true)
+    // Labels: the model name, the connection label or id, and Doctrine.
+    const byKey = new Map(summary.rows.map((r) => [key(r), r.label]))
+    expect(byKey.get('sens-radar.detectRangeM')).toBe('sens radar')
+    expect(byKey.get('doctrine.declareHostileS')).toBe('Doctrine')
+    const con = s.connections[0]
+    expect(byKey.get(`${con.id}.latencyS`)).toBe(con.id)
+    // Sampling one field leaves the input untouched.
+    expect(s.uncertainty).toBe('aleatory')
+    expect(PF_SPREAD.pk.spread.kind).toBe('beta')
   })
 })

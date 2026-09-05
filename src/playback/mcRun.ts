@@ -5,7 +5,11 @@
  * ids, the indices, the step), and records the same
  * per-step counts the live panels read from the deterministic ledger. The
  * summary holds per-step bands and per-replicate scalars, never a replicate
- * ledger. Pure TS, no DOM, no store import at the value level, and it never
+ * ledger. Under `uncertainty: 'total'` each replicate first samples every
+ * uncertain field through the policy's `param` draw (`sampleScenario`, once
+ * per replicate) and runs the sweep and the attrition on that scenario;
+ * under `aleatory` the nominal scenario runs and the sampler is never
+ * called. Pure TS, no DOM, no store import at the value level, and it never
  * reads `engagementPicture` (that cache is the deterministic run).
  *
  * The grid is the chart grid: `sampleCount(scenario)` steps at DT from t = 0
@@ -13,6 +17,7 @@
  */
 import { heldOnGrid, residualOnGrid, sampleCount } from '../analysis/series'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
+import { sampleScenario, uncertainFields } from '../analysis/uncertainty'
 import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
 import { meanInterval, quantile, wilson } from '../te/calc/stats'
@@ -118,11 +123,54 @@ export interface McRunRequest {
   scenario: Scenario
 }
 
+/** One sensitivity request to the worker, same shape, on its own worker instance. */
+export interface McSensitivityRequest {
+  type: 'sensitivity'
+  runId: string
+  scenario: Scenario
+}
+
+/** Every request the worker accepts; it dispatches on `type`. */
+export type McRequest = McRunRequest | McSensitivityRequest
+
 /** Messages the worker posts back, tagged by the run they belong to. */
 export type McWorkerMessage =
   | { type: 'progress'; runId: string; done: number; total: number }
   | { type: 'done'; runId: string; summary: McSummary }
   | { type: 'error'; runId: string; message: string }
+
+/** Messages of a sensitivity run; `done` and `total` count uncertain fields. */
+export type McSensitivityMessage =
+  | { type: 'sens-progress'; runId: string; done: number; total: number }
+  | { type: 'sens-done'; runId: string; summary: SensitivitySummary }
+  | { type: 'sens-error'; runId: string; message: string }
+
+/** One tornado row: the headline statistic with one field at its p10 and at its p90. */
+export interface SensitivityRow {
+  /** A library model id, a connection id, or 'doctrine' (uncertainFields). */
+  modelId: string
+  field: string
+  /** The model name (a connection reads its label, doctrine reads 'Doctrine'), for the panel. */
+  label: string
+  /** End-of-run leaker mean with the field at its p10 sample, every other field nominal. */
+  low: number
+  /** The same with the field at its p90 sample. */
+  high: number
+  /** |high - low|; rows sort by it, largest first. */
+  swing: number
+}
+
+/** The sensitivity run result: one row per uncertain field, paired by common random numbers. */
+export interface SensitivitySummary {
+  stat: 'leakers'
+  rows: SensitivityRow[]
+  /** End-of-run leaker mean with every field nominal, at the same seed and replicates. */
+  nominal: number
+  replicates: number
+  seed: number
+  /** Wall time in the worker, ms; 0 when run outside the worker. */
+  elapsedMs: number
+}
 
 /** The defined fraction with its Wilson interval; p 0 and the full unit interval with no run. */
 function definedOf(n: number, total: number): Stat['defined'] {
@@ -235,7 +283,8 @@ export function runReplicates(
   scenario: Scenario,
   onProgress?: (done: number, total: number) => void,
 ): McSummary {
-  const { seed, replicates, targetHalfWidth } = runSettings(scenario)
+  const { seed, replicates, targetHalfWidth, uncertainty } = runSettings(scenario)
+  const total = uncertainty === 'total'
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const n = sampleCount(scenario)
   const enabledSensorIds = new Set(
@@ -266,8 +315,10 @@ export function runReplicates(
   let stopped: McSummary['stopped'] = { rule: 'replicates', at: replicates }
   for (let i = 0; i < replicates; i += 1) {
     const policy = monteCarloPolicy(seed, i, thresholds)
-    const assessments = assessAllThreats(scenario, policy)
-    const report = resolveEngagements(scenario, assessments, policy)
+    // The ternary, not a null sampler: under aleatory the sampler never runs.
+    const s = total ? sampleScenario(scenario, (m, f) => policy.param(m, f)) : scenario
+    const assessments = assessAllThreats(s, policy)
+    const report = resolveEngagements(s, assessments, policy)
     const tracks = assessments.filter((a) => a.status !== 'no-path')
 
     const tl = buildLiveTimeline(assessments, report)
@@ -365,4 +416,75 @@ export function runReplicates(
     elapsedMs: 0,
     stopped,
   }
+}
+
+/**
+ * End-of-run leaker mean over the replicates of `runSettings(scenario)`:
+ * the same number `runReplicates(scenario).leakers.mean[n - 1]` reports,
+ * without the bands. The caller passes an aleatory scenario with no stopping
+ * rule, so every replicate runs.
+ */
+function endLeakerMean(scenario: Scenario): number {
+  const { seed, replicates } = runSettings(scenario)
+  const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
+  const tEndS = (sampleCount(scenario) - 1) * DT
+  let sum = 0
+  for (let i = 0; i < replicates; i += 1) {
+    const policy = monteCarloPolicy(seed, i, thresholds)
+    const assessments = assessAllThreats(scenario, policy)
+    const report = resolveEngagements(scenario, assessments, policy)
+    sum += liveKpisAt(buildLiveTimeline(assessments, report), tEndS).leakerShips
+  }
+  return sum / replicates
+}
+
+/** The panel label of one uncertain field's owner: model name, connection label, or Doctrine. */
+function fieldLabel(scenario: Scenario, modelId: string): string {
+  if (modelId === 'doctrine') return 'Doctrine'
+  const model = scenario.library.find((m) => m.id === modelId)
+  if (model) return model.name
+  const link = scenario.connections.find((c) => c.id === modelId)
+  return link ? link.label || link.id : modelId
+}
+
+/**
+ * One-at-a-time sensitivity on the end-of-run leaker mean. For each uncertain
+ * field the loop runs `replicates` replicates twice, the field at its p10
+ * sample and at its p90 sample with every other field nominal, under the
+ * same seed and replicate indices as the nominal run (common random
+ * numbers), so the swing is a paired difference. Rows sort by swing, largest
+ * first; ties keep the `uncertainFields` order. `onProgress` fires after
+ * every field with the field count. `elapsedMs` is 0 here; the worker fills it.
+ */
+export function runSensitivity(
+  scenario: Scenario,
+  onProgress?: (done: number, total: number) => void,
+): SensitivitySummary {
+  const { seed, replicates } = runSettings(scenario)
+  // Every run is aleatory (the field under test is the only sampled value)
+  // and runs every replicate, so the p10 and p90 means pair replicate by replicate.
+  const base: Scenario = { ...scenario, uncertainty: 'aleatory', targetHalfWidth: null }
+  const fields = uncertainFields(base)
+  const nominal = endLeakerMean(base)
+  const rows: SensitivityRow[] = []
+  fields.forEach((f, k) => {
+    const at = (q: number) =>
+      endLeakerMean(
+        sampleScenario(base, (m, fl) => (m === f.modelId && fl === f.field ? q : null)),
+      )
+    const low = at(0.1)
+    const high = at(0.9)
+    rows.push({
+      modelId: f.modelId,
+      field: f.field,
+      label: fieldLabel(base, f.modelId),
+      low,
+      high,
+      swing: Math.abs(high - low),
+    })
+    onProgress?.(k + 1, fields.length)
+  })
+  // A stable sort: ties keep the uncertainFields order.
+  rows.sort((a, b) => b.swing - a.swing)
+  return { stat: 'leakers', rows, nominal, replicates, seed, elapsedMs: 0 }
 }

@@ -7,9 +7,10 @@
  *   `nominal * 10^(sigmaDb * z / 10)`, so a 3 dB sigma is a factor of 2 at one sigma.
  * - triangular `lo` and `hi` are FRACTIONS of the nominal (`-0.2` is 20 percent under,
  *   `+0.3` is 30 percent over) with the mode at the nominal. One row serves every value.
- * - beta from the PF table: `trials` is a pseudo-count and the mean sits at the nominal
- *   (`a = nominal * trials`, `b = (1 - nominal) * trials`). Beta from a provenance row is a
- *   stated count (`successes` of `trials`) and is used as is.
+ * - beta from the PF table (`pseudo`): `trials` is a pseudo-count and the mean sits at the
+ *   nominal (`a = nominal * trials`, `b = (1 - nominal) * trials`). Beta from a provenance
+ *   row is a stated count (`successes` of `trials`) under a Jeffreys prior
+ *   (`a = successes + 0.5`, `b = failures + 0.5`), so an all-success row keeps a spread.
  */
 import type {
   Connection,
@@ -19,7 +20,7 @@ import type {
   SpecModel,
   Spread,
 } from '../model/types'
-import { effectiveDoctrine } from '../model/types'
+import { effectiveDoctrine, entityActive } from '../model/types'
 import { rcsM2For } from '../model/rcsFactors'
 import { bdaSFor, defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
 import { DEFAULT_PK } from '../playback/attrition'
@@ -45,7 +46,7 @@ const pf = (spread: Spread): PfSpreadRow => ({ spread, source: PF_SOURCE, date: 
 export const PF_SPREAD: Record<string, PfSpreadRow> = {
   rcsM2: pf({ kind: 'lognormal', sigmaDb: 6 }), // PF
   detectRangeM: pf({ kind: 'lognormal', sigmaDb: 3 }), // PF
-  pk: pf({ kind: 'beta', successes: 17, trials: 20 }), // PF
+  pk: pf({ kind: 'beta', successes: 17, trials: 20, pseudo: true }), // PF
   engageTimeS: pf({ kind: 'triangular', lo: -0.2, hi: 0.3 }), // PF
   latencyS: pf({ kind: 'triangular', lo: -0.5, hi: 1.0 }), // PF
   trackInitS: pf({ kind: 'triangular', lo: -0.3, hi: 0.5 }), // PF
@@ -88,17 +89,26 @@ function hasSpec(model: SpecModel): boolean {
   return false
 }
 
+/** Ids of the library models in use: at least one active entity references the model. */
+function modelsInUse(scenario: Scenario): Set<string> {
+  const ids = new Set<string>()
+  for (const e of scenario.entities) if (e.specId && entityActive(e)) ids.add(e.specId)
+  return ids
+}
+
 /**
  * Every (modelId, field) pair with a spread in this scenario, in a stable order: library
- * models in library order (sensor detectRangeM, trackInitS; effector pk, engageTimeS,
- * targetS, bdaS; uas rcsM2), then connections as `{ modelId: connection.id, field:
- * 'latencyS' }`, then `{ modelId: 'doctrine', field: 'declareHostileS' }` when doctrine is
- * enabled. A field with no spread is skipped.
+ * models in use, in library order (sensor detectRangeM, trackInitS; effector pk,
+ * engageTimeS, targetS, bdaS; uas rcsM2), then connections as `{ modelId: connection.id,
+ * field: 'latencyS' }`, then `{ modelId: 'doctrine', field: 'declareHostileS' }` when
+ * doctrine is enabled. A field with no spread is skipped, and so is a model no active
+ * entity uses.
  */
 export function uncertainFields(scenario: Scenario): UncertainField[] {
   const out: UncertainField[] = []
+  const inUse = modelsInUse(scenario)
   for (const model of scenario.library) {
-    if (!hasSpec(model)) continue
+    if (!inUse.has(model.id) || !hasSpec(model)) continue
     for (const field of FIELDS_BY_KIND[model.kind] ?? []) {
       const spread = spreadFor(model, field)
       if (spread) out.push({ modelId: model.id, field, spread })
@@ -207,6 +217,9 @@ export function normalQuantile(p: number): number {
 
 const BETA_EPS = 1e-9
 
+/** The hash uniform is [0, 1); u is clamped to [U_EPS, 1 - U_EPS] so every quantile is finite. */
+const U_EPS = 2 ** -32
+
 /**
  * Inverse-CDF sample of one spread at u in (0, 1) around the nominal value.
  * Lognormal: `nominal * 10^(sigmaDb * z / 10)` with `z = normalQuantile(u)`; sigmaDb is a
@@ -214,10 +227,13 @@ const BETA_EPS = 1e-9
  * `nominal * (1 + hi)` (lo and hi are fractions); u 0.5 returns the nominal only when the
  * bounds are symmetric, an asymmetric spread returns its median. Beta: `betaQuantile(u, a,
  * b)` with `a = nominal * trials`, `b = (1 - nominal) * trials` (a PF table spread), or the
- * stated counts (a provenance row spread, given as `successes`); the result is clamped to
- * the open interval (0, 1).
+ * stated counts under a Jeffreys prior, `a = successes + 0.5`, `b = trials - successes +
+ * 0.5` (a provenance row spread; 2 of 2 or 61 of 61 would otherwise be the constant 1);
+ * the result is clamped to the open interval (0, 1). `u` is clamped to [U_EPS, 1 - U_EPS]
+ * first, so u 0 from the hash never takes a lognormal to 0.
  */
-export function sampleSpread(nominal: number, spread: Spread, u: number): number {
+export function sampleSpread(nominal: number, spread: Spread, uRaw: number): number {
+  const u = Math.min(1 - U_EPS, Math.max(U_EPS, uRaw))
   if (spread.kind === 'lognormal') {
     return nominal * Math.pow(10, (spread.sigmaDb * normalQuantile(u)) / 10)
   }
@@ -232,34 +248,35 @@ export function sampleSpread(nominal: number, spread: Spread, u: number): number
   }
   const rowCounts = !isTableSpread(spread)
   const mean = Math.min(1 - BETA_EPS, Math.max(BETA_EPS, nominal))
-  const a = rowCounts ? spread.successes : mean * spread.trials
-  const b = rowCounts ? spread.trials - spread.successes : (1 - mean) * spread.trials
+  const a = rowCounts ? spread.successes + 0.5 : mean * spread.trials
+  const b = rowCounts ? spread.trials - spread.successes + 0.5 : (1 - mean) * spread.trials
   const x = betaQuantile(u, Math.max(a, BETA_EPS), Math.max(b, BETA_EPS))
   return Math.min(1 - BETA_EPS, Math.max(BETA_EPS, x))
 }
 
 /**
  * A beta spread from a provenance row states real counts and is used as is; the PF table
- * beta is rescaled so its mean sits at the nominal. A table spread is known by identity.
+ * beta carries `pseudo` and is rescaled so its mean sits at the nominal. The flag, not
+ * object identity, tells them apart, so a clone or a save keeps the distinction.
  */
 function isTableSpread(spread: Spread): boolean {
-  return Object.values(PF_SPREAD).some((r) => r.spread === spread)
+  return spread.kind === 'beta' && spread.pseudo === true
 }
 
+/** The parameter sampler: a uniform in [0, 1), or null to keep the field at its nominal. */
+type ParamSampler = (modelId: string, field: string) => number | null
+
 /** Draw-and-write for one library model; returns the same object when nothing changed. */
-function sampleModel(
-  model: SpecModel,
-  doctrine: FireDoctrine,
-  u: (modelId: string, field: string) => number,
-): SpecModel {
+function sampleModel(model: SpecModel, doctrine: FireDoctrine, u: ParamSampler): SpecModel {
   if (!hasSpec(model)) return model
   const fields = FIELDS_BY_KIND[model.kind] ?? []
   let next: SpecModel | null = null
   for (const field of fields) {
     const spread = spreadFor(model, field)
     if (!spread) continue
-    const nominal = nominalOf(model, field, doctrine)
-    const v = sampleSpread(nominal, spread, u(model.id, field))
+    const uv = u(model.id, field)
+    if (uv == null) continue
+    const v = sampleSpread(nominalOf(model, field, doctrine), spread, uv)
     next = next ?? cloneSpec(model)
     const spec = (next.sensor ?? next.effector ?? next.uas) as unknown as Record<string, unknown>
     spec[field] = v
@@ -295,35 +312,34 @@ function nominalOf(model: SpecModel, field: string, doctrine: FireDoctrine): num
  * result has new `library`, `connections` and `doctrine` objects and shares every other
  * reference. A field whose nominal is absent takes the engine resolver's value and the
  * sample is written into the field (a connection with no `latencyS` takes the kind default).
+ * A `null` from `u` keeps that field at its nominal: the spec field is not written and an
+ * absent `latencyS` stays absent. Only library models in use (an active entity references
+ * them) are sampled; an unused model is returned as the same object.
  */
-export function sampleScenario(
-  scenario: Scenario,
-  u: (modelId: string, field: string) => number,
-): Scenario {
+export function sampleScenario(scenario: Scenario, u: ParamSampler): Scenario {
   const doctrine = effectiveDoctrine(scenario)
-  const library = scenario.library.map((m) => sampleModel(m, doctrine, u))
+  const inUse = modelsInUse(scenario)
+  const library = scenario.library.map((m) =>
+    inUse.has(m.id) ? sampleModel(m, doctrine, u) : m,
+  )
   const kindOf = new Map(scenario.entities.map((e) => [e.id, e.kind]))
   const latency = PF_SPREAD.latencyS?.spread
   const connections: Connection[] = scenario.connections.map((c) => {
     if (!latency) return c
+    const uv = u(c.id, 'latencyS')
+    if (uv == null) return c
     const nominal =
       c.latencyS ??
       (doctrine.enabled
         ? defaultLinkLatencyS(kindOf.get(c.fromId) ?? 'sensor', kindOf.get(c.toId) ?? 'c2')
         : 0)
-    return { ...c, latencyS: sampleSpread(nominal, latency, u(c.id, 'latencyS')) }
+    return { ...c, latencyS: sampleSpread(nominal, latency, uv) }
   })
   const declare = PF_SPREAD.declareHostileS?.spread
+  const uDeclare = declare && doctrine.enabled ? u('doctrine', 'declareHostileS') : null
   const nextDoctrine: FireDoctrine =
-    declare && doctrine.enabled
-      ? {
-          ...doctrine,
-          declareHostileS: sampleSpread(
-            doctrine.declareHostileS,
-            declare,
-            u('doctrine', 'declareHostileS'),
-          ),
-        }
+    declare && uDeclare != null
+      ? { ...doctrine, declareHostileS: sampleSpread(doctrine.declareHostileS, declare, uDeclare) }
       : { ...doctrine }
   return { ...scenario, library, connections, doctrine: nextDoctrine }
 }

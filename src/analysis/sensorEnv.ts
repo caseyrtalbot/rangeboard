@@ -413,13 +413,18 @@ function ceilingM(maxAltitudeFt: number | null | undefined): number | null {
 
 export type GeometryGate = 'ok' | 'below-horizon' | 'elevation' | 'ceiling'
 
+/** Elevation gate tolerance at both edges, degrees. PF. */
+const EL_EPS_DEG = 0.001
+
 /**
  * Vertical geometry gate for one sensor against one target position.
  * Ceiling applies only when spec.maxAltitudeFt is recorded. Horizon (4/3
  * earth radio line of sight between the phase center and the target)
  * applies to radar, RF and EO/IR, never to acoustic, which needs no line
  * of sight. Elevation applies only when spec.elevationDeg is recorded and
- * tests the angle from the phase center to the target against [min, max].
+ * tests the angle from the phase center to the target against [min, max]
+ * with a 0.001 degree tolerance at both edges (PF) so a target at the mount
+ * height passes a 0 degree lower edge.
  * Heights are AGL over a flat plane, both measured from the same ground.
  */
 export function sensorGeometryGate(
@@ -435,7 +440,7 @@ export function sensorGeometryGate(
   const el = spec.elevationDeg
   if (el) {
     const angle = elevationDeg(groundM, targetAltM - sensorHeightM)
-    if (angle < el[0] || angle > el[1]) return 'elevation'
+    if (angle < el[0] - EL_EPS_DEG || angle > el[1] + EL_EPS_DEG) return 'elevation'
   }
   return 'ok'
 }

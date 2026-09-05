@@ -10,7 +10,7 @@ import { newId } from '../model/types'
 export type WidgetType =
   | 'kpi-tiles' | 'time-series' | 'system-status' | 'threat-picture'
   | 'requirement-gates' | 'event-ledger' | 'environment' | 'fire-doctrine'
-  | 'projection' | 'run-validity' | 'engagement-lanes'
+  | 'projection' | 'run-validity' | 'engagement-lanes' | 'sensitivity'
 
 /** Every widget type in catalog order. The one list a loader validates against. */
 export const WIDGET_TYPES: readonly WidgetType[] = [
@@ -25,6 +25,7 @@ export const WIDGET_TYPES: readonly WidgetType[] = [
   'projection',
   'run-validity',
   'engagement-lanes',
+  'sensitivity',
 ]
 
 /** KPI tile keys. The first six are the default tile set. */
@@ -169,6 +170,7 @@ export const BUILTIN_LENSES: LensPreset[] = [
       widget('sos-systems', 'system-status', { kind: 'all' }),
       widget('sos-doctrine', 'fire-doctrine'),
       widget('sos-gates', 'requirement-gates'),
+      widget('sos-sensitivity', 'sensitivity'),
     ],
   },
   {
@@ -179,6 +181,7 @@ export const BUILTIN_LENSES: LensPreset[] = [
       widget('th-threats', 'threat-picture', { expanded: true }),
       widget('th-series', 'time-series', { preset: 'threat' }),
       widget('th-projection', 'projection'),
+      widget('th-sensitivity', 'sensitivity'),
       widget('th-environment', 'environment'),
     ],
   },

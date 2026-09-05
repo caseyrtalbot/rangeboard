@@ -71,13 +71,30 @@ describe('seed library provenance', () => {
       for (const row of model.provenance ?? []) {
         const url = row.url ?? null
         if (row.basis === 'pf') {
-          if (url !== null) offenders.push(`${model.id} ${row.field}: pf row has a url`)
+          // A pf row may link a page when it carries a spread: the source gives the
+          // trial counts behind the spread, not the nominal value.
+          if (url !== null && row.spread == null) {
+            offenders.push(`${model.id} ${row.field}: pf row has a url and no spread`)
+          }
         } else if (!url?.startsWith('http')) {
           offenders.push(`${model.id} ${row.field}: ${row.basis} row has no url`)
         }
       }
     }
     expect(offenders).toEqual([])
+  })
+
+  it('the two sourced kill probabilities carry their stated trial counts', () => {
+    const rows = ['lib-stinger', 'lib-leonidas'].map((id) => {
+      const model = SEED_LIBRARY.find((m) => m.id === id)
+      return model?.provenance?.find((row) => row.field === 'pk')
+    })
+    expect(rows.map((row) => row?.spread)).toEqual([
+      { kind: 'beta', successes: 2, trials: 2 },
+      { kind: 'beta', successes: 61, trials: 61 },
+    ])
+    // No pseudo flag: these are stated trials, not the PF table pseudo-counts.
+    expect(rows.map((row) => row?.basis)).toEqual(['pf', 'pf'])
   })
 
   it('no model answers one field twice', () => {

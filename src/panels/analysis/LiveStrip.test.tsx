@@ -60,6 +60,16 @@ describe('LiveStrip mode chip', () => {
     expect(el).toContain('MC 100 · 40/100')
   })
 
+  it('names the total uncertainty in the chip, its title and the meta', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo', uncertainty: 'total' })
+    const el = chip(render())
+    expect(el).toContain('MC 100 · total · seed 4821')
+    expect(el).toContain('Monte Carlo, 100 replicates, seed 4821, total uncertainty')
+    expect(render()).toContain(
+      '<span class="chip-meta">estimate · 100 replicates · total</span>',
+    )
+  })
+
   it('warns when the configuration changed since the replicates ran', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     setMc({ status: 'stale', progress: 100, total: 100 })

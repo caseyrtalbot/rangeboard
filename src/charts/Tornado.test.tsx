@@ -25,7 +25,7 @@ describe('Tornado static markup', () => {
 
   it('cuts the gutter label to the budget and keeps the tag', () => {
     expect(html).toContain('detectRangeM')
-    expect(html).toContain('engageTimeSe…')
+    expect(html).toContain('engageTimeS…')
     expect(html).not.toContain('engageTimeSeconds')
     expect(html).toContain('<foreignObject')
     expect(html).toContain('<b>PF</b>')

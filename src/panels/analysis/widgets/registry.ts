@@ -8,6 +8,7 @@ import { KpiTilesWidget } from './KpiTilesWidget'
 import { ProjectionWidget } from './ProjectionWidget'
 import { RequirementGatesWidget } from './RequirementGatesWidget'
 import { RunValidityWidget } from './RunValidityWidget'
+import { SensitivityWidget } from './SensitivityWidget'
 import { SystemStatusWidget } from './SystemStatusWidget'
 import { ThreatPictureWidget } from './ThreatPictureWidget'
 import { TimeSeriesWidget } from './TimeSeriesWidget'
@@ -36,4 +37,5 @@ export const WIDGETS: Record<WidgetType, { label: string; component: ComponentTy
   projection: { label: 'Full-run projection', component: ProjectionWidget },
   'run-validity': { label: 'Run validity', component: RunValidityWidget },
   'engagement-lanes': { label: 'Engagement lanes', component: EngagementLanesWidget },
+  sensitivity: { label: 'Sensitivity', component: SensitivityWidget },
 }

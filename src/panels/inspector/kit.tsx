@@ -15,6 +15,8 @@
 import type { ReactNode } from 'react'
 import type { SpecModel } from '../../model/types'
 import { basisFor } from '../../model/types'
+import { spreadFor } from '../../analysis/uncertainty'
+import { spreadText } from './spreadText'
 
 /** Semantic state of an object or a measurement. Drives colour, nothing else. */
 export type StatusTone = 'nominal' | 'warning' | 'critical' | 'inactive'
@@ -96,10 +98,21 @@ export function Row({
   )
 }
 
+/** The spread part of a tag title: the resolved spread, or a pinned row. */
+function spreadTitle(model: SpecModel | undefined, field: string): string {
+  if (!model) return ''
+  const spread = spreadFor(model, field)
+  if (spread) return ` · spread ${spreadText(spread)}`
+  const row = model.provenance?.find((p) => p.field === field)
+  return row?.spread === null ? ' · pinned' : ''
+}
+
 /**
  * The provenance tag of one spec field. A planning factor reads PF; a
  * datasheet or reference row reads SRC with its basis, source and date. An
- * absent value, or no model at all, is always PF.
+ * absent value, or no model at all, is always PF. Either title names the
+ * field's spread, or says the row is pinned, so a total-uncertainty run is
+ * readable from the tag.
  */
 export function PfTag({
   model,
@@ -111,15 +124,16 @@ export function PfTag({
   absent?: boolean
 }) {
   const row = model?.provenance?.find((p) => p.field === field)
+  const spread = spreadTitle(model, field)
   if (absent || !model || basisFor(model, field) === 'pf' || !row) {
     return (
-      <span className="pf" title="planning factor">
+      <span className="pf" title={`planning factor${spread}`}>
         PF
       </span>
     )
   }
   return (
-    <span className="pf src" title={`${row.basis} · ${row.source} · ${row.date}`}>
+    <span className="pf src" title={`${row.basis} · ${row.source} · ${row.date}${spread}`}>
       SRC
     </span>
   )

@@ -224,8 +224,9 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('doctrine', effectiveDoctrine(scenario).enabled)
   add('kinetic-pk', aimed.length > 0)
   add('flyout', kinetic.some((e) => (e.flyoutSpeedMps ?? 0) > 0))
-  add('draw-policy', runSettings(scenario).runMode === 'monte-carlo')
-  // parameter-spread stays out until the uncertainty setting exists.
+  const run = runSettings(scenario)
+  add('draw-policy', run.runMode === 'monte-carlo')
+  add('parameter-spread', run.runMode === 'monte-carlo' && run.uncertainty === 'total')
   return out
 }
 

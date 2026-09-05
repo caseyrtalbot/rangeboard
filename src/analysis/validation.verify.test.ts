@@ -146,11 +146,9 @@ describe('Blighter A400 free-space table (BSS-1311, read 2026-09-04)', () => {
       headingDeg: 180,
       color: null,
       notes: '',
-      // MOUNT_HEIGHT_M / FT_TO_M * FT_TO_M rounds to 3.9999999999999996 m,
-      // a negative elevation the seed's [0, 30] deg gate rejects. One ulp
-      // up puts the threat 9e-16 m above the phase center: elevation 0+,
-      // and hypot(2730, 9e-16) is exactly 2730, so slant equals ground.
-      altitudeFt: (MOUNT_HEIGHT_M / FT_TO_M) * (1 + Number.EPSILON),
+      // The target flies at the phase center height, so slant equals
+      // ground range and the elevation is 0 inside the gate tolerance.
+      altitudeFt: MOUNT_HEIGHT_M / FT_TO_M,
     }
     const path: FlightPath = {
       id: 'val-path',

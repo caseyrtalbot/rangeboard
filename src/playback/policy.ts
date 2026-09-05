@@ -3,12 +3,12 @@ import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../model/types'
 import { hashU01, idHash } from '../geometry/prng'
 import { stepIndex } from './sim'
 
-/** Draw kinds, one integer per engine draw point; `param` is reserved for wave 3. */
+/** Draw kinds, one integer per engine draw point. */
 export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5 } as const
 export type DrawKind = keyof typeof DRAW_KIND
 
 /**
- * The engine's four probabilistic outcomes, resolved by one policy per run.
+ * The engine's five probabilistic outcomes, resolved by one policy per run.
  * The deterministic policy keeps the expected-value arithmetic; the Monte
  * Carlo policy draws each outcome from a counter key built from the id, time
  * and index arguments, so the same draw point gives the same value whatever
@@ -21,9 +21,9 @@ export interface DrawPolicy {
    */
   detect(pd: number, sensorId: string, uasId: string, tS: number, memberIdx: number): boolean
   /**
-   * Salvo outcome. salvoIdx: the count of salvos this effector committed
-   * before this one. Deterministic: returns pk as mass. MC: 0 or 1. tS is
-   * unused by both.
+   * Salvo outcome. salvoIdx: salvos this effector committed at this ship
+   * before this one, every channel together: the kill draw key.
+   * Deterministic: returns pk as mass. MC: 0 or 1. tS is unused by both.
    */
   kill(
     pk: number,
@@ -37,6 +37,8 @@ export interface DrawPolicy {
   jam(p: number, effectorId: string, uasId: string, tS: number): number
   /** Scan phase as a fraction of the period, in [0, 1). Deterministic: 0. MC: one uniform. */
   phase(sensorId: string): number
+  /** Parameter sample for one uncertain field, a uniform in [0, 1). Deterministic: 0.5. */
+  param(modelId: string, field: string): number
 }
 
 /**
@@ -57,6 +59,7 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
     kill: (pk) => pk,
     jam: (p) => p,
     phase: () => 0,
+    param: () => 0.5,
   }
 }
 
@@ -90,5 +93,6 @@ export function monteCarloPolicy(
     jam: (p, effectorId, uasId, tS) =>
       u(DRAW_KIND.jam, effectorId, h(uasId), 0, stepIndex(tS)) < p ? 1 : 0,
     phase: (sensorId) => u(DRAW_KIND.phase, sensorId, 0, 0, 0),
+    param: (modelId, field) => u(DRAW_KIND.param, modelId, h(field), 0, 0),
   }
 }

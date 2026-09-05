@@ -49,8 +49,13 @@ import {
 import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
 // Types only: a value import of mcRun.ts would close the cycle
 // mcRun -> series -> impact -> attrition -> sim -> store.
-import type { McSummary, McWorkerMessage } from '../playback/mcRun'
-import { cancelMcRun, startMcRun } from '../playback/mcClient'
+import type {
+  McSensitivityMessage,
+  McSummary,
+  McWorkerMessage,
+  SensitivitySummary,
+} from '../playback/mcRun'
+import { cancelMcRun, cancelSensitivity, startMcRun, startSensitivity } from '../playback/mcClient'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -253,6 +258,29 @@ export interface PlaybackState {
 /** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */
 export type McStatus = 'idle' | 'running' | 'done' | 'stale' | 'error'
 
+/** Lifecycle of the sensitivity run behind the Sensitivity widget. */
+interface SensitivityState {
+  runId: string | null
+  status: McStatus
+  /** Uncertain fields done, and the total. */
+  progress: number
+  total: number
+  summary: SensitivitySummary | null
+  basisSignature: string | null
+  error: string | null
+}
+
+/** The sensitivity slice before any run. */
+export const IDLE_SENSITIVITY: SensitivityState = {
+  runId: null,
+  status: 'idle',
+  progress: 0,
+  total: 0,
+  summary: null,
+  basisSignature: null,
+  error: null,
+}
+
 export interface McState {
   /** playback.runId the summary belongs to; null while idle. */
   runId: string | null
@@ -264,6 +292,8 @@ export interface McState {
   /** analysisBasisSignature of the scenario the summary was computed on. */
   basisSignature: string | null
   error: string | null
+  /** The sensitivity run, on its own worker and its own lifecycle. */
+  sensitivity: SensitivityState
 }
 
 /** The Monte Carlo slice before any run: no summary, no signature, no error. */
@@ -275,6 +305,7 @@ export const IDLE_MC: McState = {
   summary: null,
   basisSignature: null,
   error: null,
+  sensitivity: IDLE_SENSITIVITY,
 }
 
 export interface Store {
@@ -442,6 +473,10 @@ export interface Store {
   runMonteCarlo: () => void
   /** Worker message sink; a message whose runId is not mc.runId is ignored. */
   mcMessage: (m: McWorkerMessage) => void
+  /** Launch the sensitivity run for the current scenario and run id (cancels an older one). */
+  runSensitivity: () => void
+  /** Sensitivity worker message sink; a message from another run is ignored. */
+  sensitivityMessage: (m: McSensitivityMessage) => void
 }
 
 
@@ -651,13 +686,23 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
 /**
  * The replicates describe the board they ran on. A configuration change makes
  * them stale: the worker is stopped and the summary is kept for reference, but
- * it is no longer the current answer. Bands read `status === 'done'` only.
+ * it is no longer the current answer. Bands read `status === 'done'` only. The
+ * sensitivity run carries its own signature, so each side goes stale on its own.
  */
 function mcForScenarioChange(mc: McState, next: Scenario): McState {
-  if (mc.status !== 'running' && mc.status !== 'done') return mc
-  if (mc.basisSignature === analysisBasisSignature(next)) return mc
-  cancelMcRun()
-  return { ...mc, status: 'stale' }
+  const live = (status: McStatus): boolean => status === 'running' || status === 'done'
+  if (!live(mc.status) && !live(mc.sensitivity.status)) return mc
+  const signature = analysisBasisSignature(next)
+  const mcStale = live(mc.status) && mc.basisSignature !== signature
+  const sensStale = live(mc.sensitivity.status) && mc.sensitivity.basisSignature !== signature
+  if (!mcStale && !sensStale) return mc
+  if (mcStale) cancelMcRun()
+  if (sensStale) cancelSensitivity()
+  return {
+    ...mc,
+    status: mcStale ? 'stale' : mc.status,
+    sensitivity: sensStale ? { ...mc.sensitivity, status: 'stale' } : mc.sensitivity,
+  }
 }
 
 /**
@@ -963,6 +1008,7 @@ export const useStore = create<Store>()((set, get) => {
       const ringOverrides = pruneRingOverrides(current, s)
       if (ringOverrides !== current) writeRingOverrides(ringOverrides)
       cancelMcRun()
+      cancelSensitivity()
       set((st) => ({
         scenario: s,
         past: [],
@@ -2061,6 +2107,7 @@ export const useStore = create<Store>()((set, get) => {
 
     resetRun: (reason = 'manual') => {
       cancelMcRun()
+      cancelSensitivity()
       set((st) => {
         const runSeq = reason === 'manual' ? st.playback.runSeq + 1 : st.playback.runSeq
         if (reason === 'manual') writeRunSeq(runSeq)
@@ -2088,6 +2135,8 @@ export const useStore = create<Store>()((set, get) => {
           summary: null,
           basisSignature,
           error: ok ? null : 'Web Worker unavailable',
+          // The sensitivity run has its own worker and its own lifecycle.
+          sensitivity: st.mc.sensitivity,
         },
       })
     },
@@ -2113,6 +2162,59 @@ export const useStore = create<Store>()((set, get) => {
           }
         }
         return { mc: { ...st.mc, status: 'error', error: m.message } }
+      }),
+
+    runSensitivity: () => {
+      const st = get()
+      if (runSettings(st.scenario).runMode === 'deterministic') return
+      const runId = st.playback.runId
+      const ok = startSensitivity(st.scenario, runId, (m) => get().sensitivityMessage(m))
+      set({
+        mc: {
+          ...st.mc,
+          sensitivity: {
+            runId,
+            status: ok ? 'running' : 'error',
+            progress: 0,
+            // The field count arrives with the first progress message: a value
+            // import of uncertainFields would pull attrition.ts into the store.
+            total: 0,
+            summary: null,
+            basisSignature: analysisBasisSignature(st.scenario),
+            error: ok ? null : 'Web Worker unavailable',
+          },
+        },
+      })
+    },
+
+    sensitivityMessage: (m) =>
+      set((st) => {
+        const sens = st.mc.sensitivity
+        // A message from a cancelled or superseded run describes another board.
+        if (m.runId !== sens.runId || sens.status === 'stale') return st
+        if (m.type === 'sens-progress') {
+          return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
+        }
+        if (m.type === 'sens-done') {
+          // A run with no progress message (one field, or none) has no total yet.
+          const total = sens.total > 0 ? sens.total : m.summary.rows.length
+          return {
+            mc: {
+              ...st.mc,
+              sensitivity: {
+                ...sens,
+                status: 'done',
+                summary: m.summary,
+                progress: total,
+                total,
+                error: null,
+              },
+            },
+          }
+        }
+        return {
+          mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } },
+        }
       }),
 
   }

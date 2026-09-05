@@ -11,7 +11,7 @@ import type {
 } from '../model/types'
 import { runSettings } from '../model/types'
 import type { AttritionReport } from '../playback/attrition'
-import type { McSummary, Stat } from '../playback/mcRun'
+import type { McSummary, SensitivitySummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {
   aarExportObject,
@@ -284,12 +284,77 @@ describe('run export Monte Carlo basis', () => {
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 
+  it('records the uncertainty mode and the sampled fields under total', () => {
+    const scenario = emptyScenario()
+    scenario.runMode = 'monte-carlo'
+    scenario.uncertainty = 'total'
+    const out = runExportObject(
+      scenario,
+      runMeta(),
+      [],
+      emptyAttrition(),
+      sampleSummary(),
+      mcSummary(),
+    )
+    expect(out.dataBasis.uncertainty).toBe('total')
+    expect(out.sampledFields?.length).toBeGreaterThan(0)
+    // Every sampled field names its model and carries the spread that was drawn.
+    for (const field of out.sampledFields ?? []) {
+      expect(field.modelId.length).toBeGreaterThan(0)
+      expect(field.spread.kind.length).toBeGreaterThan(0)
+    }
+    expect(out.models.map((m) => m.id)).toContain('parameter-spread')
+  })
+
+  it('records the aleatory mode with no sampled field list', () => {
+    const scenario = emptyScenario()
+    scenario.runMode = 'monte-carlo'
+    const out = runExportObject(
+      scenario,
+      runMeta(),
+      [],
+      emptyAttrition(),
+      sampleSummary(),
+      mcSummary(),
+    )
+    expect(out.dataBasis.uncertainty).toBe('aleatory')
+    expect('sampledFields' in out).toBe(false)
+    expect(out.models.map((m) => m.id)).not.toContain('parameter-spread')
+  })
+
+  it('carries the sensitivity rows when a sensitivity run is passed', () => {
+    const scenario = emptyScenario()
+    scenario.runMode = 'monte-carlo'
+    const sensitivity: SensitivitySummary = {
+      stat: 'leakers',
+      rows: [{ modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1 }],
+      nominal: 1.5,
+      replicates: 20,
+      seed: 4821,
+      elapsedMs: 30,
+    }
+    const out = runExportObject(
+      scenario,
+      runMeta(),
+      [],
+      emptyAttrition(),
+      sampleSummary(),
+      mcSummary(),
+      sensitivity,
+    )
+    expect(out.sensitivity).toBe(sensitivity)
+    expect(JSON.parse(JSON.stringify(out))).toEqual(out)
+  })
+
   it('keeps the deterministic basis and no mcSummary key without a summary', () => {
     const out = runExportObject(emptyScenario(), runMeta(), [], emptyAttrition(), sampleSummary())
     expect(out.dataBasis.kind).toBe('deterministic-planning-model')
     expect(out.dataBasis.semantics).toBe('planning-envelope')
     expect('seed' in out.dataBasis).toBe(false)
     expect('mcSummary' in out).toBe(false)
+    expect('uncertainty' in out.dataBasis).toBe(false)
+    expect('sampledFields' in out).toBe(false)
+    expect('sensitivity' in out).toBe(false)
   })
 })
 
@@ -323,12 +388,14 @@ describe('run settings load fill', () => {
     delete s.runMode
     delete s.seed
     delete s.replicates
+    delete s.uncertainty
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
     expect(runSettings(out)).toEqual({
       runMode: 'deterministic',
       seed: 4821,
       replicates: 100,
       targetHalfWidth: null,
+      uncertainty: 'aleatory',
     })
     expect(out.schemaVersion).toBe(1)
   })

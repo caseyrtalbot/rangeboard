@@ -105,6 +105,19 @@ describe('modelsUsed', () => {
     expect(ids).toContain('draw-policy')
     expect(ids).toEqual((Object.keys(MODEL_TAGS) as ModelId[]).filter((id) => ids.includes(id)))
   })
+
+  it('adds the parameter spread under the total uncertainty mode only', () => {
+    const s = radarLaydown()
+    s.runMode = 'monte-carlo'
+    s.uncertainty = 'total'
+    expect(modelsUsed(s).map((t) => t.id)).toContain('parameter-spread')
+    s.uncertainty = 'aleatory'
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('parameter-spread')
+    // The mode is a scenario fact; a deterministic run draws no parameter.
+    s.runMode = 'deterministic'
+    s.uncertainty = 'total'
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('parameter-spread')
+  })
 })
 
 describe('modelsForEntity', () => {

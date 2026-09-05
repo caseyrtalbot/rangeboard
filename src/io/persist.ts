@@ -5,16 +5,19 @@ import type {
   RaidPlan,
   Scenario,
   SpecModel,
+  UncertaintyMode,
 } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attrition'
-import type { McSummary } from '../playback/mcRun'
+import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import type { ModelTag } from '../analysis/fidelity'
 import { modelsUsed } from '../analysis/fidelity'
 import type { RequirementGateReport } from '../analysis/requirements'
 import { buildRequirementGateReport } from '../analysis/requirements'
 import type { RunValidityAssessment } from '../analysis/runValidity'
 import { assessRunValidity } from '../analysis/runValidity'
+import type { UncertainField } from '../analysis/uncertainty'
+import { uncertainFields } from '../analysis/uncertainty'
 import { specFields, runSettings } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
@@ -255,6 +258,8 @@ export interface RunExport {
     replicates?: number
     /** Monte Carlo only: why the replicate loop ended. */
     stopped?: McSummary['stopped']
+    /** Monte Carlo only: draw noise alone, or parameter spreads too. */
+    uncertainty?: UncertaintyMode
   }
   /**
    * Whether the run can carry the evidence it looks like it carries, and
@@ -272,6 +277,10 @@ export interface RunExport {
   summary: AarSummary
   /** The replicate summary, present only for a Monte Carlo run. */
   mcSummary?: McSummary
+  /** Every field the replicates sampled; a Monte Carlo run under total uncertainty only. */
+  sampledFields?: UncertainField[]
+  /** The sensitivity rows, present when a sensitivity run finished for this run. */
+  sensitivity?: SensitivitySummary
 }
 
 /** Pure builder for tests and alternate storage targets. */
@@ -282,6 +291,7 @@ export function runExportObject(
   attrition: AttritionReport,
   summary: AarSummary,
   mc: McSummary | null = null,
+  sensitivity: SensitivitySummary | null = null,
 ): RunExport {
   // A package with no replicate summary carries deterministic numbers, so its
   // validity and its model list read the envelope even under a Monte Carlo
@@ -303,6 +313,7 @@ export function runExportObject(
           seed: mc.seed,
           replicates: mc.replicates,
           stopped: mc.stopped,
+          uncertainty: runSettings(scenario).uncertainty,
         }
       : {
           kind: 'deterministic-planning-model',
@@ -321,6 +332,12 @@ export function runExportObject(
     summary,
   }
   if (mc) out.mcSummary = mc
+  // The sampled field list is what a total-uncertainty replicate drew, so it
+  // reads the scenario the run settings name, never the sampled copy.
+  if (mc && runSettings(scenario).uncertainty === 'total') {
+    out.sampledFields = uncertainFields(scenario)
+  }
+  if (sensitivity) out.sensitivity = sensitivity
   return out
 }
 
@@ -331,9 +348,10 @@ export function exportRunRecord(
   attrition: AttritionReport,
   summary: AarSummary,
   mc: McSummary | null = null,
+  sensitivity: SensitivitySummary | null = null,
 ): void {
   downloadJson(
-    runExportObject(scenario, run, assessments, attrition, summary, mc),
+    runExportObject(scenario, run, assessments, attrition, summary, mc, sensitivity),
     `${safeName(scenario.name)}.${run.label.toLowerCase()}.run.json`,
   )
 }

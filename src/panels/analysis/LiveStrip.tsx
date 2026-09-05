@@ -4,7 +4,7 @@ import { scenarioDurationS, formatRunLabel, useStore } from '../../state/store'
 import { engagementPicture } from '../../analysis/impact'
 import { buildLiveTimeline } from '../../analysis/liveStats'
 import { formatTime } from '../../geometry/geo'
-import type { RunMode } from '../../model/types'
+import type { RunMode, UncertaintyMode } from '../../model/types'
 import { runSettings } from '../../model/types'
 import { resetAnalysisRun } from '../../playback/runSession'
 import { Field, Seg, useSimTimeStep } from './widgets/controls'
@@ -12,6 +12,12 @@ import { Field, Seg, useSimTimeStep } from './widgets/controls'
 const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
   { v: 'deterministic', label: 'Deterministic' },
   { v: 'monte-carlo', label: 'Monte Carlo' },
+]
+
+/** Aleatory: the draw noise only. Total: one parameter sample per replicate too. */
+const UNCERTAINTY_OPTIONS: Array<{ v: UncertaintyMode; label: string }> = [
+  { v: 'aleatory', label: 'Aleatory' },
+  { v: 'total', label: 'Total' },
 ]
 
 /** Replicate count bounds of the popover input. */
@@ -26,7 +32,8 @@ const MAX_SEED = 4294967295
 function chipMeta(run: ReturnType<typeof runSettings>, mc: McState): string {
   if (run.runMode === 'deterministic') return 'envelope · Pd threshold'
   const done = mc.status === 'done' ? mc.summary : null
-  return `estimate · ${done?.replicates ?? run.replicates} replicates`
+  const base = `estimate · ${done?.replicates ?? run.replicates} replicates`
+  return run.uncertainty === 'total' ? `${base} · total` : base
 }
 
 /** The mode chip: class, text, title and the basis meta beside it. */
@@ -45,9 +52,12 @@ function modeChip(
   if (run.runMode === 'deterministic') {
     return { cls: 'chip det', text: 'DET', title: 'Deterministic expected-value run' }
   }
-  const head = `MC ${run.replicates}`
+  const total = run.uncertainty === 'total'
+  const head = total ? `MC ${run.replicates} · total` : `MC ${run.replicates}`
   const seeded = `${head} · seed ${run.seed}`
-  const basis = `Monte Carlo, ${run.replicates} replicates, seed ${run.seed}`
+  const basis = `Monte Carlo, ${run.replicates} replicates, seed ${run.seed}${
+    total ? ', total uncertainty' : ''
+  }`
   switch (mc.status) {
     case 'running':
       return {
@@ -155,7 +165,10 @@ function DecimalInput({
   )
 }
 
-/** The run mode popover: mode, seed, replicate count, target half-width and the run button. */
+/**
+ * The run mode popover: mode, uncertainty mode, seed, replicate count, target
+ * half-width and the run button. Every control writes a scenario fact.
+ */
 function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McState }) {
   const patchScenario = useStore((s) => s.patchScenario)
   const deterministic = run.runMode === 'deterministic'
@@ -168,6 +181,14 @@ function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McSta
         onChange={(v) => patchScenario({ runMode: v })}
         dataRole="run-mode"
       />
+      <Field label="Uncertainty">
+        <Seg
+          value={run.uncertainty}
+          options={UNCERTAINTY_OPTIONS}
+          onChange={(v) => patchScenario({ uncertainty: v })}
+          dataRole="uncertainty"
+        />
+      </Field>
       <Field label="Seed">
         <IntInput
           value={run.seed}

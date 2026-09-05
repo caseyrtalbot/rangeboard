@@ -23,13 +23,14 @@ export interface TornadoProps {
 }
 
 /**
- * The gutter holds a field name such as `detectRangeM`: 13 characters of 10 px mono at
- * about 6 px each from a 2 px inset, then the tag. A longer label is cut to the budget
- * with an ellipsis rather than clipped by the SVG edge.
+ * The gutter holds a field name such as `detectRangeM`: 12 characters of 10 px mono at
+ * about 6 px each from a 2 px inset, then the tag (a PF chip needs about 24 px, an SRC
+ * chip about 32 px). A longer label is cut to the budget with an ellipsis rather than
+ * clipped by the SVG edge.
  */
-const GUTTER_W = 96
-const LABEL_CHARS = 13
-const TAG_X = 78
+const GUTTER_W = 110
+const LABEL_CHARS = 12
+const TAG_X = 76
 const TAG_H = 12
 /** Reserve at each end of the scale for the numeric end value in 10 px mono. */
 const VALUE_W = 34

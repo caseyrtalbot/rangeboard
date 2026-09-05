@@ -26,6 +26,44 @@ describe('LibraryEditor sources', () => {
     expect(html).not.toContain('src-add')
   })
 
+  it('reads the spread of every source row of a builtin model', () => {
+    useStore.getState().select({ libraryId: 'lib-giraffe1x' })
+    const html = render()
+    expect(html).toContain('<th>Spread</th>')
+    // detectRangeM takes the PF table lognormal; updateRateS carries no spread.
+    expect(html).toContain('<td class="mono">±3 dB</td>')
+    expect(html).toContain('<td class="mono">none</td>')
+  })
+
+  it('reads a pinned row and a triangular spread on a custom model', () => {
+    const id = useStore.getState().addModel('effector')
+    useStore.getState().updateModel(id, {
+      provenance: [
+        {
+          field: 'pk',
+          value: '0.7',
+          source: 'a test report',
+          url: null,
+          date: '2026-09-04',
+          basis: 'pf',
+          spread: null,
+        },
+        {
+          field: 'engageTimeS',
+          value: '3 s',
+          source: 'a maker page',
+          url: 'https://example.test/x',
+          date: '2026-09-04',
+          basis: 'datasheet',
+        },
+      ],
+    })
+    useStore.getState().select({ libraryId: id })
+    const html = render()
+    expect(html).toContain('<td class="mono">pinned</td>')
+    expect(html).toContain('<td class="mono">-20% to +30%</td>')
+  })
+
   it('edits the flyout speed of an effector model', () => {
     useStore.getState().select({ libraryId: 'lib-skyranger30' })
     const html = render()

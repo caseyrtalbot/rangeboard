@@ -1715,6 +1715,7 @@ describe('slice 1: one draw per scan', () => {
       kill: (pk) => pk,
       jam: (x) => x,
       phase: () => 0,
+      param: () => 0.5,
     }
     return p
   }

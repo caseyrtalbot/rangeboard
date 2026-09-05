@@ -2010,31 +2010,41 @@ p.muted.small {
   font-family: var(--font-mono);
 }
 
-/* Sources table. Five short columns in a 320 px panel, plus a remove column
-   on a custom model. The field key, the value and the date are machine data;
-   the source name is prose, so it leaves the table monospace and wraps
-   instead of clipping to nothing. */
+/* Sources table. Six short columns in a 320 px panel (Field, Value, Basis,
+   Spread, Source, Date), plus a remove column on a custom model. The field
+   key, the value, the spread and the date are machine data; the source name
+   is prose, so it leaves the table monospace and wraps instead of clipping to
+   nothing. The five fixed columns hold 74 percent, so Source keeps about the
+   width it had before the Spread column. */
 .src-tb {
   font-size: 10.5px;
 }
 
 .tb.src-tb th:nth-child(1) {
-  width: 22%;
-}
-
-.tb.src-tb th:nth-child(2) {
-  width: 18%;
-}
-
-.tb.src-tb th:nth-child(3) {
-  width: 12%;
-}
-
-.tb.src-tb th:nth-child(5) {
   width: 20%;
 }
 
+.tb.src-tb th:nth-child(2) {
+  width: 13%;
+}
+
+.tb.src-tb th:nth-child(3) {
+  width: 11%;
+}
+
+.tb.src-tb th:nth-child(4) {
+  width: 15%;
+}
+
+.tb.src-tb th:nth-child(5) {
+  width: auto;
+}
+
 .tb.src-tb th:nth-child(6) {
+  width: 15%;
+}
+
+.tb.src-tb th:nth-child(7) {
   width: var(--space-5);
 }
 
@@ -2049,7 +2059,15 @@ p.muted.small {
   font-family: var(--font-mono);
 }
 
+/* The spread is short machine data, but "17 of 20 (pseudo)" is wider than the
+   column at a 320 px panel. It wraps at the spaces instead of clipping, so no
+   count is lost. */
 .src-tb td:nth-child(4) {
+  overflow-wrap: normal;
+  white-space: normal;
+}
+
+.src-tb td:nth-child(5) {
   overflow-wrap: anywhere;
   white-space: normal;
 }

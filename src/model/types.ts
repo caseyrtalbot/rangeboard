@@ -378,7 +378,12 @@ export interface ThreatProfile {
 export type Spread =
   | { kind: 'lognormal'; sigmaDb: number }
   | { kind: 'triangular'; lo: number; hi: number }
-  | { kind: 'beta'; successes: number; trials: number }
+  /**
+   * `pseudo` marks the PF table beta: `trials` is a pseudo-count and the
+   * sampler rescales the mean to the field's nominal. Absent, the counts
+   * are stated trials from a source and are used as they stand.
+   */
+  | { kind: 'beta'; successes: number; trials: number; pseudo?: true }
 
 /** One provenance row. `field` is the SensorSpec / UasSpec / EffectorSpec key it covers. */
 export interface Provenance {
@@ -935,6 +940,13 @@ export const DEFAULT_REQUIREMENT_THRESHOLDS: RequirementThresholds = {
 /** Engine run mode: expected-value arithmetic, or seeded replicate draws. */
 export type RunMode = 'deterministic' | 'monte-carlo'
 
+/**
+ * What a replicate run varies: the engine draws only (`aleatory`), or the
+ * engine draws plus one parameter sample per replicate from every spread
+ * (`total`). Read through `runSettings`; absent on old saves = aleatory.
+ */
+export type UncertaintyMode = 'aleatory' | 'total'
+
 /** Seed of a fresh scenario. Fixed so an old save refilled by fillScenario keeps one seed. */
 export const DEFAULT_SEED = 4821
 
@@ -964,6 +976,8 @@ export interface Scenario {
    * is under this. Null or absent: run every replicate.
    */
   targetHalfWidth?: number | null
+  /** Replicate uncertainty mode. Absent on old saves = aleatory. */
+  uncertainty?: UncertaintyMode
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
 
@@ -991,12 +1005,13 @@ export interface Scenario {
   geoRef: GeoRef | null
 }
 
-/** The one reader of the three run fields with their defaults applied. */
+/** The one reader of the run fields with their defaults applied. */
 export function runSettings(s: Scenario): {
   runMode: RunMode
   seed: number
   replicates: number
   targetHalfWidth: number | null
+  uncertainty: UncertaintyMode
 } {
   const seed = s.seed
   const reps = s.replicates
@@ -1007,6 +1022,7 @@ export function runSettings(s: Scenario): {
     replicates:
       Number.isInteger(reps) && (reps as number) >= 1 ? (reps as number) : DEFAULT_REPLICATES,
     targetHalfWidth: typeof half === 'number' && Number.isFinite(half) && half > 0 ? half : null,
+    uncertainty: s.uncertainty === 'total' ? 'total' : 'aleatory',
   }
 }
 

@@ -4,7 +4,7 @@
  * the run finished and it belongs to the run id on the playhead; a stale,
  * running or idle slice reads as no summary.
  */
-import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
+import type { BandSeries, McSummary, SensitivitySummary, Stat } from '../../../playback/mcRun'
 import { STAT_CONF } from '../../../playback/mcRun'
 import { DT } from '../../../playback/sim'
 import type { McState } from '../../../state/store'
@@ -12,6 +12,12 @@ import type { McState } from '../../../state/store'
 /** The summary of a finished run for `runId`, else null. */
 export function currentSummary(mc: McState, runId: string): McSummary | null {
   return mc.status === 'done' && mc.runId === runId ? mc.summary : null
+}
+
+/** The summary of a finished sensitivity run for `runId`, else null. Same rule. */
+export function currentSensitivity(mc: McState, runId: string): SensitivitySummary | null {
+  const sens = mc.sensitivity
+  return sens.status === 'done' && sens.runId === runId ? sens.summary : null
 }
 
 /** A count: an integer when integral, else one decimal. */

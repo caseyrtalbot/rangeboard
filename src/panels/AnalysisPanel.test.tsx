@@ -98,7 +98,7 @@ describe('AnalysisPanel lenses', () => {
     const html = render()
     const add = html.slice(html.indexOf('class="add"'), html.indexOf('class="save"'))
     expect(html).toContain('Add widget')
-    expect(add.match(/<button/g)?.length).toBe(11)
+    expect(add.match(/<button/g)?.length).toBe(12)
     expect(html).toContain('Save as preset')
 
     useStore.getState().setAnalysisCustomize(false)

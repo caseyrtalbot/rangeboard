@@ -633,7 +633,10 @@ interface PendingEffect {
   effectorId: string
   target: ThreatState
   shipIdx: number
-  /** Salvos this effector committed before this one, every channel together: the kill draw key. */
+  /**
+   * Salvos this effector committed at this ship before this one, every
+   * channel together: the kill draw key.
+   */
   salvoIdx: number
   /** Geometry Pk evaluated at tEffect (position, falloff, size, evasion). */
   pk: number
@@ -789,6 +792,8 @@ export function resolveEngagements(
   }
 
   const events: EngagementEvent[] = []
+  // Salvos per (effector, threat, ship), every channel: the kill draw key.
+  const salvoCounts = new Map<string, number>()
 
   // Salvos in flight. Applied in tEffect order so a jam that takes hold
   // before a kill shot arrives degrades that kill (see attrition.test.ts).
@@ -885,8 +890,11 @@ export function resolveEngagements(
     capped: boolean,
   ) => {
     const softShot = !isHardKill(es.spec.effectorType)
-    // Read before the channel counter below increments: the kill draw key.
-    const salvoIdx = es.shotsFired + es.deSalvos + es.jamSalvos
+    // The kill draw key: this effector's salvos at this ship so far, so an
+    // added threat never shifts the key of a shot at another one.
+    const salvoKey = `${es.entity.id}:${target.a.uasId}:${shipIdx}`
+    const salvoIdx = salvoCounts.get(salvoKey) ?? 0
+    salvoCounts.set(salvoKey, salvoIdx + 1)
     const event: EngagementEvent = {
       tS: t,
       tEffectS: tEffect,

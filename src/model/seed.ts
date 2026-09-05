@@ -47,6 +47,7 @@ export function emptyScenario(): Scenario {
     seed: DEFAULT_SEED,
     replicates: DEFAULT_REPLICATES,
     targetHalfWidth: null,
+    uncertainty: 'aleatory',
     environment: defaultEnvironment(),
 
     roe: 'tight',

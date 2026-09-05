@@ -3,6 +3,7 @@ import { emptyScenario } from '../model/seed'
 import type { Entity, Scenario, SpecModel } from '../model/types'
 import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
+import { betaQuantile } from '../te/calc/stats'
 import {
   PF_SPREAD,
   normalQuantile,
@@ -72,10 +73,12 @@ function scenario(library: SpecModel[]): Scenario {
   return {
     ...emptyScenario(),
     library,
+    // One active entity per model, so every library model passed is in use.
     entities: [
       ent('s1', 'sensor', RADAR.id),
       ent('c1', 'c2', null),
       ent('e1', 'effector', INTERCEPTOR.id),
+      ent('u1', 'uas', UAS.id),
     ],
     connections: [
       { id: 'k1', fromId: 's1', toId: 'c1', label: '' },
@@ -112,8 +115,10 @@ describe('sampleSpread', () => {
     const tri = { kind: 'triangular', lo: -0.2, hi: 0.3 } as const
     // Mode fraction is 0.2 / 0.5 = 0.4, so the median sits above the mode.
     expect(sampleSpread(10, tri, 0.5)).toBeGreaterThan(10)
-    expect(sampleSpread(10, tri, 0)).toBeCloseTo(8, 12)
-    expect(sampleSpread(10, tri, 1)).toBeCloseTo(13, 12)
+    // u clamps to 2^-32 = 2.3e-10: the u 0 sample is 8 + sqrt(2.3e-10 * 5 * 2)
+    // = 8 + 4.8e-5 and the u 1 sample 13 - sqrt(2.3e-10 * 5 * 3) = 13 - 5.9e-5.
+    expect(Math.abs(sampleSpread(10, tri, 0) - 8)).toBeLessThan(1e-4)
+    expect(Math.abs(sampleSpread(10, tri, 1) - 13)).toBeLessThan(1e-4)
   })
 
   it('lognormal at z 1 for 3 dB is nominal times 10^0.3', () => {
@@ -122,10 +127,27 @@ describe('sampleSpread', () => {
     expect(Math.abs(v - 1000 * Math.pow(10, 0.3))).toBeLessThan(1e-6)
   })
 
-  it('a row beta uses the stated counts as is', () => {
-    // Beta(9, 1): median 0.5^(1/9) = 0.9259...; a table beta at 0.9 would give a different value.
-    const v = sampleSpread(0.9, { kind: 'beta', successes: 9, trials: 10 }, 0.5)
-    expect(v).toBeCloseTo(Math.pow(0.5, 1 / 9), 9)
+  it('clamps u at the hash range ends: u 0 and u 1 give finite positive samples', () => {
+    // hashU01 is [0, 1); an unclamped u 0 takes normalQuantile(0) = -Infinity.
+    const six = { kind: 'lognormal', sigmaDb: 6 } as const
+    expect(Number.isFinite(sampleSpread(1, six, 0))).toBe(true)
+    expect(sampleSpread(1, six, 0)).toBeGreaterThan(0)
+    expect(Number.isFinite(sampleSpread(1, six, 1))).toBe(true)
+  })
+
+  it('a row beta uses the stated counts under a Jeffreys prior', () => {
+    // 2 of 2: Beta(2.5, 0.5), the stated counts plus 0.5 each side; the
+    // nominal plays no part in a row beta.
+    const two = sampleSpread(0.7, { kind: 'beta', successes: 2, trials: 2 }, 0.5)
+    expect(two).toBeCloseTo(betaQuantile(0.5, 2.5, 0.5), 9)
+    // 61 of 61: Beta(61.5, 0.5). Without the prior b is 0 and the sample is
+    // the constant 1. Under the prior the mass sits near 1 but spreads: the
+    // mean is 61.5 / 62 = 0.992 and the lower tail reaches down, so p10 is
+    // under 1 and, with a = 61.5 pulling the mass up, above 0.9.
+    const many = sampleSpread(0.7, { kind: 'beta', successes: 61, trials: 61 }, 0.1)
+    expect(many).toBeLessThan(1)
+    expect(many).toBeGreaterThan(0.9)
+    expect(many).toBeCloseTo(betaQuantile(0.1, 61.5, 0.5), 9)
   })
 })
 
@@ -181,7 +203,51 @@ describe('uncertainFields', () => {
   })
 })
 
+describe('models in use', () => {
+  it('an unused library model contributes no field and is the same object after sampling', () => {
+    const s = scenario([RADAR, INTERCEPTOR, UAS])
+    s.entities = s.entities.filter((e) => e.id !== 'u1')
+    expect(uncertainFields(s).some((f) => f.modelId === UAS.id)).toBe(false)
+    expect(uncertainFields(s).some((f) => f.modelId === RADAR.id)).toBe(true)
+    const out = sampleScenario(s, () => 0.9)
+    expect(out.library[2]).toBe(UAS)
+    expect(out.library[0]).not.toBe(RADAR)
+  })
+
+  it('a disabled entity leaves its model unused', () => {
+    const s = scenario([RADAR, INTERCEPTOR, UAS])
+    s.entities = s.entities.map((e) => (e.id === 'u1' ? { ...e, enabled: false } : e))
+    expect(uncertainFields(s).some((f) => f.modelId === UAS.id)).toBe(false)
+    expect(sampleScenario(s, () => 0.9).library[2]).toBe(UAS)
+  })
+})
+
 describe('sampleScenario', () => {
+  it('a null sample keeps every field at its nominal', () => {
+    const s = scenario([RADAR, INTERCEPTOR, UAS])
+    const out = sampleScenario(s, () => null)
+    expect(out.library).not.toBe(s.library)
+    expect(out.connections).not.toBe(s.connections)
+    expect(out.doctrine).not.toBe(s.doctrine)
+    expect(out.library.map((m) => m.sensor ?? m.effector ?? m.uas)).toEqual(
+      s.library.map((m) => m.sensor ?? m.effector ?? m.uas))
+    // An absent latency stays absent; a stated one keeps its value.
+    expect(out.connections[0].latencyS).toBeUndefined()
+    expect(out.connections[1].latencyS).toBe(6)
+    expect(out.doctrine).toEqual(s.doctrine)
+  })
+
+  it('samples one field and keeps the rest nominal', () => {
+    const s = scenario([RADAR, INTERCEPTOR, UAS])
+    const out = sampleScenario(s, (m, f) => (m === UAS.id && f === 'rcsM2' ? 0.9 : null))
+    expect(out.library[2].uas?.rcsM2).toBeCloseTo(
+      sampleSpread(0.2, PF_SPREAD.rcsM2.spread, 0.9), 9)
+    expect(out.library[0].sensor).toEqual(RADAR.sensor)
+    expect(out.library[1].effector).toEqual(INTERCEPTOR.effector)
+    expect(out.connections[0].latencyS).toBeUndefined()
+    expect(out.doctrine).toEqual(s.doctrine)
+  })
+
   it('changes only the listed fields, writes resolver values, and never mutates the input', () => {
     const s = scenario([RADAR, INTERCEPTOR, UAS])
     const before = JSON.parse(JSON.stringify(s))

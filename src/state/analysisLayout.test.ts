@@ -52,6 +52,36 @@ describe('builtin lenses', () => {
     }
   })
 
+  it('places the sensitivity widget in the threat and system-of-systems lenses', () => {
+    const threat = BUILTIN_LENSES.find((p) => p.id === 'threat')!
+    expect(threat.widgets.map((w) => w.id)).toEqual([
+      'th-threats',
+      'th-series',
+      'th-projection',
+      'th-sensitivity',
+      'th-environment',
+    ])
+    const iads = BUILTIN_LENSES.find((p) => p.id === 'iads')!
+    expect(iads.widgets.map((w) => w.id)).toEqual([
+      'sos-kpi',
+      'sos-lanes',
+      'sos-systems',
+      'sos-doctrine',
+      'sos-gates',
+      'sos-sensitivity',
+    ])
+    for (const id of ['th-sensitivity', 'sos-sensitivity']) {
+      const all = BUILTIN_LENSES.flatMap((p) => p.widgets)
+      expect(all.find((w) => w.id === id)?.type).toBe('sensitivity')
+    }
+  })
+
+  it('lists sensitivity last in the widget catalog and gives it no params', () => {
+    expect(WIDGET_TYPES[WIDGET_TYPES.length - 1]).toBe('sensitivity')
+    expect(new Set(WIDGET_TYPES).size).toBe(WIDGET_TYPES.length)
+    expect(defaultWidgetParams('sensitivity')).toEqual({})
+  })
+
   it('opens on run-summary with the six default tiles', () => {
     const view = defaultAnalysisView()
     expect(view.layout.presetId).toBe('run-summary')

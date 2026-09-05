@@ -33,11 +33,19 @@ describe('Inspector provenance tags', () => {
     const html = render()
     const tag = /<span class="pf src" title="([^"]*)"/.exec(html)
     expect(tag).not.toBeNull()
-    expect(tag![1]).toMatch(/^(datasheet|reference) · .+ · \d{4}-\d{2}-\d{2}$/)
+    expect(tag![1]).toMatch(
+      /^(datasheet|reference) · .+ · \d{4}-\d{2}-\d{2}( · spread .+)?$/,
+    )
   })
 
   it('marks an unsourced field PF', () => {
     expect(render()).toContain('<span class="pf" title="planning factor">')
+  })
+
+  it('names the field spread in the tag title', () => {
+    const html = render()
+    // The Giraffe 1X detection range is sourced and takes the 3 dB PF spread.
+    expect(html).toMatch(/<span class="pf src" title="[^"]* · spread ±3 dB"/)
   })
 })
 
@@ -48,14 +56,15 @@ describe('Inspector effector and threat tags', () => {
     const wez = html.slice(html.indexOf('WEZ'), html.indexOf('Engagement time'))
     expect(wez).toContain('class="pf src"')
     const pk = html.slice(html.indexOf('Single-shot Pk'), html.indexOf('Magazine'))
-    expect(pk).toContain('<span class="pf" title="planning factor">')
+    // A Pk with no row takes the PF table beta, so the title names its pseudo-counts.
+    expect(pk).toContain('<span class="pf" title="planning factor · spread 17 of 20 (pseudo)">')
   })
 
   it('tags the threat radar cross section row', () => {
     selectFromModel('lib-mavic3')
     const html = render()
     const rcs = html.slice(html.indexOf('Radar cross section'), html.indexOf('Fluctuation model'))
-    expect(rcs).toContain('<span class="pf" title="planning factor">')
+    expect(rcs).toContain('<span class="pf" title="planning factor · spread ±6 dB">')
   })
 })
 
