@@ -19,8 +19,10 @@ localStorage persistence. Offline installation and field durability are planned 
 5. [Ownership findings](docs/field-te/OWNERSHIP_FINDINGS.md) and
    [backlog triage](docs/field-te/BACKLOG_TRIAGE.md): evidence and inherited task routing.
 
-Historical plans and research are classified in AGENTS.md. Source and tests determine
-implemented behavior; an old plan or accepted decision is not proof of completion.
+The [document index](docs/README.md) separates current guidance, verified evidence and
+historical reference. Read the [engineering reference](docs/ENGINEERING_REFERENCE.md) for
+module contracts and the [verification guide](docs/VERIFICATION.md) for browser procedures.
+Source and tests determine implemented behavior; an old plan or accepted decision is not proof of completion.
 
 ## Local development
 

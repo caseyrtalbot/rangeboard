@@ -14,8 +14,11 @@ untracked `.claude/launch.json` is preserved as an unowned change.
 
 Casey requested the fresh orchestrator packet `/private/tmp/caseytalbot-rangeboard-parallel-handoff.md`.
 Three workers owned C2 result consumers, C3 persistence, and E1 new evidence dossiers.
-The parent integrated shared export changes after C3 relinquished persistence. Briefs and
-exclusive ownership are in [the wave packet](wave-c2-c3-e1/OWNERSHIP.md). R-D-28 to R-D-30
+The parent integrated shared export changes after C3 relinquished persistence. The retained
+[C2 record](wave-c2-c3-e1/C2_RESULT.md), [C3 record](wave-c2-c3-e1/C3_RESULT.md), and
+[independent review](wave-c2-c3-e1/INDEPENDENT_REVIEW.md) record the completed work.
+Expired dispatch briefs were removed during the subsequent documentation hygiene pass;
+the original packet remains in git at `66db3ad`. R-D-28 to R-D-30
 record selection and bounded decisions; R-F-25/R-F-26 close for this verified scope.
 
 C2 aligns result means with their own intervals, units, denominator and horizon. Percentage

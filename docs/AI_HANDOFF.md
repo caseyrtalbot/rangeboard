@@ -1,7 +1,8 @@
 # RangeBoard: current engineering handoff
 
 Status: CURRENT TRANSFER RECORD, 2026-09-05. C2/C3/E1 wave verified and published.
-Casey authorized commit, push and next-agent handoff on 2026-09-05. Stop before C4.
+The documentation hygiene and Astra-focused AGENTS.md are recorded in this commit.
+Casey authorized committing the cleanup; it has not been pushed. Stop before C4.
 
 Marks: `[V]` source/test/tool verified; `[D]` user direction/documented intent;
 `[I]` reasoned implication; `[U]` unresolved. Read [AGENTS.md](../AGENTS.md), this record,
@@ -15,9 +16,10 @@ C3 (R-F-26), E1 evidence, followed by serial integration, independent review and
 This superseded the prior C1-only stop for those scopes only. R-D-28 to R-D-30 record choices.
 
 [V] Branch `analysis-hardening`. C2/C3/E1 implementation `798380d787f12b5cea729aefcd9570b3f51c3f0c`
-is published to `origin/analysis-hardening` (remote hash checked on 2026-09-05); this
-publication-record commit follows it. C1 `002684c` and its record `d8a76f1` remain published.
-No branch, stash, dependency, schema/storage key, draw-key or physics change.
+is published to `origin/analysis-hardening` (remote hash checked on 2026-09-05).
+This documentation commit follows publication record `66db3ad`; C1 `002684c` and its
+record `d8a76f1` remain published. The cleanup changes no source, dependency,
+schema/storage key, draw-key or physics.
 [V] Incoming modified `CLAUDE.md` and four untracked data-engine mockup/build files were
 preserved by SHA-256 check. A later untracked `.claude/launch.json` appeared during final
 QA; this task did not create/edit it and leaves it unowned and untouched. Do not stage,
@@ -26,6 +28,17 @@ changes are identified by the [completion record](field-te/WAVE_C2_C3_E1_COMPLET
 [evidence manifest](field-te/evidence/wave-c2-c3-e1-2026-09-05/manifest.json). Recheck live status.
 
 ## 2. Completed and verified
+
+[V] Documentation hygiene: two superseded handoffs and five completed dispatch files removed;
+originals remain in git at `66db3ad`. [Document index](README.md) routes current versus
+historical material. [AGENTS.md](../AGENTS.md) is the concise Astra contract; its detailed
+technical rules remain in [the engineering reference](ENGINEERING_REFERENCE.md), and browser
+procedures in [the verification guide](VERIFICATION.md). Source and captured evidence are
+unchanged. Hygiene verification: 277 local Markdown file links and seven heading/line
+anchors resolve; all 219 prior register rows and preserved hashes match. Type-check,
+1,327 tests in 76 files, lint (74 existing warnings, zero errors), build (existing chunk
+warning) and schema drift check pass. No browser rerun was needed for this docs-only change.
+M-12 records this cleanup; C4 has not started.
 
 [V] C2: matching estimates/mean intervals/percentage denominators; quantile versus mean-CI
 labels; conditional time and no-statistic basis/definedness; deterministic requirement gates
