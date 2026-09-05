@@ -3,8 +3,8 @@
 ## Revision
 
 `analysis-hardening` at the commit that carries this file; `main` fast-forwarded to it on
-2026-09-05 (wave 1 boundary), moves at each wave boundary. Remote verified equal after each
-push. Tree clean except untracked `.claude/`. Contributor: Claude Fable under [AGENTS.md](../AGENTS.md).
+2026-09-05, moves at each wave boundary. Remote verified equal after each push. Tree clean
+except untracked `.claude/`. Contributor: Claude Fable under [AGENTS.md](../AGENTS.md).
 
 ## Verified
 
@@ -14,15 +14,14 @@ push. Tree clean except untracked `.claude/`. Contributor: Claude Fable under [A
   (`evidence/rf31-budget-2026-09-05/parity-after.log`).
 - R-F-31 done: 3.2 ms per replicate on the firing fixture, 100 ms on Merops, page crash at
   384 million retained numbers; `DEFAULT_BUDGET`, checkpoint generators, store cancel
-  actions; browser cancel answered in 261 ms. R-F-20 fixture
-  `src/playback/__fixtures__/detection-outside-rings.json`: no ring violation, detection at
-  250.5 s, four events, MC kills 0.9, browser-confirmed.
+  actions; browser cancel in 261 ms. R-F-20 fixture `src/playback/__fixtures__/detection-outside-rings.json`:
+  no ring violation, detection at 250.5 s, four events, MC kills 0.9, browser-confirmed.
 
 ## Next
 
 1. Wave 2 engine track, serial, parity-gated on the r1-leaf baseline: extract from `store.ts`
-   (2,257 lines), `sim.ts` (1,503) and `attrition.ts` (1,313) per PLAN section 4, contracts
-   tested first; then move panel callers off the store re-exports (`store.ts` lines 77 to 78).
+   (2,257 lines), `sim.ts` (1,503), `attrition.ts` (1,313) per PLAN section 4, contracts
+   tested first; then move panel callers off the store re-exports (`store.ts` 77 to 78).
 2. Wave 2 design track beside it on disjoint panel paths: design steps 2, 3, 4 in series.
 3. Wave 3: E2 one model at a time from R-F-30; E3 studies beside it, E3 source changes after.
 4. Wave 4: design steps 6 (cancel control on the new actions), 7 (R-F-20 blocked-route row),
@@ -38,5 +37,4 @@ retained numbers, ten minutes); Archivo and JetBrains Mono fetched as open-licen
 
 ## Open findings
 
-R-F-20 blocked-route row (design step 7). R-F-30 jam geometry. R-F-33 raw-horizon
-subscriptions and Recharts rebuilds at 5x and above. R-F-34 per-node canvas memo.
+R-F-20 blocked-route row (step 7). R-F-30 jam geometry. R-F-33 raw-horizon subscriptions. R-F-34 canvas memo.
