@@ -27,8 +27,8 @@ push. Tree clean except untracked `.claude/`. Contributor: Claude Fable under [A
 3. Wave 3: E2 one model at a time from R-F-30; E3 studies beside it, E3 source changes after.
 4. Wave 4: design steps 6 (cancel control on the new actions), 7 (R-F-20 blocked-route row),
    9, 10, 13 on disjoint panel paths; then 8 (carries R-F-33), 11, 12; then 14 with R-F-34.
-5. Wave 5: T1 as a static offline bundle for Chrome on macOS; then A1 against R-D-33.
-   The 74 lint warnings fold into the slices that own `src/te/ui`, `src/charts`, the widgets.
+5. Wave 5: T1 as a static offline bundle for Chrome on macOS, then A1 against R-D-33. The 74
+   lint warnings fold into the slices that own `src/te/ui`, `src/charts` and the widgets.
 
 ## Inputs Casey holds
 
@@ -38,6 +38,5 @@ retained numbers, ten minutes); Archivo and JetBrains Mono fetched as open-licen
 
 ## Open findings
 
-R-F-20 blocked-route presentation (design step 7). R-F-30 jam geometry. R-F-33 raw-horizon
-subscriptions in `ThreatPictureWidget`, `DebriefRecord`; Recharts rebuilds at 5x and above.
-R-F-34 per-node canvas memo.
+R-F-20 blocked-route row (design step 7). R-F-30 jam geometry. R-F-33 raw-horizon
+subscriptions and Recharts rebuilds at 5x and above. R-F-34 per-node canvas memo.
