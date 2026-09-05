@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity } from '../model/types'
-import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attrition'
-import type { DetectionHit, SensorObservation, ThreatAssessment } from '../playback/sim'
+import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attritionReport'
+import type { SensorObservation, ThreatAssessment } from '../playback/sim'
+import type { DetectionHit } from '../playback/detection'
 import { systemTelemetryAt } from './systemTelemetry'
 
 function entity(id: string, kind: Entity['kind'], specId: string, systemId?: string): Entity {

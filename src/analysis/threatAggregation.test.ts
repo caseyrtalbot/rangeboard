@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, FlightPath } from '../model/types'
-import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attrition'
+import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
 import { expectedDeadTimes, threatPictureAt, trackQualityAt } from './threatAggregation'
 

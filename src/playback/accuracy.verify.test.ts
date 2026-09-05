@@ -13,7 +13,8 @@ import type {
 } from '../model/types'
 import { MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
-import { distanceFalloff, resolveEngagements } from './attrition'
+import { resolveEngagements } from './attrition'
+import { distanceFalloff } from './pk'
 import { assessAllThreats } from './sim'
 import { buildAarSummary } from '../analysis/aar'
 

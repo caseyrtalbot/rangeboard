@@ -6,7 +6,7 @@
  * the one table they read, so a ring name is written once.
  */
 
-import type { RingKey } from '../state/store'
+import type { RingKey } from '../state/rings'
 
 /** Short name of each ring. Every ring control shows this text. */
 export const RING_LABELS: Record<RingKey, string> = {

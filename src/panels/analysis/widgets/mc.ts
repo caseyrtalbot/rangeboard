@@ -6,8 +6,8 @@
  */
 import type { BandSeries, McSummary, SensitivitySummary, Stat } from '../../../playback/mcRun'
 import { STAT_CONF } from '../../../playback/mcRun'
-import { DT } from '../../../playback/sim'
-import type { McState } from '../../../state/store'
+import { DT } from '../../../playback/clock'
+import type { McState } from '../../../state/runState'
 
 /** The summary of a finished run for `runId`, else null. */
 export function currentSummary(mc: McState, runId: string): McSummary | null {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { RING_KEYS, useStore } from '../state/store'
+import { useStore } from '../state/store'
+import { RING_KEYS } from '../state/rings'
 import { toggleAnalysisRun } from '../playback/runSession'
 import type { Tool } from '../state/store'
 import { RING_LABELS } from './ringLabels'

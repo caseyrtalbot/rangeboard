@@ -76,15 +76,6 @@ import {
   startSensitivity,
 } from '../playback/mcClient'
 
-// Preserve the public entrypoints used by panel and canvas consumers.
-export { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
-export { SENSOR_RING_KEYS, EFFECTOR_RING_KEYS, RING_KEYS } from './rings'
-export type { RingKey, RingOverrides } from './rings'
-export type { LayerKey, LayerPreset } from './layers'
-export { ringVisible } from './layers'
-export type { McState, RunPhase } from './runState'
-export { IDLE_MC, IDLE_SENSITIVITY } from './runState'
-export { defaultFrameName, formatRunLabel } from './labels'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_FIRE_DOCTRINE } from '../../model/types'
 import type { UasSpec } from '../../model/types'
-import { distanceFalloff, falloffRangeM, kineticPk } from '../../playback/attrition'
-import { RING_KEYS } from '../../state/store'
+import { distanceFalloff, falloffRangeM, kineticPk } from '../../playback/pk'
+import { RING_KEYS } from '../../state/rings'
 import {
   COMMIT_DASH,
   DETECT_DASH,

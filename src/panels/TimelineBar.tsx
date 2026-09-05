@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { defaultFrameName, formatRunLabel, useStore } from '../state/store'
+import { useStore } from '../state/store'
+import { defaultFrameName, formatRunLabel } from '../state/labels'
 import {
   selectDurationS,
   selectFrames,

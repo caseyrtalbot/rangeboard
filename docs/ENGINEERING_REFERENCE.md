@@ -67,7 +67,8 @@ Breaking one of these breaks the app.
 - **Module cycles:** `model/scenario.ts` owns `modelFor`, `pathSpeed` and
   `scenarioDurationS`; engine and validation consumers import that leaf directly.
   `state/rings.ts` owns shared ring keys/types, so `viewState.ts` has no runtime store
-  dependency. `store.ts` re-exports these public symbols for existing UI consumers.
+  dependency. Panels and canvas import every leaf directly; `store.ts`, `sim.ts` and
+  `attrition.ts` carry no re-exports (Wave 2, 2026-09-05).
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
   `attrition.ts`; worker execution stays behind `mcClient.ts`. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.

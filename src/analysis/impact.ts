@@ -3,7 +3,7 @@ import { entityActive } from '../model/types'
 import { defaultEffectRadiusM, defaultWeaponProfile } from '../model/weaponFactors'
 import type { ThreatAssessment } from '../playback/sim'
 import { assessAllThreats } from '../playback/sim'
-import type { AttritionReport } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
 import { resolveEngagements } from '../playback/attrition'
 
 /**

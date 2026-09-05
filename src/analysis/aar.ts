@@ -6,7 +6,7 @@ import type {
   Scenario,
 } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
-import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
+import type { AttritionReport, ThreatAttrition } from '../playback/attritionReport'
 import type { LeakerImpact } from './impact'
 
 /**

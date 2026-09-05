@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AttritionReport } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
 import { mcdaParts, mcdaScore, WARNING_FULL_S } from './mcda'
 

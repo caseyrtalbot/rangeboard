@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, FlightPath, Scenario, SpecModel, UasSpec, Vec2 } from '../model/types'
 import { assessAllThreats } from '../playback/sim'
-import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
+import type { AttritionReport, ThreatAttrition } from '../playback/attritionReport'
 import { resolveEngagements } from '../playback/attrition'
 import {
   assessLeakerImpacts,

@@ -16,7 +16,8 @@ import { mOfN, rangeForPd } from '../analysis/radarPd'
 import { resolveEngagements } from './attrition'
 import { runReplicates } from './mcRun'
 import { monteCarloPolicy } from './policy'
-import { assessAllThreats, stepIndex } from './sim'
+import { assessAllThreats } from './sim'
+import { stepIndex } from './clock'
 
 /**
  * CLOSED-FORM CONVERGENCE of the replicate engine (engine refactor slice 2).

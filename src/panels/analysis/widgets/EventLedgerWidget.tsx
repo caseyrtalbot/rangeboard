@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatTime } from '../../../geometry/geo'
 import type { Scenario } from '../../../model/types'
-import type { AttritionReport } from '../../../playback/attrition'
+import type { AttritionReport } from '../../../playback/attritionReport'
 import { useStore } from '../../../state/store'
 import { CHANNEL_LABEL, CHANNEL_SHORT } from '../../headlines'
 import { useEngagement, useRunCursor } from './controls'

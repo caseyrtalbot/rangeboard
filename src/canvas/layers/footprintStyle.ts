@@ -1,7 +1,7 @@
 import type { SensorHoldGate } from '../../analysis/sensorEnv'
 import type { FireDoctrine, UasSpec } from '../../model/types'
-import type { RingKey } from '../../state/store'
-import { falloffRangeM, kineticPk } from '../../playback/attrition'
+import type { RingKey } from '../../state/rings'
+import { falloffRangeM, kineticPk } from '../../playback/pk'
 
 /**
  * One style source for every ring the board draws. Each ring is either a

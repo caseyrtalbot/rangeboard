@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../../../model/seed'
 import { DEFAULT_FIRE_DOCTRINE } from '../../../model/types'
 import type { SensitivitySummary } from '../../../playback/mcRun'
-import { IDLE_SENSITIVITY, useStore } from '../../../state/store'
+import { useStore } from '../../../state/store'
+import { IDLE_SENSITIVITY } from '../../../state/runState'
 import { SensitivityWidget } from './SensitivityWidget'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,

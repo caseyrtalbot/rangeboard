@@ -1,5 +1,5 @@
 import type { Scenario } from '../../model/types'
-import type { AttritionReport } from '../../playback/attrition'
+import type { AttritionReport } from '../../playback/attritionReport'
 import type { McSummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
 import { formatTime } from '../../geometry/geo'

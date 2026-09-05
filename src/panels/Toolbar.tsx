@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { defaultFrameName, useStore } from '../state/store'
+import { useStore } from '../state/store'
+import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
 import { ViewMenu } from './ViewMenu'

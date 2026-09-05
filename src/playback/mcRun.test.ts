@@ -16,12 +16,14 @@ import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import * as uncertainty from '../analysis/uncertainty'
 import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
 import { betaQuantile } from '../te/calc/stats'
-import { FALLOFF_AT_MAX, resolveEngagements } from './attrition'
+import { resolveEngagements } from './attrition'
+import { FALLOFF_AT_MAX } from './pk'
 import { replicateLoop, runReplicates, runSensitivity, sensitivityLoop, summaryNumbers } from './mcRun'
 import type { BandSeries, ExecutionBudget, McSummary } from './mcRun'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy, monteCarloPolicy } from './policy'
-import { assessAllThreats, DT } from './sim'
+import { assessAllThreats } from './sim'
+import { DT } from './clock'
 
 // The module keeps its real behavior; the spy shows whether the loop called it.
 vi.mock('../analysis/uncertainty', { spy: true })

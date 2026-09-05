@@ -1,11 +1,8 @@
 import type { AarEffectorShots, AarSummary, EnvironmentSpec } from '../model/types'
 import type { ImpactSeverity } from '../analysis/impact'
 import type { ThreatAssessment } from '../playback/sim'
-import type {
-  AttritionTotals,
-  ExpenditureChannel,
-  ThreatAttrition,
-} from '../playback/attrition'
+import type { ExpenditureChannel } from '../playback/pk'
+import type { AttritionTotals, ThreatAttrition } from '../playback/attritionReport'
 import { formatSpeed, formatTime } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
 

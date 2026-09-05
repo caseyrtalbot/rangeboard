@@ -1,6 +1,6 @@
 import type { RequirementThresholds, Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive } from '../model/types'
-import type { AttritionReport, ThreatAttrition } from '../playback/attrition'
+import type { AttritionReport, ThreatAttrition } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
 import { formatTime } from '../geometry/geo'
 import type { RunValidityAssessment, RunValidityFinding } from './runValidity'

@@ -26,8 +26,11 @@ import {
   ShortcutList,
 } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
-import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS, useStore, modelFor } from '../state/store'
-import type { RaidDraft, RingKey } from '../state/store'
+import { useStore } from '../state/store'
+import { modelFor } from '../model/scenario'
+import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
+import type { RaidDraft } from '../state/store'
+import type { RingKey } from '../state/rings'
 import { RING_HINTS, RING_LABELS } from './ringLabels'
 import { formatDistance, formatSpeed, pathLength } from '../geometry/geo'
 import { evaluateIntegration, integrationSummary } from '../model/integration'
@@ -51,17 +54,14 @@ import {
   trackInitSFor,
 } from '../analysis/doctrineFactors'
 import { GATE_WORD } from '../canvas/layers/footprintStyle'
-import {
-  DEFAULT_PK,
-  EVASION_PENALTY,
-  FLYOUT_SPEED_FACTOR,
-  SIZE_PENALTY,
-} from '../playback/attrition'
+import { DEFAULT_PK, EVASION_PENALTY, SIZE_PENALTY } from '../playback/pk'
+import { FLYOUT_SPEED_FACTOR } from '../playback/intercept'
 import type { SensorSpec, SpecModel } from '../model/types'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
-import { DEFAULT_DEFENDED_RADIUS_M, threatAltitudeFt } from '../playback/sim'
+import { DEFAULT_DEFENDED_RADIUS_M } from '../playback/sim'
+import { threatAltitudeFt } from '../playback/tracks'
 import { THREAT_TACTICS } from '../playback/tactics'
 
 const FORMATION_SHAPES: FormationShape[] = ['line', 'wedge', 'column', 'echelon', 'cluster']

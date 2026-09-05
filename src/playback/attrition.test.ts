@@ -4,15 +4,9 @@ import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '
 import { MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { posAtTime } from '../geometry/geo'
-import {
-  distanceFalloff,
-  expenditureChannel,
-  FLYOUT_SPEED_FACTOR,
-  isHardKill,
-  resolveEngagements,
-  SHIP_DEAD_BELOW,
-  timeOfFlightS,
-} from './attrition'
+import { resolveEngagements } from './attrition'
+import { distanceFalloff, expenditureChannel, isHardKill, SHIP_DEAD_BELOW } from './pk'
+import { FLYOUT_SPEED_FACTOR, timeOfFlightS } from './intercept'
 import { assessAllThreats } from './sim'
 
 /**

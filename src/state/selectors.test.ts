@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import { DT } from '../playback/sim'
+import { DT } from '../playback/clock'
 import {
   durationOf,
   selectDurationS,

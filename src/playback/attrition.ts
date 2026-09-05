@@ -32,38 +32,6 @@ import type {
 } from './attritionReport'
 import type { EffectorState, JamHold, PendingEffect, ShipState, ThreatState } from './sweepState'
 import { EPS, interceptAt, intervalIndexAt, launchPolicyReleases, membersAtTime } from './intercept'
-
-// Every attrition entrypoint stays resolvable from attrition.ts for the panels and the canvas.
-export {
-  CONTINUE_TRACK_DEGRADE,
-  DEFAULT_PK,
-  DEFAULT_SALVO_COOLDOWN_S,
-  distanceFalloff,
-  EVASION_PENALTY,
-  expenditureChannel,
-  FALLOFF_AT_MAX,
-  falloffRangeM,
-  isHardKill,
-  kineticPk,
-  SHIP_DEAD_BELOW,
-  SIZE_PENALTY,
-} from './pk'
-export type { ExpenditureChannel } from './pk'
-export type {
-  AttritionReport,
-  AttritionTotals,
-  EffectorAttrition,
-  EngagementEvent,
-  ThreatAttrition,
-} from './attritionReport'
-export type { EffectorState, ThreatState } from './sweepState'
-export {
-  FLYOUT_SPEED_FACTOR,
-  interceptAt,
-  intervalIndexAt,
-  launchPolicyReleases,
-  timeOfFlightS,
-} from './intercept'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
 import { effectivePathDelayS } from './raid'

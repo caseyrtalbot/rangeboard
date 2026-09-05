@@ -10,7 +10,7 @@ import {
   withBands,
 } from '../../../analysis/series'
 import type { Scenario } from '../../../model/types'
-import { DT } from '../../../playback/sim'
+import { DT } from '../../../playback/clock'
 import type { ThreatAssessment } from '../../../playback/sim'
 import type { TimeSeriesPreset } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'

@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { scenarioDurationS, useStore } from '../../state/store'
+import { useStore } from '../../state/store'
+import { scenarioDurationS } from '../../model/scenario'
 import { selectSimTimeS } from '../../state/selectors'
 import type { ImpactSeverity, Scenario } from '../../model/types'
 import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'

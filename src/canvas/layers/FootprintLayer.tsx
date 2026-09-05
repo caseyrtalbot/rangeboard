@@ -8,7 +8,9 @@ import {
   mountHeightOf,
 } from '../../model/types'
 import type { UiState } from '../../state/store'
-import { modelFor, ringVisible, useStore } from '../../state/store'
+import { useStore } from '../../state/store'
+import { modelFor } from '../../model/scenario'
+import { ringVisible } from '../../state/layers'
 import { destination, formatDistance, wedgePoints } from '../../geometry/geo'
 import { groundRangeM } from '../../geometry/slant'
 import {
@@ -21,9 +23,10 @@ import {
 } from '../../analysis/sensorEnv'
 import { commitPkFor } from '../../analysis/doctrineFactors'
 import { effectiveJamRangeM } from '../../analysis/ewPhysics'
-import { DEFAULT_PK } from '../../playback/attrition'
-import { defendedRadiusOf, threatAltitudeFt } from '../../playback/sim'
-import type { DetectionHit } from '../../playback/sim'
+import { DEFAULT_PK } from '../../playback/pk'
+import { defendedRadiusOf } from '../../playback/sim'
+import { threatAltitudeFt } from '../../playback/tracks'
+import type { DetectionHit } from '../../playback/detection'
 import { LABEL_FONT_PX } from '../labelLayout'
 import type { EnvelopeBand } from './footprintStyle'
 import {

@@ -1,6 +1,6 @@
 import type { McdaVector } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
-import type { AttritionReport } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
 
 /**
  * Weighted single-value configuration score, after the COURAGEOUS project

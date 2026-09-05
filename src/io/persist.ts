@@ -8,7 +8,7 @@ import type {
   UncertaintyMode,
 } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
-import type { AttritionReport } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import type { ModelTag } from '../analysis/fidelity'
 import { modelsUsed } from '../analysis/fidelity'

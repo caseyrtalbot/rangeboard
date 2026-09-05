@@ -12,7 +12,7 @@ import {
   type TooltipContentProps,
 } from 'recharts'
 import { formatTime } from '../geometry/geo'
-import { DT } from '../playback/sim'
+import { DT } from '../playback/clock'
 import { ChartFrame, useChartTokens } from './ChartFrame'
 import { timeTicks } from './timeAxis'
 import { resolveColor, type ChartTokens } from './tokens'

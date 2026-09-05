@@ -10,7 +10,7 @@ import type {
   SpecModel,
 } from '../model/types'
 import { runSettings } from '../model/types'
-import type { AttritionReport } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {

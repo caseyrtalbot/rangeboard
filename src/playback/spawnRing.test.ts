@@ -6,7 +6,8 @@ import { fillScenario } from '../io/persist'
 import { assessRunValidity } from '../analysis/runValidity'
 import { resolveEngagements } from './attrition'
 import { runReplicates } from './mcRun'
-import { assessAllThreats, spawnInRingViolations } from './sim'
+import { assessAllThreats } from './sim'
+import { spawnInRingViolations } from './detection'
 
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { threatPictureAt } from '../../../analysis/threatAggregation'
 import { formatTime } from '../../../geometry/geo'
-import { detectionsAt } from '../../../playback/sim'
+import { detectionsAt } from '../../../playback/detection'
 import { useStore } from '../../../state/store'
 import { ThreatPicture } from '../ThreatPicture'
 import { useEngagement, useRunCursor } from './controls'

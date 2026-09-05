@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EntityKind } from '../model/types'
 import { entityActive } from '../model/types'
-import type { LayerKey, LayerPreset, RingKey } from '../state/store'
-import {
-  EFFECTOR_RING_KEYS,
-  SENSOR_RING_KEYS,
-  modelFor,
-  ringVisible,
-  useStore,
-} from '../state/store'
+import type { RingKey } from '../state/rings'
+import type { LayerKey, LayerPreset } from '../state/layers'
+import { useStore } from '../state/store'
+import { modelFor } from '../model/scenario'
+import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
+import { ringVisible } from '../state/layers'
 import { RING_LABELS } from '../panels/ringLabels'
 
 const MODEL_GROUPS: { kind: EntityKind; title: string }[] = [

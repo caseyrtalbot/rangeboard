@@ -1,8 +1,9 @@
 import { Arrow, Circle, Group, Line, Text } from 'react-konva'
 import type { Vec2 } from '../../model/types'
-import { useStore, modelFor, pathSpeed } from '../../state/store'
+import { useStore } from '../../state/store'
+import { modelFor, pathSpeed } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
-import type { LiveTrack } from '../../playback/sim'
+import type { LiveTrack } from '../../playback/tracks'
 
 interface Props {
   mouseWorld: Vec2 | null

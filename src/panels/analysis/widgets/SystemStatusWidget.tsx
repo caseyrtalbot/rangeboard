@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
 import type { SystemTelemetryGroup } from '../../../analysis/systemTelemetry'
-import { detectionsAt } from '../../../playback/sim'
+import { detectionsAt } from '../../../playback/detection'
 import type { SystemStatusKind } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { SystemStatus } from '../SystemStatus'

@@ -1,5 +1,6 @@
 import { Circle, Group, Line, Text } from 'react-konva'
-import { useStore, modelFor, pathSpeed } from '../../state/store'
+import { useStore } from '../../state/store'
+import { modelFor, pathSpeed } from '../../model/scenario'
 import { pathExhaustionPoint, rangeBasis, rangeCurvePoints } from '../../analysis/range'
 import { formatDistance } from '../../geometry/geo'
 

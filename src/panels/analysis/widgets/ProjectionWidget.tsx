@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../../../model/types'
-import { DT } from '../../../playback/sim'
+import { DT } from '../../../playback/clock'
 import { threatPictureAt } from '../../../analysis/threatAggregation'
 import { useStore } from '../../../state/store'
 import { residualSectionHeadline } from '../../headlines'

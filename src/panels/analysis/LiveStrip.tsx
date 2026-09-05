@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import type { McState } from '../../state/store'
-import { formatRunLabel, useStore } from '../../state/store'
+import type { McState } from '../../state/runState'
+import { useStore } from '../../state/store'
+import { formatRunLabel } from '../../state/labels'
 import {
   selectDurationS,
   selectObservedThroughStep,

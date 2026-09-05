@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../../model/seed'
-import type { McState } from '../../state/store'
-import { IDLE_MC, useStore } from '../../state/store'
+import type { McState } from '../../state/runState'
+import { useStore } from '../../state/store'
+import { IDLE_MC } from '../../state/runState'
 import { LiveStrip } from './LiveStrip'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, FlightPath, Scenario } from '../model/types'
-import type { AttritionReport } from '../playback/attrition'
-import { SHIP_DEAD_BELOW } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
+import { SHIP_DEAD_BELOW } from '../playback/pk'
 import type { ThreatAssessment } from '../playback/sim'
 import { buildRequirementGateReport } from './requirements'
 

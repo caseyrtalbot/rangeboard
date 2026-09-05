@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useStore, scenarioDurationS } from '../state/store'
+import { useStore } from '../state/store'
+import { scenarioDurationS } from '../model/scenario'
 import { emptyScenario } from '../model/seed'
 import type { FlightPath, Scenario } from '../model/types'
 import { buildRaidPlan, effectivePathDelayS, waveDelayS, waveIndexFor } from './raid'
-import { liveTracks } from './sim'
+import { liveTracks } from './tracks'
 
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())

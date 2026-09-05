@@ -25,15 +25,6 @@ import type { DetectionHit, ScanSteering } from './detection'
 import { pdTrackCumulativeOf, radarPdProbe, resolvedThresholds, sweepSensorHits } from './detection'
 import { connectedEffectorIds, killChainConnected, killChainRoutes } from './killChain'
 
-// Every engine entrypoint stays resolvable from sim.ts for the panels and the canvas.
-export { DT, stepIndex } from './clock'
-export type { LiveTrack } from './tracks'
-export { entityPosAt, liveTracks, memberPositions, threatAltitudeFt } from './tracks'
-export type { DetectionHit, ScanSteering, SpawnViolation } from './detection'
-export { detectionsAt, sensorHoldsPoint, spawnInRingViolations, sweepSensorHits } from './detection'
-export type { KillChainRoute } from './killChain'
-export { connectedEffectorIds, killChainRoutes } from './killChain'
-
 export type ThreatStatus =
   | 'no-path'
   | 'never-detected'

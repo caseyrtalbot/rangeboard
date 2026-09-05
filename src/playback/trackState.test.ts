@@ -4,8 +4,9 @@ import { profileFor } from '../model/integration'
 import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
 import type { SensorObservation, ThreatAssessment } from './sim'
 import { assessAllThreats } from './sim'
-import type { AttritionReport, EngagementEvent } from './attrition'
-import { resolveEngagements, SHIP_DEAD_BELOW } from './attrition'
+import type { AttritionReport, EngagementEvent } from './attritionReport'
+import { resolveEngagements } from './attrition'
+import { SHIP_DEAD_BELOW } from './pk'
 import {
   BEAM_DISPLAY_S,
   BLINK_PERIOD_S,

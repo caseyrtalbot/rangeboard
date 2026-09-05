@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Circle, Group, Line, RegularPolygon, Text } from 'react-konva'
 import { useStore } from '../../state/store'
-import type { LiveTrack } from '../../playback/sim'
+import type { LiveTrack } from '../../playback/tracks'
 import type { ImpactSeverity, LeakerImpact, ThreatWez } from '../../analysis/impact'
 import { SEVERITY_LABEL, SEVERITY_RANK, threatWezList } from '../../analysis/impact'
 import { formatDistance } from '../../geometry/geo'

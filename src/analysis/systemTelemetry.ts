@@ -1,8 +1,9 @@
 import type { Entity, Scenario } from '../model/types'
 import { defaultSensorRole, entityActive } from '../model/types'
 import { profileFor } from '../model/integration'
-import type { AttritionReport } from '../playback/attrition'
-import type { DetectionHit, ThreatAssessment } from '../playback/sim'
+import type { AttritionReport } from '../playback/attritionReport'
+import type { ThreatAssessment } from '../playback/sim'
+import type { DetectionHit } from '../playback/detection'
 import { killChainRoutes } from '../playback/killChain'
 import { expectedDeadTimes } from './threatAggregation'
 

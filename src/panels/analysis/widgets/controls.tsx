@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { Scenario } from '../../../model/types'
 import type { EngagementPicture } from '../../../analysis/impact'
 import { engagementPicture } from '../../../analysis/impact'
-import type { RunPhase } from '../../../state/store'
+import type { RunPhase } from '../../../state/runState'
 import { useStore } from '../../../state/store'
 import { durationOf, selectSimTimeStep } from '../../../state/selectors'
 

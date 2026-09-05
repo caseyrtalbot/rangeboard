@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { pathSpeed, scenarioDurationS, useStore } from '../state/store'
+import { useStore } from '../state/store'
+import { pathSpeed, scenarioDurationS } from '../model/scenario'
 import { emptyScenario } from '../model/seed'
 import type {
   EntityKind,
@@ -19,13 +20,9 @@ import { rangeForPd } from '../analysis/radarPd'
 import { posAtTime } from '../geometry/geo'
 import { groundRangeM } from '../geometry/slant'
 import type { DrawPolicy } from './policy'
-import {
-  assessThreat,
-  DEFAULT_DEFENDED_RADIUS_M,
-  detectionsAt,
-  memberPositions,
-  threatAltitudeFt,
-} from './sim'
+import { assessThreat, DEFAULT_DEFENDED_RADIUS_M } from './sim'
+import { memberPositions, threatAltitudeFt } from './tracks'
+import { detectionsAt } from './detection'
 
 function reset() {
   useStore.getState().replaceScenario(legacyScenario())

@@ -1,5 +1,5 @@
 import type { ThreatAssessment } from '../playback/sim'
-import type { AttritionReport } from '../playback/attrition'
+import type { AttritionReport } from '../playback/attritionReport'
 import { expectedDeadTimes } from './threatAggregation'
 
 /**

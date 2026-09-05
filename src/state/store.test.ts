@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore, scenarioDurationS } from './store'
+import { useStore } from './store'
+import { scenarioDurationS } from '../model/scenario'
 import { analysisBasisSignature } from './analysisBasis'
 import { bumpCardVersion } from './labels'
 import { DEFAULT_LAYERS, ringVisible } from './layers'

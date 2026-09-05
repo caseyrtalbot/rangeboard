@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ThreatAssessment } from '../playback/sim'
-import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attrition'
+import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attritionReport'
 import { resolveEngagements } from '../playback/attrition'
 import { assessAllThreats } from '../playback/sim'
 import { emptyScenario } from '../model/seed'
