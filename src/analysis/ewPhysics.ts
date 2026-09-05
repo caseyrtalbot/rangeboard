@@ -1,6 +1,7 @@
 import type { EffectorSpec, JamBand, UasSpec, Vec2 } from '../model/types'
 import { JAM_BANDS } from '../model/types'
 import { angleDiffDeg, bearingDeg, dist } from '../geometry/geo'
+import { slantRangeM } from '../geometry/slant'
 import { jammable } from './sensorEnv'
 
 /**
@@ -114,6 +115,10 @@ export function effectiveJamRangeM(spec: EffectorSpec, uas?: UasSpec): number {
  * Full jam-physics answer for one jammer against one target position.
  * `uas` undefined (entity with a deleted spec) skips the band gate and keeps
  * the geometry factors, matching the legacy jammable() gate in sim.ts.
+ * `dAltM` is the target altitude minus the jammer mount height, meters; the
+ * range, min-range and power falloff use the slant range it implies, the
+ * same convention as the envelope gate in attrition.ts and the sim window.
+ * The sector test stays in plan view.
  */
 export function assessJam(
   spec: EffectorSpec,
@@ -121,6 +126,7 @@ export function assessJam(
   jammerHeadingDeg: number,
   uas: UasSpec | undefined,
   targetPos: Vec2,
+  dAltM = 0,
 ): JamAssessment {
   const targetBands = uas ? targetLinkBands(uas) : []
   const covered = uas
@@ -143,7 +149,7 @@ export function assessJam(
     bandFactor = covered.length === targetBands.length ? 1 : JAM_PARTIAL_BAND_FACTOR
   }
 
-  const rangeM = dist(jammerPos, targetPos)
+  const rangeM = slantRangeM(dist(jammerPos, targetPos), dAltM)
   if (rangeM < spec.minRangeM || rangeM > effectiveRangeM) return fail()
 
   const sectorDeg = spec.sectorDeg ?? 360

@@ -1,4 +1,4 @@
-import type { Entity, FlightPath, Scenario, SpecModel, UasSpec, Vec2 } from '../model/types'
+import type { Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
 import {
   DEFAULT_REQUIREMENT_THRESHOLDS,
   defaultJamBehavior,
@@ -495,9 +495,11 @@ export function resolveEngagements(
       }
       // Jam physics (band coverage, alignment, power out) decide whether a
       // jammer can affect this ship at all; a ship the physics cannot reach
-      // is never a jam candidate, so the dwell is not wasted on it.
-      const jamFactor = (uasSpec: UasSpec | undefined, p: Vec2): number =>
-        assessJam(es.spec, es.entity.pos, es.entity.headingDeg, uasSpec, p).factor
+      // is never a jam candidate, so the dwell is not wasted on it. The
+      // physics take the same slant range as inEnvelope (R-F-30).
+      const jamFactor = (ts: ThreatState, p: Vec2): number =>
+        assessJam(es.spec, es.entity.pos, es.entity.headingDeg, ts.uasSpec, p, ts.altM - es.mountM)
+          .factor
 
       // Global ship-level assignment. Among every gated threat whose window
       // (this effector's) contains t and tEffect, and every ship inside the
@@ -543,7 +545,7 @@ export function resolveEngagements(
           const ic = interceptAt(ts, es, t, i, membersAt, within[1])
           if (!contains(ic.tEffectS)) continue
           if (!inEnvelope(ic.pos, ts)) continue
-          if (isJammer && jamFactor(ts.uasSpec, ic.pos) <= 0) continue
+          if (isJammer && jamFactor(ts, ic.pos) <= 0) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
           if (alive < SHIP_DEAD_BELOW) continue // expected dead: never targeted
@@ -579,7 +581,7 @@ export function resolveEngagements(
       // airframe size and jinking do not protect a link, so a jammer takes
       // none of the kinetic penalties and all of the EW ones.
       const pk = isJammer
-        ? Math.min(1, Math.max(0, es.pk * jamFactor(target.uasSpec, hit.pos)))
+        ? Math.min(1, Math.max(0, es.pk * jamFactor(target, hit.pos)))
         : kineticPk(es.pk, es.spec.maxRangeM, target.uasSpec, hit.slantM)
 
       commitSalvo(es, target, shipIdx, pk, t, hit.tEffectS, continueJam, hit.capped)

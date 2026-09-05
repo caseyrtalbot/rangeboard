@@ -141,6 +141,22 @@ describe('assessJam', () => {
     expect(assessJam(standoff, ORIGIN, 0, uas(), { x: 0, y: -400 }).effective).toBe(true)
   })
 
+  it('evaluates range, min range and falloff on the slant range (R-F-30)', () => {
+    // Jammer mount m = 4 m, target altitude h = 1204 m, so dAltM = 1200.
+    // d = 1600: slant = sqrt(1600^2 + 1200^2) = 2000, the envelope edge,
+    // powerFactor = 1 - 0.3 * 2000 / 2000 = 0.7 (horizontal would give 0.76).
+    // d = 1800: horizontal is inside 2000 but slant = 2163 is outside.
+    const dAltM = 1204 - 4
+    const edge = assessJam(jammer(), ORIGIN, 0, uas(), { x: 0, y: -1600 }, dAltM)
+    expect(edge.effective).toBe(true)
+    expect(edge.powerFactor).toBeCloseTo(0.7, 9)
+    expect(assessJam(jammer(), ORIGIN, 0, uas(), { x: 0, y: -1800 }, dAltM).effective).toBe(false)
+    // Min range 1000 on the slant: d = 600 with dAltM = 800 sits at 1000, inside.
+    const standoff = jammer({ minRangeM: 1000 })
+    expect(assessJam(standoff, ORIGIN, 0, uas(), { x: 0, y: -600 }, 800).effective).toBe(true)
+    expect(assessJam(standoff, ORIGIN, 0, uas(), { x: 0, y: -600 }).effective).toBe(false)
+  })
+
   it('keeps geometry factors for an entity with a deleted spec', () => {
     const a = assessJam(jammer(), ORIGIN, 0, undefined, { x: 0, y: -1000 })
     expect(a.effective).toBe(true)
