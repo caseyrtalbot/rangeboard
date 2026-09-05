@@ -23,6 +23,7 @@ Source, tests and recorded verification determine implemented behavior.
 | --- | --- |
 | [Ownership findings](field-te/OWNERSHIP_FINDINGS.md) | Dated source-linked findings; current resolution is in the register |
 | [R1 first extraction](field-te/R1_LEAF_EXTRACTION.md) | Brief, parity evidence and temporary compatibility surface of the first R1 leaf-module extraction (`7c9b577`) |
+| [F1 cadence brief](field-te/F1_CADENCE_BRIEF.md) | Baseline render counts at `dc10895`, the proposed 10 Hz publication rule, canvas interpolation, selectors and parity gate for the F1 slice inside R1 |
 | [C4 completion](field-te/C4_COMPLETION.md) | Record transition, evidence-purpose and isolated campaign acceptance rules/results |
 | [C1 completion](field-te/C1_COMPLETION.md) | Freshness input/consumer matrix, lifecycle checks and evidence |
 | [C2/C3/E1 completion](field-te/WAVE_C2_C3_E1_COMPLETION.md) | Integrated result/persistence work, model evidence and verification |

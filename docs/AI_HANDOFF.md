@@ -2,8 +2,9 @@
 
 Status: CURRENT TRANSFER RECORD, 2026-09-05. Contributor: Claude Fable 5.1, for the
 engineering plan and the design contract. Verified source revision `edb0da7` on
-`analysis-hardening`; this transfer is committed as `2b834fa`, four commits ahead of
-`origin/analysis-hardening`, not pushed. It follows Astra's R1 first-extraction commit
+`analysis-hardening`; this transfer is committed as `2b834fa` and `dc10895`, five commits
+ahead of `origin/analysis-hardening`, not pushed. The F1 brief of 2026-09-05 (later) is in
+the working tree, uncommitted. It follows Astra's R1 first-extraction commit
 `7c9b577` and pilot-decision record `edb0da7`, and replaces the two-owner handoff (R-D-34).
 
 Marks: `[V]` verified; `[D]` documented direction; `[I]` inference; `[U]` unresolved.
@@ -51,6 +52,17 @@ against a 288.46 kB baseline. `model/scenario.ts` owns `modelFor`, `pathSpeed` a
 the public UI entrypoints with a removal condition in the R1 record. This session did not
 rerun the gates; its changes are documentation only.
 
+[V] F1 baseline measured on 2026-09-05 at `dc10895`, documentation only, no source edit:
+[F1_CADENCE_BRIEF.md](field-te/F1_CADENCE_BRIEF.md) with evidence under
+`field-te/evidence/f1-cadence-2026-09-05/` (probe script, headless and headed render-count
+JSON, console logs, screenshot, manifest with hashes). The store publishes once per animation
+frame with no fixed cadence: 120 Hz headless, 85 Hz headed, about 46 Hz on the Analysis tab,
+17 Hz with MC bands. `Inspector` renders 0 times per publication; `AnalysisPanel` and
+`LiveStrip` render every publication through `observedThroughS` and cascade to every widget
+and a double Recharts commit; the Konva root commits twice per publication. Recorded as
+R-F-32 and a note on R-D-34. The dev server used for the probe was started on port 5301 and
+stopped. The four gates were not rerun; no source changed.
+
 [V] Persistence facts checked this session, which withdrew design item F10: both stores
 carry `schemaVersion` 1; storage keys are versioned in `src/io/storageKeys.ts`; runtime
 validation runs before adoption; an unreadable save is copied under a recovery prefix and
@@ -79,17 +91,12 @@ engine edits.
 
 ## Next exact task
 
-[I] Write the **F1 cadence and selector brief**, inside R1. Areas: `src/state`,
-`src/playback` (main-thread adapters only), `src/panels/TimelineBar.tsx`,
-`src/panels/Inspector.tsx`, named canvas consumers. Steps: capture baseline render counts
-per simulated second for `TimelineBar`, `Inspector`, `AnalysisPanel` and the canvas layers
-on the verified firing fixture at 1x, 5x and 20x; define 10 Hz as the wall-clock store
-publication cadence at every playback speed with engine `DT = 0.5 s` and event horizons
-unchanged; define canvas interpolation between publications; list the store selectors the
-panels will subscribe to. Acceptance for the brief: the measurements exist as a manifest
-under `docs/field-te/evidence/`, the cadence rule is stated for every speed, and the parity
-gate is named. Stop after the brief. Implementation needs Casey's selection. This is not
-authorization.
+[D] The F1 brief exists and stops here, as the previous record required. Casey selects
+the next slice. The brief proposes the F1 implementation slice with its owned paths,
+cadence rule, interpolation, selectors, parity gate and effort classes (brief sections 3
+to 7). Alternatives inside R1 are the R-F-31 measured budget and cancellation policy, or a
+larger store or sweep extraction. Whichever is selected needs its own brief acceptance and
+Casey's instruction before the first source edit. This record is not that authorization.
 
 [D] Before the first source edit of any slice: rerun the four gates and the schema drift
 check, compare the warning count with 74, and read `git status --short`.
