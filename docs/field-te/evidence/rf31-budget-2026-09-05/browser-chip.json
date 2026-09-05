@@ -1,0 +1,10 @@
+{
+  "running": "MC 1000 · 2/1000",
+  "chipText": "MC 3 of 1000 · seed 4821",
+  "chipTitle": "Monte Carlo, 1000 replicates, seed 4821, stopped at 3 by a cancel, 610 ms",
+  "status": "done",
+  "stopped": {
+    "rule": "cancelled",
+    "at": 3
+  }
+}

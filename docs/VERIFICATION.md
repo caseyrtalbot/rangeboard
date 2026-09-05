@@ -30,6 +30,11 @@ Current procedure. Read with [AGENTS.md](../AGENTS.md). Actual run results belon
   kill chain. `completeConnect` types a hand-drawn link when a researched pairing exists,
   so a browser laydown Giraffe 1X to FAAD C2 to Coyote reaches the status `no-fc-uplink`
   and fires nothing. Add a KuRFS to a Coyote demo laydown (`outstanding.md` R-F-20).
+- The [detection fixture](../src/playback/__fixtures__/detection-outside-rings.json) is
+  that laydown with the Mavic 3 spawned 18 km north, outside every ring: detection at
+  250.5 s, four firing events, MC kills mean 0.9 at seed 4821. Load it through
+  `parseAutosave` and `loadScenario`; the [probe](field-te/evidence/rf20-detection-2026-09-05/rf20-fixture-probe.mjs.txt)
+  confirms it through store actions. Use it for detection and warning-time evidence.
 - Before a change to the save shape: build a scenario, read the autosave, strip the new
   fields, write it back, reload, and expect no `rangeboard.scenario.recovered.*` key.
 - Never click the run reset control with a dirty run in a script without handling the
@@ -53,7 +58,7 @@ loads the [typed firing fixture](field-te/evidence/onboarding-2026-09-04/firing-
 through `parseAutosave` and the store's `loadScenario` action. It verifies real-worker
 results, freshness, charts and export. The fixture fires four deterministic events with a
 routed KuRFS; its spawn-in-ring and unvalidated-model findings limit it to integration
-checks. Do not use it as valid detection evidence. See the
+checks. Do not use it as valid detection evidence; the detection fixture above is. See the
 [completion record](field-te/WAVE_C2_C3_E1_COMPLETION.md) for measured results.
 
 For native file input, image decoding, library import and recovery, use the preserved

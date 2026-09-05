@@ -11,6 +11,7 @@ import { buildLiveTimeline } from '../../analysis/liveStats'
 import { formatTime } from '../../geometry/geo'
 import type { RunMode, UncertaintyMode } from '../../model/types'
 import { runSettings } from '../../model/types'
+import type { StopRule } from '../../playback/mcRun'
 import { resetAnalysisRun } from '../../playback/runSession'
 import { Field, Seg, useSimTimeStep } from './widgets/controls'
 
@@ -49,6 +50,14 @@ function chipOf(
   return { ...modeChip(run, mc), meta: chipMeta(run, mc) }
 }
 
+/** Chip title phrase per early stop rule. */
+const STOP_BY: Record<StopRule, string> = {
+  replicates: 'the replicate count',
+  halfWidth: 'the half-width rule',
+  budget: 'the execution budget',
+  cancelled: 'a cancel',
+}
+
 /** Class, text and title per run mode and replicate state. */
 function modeChip(
   run: ReturnType<typeof runSettings>,
@@ -72,12 +81,12 @@ function modeChip(
       }
     case 'done': {
       const summary = mc.summary
-      const early = summary != null && summary.stopped.rule === 'halfWidth'
+      const early = summary != null && summary.stopped.rule !== 'replicates'
       return {
         cls: 'chip mc',
         text: early ? `MC ${summary.replicates} of ${run.replicates} · seed ${run.seed}` : seeded,
         title: early
-          ? `${basis}, stopped at ${summary.replicates} by the half-width rule, ${Math.round(
+          ? `${basis}, stopped at ${summary.replicates} by ${STOP_BY[summary.stopped.rule]}, ${Math.round(
               summary.elapsedMs,
             )} ms`
           : `${basis}, ${Math.round(summary?.elapsedMs ?? 0)} ms`,

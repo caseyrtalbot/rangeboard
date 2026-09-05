@@ -3,7 +3,10 @@ import { useStore } from '../state/store'
 import { emptyScenario } from '../model/seed'
 import type { Scenario, Vec2 } from '../model/types'
 import { fillScenario } from '../io/persist'
-import { spawnInRingViolations } from './sim'
+import { assessRunValidity } from '../analysis/runValidity'
+import { resolveEngagements } from './attrition'
+import { runReplicates } from './mcRun'
+import { assessAllThreats, spawnInRingViolations } from './sim'
 
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())
@@ -135,5 +138,31 @@ describe('spawnInRingViolations on the captured fixture', () => {
     expect(uasIds).toHaveLength(6)
     const names = uasIds.map((id) => s.entities.find((e) => e.id === id)?.name ?? id)
     for (const name of names) expect(name).toContain('THR-G1-Q-01')
+  })
+
+  // R-F-20: the firing laydown (Giraffe 1X, KuRFS, FAAD C2, Coyote) with the Mavic 3
+  // spawned 18 km north, 3 km beyond the 15 km KuRFS placard. The search problem runs:
+  // detection lands well after T0 and the routed chain still fires.
+  it('the detection fixture spawns outside every ring and still fires', () => {
+    const fixtures = import.meta.glob<string>('./__fixtures__/*.json', {
+      eager: true,
+      import: 'default',
+      query: '?raw',
+    })
+    const s = fillScenario(JSON.parse(fixtures['./__fixtures__/detection-outside-rings.json']) as Scenario)
+    expect(spawnInRingViolations(s)).toEqual([])
+    const assessments = assessAllThreats(s)
+    expect(assessRunValidity(s, assessments).findings.map((f) => f.id)).not.toContain('spawn-in-ring')
+    const [track] = assessments
+    expect(track.status).toBe('engageable')
+    expect(track.firstDetectS).toBeGreaterThan(100)
+    expect(track.arrivalS).toBeGreaterThan(track.firstDetectS!)
+    const report = resolveEngagements(s, assessments)
+    expect(report.events.length).toBeGreaterThan(0)
+    expect(report.threats[0].expectedKills).toBeGreaterThan(0.5)
+    const mc = runReplicates({ ...s, runMode: 'monte-carlo', replicates: 30, uncertainty: 'total' })
+    expect(mc.firstDetectS.defined.p).toBe(1)
+    expect(mc.firstDetectS.mean).toBeGreaterThan(0)
+    expect(mc.kills.mean[mc.kills.mean.length - 1]).toBeGreaterThan(0.5)
   })
 })

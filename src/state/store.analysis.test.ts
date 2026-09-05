@@ -10,6 +10,7 @@ import { emptyScenario } from '../model/seed'
 import { analysisBasisSignature, useStore } from './store'
 import { currentSensitivity, currentSummary } from '../panels/analysis/widgets/mc'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
+import { CANCEL_GRACE_MS } from '../playback/mcClient'
 import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 
 // Capture callbacks so even a queued event from a terminated worker can be delivered.
@@ -170,6 +171,33 @@ describe('complete analysis basis and request ownership', () => {
     expect(useStore.getState().mc.status).toBe('done')
     ControlledWorker.instances.at(-1)!.onerror?.({ message: 'current error' })
     expect(useStore.getState().mc.sensitivity.error).toBe('current error')
+  })
+
+  it('a cancel asks the worker to stop and accepts the partial summary; silence terminates it', () => {
+    vi.useFakeTimers()
+    const work = launch()
+    useStore.getState().cancelMonteCarlo()
+    useStore.getState().cancelSensitivityRun()
+    expect(work.mc.postMessage).toHaveBeenLastCalledWith({ type: 'cancel', runId: work.runId })
+    expect(work.sens.postMessage).toHaveBeenLastCalledWith({ type: 'cancel', runId: work.runId })
+    // A second cancel while one is in flight posts nothing more.
+    useStore.getState().cancelMonteCarlo()
+    expect(work.mc.postMessage).toHaveBeenCalledTimes(2)
+    const partial = { ...mcSummary, replicates: 7, stopped: { rule: 'cancelled' as const, at: 7 } }
+    work.mc.send({ type: 'done', runId: work.runId, summary: partial })
+    expect(useStore.getState().mc.status).toBe('done')
+    expect(useStore.getState().mc.progress).toBe(7)
+    expect(useStore.getState().mc.summary?.stopped.rule).toBe('cancelled')
+    vi.advanceTimersByTime(CANCEL_GRACE_MS + 1)
+    expect(work.mc.terminated).toBe(false)
+    expect(useStore.getState().mc.status).toBe('done')
+    expect(work.sens.terminated).toBe(true)
+    expect(useStore.getState().mc.sensitivity.status).toBe('error')
+    expect(useStore.getState().mc.sensitivity.error).toBe('Cancel timed out; the worker was stopped')
+    // Nothing running: a cancel is a no-op.
+    useStore.getState().cancelMonteCarlo()
+    expect(work.mc.postMessage).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
   })
 
   it('playback resets on input changes but retains its sequence and ignores metadata edits', () => {

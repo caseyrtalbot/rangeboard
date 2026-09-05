@@ -1,0 +1,117 @@
+// R-F-31 worker measurement probe: Chromium worker heap ceiling on this Mac, and the
+// app's own Monte Carlo worker time on the named fixtures through real store actions.
+// Usage: node rf31-worker-probe.mjs <baseUrl> <outFile>
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+import { writeFileSync } from 'node:fs'
+const [baseUrl = 'http://localhost:5311/', outFile = 'measure-browser.json'] = process.argv.slice(2)
+
+const browser = await chromium.launch({ headless: true })
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+const out = { chromium: browser.version(), at: new Date().toISOString() }
+page.on('console', (m) => { if (m.type() === 'error') console.log('console.error', m.text()) })
+await page.goto(baseUrl, { waitUntil: 'networkidle' })
+await page.waitForFunction(() => Boolean(window.__store))
+
+out.mainThread = await page.evaluate(() => ({
+  jsHeapSizeLimit: performance.memory?.jsHeapSizeLimit ?? null,
+  deviceMemory: navigator.deviceMemory ?? null,
+  hardwareConcurrency: navigator.hardwareConcurrency,
+  userAgent: navigator.userAgent,
+}))
+
+// Worker heap ceiling, on its own page: keep number[] rows of 1001 mixed values, as the
+// replicate loop keeps them, until the worker dies. Reports go through the console so the
+// last one survives a crash of the whole renderer.
+const heapPage = await browser.newPage()
+let lastReport = null
+heapPage.on('console', (m) => { const t = m.text(); if (t.startsWith('heap ')) lastReport = JSON.parse(t.slice(5)) })
+const crashed = new Promise((resolve) => heapPage.on('crash', () => resolve('renderer crashed')))
+await heapPage.goto(baseUrl, { waitUntil: 'networkidle' })
+const heapT0 = Date.now()
+const heapRun = heapPage.evaluate(() => new Promise((resolve) => {
+  const src = `
+    const rows = []; const n = 1001; let numbers = 0; let t0 = performance.now()
+    function chunk() {
+      for (let i = 0; i < 2000; i += 1) {
+        const row = []
+        for (let k = 0; k < n; k += 1) row.push(k % 7 === 0 ? 0.4 : k % 3)
+        rows.push(row); numbers += n
+      }
+      postMessage({ numbers, rows: rows.length, ms: Math.round(performance.now() - t0) })
+      setTimeout(chunk, 0)
+    }
+    chunk()`
+  const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })))
+  w.onmessage = (e) => console.log('heap ' + JSON.stringify(e.data))
+  w.onerror = (e) => { w.terminate(); resolve('worker error: ' + e.message) }
+  setTimeout(() => { w.terminate(); resolve('timeout 240 s') }, 240000)
+})).catch((e) => 'evaluate failed: ' + e.message)
+const how = await Promise.race([heapRun, crashed])
+out.workerHeap = { how, last: lastReport, wallMs: Date.now() - heapT0 }
+await heapPage.close().catch(() => {})
+console.log('workerHeap', JSON.stringify(out.workerHeap))
+
+// App worker time on the named fixtures.
+async function run(fixtureUrl, name, replicates, uncertainty) {
+  return page.evaluate(async ({ fixtureUrl, replicates, uncertainty }) => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const raw = await (await fetch(fixtureUrl)).text()
+    const s = window.__store.getState()
+    s.loadScenario(parseAutosave(raw))
+    s.patchScenario({ runMode: 'monte-carlo', replicates, uncertainty, targetHalfWidth: null })
+    const gaps = []
+    let lastAt = performance.now()
+    const unsub = window.__store.subscribe((n, p) => {
+      if (n.mc.progress !== p.mc.progress) { const t = performance.now(); gaps.push(Math.round(t - lastAt)); lastAt = t }
+    })
+    const t0 = performance.now()
+    window.__store.getState().runMonteCarlo()
+    const result = await new Promise((resolve) => {
+      const timer = setInterval(() => {
+        const mc = window.__store.getState().mc
+        if (mc.status === 'done' || mc.status === 'error') { clearInterval(timer); resolve(mc) }
+      }, 20)
+    })
+    unsub()
+    const wallMs = Math.round(performance.now() - t0)
+    const sum = result.summary
+    return {
+      status: result.status, error: result.error, replicates, uncertainty, wallMs,
+      elapsedMs: sum?.elapsedMs ?? null, n: sum?.kills.mean.length ?? null,
+      tracks: sum ? Object.keys(sum.perThreat).length : null,
+      msPerReplicate: sum ? sum.elapsedMs / replicates : null,
+      progressGapMs: gaps, summaryBytes: sum ? JSON.stringify(sum).length : null,
+    }
+  }, { fixtureUrl, replicates, uncertainty }).then((r) => { const row = { name, ...r }; console.log(JSON.stringify(row)); return row })
+}
+out.runs = []
+const FIRING = '/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+const MEROPS = '/src/playback/__fixtures__/layered-acoustic-merops.json'
+for (const u of ['aleatory', 'total']) {
+  out.runs.push(await run(FIRING, 'firing-scenario', 100, u))
+  out.runs.push(await run(MEROPS, 'layered-acoustic-merops', 30, u))
+}
+out.runs.push(await run(FIRING, 'firing-scenario', 1000, 'total'))
+
+// Sensitivity on the firing fixture through the store.
+out.sensitivity = await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const raw = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.patchScenario({ runMode: 'monte-carlo', replicates: 30 })
+  const t0 = performance.now()
+  window.__store.getState().runSensitivity()
+  const sens = await new Promise((resolve) => {
+    const timer = setInterval(() => {
+      const x = window.__store.getState().mc.sensitivity
+      if (x.status === 'done' || x.status === 'error') { clearInterval(timer); resolve(x) }
+    }, 20)
+  })
+  return { status: sens.status, error: sens.error, wallMs: Math.round(performance.now() - t0),
+    elapsedMs: sens.summary?.elapsedMs ?? null, fields: sens.summary?.rows.length ?? null }
+})
+console.log('sensitivity', JSON.stringify(out.sensitivity))
+writeFileSync(outFile, JSON.stringify(out, null, 2))
+await browser.close()

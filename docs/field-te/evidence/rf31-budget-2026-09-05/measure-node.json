@@ -1,0 +1,269 @@
+{
+  "node": "v22.23.1",
+  "gcExposed": true,
+  "cases": [
+    {
+      "name": "firing-scenario",
+      "uncertainty": "aleatory",
+      "replicates": 10,
+      "n": 1001,
+      "threats": 1,
+      "tracks": 1,
+      "totalMs": 117,
+      "msPerReplicate": 11.741125000000002,
+      "msPerReplicateStep": 0.011729395604395607,
+      "progressGapMs": [
+        55
+      ],
+      "summaryBytes": 99991,
+      "summaryNumbers": 42042,
+      "heapDeltaBytes": 1743200
+    },
+    {
+      "name": "firing-scenario",
+      "uncertainty": "aleatory",
+      "replicates": 30,
+      "n": 1001,
+      "threats": 1,
+      "tracks": 1,
+      "totalMs": 154,
+      "msPerReplicate": 5.132476366666666,
+      "msPerReplicateStep": 0.0051273490176490175,
+      "progressGapMs": [
+        37,
+        29,
+        22
+      ],
+      "summaryBytes": 147608,
+      "summaryNumbers": 42042,
+      "heapDeltaBytes": 647064
+    },
+    {
+      "name": "firing-scenario",
+      "uncertainty": "aleatory",
+      "replicates": 100,
+      "n": 1001,
+      "threats": 1,
+      "tracks": 1,
+      "totalMs": 352,
+      "msPerReplicate": 3.5162424999999997,
+      "msPerReplicateStep": 0.0035127297702297697,
+      "progressGapMs": [
+        37,
+        26,
+        22,
+        21,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22
+      ],
+      "summaryBytes": 147202,
+      "summaryNumbers": 42042,
+      "heapDeltaBytes": 523944
+    },
+    {
+      "name": "firing-scenario",
+      "uncertainty": "total",
+      "replicates": 10,
+      "n": 1001,
+      "threats": 1,
+      "tracks": 1,
+      "totalMs": 89,
+      "msPerReplicate": 8.863554099999998,
+      "msPerReplicateStep": 0.008854699400599398,
+      "progressGapMs": [
+        41
+      ],
+      "summaryBytes": 117432,
+      "summaryNumbers": 42042,
+      "heapDeltaBytes": 516608
+    },
+    {
+      "name": "firing-scenario",
+      "uncertainty": "total",
+      "replicates": 30,
+      "n": 1001,
+      "threats": 1,
+      "tracks": 1,
+      "totalMs": 175,
+      "msPerReplicate": 5.8348152666666655,
+      "msPerReplicateStep": 0.005828986280386279,
+      "progressGapMs": [
+        39,
+        34,
+        32
+      ],
+      "summaryBytes": 198765,
+      "summaryNumbers": 42042,
+      "heapDeltaBytes": 911832
+    },
+    {
+      "name": "firing-scenario",
+      "uncertainty": "total",
+      "replicates": 100,
+      "n": 1001,
+      "threats": 1,
+      "tracks": 1,
+      "totalMs": 367,
+      "msPerReplicate": 3.672794999999999,
+      "msPerReplicateStep": 0.003669125874125873,
+      "progressGapMs": [
+        38,
+        29,
+        23,
+        23,
+        24,
+        23,
+        23,
+        22,
+        22,
+        22
+      ],
+      "summaryBytes": 169780,
+      "summaryNumbers": 42042,
+      "heapDeltaBytes": 640136
+    },
+    {
+      "name": "layered-acoustic-merops",
+      "uncertainty": "aleatory",
+      "replicates": 10,
+      "n": 2643,
+      "threats": 10,
+      "tracks": 9,
+      "totalMs": 1771,
+      "msPerReplicate": 177.1452708,
+      "msPerReplicateStep": 0.06702431736662882,
+      "progressGapMs": [
+        1487
+      ],
+      "summaryBytes": 1618594,
+      "summaryNumbers": 259014,
+      "heapDeltaBytes": 4370224
+    },
+    {
+      "name": "layered-acoustic-merops",
+      "uncertainty": "aleatory",
+      "replicates": 30,
+      "n": 2643,
+      "threats": 10,
+      "tracks": 9,
+      "totalMs": 4438,
+      "msPerReplicate": 147.92515696666666,
+      "msPerReplicateStep": 0.05596865568167486,
+      "progressGapMs": [
+        1368,
+        1326,
+        1303
+      ],
+      "summaryBytes": 1634404,
+      "summaryNumbers": 259014,
+      "heapDeltaBytes": 3948104
+    },
+    {
+      "name": "layered-acoustic-merops",
+      "uncertainty": "aleatory",
+      "replicates": 100,
+      "n": 2643,
+      "threats": 10,
+      "tracks": 9,
+      "totalMs": 14290,
+      "msPerReplicate": 142.89900958,
+      "msPerReplicateStep": 0.05406697297767689,
+      "progressGapMs": [
+        1353,
+        1328,
+        1325,
+        1392,
+        1369,
+        1360,
+        1338,
+        1340,
+        1362,
+        1354
+      ],
+      "summaryBytes": 1489849,
+      "summaryNumbers": 259014,
+      "heapDeltaBytes": 2614056
+    },
+    {
+      "name": "layered-acoustic-merops",
+      "uncertainty": "total",
+      "replicates": 10,
+      "n": 2643,
+      "threats": 10,
+      "tracks": 9,
+      "totalMs": 1702,
+      "msPerReplicate": 170.19421250000013,
+      "msPerReplicateStep": 0.06439432936057515,
+      "progressGapMs": [
+        1409
+      ],
+      "summaryBytes": 1483138,
+      "summaryNumbers": 259014,
+      "heapDeltaBytes": 3706880
+    },
+    {
+      "name": "layered-acoustic-merops",
+      "uncertainty": "total",
+      "replicates": 30,
+      "n": 2643,
+      "threats": 10,
+      "tracks": 9,
+      "totalMs": 4643,
+      "msPerReplicate": 154.7562930666667,
+      "msPerReplicateStep": 0.058553270172783466,
+      "progressGapMs": [
+        1436,
+        1385,
+        1366
+      ],
+      "summaryBytes": 1956464,
+      "summaryNumbers": 259014,
+      "heapDeltaBytes": 4445520
+    },
+    {
+      "name": "layered-acoustic-merops",
+      "uncertainty": "total",
+      "replicates": 100,
+      "n": 2643,
+      "threats": 10,
+      "tracks": 9,
+      "totalMs": 14994,
+      "msPerReplicate": 149.93706665999997,
+      "msPerReplicateStep": 0.056729877661748,
+      "progressGapMs": [
+        1426,
+        1404,
+        1450,
+        1448,
+        1416,
+        1373,
+        1451,
+        1406,
+        1425,
+        1406
+      ],
+      "summaryBytes": 1625485,
+      "summaryNumbers": 259014,
+      "heapDeltaBytes": 3982856
+    }
+  ],
+  "retained": {
+    "numbers": 1001000,
+    "bytesPerNumberDoubleRows": 10.374833166833167,
+    "bytesPerNumberIntRows": 10.360231768231769,
+    "keep": 2000
+  },
+  "sensitivity": {
+    "fixture": "firing-scenario",
+    "replicates": 30,
+    "fields": 13,
+    "rows": 13,
+    "totalMs": 2174,
+    "msPerField": 167.19917630769262,
+    "msPerReplicate": 2.683443570370376
+  }
+}

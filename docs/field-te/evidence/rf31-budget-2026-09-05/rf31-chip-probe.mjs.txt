@@ -1,0 +1,36 @@
+// R-F-31 strip chip check after a cancel on the Analysis tab.
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+import { writeFileSync } from 'node:fs'
+const [baseUrl = 'http://localhost:5311/', outDir = '.'] = process.argv.slice(2)
+const browser = await chromium.launch({ headless: true })
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })
+await page.goto(baseUrl, { waitUntil: 'networkidle' })
+await page.waitForFunction(() => Boolean(window.__store))
+const result = await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const raw = await (await fetch('/src/playback/__fixtures__/layered-acoustic-merops.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.patchScenario({ runMode: 'monte-carlo', replicates: 1000, uncertainty: 'aleatory', targetHalfWidth: null })
+  s.setRightTab('analysis')
+  s.applyLens('run-summary')
+  window.__store.getState().runMonteCarlo()
+  await new Promise((r) => setTimeout(r, 700))
+  const running = document.querySelector('.chip.mc')?.textContent ?? null
+  window.__store.getState().cancelMonteCarlo()
+  await new Promise((resolve) => {
+    const timer = setInterval(() => {
+      if (window.__store.getState().mc.status !== 'running') { clearInterval(timer); resolve() }
+    }, 10)
+  })
+  await new Promise((r) => setTimeout(r, 200))
+  const chip = document.querySelector('.chip.mc')
+  const mc = window.__store.getState().mc
+  return { running, chipText: chip?.textContent ?? null, chipTitle: chip?.getAttribute('title') ?? null,
+    status: mc.status, stopped: mc.summary?.stopped ?? null }
+})
+console.log(JSON.stringify(result))
+await page.screenshot({ path: `${outDir}/analysis-after-cancel.png` })
+writeFileSync(`${outDir}/browser-chip.json`, JSON.stringify(result, null, 2))
+await browser.close()

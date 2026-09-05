@@ -1,0 +1,29 @@
+import { it } from 'vitest'
+import { appendFileSync, writeFileSync } from 'node:fs'
+import type { Scenario } from '../model/types'
+import { assessAllThreats, spawnInRingViolations } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates } from './mcRun'
+import { scenarioDurationS } from '../model/scenario'
+import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+
+it('finds a spawn outside every ring that fires', () => {
+  const out = process.env.TMPDIR + '/rf20-probe.jsonl'
+  writeFileSync(out, '')
+  for (const d of [8000, 12000, 15000, 16000, 18000, 20000, 25000]) {
+    const base = structuredClone(probe) as unknown as Scenario
+    const uas = base.entities.find((e) => e.kind === 'uas')!
+    uas.pos = { x: 0, y: -d }
+    const path = base.paths.find((p) => p.entityId === uas.id)!
+    path.points[0] = { x: 0, y: -d }
+    const violations = spawnInRingViolations(base)
+    const assessments = assessAllThreats(base)
+    const report = resolveEngagements(base, assessments)
+    const a = assessments[0]
+    const mc = runReplicates({ ...base, runMode: 'monte-carlo', replicates: 30, uncertainty: 'total' })
+    appendFileSync(out, JSON.stringify({ d, durationS: scenarioDurationS(base), violations, status: a.status,
+      firstDetectS: a.firstDetectS, arrivalS: a.arrivalS, warningS: a.warningS, events: report.events.length,
+      kills: report.threats[0]?.expectedKills, mcKills: mc.kills.mean.at(-1), mcLeak: mc.leakers.mean.at(-1),
+      mcFirstDetect: mc.firstDetectS.mean, mcDefined: mc.firstDetectS.defined.p, n: mc.kills.mean.length }) + '\n')
+  }
+})

@@ -1,0 +1,77 @@
+// R-F-31 browser cancel check: the real Monte Carlo worker on the Merops fixture through
+// store actions. Starts 1,000 replicates, cancels after one second, and records the
+// summary the worker returns; then the same for a sensitivity run on the firing fixture.
+// Usage: node rf31-cancel-probe.mjs <baseUrl> <outFile>
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+import { writeFileSync } from 'node:fs'
+const [baseUrl = 'http://localhost:5311/', outFile = 'browser-cancel.json'] = process.argv.slice(2)
+const browser = await chromium.launch({ headless: true })
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
+const errors = []
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+await page.goto(baseUrl, { waitUntil: 'networkidle' })
+await page.waitForFunction(() => Boolean(window.__store))
+const out = { chromium: browser.version(), at: new Date().toISOString() }
+
+out.replicates = await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const raw = await (await fetch('/src/playback/__fixtures__/layered-acoustic-merops.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.patchScenario({ runMode: 'monte-carlo', replicates: 1000, uncertainty: 'aleatory', targetHalfWidth: null })
+  const progress = []
+  const t0 = performance.now()
+  const unsub = window.__store.subscribe((n, p) => {
+    if (n.mc.progress !== p.mc.progress) progress.push({ done: n.mc.progress, atMs: Math.round(performance.now() - t0) })
+  })
+  window.__store.getState().runMonteCarlo()
+  await new Promise((r) => setTimeout(r, 1000))
+  const statusAtCancel = window.__store.getState().mc.status
+  const progressAtCancel = window.__store.getState().mc.progress
+  window.__store.getState().cancelMonteCarlo()
+  const tCancel = performance.now()
+  const mc = await new Promise((resolve) => {
+    const timer = setInterval(() => {
+      const mc = window.__store.getState().mc
+      if (mc.status !== 'running') { clearInterval(timer); resolve(mc) }
+    }, 10)
+  })
+  unsub()
+  const strip = document.querySelector('.chip.mc')
+  return {
+    statusAtCancel, progressAtCancel, answerMs: Math.round(performance.now() - tCancel),
+    status: mc.status, error: mc.error, stopped: mc.summary?.stopped ?? null,
+    replicates: mc.summary?.replicates ?? null, elapsedMs: mc.summary?.elapsedMs ?? null,
+    progress, chipText: strip?.textContent ?? null, chipTitle: strip?.getAttribute('title') ?? null,
+    leakerMeanEnd: mc.summary ? mc.summary.leakers.mean.at(-1) : null,
+    killsN: mc.summary ? mc.summary.firstDetectS.total : null,
+  }
+})
+console.log('replicates', JSON.stringify(out.replicates))
+
+out.sensitivity = await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const raw = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.patchScenario({ runMode: 'monte-carlo', replicates: 300 })
+  window.__store.getState().runSensitivity()
+  await new Promise((r) => setTimeout(r, 1500))
+  const progressAtCancel = window.__store.getState().mc.sensitivity.progress
+  window.__store.getState().cancelSensitivityRun()
+  const tCancel = performance.now()
+  const sens = await new Promise((resolve) => {
+    const timer = setInterval(() => {
+      const x = window.__store.getState().mc.sensitivity
+      if (x.status !== 'running') { clearInterval(timer); resolve(x) }
+    }, 10)
+  })
+  return { progressAtCancel, answerMs: Math.round(performance.now() - tCancel), status: sens.status,
+    error: sens.error, stopped: sens.summary?.stopped ?? null, rows: sens.summary?.rows.length ?? null,
+    total: sens.total, nominal: sens.summary?.nominal ?? null }
+})
+console.log('sensitivity', JSON.stringify(out.sensitivity))
+out.consoleErrors = errors
+writeFileSync(outFile, JSON.stringify(out, null, 2))
+await browser.close()

@@ -17,8 +17,8 @@ import * as uncertainty from '../analysis/uncertainty'
 import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
 import { betaQuantile } from '../te/calc/stats'
 import { FALLOFF_AT_MAX, resolveEngagements } from './attrition'
-import { runReplicates, runSensitivity } from './mcRun'
-import type { BandSeries, McSummary } from './mcRun'
+import { replicateLoop, runReplicates, runSensitivity, sensitivityLoop, summaryNumbers } from './mcRun'
+import type { BandSeries, ExecutionBudget, McSummary } from './mcRun'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy, monteCarloPolicy } from './policy'
 import { assessAllThreats, DT } from './sim'
@@ -768,6 +768,62 @@ describe('runReplicates', () => {
       expect(tight.replicates).toBe(40)
     })
   })
+
+  describe('execution budget and cancel', () => {
+    const wide: ExecutionBudget = { retainedNumbers: Infinity, timeMs: Infinity }
+
+    it('a stop at checkpoint k gives the summary of a k-replicate run', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 40
+      const loop = replicateLoop(scenario)
+      let next = loop.next()
+      while (!next.done && next.value.done < 7) next = loop.next()
+      next = loop.next('cancelled')
+      expect(next.done).toBe(true)
+      const cancelled = next.value as McSummary
+      expect(cancelled.stopped).toEqual({ rule: 'cancelled', at: 7 })
+      expect(cancelled.replicates).toBe(7)
+      const seven = runReplicates({ ...scenario, replicates: 7 })
+      expect(cancelled).toEqual({ ...seven, stopped: cancelled.stopped })
+    })
+
+    it('the retained-number budget stops the loop at the replicate that reaches it', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 40
+      const n = sampleCount(scenario)
+      // One track: 6 numbers per step per replicate, so the smallest budget the
+      // summary (7 * 6 * n) passes is reached by the rows at replicate 7.
+      const summary = runReplicates(scenario, undefined, { ...wide, retainedNumbers: 7 * 6 * n })
+      expect(summary.stopped).toEqual({ rule: 'budget', at: 7 })
+      expect(summary.replicates).toBe(7)
+      expect(summary.leakers.mean).toHaveLength(n)
+      expect(runReplicates(scenario, undefined, wide).stopped).toEqual({ rule: 'replicates', at: 40 })
+    })
+
+    it('the wall-time budget stops after the first replicate, and the last checkpoint takes no stop', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 5
+      expect(runReplicates(scenario, undefined, { ...wide, timeMs: 0 }).stopped)
+        .toEqual({ rule: 'budget', at: 1 })
+      const loop = replicateLoop({ ...scenario, replicates: 1 })
+      loop.next()
+      const done = loop.next('cancelled')
+      expect(done.done).toBe(true)
+      expect((done.value as McSummary).stopped).toEqual({ rule: 'replicates', at: 1 })
+    })
+
+    it('a summary over the budget is refused before the first replicate', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      const need = summaryNumbers(scenario)
+      expect(need).toBe(7 * sampleCount(scenario) * 6)
+      const cost = vi.spyOn(uncertainty, 'sampleScenario')
+      expect(() => runReplicates(scenario, undefined, { ...wide, retainedNumbers: need - 1 }))
+        .toThrow(/over the budget/)
+      expect(cost).not.toHaveBeenCalled()
+      expect(runReplicates(scenario, undefined, { ...wide, retainedNumbers: need }).stopped)
+        .toEqual({ rule: 'budget', at: 7 })
+    })
+  })
 })
 
 /**
@@ -953,5 +1009,29 @@ describe('runSensitivity', () => {
     // Sampling one field leaves the input untouched.
     expect(s.uncertainty).toBe('aleatory')
     expect(PF_SPREAD.pk.spread.kind).toBe('beta')
+  })
+
+  it('a stop drops the field in progress and keeps the completed rows under `stopped`', () => {
+    const s = fixture()
+    const full = runSensitivity(s)
+    expect('stopped' in full).toBe(false)
+    expect(JSON.stringify(runSensitivity(s, undefined, { retainedNumbers: Infinity, timeMs: Infinity })))
+      .toBe(JSON.stringify(full))
+    const cut = runSensitivity(s, undefined, { retainedNumbers: Infinity, timeMs: 0 })
+    expect(cut.stopped).toEqual({ rule: 'budget', at: 0 })
+    expect(cut.rows).toEqual([])
+    expect(Number.isNaN(cut.nominal)).toBe(true)
+    // Cancel during the second field: the nominal and the first row survive.
+    const loop = sensitivityLoop(s)
+    let next = loop.next()
+    while (!next.done && next.value.done < 1) next = loop.next()
+    next = loop.next('cancelled')
+    expect(next.done).toBe(true)
+    const partial = next.value as ReturnType<typeof runSensitivity>
+    expect(partial.stopped).toEqual({ rule: 'cancelled', at: 1 })
+    expect(partial.nominal).toBe(full.nominal)
+    expect(partial.rows).toHaveLength(1)
+    expect(full.rows.map((r) => r.modelId + r.field)).toContain(partial.rows[0].modelId + partial.rows[0].field)
+    expect(full.rows.find((r) => r.field === partial.rows[0].field)).toEqual(partial.rows[0])
   })
 })

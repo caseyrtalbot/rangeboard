@@ -1,0 +1,49 @@
+{
+  "chromium": "151.0.7922.34",
+  "at": "2026-09-05T22:17:56.102Z",
+  "replicates": {
+    "statusAtCancel": "running",
+    "progressAtCancel": 5,
+    "answerMs": 261,
+    "status": "done",
+    "error": null,
+    "stopped": {
+      "rule": "cancelled",
+      "at": 7
+    },
+    "replicates": 7,
+    "elapsedMs": 990,
+    "progress": [
+      {
+        "done": 2,
+        "atMs": 539
+      },
+      {
+        "done": 5,
+        "atMs": 832
+      },
+      {
+        "done": 7,
+        "atMs": 1262
+      }
+    ],
+    "chipText": null,
+    "chipTitle": null,
+    "leakerMeanEnd": 1.7142857142857142,
+    "killsN": 7
+  },
+  "sensitivity": {
+    "progressAtCancel": 1,
+    "answerMs": 32,
+    "status": "done",
+    "error": null,
+    "stopped": {
+      "rule": "cancelled",
+      "at": 1
+    },
+    "rows": 1,
+    "total": 13,
+    "nominal": 0.043333333333333335
+  },
+  "consoleErrors": []
+}

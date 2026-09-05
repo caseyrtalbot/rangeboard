@@ -1,0 +1,86 @@
+// Scratch measurement for R-F-31, run once as src/playback/zz_rf31_measure.test.ts with
+// NODE_OPTIONS=--expose-gc and deleted after. Output: measure-node.json.
+import { it } from 'vitest'
+import { writeFileSync } from 'node:fs'
+import type { Scenario } from '../model/types'
+import { sampleCount } from '../analysis/series'
+import { runReplicates, runSensitivity } from './mcRun'
+import { uncertainFields } from '../analysis/uncertainty'
+import firing from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import merops from './__fixtures__/layered-acoustic-merops.json'
+
+const gc = (globalThis as { gc?: () => void }).gc
+const heap = () => { gc?.(); gc?.(); return process.memoryUsage().heapUsed }
+const out: Record<string, unknown> = { node: process.version, gcExposed: gc != null, cases: [] }
+const cases = out.cases as unknown[]
+
+function measure(name: string, base: Scenario, replicates: number, uncertainty: 'aleatory' | 'total') {
+  const scenario = { ...base, runMode: 'monte-carlo', replicates, targetHalfWidth: null, uncertainty } as Scenario
+  const n = sampleCount(scenario)
+  const threats = scenario.entities.filter((e) => e.kind === 'uas').length
+  const before = heap()
+  const t0 = performance.now()
+  let lastProgressAt = t0
+  const gaps: number[] = []
+  const summary = runReplicates(scenario, () => { const t = performance.now(); gaps.push(t - lastProgressAt); lastProgressAt = t })
+  const t1 = performance.now()
+  const json = JSON.stringify(summary)
+  const after = heap()
+  const perThreat = Object.keys(summary.perThreat).length
+  const row = {
+    name, uncertainty, replicates, n, threats, tracks: perThreat,
+    totalMs: Math.round(t1 - t0), msPerReplicate: (t1 - t0) / replicates,
+    msPerReplicateStep: (t1 - t0) / replicates / n,
+    progressGapMs: gaps.map((g) => Math.round(g)),
+    summaryBytes: json.length,
+    summaryNumbers: n * 7 * (5 + perThreat),
+    heapDeltaBytes: after - before,
+  }
+  cases.push(row)
+  return summary
+}
+
+it('measures worker time and memory on named fixtures', () => {
+  const fixtures: [string, Scenario][] = [
+    ['firing-scenario', firing as unknown as Scenario],
+    ['layered-acoustic-merops', merops as unknown as Scenario],
+  ]
+  for (const [name, s] of fixtures) {
+    for (const u of ['aleatory', 'total'] as const) {
+      for (const r of [10, 30, 100]) measure(name, s, r, u)
+    }
+  }
+  // Retained sample memory: the rows the loop keeps, as the loop keeps them.
+  const n = 1001
+  const before = heap()
+  const rows: number[][] = []
+  for (let i = 0; i < 1000; i += 1) {
+    const row: number[] = []
+    for (let k = 0; k < n; k += 1) row.push(k % 7 === 0 ? 0.4 : k % 3)
+    rows.push(row)
+  }
+  const afterMixed = heap()
+  const intRows: number[][] = []
+  for (let i = 0; i < 1000; i += 1) {
+    const row: number[] = []
+    for (let k = 0; k < n; k += 1) row.push(k % 3)
+    intRows.push(row)
+  }
+  const afterInt = heap()
+  out.retained = {
+    numbers: 1000 * n,
+    bytesPerNumberDoubleRows: (afterMixed - before) / (1000 * n),
+    bytesPerNumberIntRows: (afterInt - afterMixed) / (1000 * n),
+    keep: rows.length + intRows.length,
+  }
+  // Sensitivity on the firing fixture.
+  const s = { ...(firing as unknown as Scenario), runMode: 'monte-carlo', replicates: 30 } as Scenario
+  const fields = uncertainFields({ ...s, uncertainty: 'aleatory', targetHalfWidth: null })
+  const t0 = performance.now()
+  const sens = runSensitivity(s)
+  const t1 = performance.now()
+  out.sensitivity = { fixture: 'firing-scenario', replicates: 30, fields: fields.length, rows: sens.rows.length,
+    totalMs: Math.round(t1 - t0), msPerField: (t1 - t0) / fields.length,
+    msPerReplicate: (t1 - t0) / (fields.length * 2 + 1) / 30 }
+  writeFileSync('docs/field-te/evidence/rf31-budget-2026-09-05/measure-node.json', JSON.stringify(out, null, 2))
+}, 600_000)

@@ -1,0 +1,50 @@
+// R-F-20 browser confirmation: the detection fixture loaded through the store, the spawn
+// check on the store's scenario, the deterministic picture and a seeded Monte Carlo run.
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+import { writeFileSync } from 'node:fs'
+const [baseUrl = 'http://localhost:5311/', outDir = '.'] = process.argv.slice(2)
+const browser = await chromium.launch({ headless: true })
+const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })
+await page.goto(baseUrl, { waitUntil: 'networkidle' })
+await page.waitForFunction(() => Boolean(window.__store))
+const result = await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const { spawnInRingViolations, assessAllThreats } = await import('/src/playback/sim.ts')
+  const { resolveEngagements } = await import('/src/playback/attrition.ts')
+  const { assessRunValidity } = await import('/src/analysis/runValidity.ts')
+  const raw = await (await fetch('/src/playback/__fixtures__/detection-outside-rings.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setRightTab('analysis')
+  s.applyLens('run-summary')
+  const scenario = window.__store.getState().scenario
+  const assessments = assessAllThreats(scenario)
+  const report = resolveEngagements(scenario, assessments)
+  const validity = assessRunValidity(scenario, assessments)
+  window.__store.getState().patchScenario({ runMode: 'monte-carlo', replicates: 30, uncertainty: 'total' })
+  window.__store.getState().runMonteCarlo()
+  const mc = await new Promise((resolve) => {
+    const timer = setInterval(() => {
+      const mc = window.__store.getState().mc
+      if (mc.status !== 'running') { clearInterval(timer); resolve(mc) }
+    }, 20)
+  })
+  await new Promise((r) => setTimeout(r, 300))
+  return {
+    name: scenario.name, violations: spawnInRingViolations(scenario), validity: validity.validity,
+    findings: validity.findings.map((f) => f.id), status: assessments[0].status,
+    firstDetectS: assessments[0].firstDetectS, arrivalS: assessments[0].arrivalS,
+    warningS: assessments[0].warningS, events: report.events.length,
+    expectedKills: report.threats[0].expectedKills,
+    mc: { status: mc.status, replicates: mc.summary?.replicates, stopped: mc.summary?.stopped,
+      killsEnd: mc.summary?.kills.mean.at(-1), leakersEnd: mc.summary?.leakers.mean.at(-1),
+      firstDetectMean: mc.summary?.firstDetectS.mean, firstDetectDefined: mc.summary?.firstDetectS.defined.p,
+      elapsedMs: mc.summary?.elapsedMs },
+    chip: document.querySelector('.chip.mc')?.textContent ?? null,
+  }
+})
+console.log(JSON.stringify(result))
+await page.screenshot({ path: `${outDir}/analysis-detection-fixture.png` })
+writeFileSync(`${outDir}/browser-results.json`, JSON.stringify(result, null, 2))
+await browser.close()

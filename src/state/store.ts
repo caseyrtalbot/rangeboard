@@ -64,7 +64,14 @@ import type {
   McWorkerMessage,
   SensitivitySummary,
 } from '../playback/mcRun'
-import { cancelMcRun, cancelSensitivity, startMcRun, startSensitivity } from '../playback/mcClient'
+import {
+  cancelMcRun,
+  cancelSensitivity,
+  requestMcCancel,
+  requestSensitivityCancel,
+  startMcRun,
+  startSensitivity,
+} from '../playback/mcClient'
 
 // Preserve the public entrypoints used by panel and canvas consumers.
 export { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
@@ -456,10 +463,18 @@ export interface Store {
   runMonteCarlo: () => void
   /** Worker message sink; a message whose runId is not mc.runId is ignored. */
   mcMessage: (m: McWorkerMessage) => void
+  /**
+   * Ask a running replicate run to stop at its next checkpoint. The status
+   * stays 'running' until the worker posts the summary of the replicates done,
+   * which arrives as `done` with `stopped.rule` 'cancelled'.
+   */
+  cancelMonteCarlo: () => void
   /** Launch the sensitivity run for the current scenario and run id (cancels an older one). */
   runSensitivity: () => void
   /** Sensitivity worker message sink; a message from another run is ignored. */
   sensitivityMessage: (m: McSensitivityMessage) => void
+  /** Ask a running sensitivity run to stop at its next checkpoint, as `cancelMonteCarlo`. */
+  cancelSensitivityRun: () => void
 }
 
 
@@ -2175,6 +2190,10 @@ export const useStore = create<Store>()((set, get) => {
         return { mc: { ...st.mc, status: 'error', error: m.message } }
       }),
 
+    cancelMonteCarlo: () => {
+      if (get().mc.status === 'running') requestMcCancel()
+    },
+
     runSensitivity: () => {
       const st = get()
       if (runSettings(st.scenario).runMode === 'deterministic') return
@@ -2229,6 +2248,10 @@ export const useStore = create<Store>()((set, get) => {
           mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } },
         }
       }),
+
+    cancelSensitivityRun: () => {
+      if (get().mc.sensitivity.status === 'running') requestSensitivityCancel()
+    },
 
   }
 })

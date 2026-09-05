@@ -1,0 +1,28 @@
+{
+  "name": "Detection fixture: KuRFS chain, spawn outside every ring",
+  "violations": [],
+  "validity": "valid-limited",
+  "findings": [
+    "unvalidated-model"
+  ],
+  "status": "engageable",
+  "firstDetectS": 250.5,
+  "arrivalS": 1475,
+  "warningS": 1224.5,
+  "events": 4,
+  "expectedKills": 0.9313181486796716,
+  "mc": {
+    "status": "done",
+    "replicates": 30,
+    "stopped": {
+      "rule": "replicates",
+      "at": 30
+    },
+    "killsEnd": 0.9,
+    "leakersEnd": 0.1,
+    "firstDetectMean": 165.85,
+    "firstDetectDefined": 1,
+    "elapsedMs": 388
+  },
+  "chip": "MC 30 · total · seed 4821"
+}

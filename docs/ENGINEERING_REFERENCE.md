@@ -57,7 +57,8 @@ Breaking one of these breaks the app.
   records. Triangular spread bounds are fractional offsets around zero, matching the sampler.
   Base64 image syntax follows native decoder padding rules. New underlay ingestion uses
   a conservative 5 MiB storage admission budget; existing valid images are not size-capped.
-  Representation checks are not a practical execution-time/memory budget or crash journal.
+  Representation checks are not a crash journal; the execution budget is the worker's
+  (`DEFAULT_BUDGET` in `mcRun.ts`, below).
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
   instead. View state outside the `Scenario` has its own keys (`rangeboard.view.v1`,
   `rangeboard.layers.v1`, `rangeboard.rings.v1`, `rangeboard.runseq.v1`,
@@ -87,6 +88,19 @@ Breaking one of these breaks the app.
   object key order is ignored and array order is preserved. See the input matrix in
   `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
+- **Worker budget and cancel (R-F-31):** `replicateLoop` and `sensitivityLoop` (`mcRun.ts`)
+  are generators that yield a `Checkpoint` after every replicate; `runReplicates` and
+  `runSensitivity` drive them synchronously and unchanged. The worker drives them
+  asynchronously under `DEFAULT_BUDGET` (96 million retained numbers, one quarter of the
+  measured 384 million at which a Chromium 151 worker took the page down; ten minutes of
+  wall time), yields to the event loop every 50 ms so a `cancel` request is read, and
+  posts progress every tenth replicate or after 250 ms of silence. A run whose summary
+  alone exceeds the budget is refused before its first replicate. A budget stop or a
+  cancel keeps the replicates done and reports `stopped.rule` 'budget' or 'cancelled'; a
+  sensitivity run drops the field in progress and carries `stopped` only when cut short.
+  The store actions `cancelMonteCarlo` and `cancelSensitivityRun` post the request through
+  `mcClient.ts`, which terminates a worker silent for `CANCEL_GRACE_MS`. Measurements:
+  `docs/field-te/evidence/rf31-budget-2026-09-05/`.
 - **Thresholds are test-defined:** `Scenario.requirements` (`RequirementThresholds`,
   defaults in `DEFAULT_REQUIREMENT_THRESHOLDS`) holds what the test asks the system to
   meet. Every reader spreads `{ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }`.
