@@ -656,8 +656,9 @@ by the tools named there.
 
 ## 18. The ownership-transfer pass of 2026-09-04
 
-[V] Run at `2d367ba` with the working tree clean. No branch, commit, merge, stash or push
-was made. Every edit below is uncommitted documentation; the user commits it.
+[V] Run at `2d367ba` with the working tree clean. No branch, merge or stash was made. On the
+user's word the edits below were committed as `0256830` and, with the register line that
+records that hash, pushed to `origin/analysis-hardening` on 2026-09-04.
 
 | File | Change |
 | --- | --- |
