@@ -8,7 +8,9 @@ C2/C3/E1 was published as `798380d`. Later slices remain PROPOSED. Stop after C4
 Casey's subsequent commit/push instruction is complete. The plan body remains the acceptance specification;
 the current transfer/register hold execution status.
 Owner: Casey (product and acceptance decisions); Claude Fable (engineering and design
-from `edb0da7`, 2026-09-05; U1 is defined by the [design contract](../design/DESIGN_CONTRACT.md)).
+from `edb0da7`, 2026-09-05, under the standing authorization in `AGENTS.md` since R-D-36;
+U1 is defined by the [design contract](../design/DESIGN_CONTRACT.md)). Where this plan says a
+slice needs selection, read: needs its own verified gates and a handoff entry.
 Astra delivered C1 to C4, E1 and the first R1 extraction; those records stand as history.
 Prepared 2026-09-04 against `8b528f2` on `analysis-hardening`.
 

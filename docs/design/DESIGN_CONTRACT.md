@@ -160,10 +160,9 @@ Found in source at `9e1c5e2`, not in screenshots.
 ## 8. Order of work and owners
 
 Each step stands alone and ships alone with its own gates. Owner effort classes follow the
-user's rule: Fable medium for delegated judgment work, Fable high only where semantics
-decide the outcome and always for orchestration and correctness review, Opus high or xhigh
-for mechanical work with a fixed contract. Fable orchestrates every step and delegates
-mechanical work to Opus where the table says so.
+user's rule as it stood when the contract was locked. Since 2026-09-05 (R-D-36) the Owner
+column is advisory: one model by default, effort raised only after a failed gate or on
+engine semantics, and delegation only where write paths are disjoint.
 
 | # | Step | Reach | Owner | Acceptance evidence |
 | --- | --- | --- | --- | --- |

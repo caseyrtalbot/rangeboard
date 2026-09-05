@@ -1,19 +1,10 @@
 # CLAUDE.md
 
-Read `AGENTS.md` first and follow it. It is the one engineering contract for this
-repository: what RangeBoard is, the commands and their baseline, the architectural
-invariants, one source per fact, the domain rules, the UI rules, the working conventions,
-and the status of every document. Nothing in this file overrides it, and nothing from it is
-copied here.
-
-Then read, in this order:
-
-1. `docs/AI_HANDOFF.md`, the one current transfer record, with `[V]` `[D]` `[I]` `[U]` marks.
-   It names the contributor, the verified revision and the next exact task.
-2. `docs/data-engine/outstanding.md`, the live register and the only status authority.
-3. `docs/design/DESIGN_CONTRACT.md`, the locked design, before any presentation change.
-4. `docs/field-te/PLAN.md`, the engineering acceptance specification, before any engine,
-   store, persistence or T&E record change.
+Read `AGENTS.md` first and follow it. It is the one engineering contract: product,
+standing authorization and hard exceptions, invariants, gates, code style, records, git.
+Then read `docs/AI_HANDOFF.md` (at most forty lines). Open the register, the design
+contract, the plan and the engineering reference by section, only where the item touches
+them.
 
 ## Claude Code environment notes
 

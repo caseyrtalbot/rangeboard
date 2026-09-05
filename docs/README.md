@@ -8,9 +8,9 @@ Source, tests and recorded verification determine implemented behavior.
 
 | Document | Purpose |
 | --- | --- |
-| [AGENTS.md](../AGENTS.md) | Working contract for the contributor named in the handoff (Claude Fable since `edb0da7`); task boundaries, invariants, verification and git rules |
-| [AI_HANDOFF.md](AI_HANDOFF.md) | One current transfer record: state, evidence and next bounded task |
-| [Outstanding register](data-engine/outstanding.md) | Only decision and follow-up status authority |
+| [AGENTS.md](../AGENTS.md) | The one-page engineering contract: standing authorization and hard exceptions, invariants, gates, code, records, git (rewritten 2026-09-05, R-D-36) |
+| [AI_HANDOFF.md](AI_HANDOFF.md) | Current handoff, at most forty lines: revision, verified state, next work, inputs Casey holds |
+| [Outstanding register](data-engine/outstanding.md) | Decisions Casey holds and open findings; closed rows are history |
 | [Engineering reference](ENGINEERING_REFERENCE.md) | Detailed architecture, equations, invariants, UI and T&E contracts |
 | [Verification guide](VERIFICATION.md) | Test conventions and isolated browser/import/recovery procedures |
 | [Field T&E plan](field-te/PLAN.md) | Acceptance specification; later slices need selection |
