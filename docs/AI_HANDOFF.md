@@ -1,7 +1,7 @@
 # RangeBoard: current engineering handoff
 
-Status: CURRENT TRANSFER RECORD, 2026-09-05. C2/C3/E1 wave verified in working tree.
-Casey authorized commit, push and next-agent handoff on 2026-09-05; publication is in progress.
+Status: CURRENT TRANSFER RECORD, 2026-09-05. C2/C3/E1 wave verified and published.
+Casey authorized commit, push and next-agent handoff on 2026-09-05. Stop before C4.
 
 Marks: `[V]` source/test/tool verified; `[D]` user direction/documented intent;
 `[I]` reasoned implication; `[U]` unresolved. Read [AGENTS.md](../AGENTS.md), this record,
@@ -14,9 +14,10 @@ then the [register](data-engine/outstanding.md). Source/tests outrank documents.
 C3 (R-F-26), E1 evidence, followed by serial integration, independent review and verification.
 This superseded the prior C1-only stop for those scopes only. R-D-28 to R-D-30 record choices.
 
-[V] Branch `analysis-hardening`, HEAD `d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446`.
-C1 implementation `002684c` and publication record `d8a76f1` remain published. This wave is
-uncommitted. No branch, stash, dependency, schema/storage key, draw-key or physics change.
+[V] Branch `analysis-hardening`. C2/C3/E1 implementation `798380d787f12b5cea729aefcd9570b3f51c3f0c`
+is published to `origin/analysis-hardening` (remote hash checked on 2026-09-05); this
+publication-record commit follows it. C1 `002684c` and its record `d8a76f1` remain published.
+No branch, stash, dependency, schema/storage key, draw-key or physics change.
 [V] Incoming modified `CLAUDE.md` and four untracked data-engine mockup/build files were
 preserved by SHA-256 check. A later untracked `.claude/launch.json` appeared during final
 QA; this task did not create/edit it and leaves it unowned and untouched. Do not stage,
@@ -55,7 +56,7 @@ replicates. Spawn-in-ring/unvalidated-model findings limit this to integration e
 
 ## 3. Next bounded task and limits
 
-[D] Stop after publishing the verified wave. No further implementation slice is selected.
+[D] The verified wave is published. Stop. No further implementation slice is selected.
 [I] Recommended next selection:
 **C4 for R-F-27/R-F-28**, using [PLAN C4](field-te/PLAN.md#c4-authoritative-te-record-transitions).
 Begin by defining issued-card/version immutability, finalized-reference blockers and purpose-aware
