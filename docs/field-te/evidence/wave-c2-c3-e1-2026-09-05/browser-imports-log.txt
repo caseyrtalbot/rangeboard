@@ -1,0 +1,40 @@
+### Ran Playwright code
+```js
+await (async page => {
+  const messages=[]
+  // A dedicated page is used so these handlers own the import dialogs.
+  page.on('dialog',async d=>{messages.push(d.message());await d.accept()})
+  const before=await page.evaluate(()=>JSON.stringify(window.__store.getState().scenario))
+  const choose=page.waitForEvent('filechooser')
+  await page.evaluate(async()=>{(await import('/src/io/persist.ts')).importScenarioFile()})
+  const chooser=await choose
+  await chooser.setFiles({name:'bad-scenario.json',mimeType:'application/json',buffer:Buffer.from('{"schemaVersion":1,"entities":null}')})
+  await page.waitForTimeout(200)
+  const rejected=await page.evaluate(raw=>JSON.stringify(window.__store.getState().scenario)===raw,before)
+  if(!rejected)throw Error('Invalid file import changed scenario')
+  const imageChooserPromise=page.waitForEvent('filechooser')
+  await page.evaluate(async()=>{(await import('/src/io/persist.ts')).importUnderlayImage()})
+  const imageChooser=await imageChooserPromise
+  await imageChooser.setFiles({name:'one-pixel.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/2hoAAAAASUVORK5CYII=','base64')})
+  await page.waitForFunction(()=>window.__store.getState().scenario.underlay.naturalW===1)
+  const image=await page.evaluate(()=>{const u=window.__store.getState().scenario.underlay;return{width:u.naturalW,height:u.naturalH,dataUrl:u.dataUrl?.slice(0,22)}})
+  const importPayload=await page.evaluate(async()=>{
+    const { emptyScenario }=await import('/src/model/seed.ts')
+    const source=emptyScenario().library.find(m=>m.kind==='sensor')
+    return {rangeboardLibrary:1,models:[{...source,id:'wave-triangular-import',builtin:false,provenance:[{field:'detectRangeM',value:String(source.sensor.detectRangeM),source:'test planning factor',date:'2026-09-05',basis:'pf',spread:{kind:'triangular',lo:-0.2,hi:0.3}}]}]}
+  })
+  const libraryChooserPromise=page.waitForEvent('filechooser')
+  await page.evaluate(async()=>{(await import('/src/io/persist.ts')).importLibraryFile()})
+  const libraryChooser=await libraryChooserPromise
+  await libraryChooser.setFiles({name:'valid-library.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(importPayload))})
+  await page.waitForFunction(()=>window.__store.getState().scenario.library.some(m=>m.id==='wave-triangular-import'))
+  const library=await page.evaluate(()=>window.__store.getState().scenario.library.find(m=>m.id==='wave-triangular-import').provenance[0].spread)
+  await page.evaluate(result=>{window.__waveImports=result},{invalidImportPreserved:rejected,messages,image,library})
+}
+)(page);
+```
+### Page
+- Page URL: http://localhost:5207/
+- Console: 1 errors, 0 warnings
+### Modal state
+- [File chooser]: can be handled by upload

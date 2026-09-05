@@ -757,20 +757,47 @@ describe('withBands', () => {
     expect(withUas.values).toEqual([60, 60, 60, 60])
     expect(withUas.band80).toEqual([[59, 59, 59, 59], [61, 61, 61, 61]])
     const [noUas] = withBands([series('residual', n)], summaryOf(n))
-    expect(noUas.values).toEqual([7, 7, 7, 7])
+    expect(noUas.values.every(Number.isNaN)).toBe(true)
+    expect(noUas.label).toContain('MC estimate unavailable')
     expect(noUas.band80).toBeUndefined()
     const [unknown] = withBands([series('residual', n)], summaryOf(n), 'uas-9')
     expect(unknown.band80).toBeUndefined()
   })
 
-  it('passes an unmatched id, a length mismatch and a null summary through unchanged', () => {
+  it('preserves undefined no-asset leakers when an MC partition band contains zero', () => {
+    const input = series('kpi.leakerShips', 4)
+    input.values.fill(NaN)
+    const [out] = withBands([input], summaryOf(4))
+    expect(out.values.every(Number.isNaN)).toBe(true)
+    expect(out.band80?.every((bound) => bound.every(Number.isNaN))).toBe(true)
+    expect(out.band95?.every((bound) => bound.every(Number.isNaN))).toBe(true)
+  })
+
+  it('hides estimates when quantile vectors are missing or no replicates exist', () => {
+    const summary = summaryOf(4)
+    summary.kills.p90 = []
+    expect(withBands([series('kpi.expectedKills', 4)], summary)[0].values.every(Number.isNaN)).toBe(true)
+    summary.replicates = 0
+    expect(withBands([series('kpi.detected', 4)], summary)[0].label).toContain('MC estimate unavailable')
+  })
+
+  it('labels unsupported quantities and hides mismatched estimates', () => {
     const n = 5
     const other = series('meanPd', n)
-    expect(withBands([other], summaryOf(n))[0]).toBe(other)
+    expect(withBands([other], summaryOf(n))[0]).toMatchObject({ values: other.values, label: 'meanPd · planning envelope' })
     const short = series('kpi.detected', n)
-    expect(withBands([short], summaryOf(n + 1))[0]).toBe(short)
-    expect(withBands([short], summaryOf(n - 1))[0]).toBe(short)
+    expect(withBands([short], summaryOf(n + 1))[0].values.every(Number.isNaN)).toBe(true)
+    expect(withBands([short], summaryOf(n - 1))[0].label).toContain('MC estimate unavailable')
     const list = [series('kpi.detected', n)]
-    expect(withBands(list, null)).toBe(list)
+    expect(withBands(list, null)[0]).toMatchObject({ values: list[0].values, label: 'kpi.detected · planning envelope' })
+  })
+})
+
+
+describe('C2 leaker definedness', () => {
+  it('does not turn a no-asset partition zero into a defined leaker chart', () => {
+    const s = emptyScenario()
+    const leak = kpiSeries(s).find((row) => row.id === 'kpi.leakerShips')!
+    expect(leak.values.every(Number.isNaN)).toBe(true)
   })
 })

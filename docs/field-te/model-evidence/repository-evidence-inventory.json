@@ -1,0 +1,164 @@
+[
+  {
+    "path": "docs/inventory/README.md",
+    "bytes": 4213,
+    "sha256": "3ec9b41cd1e6b70cdd63f9ab53302d937312dc265553769f70d357d1b665b269",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/inventory/changelog.md",
+    "bytes": 13303,
+    "sha256": "e31ca380270d7ef26c98d62a1531c3993948963038773278c24e7f0c4817f5ef",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/inventory/doctrine.md",
+    "bytes": 14862,
+    "sha256": "14e3241eea342a3747a223bc63f1ad0a72a334a5bb6ae799df927f8459b2c238",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/inventory/gaps.md",
+    "bytes": 57216,
+    "sha256": "8a460f1eacfcedad04c219955e6f2aef770989f24ead88f24f21420042e9fca5",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/inventory/integration-matrix.csv",
+    "bytes": 20318,
+    "sha256": "011c216d9d9fb6ab21bf9101f2141dcc01d2bc0bc72413060a13eeb8d4667d76",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/inventory/provenance.md",
+    "bytes": 200152,
+    "sha256": "14dd4670d8609feadfc5482cb7eb1a24ce2a7cbc2e4b7c96fd3f5ea8b34e71c1",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/threat/UAS_CUAS_Threat_Study_Public_Source_2026-08-22.md",
+    "bytes": 119867,
+    "sha256": "9f59cdd3da676f11d16b5e18ca687b8038b95703465aa4b86a135a2c69e04cfd",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/01-roles-qualification.md",
+    "bytes": 30808,
+    "sha256": "8f27dea7d292b4cf3d2f7a49b2a93a328d8aea08f814b5df8c7e013a9913f48f",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/02-evidence-measures-design.md",
+    "bytes": 19709,
+    "sha256": "fba3f3537029c09e5ff4c86c7ba4efcf83686c16ab6fd346516e9d8272c68f54",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/03-integration-readiness.md",
+    "bytes": 19311,
+    "sha256": "6d4057a98d3725c4f5a863aa81d9a30c3afc36dcc6974c0c7d651687774f7300",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/04-test-cards-execution.md",
+    "bytes": 35274,
+    "sha256": "dd2b4fd47352cace187f315975c5a57bd961d566fa6bf3b4cf8f43f4cab1216a",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/05-validation-analysis.md",
+    "bytes": 19920,
+    "sha256": "830c2093cc0c420dc41bfd8f02894cea8d02fc593dc6c070ea10cf50201b5832",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/06-decision-closeout.md",
+    "bytes": 23065,
+    "sha256": "df254c8dd262efbbd13152826828fb8c64ff1403f1e53750e8fcba0e932e73e1",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/07-templates-forms-checklists.md",
+    "bytes": 24586,
+    "sha256": "a936a6bfe271fd5615126226ad6fdc34ce9b62a687d0704b0edfffd48a850a33",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/08-threat-doctrine.md",
+    "bytes": 68195,
+    "sha256": "48d4b3f038aff088dcb32a2a6b0079a5f19b534762a181f8147f3a3d9a7aeb53",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/09-measures-quantdesign.md",
+    "bytes": 57943,
+    "sha256": "a41c2a334a7dfc4000be6ff84601ddcaf01b9b2c5583769bf3f004f3204464cd",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/10-quant-guide.md",
+    "bytes": 56136,
+    "sha256": "568cc6a514445199556a3737de0b56821ea2f7342a5c24ec5dd9f0f8f17e7903",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/11-instrumentation-worked-cards.md",
+    "bytes": 45496,
+    "sha256": "47a88934fe1143eed3c70650dffc59b814fd36bbbc63a5fb686158b1b2605372",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/12-jiatf401.md",
+    "bytes": 43823,
+    "sha256": "fd3c408c52be07e350faa5e3c144a09f32e18c120447ec7d3bb31ced58e6d389",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/13-field-guide-questions.md",
+    "bytes": 103442,
+    "sha256": "f573731eb26ed0dc06994253564c9a89ef37d6a81191fe702cc814aa4b2cf5ef",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/MASTER-CALCULATIONS.md",
+    "bytes": 65174,
+    "sha256": "5fa70aa565ec2cb73a76ddc3ea385048bd4fa80883fea69f7f37d4bca5e17853",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/MASTER-DATAMODEL.md",
+    "bytes": 113483,
+    "sha256": "ba0288b8311cada1b8305901101c2fe20b9c77e33920e2ce4a9f7e6ef579e99d",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/MASTER-FORMS.md",
+    "bytes": 136967,
+    "sha256": "b6a8134ecf16fb1ede6705be0e33867ce46934b8c94fc10745ef78ab908970c2",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/MASTER-SEEDDATA.md",
+    "bytes": 153593,
+    "sha256": "69d323fd84651e8d253b2976755fa490e2af53d027497c7519e00072afdd93a3",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/te-compilation/_BRIEF.md",
+    "bytes": 5301,
+    "sha256": "8047b8c2042cb83022c93ded20a4a94b2b2f159bc506a77fc98c1093fbd522e1",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/data-engine/PLAN.md",
+    "bytes": 48043,
+    "sha256": "6482ba79316c2386e38304d2878c1b172b65c093040fd920060614275ba02d19",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  },
+  {
+    "path": "docs/engine-refactor/PLAN.md",
+    "bytes": 48839,
+    "sha256": "a151edb66b1ced2dbd1e86c64166fb2b571c646c5f261889783e73baa3cb6a3a",
+    "status": "historical repository research or implementation intent; original external sources not implicitly reopened"
+  }
+]

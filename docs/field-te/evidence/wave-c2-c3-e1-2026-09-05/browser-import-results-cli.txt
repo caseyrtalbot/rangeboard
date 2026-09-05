@@ -1,0 +1,18 @@
+### Result
+{
+  "invalidScenarioImportPreserved": true,
+  "image": {
+    "width": 1,
+    "height": 1,
+    "dataUrlPrefix": "data:image/png;base64,"
+  },
+  "triangularLibrary": {
+    "kind": "triangular",
+    "lo": -0.2,
+    "hi": 0.3
+  }
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (({invalidScenarioImportPreserved:window.__invalidImportPreserved,image:{width:window.__store.getState().scenario.underlay.naturalW,height:window.__store.getState().scenario.underlay.naturalH,dataUrlPrefix:window.__store.getState().scenario.underlay.dataUrl?.slice(0,22)},triangularLibrary:window.__store.getState().scenario.library.find(m=>m.id==="wave-triangular-import")?.provenance[0].spread}))');
+```

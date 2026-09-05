@@ -1,0 +1,13 @@
+{
+  "invalidScenarioImportPreserved": true,
+  "image": {
+    "width": 1,
+    "height": 1,
+    "dataUrlPrefix": "data:image/png;base64,"
+  },
+  "triangularLibrary": {
+    "kind": "triangular",
+    "lo": -0.2,
+    "hi": 0.3
+  }
+}

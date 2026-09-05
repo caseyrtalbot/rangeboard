@@ -1,0 +1,76 @@
+async page => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('dialog', dialog => dialog.accept())
+  await page.evaluate(async () => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const raw = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).text()
+    const s = window.__store.getState()
+    s.loadScenario(parseAutosave(raw))
+    s.patchScenario({ runMode: 'monte-carlo', uncertainty: 'total', replicates: 30 })
+    s.setRightTab('analysis')
+    s.clearSelection()
+    s.applyLens('run-summary')
+    window.__store.getState().runMonteCarlo()
+  })
+  await page.waitForFunction(() => window.__store.getState().mc.status === 'done', null, { timeout: 30000 })
+  await page.evaluate(() => {
+    const s = window.__store.getState()
+    s.startRun()
+    s.advanceRun(s.mc.summary.durationS)
+    s.completeRun(s.mc.summary.durationS)
+  })
+  await page.locator('.debrief-record').waitFor()
+  const current = await page.evaluate(async () => {
+    const s = window.__store.getState()
+    const { engagementPicture } = await import('/src/analysis/impact.ts')
+    const { currentSummary } = await import('/src/panels/analysis/widgets/mc.ts')
+    const p = engagementPicture(s.scenario)
+    const mc = currentSummary(s.mc, s.playback.runId)
+    const metrics = [...document.querySelectorAll('.debrief-record .outcome-metric')].map(el => ({
+      label: el.querySelector('span')?.textContent,
+      value: el.querySelector('strong')?.textContent,
+      sub: el.querySelector('small')?.textContent
+    }))
+    const expectedDefeat = `${(mc.kills.mean.at(-1) / p.report.totals.raidSize * 100).toFixed(1)}%`
+    if (metrics.find(x => x.label === 'Defeat')?.value !== expectedDefeat) throw Error('Defeat differs from MC mean')
+    if (!metrics.find(x => x.label === 'Defeat')?.sub.includes('pp')) throw Error('Defeat CI lacks percentage-point unit')
+    if (!metrics.find(x => x.label === 'Late E[k]')?.sub.includes('envelope')) throw Error('Late kills missing envelope basis')
+    return { status: s.mc.status, expectedDefeat, meanKills: mc.kills.mean.at(-1), meanLeakers: mc.leakers.mean.at(-1), deterministicKills: p.report.totals.expectedKills, deterministicEvents: p.report.events.length, metrics, gates: document.querySelector('.requirements-block')?.textContent }
+  })
+  await page.screenshot({ path: 'output/playwright/wave-c2-current.png' })
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('button', {name:'Export debrief JSON',exact:true}).click()
+  ])
+  await download.saveAs('output/playwright/wave-run-export.json')
+  await page.evaluate(() => { const s = window.__store.getState(); s.scrubTo(100); })
+  await page.locator('.recharts-wrapper').first().waitFor()
+  const charts = await page.evaluate(() => ({
+    paths: document.querySelectorAll('.recharts-line-curve').length,
+    bandPaths: document.querySelectorAll('.recharts-area-area').length,
+    text: [...document.querySelectorAll('section.wg')].map(el=>el.textContent),
+    overflow: [...document.querySelectorAll('.right-panel,.right-panel-body,section.wg,.detail,.outcome-metric small,.tile .ts')].filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>({cls:el.className,width:el.clientWidth,scroll:el.scrollWidth,text:el.textContent})),
+    typeFloor: [...document.querySelectorAll('.right-panel *')].filter(el=>[...el.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()) && parseFloat(getComputedStyle(el).fontSize)<10 && el.tagName!=='text').map(el=>({cls:el.className,text:el.textContent}))
+  }))
+  if (!charts.paths || !charts.bandPaths) throw Error('MC chart line or quantile bands not rendered')
+  await page.evaluate(() => [...document.querySelectorAll('section.wg')].find(el=>el.textContent.includes('replicate quantiles'))?.scrollIntoView())
+  await page.screenshot({ path: 'output/playwright/wave-c2-charts.png' })
+  const stale = await page.evaluate(() => {
+    const s = window.__store.getState()
+    const threat = s.scenario.entities.find(e=>e.kind==='uas')
+    s.updateEntity(threat.id,{altitudeFt:16000})
+    return { status:window.__store.getState().mc.status, text:document.querySelector('.analysis-panel')?.textContent }
+  })
+  await page.waitForTimeout(100)
+  stale.text = await page.locator('.analysis-panel').innerText()
+  if (stale.status!=='stale') throw Error('C1 edit did not stale MC result')
+  if (stale.text.includes('MC mean ·')) throw Error('Stale MC estimates remain visible')
+  await page.screenshot({path:'output/playwright/wave-c2-stale.png'})
+  await page.evaluate(() => { window.__store.getState().undo(); window.__store.getState().runMonteCarlo() })
+  await page.waitForFunction(() => window.__store.getState().mc.status === 'done',null,{timeout:30000})
+  const restored = await page.evaluate(() => { const s=window.__store.getState(); return {status:s.mc.status,kills:s.mc.summary.kills.mean.at(-1),leakers:s.mc.summary.leakers.mean.at(-1)} })
+  if (restored.kills!==current.meanKills || restored.leakers!==current.meanLeakers) throw Error('Seeded MC changed after undo/recompute')
+  await page.evaluate(result=>{window.__waveResults=result},{current,charts,stale,restored,errors})
+}

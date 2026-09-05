@@ -20,8 +20,12 @@ import type { UncertainField } from '../analysis/uncertainty'
 import { uncertainFields } from '../analysis/uncertainty'
 import { specFields, runSettings } from '../model/types'
 import { emptyScenario } from '../model/seed'
-import { useStore } from '../state/store'
-import { notifyRecovery, stashUnreadableSave } from './recovery'
+import { analysisBasisSignature, useStore } from '../state/store'
+import { runResultGroups } from './runResultGroups'
+import type { RunResultGroups } from './runResultGroups'
+import { allowAutosave, assertAutosaveAllowed, blockAutosave, notifyRecovery, recoverUnreadableSave } from './recovery'
+import { parseLibraryData, validateScenarioReferences, validateScenarioShape } from './validateScenario'
+import { MAX_IMAGE_CODE_UNITS, validateImage } from './runtimeValidation'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 
 /**
@@ -75,6 +79,7 @@ export function adoptSeedProvenance(saved: SpecModel, seed: SpecModel): SpecMode
  * content.
  */
 export function fillScenario(parsed: Scenario): Scenario {
+  validateScenarioShape(parsed)
   const empty = emptyScenario()
   const roe =
     parsed.roe ??
@@ -88,7 +93,7 @@ export function fillScenario(parsed: Scenario): Scenario {
     const seed = m.builtin ? seedById.get(m.id) : undefined
     return seed ? adoptSeedProvenance(m, seed) : m
   })
-  return {
+  const filled: Scenario = {
     ...empty,
     ...parsed,
     library,
@@ -104,6 +109,8 @@ export function fillScenario(parsed: Scenario): Scenario {
 
     roe,
   }
+  validateScenarioReferences(filled)
+  return filled
 }
 
 /**
@@ -123,37 +130,39 @@ export function fillDoctrine(
 }
 
 /**
- * Parse a raw autosave record. Throws on malformed JSON; returns null when the
- * record is not a schema-1 scenario. Exported for tests.
+ * Parse a raw autosave record. Throws a path/reason on invalid JSON or runtime
+ * shape; only a validated, default-filled schema-1 scenario is returned.
  */
-export function parseAutosave(raw: string): Scenario | null {
-  const parsed = JSON.parse(raw) as Scenario | null
-  if (!parsed || typeof parsed !== 'object' || parsed.schemaVersion !== 1) return null
-  return fillScenario(parsed)
+export function parseAutosave(raw: string): Scenario {
+  return parseScenarioData(JSON.parse(raw))
 }
 
-/**
- * Load the scenario autosave. A record that exists but cannot be loaded is
- * copied to a recovery key BEFORE this returns, because the first edit after
- * an empty start overwrites the live key. The user is told where the copy is.
- */
+/** Pure scenario import boundary; no malformed payload reaches a store. */
+export function parseScenarioData(value: unknown): Scenario {
+  validateScenarioShape(value)
+  return fillScenario(value)
+}
+
+/** Read failure and failed recovery both prevent subsequent autosave overwrite. */
 export function loadAutosave(): Scenario | null {
   let raw: string | null
   try {
     raw = localStorage.getItem(SCENARIO_KEY)
   } catch {
+    blockAutosave(SCENARIO_KEY, 'Autosave paused: existing browser storage could not be read. Export current work and reload when storage is available.')
+    const store = useStore.getState()
+    store.setSaveState(store.save.lastAutosaveAt, 'Autosave paused: browser storage could not be read. Export current work and reload when storage is available.')
     return null
   }
-  if (!raw) return null
-  let scenario: Scenario | null = null
+  if (raw === null) { allowAutosave(SCENARIO_KEY); return null }
   try {
-    scenario = parseAutosave(raw)
-  } catch {
-    scenario = null
+    const scenario = parseAutosave(raw)
+    allowAutosave(SCENARIO_KEY)
+    return scenario
+  } catch (error) {
+    notifyRecovery('scenario', recoverUnreadableSave(raw, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX), (error as Error).message)
+    return null
   }
-  if (scenario) return scenario
-  notifyRecovery('scenario', stashUnreadableSave(raw, SCENARIO_RECOVERY_PREFIX))
-  return null
 }
 
 /**
@@ -173,12 +182,13 @@ export function startAutosave(): void {
     if (!scenario) return
     const store = useStore.getState()
     try {
+      assertAutosaveAllowed(SCENARIO_KEY)
       localStorage.setItem(SCENARIO_KEY, JSON.stringify(scenario))
       store.setSaveState(Date.now(), null)
     } catch (err) {
       // Storage full (large underlay image) or storage unavailable. The Saved
       // pill must not keep showing a time that is no longer true.
-      const reason = err instanceof Error && err.name ? err.name : 'storage error'
+      const reason = err instanceof Error ? err.message || err.name : 'storage error'
       store.setSaveState(store.save.lastAutosaveAt, `Not saved: ${reason}. Export the scenario.`)
     }
   }
@@ -246,6 +256,14 @@ export interface RunRecordMeta {
 /** Full, reproducible completed-run package rather than summary-only AAR. */
 export interface RunExport {
   rangeboardRun: 1
+  /** Existing dataBasis describes only its named groups, not the whole mixed package. */
+  packageBasis: {
+    semantics: 'planning-envelope' | 'mixed-result-groups'
+    dataBasisAppliesTo: Array<keyof RunResultGroups>
+  }
+  /** Configuration equality only: not a cryptographic or source-revision hash. */
+  configuration: { analysisBasisSignature: string; identityKind: 'configuration-equality' }
+  resultGroups: RunResultGroups
   dataBasis: {
     kind: 'deterministic-planning-model' | 'monte-carlo'
     /** What the numbers are: a threshold envelope, or a replicate estimate. */
@@ -303,6 +321,15 @@ export function runExportObject(
   const validity = assessRunValidity(basisScenario, assessments)
   const out: RunExport = {
     rangeboardRun: 1,
+    packageBasis: {
+      semantics: mc || sensitivity ? 'mixed-result-groups' : 'planning-envelope',
+      dataBasisAppliesTo: mc ? ['mcSummary'] : ['assessments', 'attrition', 'requirements', 'summary'],
+    },
+    configuration: {
+      analysisBasisSignature: analysisBasisSignature(scenario),
+      identityKind: 'configuration-equality',
+    },
+    resultGroups: runResultGroups(scenario, assessments, attrition, mc, sensitivity),
     dataBasis: mc
       ? {
           kind: 'monte-carlo',
@@ -367,7 +394,7 @@ export function pickJsonFile(onLoad: (data: unknown) => void): void {
     file
       .text()
       .then((text) => onLoad(JSON.parse(text)))
-      .catch(() => window.alert('Could not read that file as JSON.'))
+      .catch((error: unknown) => window.alert(`Could not import file: ${error instanceof Error ? error.message : 'unreadable JSON'}`))
   }
   input.click()
 }
@@ -385,25 +412,15 @@ export function importScenarioFile(): void {
     return
   }
   pickJsonFile((data) => {
-    const s = data as Scenario
-    if (s?.schemaVersion !== 1 || !Array.isArray(s.entities)) {
-      window.alert('That file is not a RangeBoard scenario.')
-      return
-    }
-    useStore.getState().loadScenario(fillScenario(s), { fit: 'always' })
-
+    const s = parseScenarioData(data)
+    useStore.getState().loadScenario(s, { fit: 'always' })
   })
 }
 
 
 export function importLibraryFile(): void {
   pickJsonFile((data) => {
-    const d = data as { rangeboardLibrary?: number; models?: SpecModel[] }
-    if (d?.rangeboardLibrary !== 1 || !Array.isArray(d.models)) {
-      window.alert('That file is not a RangeBoard library.')
-      return
-    }
-    useStore.getState().mergeLibrary(d.models)
+    useStore.getState().mergeLibrary(parseLibraryData(data))
   })
 }
 
@@ -415,10 +432,18 @@ export function importUnderlayImage(): void {
   input.onchange = () => {
     const file = input.files?.[0]
     if (!file) return
+    // Base64 expands bytes by 4/3; localStorage counts UTF-16 code units.
+    if (4 * Math.ceil(file.size / 3) + 128 > MAX_IMAGE_CODE_UNITS) {
+      window.alert('Image exceeds the 5 MiB browser-storage budget. Choose a smaller image.')
+      return
+    }
     const reader = new FileReader()
+    reader.onerror = () => window.alert('Could not read the image file.')
     reader.onload = () => {
       const dataUrl = reader.result as string
+      try { validateImage(dataUrl, 'underlay.dataUrl', true) } catch (error) { window.alert((error as Error).message); return }
       const img = new Image()
+      img.onerror = () => window.alert('Could not decode the image file.')
       img.onload = () => {
         useStore.getState().setUnderlayImage(dataUrl, img.naturalWidth, img.naturalHeight)
         useStore.getState().setBasemap('sat')

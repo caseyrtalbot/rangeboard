@@ -81,7 +81,7 @@ export function EventLedgerWidget({ id, params, collapsed, customize, index, cou
       id={id}
       type="event-ledger"
       title="Event ledger"
-      meta={`${shown} of ${report.events.length}`}
+      meta={`planning envelope · ${shown} of ${report.events.length}`}
       collapsed={collapsed}
       customize={customize}
       index={index}

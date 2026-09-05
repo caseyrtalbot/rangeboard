@@ -1,87 +1,75 @@
 # RangeBoard: current engineering handoff
 
-Status: CURRENT TRANSFER RECORD. Updated 2026-09-05. C1 is implemented, verified and
-published as `002684c` on `origin/analysis-hardening`. Stop before C2.
+Status: CURRENT TRANSFER RECORD, 2026-09-05. C2/C3/E1 wave verified in working tree.
+Casey authorized commit, push and next-agent handoff on 2026-09-05; publication is in progress.
 
-Marks: `[V]` source/test/tool verified; `[D]` documented intent or user direction;
+Marks: `[V]` source/test/tool verified; `[D]` user direction/documented intent;
 `[I]` reasoned implication; `[U]` unresolved. Read [AGENTS.md](../AGENTS.md), this record,
 then the [register](data-engine/outstanding.md). Source/tests outrank documents.
 
 ## 1. Scope and working tree
 
-[D] Casey selected execution of `/private/tmp/caseytalbot-rangeboard-handoff.md`: implement
-C1, complete analysis identity/result invalidation (R-F-24), verify and update records, then
-stop. [PLAN.md](field-te/PLAN.md) sufficed; no new project-wide plan was needed. R-D-26
-records selection and R-D-27 records bounded implementation choices.
+[D] Casey requested execution of the fresh orchestrator handoff at
+`/private/tmp/caseytalbot-rangeboard-parallel-handoff.md`: parallel C2 (R-F-25),
+C3 (R-F-26), E1 evidence, followed by serial integration, independent review and verification.
+This superseded the prior C1-only stop for those scopes only. R-D-28 to R-D-30 record choices.
 
-[V] Implementation baseline was `8b528f2a096a64d5a3ead9c5456d29bed6bd1ad1`, branch
-`analysis-hardening`. [D] Casey authorized commit and push on 2026-09-05. [V] After fetching
-and checking origin, C1 was committed and pushed as `002684c`; this publication record
-follows it. No branch, stash or schema/storage/dependency/draw-contract change was made.
+[V] Branch `analysis-hardening`, HEAD `d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446`.
+C1 implementation `002684c` and publication record `d8a76f1` remain published. This wave is
+uncommitted. No branch, stash, dependency, schema/storage key, draw-key or physics change.
+[V] Incoming modified `CLAUDE.md` and four untracked data-engine mockup/build files were
+preserved by SHA-256 check. A later untracked `.claude/launch.json` appeared during final
+QA; this task did not create/edit it and leaves it unowned and untouched. Do not stage,
+repair or delete these files as cleanup. All wave
+changes are identified by the [completion record](field-te/WAVE_C2_C3_E1_COMPLETION.md) and
+[evidence manifest](field-te/evidence/wave-c2-c3-e1-2026-09-05/manifest.json). Recheck live status.
 
-[V] The incoming documentation changes were retained and committed with C1: AGENTS.md,
-README.md, the current handoff/register, historical status headers, and `docs/field-te/`.
-The source/test changes are listed in the completion record. The verified source/evidence
-hashes were checked again before committing; no source edits were needed for publication.
-Casey's four pre-existing untracked files remain untouched: `docs/data-engine/build_mockup.py`,
-`build_mockup_te.py`, `mockup.html`, `mockup-te.html`. Do not delete, stage, overwrite or
-regenerate them as cleanup. Inspect live git status before continuing.
+## 2. Completed and verified
 
-## 2. Completed C1 and evidence
+[V] C2: matching estimates/mean intervals/percentage denominators; quantile versus mean-CI
+labels; conditional time and no-statistic basis/definedness; deterministic requirement gates
+with envelope findings; per-group run export basis/validity/quantity semantics and configuration
+equality identity. Complete [measure matrix](field-te/wave-c2-c3-e1/C2_MATRIX.md).
 
-[V] `analysisBasisSignature` includes domain fields by default, removes named metadata,
-resolves scenario/entity/link defaults, and shares effective spread enumeration through
-pure `analysis/parameterBasis.ts`. The former uncertainty API is re-exported unchanged.
-Raw specifications are conservative inputs; equivalent explicit spec overrides can still
-cause recomputation. No claim of minimal invalidation is made.
+[V] C3: runtime shape and semantic/reference checks before Board/T&E save/import adoption,
+legacy default preservation, image validation and representability checks. Read denial or
+failed verified recovery pauses autosave to preserve the raw key. Generated shape descriptors
+must be regenerated/reviewed when domain types change. Internal T&E transitions remain C4.
 
-[V] Worker-instance ownership prevents replaced/canceled callbacks from reaching either
-slot, including repeated requests in the same playback run. Store guards require a
-running slot, current playback identity and current basis. Terminal callbacks are ignored.
-Both worker slots remain independent. SensitivityWidget now uses `currentSensitivity` and
-hides stale rows/replicate metadata. MC estimator/interval/export semantics remain C2.
+[V] E1: [model evidence baseline](field-te/model-evidence/README.md), eight dossiers/crosswalk,
+seven original primary captures, source/configuration/independence reconciliation. No trial
+validation, seed correction or fidelity upgrade is claimed. Historical research is preserved.
 
-[V] Initial focused regressions reproduced nine failures. Final verification: type-check
-clean; 1,222 tests in 70 files pass; lint 74 warnings, zero errors; build passes with the
-existing chunk-size warning. Exact deterministic/aleatory/total/sensitivity numerical
-parity passed for the preserved probe at four replicates. The temporary Vitest parity
-script under `src/` was removed after use.
+[V] Final checks: type-check clean; **1,327 tests in 76 files pass**; lint **74 existing warnings,
+zero errors**; build passes with the existing chunk-size warning; descriptor drift check passes.
+Exact pre/post deterministic, aleatory/total MC and sensitivity parity on the fixed probe at
+four replicates. Temporary parity/review probes were removed before final gates.
 
-[V] Isolated browser, real workers, saved typed KuRFS/C2/Coyote route, total uncertainty,
-30 replicates: all five material edits invalidate both results and remove sensitivity
-rows; recomputation restores current results. Baseline/undo restore four deterministic
-events and MC mean kills 0.9666666667, leakers 0.0333333333. Spawn-in-ring and unvalidated-model
-findings remain on the baseline; this is freshness evidence, not detection validation.
-The temporary browser session and development server were stopped after inspection.
+[V] Independent verifier PASS after four fixes: triangular-offset compatibility, reserved-ID
+serialization loss, malformed base64 padding, and consistent envelope requirement validity.
+Isolated browser verified real-worker means/CI units, rendered quantile charts, edit/undo
+freshness, native export/import, legacy reload and failed-recovery raw preservation. No captured
+page exceptions. Screenshots inspected; tested 320 px content has no overflow/type-floor failure.
+Typed probe fires four events; MC mean kills 0.9666666667 and leakers 0.0333333333 at 30 total
+replicates. Spawn-in-ring/unvalidated-model findings limit this to integration evidence.
 
-[V] Full input/consumer/test matrix, file scope, decisions, evidence limits and checks:
-[C1_COMPLETION.md](field-te/C1_COMPLETION.md). Captured outputs/screenshots and hashes:
-[evidence manifest](field-te/evidence/c1-2026-09-04/manifest.json).
-Onboarding findings/evidence remain historical, with a C1 status note.
+## 3. Next bounded task and limits
 
-## 3. Next step and open work
+[D] Stop after publishing the verified wave. No further implementation slice is selected.
+[I] Recommended next selection:
+**C4 for R-F-27/R-F-28**, using [PLAN C4](field-te/PLAN.md#c4-authoritative-te-record-transitions).
+Begin by defining issued-card/version immutability, finalized-reference blockers and purpose-aware
+inclusion at store boundaries. Verify with direct store regressions and a complete illustrative
+campaign walkthrough. Stop before R1 or additional model/UI work. This recommendation is not
+implementation authorization.
 
-[D] Stop here. **C2 is the next implementation slice when selected**, using
-[PLAN.md section C2](field-te/PLAN.md#c2-consistent-estimates-intervals-gates-and-exports).
-Start with a bounded brief around R-F-25: inventory headline/chart/gate/export quantity,
-unit, denominator, horizon, definedness and deterministic/MC basis. Define the MC
-requirement rule before changing it. This packet does not authorize C2 implementation,
-R1 extraction or later physics/UI work. The later user request authorized publication of
-C1 and its records only.
-
-| IDs | Remaining scope | Slice |
-| --- | --- | --- |
-| R-F-25 | Mixed deterministic values, MC intervals, labels and export semantics | C2 |
-| R-F-26 | Malformed nested saves/imports pass shallow parsers | C3 |
-| R-F-27/R-F-28 | T&E record immutability, inclusion purpose and reference enforcement | C4 |
-| F-19/F-59 and related follow-ups | Existing store/engine/view cycles and worker weight | R1 |
-| R-F-2/3/4/6/7/16/29 | Source reconciliation, approximation limits, spread scope and credibility | E1/E2/E3 |
-| R-F-15 | Member-order pairing coverage | E3 |
-| R-F-20/21/22; M-11 | Blocked-route explanation, narrow-panel clipping, stale source copy | C2/U1 and owning slices |
-
-[D] Casey's objective remains a field C-UAS T&E application with physically defensible
-models, reliable records and usable operator workflows. Existing evidence is the repository's
-open-source doctrine/specifications/modeling; no independent trial dataset is available.
-[U] Field hardware/OS, initial test question and representative pilot/acceptance owner remain
-undecided. These do not block the next bounded correctness work. Single-operator laptop,
-offline use and manual file transfer remain provisional assumptions.
+[U] R-F-31: practical execution budgets/cancellation for large representable runs remain a
+policy/performance question. LocalStorage recovery is not crash/cross-tab durability (T1).
+C4 internal mutations can still produce invalid records; C3 rejects them on later external adoption
+and preserves the raw save rather than inventing repairs.
+[U] E2/E3: radar quantity/configuration/calibration limits, capped-intercept feasibility,
+R-F-30 jam horizontal/slant mismatch, vendor-count applicability, sampled/fixed uncertainty
+coverage and stop-rule adequacy. E1's dossiers qualify these; they do not resolve the physics.
+[U] R-F-20 retains per-threat blocked-route presentation and a valid detection fixture;
+general panel cleanup remains U1. Field hardware/OS, initial test question and pilot owner
+remain undecided. Existing evidence includes no independent trial dataset.

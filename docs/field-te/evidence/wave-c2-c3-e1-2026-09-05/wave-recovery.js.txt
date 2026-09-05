@@ -1,0 +1,63 @@
+async page => {
+  const messages=[]
+  const errors=[]
+  page.on('dialog', async dialog => {messages.push(dialog.message()); await dialog.accept()})
+  page.on('pageerror', error => errors.push(error.message))
+  await page.evaluate(async () => {
+    const p = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).json()
+    const { buildJiatf401 } = await import('/src/te/seed/jiatf401.ts')
+    // Missing fields that have explicit legacy defaults must still load.
+    delete p.doctrine; delete p.requirements; delete p.environment; delete p.uncertainty
+    const c=buildJiatf401()
+    delete c.charter; delete c.decision; delete c.evidencePackage
+    localStorage.setItem('rangeboard.scenario.v1',JSON.stringify(p))
+    localStorage.setItem('rangeboard.te.v1',JSON.stringify({schemaVersion:1,campaigns:[c],activeCampaignId:c.id}))
+  })
+  await page.reload()
+  await page.waitForFunction(()=>!!window.__store && !!window.__teStore)
+  const legacy=await page.evaluate(()=>({entities:window.__store.getState().scenario.entities.length,campaigns:window.__teStore.getState().campaigns.length,recovery:Object.keys(localStorage).filter(k=>k.includes('.recovered.'))}))
+  if(legacy.entities!==6 || legacy.campaigns!==1 || legacy.recovery.length) throw Error('Valid legacy save failed')
+  const rawBoard='{"schemaVersion":1,"entities":null}'
+  const rawTe=await page.evaluate(()=>JSON.stringify({schemaVersion:1,campaigns:[{...window.__teStore.getState().campaigns[0],cards:null}],activeCampaignId:null}))
+  await page.evaluate(({rawBoard,rawTe})=>{
+    localStorage.setItem('rangeboard.scenario.v1',rawBoard)
+    localStorage.setItem('rangeboard.te.v1',rawTe)
+  },{rawBoard,rawTe})
+  await page.reload()
+  await page.waitForFunction(()=>!!window.__store && !!window.__teStore)
+  const recovered=await page.evaluate(({rawBoard,rawTe})=>({
+    boardEmpty:window.__store.getState().scenario.entities.length===0,
+    teEmpty:window.__teStore.getState().campaigns.length===0,
+    boardRawCopied:Object.keys(localStorage).filter(k=>k.startsWith('rangeboard.scenario.recovered.')).some(k=>localStorage.getItem(k)===rawBoard),
+    teRawCopied:Object.keys(localStorage).filter(k=>k.startsWith('rangeboard.te.recovered.')).some(k=>localStorage.getItem(k)===rawTe)
+  }),{rawBoard,rawTe})
+  if(Object.values(recovered).some(v=>!v)) throw Error('Raw malformed save not recovered')
+  await page.addInitScript(()=>{
+    const original=Storage.prototype.setItem
+    Storage.prototype.setItem=function(key,value){
+      if(this===localStorage && sessionStorage.getItem('wave-deny-recovery')==='1' && key.includes('.recovered.')) throw new DOMException('test quota','QuotaExceededError')
+      return original.call(this,key,value)
+    }
+  })
+  await page.evaluate(({rawBoard,rawTe})=>{
+    sessionStorage.setItem('wave-deny-recovery','1')
+    localStorage.setItem('rangeboard.scenario.v1',rawBoard)
+    localStorage.setItem('rangeboard.te.v1',rawTe)
+  },{rawBoard,rawTe})
+  await page.reload()
+  await page.waitForFunction(()=>!!window.__store && !!window.__teStore)
+  await page.evaluate(()=>{
+    window.__store.getState().patchScenario({name:'new edit after recovery failure'})
+    window.__teStore.getState().createCampaign('New edit','NEW')
+  })
+  await page.waitForTimeout(800)
+  const failedCopy=await page.evaluate(({rawBoard,rawTe})=>({
+    boardRawPreserved:localStorage.getItem('rangeboard.scenario.v1')===rawBoard,
+    teRawPreserved:localStorage.getItem('rangeboard.te.v1')===rawTe,
+    teSaveError:window.__teStore.getState().saveError
+  }),{rawBoard,rawTe})
+  if(!failedCopy.boardRawPreserved || !failedCopy.teRawPreserved) throw Error('Recovery failure destroyed raw save')
+  await page.screenshot({path:'output/playwright/wave-c3-recovery-failed.png'})
+  await page.evaluate(()=>sessionStorage.removeItem('wave-deny-recovery'))
+  await page.evaluate(result=>{window.__waveRecovery=result},{legacy,recovered,failedCopy,messages,errors})
+}

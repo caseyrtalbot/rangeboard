@@ -127,12 +127,13 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
       id={id}
       type="time-series"
       title={title}
-      meta={summary ? `${DT} s · bands 80 and 95%` : `${DT} s`}
+      meta={`${DT} s · basis per series`}
       collapsed={collapsed}
       customize={customize}
       index={index}
       count={count}
     >
+      {summary && <p className="muted small">MC bands: 80% and 95% replicate quantiles; tiles report confidence intervals on means.</p>}
       {threats === 0 ? (
         <p className="muted small">No threats with flight paths.</p>
       ) : (

@@ -123,6 +123,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   if (!spec) {
     return (
       <div className="detail" data-detail="sensor">
+        <p className="muted small">Planning envelope · deterministic readouts and charts.</p>
         <DetailHeader
           entity={entity}
           color={color}
@@ -211,6 +212,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="sensor">
+      <p className="muted small">Planning envelope · deterministic readouts and charts.</p>
       <DetailHeader
         entity={entity}
         color={color}

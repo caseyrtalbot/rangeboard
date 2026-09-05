@@ -1,0 +1,11 @@
+### Result
+{
+  "configuredThreshold": 0.23,
+  "copyUses23Percent": true,
+  "explicitGateBasis": true,
+  "routeExplanation": true
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (({configuredThreshold:window.__store.getState().scenario.requirements.maxResidualPerTrack,copyUses23Percent:window.__methodologyText.includes("23% per track"),explicitGateBasis:window.__methodologyText.includes("These gates evaluate the deterministic planning envelope"),routeExplanation:window.__methodologyText.includes("routed fire-control sensor")}))');
+```

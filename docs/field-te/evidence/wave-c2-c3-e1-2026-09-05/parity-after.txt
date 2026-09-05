@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 /Users/caseytalbot/Projects/rangeboard
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  09:53:28
+   Duration  695ms (transform 163ms, setup 0ms, import 201ms, tests 436ms, environment 0ms)
+

@@ -55,7 +55,9 @@ function setSensitivity(patch: Partial<SensitivitySummary> | null, status: 'done
 
 describe('SensitivityWidget', () => {
   beforeEach(() => {
-    useStore.getState().replaceScenario(emptyScenario())
+    const s = emptyScenario()
+    s.entities.push({ id: 'asset', name: 'asset', kind: 'asset', specId: null, pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' })
+    useStore.getState().replaceScenario(s)
   })
 
   it('asks for the Monte Carlo run mode under the deterministic mode', () => {
@@ -73,7 +75,7 @@ describe('SensitivityWidget', () => {
   })
 
   it('says so when no field carries a spread', () => {
-    const s = emptyScenario()
+    const s = useStore.getState().scenario
     useStore.getState().replaceScenario({
       ...s,
       runMode: 'monte-carlo',
@@ -115,7 +117,19 @@ describe('SensitivityWidget', () => {
     expect(html).toContain('<td>Coyote</td>')
     expect(html).toContain('<td>0.7</td>')
     expect(html).toContain('Run again')
+    expect(html).toContain('parameter perturbations, not uncertainty intervals')
+    expect(html).toContain('Mean CI unavailable')
     expect(html).not.toContain('STALE')
+  })
+
+  it('hides sensitivity partition values without an active defended asset', () => {
+    useStore.getState().replaceScenario({ ...emptyScenario(), runMode: 'monte-carlo' })
+    setSensitivity({}, 'done')
+    const html = render()
+    expect(html).toContain('Leakers unavailable: no defended asset')
+    expect(html).not.toContain('chart-tornado')
+    expect(html).not.toContain('<td>Coyote</td>')
+    expect(html).not.toContain('reps · seed')
   })
 
   it('marks a stale run and hides its rows and replicate metadata', () => {

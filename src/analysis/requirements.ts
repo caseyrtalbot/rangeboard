@@ -29,6 +29,8 @@ export interface RequirementGate {
 }
 
 export interface RequirementGateReport {
+  /** Threshold decisions use the deterministic envelope, never an MC mean CI. */
+  basis: 'planning-envelope'
   overall: RequirementGateStatus
   met: number
   required: number
@@ -154,8 +156,8 @@ function buildGate(
  * fail, so those numbers stay in the scenario where the test engineer sets
  * them.
  *
- * Pass `validity` when the caller already ran assessRunValidity, so the
- * spawn-in-ring sweep runs once per run instead of once per consumer.
+ * Pass envelope `validity` when the caller already ran assessRunValidity, so the
+ * spawn-in-ring sweep can be reused. MC-mode callers recompute envelope findings.
  */
 export function buildRequirementGateReport(
   scenario: Scenario,
@@ -171,7 +173,12 @@ export function buildRequirementGateReport(
     ...DEFAULT_REQUIREMENT_THRESHOLDS,
     ...scenario.requirements,
   }
-  const findings = (validity ?? assessRunValidity(scenario, assessments)).findings
+  // A supplied MC assessment can name parameter-spread models these gates never use.
+  // Recompute the full envelope findings, rather than mixing the two validity bases.
+  const envelopeValidity = scenario.runMode === 'monte-carlo'
+    ? assessRunValidity({ ...scenario, runMode: 'deterministic' }, assessments)
+    : validity ?? assessRunValidity(scenario, assessments)
+  const findings = envelopeValidity.findings
   const population = (id: RequirementGateId): ThreatAssessment[] => {
     const invalid = invalidatedTracksForGate(findings, id)
     return invalid.size === 0 ? threats : threats.filter((a) => !invalid.has(a.uasId))
@@ -282,7 +289,12 @@ export function buildRequirementGateReport(
       id: 'target',
       label: 'Target',
       population: targetPop,
-      test: (a) => ({ pass: a.status === 'engageable', reason: a.status.replaceAll('-', ' ') }),
+      test: (a) => ({
+        pass: a.status === 'engageable',
+        reason: a.status === 'no-fc-uplink'
+          ? 'fire-control uplink required: route has no fire-control sensor; geometry only, no shot'
+          : a.status.replaceAll('-', ' '),
+      }),
       metric: `${targetPop.filter((a) => a.status === 'engageable').length}/${targetPop.length} usable`,
       detail:
         minWindow == null ? 'no usable engagement window' : `shortest selected window ${formatTime(minWindow)}`,
@@ -328,6 +340,7 @@ export function buildRequirementGateReport(
   const incomplete = evaluated.length !== gates.length
   const overall: RequirementGateStatus = failed ? 'fail' : incomplete ? 'not-evaluated' : 'pass'
   return {
+    basis: 'planning-envelope',
     overall,
     met: gates.filter((g) => g.status === 'pass').length,
     required: gates.length,

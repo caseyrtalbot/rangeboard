@@ -1,0 +1,44 @@
+### Error
+dialog.accept: Cannot accept dialog which is already handled!
+    at _Page.<anonymous> (evalmachine.<anonymous>:4:84)
+dialog.accept: Cannot accept dialog which is already handled!
+    at _Page.<anonymous> (evalmachine.<anonymous>:4:84)
+dialog.accept: Cannot accept dialog which is already handled!
+    at _Page.<anonymous> (evalmachine.<anonymous>:4:84)
+dialog.accept: Cannot accept dialog which is already handled!
+    at _Page.<anonymous> (evalmachine.<anonymous>:4:84)
+### Result
+{
+  "legacy": {
+    "entities": 6,
+    "campaigns": 1,
+    "recovery": []
+  },
+  "recovered": {
+    "boardEmpty": true,
+    "teEmpty": true,
+    "boardRawCopied": true,
+    "teRawCopied": true
+  },
+  "failedCopy": {
+    "boardRawPreserved": true,
+    "teRawPreserved": true,
+    "teSaveError": "Not saved: Autosave paused to preserve an unreadable save. Export current work, free browser storage, and reload. Export the campaign."
+  },
+  "messages": [
+    "The saved scenario could not be read and was not loaded. scenario.name: required field is missing A copy is kept in browser storage under \"rangeboard.scenario.recovered.1788627894765\".",
+    "The saved T&E campaigns could not be read and was not loaded. te.campaigns[0].cards: expected an array A copy is kept in browser storage under \"rangeboard.te.recovered.1788627894777\".",
+    "The saved scenario could not be read and was not loaded. scenario.name: required field is missing A recovery copy could not be verified. The original is retained; autosave is paused. Export current work, free browser storage, and reload.",
+    "The saved T&E campaigns could not be read and was not loaded. te.campaigns[0].cards: expected an array A recovery copy could not be verified. The original is retained; autosave is paused. Export current work, free browser storage, and reload."
+  ],
+  "errors": []
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (window.__waveRecovery)');
+```
+### Page
+- Page URL: http://localhost:5207/
+- Page Title: RangeBoard — C-UAS T&E Planning Canvas
+### Events
+- New console entries: .playwright-cli/console-2026-09-05T16-53-20-300Z.log#L9-L11

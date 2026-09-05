@@ -1,0 +1,212 @@
+{
+  "date": "2026-09-05 America/Los_Angeles",
+  "baseHead": "d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446",
+  "branch": "analysis-hardening",
+  "committed": false,
+  "pushed": false,
+  "scope": [
+    "C2 R-F-25",
+    "C3 R-F-26",
+    "E1 evidence"
+  ],
+  "gates": {
+    "typecheck": {
+      "command": "npx tsc --noEmit -p tsconfig.app.json",
+      "exitCode": 0
+    },
+    "tests": {
+      "command": "npx vitest run",
+      "exitCode": 0,
+      "passed": 1327,
+      "files": 76
+    },
+    "lint": {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "warnings": 74,
+      "errors": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "mainKB": 2052.85,
+      "mainGzipKB": 588.72,
+      "workerKB": 288.46,
+      "warning": "existing chunk-size warning"
+    },
+    "schema": {
+      "command": "node src/io/generateRuntimeSchema.mjs --check",
+      "exitCode": 0
+    }
+  },
+  "numericalParity": {
+    "matched": true,
+    "method": "exact serialized deterministic assessments/report, aleatory MC, total MC and sensitivity against pre-edit capture",
+    "replicates": 4,
+    "probe": "../onboarding-2026-09-04/firing-scenario.json",
+    "baselineSha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+    "scratchRemoved": true
+  },
+  "independentReview": {
+    "status": "PASS",
+    "confirmedFindings": 4,
+    "resolvedFindings": 4,
+    "record": "../../wave-c2-c3-e1/INDEPENDENT_REVIEW.md"
+  },
+  "browser": {
+    "sessions": [
+      "rangeboard-wave",
+      "rangeboard-recovery",
+      "rangeboard-imports"
+    ],
+    "engine": "Chromium via Playwright CLI; isolated storage",
+    "sessionsClosed": true,
+    "devServerStopped": true,
+    "replicates": 30,
+    "uncertainty": "total",
+    "deterministicEvents": 4,
+    "meanKills": 0.9666666666666667,
+    "meanLeakers": 0.03333333333333333,
+    "pageExceptions": 0,
+    "chartLines": 3,
+    "quantileBandPaths": 6,
+    "testedPanelOverflow": false,
+    "testedTextBelow10px": false,
+    "screenshotsInspected": true,
+    "validityLimits": [
+      "spawn-in-ring",
+      "unvalidated-model"
+    ],
+    "nativeImportChecks": [
+      "malformed scenario preserves store",
+      "PNG FileReader/Image decode",
+      "negative-offset triangular library import"
+    ],
+    "recoveryChecks": [
+      "valid legacy Board/T&E load",
+      "malformed raw copies preserved",
+      "failed recovery suppresses autosave for both stores"
+    ]
+  },
+  "e1": {
+    "index": "../../model-evidence/README.md",
+    "originalSources": 7,
+    "dossiersAndCrosswalk": 8,
+    "models": 90,
+    "provenanceRows": 205,
+    "historicalArtifacts": 27,
+    "independentTrialData": false
+  },
+  "preservation": {
+    "existingRegisterRowsPreserved": 214,
+    "newRegisterRows": [
+      "R-D-28",
+      "R-D-29",
+      "R-D-30",
+      "R-F-30",
+      "R-F-31"
+    ],
+    "localPathsChecked": 154,
+    "missing": [],
+    "incomingHashesMatched": true,
+    "incomingUserFiles": {
+      "CLAUDE.md": "306ed531d9f2e761ea171b455cc82b617d5de992994ef53cdbe5c4b5bfbbaec0",
+      "docs/data-engine/build_mockup.py": "dfb502a680d85c067ae5822733a4930a007ee9efa0111c56d279fe50d4f6cb19",
+      "docs/data-engine/build_mockup_te.py": "2c1374e4a584019b1677750c1ee4d94785130d8a579017c5d8a4254c9895a003",
+      "docs/data-engine/mockup.html": "34f1a0e4c9fdde9a2f1cb1c37cb1320e232ba464b6dd8b3148203898d798e8d6",
+      "docs/data-engine/mockup-te.html": "22b1b05d4ab36bf26d4288ab31c9a9f4fde39114ebc20385147b1b64e4acda37"
+    },
+    "laterUnownedPaths": [
+      ".claude/launch.json"
+    ],
+    "laterUnownedSha256": {
+      ".claude/launch.json": "ca483e1381a10ea86225506e7638063ea6ad3043c1d1a1c3e5613a23f08b30ed"
+    }
+  },
+  "sourceSha256": {
+    "src/analysis/requirements.test.ts": "803b349cc0b7be8ed64261799ee4bb14079b8e549d74c582cb328a83b7a8be84",
+    "src/analysis/requirements.ts": "ba16be311fedd144f724f38c460c5d3c3a92571ca81cff820febf9a04ae22671",
+    "src/analysis/series.test.ts": "09224f7df219816bb76b982585e7d6d7dd2bb1f349f176ecfd6c90c89eea31fe",
+    "src/analysis/series.ts": "514200bfe9c89b6be96b71d136294e1110970006a0d2fdc0cf94bcc1adc66c93",
+    "src/index.css": "3fbe6bd6705a0e38599e2a3674d97fbd25a714e32523299023cf6f68a809b0df",
+    "src/io/persist.ts": "54ff4f016b1064d3cc56b6074d764b340535cadbfb5b064fa325a433840407bb",
+    "src/io/recovery.ts": "d458b7e67600f9bf4f992ecaf5cb1dddb915197f7caf8043e7d00bdab9dc0fac",
+    "src/panels/TestCardsPanel.tsx": "f5f76e62c1e31065a89def27a3b97b74265e7ba0e93621f9d7fb65d5b204aa88",
+    "src/panels/analysis/DebriefRecord.tsx": "7da1d632a0e13d22a8e450886d04bdf62f03ca88d2a1ad6ad071e8dc8ce17130",
+    "src/panels/analysis/OutcomeSummary.tsx": "37f4d88afd45dd7a81246880ebe5ccb8e2f872e5dcb1bac6c4b0a49d34d7110e",
+    "src/panels/analysis/RequirementGates.tsx": "af14afc505d0df7d3818935e7d23c4b0774de77d0476e9b22b45d9916a1cd70e",
+    "src/panels/analysis/ThreatPicture.tsx": "19b419b68be2fbcc241b5c7d5fad120aab5a747a79171126fc5f7d70d2d4cb67",
+    "src/panels/analysis/detail/EffectorDetail.tsx": "a7965bb20c5632558fe9c00d5fc327765f46a4a2088f8777c91a2f6673f4f8e2",
+    "src/panels/analysis/detail/SensorDetail.tsx": "27a92a13271a11b2f287783270023bf3dd07f82c8419b66a6dd32c61b6139869",
+    "src/panels/analysis/detail/SystemDetail.tsx": "1e729c19a5e970e42104c7bb54ac81f29c5c14ea844f2f0c1ef9fa2419abb4f8",
+    "src/panels/analysis/detail/ThreatDetail.tsx": "ce63cdde2de3b5352e6222d1478c3600c82e49f86aa4e491828af0683d50bf39",
+    "src/panels/analysis/widgets/EngagementLanesWidget.tsx": "d17fbd183b00471dcc90e6f1d6846e99d9cab7b6c207aae0ed14366f190ca9d9",
+    "src/panels/analysis/widgets/EventLedgerWidget.tsx": "35f6d1bdbc7d23d6c8236b3845c142e558d797e26f8153e337e38d0e1a768867",
+    "src/panels/analysis/widgets/KpiTilesWidget.test.tsx": "46e8e4f71a8438c574aa53990a58227d86f80c13dfcdf1b435f6f9ef4b1431f8",
+    "src/panels/analysis/widgets/KpiTilesWidget.tsx": "3189a9bd0adbc387fee6dbf092b193135be5b0d1e5d7784bddc299da059c30cd",
+    "src/panels/analysis/widgets/ProjectionWidget.tsx": "50693b00dfe8fb62ef90e990e4153ff746e86932a418ca816d0fa91ea578a7bd",
+    "src/panels/analysis/widgets/RequirementGatesWidget.tsx": "3187d8eb6ac90cf76b6d2b912ead54b56c8c087f53c19a2fd3074cf12432b192",
+    "src/panels/analysis/widgets/SensitivityWidget.test.tsx": "26722674fe4e6d108e0a044bf3d506ed56193751a94a1956f9da345507ec693b",
+    "src/panels/analysis/widgets/SensitivityWidget.tsx": "9b3371c577bd72c1a89d23a28f2bf75d373e744db3844046970630243ad25d73",
+    "src/panels/analysis/widgets/SystemStatusWidget.tsx": "2b0134ccd87371ae235f2b2929bbe6a1cdedbc6e4ba5a7da7f45bbe4ae83ad05",
+    "src/panels/analysis/widgets/ThreatPictureWidget.tsx": "75ddd33e35a9d968ab36aa89cec00c3a1ffe2257b52e0e63167ff084c87c2bf9",
+    "src/panels/analysis/widgets/TimeSeriesWidget.tsx": "55c85fe78f60146a3cb2c1f23368f0616c5217ca118ff78db3805cc94d7c5af9",
+    "src/panels/analysis/widgets/mc.ts": "7e93b1a222d755767ede7cfb51423041f9056a21b7f5645f4e4eac5f8db3964b",
+    "src/te/io/persistTe.ts": "0bba5df3d5c9fa125c8761b20ee04769734d2569122dd79c68616d2ab00c42e6",
+    "src/io/generateRuntimeSchema.mjs": "6cbd44690e91403ae684ed02c41df4d5416f8d2694b80b53c1ceaae870613455",
+    "src/io/recovery.test.ts": "71895cef3e6bfeca0503748324836bd3763cc1d20d8cc40e2edbc5440ef14f83",
+    "src/io/runExport.test.ts": "6b1d7d00f9f803e468cd7e19c53eeb0f40efc189b193b131d51fcdd865b15b24",
+    "src/io/runResultGroups.ts": "a039bbff4741585ec843f2906c1191cd59c273e5032ed4576ba458ab645c7f8a",
+    "src/io/runtimeSchema.ts": "c18e2be101062b4da6457507e5bb372aa26e7cbe5df5f303f0b959bf2192419e",
+    "src/io/runtimeValidation.test.ts": "ac4df82634bbfde6e6e275494621ac82c2e88fdfeb60bf1a3aeee0d8fd5bc75b",
+    "src/io/runtimeValidation.ts": "ba52229fba0b75f6d3633d2aa9c5045cf7e11e2d300292aa77e756e5a19e6024",
+    "src/io/validateScenario.ts": "b124b131c7c71d95ee1bd9815a7a77b039616c3078615b0f414130875cd96570",
+    "src/panels/analysis/OutcomeSummary.test.tsx": "416941ef405db59dc7e5b9f9c51f0d5b60afaeef568450baf141dfb5f08de1bf",
+    "src/panels/analysis/widgets/ProjectionWidget.test.tsx": "652f28d7e67c0a54c21682cf011c44cbeba91530d0604f677fbcb8979bb02345",
+    "src/te/io/persistTe.test.ts": "599c09a0f0eb83e565c008b3e2e1f9e0d42949d170b4b3e7fee2c01628e956a8",
+    "src/te/io/validateTe.ts": "35cb29ee571a9d47c852b1fa118706c118880f162b03a5f5e8cc801c29bc89bf"
+  },
+  "evidenceSha256": {
+    "browser-c2-log.txt": "e5cc8a43f44a9d35284c90dded74d171c466622663cef55118573c8a3ce2ebd3",
+    "browser-c2-results-cli.txt": "7c9ef07af2f81774c395ffa74fe624bf48eb17a2e5db13fdb10a323ce65e9f03",
+    "browser-c2-results.json": "235a896eb935bdfd1597fc582345ba6c154b5b66d67caab0104a1ff3ad98fb87",
+    "browser-c3-log.txt": "8bb81490a9c5065188ae040324478c9de7621dde7894eb720b663c590e5a5854",
+    "browser-c3-results-cli.txt": "4399407f7120e2c45d2bc38c361d6e9133cf8ded709ba521b834d0d86034112f",
+    "browser-c3-results.json": "7000b7d2f54509e4ceb8fbc007488b2764cf34f3f4882e3bd90fb5f23466e6ba",
+    "browser-import-results-cli.txt": "66f2085dc192756dbe1b2b7ec2fe0defdd66bb4c49335802b11f1176c9bb2482",
+    "browser-import-results.json": "d32eb06e0363125f474db11a9f41cbb1c182df8a34aa26dedca9dbf7ca0ca602",
+    "browser-imports-log.txt": "d60ee51443d63e8a22f39a4c64320d5567bf7ce119bd97ae82a2d27d298332d9",
+    "browser-methodology-cli.txt": "f8bae52f7a3b678c42762744d03293d0466ffdc704d3a74413c13418cb62db15",
+    "browser-methodology.json": "7e1b8cd9ce6a30af2a9e7bf1a89ed842a7dca7ea55297470d3059d2d047fef8a",
+    "build.txt": "cc2171f97b389b295feaee3e232d93df88ee47a9c3b4160b52f885934d057b9e",
+    "documentation-qa.json": "02cbc3a1e54e55fedc0b74433f05a960b10d872bfc65f6ef68b5cc7811914859",
+    "export-tests.txt": "c23f47a265d172646ffaa1a3d9ee003a488f1e70d64486d3ca659681f1dd1f5f",
+    "incoming-user-files.json": "1819137d9e9f0c7a85f799588bd093fd528a4abd23e7863f38af2df3a98ac084",
+    "lint.txt": "3935c75a7408a2f75a3ce2b8c93c34b9c6246f0593e88663e41f98207ab404e1",
+    "native-image-import.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+    "native-import-recipe.md": "0cbd6a0593cb6a33ea96f873448d2d87ef5eadfb1d7616b2bcfe0dd7caa477bb",
+    "native-library-import.json": "1e3a4bec5885eb18cfdff8e33dd2c36c5a1aec5b8d1d0d483a0e2be9d5a692e5",
+    "numerical-baseline.json": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+    "parity-after.txt": "1eb72c942905679f5c87ae086ab6303d4375a6d14083ee2ebab905fe4d2b91b6",
+    "parity-before.txt": "b3188d2767a75da0d976952548cf1969e0dc9dce25cb896f885ecff166bea6ab",
+    "parity-probe.ts.txt": "9339fc80dd00fdc62418cc6e2c862e3dc99d9f2e18afe0d2f5807ddd2f5a5bb8",
+    "schema-check.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tests.txt": "72ed97dba6af7b1893f075e7eb7a9d317c07531e694dbf8992edcf89bafb8ea1",
+    "typecheck.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "wave-c2-charts.png": "e70332b483adb65d460650bb8db90b1a75a25ecc2f500938e628896650811e7a",
+    "wave-c2-current.png": "a61681f56a3df27ca5988487fb88181c900809c755adc8834b6cfc5d963fdfe3",
+    "wave-c2-methodology.png": "0e93173dc5ff84fa2aac423db4e15eb602461f779dec489d5b5af745c98c89fe",
+    "wave-c2-stale.png": "1f0051631021cc75f2eb7816a21bee2ec36c9d93efcd5d917209e827d8c5c2b8",
+    "wave-c3-recovery-failed.png": "c7a0d42d093b0cfd52f8641206aac16f2cc6fdab60fb3de6109b491881ab3974",
+    "wave-imports-aborted.js.txt": "98b012d63e92cbd2b1e3e433c01c61427c3b8064f526c23303c106b223e6f100",
+    "wave-recovery.js.txt": "478007b3c76bd26c890f254b1dbc369bd4f29bc441d8098a4840a45f5c300589",
+    "wave-results.js.txt": "6337f3916d86c71cdd1129e74ab5a5ee7979ef83af8f36ee666dff43b6a86a69",
+    "wave-run-export.json": "d90c82136252bf8fb5595f481a283672adb622602f57c31e7bb5070b25ccb481"
+  },
+  "limits": [
+    "C4 internal store transitions remain open",
+    "R-F-31 practical work budgets unresolved",
+    "localStorage recovery is not crash/cross-tab durability",
+    "E2/E3 physics and independent validation remain future work"
+  ]
+}

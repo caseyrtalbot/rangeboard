@@ -87,7 +87,7 @@ function summaryOf(scenario: Scenario, detectedIn = 100): McSummary {
 }
 
 /** Install a summary in the mc slice for the current run id under `status`. */
-function setMc(status: 'done' | 'stale', detectedIn = 100): void {
+function setMc(status: 'done' | 'stale' | 'running' | 'error', detectedIn = 100): void {
   const st = useStore.getState()
   useStore.setState({
     mc: {
@@ -158,11 +158,11 @@ describe('KpiTilesWidget', () => {
     const html = render({ tiles: ['detect', 'killEk', 'firstDetect'] })
     expect(html).toContain('4.5<small>/1</small>')
     // Count bands carry lo 4, hi 5 (and 0, 1): half-width 0.5 over 100 replicates.
-    expect(html).toContain('±0.5 (95%) · 100')
+    expect(html).toContain('±0.5 (95% mean CI) · n=100')
     expect(html).not.toContain('p10 to p90')
-    expect(html).toContain('3 of 13 · mean of 100')
-    // A time tile stays "not yet" until the cursor reaches the mean.
-    expect(html).toContain('not yet')
+    expect(html).toContain('3 of 13 · 100 replicates · basis per tile')
+    // This statistic covers the entire run, explicitly separate from cursor counts.
+    expect(html).toContain('full-run · MC conditional mean')
     useStore.setState({ mc: IDLE_MC })
   })
 
@@ -172,15 +172,15 @@ describe('KpiTilesWidget', () => {
     useStore.getState().pauseRun()
     setMc('done')
     const full = render({ tiles: ['firstDetect'] })
-    expect(full).toContain('±2.0 s (95%) · 100')
-    expect(full).not.toContain('detected in')
+    expect(full).toContain('±2.0 s (95% mean CI) · n=100')
+    expect(full).toContain('detected in 100 of 100')
     setMc('done', 98)
     const partial = render({ tiles: ['firstDetect'] })
-    expect(partial).toContain('±2.0 s (95%) · 98 · detected in 98 of 100')
+    expect(partial).toContain('±2.0 s (95% mean CI) · n=98 · detected in 98 of 100')
     useStore.setState({ mc: IDLE_MC })
   })
 
-  it('words an undefined warning replicate as warning time, and drops the sub at n 0', () => {
+  it('words undefined warning replicates explicitly, including n 0', () => {
     // R-F-13: a replicate with no warning time had no defended asset, which is
     // not a detection miss. The tile needs an arrival, so the laydown gains a
     // defended asset and a radar; the threat crosses the 500 m boundary at
@@ -190,11 +190,11 @@ describe('KpiTilesWidget', () => {
     useStore.getState().pauseRun()
     setMc('done', 40)
     const partial = render({ tiles: ['minWarning'] })
-    expect(partial).toContain('±2.0 s (95%) · 40 · warning time in 40 of 100')
+    expect(partial).toContain('±2.0 s (95% mean CI) · n=40 · warning time in 40 of 100')
     expect(partial).not.toContain('detected in')
     setMc('done', 0)
     const none = render({ tiles: ['minWarning'] })
-    expect(none).not.toContain('warning time in')
+    expect(none).toContain('MC estimate unavailable · warning time in 0 of 100')
     expect(none).not.toContain('(95%)')
     useStore.setState({ mc: IDLE_MC })
   })
@@ -206,6 +206,36 @@ describe('KpiTilesWidget', () => {
     expect(html).not.toContain('mean of')
     expect(html).toContain('1 of 13')
     useStore.setState({ mc: IDLE_MC })
+  })
+
+
+  it.each(['stale', 'running', 'error'] as const)('labels deterministic fallback during %s without MC values', (status) => {
+    useStore.getState().advanceRun(130)
+    useStore.getState().pauseRun()
+    setMc(status)
+    const html = render({ tiles: ['detect', 'firstDetect', 'minWarning'] })
+    expect(html).toContain('planning envelope')
+    expect(html).not.toContain('MC conditional mean')
+    expect(html).not.toContain('mean CI')
+  })
+
+  it('labels deterministic-only tiles individually alongside MC tiles', () => {
+    useStore.getState().advanceRun(13)
+    useStore.getState().pauseRun()
+    setMc('done')
+    const html = render({ tiles: ['detect', 'idClass', 'targetNow', 'salvos', 'lateEk', 'firstEffect', 'detectToEffect'] })
+    expect(html.match(/class="ts">planning envelope/g)).toHaveLength(6)
+    expect(html).toContain('MC mean')
+    expect(html).not.toContain('mean of')
+  })
+
+  it('shows a full-run MC warning even when the envelope has no detected arrival', () => {
+    useStore.getState().advanceRun(1)
+    useStore.getState().pauseRun()
+    setMc('done')
+    const html = render({ tiles: ['minWarning'] })
+    expect(html).toContain('full-run · MC conditional mean')
+    expect(html).not.toContain('not yet')
   })
 
   it('says so when no threat has a flight path', () => {

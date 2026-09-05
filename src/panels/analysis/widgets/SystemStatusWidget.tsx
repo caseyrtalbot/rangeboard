@@ -70,7 +70,7 @@ export function SystemStatusWidget({ id, params, collapsed, customize, index, co
       id={id}
       type="system-status"
       title={title}
-      meta={`${online}/${components} online`}
+      meta={`planning envelope · ${online}/${components} online`}
       collapsed={collapsed}
       customize={customize}
       index={index}

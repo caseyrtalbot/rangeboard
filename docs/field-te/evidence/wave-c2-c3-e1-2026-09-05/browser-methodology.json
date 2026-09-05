@@ -1,0 +1,6 @@
+{
+  "configuredThreshold": 0.23,
+  "copyUses23Percent": true,
+  "explicitGateBasis": true,
+  "routeExplanation": true
+}

@@ -1,0 +1,9 @@
+Markdown local links/line anchors checked: 134
+Original captures matched: 7
+Seed models: 90
+Seed provenance rows: 205
+Historical artifacts unchanged: 27
+Dossiers checked: 8
+Integrity entries: 33
+Issues: 0
+

@@ -167,7 +167,7 @@ export function kpiSeries(scenario: Scenario): Series[] {
   for (let i = 0; i < n; i += 1) {
     const k = liveKpisAt(tl, i * DT)
     KPI_SPECS.forEach((spec, j) => {
-      values[j][i] = k[spec.key]
+      values[j][i] = spec.key === 'leakerShips' && report.totals.reportedLeakers == null ? NaN : k[spec.key]
     })
   }
   return KPI_SPECS.map((spec, j) => ({
@@ -844,21 +844,30 @@ function bandFor(summary: McSummary, id: string, uasId?: string): BandSeries | n
 }
 
 /**
- * Attach the Monte Carlo bands to the series the summary covers and replace the line by the
- * replicate mean, so the line, the band and the tile agree. Series without a match, or a
- * null summary, pass through unchanged. `uasId` selects the per-threat residual band.
+ * Mean lines and replicate quantile bands share the same samples. Unsupported quantities
+ * remain explicitly deterministic; missing/mismatched supported estimates stay unavailable.
  */
 export function withBands(series: Series[], summary: McSummary | null, uasId?: string): Series[] {
-  if (!summary) return series
+  const covered = new Set(['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected', 'kpi.engaged', 'tracksHeld', 'residual'])
   return series.map((s) => {
+    if (!summary || !covered.has(s.id)) return { ...s, label: `${s.label} · planning envelope` }
     const band = bandFor(summary, s.id, uasId)
-    // A band on another grid is a mismatch, not a partial fit: the series stays deterministic.
-    if (!band || band.mean.length !== s.values.length) return s
+    const vectors = band && [band.mean, band.p10, band.p90, band.p025, band.p975]
+    if (!band || summary.replicates < 1 || !vectors?.every((values) =>
+      values.length === s.values.length && values.every(Number.isFinite))) {
+      return { ...s, label: `${s.label} · MC estimate unavailable`, values: s.values.map(() => NaN), band80: undefined, band95: undefined }
+    }
+    // Leakers have no defined display value without a defended asset. The engine's
+    // partition zero must not manufacture a chart of perfect defence in that case.
+    const mask = (values: number[]) => s.id === 'kpi.leakerShips'
+      ? values.map((value, i) => Number.isFinite(s.values[i]) ? value : NaN)
+      : values
     return {
       ...s,
-      values: band.mean,
-      band80: [band.p10, band.p90],
-      band95: [band.p025, band.p975],
+      label: `${s.label} · MC mean`,
+      values: mask(band.mean),
+      band80: [mask(band.p10), mask(band.p90)],
+      band95: [mask(band.p025), mask(band.p975)],
     }
   })
 }

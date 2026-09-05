@@ -1,0 +1,76 @@
+### Result
+{
+  "current": {
+    "status": "done",
+    "expectedDefeat": "96.7%",
+    "meanKills": 0.9666666666666667,
+    "meanLeakers": 0.03333333333333333,
+    "deterministicKills": 0.9599700431317969,
+    "deterministicEvents": 4,
+    "metrics": [
+      {
+        "label": "Defeat",
+        "value": "96.7%",
+        "sub": "MC mean · ±6.8 pp (95% mean CI) · n=30"
+      },
+      {
+        "label": "Leakers",
+        "value": "0.03",
+        "sub": "MC mean · ±0.1 (95% mean CI) · n=30 · ships"
+      },
+      {
+        "label": "Late E[k]",
+        "value": "0",
+        "sub": "planning envelope · after arrival, not a defeat"
+      },
+      {
+        "label": "First detect",
+        "value": "0:00",
+        "sub": "MC conditional mean · ±0.3 s (95% mean CI) · n=30 · detected in 30 of 30"
+      },
+      {
+        "label": "First effect",
+        "value": "1:51",
+        "sub": "planning envelope · kill mass removed"
+      },
+      {
+        "label": "Min warning",
+        "value": "7:54",
+        "sub": "MC conditional mean · ±0.3 s (95% mean CI) · n=30 · warning time in 30 of 30"
+      },
+      {
+        "label": "Salvos",
+        "value": "4",
+        "sub": "planning envelope · 4 kin · 0 DE · 0 EW"
+      }
+    ],
+    "gates": "REQUIREMENTS NOT RUN5/6Planning envelope · test-defined thresholds. No MC probability of pass is calculated.NOT RUNDetect0/1not runno track reached a defended assetNOT SCORED: every track is invalidated by a run validity findingCAVEAT: 1 track not scored here. Flight paths start inside a detect ring (detected at T0): DJI Mavic 3 (G1 quad) 1 held by KuRFS fire-control radar (Raytheon) 1CAVEAT: Point values from the threshold envelope. Run Monte Carlo for an interval.CAVEAT: These models are not validated: Environment, Doctrine, Kinetic Pk. Their outputs are planning factors.PASSTrack1/11/1 heldsensor hold at first shot, target-window opening, asset arrival, or closest approach when the track never arrivesCAVEAT: Point values from the threshold envelope. Run Monte Carlo for an interval.CAVEAT: These models are not validated: Environment, Doctrine, Kinetic Pk. Their outputs are planning factors.PASSIdentify1/11/1 hostileevery track must reach the hostile classification gateCAVEAT: Point values from the threshold envelope. Run Monte Carlo for an interval.CAVEAT: These models are not validated: Environment, Doctrine, Kinetic Pk. Their outputs are planning factors.PASSTarget1/11/1 usableshortest selected window 8:00CAVEAT: Point values from the threshold envelope. Run Monte Carlo for an interval.CAVEAT: These models are not validated: Environment, Doctrine, Kinetic Pk. Their outputs are planning factors.PASSEngage1/11/1 engaged4 total salvos assignedCAVEAT: Point values from the threshold envelope. Run Monte Carlo for an interval.CAVEAT: These models are not validated: Environment, Doctrine, Kinetic Pk. Their outputs are planning factors.PASSSurvival limit1/196.0% defeat0.04 expected ships residual · requirement ≤10% per track (scenario setting)CAVEAT: Point values from the threshold envelope. Run Monte Carlo for an interval.CAVEAT: These models are not validated: Environment, Doctrine, Kinetic Pk. Their outputs are planning factors."
+  },
+  "charts": {
+    "paths": 3,
+    "bandPaths": 6,
+    "text": [
+      "▾KPI tiles6 of 13 · 30 replicates · basis per tileDetect1/1MC mean · ±0 (95% mean CI) · n=30Track now1/1MC mean · ±0 (95% mean CI) · n=30ID / class1/1planning envelopeEngaged0.8/1MC mean · ±0.2 (95% mean CI) · n=30Kill E[k]0MC mean · ±0 (95% mean CI) · n=30Leak E[n]0MC mean · ±0 (95% mean CI) · n=30",
+      "▾Expected kills · MC mean · Leaker ships · MC mean · Detected tracks · MC mean0.5 s · basis per seriesMC bands: 80% and 95% replicate quantiles; tiles report confidence intervals on means.0:005:000.00.51.0ARRT+1:40Expected kills · MC meanLeaker ships · MC meanDetected tracks · MC mean",
+      "▾Live threat pictureplanning envelope · T+1:40 · 1/1 detectedWEZEffect state uses surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD1/1TRK1/1ID1/1TGT1/1ENG1/1FX0/1Survives 100%",
+      "▾Full-run projectionnot live · conditionaliDefeat96.7%MC mean · ±6.8 pp (95% mean CI) · n=30Leakers0.03MC mean · ±0.1 (95% mean CI) · n=30 · shipsLate E[k]0planning envelope · after arrival, not a defeatFirst detect0:00MC conditional mean · ±0.3 s (95% mean CI) · n=30 · detected in 30 of 30First effect1:51planning envelope · kill mass removedMin warning7:54MC conditional mean · ±0.3 s (95% mean CI) · n=30 · warning time in 30 of 30Salvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual",
+      "▾Run validity1 invalidating · 1 limitingINVALIDA gate below is not scored: the run never made that measurement.Radar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFlight paths start inside a detect ring (detected at T0): DJI Mavic 3 (G1 quad) 1 held by KuRFS fire-control radar (Raytheon) 1LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors."
+    ],
+    "overflow": [],
+    "typeFloor": []
+  },
+  "stale": {
+    "status": "stale",
+    "text": "READY\nRUN-0003 · T+0:00\nMC 30 · total · stale\nestimate · 30 replicates · total\nbuffer clean · configuration changed\nClean reset\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nCustomize\n▾\nKPI TILES\n6 of 13 · planning envelope\nDETECT\n0/1\nplanning envelope\nTRACK NOW\n0/1\nplanning envelope\nID / CLASS\n0/1\nplanning envelope\nENGAGED\n0/1\nplanning envelope\nKILL E[K]\n0.0\nplanning envelope\nLEAK E[N]\n0.0\nplanning envelope\n▾\nEXPECTED KILLS · PLANNING ENVELOPE · LEAKER SHIPS · PLANNING ENVELOPE · DETECTED TRACKS · PLANNING ENVELOPE\n0.5 s · basis per series\n0:00\n5:00\n0.0\n0.5\n1.0\nARR\nT+0:00\nExpected kills · planning envelope\nLeaker ships · planning envelope\nDetected tracks · planning envelope\n▾\nLIVE THREAT PICTURE\nplanning envelope · ready · 0/1 detected\nWEZ\n\nEffect state uses surviving mass, including late effects. Requirement verdicts are in Requirement gates.\n\n▸\nDJI Mavic 3 (G1 quad)\n1 trk · 1 ships\nD\n0/1\nTRK\n0/1\nID\n0/1\nTGT\n0/1\nENG\n0/1\nFX\n0/1\nSurvives 100%\n▾\nFULL-RUN PROJECTION\nnot live · conditional\ni\nDEFEAT\n87.4%\nplanning envelope · 0.9 of 1 ships\nLEAKERS\n12.6%\nplanning envelope · 0.13 of 1 ships\nLATE E[K]\n0.06\nplanning envelope · after arrival, not a defeat\nFIRST DETECT\n0:00\nplanning envelope · earliest track\nFIRST EFFECT\n2:14\nplanning envelope · kill mass removed\nMIN WARNING\n7:55\nplanning envelope · worst threat\nSALVOS\n4\nplanning envelope · 4 kin · 0 DE · 0 EW\nCoyote Block 2 interceptor 1\n4 kin\nplanning envelope · 0/4 remaining\n▸\nPROJECTED THREAT OUTCOME · PLANNING ENVELOPE\n0.13 expected residual\n▾\nRUN VALIDITY\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nRadar Pd · physics · datasheet\nRadar scan · physics · analytic\nEnvironment · planning · none\nHorizon · physics · analytic\nDoctrine · planning · none\nKinetic Pk · planning · none\nFlyout · physics · analytic\nDraw policy · physics · analytic\nParameter spread · planning · none\nINVALIDATES\nFlight paths start inside a detect ring (detected at T0): DJI Mavic 3 (G1 quad) 1 held by KuRFS fire-control radar (Raytheon) 1\nLIMITS\nThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors."
+  },
+  "restored": {
+    "status": "done",
+    "kills": 0.9666666666666667,
+    "leakers": 0.03333333333333333
+  },
+  "errors": []
+}
+### Ran Playwright code
+```js
+await page.evaluate('() => (window.__waveResults)');
+```

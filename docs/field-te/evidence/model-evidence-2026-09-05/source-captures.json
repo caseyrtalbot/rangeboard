@@ -1,0 +1,78 @@
+[
+  {
+    "file": "blighter-a400.pdf",
+    "requested_url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+    "retrieved_utc": "2026-09-05T16:33:58.938721+00:00",
+    "status": 200,
+    "final_url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+    "content_type": "application/pdf",
+    "bytes": 439302,
+    "sha256": "fecdb3a815a0f52107182939864805b75bc12e3cd93a815624c3330171230c85"
+  },
+  {
+    "file": "echoshield.pdf",
+    "requested_url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a5558f970a01479ae2a92b7_TS-EchoShield-Echodyne_6JL.pdf",
+    "retrieved_utc": "2026-09-05T16:33:58.939104+00:00",
+    "status": 200,
+    "final_url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a5558f970a01479ae2a92b7_TS-EchoShield-Echodyne_6JL.pdf",
+    "content_type": "application/pdf",
+    "bytes": 310616,
+    "sha256": "f6868be0f57cb299e159b46642de0efc289b6cc75bc350a71e151df5325c21fe"
+  },
+  {
+    "file": "echoguard.pdf",
+    "requested_url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+    "retrieved_utc": "2026-09-05T16:33:58.939185+00:00",
+    "status": 200,
+    "final_url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+    "content_type": "application/pdf",
+    "bytes": 316847,
+    "sha256": "82e13fbe814eb7cc0ff63cfecd17011c34772dcf8458e01f5bee97c0f329ad99"
+  },
+  {
+    "file": "courageous.html",
+    "requested_url": "https://www.mdpi.com/2072-4292/16/19/3714",
+    "retrieved_utc": "2026-09-05T16:33:58.939234+00:00",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "file": "epirus-leonidas.html",
+    "requested_url": "https://www.epirusinc.com/press-releases/epirus-leonidas-high-power-microwave-defeats-49-drone-swarm-100-of-drones-flown-at-live-fire-demonstration",
+    "retrieved_utc": "2026-09-05T16:33:58.939278+00:00",
+    "status": 200,
+    "final_url": "https://www.epirusinc.com/press-releases/epirus-leonidas-high-power-microwave-defeats-49-drone-swarm-100-of-drones-flown-at-live-fire-demonstration",
+    "content_type": "text/html; charset=utf-8",
+    "bytes": 151079,
+    "sha256": "fa95c3a9f90109d764c4b5fc2d0a1dbd7881f76c82087c722ec6ac1ca90ae9f4"
+  },
+  {
+    "file": "rtx-kurfs-coyote.html",
+    "requested_url": "https://www.rtx.com/news/news-center/2024/10/14/rtxs-raytheon-demos-kurfs-and-coyote-performance-against-complex-uas-threats",
+    "retrieved_utc": "2026-09-05T16:33:58.939322+00:00",
+    "status": 200,
+    "final_url": "https://www.rtx.com/news/news-center/2024/10/14/rtxs-raytheon-demos-kurfs-and-coyote-performance-against-complex-uas-threats",
+    "content_type": "text/html; charset=utf-8",
+    "bytes": 66330,
+    "sha256": "05470d4f192f75fe2af5ad188420dfd7eaaaff1b6009429e63700d861b5314f2"
+  },
+  {
+    "file": "courageous.pdf",
+    "requested_url": "https://mdpi-res.com/d_attachment/remotesensing/remotesensing-16-03714/article_deploy/remotesensing-16-03714.pdf",
+    "retrieved_utc": "2026-09-05T16:36:36.149084+00:00",
+    "status": 200,
+    "final_url": "https://mdpi-res.com/d_attachment/remotesensing/remotesensing-16-03714/article_deploy/remotesensing-16-03714.pdf",
+    "content_type": "application/pdf",
+    "bytes": 3248856,
+    "sha256": "571320cbd7dcd9e6ff60739cba8a5526cb741d1f5f10be87d857b906e596aada"
+  },
+  {
+    "file": "stinger-2017.html",
+    "requested_url": "https://raytheon.mediaroom.com/2017-06-01-Stinger-missiles-with-proximity-fuzes-destroy-UAVs-in-first-ever-test",
+    "retrieved_utc": "2026-09-05T16:36:36.149498+00:00",
+    "status": 200,
+    "final_url": "https://raytheon.mediaroom.com/2017-06-01-Stinger-missiles-with-proximity-fuzes-destroy-UAVs-in-first-ever-test",
+    "content_type": "text/html; charset=UTF-8",
+    "bytes": 28705,
+    "sha256": "2183c90fae35e1f4d532d0e5d41f13e0a5231ea53635adeee2878a9fc4553ebb"
+  }
+]

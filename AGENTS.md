@@ -42,7 +42,9 @@ feature that presents a bare point as a result.
 This is the required result contract. The ownership review found implementation gaps in
 result freshness, matching estimates/intervals, runtime save validation and T&E record
 enforcement. They are recorded in `docs/field-te/OWNERSHIP_FINDINGS.md` and register rows
-R-F-24 to R-F-29; C1 has verified and closed R-F-24; the remaining gaps are still open.
+R-F-24 to R-F-29. C1 closed R-F-24; the verified C2/C3 wave closes R-F-25/R-F-26.
+T&E transition/inclusion gaps and broader uncertainty adequacy remain open. E1 qualifies
+the model/source evidence without upgrading fidelity tags or changing equations.
 
 ## 2. Commands and verification
 
@@ -61,6 +63,12 @@ warnings and 0 errors, all `react(only-export-components)` (72) or
 change adds no lint warning and no test failure. Count lint with
 `npm run lint 2>&1 | grep -c warning`. Run all four commands before you report a change
 done, and report their actual output.
+
+After a Board/T&E domain type change, regenerate `src/io/runtimeSchema.ts` with
+`node src/io/generateRuntimeSchema.mjs`, review legacy compatibility and semantic rules,
+and run `node src/io/generateRuntimeSchema.mjs --check`. No compiler runs in the browser.
+The verified C2/C3/E1 wave at `d8a76f1` plus its working diff has 1,327 passing tests in
+76 files, type-check/build pass and the same 74 lint warnings. See its completion record.
 
 Test conventions:
 
@@ -126,10 +134,20 @@ Breaking one of these breaks the app.
   is optional with a default. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
   `rangeboard.scenario.recovered.<ms>` before anything writes when recovery storage is
-  available. This is best-effort; failed recovery is surfaced. Current parsers do not
-  reject every malformed nested shape (R-F-26). `loadScenario` is the one
+  available. Recovery names avoid collisions and exact readback is verified. Read denial or failed
+  recovery pauses autosave so the only raw copy is retained; the notice explains export,
+  storage cleanup and reload. C3 validates required/nested shapes, finite/ranged values,
+  IDs/references and engine representability before default filling and adoption.
+  Missing supported legacy fields fill; malformed present fields fail with a path/reason.
+  Unknown extension data and legitimate legacy edits remain. `loadScenario` is the one
   load path; `replaceScenario` clears history, selection, drafts and the tool, and prunes
   per-entity view state.
+  Validation descriptors share the domain types; semantic/reference rules remain explicit.
+  Reserved object-prototype IDs are rejected before object-backed engine maps can lose
+  records. Triangular spread bounds are fractional offsets around zero, matching the sampler.
+  Base64 image syntax follows native decoder padding rules. New underlay ingestion uses
+  a conservative 5 MiB storage admission budget; existing valid images are not size-capped.
+  Representation checks are not a practical execution-time/memory budget or crash journal.
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
   instead. View state outside the `Scenario` has its own keys (`rangeboard.view.v1`,
   `rangeboard.layers.v1`, `rangeboard.rings.v1`, `rangeboard.runseq.v1`,
@@ -199,7 +217,10 @@ src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx, sprea
                analysis/detail/), TimelineBar (owns the rAF loop), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
 src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and library
-               import/export, runExportObject), viewState.ts, storageKeys.ts, recovery.ts
+               import/export, runExportObject), runResultGroups.ts (per-group basis/units),
+               runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
+               runtimeValidation.ts + validateScenario.ts (runtime semantics),
+               viewState.ts, storageKeys.ts, recovery.ts
 src/te/        T&E Operations workspace (own store, section 8)
 src/main.tsx   loads the autosave, starts both autosaves, exposes window.__store and
                window.__teStore in dev
@@ -302,9 +323,14 @@ Each fact below has exactly one definition. Read it there; never add a second co
   every 10 after that, when the 95 percent half-width of the end-of-run leaker mean is
   under `targetHalfWidth`; `McSummary.stopped` records the rule and the replicate. Panels
   read a time `Stat` through `timeStatSub(stat, quantity)` and a band step through
-  `countSub` (`widgets/mc.ts`). Bands and tile subs read `McSummary` only through
-  `withBands` (`series.ts`) and only when `mc.status` is `done` for the current run id;
-  under a summary the line becomes the replicate mean.
+  `countSub` (`widgets/mc.ts`). Bands and tile subs read current `McSummary` through `withBands` (`series.ts`) and
+  `currentSummary`, only when `mc.status` is `done` for the current run id. Covered chart
+  lines become replicate means with 80/95 percent replicate-quantile bands. Tile intervals
+  describe means, not those quantiles. Values and intervals share quantity/denominator;
+  Defeat converts ship count and interval to percent/percentage points by the same raid size.
+  Missing/zero-sample estimates remain unavailable and n=1 carries no claimed mean CI.
+  Full-run conditional time means are labeled; quantities without a replicate statistic
+  retain an individual planning-envelope label.
 - **Provenance** (`Provenance` in `src/model/types.ts`): a `SpecModel` carries one row per
   field (field, value, source, url, date, basis, spread); `basisFor(model, field)` is the
   one basis resolver and answers `pf` when the field has no row. `PfTag`
@@ -366,6 +392,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   from it. `planning-envelope` is limiting on every gate under every deterministic run;
   `unvalidated-model` is limiting on every gate and names the used models with validation
   `none`. Derived live, never stored. `valid` depends on the models and conditions used.
+  Requirement gates always evaluate the deterministic planning envelope using complete
+  envelope findings, even in MC mode; a mean CI is not probability of meeting a gate.
+  Run exports retain deterministic payloads and declare `resultGroups` basis, horizon,
+  validity and quantity semantics, plus configuration equality identity. `packageBasis`
+  scopes the legacy `dataBasis` field to its named groups. Sensitivity endpoints are
+  paired OAT parameter perturbations, not mean CIs or outcome quantiles; leaker display
+  remains undefined without a defended asset.
   A sensor-only MC case at neutral covariates with environment application and doctrine
   disabled can be `valid`; the old universal claim in R-F-14 was disproved in onboarding.
 - **Symbology** (`src/panels/Glyph.tsx`, `src/playback/trackState.ts`): MIL-STD-2525
@@ -525,8 +558,9 @@ Design system (`src/index.css`):
   (`src/te/io/frameCapture.ts`) works only from the Board workspace.
 - The module was built 2026-08-19 to 2026-08-22, rebuilt as a guided decision workflow in
   `3d93aa1` (2026-08-25), and its persistence hardened in `7e5a5ae` (2026-09-02). Since
-  then only `calc/stats.ts` changed (exports the engine imports). Every plan from
-  2026-09-03 on put `src/te/` out of scope, so no later review covers it. Do not touch
+  then `calc/stats.ts` gained the engine exports. C3 now also hardens persistence and
+  imports through `io/validateTe.ts`, including embedded Board snapshots and campaign-local
+  references. This does not enforce internal store transitions (C4). Do not touch
   `src/te/` unless the task names it. One known stale string:
   `src/te/ui/DesignPanel.tsx` says "Recorded, not modeled. The board is plan view.", false
   since the Board gained altitude and slant range (`outstanding.md` D-2, open).
@@ -590,9 +624,12 @@ Scope and git:
 | `CLAUDE.md` | CURRENT CONTRACT (pointer) | the Claude Code entrypoint; points here and holds only Claude-specific environment notes |
 | `docs/AI_HANDOFF.md` | CURRENT TRANSFER RECORD | the state transfer with epistemic marks; verify its section 2 against git before you rely on it |
 | `docs/data-engine/outstanding.md` | CURRENT OUTSTANDING REGISTER | every decision and follow-up; append only |
-| `docs/field-te/PLAN.md` | DEVELOPMENT PLAN; C1 VERIFIED, later slices PROPOSED | correctness, refactor, model credibility, field workflow and UI slices; the current handoff selects one next task |
+| `docs/field-te/PLAN.md` | DEVELOPMENT PLAN; C1/C2/C3/E1 VERIFIED, later slices PROPOSED | correctness, refactor, model credibility, field workflow and UI slices; the current handoff selects one next task |
 | `docs/field-te/OWNERSHIP_FINDINGS.md` | VERIFIED ONBOARDING RECORD | source-linked findings and corrections to the old transfer, at `8b528f2` |
 | `docs/field-te/C1_COMPLETION.md` | VERIFIED C1 RECORD | input/consumer/test matrix, request lifecycle and verification evidence |
+| `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md` | VERIFIED WAVE RECORD | result/persistence integration, review corrections and gates |
+| `docs/field-te/wave-c2-c3-e1/` | EXECUTED WAVE PACKET | lane briefs, ownership, quantity matrix and lane evidence |
+| `docs/field-te/model-evidence/` | QUALIFIED E1 EVIDENCE BASELINE | family dossiers, source pedigree/applicability and unresolved model studies |
 | `docs/field-te/BACKLOG_TRIAGE.md` | PROPOSED ROUTING INDEX | all 204 inherited register rows routed; not a second status authority |
 | `docs/field-te/evidence/onboarding-2026-09-04/` | CAPTURED EVIDENCE | browser outputs, illustrative probe save, screenshots, gate output and hash manifest; not field-validation data |
 | `docs/data-engine/PLAN.md` | COMPLETED / HISTORICAL IMPLEMENTATION SPEC | the data-engine plan, slices 0 to 9, built `3b264e3` to `e6edbb4`; its imperative rules are history |

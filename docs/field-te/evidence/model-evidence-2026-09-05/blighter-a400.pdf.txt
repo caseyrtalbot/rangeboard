@@ -1,0 +1,138 @@
+                                                                                                  DATASHEET
+
+
+                                        A400 Series Radars
+                                                            n
+                                                                Medium-range air security radars (ASR)
+                                                                for detection of covert air targets
+                                                            n
+                                                                Detects and reports all sizes of air targets
+                                                                including FPV drones and surface targets
+                                                            n
+                                                                10 m to 20,000 m detection range
+                                                            n
+                                                                Detects low-slow-small (LSS) targets
+                                                            n
+                                                                90° to 360° horizontal scanning options
+                                                            n
+                                                                No moving parts and FMCW technology
+                                                                for ultra-high reliability
+                                                            n
+                                                                Unsurpassed patented clutter suppression
+                                                                for near-horizon and coastline operation
+                                                            n
+                                                                Full volumetric air coverage using optional
+                                                                Blighter Radar Tilting System (BRTS Mk 2)
+                         Blighter A422 Radar
+                         (Shown with W20S antennas
+                                                            n
+                                                                Drone Spotlighting Mode
+                         and mounted on optional
+                         pneumatic mast system)
+
+
+
+
+Blighter addresses a broad range of security requirements in the defence, homeland
+security and civil/commercial markets. Blighter radars are part of a range of advanced
+BSS technologies that provide class-leading protection against both conventional and
+asymmetric/terrorist threats.
+
+Blighter’s A400 series range of air security radars         Configuration Options
+build on the heritage of its successful Blighter            The A400 series air security radars are offered in
+B400 series ground surveillance radars. A400                three configurations. The Blighter A402 radar covers
+series radars are modular non-rotating,                     a horizontal azimuth scan sector of 90°, the Blighter
+electronic-scanning (e-scan) systems using low-             A422 radar covers 180° and for 360° surveillance a
+power symmetric dual-beam electronic-scan                   dual-A422 back-to-back configuration can be used.
+array and FMCW (frequency modulated                         Vertical elevation coverage is selected by use of
+continuous wave) technologies to provide                    either the W20S antennas (20° standard or 30°
+reliable, small and slow drone (UAV, UAS, RPV,              extended coverage) or the M10S antennas (10°
+FPV) detection even in complex environments.                standard or 15° extended coverage). An optional
+                                                            Blighter Radar Tilting System (BRTS Mk 2) allows
+A400 series air security radars are optimised for the
+                                                            the A400 radar to provide increased volumetric air
+detection of small drones carrying video cameras,
+                                                            coverage combined with drone altitude indication.
+wireless communication systems, narcotics, explo-
+sives and other malicious payloads. A400 series             Detection Performance
+radars use D3 (Digital Drone Detection) micro-              A400 series air security radars are capable of
+Doppler technology that enables them to extract the         detecting DJI Phantom drones at ranges from 10 m
+tiny radar reflections from modern plastic bodied           to more than 3 km and larger drones and aircraft at
+UAVs even when flying close to the ground or near           ranges up to 20 km. Drone speeds ranging from
+buildings where clutter reflections are relatively large.   hover-drift to over 400 km/h are all detected. Target
+Blighter’s Ku-band operating frequency is ideally           tracking software and extensive zone filtering
+suited to detecting the small structures used to            facilities allow drones to be detected while reducing
+construct compact UAVs such as the control wires,           false alarms from birds.
+battery pack, motor and wireless communications
+system.
+
+Smart Radar, Securing Horizons TM
+Configurations
+
+
+
+
+Blighter A402 Radar - 90°              Blighter A422 Radar - 180°               Blighter Dual A422 Radars - 360°        Optional Blighter Radar Tilting
+1x Main Radar Unit                     1x Main Radar Unit                       2x Main Radar Unit                      System (BRTS Mk 2)
+Shown here with W20S antennas          1x Auxiliary Radar Unit                  2x Auxiliary Radar Unit
+                                       Shown here with W20S antennas            Shown here with W20S antennas
+
+
+
+
+Specification
+Architectural Overview                              n   Minimum detectable target radial                    Electrical
+n   Radar type: E-scan Frequency                        velocity: 0.37 km/h (0.23 mph)                      n   Battery/regulated-PSU input range:
+    Modulated Continuous Wave (FMCW)                n   Maximum detectable target radial                        from 12 V to 28 V (DC)
+    Doppler Radar                                       velocity: 400km/h (250mph)                          n   Vehicle supply input range:
+n   Radar mode: tri-mode (air, ground and           *Free space detection performance. A400 series radar        from 12 V to 24 V (DC)
+                                                    with M10S antennas. UAV detection ranges are highly
+    coastline)                                      dependent upon construction of the airframe and of      n   Power consumption (from 24 V
+n   Frequency band: Ku band                         the onboard electronics and payload.                        regulated-PSU): 100 W (nominal)
+n   Spectrum occupancy: 15.7 to 17.2                Coverage                                                Physical, Environmental & Reliability
+    GHz                                             n   Instrumented maximum range:                         n   External dimensions of radar unit(s) (W
+n   Scan type: Symmetric dual-beam                      20 km (12.4 mi.)                                        x H x D)*: 666 mm x 503 mm x 128
+    electronic scanning in azimuth                  n   Instrumented minimum range:                             mm (26.2 in. x 19.8 in. x 5.0 in.)
+    (‘e-scan’)                                          less than 10 m (33 ft.)                             n   Weight of main radar unit (approx.)*:
+n   Transmitter power (nominal): 4 Watt             n   Azimuth scan angle: 90° (A402),                         25 kg (55 lb.)
+n   Multi-radar operation: supported                    180° (A422) or 360° (Dual A422)                     n   Weight of auxiliary radar unit(s)
+    and unlimited                                       horizontal e-scan                                       (approx.)*: 21 kg (46 lb.)
+n   Embedded software and firmware:                 n   Elevation beam (vertical beamwidth):                n   Operating temperature: from -32° C
+    field upgradeable via network                       10 to 15° (M10S antennas) or                            to +65° C (from -25° F to +149° F)
+    connection                                          20 to 30° (W20S antennas)                               Note: extended operating temperature
+Target Detection Performance                        n   Fastest scan time (for 90°): 1.0 s                      version available
+n   Maximum detection ranges:                       n   Fastest scan time (in Drone                         n   IP rating: IP66 (dust tight and
+                                                        Spotlighting Mode): 0.25 s                              protected against powerful water
+    – RCS 0.01 m2: 2.73 km (1.7 mi.)*
+                                                    Connectivity & Software
+                                                                                                                jets)
+    – RCS 0.05 m2: 4.09 km (2.54 mi.)*
+                                                                                                            n   MTBF: > 65,000 h
+    – RCS 0.1 m2: 4.87 km (3.03 mi.)*               n   Main I/O interface (for radar control
+                                                                                                            * excluding antennas, mountings and solar shield
+    – RCS 0.5 m2: 7.28 km (4.52 mi.)*                   and target data): 10/100 Ethernet
+                                                        network interface
+    – RCS 1.0 m2: 8.66 km (5.38 mi.)*
+                                                    n   Auxiliary I/O interfaces: RS-232 and                Errors and omissions excepted. Blighter Surveillance
+    – RCS 10.0 m2: 15.40 km (9.57 mi.)*
+                                                        RS-422 control lines, opto-isolated                 Systems Ltd reserves the right to modify specifications
+n   Maximum targets per scan: >500                      control/status inputs and isolated                  without notice. Blighter radars are protected by a
+                                                                                                            number of international patents. The Blighter name is
+n   False Alarm Rate (FAR): 1 false alarm               switched contact outputs                            an international registered trademark.
+    per day (adjustable)                            n   Software Interface: via BlighteNexus
+                                                        (ICD available)                                     BSS-1311 © 2025 Blighter Surveillance Systems Ltd
+
+
+
+
+                                                                                                            Blighter Surveillance Systems Ltd
+                                                                                                            Iceni House
+                                                                                                            London Road
+                                                                                                            Great Chesterford
+                                                                                                            Saffron Walden
+                                                                                                            CB10 1NY
+                                                                                                            United Kingdom
+                                                                                                            www.blighter.com
+                                                                                                            hello@blighter.com
+                                                                                                            Tel: +44 1223 491122
+

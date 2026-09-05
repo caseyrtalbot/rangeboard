@@ -10,7 +10,7 @@ export function EngagementLanesWidget({ id, params, collapsed, customize, index,
       id={id}
       type="engagement-lanes"
       title="Engagement lanes"
-      meta="per threat"
+      meta="planning envelope · per threat"
       collapsed={collapsed}
       customize={customize}
       index={index}

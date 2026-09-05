@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { TornadoRow } from '../../../charts/Tornado'
 import { Tornado } from '../../../charts/Tornado'
 import { uncertainFields } from '../../../analysis/uncertainty'
-import { runSettings } from '../../../model/types'
+import { entityActive, runSettings } from '../../../model/types'
 import { useStore } from '../../../state/store'
 import { PfTag } from '../../inspector/kit'
 import { currentSensitivity, formatCount } from './mc'
@@ -23,7 +23,8 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
   const start = useStore((s) => s.runSensitivity)
   const run = runSettings(scenario)
   const fields = useMemo(() => uncertainFields(scenario), [scenario])
-  const summary = currentSensitivity(mc, runId)
+  const hasAsset = scenario.entities.some((entity) => entity.kind === 'asset' && entityActive(entity))
+  const summary = hasAsset ? currentSensitivity(mc, runId) : null
   const library = scenario.library
   const rows: TornadoRow[] = useMemo(
     () =>
@@ -53,6 +54,8 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
     >
       {run.runMode === 'deterministic' ? (
         <p className="muted small">Sensitivity needs the Monte Carlo run mode.</p>
+      ) : !hasAsset ? (
+        <p className="muted small">Leakers unavailable: no defended asset. Sensitivity requires a defended asset.</p>
       ) : fields.length === 0 ? (
         <p className="muted small">No field carries a spread.</p>
       ) : sensitivity.status === 'running' ? (
@@ -61,14 +64,15 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
         </p>
       ) : summary != null ? (
         <>
-          <Tornado rows={rows} nominal={summary.nominal} unit={null} />
+          <p className="muted small">Full-run MC mean leakers (ships). One parameter at p10/p90, all others nominal; paired replicates. Endpoints are parameter perturbations, not uncertainty intervals. Mean CI unavailable.</p>
+          <Tornado rows={rows} nominal={summary.nominal} unit="ships" />
           <table className="tb">
             <thead>
               <tr>
                 <th>Model</th>
                 <th>Field</th>
-                <th>Low</th>
-                <th>High</th>
+                <th>At parameter p10</th>
+                <th>At parameter p90</th>
                 <th>Swing</th>
               </tr>
             </thead>

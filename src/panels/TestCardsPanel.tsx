@@ -222,7 +222,7 @@ function CardEditor({ card }: { card: TestCard }) {
   const fillExpectedFromAnalysis = () => {
     const { assessments, report, impacts } = engagementPicture(scenario)
     const aar = buildAarSummary(scenario, assessments, report, impacts)
-    const lines = [`Expected: ${aarHeadline(aar)}`]
+    const lines = [`Planning envelope · full-run expected: ${aarHeadline(aar)}`]
     for (const t of aar.threats) {
       lines.push(`${t.name}: ${t.outcome}, leak ${Math.round(t.leakProbability * 100)}%`)
     }

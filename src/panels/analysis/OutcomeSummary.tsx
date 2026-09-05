@@ -1,6 +1,6 @@
 import type { Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attrition'
-import type { BandSeries, McSummary } from '../../playback/mcRun'
+import type { McSummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
 import { formatTime } from '../../geometry/geo'
 import {
@@ -10,13 +10,7 @@ import {
   totalSalvos,
 } from '../headlines'
 import { SURVIVAL_LABELS } from './widgets/labels'
-import { countSub, timeStatSub } from './widgets/mc'
-
-/** The half-width sub of a band at its last step: the end-of-run interval. */
-function lastStepSub(band: BandSeries, reps: number): string | null {
-  const i = band.mean.length - 1
-  return i < 0 ? null : countSub(band, i, reps)
-}
+import { bandMean, countSub, statMean, timeStatSub } from './widgets/mc'
 
 function expectedCount(value: number): string {
   if (value === 0) return '0'
@@ -73,9 +67,11 @@ export function OutcomeSummary({
 }) {
   const totals = report.totals
   const raid = totals.raidSize
-  const defeatPct = raid > 0 ? (totals.expectedKills / raid) * 100 : 0
+  const kills = mc ? bandMean(mc.kills, mc.kills.mean.length - 1, mc.replicates) : totals.expectedKills
+  const leakers = mc ? bandMean(mc.leakers, mc.leakers.mean.length - 1, mc.replicates) : totals.reportedLeakers
+  const defeatPct = raid > 0 && kills != null ? (kills / raid) * 100 : null
   const residual = residualHeadline(totals)
-  const firstDetect = assessments.reduce<number | null>(
+  const envelopeFirstDetect = assessments.reduce<number | null>(
     (min, assessment) =>
       assessment.firstDetectS != null && (min == null || assessment.firstDetectS < min)
         ? assessment.firstDetectS
@@ -94,58 +90,61 @@ export function OutcomeSummary({
   const warnings = assessments
     .map((assessment) => assessment.warningS)
     .filter((value): value is number => value != null)
-  const minWarning = warnings.length > 0 ? Math.min(...warnings) : null
+  const firstDetect = mc ? statMean(mc.firstDetectS) : envelopeFirstDetect
+  const minWarning = mc ? statMean(mc.minWarningS) : warnings.length > 0 ? Math.min(...warnings) : null
   const salvos = totalSalvos(totals)
   return (
     <div className="outcome-summary">
       <div className="outcome-grid">
         <Metric
           label="Defeat"
-          value={`${defeatPct.toFixed(1)}%`}
+          value={defeatPct == null ? '—' : `${defeatPct.toFixed(1)}%`}
           sub={
-            (mc && lastStepSub(mc.kills, mc.replicates)) ??
-            `${expectedCount(totals.expectedKills)} of ${raid} ships`
+            raid <= 0 ? 'no ships' : mc
+              ? countSub(mc.kills, mc.kills.mean.length - 1, mc.replicates, 100 / raid, ' pp')
+              : `planning envelope · ${expectedCount(totals.expectedKills)} of ${raid} ships`
           }
           cls="good"
           title="Expected kill mass whose effect landed at or before the threat reached the defended asset. Late intercepts are not counted here."
         />
         <Metric
           label={SURVIVAL_LABELS.leakers}
-          value={residual.value}
+          value={totals.reportedLeakers == null ? '—' : leakers == null ? '—' : mc ? expectedCount(leakers) : residual.value}
           sub={
-            (mc && totals.reportedLeakers != null && lastStepSub(mc.leakers, mc.replicates)) ||
-            residual.sub
+            totals.reportedLeakers == null ? residual.sub : mc
+              ? `${countSub(mc.leakers, mc.leakers.mean.length - 1, mc.replicates)} · ships`
+              : `planning envelope · ${residual.sub}`
           }
-          cls={residual.bad ? 'bad' : ''}
+          cls={totals.reportedLeakers != null && leakers != null && leakers > 0.05 ? 'bad' : ''}
           title="Expected ship mass that reached a defended asset. Not measurable when the laydown places no asset."
         />
         <Metric
           label="Late E[k]"
           value={expectedCount(totals.expectedLateKills)}
-          sub="after arrival, not a defeat"
+          sub="planning envelope · after arrival, not a defeat"
           cls={totals.expectedLateKills > 0.05 ? 'warn' : ''}
           title="Expected kill mass intercepted after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is not a defeat and it does not reduce the leaker count."
         />
         <Metric
           label="First detect"
           value={firstDetect == null ? '—' : formatTime(firstDetect)}
-          sub={(mc && timeStatSub(mc.firstDetectS, 'detected')) ?? 'earliest track'}
+          sub={(mc && timeStatSub(mc.firstDetectS, 'detected')) ?? 'planning envelope · earliest track'}
         />
         <Metric
           label="First effect"
           value={firstEffect == null ? '—' : formatTime(firstEffect)}
-          sub="kill mass removed"
+          sub="planning envelope · kill mass removed"
           title="First effect that removed kill mass. A jam dwell that only degrades the track is not an effect here."
         />
         <Metric
           label="Min warning"
           value={minWarning == null ? '—' : formatTime(minWarning)}
-          sub={(mc && timeStatSub(mc.minWarningS, 'warning')) ?? 'worst threat'}
+          sub={(mc && timeStatSub(mc.minWarningS, 'warning')) ?? 'planning envelope · worst threat'}
         />
         <Metric
           label="Salvos"
           value={`${salvos}`}
-          sub={expenditureBreakdown(totals)}
+          sub={`planning envelope · ${expenditureBreakdown(totals)}`}
           wide
           title="Salvos by what each one cost: kinetic rounds, directed-energy bursts, EW salvos."
         />
@@ -162,7 +161,7 @@ export function OutcomeSummary({
                 <span>{entity?.name ?? row.effectorId}</span>
                 <strong>{spent.length > 0 ? spent.join(' · ') : 'no salvos'}</strong>
                 <small>
-                  {total == null ? 'continuous capacity' : `${row.expectedRoundsRemaining ?? 0}/${total} remaining`}
+                  planning envelope · {total == null ? 'continuous capacity' : `${row.expectedRoundsRemaining ?? 0}/${total} remaining`}
                 </small>
               </div>
             )

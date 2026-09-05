@@ -1,0 +1,3637 @@
+{
+  "source": "src/model/seedLibrary.ts",
+  "source_sha256": "e82fb355b962e8af73d82e7d3be78ce972994b11d9dce1b86843a6d039431519",
+  "models": [
+    {
+      "id": "lib-rps42",
+      "name": "RPS-42 radar panel (RADA MHR)",
+      "kind": "sensor",
+      "line": 21,
+      "description": "S-band AESA panel, one 90 deg face; four panels give 360 deg. Nano-UAS acquisition 3.5 km is published; the 8 km mini-UAS figure has no locatable source and is a planning figure.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "target-acquisition",
+        "detectRangeM": 5000,
+        "refRcsM2": 0.01,
+        "instrumentedRangeM": 30000,
+        "classifyRangeM": 5000,
+        "sectorDeg": 90,
+        "elevationDeg": [
+          -10,
+          70
+        ],
+        "maxAltitudeFt": 30000,
+        "resolutionM": 50
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "5000 m against Group 1 (Raven, WASP, Puma class)",
+          "source": "Breaking Defense, RADA sponsored post (2022-10-31)",
+          "url": "https://breakingdefense.com/2022/10/why-countering-small-uas-and-swarms-demands-highly-capable-radars/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "30000 m",
+          "source": "DRS MHR family datasheet (04-2017)",
+          "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "-10 to 70 deg",
+          "source": "DRS MHR family datasheet (04-2017)",
+          "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "maxAltitudeFt",
+          "value": "30000 ft",
+          "source": "DRS MHR family datasheet (04-2017)",
+          "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "90 deg",
+          "source": "DRS MHR family datasheet (04-2017)",
+          "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-rps62",
+      "name": "RPS-62 radar panel (RADA MHR)",
+      "kind": "sensor",
+      "line": 84,
+      "description": "Larger S-band MHR-family panel. Northrop names MHR/RPS-42/62/82 among FAAD C2 supported sensors, but no range figure is published for the RPS-62: both rings are planning figures.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "surveillance",
+        "detectRangeM": 3000,
+        "classifyRangeM": 8000,
+        "sectorDeg": 90,
+        "elevationDeg": [
+          0,
+          90
+        ],
+        "maxAltitudeFt": 30000,
+        "resolutionM": 50
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "3000 m against nano-UAV (15 km medium UAV, 22 km fighter)",
+          "source": "EDR Magazine, DSEI 2019 RADA report",
+          "url": "https://www.edrmagazine.eu/dsei-2019-rada-two-new-radars-from-israel",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "90 deg",
+          "source": "EDR Magazine, DSEI 2019 RADA report",
+          "url": "https://www.edrmagazine.eu/dsei-2019-rada-two-new-radars-from-israel",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-kurfs",
+      "name": "KuRFS fire-control radar (Raytheon)",
+      "kind": "sensor",
+      "line": 121,
+      "description": "Precision 360 deg Ku-band AESA. Fire-control sensor for LIDS and Coyote; detects the smallest UAS class beyond 15 km.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "fire-control",
+        "detectRangeM": 15000,
+        "classifyRangeM": 10000,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": 30
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "15000 m against the smallest class of drones (beyond 15 km)",
+          "source": "Defense News, Raytheon native content (2022-11-24)",
+          "url": "https://www.defensenews.com/native/raytheon-missiles-defense/2022/11/22/birds-planes-drones-kurfs-radar-can-spot-them-all/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Raytheon KuRFS product page (rtx.com)",
+          "url": "https://www.rtx.com/raytheon/lang/ro/capabilities/products/counter-uas/sensors/kurfs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-echoshield",
+      "name": "EchoShield tracking radar (Echodyne)",
+      "kind": "sensor",
+      "line": 158,
+      "description": "Ku-band pulse-Doppler ESA panel, 130 x 90 deg field of regard. Group 1 UAS at 3-4 km, larger UAS to 11 km.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "tracking",
+        "detectRangeM": 3000,
+        "refRcsM2": 0.01,
+        "classifyRangeM": 2500,
+        "sectorDeg": 130,
+        "elevationDeg": [
+          -45,
+          45
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": 30
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "3000 m against Group 1 (-20 to -10 dBsm), typical tracking 3 to 5.3 km",
+          "source": "Echodyne EchoShield spec sheet (6JL, 2026)",
+          "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a5558f970a01479ae2a92b7_TS-EchoShield-Echodyne_6JL.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "130 deg",
+          "source": "Echodyne EchoShield spec sheet (6JL, 2026)",
+          "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a5558f970a01479ae2a92b7_TS-EchoShield-Echodyne_6JL.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-lstar",
+      "name": "AN/TPQ-50 LSTAR air-surveillance radar (SRC)",
+      "kind": "sensor",
+      "line": 196,
+      "description": "L-band 360 deg air-surveillance radar (AN/TPQ-50), the search sensor in the LIDS family. SRC publishes >35 km instrumented in air-surveillance mode and >15 km in counterfire mode, neither conditioned on a UAS class; the 10 km ring is a small-UAS planning figure.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "early-warning",
+        "rangeBasis": "planning",
+        "detectRangeM": 10000,
+        "instrumentedRangeM": 35000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          0,
+          30
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "10000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "35000 m",
+          "source": "SRC AN/TPQ-50 product sheet (2026)",
+          "url": "https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "0 to 30 deg",
+          "source": "SRC AN/TPQ-50 product sheet (2026)",
+          "url": "https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "SRC AN/TPQ-50 product sheet (2026)",
+          "url": "https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-tpq53",
+      "name": "AN/TPQ-53 multi-mission radar",
+      "kind": "sensor",
+      "line": 251,
+      "description": "S-band counterfire radar with a simultaneous air-surveillance and C-UAS mode, running a 90 deg sector at longer range or 360 deg rotating. Lockheed publishes no range against a UAS class; the ring is a planning figure. Cues LIDS effectors.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "early-warning",
+        "rangeBasis": "planning",
+        "detectRangeM": 15000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "15000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Lockheed Martin TPQ-53 product page",
+          "url": "https://www.lockheedmartin.com/en-us/products/tpq-53.html",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-iris",
+      "name": "IRIS counter-drone radar (Robin)",
+      "kind": "sensor",
+      "line": 289,
+      "description": "X-band FMCW 3D radar with micro-Doppler drone/bird classification. 5 km is the instrumented range, not a detection range against a stated target; a 12 km long-range mode is offered.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "classification",
+        "detectRangeM": 3100,
+        "instrumentedRangeM": 5000,
+        "updateRateS": 1,
+        "classifyRangeM": 3000,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          0,
+          60
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": 50
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "3100 m against C1 Micro 0.9 kg (nano 1100, mini 3700, small 7600)",
+          "source": "Robin Radar IRIS product sheet (2026-04)",
+          "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "5000 m",
+          "source": "Robin Radar IRIS product sheet (2026-04)",
+          "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "updateRateS",
+          "value": "1 s",
+          "source": "Robin Radar IRIS product sheet (2026-04)",
+          "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Robin Radar IRIS product sheet (2026-04)",
+          "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-r8ss",
+      "name": "Ranger R8SS-3D panel radar (FLIR)",
+      "kind": "sensor",
+      "line": 344,
+      "description": "Compact perimeter panel radar; tracks up to 500 targets and cues EO/IR. Micro-UAS to 2-3 km per 120 deg face.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "surveillance",
+        "detectRangeM": 1200,
+        "instrumentedRangeM": 7800,
+        "updateRateS": 0.5,
+        "classifyRangeM": null,
+        "sectorDeg": 90,
+        "elevationDeg": [
+          -40,
+          40
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": 50
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "1200 m against MicroUAS (MiniUAS 2100, Small UAS 4000)",
+          "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+          "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "7800 m",
+          "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+          "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "updateRateS",
+          "value": "0.5 s (2 Hz; 4 Hz mode stated)",
+          "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+          "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "90 deg",
+          "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+          "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-rfone",
+      "name": "RfOne Mk2 RF sensor (DroneShield)",
+      "kind": "sensor",
+      "line": 399,
+      "description": "Passive, non-emitting RF direction finder for UAS control and video links. Four units give 360 deg; multiple sites triangulate a position. DroneShield publishes no detection range, so the 5 km ring is a planning figure.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "early-warning",
+        "rangeBasis": "planning",
+        "detectRangeM": 5000,
+        "classifyRangeM": 5000,
+        "sectorDeg": 90,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": 100
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "5000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-rf360",
+      "name": "RF-360 passive RF sensor (Dedrone)",
+      "kind": "sensor",
+      "line": 429,
+      "description": "Omnidirectional passive RF sensor (Dedrone by Axon). Detects, classifies and direction-finds drones and controllers by protocol signature. 2 km is the normal-conditions figure; up to 5 km is claimed in ideal conditions against specific drones. One unit gives angle of arrival only.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "classification",
+        "detectRangeM": 2000,
+        "classifyRangeM": 2000,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": 100
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "2000 m for most drones in normal conditions; up to 5000 m in ideal conditions",
+          "source": "Dedrone RF-360 data sheet V2.0 (PDF)",
+          "url": "https://l.dedrone.com/hubfs/Downloads%20-%20PDFs/DS_RF360-360T_en_web.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg, omnidirectional",
+          "source": "Dedrone RF-360 data sheet V2.0 (PDF)",
+          "url": "https://l.dedrone.com/hubfs/Downloads%20-%20PDFs/DS_RF360-360T_en_web.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-discovair",
+      "name": "Discovair G2 acoustic array (Squarehead)",
+      "kind": "sensor",
+      "line": 466,
+      "description": "Passive 128-microphone array with ML classification. Tracks Group 1-2 UAS by sound, including RF-silent drones.",
+      "spec": {
+        "sensorType": "acoustic",
+        "role": "tracking",
+        "refAcousticDb": 75,
+        "detectRangeM": 500,
+        "classifyRangeM": 400,
+        "sectorDeg": 105,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": 200
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "500 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "105 deg in directional mode; 360 deg in hemispheric mode",
+          "source": "Squarehead Technology drone detection page (Discovair G2+)",
+          "url": "https://www.sqhead.com/drone-detection",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-acoustic-picket",
+      "name": "Acoustic picket node (representative)",
+      "kind": "sensor",
+      "line": 504,
+      "description": "REPRESENTATIVE acoustic picket node, not a named product. Cheap omnidirectional microphone node for a forward picket line. Ranges are planning figures for an engine-noise target; small electric quadcopters are detected at far shorter ranges.",
+      "spec": {
+        "sensorType": "acoustic",
+        "role": "early-warning",
+        "refAcousticDb": 95,
+        "detectRangeM": 4000,
+        "classifyRangeM": 2000,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": 10000,
+        "resolutionM": 500
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "4000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-hdcmr",
+      "name": "Ranger HDC MR EO/IR (FLIR)",
+      "kind": "sensor",
+      "line": 534,
+      "description": "Mid-range pan-tilt thermal and color imager for visual identification of radar-cued tracks. 360 deg slewable.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "classification",
+        "eoBand": "dual",
+        "refSpanM": 0.4,
+        "detectRangeM": 3000,
+        "classifyRangeM": 1500,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          -35,
+          90
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": 20
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "3000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "eoBand",
+          "value": "dual: HD thermal imager plus a 1920 x 1080 HD colour TV camera",
+          "source": "Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl",
+          "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg azimuth range",
+          "source": "Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl",
+          "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "-35 to 90 deg elevation range",
+          "source": "Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl",
+          "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-teleidoscope",
+      "name": "Teleidoscope ML auto-track camera",
+      "kind": "sensor",
+      "line": 589,
+      "description": "Machine-learning EO/IR auto-track gimbal. The fielded program is the NCR-IADS airspace-warning camera modernization; no source places Teleidoscope in FS-LIDS or M-LIDS, and no source supports a fire-control role. Ranges are planning figures.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "classification",
+        "eoBand": "dual",
+        "rangeBasis": "planning",
+        "detectRangeM": 2000,
+        "classifyRangeM": 1500,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": 15
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "2000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-wisp",
+      "name": "Wisp wide-area IR sensor (Anduril)",
+      "kind": "sensor",
+      "line": 620,
+      "description": "Passive 360 deg wide-area infrared sensor with on-edge AI. Searches for low, slow, small UAS without a radar cue and feeds Lattice. Detection band 3-10 miles; 4.8 km is the low end.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "surveillance",
+        "eoBand": "thermal",
+        "refSpanM": 0.4,
+        "detectRangeM": 4800,
+        "instrumentedRangeM": 16000,
+        "classifyRangeM": 4800,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "4800 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "eoBand",
+          "value": "thermal: passive infrared detection and tracking",
+          "source": "Anduril Wisp product page (embedded page JSON, curl)",
+          "url": "https://www.anduril.com/wisp",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg horizontal field of view",
+          "source": "Anduril Wisp product page (embedded page JSON, curl)",
+          "url": "https://www.anduril.com/wisp",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-mxgcs",
+      "name": "WESCAM MX-GCS EO/IR sight (L3Harris)",
+      "kind": "sensor",
+      "line": 668,
+      "description": "Stabilized cooled MWIR and HD colour sight with eyesafe laser rangefinder on SGT Stout M-SHORAD. Slews 360 deg independent of the turret to identify and track air threats for the 30 mm gun. Ranges are planning figures: none are published.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "fire-control",
+        "eoBand": "dual",
+        "rangeBasis": "planning",
+        "detectRangeM": 8000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "8000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "eoBand",
+          "value": "dual: mid-wave cooled thermal imager plus an HD daylight sensor",
+          "source": "L3Harris WESCAM MX-GCS product page",
+          "url": "https://www.l3harris.com/all-capabilities/wescam-mx-gcs-independent-stabilized-sighting-system",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg scanning, independent of the gun turret",
+          "source": "L3Harris WESCAM MX-GCS product page",
+          "url": "https://www.l3harris.com/all-capabilities/wescam-mx-gcs-independent-stabilized-sighting-system",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-spynel",
+      "name": "Spynel-S 6000 panoramic IR (HGH)",
+      "kind": "sensor",
+      "line": 715,
+      "description": "Passive rotating MWIR sensor that rebuilds a 360 deg thermal panorama every 2 s and cues itself. Wide-area search, no radar needed. UAS ranges are planning figures: HGH publishes DRI for people and vehicles only.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "surveillance",
+        "eoBand": "thermal",
+        "rangeBasis": "planning",
+        "detectRangeM": 5000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          -45,
+          45
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "5000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "eoBand",
+          "value": "thermal: MWIR 640 x 512 focal plane array",
+          "source": "HGH Spynel-S product page (curl), Spynel-S 6000 column",
+          "url": "https://hgh-infrared.com/was/products/spynel-s/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg horizontal field of view",
+          "source": "HGH Spynel-S product page (curl), Spynel-S 6000 column",
+          "url": "https://hgh-infrared.com/was/products/spynel-s/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "-45 to 45 deg motorised tilt",
+          "source": "HGH Spynel-S product page (curl), Spynel-S 6000 column",
+          "url": "https://hgh-infrared.com/was/products/spynel-s/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-zvook",
+      "name": "Zvook acoustic station (Ukraine)",
+      "kind": "sensor",
+      "line": 770,
+      "description": "Half-metre acoustic mirror over one microphone with edge ML. Tower-mounted at 10-12 m, about 200 deg coverage, 5 km on Shahed-type OWA and 7 km on cruise missiles. Passive: it cannot be jammed or homed on.",
+      "spec": {
+        "sensorType": "acoustic",
+        "role": "early-warning",
+        "refAcousticDb": 100,
+        "detectRangeM": 5000,
+        "classifyRangeM": 5000,
+        "sectorDeg": 200,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "up to 5000 m on a drone; 7000 m on a cruise missile",
+          "source": "Militarnyi, NATO Shows Interest in Ukrainian Acoustic Detection Networks for Air Defense, citing The Times",
+          "url": "https://militarnyi.com/en/news/nato-shows-interest-in-ukrainian-acoustic-detection-networks-for-air-defense/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "about 200 deg coverage angle",
+          "source": "Militarnyi, NATO Shows Interest in Ukrainian Acoustic Detection Networks for Air Defense",
+          "url": "https://militarnyi.com/en/news/nato-shows-interest-in-ukrainian-acoustic-detection-networks-for-air-defense/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-zvooknw0",
+      "name": "Zvook NW0 tactical FPV sensor",
+      "kind": "sensor",
+      "line": 808,
+      "description": "Post-mounted 360 deg acoustic sensor for FPV drones, including fibre-optic FPV that emits no RF at all. Declared 150-450 m; the maker advises 400-600 m node spacing. IP67, 15-20 W.",
+      "spec": {
+        "sensorType": "acoustic",
+        "role": "early-warning",
+        "refAcousticDb": 75,
+        "detectRangeM": 150,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "150 to 450 m on FPV drones; the lower bound is 150 m",
+          "source": "Militarnyi, Ukraine Develops Acoustic Detector for FPV Drones (ZVOOK NW0), quoting the company",
+          "url": "https://militarnyi.com/en/news/ukraine-develops-acoustic-detector-for-fpv-drones/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg coverage",
+          "source": "dev.ua, Ukrainian company ZVOOK has created an acoustic sensor to detect FPV drones by sound",
+          "url": "https://dev.ua/en/news/ukrainska-kompaniia-zvook-stvoryla-akustychnyi-sensor-dlia-vyiavlennia-fpv-droniv-za-zvukom-1769187556",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-kumrfs-m",
+      "name": "KuMRFS-M mobile fire-control radar (Raytheon)",
+      "kind": "sensor",
+      "line": 846,
+      "description": "Mobile configuration of KuMRFS-T sized for an M-ATV or JLTV mast. Four independent AESA quadrants give 360 deg upper-hemisphere coverage, with quadrant arrays one quarter the size of the fixed -T. Government brochure: UAS Group 1-3 capability beyond 7 km. Air surveillance and fire control at the short halt, not on the move.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "fire-control",
+        "detectRangeM": 7000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "7000 m against UAS Group 1 to 3 (beyond 7 km)",
+          "source": "SRC LIDS family brochure",
+          "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "SRC LIDS family brochure",
+          "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-xbaeu",
+      "name": "XBAEU Ku720-2 mobile sensing radar (Raytheon)",
+      "kind": "sensor",
+      "line": 883,
+      "description": "Scaled Ku720-2 distributed mobile sensing radar. CRS records it as the radar on the single-Stryker M-LIDS Increment 2.1, in place of KuMRFS. RTX states 360 deg persistent detection, identification and tracking. NO range figure of any type is published: the ring is a REPRESENTATIVE planning value from the app role-default table, not an XBAEU performance figure.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "fire-control",
+        "rangeBasis": "planning",
+        "detectRangeM": 8000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "8000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "RTX news release (2024-10-14)",
+          "url": "https://www.rtx.com/news/news-center/2024/10/14/rtxs-raytheon-demos-kurfs-and-coyote-performance-against-complex-uas-threats",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-cuaews-df",
+      "name": "CUAEWS DF passive RF sensor (SRC)",
+      "kind": "sensor",
+      "line": 921,
+      "description": "Passive find-and-fix half of the LIDS EW element. Searches the RF environment for signals of interest, direction-finds lines of bearing to both the UAS and its operator, and classifies each contact SUSPECT, NEUTRAL/UNKNOWN or FRIEND before the jammer half fires. No detection range is published: the ring is REPRESENTATIVE. The brochure's 8 km is the EW EFFECTS range and belongs to lib-cuaews.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "classification",
+        "rangeBasis": "planning",
+        "detectRangeM": 6000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "6000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-cm262",
+      "name": "CM262 EO/IR/SWIR gimbal (CACI)",
+      "kind": "sensor",
+      "line": 951,
+      "description": "Four-sensor 16 kg gimbal on the L-MADIS sensor vehicle: HD EO, HD MWIR, SWIR and a laser rangefinder, 360 deg continuous in azimuth and +90 to -16 deg in elevation, with on-board C-UAS tracking. CACI publishes no detection or identification range against any target, so the ring is REPRESENTATIVE. The datasheet's 16 km is the laser rangefinder's ranging range, not a detection range.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "classification",
+        "eoBand": "dual",
+        "rangeBasis": "planning",
+        "detectRangeM": 5000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          -16,
+          90
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "5000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "eoBand",
+          "value": "dual: HD EO, HD MWIR, SWIR and a laser rangefinder",
+          "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+          "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg continuous in azimuth",
+          "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+          "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "-16 to 90 deg from the horizon",
+          "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+          "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-drs-s3",
+      "name": "DRS S3 stabilised sight (RIwP turret)",
+      "kind": "sensor",
+      "line": 1006,
+      "description": "EO/IR sight integrated in the Moog RIwP turret with a built-in auto-tracker. Provides the detect / recognise / identify chain and holds track through kinetic engagements against ground and air targets. The M-LIDS brochure gives the vehicle EO/IR camera gun system a target acquisition range greater than 2 km.",
+      "spec": {
+        "sensorType": "eo-ir",
+        "role": "fire-control",
+        "eoBand": "dual",
+        "refSpanM": 0.4,
+        "detectRangeM": 2000,
+        "classifyRangeM": 1500,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          -45,
+          85
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "2000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "eoBand",
+          "value": "dual: cooled HD MWIR or uncooled HD LWIR plus an HD colour day channel",
+          "source": "Leonardo DRS S3 Stabilized Sight System datasheet (2022)",
+          "url": "https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg azimuth travel with a slip ring",
+          "source": "Leonardo DRS S3 Stabilized Sight System datasheet (2022)",
+          "url": "https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "-45 to 85 deg elevation travel",
+          "source": "Leonardo DRS S3 Stabilized Sight System datasheet (2022)",
+          "url": "https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-sentry-lr-fc",
+      "name": "Long Range Sentry Tower w/ fire control (Anduril)",
+      "kind": "sensor",
+      "line": 1061,
+      "description": "Autonomous Lattice-native tower carrying an ultra-high-powered 360 deg radar that Anduril states identifies, classifies and tracks Group 1-3 drones up to 15 km. SIMPLIFICATION: the real tower is a multi-sensor mast that fuses radar, visible and mid-wave IR on board; RangeBoard models one sensor per SpecModel, so only the radar is modelled because the radar is what gives the tower its C-UAS reach.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "fire-control",
+        "detectRangeM": 2000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "2000 m against Group 1 (2 to 4 km; 15 km for Group 3+)",
+          "source": "Anduril Sentry product page",
+          "url": "https://www.anduril.com/sentry",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Anduril Sentry product page",
+          "url": "https://www.anduril.com/sentry",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-sentinela4",
+      "name": "Sentinel A4 air defense radar (AN/MPQ-64A4)",
+      "kind": "sensor",
+      "line": 1098,
+      "description": "X-band digital AESA (GaN), 360 deg with stop-and-stare, -15 deg to zenith. Army SHORAD acquisition radar against FW/RW/CM/RAM and UAS. No public small-UAS detection range; ring is a role planning factor.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "target-acquisition",
+        "rangeBasis": "planning",
+        "detectRangeM": 15000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          -15,
+          90
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "15000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "-15 to 90 deg",
+          "source": "Lockheed Martin Sentinel A4 product card (2024)",
+          "url": "https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Lockheed Martin Sentinel A4 product card (2024)",
+          "url": "https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-gator",
+      "name": "AN/TPS-80 G/ATOR multi-mission radar",
+      "kind": "sensor",
+      "line": 1144,
+      "description": "S-band GaN AESA expeditionary multi-mission radar, 360 deg. USMC air surveillance and air defense (Block 1) plus counterfire (Block 2); the sensor for MRIC. No public small-UAS range; ring is a role planning factor.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "early-warning",
+        "rangeBasis": "planning",
+        "detectRangeM": 40000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "40000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Northrop Grumman G/ATOR product page",
+          "url": "https://www.northropgrumman.com/what-we-do/mission-solutions/radars/an-tps-80-ground-air-task-oriented-radar-g-ator",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-giraffe1x",
+      "name": "Giraffe 1X 3D radar (Saab)",
+      "kind": "sensor",
+      "line": 1182,
+      "description": "Compact 3D air surveillance radar; full search volume updated every second. Drone Tracker mode separates mini-UAV from birds. Saab states a UAV lighter than a milk carton at 4 km. Bought by the US Army-contracted for Estonia, Latvia and Lithuania.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "surveillance",
+        "detectRangeM": 4000,
+        "refRcsM2": 0.01,
+        "instrumentedRangeM": 75000,
+        "updateRateS": 1,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": [
+          0,
+          70
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "4000 m against a UAV lighter than a milk carton",
+          "source": "Saab Giraffe 1X product page",
+          "url": "https://www.saab.com/products/giraffe-1x",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "75000 m",
+          "source": "Saab Giraffe 1X leaflet (2014), radartutorial.eu copy",
+          "url": "https://www.radartutorial.eu/19.kartei/04.battle/pubs/giraffe_1x.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "updateRateS",
+          "value": "1 s",
+          "source": "Saab Giraffe 1X product page",
+          "url": "https://www.saab.com/products/giraffe-1x",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "elevationDeg",
+          "value": "0 to 70 deg",
+          "source": "Saab Giraffe 1X leaflet (2014), radartutorial.eu copy",
+          "url": "https://www.radartutorial.eu/19.kartei/04.battle/pubs/giraffe_1x.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg",
+          "source": "Saab layered-defence page",
+          "url": "https://www.saab.com/markets/eu-nato-affairs/layered-defence-against-the-drone-threat",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-spexer2000",
+      "name": "SPEXER 2000 3D radar (HENSOLDT)",
+      "kind": "sensor",
+      "line": 1246,
+      "description": "X-band pulse-Doppler AESA, 120 deg per antenna (MkIII builds to 360 deg with more antennas), elevation to 90 deg. Datasheet maxima: UAV 9 km, micro-UAV 6 km. Over 300 tracks per 120 deg sector.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "target-acquisition",
+        "detectRangeM": 6000,
+        "refRcsM2": 0.04,
+        "instrumentedRangeM": 40000,
+        "classifyRangeM": null,
+        "sectorDeg": 120,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "6000 m against Micro UAV (UAV 9 km)",
+          "source": "HENSOLDT SPEXER 2000 datasheet (2020)",
+          "url": "https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "40000 m",
+          "source": "EDR Magazine, SPEXER 2000 3rd Gen (2020-06-22)",
+          "url": "https://www.edrmagazine.eu/hensoldt-unveils-its-new-spexer-2000-3rd-gen-radar-for-c-uas-and-not-only",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "120 deg",
+          "source": "HENSOLDT SPEXER 2000 datasheet (2020)",
+          "url": "https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-echoguard",
+      "name": "EchoGuard 4D radar (Echodyne)",
+      "kind": "sensor",
+      "line": 1293,
+      "description": "K-band MESA ESA panel, 120 x 80 deg field of view, 6 km instrumented. Datasheet: sUAV over 1 km (Phantom 4), over 1.4 km (Matrice 600), vehicle 3.5 km. Up to 20 tracks at 10 Hz.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "tracking",
+        "detectRangeM": 1000,
+        "refRcsM2": 0.01,
+        "instrumentedRangeM": 6000,
+        "classifyRangeM": null,
+        "sectorDeg": 120,
+        "elevationDeg": [
+          -40,
+          40
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "1000 m against sUAV Phantom 4 (Matrice 600 1400 m)",
+          "source": "Echodyne EchoGuard spec sheet (6JL, 2026)",
+          "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "6000 m",
+          "source": "Echodyne EchoGuard spec sheet (6JL, 2026)",
+          "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "120 deg",
+          "source": "Echodyne EchoGuard spec sheet (6JL, 2026)",
+          "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-spyglass",
+      "name": "Spyglass short-range radar (Anduril / Numerica)",
+      "kind": "sensor",
+      "line": 1340,
+      "description": "Ku-band phased array with simultaneous transmit and receive. Numerica states detection and track of small autonomous UAS beyond 3.5 km. Demonstrated in the JCO-recommended SAIC C-sUAS-as-a-Service at Yuma, Sep 2022. Now an Anduril product in Lattice.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "surveillance",
+        "detectRangeM": 6000,
+        "classifyRangeM": null,
+        "sectorDeg": 90,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "6000 m against Group 1 UAS (Group 3 12 km)",
+          "source": "Anduril Spyglass product page",
+          "url": "https://www.anduril.com/spyglass",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "90 deg",
+          "source": "Anduril Spyglass product page",
+          "url": "https://www.anduril.com/spyglass",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-a422",
+      "name": "Blighter A422 air security radar",
+      "kind": "sensor",
+      "line": 1377,
+      "description": "Ku-band FMCW e-scan radar, 180 deg per unit, elevation to 30 deg with W20S antennas, 20 km instrumented. Free-space detection 2.73 km at 0.01 m2 RCS, 4.87 km at 0.1 m2. UK-supplied to Ukraine in 2022.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "surveillance",
+        "detectRangeM": 2730,
+        "refRcsM2": 0.01,
+        "instrumentedRangeM": 20000,
+        "classifyRangeM": null,
+        "sectorDeg": 180,
+        "elevationDeg": [
+          0,
+          30
+        ],
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "2730 m at 0.01 m2 RCS, free space, M10S antennas",
+          "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+          "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "refRcsM2",
+          "value": "0.01 m2",
+          "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+          "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "20000 m",
+          "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+          "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "180 deg",
+          "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+          "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-gm200mmc",
+      "name": "Ground Master 200 MM/C radar (Thales)",
+      "kind": "sensor",
+      "line": 1432,
+      "description": "4D AESA multi-mission radar on a tactical truck; over 400 km instrumented for air surveillance and up to 100 km for weapon locating. NATO users NL, DK, LT. Thales claims drone detection but publishes no small-UAS range; ring is a role planning factor.",
+      "spec": {
+        "sensorType": "radar",
+        "role": "early-warning",
+        "rangeBasis": "planning",
+        "detectRangeM": 40000,
+        "instrumentedRangeM": 400000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": 100000,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "40000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "instrumentedRangeM",
+          "value": "400000 m",
+          "source": "Army Recognition, GM200 MM/C Sweden (2025-04-08)",
+          "url": "https://www.armyrecognition.com/news/army-news/2025/sweden-becomes-fifth-nato-country-to-procure-the-french-thales-gm200-mm-c-radar",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "maxAltitudeFt",
+          "value": "100000 ft",
+          "source": "Army Recognition, GM200 MM/C Sweden (2025-04-08)",
+          "url": "https://www.armyrecognition.com/news/army-news/2025/sweden-becomes-fifth-nato-country-to-procure-the-french-thales-gm200-mm-c-radar",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-corian",
+      "name": "CORIAN passive RF array (CACI)",
+      "kind": "sensor",
+      "line": 1479,
+      "description": "Fixed-site networked passive RF sensor array. TDOA multilateration across nodes geolocates the Group 1-2 sUAS AND its ground operator; positive ID by an unclassified signal library. JCO fixed/semi-fixed interim selection. Range is a planning figure, not a published one.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "classification",
+        "rangeBasis": "planning",
+        "detectRangeM": 5000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "5000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-wingman",
+      "name": "Wingman 103 wearable RF detector (MyDefence)",
+      "kind": "sensor",
+      "line": 1509,
+      "description": "Body-worn passive RF detector for dismounted troops. Up to 6 km on the drone or controller link, direction finding to within 30 deg, alert in under 10 s. 90 deg face as issued; omnidirectional with the wideband antenna. ATAK compatible.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "early-warning",
+        "detectRangeM": 6000,
+        "classifyRangeM": null,
+        "sectorDeg": 90,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null,
+        "rfBands": [
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "up to 6000 m, no target class stated",
+          "source": "MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)",
+          "url": "https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "rfBands",
+          "value": "2.4, 5.2 and 5.8 GHz as issued; 5.2 GHz has no band code",
+          "source": "MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)",
+          "url": "https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "90 deg horizontal as issued; 360 deg with the wideband antenna",
+          "source": "MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)",
+          "url": "https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-rfpatrol",
+      "name": "RfPatrol Mk2 body-worn RF detector (DroneShield)",
+      "kind": "sensor",
+      "line": 1555,
+      "description": "Body-worn, strictly non-emitting RF detector. 4 km in a low-RF (rural) background but only 1 km in a high-RF (urban) background. Directional and omnidirectional antennas give 360 deg cover. Alerts by sound, light and haptic.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "early-warning",
+        "urbanRangeM": 1000,
+        "detectRangeM": 4000,
+        "classifyRangeM": 4000,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "up to 4000 m in a rural environment, no target class stated",
+          "source": "Army Recognition, Droneshield releases handheld RfPatrol Mk II drone detector (2020)",
+          "url": "https://www.armyrecognition.com/archives/archives-land-defense/land-defense-2020/droneshield-releases-handheld-rfpatrol-mk-ii-drone-detector",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg detection coverage",
+          "source": "DroneShield dismounted products page (RfPatrol Mk2)",
+          "url": "https://www.droneshield.com/products-dismounted",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-ardronis",
+      "name": "ARDRONIS Locate RF DF system (Rohde & Schwarz)",
+      "kind": "sensor",
+      "line": 1593,
+      "description": "Receive-only RF monitoring and direction finding on the control uplink, telemetry and video downlink. Locate Compact states more than 5 km. Warns while the drone is still on the ground. STANAG aligned and SAPIENT compliant.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "classification",
+        "detectRangeM": 5000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null,
+        "rfBands": [
+          "uhf-433",
+          "ism-915",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "more than 5000 m, no target class stated",
+          "source": "Rohde & Schwarz ARDRONIS Locate Compact solution page",
+          "url": "https://www.rohde-schwarz.com/us/solutions/critical-infrastructure/countering-drones/ardronis-locate-compact-solution_256824.html",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "rfBands",
+          "value": "400 MHz to 6 GHz monitored range",
+          "source": "Rohde & Schwarz ARDRONIS Locate Compact solution page",
+          "url": "https://www.rohde-schwarz.com/us/solutions/critical-infrastructure/countering-drones/ardronis-locate-compact-solution_256824.html",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-titan",
+      "name": "Titan C-UAS RF sensor (BlueHalo / AeroVironment)",
+      "kind": "sensor",
+      "line": 1631,
+      "description": "Self-contained RF detection and direction-finding unit, up to 3 km horizontal across five bands from 433 MHz to 5.8 GHz. NOT receive-only: the same 20 lb unit jams to 1.5 km, which belongs in a separate effector record. US Army fielded.",
+      "spec": {
+        "sensorType": "rf",
+        "role": "classification",
+        "rfBands": [
+          "uhf-433",
+          "ism-915",
+          "ism-2400",
+          "ism-5800"
+        ],
+        "detectRangeM": 3000,
+        "classifyRangeM": null,
+        "sectorDeg": 360,
+        "elevationDeg": null,
+        "maxAltitudeFt": null,
+        "resolutionM": null
+      },
+      "provenance": [
+        {
+          "field": "detectRangeM",
+          "value": "more than 3000 m horizontal radius, no target class stated",
+          "source": "AeroVironment Titan C-UAS datasheet version 250501 (PDF)",
+          "url": "https://www.avinc.com/wp-content/uploads/2026/04/AV_TitanCUAS_Datasheet_250501.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "rfBands",
+          "value": "2.4 and 5.8 GHz plus Wi-Fi (SF unit); 433, 868 and 915 MHz and 1.2 GHz (EF unit)",
+          "source": "AeroVironment Titan C-UAS datasheet version 250501 (PDF)",
+          "url": "https://www.avinc.com/wp-content/uploads/2026/04/AV_TitanCUAS_Datasheet_250501.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-coyote",
+      "name": "Coyote Block 2 interceptor",
+      "kind": "effector",
+      "line": 1673,
+      "description": "Rocket-boosted turbojet kinetic interceptor with a tungsten fragmentation warhead, fired from a 4-pack palletized launcher. The RF seeker belongs to Block 1B, not Block 2. Reach is reported at about 15 km.",
+      "spec": {
+        "effectorType": "interceptor",
+        "minRangeM": 500,
+        "maxRangeM": 10000,
+        "maxAltitudeFt": 20000,
+        "engageTimeS": 60,
+        "pk": 0.85,
+        "magazineSize": 4,
+        "salvoCooldownS": 30,
+        "flyoutSpeedMps": 154
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "interception range 10 to 15 km; the lower bound is 10000 m",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "flyoutSpeedMps",
+          "value": "about 555 to 595 km/h; the lower bound is 154 m/s",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-roadrunner",
+      "name": "Roadrunner-M interceptor (Anduril)",
+      "kind": "effector",
+      "line": 1711,
+      "description": "Twin-turbojet reusable interceptor launched from a ground nest and managed through Lattice. Anduril publishes no range, speed, altitude or endurance figure: every number here is a planning figure.",
+      "spec": {
+        "effectorType": "interceptor",
+        "minRangeM": 500,
+        "maxRangeM": 15000,
+        "maxAltitudeFt": 20000,
+        "engageTimeS": 45,
+        "pk": 0.85,
+        "magazineSize": 4,
+        "salvoCooldownS": 30
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "15000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-anvil",
+      "name": "Anvil interceptor (Anduril)",
+      "kind": "effector",
+      "line": 1740,
+      "description": "Rotary-wing collision interceptor for Group 1-2 with low collateral effects. ~4 km planning value.",
+      "spec": {
+        "effectorType": "interceptor",
+        "minRangeM": 100,
+        "maxRangeM": 4000,
+        "maxAltitudeFt": 5000,
+        "engageTimeS": 60,
+        "pk": 0.75,
+        "magazineSize": 2,
+        "salvoCooldownS": 60
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "4000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-merops",
+      "name": "MEROPS fixed-wing interceptor",
+      "kind": "effector",
+      "line": 1769,
+      "description": "Fast fixed-wing interceptor with fragmentation warhead; Ukraine-proven vs Shahed-class OWA. 5-20 km envelope.",
+      "spec": {
+        "effectorType": "interceptor",
+        "minRangeM": 1000,
+        "maxRangeM": 20000,
+        "maxAltitudeFt": 16000,
+        "engageTimeS": 120,
+        "pk": 0.8,
+        "magazineSize": 4,
+        "salvoCooldownS": 60,
+        "flyoutSpeedMps": 78
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "range of roughly 5 to 20 km; 20000 m at the top of the envelope",
+          "source": "Defense News",
+          "url": "https://www.defensenews.com/unmanned/2026/04/20/us-army-turns-to-ukraine-tested-drones-to-counter-iranian-uav-threat/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "flyoutSpeedMps",
+          "value": "up to 280 km/h, a maximum (78 m/s)",
+          "source": "Defense News",
+          "url": "https://www.defensenews.com/unmanned/2026/04/20/us-army-turns-to-ukraine-tested-drones-to-counter-iranian-uav-threat/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-xm914",
+      "name": "XM914 30mm gun (M-LIDS)",
+      "kind": "effector",
+      "line": 1807,
+      "description": "30x113mm chain gun on RIwP turret firing XM1223 proximity-airburst rounds. Group 1-2 out to ~2 km.",
+      "spec": {
+        "effectorType": "gun",
+        "minRangeM": 50,
+        "maxRangeM": 2000,
+        "maxAltitudeFt": 5000,
+        "engageTimeS": 10,
+        "pk": 0.75,
+        "magazineSize": 30,
+        "salvoCooldownS": 10,
+        "flyoutSpeedMps": 805
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "2000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "flyoutSpeedMps",
+          "value": "XM1211 HEP/PROX muzzle velocity (805 m/s)",
+          "source": "Northrop Grumman LW30x113 Ammunition Suite product brochure (PDF, 2020)",
+          "url": "https://media.northropgrumman.com/9f629332-bf99-4a89-bb0f-b3850037234a/LW30x113-Ammo-Suite-Product-Brochure_Original%20file.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-lpws",
+      "name": "LPWS 20mm (land Phalanx)",
+      "kind": "effector",
+      "line": 1845,
+      "description": "Land-based Phalanx 20mm gun with radar-directed burst fire, cued by KuRFS. Point defense to ~1.5 km.",
+      "spec": {
+        "effectorType": "gun",
+        "minRangeM": 100,
+        "maxRangeM": 1500,
+        "maxAltitudeFt": 5000,
+        "engageTimeS": 5,
+        "pk": 0.7,
+        "magazineSize": 20,
+        "salvoCooldownS": 5
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "1500 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-smash",
+      "name": "SMASH 2000L rifle fire control",
+      "kind": "effector",
+      "line": 1874,
+      "description": "Computerized rifle sight for dismounted counter-drone fire. Group 1 quads inside 250 m.",
+      "spec": {
+        "effectorType": "gun",
+        "minRangeM": 10,
+        "maxRangeM": 200,
+        "maxAltitudeFt": 800,
+        "engageTimeS": 8,
+        "pk": 0.7,
+        "magazineSize": 24,
+        "salvoCooldownS": 10
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "small UAS kinetic elimination up to 200 m in day mode",
+          "source": "SMARTSHOOTER SMASH 3000 (SMASH 2000L) datasheet (PDF)",
+          "url": "https://www.smart-shooter.com/wp-content/uploads/2026/08/SMASH-3000.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-phel",
+      "name": "P-HEL 20 kW laser (AV LOCUST)",
+      "kind": "effector",
+      "line": 1903,
+      "description": "Palletized 20 kW-class high-energy laser (AeroVironment LOCUST), fielded for base defense. No engagement range has ever been published: the 3 km ring is a planning figure.",
+      "spec": {
+        "effectorType": "de",
+        "minRangeM": 100,
+        "maxRangeM": 3000,
+        "maxAltitudeFt": 8000,
+        "engageTimeS": 15,
+        "salvoCooldownS": 15
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "3000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-demshorad",
+      "name": "DE M-SHORAD 50 kW laser",
+      "kind": "effector",
+      "line": 1930,
+      "description": "Stryker-mounted 50 kW-class laser prototype. GAO found the prototype not mature enough to transition; production slipped to FY2027 and the enduring path is now E-HEL. Four prototypes deployed to CENTCOM. No engagement range is published: the ring is a planning figure.",
+      "spec": {
+        "effectorType": "de",
+        "minRangeM": 100,
+        "maxRangeM": 5000,
+        "maxAltitudeFt": 10000,
+        "engageTimeS": 15,
+        "salvoCooldownS": 10
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "5000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-leonidas",
+      "name": "Leonidas HPM (Epirus)",
+      "kind": "effector",
+      "line": 1957,
+      "description": "Software-defined high-power microwave array; defeats swarms in a sector. ~1 km planning value, 120 deg beam.",
+      "spec": {
+        "effectorType": "hpm",
+        "minRangeM": 0,
+        "maxRangeM": 1000,
+        "maxAltitudeFt": 3000,
+        "sectorDeg": 120,
+        "engageTimeS": 3,
+        "pk": 0.7,
+        "salvoCooldownS": 5
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "1000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "pk",
+          "value": "0.7 (PF); 61 of 61 drones disabled, 49-drone swarm in one pulse",
+          "source": "Epirus press release, 10 Sep 2025",
+          "url": "https://www.epirusinc.com/press-releases/epirus-leonidas-high-power-microwave-defeats-49-drone-swarm-100-of-drones-flown-at-live-fire-demonstration",
+          "date": "2026-09-04",
+          "basis": "pf",
+          "spread": {
+            "kind": "beta",
+            "successes": 61,
+            "trials": 61
+          }
+        }
+      ]
+    },
+    {
+      "id": "lib-thor",
+      "name": "THOR HPM (AFRL)",
+      "kind": "effector",
+      "line": 1995,
+      "description": "AFRL high-power microwave counter-swarm demonstrator in a shipping container. AFRL has never published an engagement range or a dwell time; both the ring and the engage time are planning figures.",
+      "spec": {
+        "effectorType": "hpm",
+        "minRangeM": 0,
+        "maxRangeM": 800,
+        "maxAltitudeFt": 3000,
+        "engageTimeS": 2,
+        "pk": 0.7,
+        "salvoCooldownS": 5
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "800 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-dronebuster",
+      "name": "Dronebuster Block 3B jammer",
+      "kind": "effector",
+      "line": 2023,
+      "description": "Handheld directional GNSS and control-link jammer. Group 1 inside ~1 km, 60 deg beam.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 1000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 60,
+        "engageTimeS": 5,
+        "pk": 0.6,
+        "salvoCooldownS": 5,
+        "jamBands": [
+          "gnss",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "1000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-modi",
+      "name": "Modi II EW jammer",
+      "kind": "effector",
+      "line": 2054,
+      "description": "Dismounted/vehicle EW system disrupting UAS communications and control links. Public sources describe control-link disruption, not GNSS denial. No range is published: the 2 km ring is a planning figure.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 2000,
+        "maxAltitudeFt": null,
+        "engageTimeS": 5,
+        "pk": 0.65,
+        "salvoCooldownS": 5,
+        "jamBands": [
+          "uhf-433",
+          "ism-915",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "2000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-enforceair",
+      "name": "EnforceAir2 RF takeover (D-Fend)",
+      "kind": "effector",
+      "line": 2084,
+      "description": "RF cyber-takeover system: assumes control of the drone and lands it. No broadband jamming. ~3.5 km on supported protocols.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 1200,
+        "maxAltitudeFt": null,
+        "engageTimeS": 20,
+        "pk": 0.7,
+        "salvoCooldownS": 20,
+        "jamBands": [
+          "ism-2400",
+          "ism-5800"
+        ],
+        "sectorDeg": 360
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "typical mitigation range 1.2 to 4 km; the lower bound is 1200 m",
+          "source": "D-Fend Solutions EnforceAir2 product page",
+          "url": "https://d-fendsolutions.com/enforceair2-next-gen-c-uas/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg omni coverage",
+          "source": "D-Fend Solutions EnforceAir2 product page",
+          "url": "https://d-fendsolutions.com/enforceair2-next-gen-c-uas/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-amphel",
+      "name": "AMP-HEL 20 kW laser (LOCUST on ISV)",
+      "kind": "effector",
+      "line": 2123,
+      "description": "Army RCCTO prototype: 20 kW-class LOCUST laser on an Infantry Squad Vehicle for maneuver-force C-UAS. Two ISV sets delivered Aug 2025; two JLTV sets with radar and C2 followed. Single-target hard kill by dwell. The engagement range is NOT published: this ring is a planning value, not a performance claim. Heavily degraded by fog, rain and dust.",
+      "spec": {
+        "effectorType": "de",
+        "minRangeM": 100,
+        "maxRangeM": 3000,
+        "maxAltitudeFt": null,
+        "engageTimeS": 15
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "3000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-helios",
+      "name": "HELIOS 60 kW shipboard laser",
+      "kind": "effector",
+      "line": 2149,
+      "description": "US Navy Mk 5 Mod 0 HELIOS: 60 kW-class laser plus optical dazzler, hosted by the Aegis Combat System, installed on USS Preble since 2022 and the only such installation. Engaged four UAS in one at-sea counter-UAS demonstration. Single target per engagement. Magazine is bounded by ship power and cooling, not by rounds. Engagement range and the deckhouse-restricted firing arcs are NOT published.",
+      "spec": {
+        "effectorType": "de",
+        "minRangeM": 100,
+        "maxRangeM": 3000,
+        "maxAltitudeFt": null,
+        "engageTimeS": 15
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "3000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-ironbeam",
+      "name": "Iron Beam 100 kW laser (Rafael)",
+      "kind": "effector",
+      "line": 2175,
+      "description": "Rafael Iron Beam ('Or Eitan'), 100 kW-class laser handed to the Israeli Air Force 28 Dec 2025: the first high-energy laser air-defence system declared operationally mature. Reported to burn rockets, mortars and UAS at about 10 km in clear air; interception takes seconds. Fires from a static emplacement and degrades badly in cloud, fog and low visibility, which is why Iron Dome remains the all-weather layer.",
+      "spec": {
+        "effectorType": "de",
+        "minRangeM": 100,
+        "maxRangeM": 7000,
+        "maxAltitudeFt": null,
+        "engageTimeS": 5
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "7000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-cuaews",
+      "name": "CUAEWS DF (SRC, LIDS EW)",
+      "kind": "effector",
+      "line": 2195,
+      "description": "LIDS/M-LIDS electronic-attack element. Passively searches RF, direction-finds both aircraft and operator, then applies tailored non-kinetic defeat plus a NAVWAR effect against waypoint-guided threats. SRC states EW effects to 8 km. Man-in-the-loop fires; re-tasking is near instantaneous and indefinite.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 8000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 360,
+        "engageTimeS": 5,
+        "pk": 0.65,
+        "salvoCooldownS": 5,
+        "jamBands": [
+          "gnss",
+          "uhf-433",
+          "ism-915",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "EW effects ranging up to 8 km (8000 m)",
+          "source": "SRC LIDS Family of Systems brochure (PDF)",
+          "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-ninja",
+      "name": "NINJA RF-cyber defeat (AFRL)",
+      "kind": "effector",
+      "line": 2226,
+      "description": "Air Force fixed-site RF-cyber C-sUAS. Software-defined radios intercept the drone-operator link and take control of or disable Group 1-2 UAS without the indiscriminate interference of broadband jamming; friendly drones can be whitelisted. NO PUBLIC DEFEAT RANGE: the 2 km ring is a representative planning figure.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 2000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 360,
+        "engageTimeS": 20,
+        "pk": 0.6,
+        "salvoCooldownS": 20,
+        "jamBands": [
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "2000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-pulsar",
+      "name": "Pulsar EW node (Anduril)",
+      "kind": "effector",
+      "line": 2257,
+      "description": "Software-defined EW node: passive RF sense, classify and direction-find, then directed electronic attack on the control link. One panel covers a 90 deg sector; two panels make 360. Placard effective range 2 km against Group 1. Selectable bands and directional transmit to limit friendly interference. Lattice-managed.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 2000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 180,
+        "engageTimeS": 5,
+        "pk": 0.6,
+        "salvoCooldownS": 5,
+        "jamBands": [
+          "gnss",
+          "ism-915",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "2000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "180 deg coverage for detect and defeat",
+          "source": "Anduril Pulsar hardware page (embedded JSON via curl)",
+          "url": "https://www.anduril.com/hardware/pulsar/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-pitbull",
+      "name": "Pitbull 101 wearable jammer (MyDefence)",
+      "kind": "effector",
+      "line": 2296,
+      "description": "Vest-worn 1.33 kg directional jammer, 60 deg beam, up to 1 km. Denies control, video and GNSS links. Manual (human-in-the-loop) or automatic, fired on a detection from the paired Wingman sensor. Jammed drones land or return to the controller or launch point.",
+      "spec": {
+        "effectorType": "jammer",
+        "minRangeM": 0,
+        "maxRangeM": 1000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 60,
+        "engageTimeS": 5,
+        "pk": 0.6,
+        "salvoCooldownS": 5,
+        "jamBands": [
+          "gnss",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "up to 1000 m of jamming range",
+          "source": "MyDefence Pitbull 101 product page",
+          "url": "https://mydefence.com/products/pitbull/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "jamBands",
+          "value": "1.6 GHz GNSS, 2.4, 5.2 and 5.8 GHz; 5.2 GHz has no band code",
+          "source": "MyDefence Pitbull 101 product page",
+          "url": "https://mydefence.com/products/pitbull/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "60 deg horizontal jamming coverage",
+          "source": "MyDefence Pitbull 101 product page",
+          "url": "https://mydefence.com/products/pitbull/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-stinger",
+      "name": "FIM-92 Stinger (M-SHORAD / MADIS)",
+      "kind": "effector",
+      "line": 2343,
+      "description": "IR-homing SHORAD missile on the M-SHORAD RIwP and MADIS Mk1 turrets. FIM-92J/K proximity fuze added for small UAS. 4.8 km weapon max; 4-round pod.",
+      "spec": {
+        "effectorType": "interceptor",
+        "minRangeM": 200,
+        "maxRangeM": 4800,
+        "maxAltitudeFt": 12500,
+        "engageTimeS": 15,
+        "pk": 0.7,
+        "magazineSize": 4,
+        "salvoCooldownS": 10,
+        "flyoutSpeedMps": 750
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "outward targeting range up to 4800 m",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "maxAltitudeFt",
+          "value": "12500 ft (3800 m) against low-altitude threats",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "flyoutSpeedMps",
+          "value": "Mach 2.2 maximum (750 m/s)",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "pk",
+          "value": "0.7 (PF); 2 of 2 intercepts, 2017 Army test",
+          "source": "RTX, Stinger page",
+          "url": "https://www.rtx.com/raytheon/what-we-do/integrated-air-and-missile-defense/stinger-missile",
+          "date": "2026-09-04",
+          "basis": "pf",
+          "spread": {
+            "kind": "beta",
+            "successes": 2,
+            "trials": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "lib-eagls",
+      "name": "EAGLS 70 mm APKWS launcher",
+      "kind": "effector",
+      "line": 2398,
+      "description": "Four-round 70 mm APKWS II launcher on a CROWS II mount with organic RPS-40 radar and EO/IR laser designator. Fielded to CENTCOM base defence 2026.",
+      "spec": {
+        "effectorType": "interceptor",
+        "minRangeM": 500,
+        "maxRangeM": 10000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 360,
+        "engageTimeS": 15,
+        "pk": 0.7,
+        "magazineSize": 4,
+        "salvoCooldownS": 5,
+        "flyoutSpeedMps": 739
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "ranges up to about 10 km (10000 m)",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/news/army-news/2026/u-s-army-live-fires-eagls-counter-drone-system-using-laser-guided-rockets-in-kuwait",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "magazineSize",
+          "value": "four-round 70 mm rocket launcher",
+          "source": "Army Recognition",
+          "url": "https://www.armyrecognition.com/news/army-news/2026/u-s-army-live-fires-eagls-counter-drone-system-using-laser-guided-rockets-in-kuwait",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "flyoutSpeedMps",
+          "value": "Hydra 70 rocket, APKWS airframe (739 m/s)",
+          "source": "Army Technology (Hydra 70 project page)",
+          "url": "https://www.army-technology.com/projects/hydra-70-rocket-system-us/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-skyranger30",
+      "name": "Skyranger 30 (Rheinmetall)",
+      "kind": "effector",
+      "line": 2445,
+      "description": "30x173 mm KCE-ABM revolver cannon with AHEAD programmable airburst on a 360-degree turret with organic AESA radar and EO/IR. Effective to 3 km. NATO mobile C-UAS.",
+      "spec": {
+        "effectorType": "gun",
+        "minRangeM": 200,
+        "maxRangeM": 3000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 360,
+        "engageTimeS": 8,
+        "pk": 0.8,
+        "magazineSize": 252,
+        "salvoCooldownS": 5,
+        "flyoutSpeedMps": 1075
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "effective range up to 3000 m with the gun",
+          "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+          "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "magazineSize",
+          "value": "252 rounds of 30 mm ready to fire",
+          "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+          "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "sectorDeg",
+          "value": "360 deg traverse arc",
+          "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+          "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "flyoutSpeedMps",
+          "value": "mean muzzle velocity (1075 m/s)",
+          "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+          "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-dronehunter",
+      "name": "DroneHunter F700 net interceptor",
+      "kind": "effector",
+      "line": 2500,
+      "description": "Reusable radar-guided multirotor interceptor that captures Group 1-2 UAS with a tethered net or DrogueChute. First Replicator 2 purchase, Jan 2026. 5 km air-vehicle range.",
+      "spec": {
+        "effectorType": "net",
+        "minRangeM": 100,
+        "maxRangeM": 5000,
+        "maxAltitudeFt": null,
+        "sectorDeg": 360,
+        "engageTimeS": 150,
+        "pk": 0.85,
+        "salvoCooldownS": 180
+      },
+      "provenance": [
+        {
+          "field": "maxRangeM",
+          "value": "5000 m",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "pk",
+          "value": "85 percent success rate on mid-air captures",
+          "source": "Fortem Technologies blog (F700)",
+          "url": "https://fortemtech.com/blog/discussions/2022-10-11-f700-building-the-worlds-best-drone-interceptor/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "salvoCooldownS",
+          "value": "reloaded for back-to-back sorties in under 3 minutes (180 s)",
+          "source": "Fortem Technologies F700 product page",
+          "url": "https://fortemtech.com/products/dronehunter-f700/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-faadc2",
+      "name": "FAAD C2 (Northrop Grumman)",
+      "kind": "c2",
+      "line": 2549,
+      "description": "DoD-designated C2 for C-sUAS. Fuses sensor tracks, correlates the air picture, and manages engagements.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-lattice",
+      "name": "Lattice C2 (Anduril)",
+      "kind": "c2",
+      "line": 2558,
+      "description": "AI sensor-fusion and C2 platform. Autonomously detects, classifies, and tracks; cues Anvil and Roadrunner.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-picogrid",
+      "name": "Picogrid Legion edge node",
+      "kind": "c2",
+      "line": 2567,
+      "description": "Vendor-neutral edge integration node (Legion with Helios/Portal hardware). Fuses local sensors into one picture.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-medusa",
+      "name": "MEDUSA C2 (USAF)",
+      "kind": "c2",
+      "line": 2576,
+      "description": "Air Force base-defense counter-sUAS C2, developed by Kongsberg Geospatial. Neither government ownership nor open standards is supported by any public source; its FAAD C2 interoperability is stated conditionally in the sources that mention it.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-ibcs",
+      "name": "IBCS battle command (Northrop Grumman)",
+      "kind": "c2",
+      "line": 2585,
+      "description": "Army IAMD battle command. Fuses distributed sensor data into fire-control-quality tracks on the Integrated Fire Control Network; 'plug-and-fight' kits adapt sensors and weapons. Set to replace Patriot, THAAD and FAAD C2 C2 systems.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-adsi",
+      "name": "ADSI data link gateway (Ultra)",
+      "kind": "c2",
+      "line": 2594,
+      "description": "Joint-certified tactical data link forwarding and control gateway. Correlates and forwards tracks across Link 16, Link 11, JREAP, the FAAD data link and Cursor-on-Target. It bridges pictures rather than running a C-UAS engagement itself.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-tak",
+      "name": "TAK / CoT node (Team Awareness Kit)",
+      "kind": "c2",
+      "line": 2603,
+      "description": "Government-owned situational-awareness and C2 client family built on the Cursor-on-Target message standard. It forwards and displays C-UAS detections and alerts to dismounted teams and operations centres. It is not a track-fusion or fire-control system and carries no engagement authority.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-dronesentryc2",
+      "name": "DroneSentry-C2 (DroneShield)",
+      "kind": "c2",
+      "line": 2612,
+      "description": "Commercial C-UAS C2 built on the SensorFusionAI 3D fusion engine. Fuses RF, radar, optical and ADS-B inputs from DroneShield and third-party sensors, drives DroneShield and partner effectors, and speaks SAPIENT and Cursor-on-Target.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-dedronetracker",
+      "name": "DedroneTracker.AI C2 (Dedrone by Axon)",
+      "kind": "c2",
+      "line": 2621,
+      "description": "Commercial airspace-security C2. Fuses RF, radar, camera, acoustic and Remote ID inputs into one risk-ranked track picture and runs jamming, cyber-takeover or kinetic mitigation from the same interface, where legally authorised.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-cac2s",
+      "name": "CAC2S (USMC aviation C2)",
+      "kind": "c2",
+      "line": 2630,
+      "description": "Marine Corps aviation command and control. Fuses expeditionary radar, weapon-system, UAS and ISR inputs into one MAGTF air picture and hosts the engage / do-not-engage decision. Named by CRS as the C2 element of the Marine MRIC air-defence system alongside G/ATOR.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-mavic3",
+      "name": "Red air: DJI Mavic 3 (G1 quad)",
+      "kind": "uas",
+      "line": 2642,
+      "description": "COTS quadcopter for recce and improvised drops. Launched 2-10 km out; ingress 100-400 ft AGL.",
+      "spec": {
+        "group": 1,
+        "rcsM2": 0.01,
+        "spanM": 0.38,
+        "acousticDb": 68,
+        "airframe": "quad",
+        "cruiseSpeedMps": 12,
+        "maxSpeedMps": 21,
+        "enduranceMin": 46,
+        "altBandFt": [
+          50,
+          1200
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "OcuSync 2.4/5.8 GHz link and video",
+        "controlLinkRangeM": 15000,
+        "operatingRadiusM": 10000,
+        "combatRadiusM": 8000,
+        "oneWay": false,
+        "rangeNote": "Combat recon radius 5-10 km under EW; repeaters and directional antennas push toward 10-15 km.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none",
+        "jamBehavior": "return-home",
+        "linkBands": [
+          "gnss",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.01 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "21 m/s at sea level with no wind (19 m/s in the EU)",
+          "source": "DJI Mavic 3 Classic specs page (same airframe)",
+          "url": "https://www.dji.com/mavic-3-classic/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "46 min maximum flight time",
+          "source": "DJI Mavic 3 Classic specs page (same airframe)",
+          "url": "https://www.dji.com/mavic-3-classic/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "linkBands",
+          "value": "link 2.4 and 5.8 GHz; GNSS from navMode",
+          "source": "DJI Mavic 3 Classic specs page (same airframe)",
+          "url": "https://www.dji.com/mavic-3-classic/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "controlLinkRangeM",
+          "value": "15000 m maximum transmission distance (FCC)",
+          "source": "DJI Mavic 3 Classic specs page (same airframe)",
+          "url": "https://www.dji.com/mavic-3-classic/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-mini4",
+      "name": "Red air: DJI Mini class (G1 sub-250 g)",
+      "kind": "uas",
+      "line": 2725,
+      "description": "Sub-250 g quad for short-range recce. Low and slow, 30-300 ft AGL, frequent hovers; hard radar target.",
+      "spec": {
+        "group": 1,
+        "rcsM2": 0.005,
+        "spanM": 0.25,
+        "acousticDb": 60,
+        "airframe": "quad",
+        "cruiseSpeedMps": 10,
+        "maxSpeedMps": 16,
+        "enduranceMin": 34,
+        "altBandFt": [
+          30,
+          800
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "OcuSync 2.4/5.8 GHz, low power",
+        "controlLinkRangeM": 20000,
+        "operatingRadiusM": 5000,
+        "combatRadiusM": 4000,
+        "oneWay": false,
+        "rangeNote": "Practical radius 3-5 km under EW; occasionally paired with repeaters.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none",
+        "jamBehavior": "return-home",
+        "linkBands": [
+          "gnss",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.005 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "16 m/s in S mode",
+          "source": "DJI Mini 4 Pro specs page",
+          "url": "https://www.dji.com/mini-4-pro/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "34 min with the Intelligent Flight Battery",
+          "source": "DJI Mini 4 Pro specs page",
+          "url": "https://www.dji.com/mini-4-pro/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "linkBands",
+          "value": "link 2.4 and 5.8 GHz; GNSS from navMode; 5.2 GHz has no band code",
+          "source": "DJI Mini 4 Pro specs page",
+          "url": "https://www.dji.com/mini-4-pro/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "controlLinkRangeM",
+          "value": "20000 m maximum transmission distance (FCC)",
+          "source": "DJI Mini 4 Pro specs page",
+          "url": "https://www.dji.com/mini-4-pro/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-fpv7",
+      "name": "Red air: FPV 7-inch OWA (G1)",
+      "kind": "uas",
+      "line": 2808,
+      "description": "Racing-style FPV one-way-attack quad, 1-2 kg payload. Terrain-masked ingress at 10-100 ft AGL; terminal dive.",
+      "spec": {
+        "group": 1,
+        "rcsM2": 0.01,
+        "spanM": 0.3,
+        "acousticDb": 75,
+        "airframe": "fpv",
+        "cruiseSpeedMps": 25,
+        "maxSpeedMps": 45,
+        "enduranceMin": 15,
+        "altBandFt": [
+          10,
+          400
+        ],
+        "navMode": "rf-manual",
+        "emissionsNote": "Analog 5.8 GHz video, ELRS 900 MHz control",
+        "controlLinkRangeM": 10000,
+        "operatingRadiusM": 8000,
+        "combatRadiusM": 10000,
+        "oneWay": true,
+        "rangeNote": "Strikes 5-15 km; relay drones and high-gain video links push 20-30 km. Extended packs and wing kits reported.",
+        "warheadKg": 4,
+        "effectRadiusM": 30,
+        "standoffRangeM": null,
+        "weaponProfile": "impact"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.01 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-fpv-fiber",
+      "name": "Red air: fiber-optic FPV (G1, jam-immune)",
+      "kind": "uas",
+      "line": 2857,
+      "description": "FPV quad steered over a fiber-optic spool. No RF emissions; immune to jamming. Slower due to spool drag.",
+      "spec": {
+        "group": 1,
+        "rcsM2": 0.01,
+        "spanM": 0.3,
+        "acousticDb": 75,
+        "airframe": "fpv",
+        "cruiseSpeedMps": 15,
+        "maxSpeedMps": 17,
+        "enduranceMin": 20,
+        "altBandFt": [
+          10,
+          300
+        ],
+        "navMode": "fiber",
+        "emissionsNote": "None: fiber-optic control and video",
+        "controlLinkRangeM": 10000,
+        "operatingRadiusM": 15000,
+        "combatRadiusM": 15000,
+        "oneWay": true,
+        "rangeNote": "Fielded fiber spools of 10, 15, and 20 km confirmed in combat; 41-50 km spools demonstrated on larger frames.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "impact",
+        "jamBehavior": "continue"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.01 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "up to 60 km/h for the class (17 m/s)",
+          "source": "RFE/RL, Fiber-Optic Drones The New Must-Have In Ukraine War (2025-03-12), globalsecurity.org mirror, quoting Serhiy Beskrestnov",
+          "url": "https://www.globalsecurity.org/wmd/library/news/ukraine/2025/03/ukraine-250312-rferl03.htm",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "controlLinkRangeM",
+          "value": "10000 m of fibre for the class",
+          "source": "RFE/RL, Fiber-Optic Drones The New Must-Have In Ukraine War (2025-03-12), globalsecurity.org mirror, quoting Serhiy Beskrestnov",
+          "url": "https://www.globalsecurity.org/wmd/library/news/ukraine/2025/03/ukraine-250312-rferl03.htm",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-m350",
+      "name": "Red air: DJI M350 class (G2 quad)",
+      "kind": "uas",
+      "line": 2923,
+      "description": "Industrial quad with thermal payload. Standoff ISR orbits 5-15 km out at 500-3000 ft; also a light bomber.",
+      "spec": {
+        "group": 2,
+        "rcsM2": 0.05,
+        "spanM": 0.895,
+        "acousticDb": 78,
+        "airframe": "quad",
+        "cruiseSpeedMps": 15,
+        "maxSpeedMps": 23,
+        "enduranceMin": 55,
+        "altBandFt": [
+          100,
+          3500
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "OcuSync 3 Enterprise, 2.4/5.8 GHz",
+        "controlLinkRangeM": 20000,
+        "operatingRadiusM": 15000,
+        "combatRadiusM": 10000,
+        "oneWay": false,
+        "rangeNote": "Employed 8-12 km where EW permits; repeaters and elevated antennas hold the link.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none",
+        "jamBehavior": "return-home",
+        "linkBands": [
+          "gnss",
+          "ism-2400",
+          "ism-5800"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.05 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "0.895 m diagonal wheelbase",
+          "source": "DJI Matrice 350 RTK specs page",
+          "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "23 m/s maximum horizontal speed",
+          "source": "DJI Matrice 350 RTK specs page",
+          "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "55 min maximum flight time with no payload",
+          "source": "DJI Matrice 350 RTK specs page",
+          "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "linkBands",
+          "value": "link 2.4 and 5.8 GHz; GNSS from navMode",
+          "source": "DJI Matrice 350 RTK specs page",
+          "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "controlLinkRangeM",
+          "value": "20000 m maximum transmission distance (FCC)",
+          "source": "DJI Matrice 350 RTK specs page",
+          "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-babayaga",
+      "name": "Red air: heavy multirotor bomber (G2)",
+      "kind": "uas",
+      "line": 3014,
+      "description": "Baba Yaga class agricultural conversion. Night bombing from 5-12 km standoff; drops several munitions and returns.",
+      "spec": {
+        "group": 2,
+        "rcsM2": 0.1,
+        "spanM": 1.5,
+        "acousticDb": 85,
+        "airframe": "quad",
+        "cruiseSpeedMps": 12,
+        "maxSpeedMps": 20,
+        "enduranceMin": 40,
+        "altBandFt": [
+          100,
+          1500
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "Custom links, often 700-900 MHz with repeater",
+        "controlLinkRangeM": 15000,
+        "operatingRadiusM": 12000,
+        "combatRadiusM": 10000,
+        "oneWay": false,
+        "rangeNote": "Night sorties 10-20 km with ~15 kg payload; Starlink-relay control reported on some airframes.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none",
+        "jamBehavior": "return-home"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.1 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        }
+      ]
+    },
+    {
+      "id": "lib-cw15",
+      "name": "Red air: CW-15 class VTOL ISR (G2)",
+      "kind": "uas",
+      "line": 3065,
+      "description": "VTOL fixed-wing ISR. Launches from any clearing 20-50 km out; long racetrack orbits at 1500-5000 ft.",
+      "spec": {
+        "group": 2,
+        "rcsM2": 0.05,
+        "spanM": 3.54,
+        "acousticDb": 80,
+        "irSignature": "low",
+        "airframe": "vtol",
+        "cruiseSpeedMps": 17,
+        "maxSpeedMps": 25,
+        "enduranceMin": 180,
+        "altBandFt": [
+          1000,
+          6000
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "Digital datalink, directional antenna",
+        "controlLinkRangeM": 50000,
+        "operatingRadiusM": 50000,
+        "combatRadiusM": 50000,
+        "oneWay": false,
+        "rangeNote": "Legs beyond 100 km reported for the class; combat ISR bounded by ~50 km datalink.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.05 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "3.54 m wingspan",
+          "source": "JOUAV CW-15 product page",
+          "url": "https://www.jouav.com/products/cw-15.html",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "61 km/h cruise speed (16.9 m/s)",
+          "source": "JOUAV CW-15 product page",
+          "url": "https://www.jouav.com/products/cw-15.html",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "180 min empty",
+          "source": "JOUAV CW-15 product page",
+          "url": "https://www.jouav.com/products/cw-15.html",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-lancet3",
+      "name": "Red air: Lancet-3 loitering munition (G2)",
+      "kind": "uas",
+      "line": 3139,
+      "description": "Rail-launched loitering munition cued by an ISR drone. Transits at 5000-15000 ft; fast terminal dive, up to 83 m/s.",
+      "spec": {
+        "group": 2,
+        "rcsM2": 0.05,
+        "spanM": 1.65,
+        "acousticDb": 75,
+        "irSignature": "low",
+        "airframe": "one-way-attack",
+        "cruiseSpeedMps": 22,
+        "maxSpeedMps": 83,
+        "enduranceMin": 40,
+        "altBandFt": [
+          1000,
+          15000
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "Video downlink until terminal; some variants autonomous",
+        "controlLinkRangeM": 50000,
+        "operatingRadiusM": 40000,
+        "combatRadiusM": 40000,
+        "oneWay": true,
+        "rangeNote": "Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.",
+        "warheadKg": 5,
+        "effectRadiusM": 30,
+        "standoffRangeM": null,
+        "weaponProfile": "impact"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.05 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "80 to 110 km/h; the lower bound is 22 m/s",
+          "source": "Army Recognition Lancet-3 data fact sheet (2026-05-24)",
+          "url": "https://www.armyrecognition.com/military-products/army/unmanned-systems/unmanned-aerial-vehicles/lancet-3-loitering-munition-kamikaze-drone-russia-data-fact-sheet",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "40 min endurance",
+          "source": "Army Recognition Lancet-3 data fact sheet (2026-05-24)",
+          "url": "https://www.armyrecognition.com/military-products/army/unmanned-systems/unmanned-aerial-vehicles/lancet-3-loitering-munition-kamikaze-drone-russia-data-fact-sheet",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-orlan10",
+      "name": "Red air: Orlan-10 class ISR (G3 fixed-wing)",
+      "kind": "uas",
+      "line": 3205,
+      "description": "Catapult-launched ISR from 50-120 km behind the line. Orbits 3000-15000 ft for hours; cues artillery.",
+      "spec": {
+        "group": 3,
+        "rcsM2": 0.1,
+        "spanM": 3.1,
+        "acousticDb": 90,
+        "airframe": "fixed-wing",
+        "cruiseSpeedMps": 30,
+        "maxSpeedMps": 42,
+        "enduranceMin": 960,
+        "altBandFt": [
+          3000,
+          16000
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "C2 and video links; multi-ship relay employment",
+        "controlLinkRangeM": 120000,
+        "operatingRadiusM": 120000,
+        "combatRadiusM": 120000,
+        "oneWay": false,
+        "rangeNote": "Routinely operates 110-150 km from its ground station on 14-16 hour sorties.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none",
+        "jamBehavior": "return-home"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.1 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "3.1 m wingspan",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/uav/207",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "110 km/h cruising speed (30.6 m/s)",
+          "source": "Airforce Technology (Orlan-10 project page)",
+          "url": "https://www.airforce-technology.com/projects/orlan-10-unmanned-aerial-vehicle-uav/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "90 to 150 km/h; the upper bound is 41.7 m/s",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/uav/207",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "flight time up to 16 h (960 min)",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/uav/207",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "controlLinkRangeM",
+          "value": "120000 m communication distance",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/uav/207",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-shahed136",
+      "name": "Red air: Shahed-136 / Geran-2 OWA (G3)",
+      "kind": "uas",
+      "line": 3295,
+      "description": "Delta-wing one-way-attack, launched in salvos hundreds of km out. Low river-valley ingress or 10-16 kft cruise with terminal dive.",
+      "spec": {
+        "group": 3,
+        "rcsM2": 0.2,
+        "spanM": 2.5,
+        "acousticDb": 100,
+        "airframe": "one-way-attack",
+        "cruiseSpeedMps": 50,
+        "maxSpeedMps": 64,
+        "enduranceMin": 600,
+        "altBandFt": [
+          200,
+          16000
+        ],
+        "navMode": "inertial",
+        "emissionsNote": "RF silent en route; some variants add SATCOM or cellular",
+        "controlLinkRangeM": null,
+        "operatingRadiusM": 1000000,
+        "combatRadiusM": 900000,
+        "oneWay": true,
+        "rangeNote": "Strike routes 600-900+ km with evasive doglegs; Kometa anti-jam GNSS and jet-powered variants reported.",
+        "warheadKg": 40,
+        "effectRadiusM": 80,
+        "standoffRangeM": null,
+        "weaponProfile": "impact",
+        "jamBehavior": "continue",
+        "linkBands": [
+          "gnss"
+        ]
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.2 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "2.5 m wingspan",
+          "source": "Janes",
+          "url": "https://www.janes.com/osint-insights/defence-news/air/irgc-confirms-specs-for-shahed-136-attack-uav",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "185 km/h from the MD550 engine (51.4 m/s), read as cruise",
+          "source": "Janes",
+          "url": "https://www.janes.com/osint-insights/defence-news/air/irgc-confirms-specs-for-shahed-136-attack-uav",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "linkBands",
+          "value": "GNSS: NASIR satellite receiver",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/page-shahed-136",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-gerbera",
+      "name": "Red air: Gerbera decoy / light OWA (G2)",
+      "kind": "uas",
+      "line": 3370,
+      "description": "Cheap foam decoy flown inside Shahed streams to saturate defenses. Same corridors and altitudes as the OWA it mimics.",
+      "spec": {
+        "group": 2,
+        "rcsM2": 0.2,
+        "spanM": 2.5,
+        "acousticDb": 90,
+        "airframe": "one-way-attack",
+        "cruiseSpeedMps": 33,
+        "maxSpeedMps": 44,
+        "enduranceMin": 240,
+        "altBandFt": [
+          500,
+          10000
+        ],
+        "navMode": "gps",
+        "emissionsNote": "Some carry emitters to mimic Shahed signatures",
+        "controlLinkRangeM": null,
+        "operatingRadiusM": 300000,
+        "combatRadiusM": 300000,
+        "oneWay": true,
+        "rangeNote": "About 300 km with a combat payload; unarmed decoy flights reported to 600 km.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "none",
+        "jamBehavior": "continue"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.2 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "2.5 m wingspan",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/uav/329",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "160 km/h maximum speed (44.4 m/s)",
+          "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+          "url": "https://war-sanctions.gur.gov.ua/en/uav/329",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-mugin5",
+      "name": "Red air: Mugin-5 converted strike (G3)",
+      "kind": "uas",
+      "line": 3436,
+      "description": "COTS fixed-wing conversion launched from improvised strips 200-400 km out. Autonomous GNSS waypoint ingress.",
+      "spec": {
+        "group": 3,
+        "rcsM2": 0.2,
+        "spanM": 5,
+        "acousticDb": 95,
+        "airframe": "one-way-attack",
+        "cruiseSpeedMps": 30,
+        "maxSpeedMps": 40,
+        "enduranceMin": 300,
+        "altBandFt": [
+          1000,
+          12000
+        ],
+        "navMode": "gps",
+        "emissionsNote": "RF silent on ingress",
+        "controlLinkRangeM": null,
+        "operatingRadiusM": 400000,
+        "combatRadiusM": 400000,
+        "oneWay": true,
+        "rangeNote": "Early conversions flew about 500 km with 25 kg of explosives; MICH 2000 derivative extends the class.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": null,
+        "weaponProfile": "impact"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.2 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "5 m wingspan (5000 mm)",
+          "source": "Mugin UAV product page (Mugin-5 Pro carbon fiber)",
+          "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "30 to 35 m/s cruise speed; the lower bound is 30 m/s",
+          "source": "Mugin UAV product page",
+          "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "40 m/s maximum speed",
+          "source": "Mugin UAV product page",
+          "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "5 to 7.5 h endurance; the lower bound is 300 min",
+          "source": "Mugin UAV product page",
+          "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-mohajer6",
+      "name": "Red air: Mohajer-6 ISR/strike (G4)",
+      "kind": "uas",
+      "line": 3517,
+      "description": "Runway-launched MALE-lite. Cruises 10000-18000 ft inside ~200 km line-of-sight C2; releases small PGMs.",
+      "spec": {
+        "group": 4,
+        "rcsM2": 1,
+        "spanM": 10,
+        "acousticDb": 100,
+        "airframe": "fixed-wing",
+        "cruiseSpeedMps": 40,
+        "maxSpeedMps": 56,
+        "enduranceMin": 720,
+        "altBandFt": [
+          8000,
+          18000
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "Line-of-sight C2 and video, ~200 km",
+        "controlLinkRangeM": 200000,
+        "operatingRadiusM": 200000,
+        "combatRadiusM": 200000,
+        "oneWay": false,
+        "rangeNote": "Bounded by line-of-sight datalink, about 200 km from the control station; up to 500 km claimed.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": 8000,
+        "weaponProfile": "standoff",
+        "jamBehavior": "return-home"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "1 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "10 m wingspan",
+          "source": "Defense Express",
+          "url": "https://en.defence-ua.com/weapon_and_tech/first_time_in_ukraine_shot_down_iranian_uav_mohajer_6-4318.html",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "200 km/h maximum speed (55.6 m/s)",
+          "source": "Defense Express",
+          "url": "https://en.defence-ua.com/weapon_and_tech/first_time_in_ukraine_shot_down_iranian_uav_mohajer_6-4318.html",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "12 h endurance (720 min)",
+          "source": "Defense Express",
+          "url": "https://en.defence-ua.com/weapon_and_tech/first_time_in_ukraine_shot_down_iranian_uav_mohajer_6-4318.html",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-geran4",
+      "name": "Red air: Geran-4 jet OWA (G3)",
+      "kind": "uas",
+      "line": 3591,
+      "description": "Turbojet one-way-attack from the Geran-3/4/5 jet family, per threat study 5.2.1 [R03]: 450 kg MTOW, 89 m/s (320 km/h) cruise, 770 km range, thermobaric or HE-frag warhead types identified. The study fixes no Geran-3 numbers, so the exploited Geran-4 carries the jet-OWA class.",
+      "spec": {
+        "group": 3,
+        "rcsM2": 0.2,
+        "spanM": 3,
+        "acousticDb": 105,
+        "airframe": "one-way-attack",
+        "cruiseSpeedMps": 97,
+        "maxSpeedMps": 97,
+        "enduranceMin": 150,
+        "altBandFt": [
+          328,
+          16404
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "SADRA INS + 16-element CRPA anti-jam satnav, camera, mesh modem (study [R03])",
+        "controlLinkRangeM": null,
+        "operatingRadiusM": 770000,
+        "combatRadiusM": null,
+        "oneWay": true,
+        "rangeNote": "Declared range 770 km, ceiling 4000 m (study 5.2.1 [R03]).",
+        "warheadKg": 50,
+        "effectRadiusM": 80,
+        "standoffRangeM": null,
+        "weaponProfile": "impact",
+        "jamBehavior": "continue"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "0.2 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "about 3 m wingspan",
+          "source": "Militarnyi",
+          "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "350 to 500 km/h cruise; the lower bound is 97 m/s",
+          "source": "Militarnyi",
+          "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "about 2.5 h flight duration (150 min)",
+          "source": "Militarnyi",
+          "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "altBandFt",
+          "value": "100 to 5000 m (328 to 16404 ft)",
+          "source": "Militarnyi",
+          "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        },
+        {
+          "field": "warheadKg",
+          "value": "50 kg or more",
+          "source": "Militarnyi",
+          "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+          "date": "2026-09-04",
+          "basis": "reference"
+        }
+      ]
+    },
+    {
+      "id": "lib-tb2",
+      "name": "Red air: Bayraktar TB2 UCAV (G4)",
+      "kind": "uas",
+      "line": 3682,
+      "description": "MALE UCAV per threat study 15B [TUR02]: 700 kg MTOW, 150 kg payload, 46 m/s (90 kt) cruise, 16000 ft operational altitude, 20+ h endurance. Releases laser-, INS/GPS-, or IR-guided munitions and mini cruise missiles at standoff; the study publishes no release range, so the standoff value is a planning factor.",
+      "spec": {
+        "group": 4,
+        "rcsM2": 1,
+        "spanM": 12,
+        "acousticDb": 100,
+        "airframe": "fixed-wing",
+        "cruiseSpeedMps": 46,
+        "maxSpeedMps": 57,
+        "enduranceMin": 1080,
+        "altBandFt": [
+          16000,
+          20000
+        ],
+        "navMode": "mixed",
+        "emissionsNote": "LOS and BLOS datalinks; EO/IR/laser designator or surveillance radar (study [TUR02])",
+        "controlLinkRangeM": null,
+        "operatingRadiusM": null,
+        "combatRadiusM": null,
+        "oneWay": false,
+        "rangeNote": "LOS and BLOS communications per the 2026 Baykar sheet; no public radius figure used.",
+        "warheadKg": null,
+        "effectRadiusM": null,
+        "standoffRangeM": 8000,
+        "weaponProfile": "standoff",
+        "jamBehavior": "return-home"
+      },
+      "provenance": [
+        {
+          "field": "rcsM2",
+          "value": "1 m2",
+          "source": "planning factor",
+          "url": null,
+          "date": "2026-09-04",
+          "basis": "pf"
+        },
+        {
+          "field": "spanM",
+          "value": "12 m wingspan",
+          "source": "Baykar Technology TB2 page",
+          "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "cruiseSpeedMps",
+          "value": "90 KTAS travel speed (46.3 m/s)",
+          "source": "Baykar Technology TB2 page",
+          "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "maxSpeedMps",
+          "value": "110 KTAS maximum speed (56.6 m/s)",
+          "source": "Baykar Technology TB2 page",
+          "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "enduranceMin",
+          "value": "18+ hours endurance (1080 min)",
+          "source": "Baykar Technology TB2 page",
+          "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        },
+        {
+          "field": "altBandFt",
+          "value": "16000 ft operational altitude, 20000 ft service ceiling",
+          "source": "Baykar Technology TB2 page",
+          "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+          "date": "2026-09-04",
+          "basis": "datasheet"
+        }
+      ]
+    },
+    {
+      "id": "lib-asset",
+      "name": "Defended asset",
+      "kind": "asset",
+      "line": 3775,
+      "description": "Protected point. Warning time is measured to this location.",
+      "spec": {},
+      "provenance": []
+    },
+    {
+      "id": "lib-marker",
+      "name": "Marker",
+      "kind": "marker",
+      "line": 3783,
+      "description": "General annotation point.",
+      "spec": {},
+      "provenance": []
+    }
+  ]
+}

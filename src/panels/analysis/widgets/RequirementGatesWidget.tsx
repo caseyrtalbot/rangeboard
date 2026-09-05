@@ -119,6 +119,7 @@ function filterReport(report: RequirementGateReport, ids: string[]): Requirement
   const incomplete = evaluated.length !== gates.length
   const overall: RequirementGateStatus = failed ? 'fail' : incomplete ? 'not-evaluated' : 'pass'
   return {
+    basis: report.basis,
     overall,
     met: gates.filter((g) => g.status === 'pass').length,
     required: gates.length,
@@ -149,7 +150,7 @@ export function RequirementGatesWidget({ id, params, collapsed, customize, index
       id={id}
       type="requirement-gates"
       title="Requirement gates"
-      meta={`${shown.met}/${shown.required} met · test-defined`}
+      meta={`${shown.met}/${shown.required} met · planning envelope`}
       collapsed={collapsed}
       customize={customize}
       index={index}

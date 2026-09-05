@@ -86,6 +86,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="system">
+      <p className="muted small">Planning envelope · deterministic readouts and charts.</p>
       <DetailHeader
         entity={entity}
         color={color}

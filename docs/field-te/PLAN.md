@@ -1,9 +1,11 @@
 # RangeBoard: field T&E development plan
 
-Status: C1 IMPLEMENTED AND VERIFIED, 2026-09-04; later slices remain PROPOSED.
-C1 completion and the input/consumer/test matrix are in [C1_COMPLETION.md](C1_COMPLETION.md).
-C1 was committed and pushed as `002684c` on 2026-09-05 after Casey authorized publication.
-Stop before C2; it is the next implementation slice when selected.
+Status: C1/C2/C3 IMPLEMENTED AND VERIFIED; E1 EVIDENCE BASELINE COMPLETE, 2026-09-05.
+C1 was published as `002684c`; the C2/C3/E1 wave is verified in the working tree on
+`d8a76f1`, uncommitted. See [wave completion](WAVE_C2_C3_E1_COMPLETION.md) and
+[model evidence](model-evidence/README.md). Later slices remain PROPOSED. Stop after this wave;
+C4 is the next recommended bounded task when Casey selects it. The original plan body below
+is retained as the acceptance specification; the current transfer/register hold execution status.
 Owner: Casey (product and acceptance decisions); Astra (engineering).
 Prepared 2026-09-04 against `8b528f2` on `analysis-hardening`.
 

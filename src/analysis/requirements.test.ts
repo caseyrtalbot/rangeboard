@@ -363,3 +363,24 @@ describe('gate populations exclude tracks with no flight path', () => {
     expect(result.overall).toBe('pass')
   })
 })
+
+
+describe('C2 requirement basis', () => {
+  it('keeps deterministic gate decisions and envelope caveats under MC settings', () => {
+    const { scenario, assessment, report } = fixture()
+    const det = buildRequirementGateReport(scenario, [assessment], report)
+    scenario.runMode = 'monte-carlo'
+    const mc = buildRequirementGateReport(scenario, [assessment], report, { validity: 'valid', findings: [] })
+    expect(mc.basis).toBe('planning-envelope')
+    expect(mc.overall).toBe(det.overall)
+    expect(mc.gates.every((gate) => gate.caveats.some((text) => text.includes('threshold envelope')))).toBe(true)
+  })
+
+  it('explains a fully typed route blocked by missing fire-control uplink', () => {
+    const { scenario, assessment, report } = fixture()
+    assessment.status = 'no-fc-uplink'
+    const target = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'target')
+    expect(target.status).toBe('fail')
+    expect(target.failures[0].reason).toContain('route has no fire-control sensor; geometry only, no shot')
+  })
+})

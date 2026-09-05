@@ -212,6 +212,7 @@ export function ThreatPicture({
   if (tracks === 0) return <p className="muted small">No threats with flight paths.</p>
   return (
     <div className="threat-picture">
+      <p className="muted small">Effect state uses surviving mass, including late effects. Requirement verdicts are in Requirement gates.</p>
       {tracks > PAGE_SIZE && (
         <div className="scale-note">
           <strong>{tracks} tracks retained</strong>

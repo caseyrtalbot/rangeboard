@@ -1,0 +1,10 @@
+src/playback/wave-parity.verify.test.ts(2,45): error TS2591: Cannot find name 'node:fs'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/playback/wave-parity.verify.test.ts(9,20): error TS2352: Conversion of type '{ replicates: number; schemaVersion: number; name: string; library: ({ id: string; name: string; kind: string; description: string; color: string; builtin: boolean; sensor: { sensorType: string; role: string; ... 14 more ...; urbanRangeM?: undefined; }; provenance: { ...; }[]; effector?: undefined; uas?: undefined; ...' to type 'Scenario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'systemPresets' are incompatible.
+    Type '{ id: string; name: string; description: string; builtin: boolean; components: { specId: string; offsetM: { x: number; y: number; }; headingDeg: number; purpose: string; }[]; links: number[][]; }[]' is not comparable to type 'SystemPreset[]'.
+      Type '{ id: string; name: string; description: string; builtin: boolean; components: { specId: string; offsetM: { x: number; y: number; }; headingDeg: number; purpose: string; }[]; links: number[][]; }' is not comparable to type 'SystemPreset'.
+        Types of property 'links' are incompatible.
+          Type 'number[][]' is not comparable to type '[number, number][]'.
+            Type 'number[]' is not comparable to type '[number, number]'.
+              Target requires 2 element(s) but source may have fewer.
+src/playback/wave-parity.verify.test.ts(16,7): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.

@@ -8,7 +8,7 @@ import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { useEngagement, useRunCursor } from './controls'
 import { KPI_LABELS } from './labels'
-import { bandStep, countSub, currentSummary, formatCount, timeStatSub } from './mc'
+import { bandMean, bandStep, countSub, currentSummary, formatCount, statMean, timeStatSub } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -63,18 +63,19 @@ function timeTile(
 /** The replicate mean at the cursor step and its half-width sub over `reps` replicates. */
 function bandAt(band: BandSeries, t: number, reps: number): { mean: number; sub: string } {
   const i = bandStep(t, band.mean.length)
-  return { mean: band.mean[i], sub: countSub(band, i, reps) }
+  return { mean: bandMean(band, i, reps) ?? NaN, sub: countSub(band, i, reps) }
 }
 
 /** A count tile over n: the replicate mean with its band sub. */
 function bandCountTile(key: KpiKey, band: BandSeries, t: number, n: number, reps: number): Tile {
   const at = bandAt(band, t, reps)
-  return { key, value: <>{formatCount(at.mean)}<small>/{n}</small></>, sub: at.sub }
+  return { key, value: <>{Number.isFinite(at.mean) ? formatCount(at.mean) : '—'}<small>/{n}</small></>, sub: at.sub }
 }
 
-/** A finite Stat mean, else null (a Stat over no sample is NaN). */
-function meanOf(stat: McSummary['firstDetectS']): number | null {
-  return stat.n > 0 && Number.isFinite(stat.mean) ? stat.mean : null
+/** Full-run conditional time statistics have no cursor-conditioned replicate counterpart. */
+function estimateTimeTile(key: KpiKey, stat: McSummary['firstDetectS'], quantity: 'detected' | 'warning'): Tile {
+  const mean = statMean(stat)
+  return { key, value: mean == null ? '—' : formatTime(mean), sub: `full-run · ${timeStatSub(stat, quantity)}` }
 }
 
 function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
@@ -169,7 +170,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
       case 'killEk': {
         if (!summary) return { key, value: k.expectedKills.toFixed(1) }
         const at = bandAt(summary.kills, t, summary.replicates)
-        return { key, value: formatCount(at.mean), sub: at.sub }
+        return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub }
       }
       case 'lateEk':
         return { key, value: k.lateKills.toFixed(1) }
@@ -180,12 +181,11 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         if (!summary) return { key, value: k.leakerShips.toFixed(1), cls: leakCls }
         const at = bandAt(summary.leakers, t, summary.replicates)
         const cls = at.mean >= 1 ? 'bad' : at.mean > 0.05 ? 'warn' : ''
-        return { key, value: formatCount(at.mean), sub: at.sub, cls }
+        return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub, cls }
       }
       case 'firstDetect': {
         if (!summary) return timeTile(key, firstDetect, firstDetect, cursor)
-        const mean = meanOf(summary.firstDetectS)
-        return timeTile(key, mean, mean, cursor, timeStatSub(summary.firstDetectS, 'detected'))
+        return estimateTimeTile(key, summary.firstDetectS, 'detected')
       }
       case 'firstEffect':
         return timeTile(key, firstEffect, firstEffect, cursor)
@@ -198,8 +198,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
       case 'minWarning': {
         const arrivalS = warningHolder?.arrivalS ?? null
         if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
-        const mean = meanOf(summary.minWarningS)
-        return timeTile(key, mean, arrivalS, cursor, timeStatSub(summary.minWarningS, 'warning'))
+        return estimateTimeTile(key, summary.minWarningS, 'warning')
       }
     }
   }
@@ -212,6 +211,8 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
     <div className={`tiles ${tiles.length <= 4 ? 'c2' : 'c3'}`}>
       {tiles.map((key) => {
         const item = tile(key)
+        const estimated = summary && ['detect', 'trackNow', 'engaged', 'killEk', 'leakEn', 'firstDetect', 'minWarning'].includes(key)
+        if (!estimated) item.sub = `planning envelope${item.sub ? ` · ${item.sub}` : ''}`
         return (
           <div className="tile" key={key} title={KPI_LABELS[key].hint}>
             <span className="tl">{KPI_LABELS[key].label}</span>
@@ -229,7 +230,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
       type="kpi-tiles"
       title="KPI tiles"
       meta={`${tiles.length} of ${KPI_KEYS.length}${
-        summary ? ` · mean of ${summary.replicates}` : ''
+        summary ? ` · ${summary.replicates} replicates · basis per tile` : ' · planning envelope'
       }`}
       collapsed={collapsed}
       customize={customize}

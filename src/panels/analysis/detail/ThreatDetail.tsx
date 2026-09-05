@@ -200,17 +200,17 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         modelLine={modelLine}
         tags={modelsForEntity(scenario, entity.id)}
       />
-      <DetailSection id="file" title="Track file">
+      <DetailSection id="file" title="Track file" meta="planning envelope">
         <Rows rows={fileRows} />
       </DetailSection>
-      <DetailSection id="phase" title="Phase">
+      <DetailSection id="phase" title="Phase" meta="planning envelope">
         <Ladder rows={barePhaseRows} durationS={durationS} tS={t} onScrub={setSimTime} />
         {phaseLegend.length > 0 ? <Legend entries={phaseLegend} /> : null}
       </DetailSection>
       <DetailSection
         id="pd"
         title="Pd by sensor"
-        meta={pd.length > 0 ? `${pd.length} sensor${pd.length === 1 ? '' : 's'}` : null}
+        meta={pd.length > 0 ? `${pd.length} sensor${pd.length === 1 ? '' : 's'} · planning envelope` : null}
       >
         {pd.length > 0 ? (
           <TimeSeries series={pd} tS={t} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
@@ -221,8 +221,9 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="survival"
         title="Survival"
-        meta={summary ? 'mean · 80% band' : 'deterministic'}
+        meta={survival?.band80 ? 'MC mean · 80/95% replicate quantiles' : summary ? 'MC estimate unavailable' : 'planning envelope'}
       >
+        <p className="muted small">Event markers use the planning envelope.</p>
         {survival ? (
           <TimeSeries
             series={[survival]}

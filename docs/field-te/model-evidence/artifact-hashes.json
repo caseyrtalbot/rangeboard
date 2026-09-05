@@ -1,0 +1,167 @@
+[
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/blighter-a400-source-page.png",
+    "bytes": 364057,
+    "sha256": "3bbf299889d0d05d7069d3fad6ec2ba1a2e93d880d14aaf8d91606c5be56490c"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/blighter-a400.pdf",
+    "bytes": 439302,
+    "sha256": "fecdb3a815a0f52107182939864805b75bc12e3cd93a815624c3330171230c85"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/blighter-a400.pdf.txt",
+    "bytes": 12072,
+    "sha256": "72eae2cce6d66d1025629f30ca99520f3e330abfc5a2b81b7e96a46bf848c733"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/courageous.pdf",
+    "bytes": 3248856,
+    "sha256": "571320cbd7dcd9e6ff60739cba8a5526cb741d1f5f10be87d857b906e596aada"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/courageous.pdf.txt",
+    "bytes": 165534,
+    "sha256": "175f493a32a3a9efc2d0a3040a3b55b23316df114779ab9e2b8fe6300bfdc23c"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/echoguard-source-page.png",
+    "bytes": 273173,
+    "sha256": "8ed6fb037a3a36703a1ae6da79bd171ddecd93fffa04424e32661af6e242442f"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/echoguard.pdf",
+    "bytes": 316847,
+    "sha256": "82e13fbe814eb7cc0ff63cfecd17011c34772dcf8458e01f5bee97c0f329ad99"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/echoguard.pdf.txt",
+    "bytes": 4688,
+    "sha256": "5a1b07ef3d171eec523ae00de122cda8436d420df4d5eed765b5ae18e7e88973"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/echoshield-source-page.png",
+    "bytes": 326985,
+    "sha256": "0ecdcccd8df91825acb4c87b16de59bd982aaf00d7fd5a75b63aa2559d5c5240"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/echoshield.pdf",
+    "bytes": 310616,
+    "sha256": "f6868be0f57cb299e159b46642de0efc289b6cc75bc350a71e151df5325c21fe"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/echoshield.pdf.txt",
+    "bytes": 5285,
+    "sha256": "753fb9b2c572c7086933c6e93aa068060d0391dff6d0e637cf2d2ba894ffd0ec"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/epirus-leonidas.html",
+    "bytes": 151079,
+    "sha256": "fa95c3a9f90109d764c4b5fc2d0a1dbd7881f76c82087c722ec6ac1ca90ae9f4"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/epirus-leonidas.html.txt",
+    "bytes": 10545,
+    "sha256": "585e91c5f54e98552692728717de00f29a7312ced5000a15cf548ae87285eb09"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/focused-tests.txt",
+    "bytes": 229,
+    "sha256": "db278280e3a4890eb81270c178c6ad2f8c74bede115a25affca85410506cd022"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/rtx-kurfs-coyote.html",
+    "bytes": 66330,
+    "sha256": "05470d4f192f75fe2af5ad188420dfd7eaaaff1b6009429e63700d861b5314f2"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/rtx-kurfs-coyote.html.txt",
+    "bytes": 5444,
+    "sha256": "89a75b443ded3d8644addd76ce84af8c65481ae21f5429aa8449a90d6fef9904"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/source-captures.json",
+    "bytes": 4007,
+    "sha256": "3c7761673a49e52b697385d0e64824bfac5bc0e5a74e63beffca542ce3b12497"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/stinger-2017.html",
+    "bytes": 28705,
+    "sha256": "2183c90fae35e1f4d532d0e5d41f13e0a5231ea53635adeee2878a9fc4553ebb"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/stinger-2017.html.txt",
+    "bytes": 3472,
+    "sha256": "2fa432ddbe8336c2151424d2de3dabfca8a44b0044b37bd19c1a1537d22e57fb"
+  },
+  {
+    "path": "docs/field-te/evidence/model-evidence-2026-09-05/typecheck.txt",
+    "bytes": 1858,
+    "sha256": "d66f21c24e9ddcdc4cd1239fb56c076dec00618bbefad411af04e7e5552c0f87"
+  },
+  {
+    "path": "docs/field-te/model-evidence/README.md",
+    "bytes": 5159,
+    "sha256": "f0a0c48ca794de1ff08e60d0dbd54eefb5c69e2549b739074a8b37ebc71d7150"
+  },
+  {
+    "path": "docs/field-te/model-evidence/effect-ew.md",
+    "bytes": 5518,
+    "sha256": "9553ce192cb78e35b78004f9022abc5ea7d68ce882a668afbbb90d915c2ccf71"
+  },
+  {
+    "path": "docs/field-te/model-evidence/environment.md",
+    "bytes": 4821,
+    "sha256": "577a61c8095bb232330f5954ddfeec6c75d977310c9079fd830d42f2d38742c2"
+  },
+  {
+    "path": "docs/field-te/model-evidence/eoir-acoustic-rf.md",
+    "bytes": 5375,
+    "sha256": "6a8bb5d991ff5db2f313618e2a3d0e1376a5c75ae89644e43d19f5426915000f"
+  },
+  {
+    "path": "docs/field-te/model-evidence/geometry-time.md",
+    "bytes": 4377,
+    "sha256": "a611ac9f943f7797f959798f0a18c2c7a9e5f894e3b7b99eeba8bafd38a2e702"
+  },
+  {
+    "path": "docs/field-te/model-evidence/motion-effect-timing.md",
+    "bytes": 4769,
+    "sha256": "a1737ee6c5e5651b885fce46d102cb9ab2b383b24cc736b3a77d8ac304087569"
+  },
+  {
+    "path": "docs/field-te/model-evidence/radar.md",
+    "bytes": 5258,
+    "sha256": "e429d41d740a46c171984d486185602ae6a94f3b0252c12b38ec3f23e44ffdb0"
+  },
+  {
+    "path": "docs/field-te/model-evidence/reconciliation-findings.md",
+    "bytes": 8111,
+    "sha256": "14b495f62a8099d15f8c4936b0f279a65b8e3782e1164be5113cad85a910eebb"
+  },
+  {
+    "path": "docs/field-te/model-evidence/repository-evidence-inventory.json",
+    "bytes": 7804,
+    "sha256": "91a4e5b472d1f1b828b311429e23721ef15683d077fbfd82330c2c79683703a4"
+  },
+  {
+    "path": "docs/field-te/model-evidence/seed-inventory.json",
+    "bytes": 128966,
+    "sha256": "2f035301e912c9ee92663b1170bef985d53826722036e6875452b39084136f83"
+  },
+  {
+    "path": "docs/field-te/model-evidence/sources.md",
+    "bytes": 4699,
+    "sha256": "fab405e533c569a110ac6edf4f99e9f0438f7f9225cb4a1ede2ba8dfac963a51"
+  },
+  {
+    "path": "docs/field-te/model-evidence/track-c2-doctrine.md",
+    "bytes": 5345,
+    "sha256": "45da7e4b71e1a34bacb271a80e4bdf8a31d2a8b3115cb8b42149a89b0ed9a962"
+  },
+  {
+    "path": "docs/field-te/model-evidence/uncertainty-crosswalk.md",
+    "bytes": 6658,
+    "sha256": "446803486da59b038e215901cc6fbc689a9d2e6fed6312bf4bae2177dd9f3a02"
+  }
+]

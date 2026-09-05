@@ -61,6 +61,7 @@ export function RequirementGates({ report }: { report: RequirementGateReport }) 
           {report.met}/{report.required}
         </strong>
       </div>
+      <p className="muted small">Planning envelope · test-defined thresholds. No MC probability of pass is calculated.</p>
       <div className="requirement-grid">
         {report.gates.map((gate) => (
           <GateCard key={gate.id} gate={gate} />

@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../../../model/types'
+import { DT } from '../../../playback/sim'
 import { threatPictureAt } from '../../../analysis/threatAggregation'
 import { useStore } from '../../../state/store'
 import { residualSectionHeadline } from '../../headlines'
@@ -13,6 +15,8 @@ import { WidgetFrame } from './WidgetFrame'
 
 /** Methodology note for the full-run projection. */
 export function AboutProjection() {
+  const scenario = useStore((s) => s.scenario)
+  const residual = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }.maxResidualPerTrack
   return (
     <Info label="About the projection">
       <p>
@@ -26,9 +30,13 @@ export function AboutProjection() {
       </p>
       <p>
         Track is evaluated at the first shot, target-window opening, or asset arrival. Effect
-        requires no more than 5% expected residual on every track.
+        uses the test-defined residual limit of {Number((residual * 100).toFixed(1))}% per track.
+        These gates evaluate the deterministic planning envelope; MC means and mean confidence
+        intervals do not estimate probability of passing a gate.
+        A fully typed fire-control uplink route needs a routed fire-control sensor; a blocked
+        route has geometry only and assigns no shot.
       </p>
-      <p>Detection and track state are sampled at 0.5-second intervals.</p>
+      <p>Detection and track state are sampled at {DT}-second intervals.</p>
     </Info>
   )
 }
@@ -74,7 +82,7 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
             mc={summary}
           />
           <AnalysisSection
-            title="Projected threat outcome"
+            title="Projected threat outcome · planning envelope"
             headline={residualSectionHeadline(report.totals)}
           >
             <ThreatPicture groups={projectionGroups} mode="projected" />

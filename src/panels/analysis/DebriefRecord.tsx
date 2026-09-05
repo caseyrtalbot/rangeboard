@@ -196,7 +196,7 @@ export function DebriefRecord({
         </span>
       </div>
       <div className="debrief-meta">
-        {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events
+        planning envelope · {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events
       </div>
       <RunValidityBanner assessment={validity} />
       <RunActions
@@ -210,21 +210,21 @@ export function DebriefRecord({
       />
       <OutcomeSummary scenario={scenario} assessments={assessments} report={report} mc={mc} />
       <AnalysisSection
-        title="Requirement record"
+        title="Requirement record · planning envelope"
         headline={`${requirements.met}/${requirements.required} met`}
         defaultOpen
       >
         <RequirementGates report={requirements} />
       </AnalysisSection>
       <AnalysisSection
-        title="System and component record"
+        title="System and component record · planning envelope"
         headline={`${componentCount} components · ${totalSalvos(report.totals)} salvos`}
         defaultOpen
       >
         <SystemStatus groups={systems} expanded endOfRun />
       </AnalysisSection>
       <AnalysisSection
-        title="Threat record"
+        title="Threat record · planning envelope"
         headline={`${trackCount} tracks · ${residualSectionHeadline(report.totals)}${
           report.totals.expectedLateKills > 0.005
             ? ` · ${report.totals.expectedLateKills.toFixed(2)} late E[k]`
@@ -235,7 +235,7 @@ export function DebriefRecord({
         <ThreatPicture groups={threats} mode="debrief" />
       </AnalysisSection>
       <AnalysisSection
-        title="Engagement event ledger"
+        title="Engagement event ledger · planning envelope"
         headline={`${report.events.length} events`}
       >
         <EventLedgerList scenario={scenario} report={report} />

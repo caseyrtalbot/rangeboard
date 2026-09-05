@@ -4205,6 +4205,13 @@ select.nu-unit {
   white-space: nowrap;
 }
 
+/* Basis, units and interval meaning must stay visible in a narrow KPI tile. */
+.tile .ts {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
 .data-horizon-label,
 .debrief-kicker {
   color: var(--accent);

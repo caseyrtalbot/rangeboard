@@ -25,52 +25,39 @@ export function formatCount(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1)
 }
 
-/** Sub line for a count band at one step: `±0.4 (95%) · 100`, half-width then replicates. */
-export function countSub(band: BandSeries, i: number, n: number): string {
-  const h = (band.hi[i] - band.lo[i]) / 2
-  return `±${formatCount(h)} (${Math.round(STAT_CONF * 100)}%) · ${n}`
+/** A finite estimate only; empty bands and undefined time samples stay unavailable. */
+export function statMean(stat: Stat): number | null {
+  return stat.n > 0 && Number.isFinite(stat.mean) ? stat.mean : null
 }
 
-/** Half-width of a Stat interval in its unit: seconds `±12 s`, else `formatCount`. */
-function halfWidthText(stat: Stat, unit: 'time' | 'count'): string {
-  const h = (stat.hi - stat.lo) / 2
-  if (unit === 'count') return `±${formatCount(h)}`
-  return `±${h < 10 ? h.toFixed(1) : `${Math.round(h)}`} s`
+export function bandMean(band: BandSeries, i: number, n: number): number | null {
+  return n > 0 && Number.isFinite(band.mean[i]) ? band.mean[i] : null
 }
 
-/**
- * Sub line for a Stat mean: `±12 s (95%) · 100` (half-width at the Stat's
- * confidence, then the finite sample count); null with no finite sample.
- */
-function statSub(stat: Stat, unit: 'time' | 'count'): string | null {
-  if (stat.n === 0) return null
-  return `${halfWidthText(stat, unit)} (${Math.round(stat.conf * 100)}%) · ${stat.n}`
+/** Mean CI, never the replicate quantile band. `scale` converts counts to percentages. */
+export function countSub(band: BandSeries, i: number, n: number, scale = 1, unit = ''): string {
+  if (bandMean(band, i, n) == null) return `MC estimate unavailable · n=${n}`
+  if (n < 2) return `MC mean · CI unavailable · n=${n}`
+  const h = (band.hi[i] - band.lo[i]) / 2 * scale
+  if (!Number.isFinite(h)) return `MC mean · CI unavailable · n=${n}`
+  return `MC mean · ±${formatCount(h)}${unit} (${Math.round(STAT_CONF * 100)}% mean CI) · n=${n}`
 }
 
-/** What a time Stat measures, so an undefined replicate is worded for that quantity. */
+/** Undefined samples are excluded: time estimates are conditional on a finite time. */
 export type StatQuantity = 'detected' | 'warning'
-
 const QUANTITY_WORD: Record<StatQuantity, string> = {
   detected: 'detected',
   warning: 'warning time',
 }
 
-/**
- * `detected in n of total` or `warning time in n of total` when some replicate
- * had no value; null when every one did. A replicate with no warning time had
- * no defended asset, which is not a detection miss.
- */
-function definedSub(stat: Stat, quantity: StatQuantity): string | null {
-  if (stat.n >= stat.total) return null
-  return `${QUANTITY_WORD[quantity]} in ${stat.n} of ${stat.total}`
-}
-
-/** The Stat sub and the defined sub joined, for a time Stat tile; null with no finite sample. */
-export function timeStatSub(stat: Stat, quantity: StatQuantity): string | null {
-  const sub = statSub(stat, 'time')
-  if (sub == null) return null
-  const defined = definedSub(stat, quantity)
-  return defined == null ? sub : `${sub} · ${defined}`
+export function timeStatSub(stat: Stat, quantity: StatQuantity): string {
+  const defined = `${QUANTITY_WORD[quantity]} in ${stat.n} of ${stat.total}`
+  if (statMean(stat) == null) return `MC estimate unavailable · ${defined}`
+  const h = (stat.hi - stat.lo) / 2
+  const interval = stat.n < 2 || !Number.isFinite(h)
+    ? 'CI unavailable'
+    : `±${h < 10 ? h.toFixed(1) : Math.round(h)} s (${Math.round(stat.conf * 100)}% mean CI)`
+  return `MC conditional mean · ${interval} · n=${stat.n} · ${defined}`
 }
 
 /** The band index of sim time t, clamped to the band length. */

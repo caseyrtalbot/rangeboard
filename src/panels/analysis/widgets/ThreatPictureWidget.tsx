@@ -58,7 +58,7 @@ export function ThreatPictureWidget({ id, params, collapsed, customize, index, c
       id={id}
       type="threat-picture"
       title={preview ? 'Threats at preview cursor' : 'Live threat picture'}
-      meta={`${timeLabel} · ${detected}/${tracks} detected`}
+      meta={`planning envelope · ${timeLabel} · ${detected}/${tracks} detected`}
       headerExtra={<WezCheck />}
       collapsed={collapsed}
       customize={customize}

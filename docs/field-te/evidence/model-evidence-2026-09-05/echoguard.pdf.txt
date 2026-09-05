@@ -1,0 +1,91 @@
+                                                       EchoGuard
+                                                                                         ®
+
+
+                                                       4D Surveillance Radar
+
+                                                       Superior Drone Detection
+                                                       Enhanced Perimeter Security
+                                                       Market-Leading Performance
+
+
+
+Short-Range, Software-Defined, Metamaterials ESA
+(MESA®) Radar in a Compact Solid-State Format.
+RADAR PERFORMANCE                 SWaP & ENVIRONMENTAL               INTEGRATION & DATA
+
+Frequency                         Size                               Control I/O
+K-band 24.45 – 24.65 GHz (USA)    16.3 cm x 20.3 cm x 5.7 cm         Gigabit Ethernet
+K-band 24.05 – 24.25 GHz (INTL)
+                                  Weight                             Power I/O
+Field of View                     1.25 kg                            Snap Lock 12 Pin Connector
+120° Azimuth x 80° Elevation
+                                  Power (USA)                        Data Output
+Track Accuracy                    + 15 to + 28 VDC                   R/V Maps: 40 MBps
+< 1° Azimuth x < 1.5° Elevation   50 W (Operating)                   Detections: 1 MBps
+                                  < 10 W (Hot Standby)               Measurements: 1 MBps
+Track Update Rate                                                    Tracks: 25 KBps
+10 Hz                             Power (INTL)
+                                  + 15 to + 24 VDC                   Mounting
+Max Tracks                        50 W (Operating)                   VESA 75 & 100 mm
+Up to 20 Simultaneous Tracks      < 7 W (Hot Standby)
+Instrumented Range                Operating Temp
+6 km
+                                  - 40° C to + 75° C
+Range                             Weather Protection
+sUAV:    > 1 km (Phantom 4)
+                                  IP67
+         > 1.4 km (Matrice 600)
+Vehicle: > 3.5 km
+Human: > 2.2 km
+RADAR DIMENSIONS
+
+
+
+
+16.3 cm
+ 6.4 in
+
+
+
+
+                                                                         5.7 cm                            20.3 cm
+                                                                          2.3 in                             8 in
+
+
+
+ORDERING DETAILS                                                                                         REGULATORY
+ECHOGUARD (USA)                                                    ECHOGUARD (INTL)                      FCC ID: 2ANLB-MESASSR00053
+    WHITE   Bright White                700-0005-203-100                WHITE 700-0005-206-100           CE Marked
+                                                                                                         RED Compliant
+    TAN     AMS-STD-595A: 33446 700-0005-203-200 (shown)                TAN        700-0005-206-200
+                                                                                                         RoHS 3 Compliant
+    GREEN AMS-STD-595A: 34094 700-0005-203-300                          GREEN 700-0005-206-300
+    GRAY    AMS-STD-595A: 36270 700-0005-203-400                        GRAY       700-0005-206-400
+
+
+
+SOFTWARE & SUPPORT
+
+SOFTWARE UPDATES                                                              TECHNICAL SUPPORT
+Continuous Improvement from                                                   Priority Access to
+Software-Defined Radar                                                        Radar Support
+•   Includes All Major and Minor Releases                                     •    Review and Training Sessions
+•   Improve Radar Operations                                                  •    Systems Integration
+•   Enhanced Classification                                                   •    Troubleshooting​
+•   Radar Data Visualization Tools                                            •    Performance Review​
+•   Radar Support Tools                                                       •    Planning
+
+
+
+
+PRIORITY TECHNICAL                    CUSTOMER PORTAL                  PERFORMANCE ENHANCEMENT                  USER COMMUNITY
+SUPPORT                               24/7 access to all tools,        Continuous improvements                  Submit requests for
+Priority queuing via                  manuals, and materials.          through software development.            features and functionality.
+company match when using
+support@echodyne.com.
+
+
+
+                           Kirkland, Washington, USA    echodyne.com                                       Copyright © 2026 Echodyne Corp.   6JL
+
