@@ -74,9 +74,9 @@ control inverts to text 1 on ink. Focus is a 2 px outline in text 1.
 ## 4. Type
 
 Two faces. Archivo carries the interface at normal width, weights 400 and 500. JetBrains
-Mono carries machine data at 400 and 500. Both come from Google Fonts in the concept page;
-the app must self-host them under `src/assets` the way IBM Plex is self-hosted today.
-Tabular figures everywhere.
+Mono carries machine data at 400 and 500. Both are self-hosted woff2 files under
+`src/assets/fonts` with their OFL licences, declared by `@font-face` in `index.css` (step 2,
+2026-09-05). Tabular figures everywhere.
 
 | Role | Size and weight | Face |
 | --- | --- | --- |

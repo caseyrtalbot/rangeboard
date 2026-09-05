@@ -1,0 +1,140 @@
+{
+  "panelWidth": 319,
+  "roles": [
+    {
+      "role": "text 1 (value)",
+      "selector": ".insp-row-value, .tv, .sr-value",
+      "sample": "surveillance",
+      "fontSize": "13px",
+      "fontWeight": "400",
+      "fontFamily": "Archivo",
+      "fg": "#eaeaeb",
+      "bg": "#171a1d",
+      "ratio": 14.53,
+      "tab": "inspect"
+    },
+    {
+      "role": "text 1 (title)",
+      "selector": ".insp-header-name, .det-n, .ro-name",
+      "sample": "Giraffe 1X 3D radar (Saab) 1",
+      "fontSize": "13px",
+      "fontWeight": "500",
+      "fontFamily": "Archivo",
+      "fg": "#eaeaeb",
+      "bg": "#171a1d",
+      "ratio": 14.53,
+      "tab": "inspect"
+    },
+    {
+      "role": "text 2 (body)",
+      "selector": ".small, .spec-summary, .analysis-empty, .empty-state p",
+      "sample": "Against threats on the board",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "fontFamily": "Archivo",
+      "fg": "#828385",
+      "bg": "#171a1d",
+      "ratio": 4.6,
+      "tab": "inspect"
+    },
+    {
+      "role": "text 2 (meta)",
+      "selector": ".insp-row-label, .row .rl, .wg-m",
+      "sample": "Role",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "fontFamily": "Archivo",
+      "fg": "#a5a6a7",
+      "bg": "#171a1d",
+      "ratio": 7.17,
+      "tab": "inspect"
+    },
+    {
+      "role": "text 3 (label)",
+      "selector": ".insp-eyebrow, .tl, .panel-subtitle",
+      "sample": "Identity",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "fontFamily": "Archivo",
+      "fg": "#828385",
+      "bg": "#171a1d",
+      "ratio": 4.6,
+      "tab": "inspect"
+    },
+    {
+      "role": "machine (mono)",
+      "selector": ".insp-row-value.mono, .rv, .live-time",
+      "sample": "2.2 nmat 0.01 m²SRC",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "fontFamily": "JetBrains Mono",
+      "fg": "#eaeaeb",
+      "bg": "#171a1d",
+      "ratio": 14.53,
+      "tab": "inspect"
+    },
+    {
+      "role": "title (heading)",
+      "selector": ".wg-t, .panel-title",
+      "sample": "Library",
+      "fontSize": "13px",
+      "fontWeight": "500",
+      "fontFamily": "Archivo",
+      "fg": "#a5a6a7",
+      "bg": "#171a1d",
+      "ratio": 7.17,
+      "tab": "inspect"
+    }
+  ],
+  "audit": {
+    "under": [],
+    "underSvg": [
+      "svg @4px",
+      "recharts-surface @10px",
+      "chart-ladder-svg chart-scrub @10px"
+    ],
+    "heavy": [],
+    "at11": [
+      "em.(none)",
+      "span.pf src",
+      "th.(none)",
+      "td.(none)"
+    ],
+    "caps": [
+      "span.pill pill-dim",
+      "span.pill pill-warn",
+      "span.status neutral det-pill"
+    ]
+  },
+  "overflow1440": [
+    {
+      "el": "aside.palette",
+      "client": 229,
+      "scroll": 232
+    }
+  ],
+  "zoom200": {
+    "toolbarWithPreFoldSizes": {
+      "client": 720,
+      "scroll": 1129
+    },
+    "cssWidth": 720,
+    "overflow": [
+      {
+        "el": "header.toolbar",
+        "client": 720,
+        "scroll": 1160
+      },
+      {
+        "el": "aside.palette",
+        "client": 229,
+        "scroll": 232
+      },
+      {
+        "el": "div.timeline",
+        "client": 170,
+        "scroll": 255
+      }
+    ]
+  }
+}

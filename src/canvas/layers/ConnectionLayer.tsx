@@ -67,7 +67,7 @@ export function ConnectionLayer() {
         const to = scenario.entities.find((e) => e.id === c.toId)
         if (!from || !to) return null
         return (
-          <Text fontFamily="IBM Plex Mono"
+          <Text fontFamily="JetBrains Mono"
             key={`${c.id}-label`}
             x={(from.pos.x + to.pos.x) / 2}
             y={(from.pos.y + to.pos.y) / 2 - 14 / k}

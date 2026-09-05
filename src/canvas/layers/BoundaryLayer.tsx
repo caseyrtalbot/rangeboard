@@ -43,7 +43,7 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
           select({ boundaryId: boundary.id })
         }}
       />
-      <Text fontFamily="IBM Plex Mono"
+      <Text fontFamily="JetBrains Mono"
         x={boundary.points[0].x}
         y={boundary.points[0].y}
         text={label}

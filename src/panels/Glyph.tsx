@@ -65,7 +65,7 @@ export function Glyph({ kind, color, size }: { kind: EntityKind; color: string; 
             x={5}
             y={6.9}
             fontSize={4}
-            fontFamily="'IBM Plex Mono', ui-monospace, monospace"
+            fontFamily="'JetBrains Mono', ui-monospace, monospace"
             textAnchor="middle"
             fill={FRAME_INK}
           >

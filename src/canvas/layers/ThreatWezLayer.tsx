@@ -7,7 +7,7 @@ import { SEVERITY_LABEL, SEVERITY_RANK, threatWezList } from '../../analysis/imp
 import { formatDistance } from '../../geometry/geo'
 
 const RED = '#c4564a'
-const MONO = 'IBM Plex Mono'
+const MONO = 'JetBrains Mono'
 
 /** Badge copy: `I&W SEVERE · 1.6 ships · 64 kg`. Unknown warheads (kg 0) must
  *  stay visible: partial sums show `>= n kg`, fully unknown shows the words. */

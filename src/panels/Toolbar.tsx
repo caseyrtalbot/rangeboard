@@ -180,7 +180,7 @@ export function Toolbar() {
   if (workspace === 'ops') {
     return (
       <header className="toolbar">
-        <div className="brand">RANGEBOARD</div>
+        <div className="brand">Rangeboard</div>
         <div className="seg" aria-label="Workspace">
           {workspaces.map((w) => (
             <button
@@ -198,7 +198,7 @@ export function Toolbar() {
 
   return (
     <header className="toolbar">
-      <div className="brand">RANGEBOARD</div>
+      <div className="brand">Rangeboard</div>
       <div className="seg" aria-label="Workspace">
         {workspaces.map((w) => (
           <button

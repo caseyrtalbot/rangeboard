@@ -1,0 +1,224 @@
+// Design step 2 browser probe: self-hosted faces, the seven type roles, the
+// 11 px floor, contrast on real surfaces, a 320 px panel and 200 percent zoom.
+// Run: npm run dev -- --port 5311 --strictPort, then PORT=5311 node probe.mjs
+import { chromium } from 'playwright'
+import { mkdirSync, writeFileSync } from 'node:fs'
+
+const PORT = process.env.PORT || '5311'
+const BASE = `http://localhost:${PORT}`
+const OUT = 'docs/field-te/evidence/design-step2-2026-09-05'
+const TABS = ['inspect', 'cards', 'library', 'analysis']
+mkdirSync(OUT, { recursive: true })
+
+const log = []
+const say = (...a) => { const s = a.join(' '); log.push(s); console.log(s) }
+
+// sRGB relative luminance and the WCAG contrast ratio. Every text token in the
+// sheet is an alpha ramp, so a colour is composited over its own opaque ground.
+const CONTRAST_FN = `
+  const srgb = (c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+  const lum = ([r, g, b]) => 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b)
+  const parse = (s) => { const m = s.match(/[\\d.]+/g).map(Number); return [m[0], m[1], m[2], m.length > 3 ? m[3] : 1] }
+  const over = (fg, bg) => fg.slice(0, 3).map((c, i) => Math.round(c * fg[3] + bg[i] * (1 - fg[3])))
+  const hex = (c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('')
+  const ratio = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05) }
+`
+
+const roleRows = new Map()
+
+async function loadFixture(page) {
+  await page.evaluate(async () => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const raw = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).text()
+    const s = window.__store.getState()
+    s.loadScenario(parseAutosave(raw))
+    s.setRightTab('analysis')
+    s.applyLens('run-summary')
+    s.startRun()
+    s.advanceRun(300)
+  })
+  await page.waitForTimeout(400)
+}
+
+async function openTab(page, tab) {
+  await page.evaluate((t) => {
+    const s = window.__store.getState()
+    s.setRightTab(t)
+    if (t === 'inspect') {
+      const e = s.scenario.entities.find((x) => x.kind === 'system') ?? s.scenario.entities[0]
+      if (e) s.select({ entityIds: [e.id] })
+    }
+  }, tab)
+  await page.waitForTimeout(350)
+}
+
+async function measureRoles(page) {
+  return page.evaluate(`(() => {
+    ${CONTRAST_FN}
+    const bgOf = (el) => {
+      let n = el
+      while (n && n !== document.documentElement) {
+        const c = parse(getComputedStyle(n).backgroundColor)
+        if (c[3] > 0.99) return c.slice(0, 3)
+        n = n.parentElement
+      }
+      return [0, 0, 0]
+    }
+    const roles = [
+      ['text 1 (value)', '.insp-row-value, .tv, .sr-value'],
+      ['text 1 (title)', '.insp-header-name, .det-n, .ro-name'],
+      ['text 2 (body)', '.small, .spec-summary, .analysis-empty, .empty-state p'],
+      ['text 2 (meta)', '.insp-row-label, .row .rl, .wg-m'],
+      ['text 3 (label)', '.insp-eyebrow, .tl, .panel-subtitle'],
+      ['machine (mono)', '.insp-row-value.mono, .rv, .live-time'],
+      ['title (heading)', '.wg-t, .panel-title'],
+    ]
+    return roles.map(([role, sel]) => {
+      const el = [...document.querySelectorAll(sel)].find((e) => e.textContent.trim())
+      if (!el) return { role, selector: sel, found: false }
+      const cs = getComputedStyle(el)
+      const bg = bgOf(el)
+      const fg = over(parse(cs.color), bg)
+      return {
+        role, selector: sel,
+        sample: el.textContent.trim().slice(0, 28),
+        fontSize: cs.fontSize, fontWeight: cs.fontWeight,
+        fontFamily: cs.fontFamily.split(',')[0].replace(/"/g, ''),
+        fg: hex(fg), bg: hex(bg),
+        ratio: Math.round(ratio(fg, bg) * 100) / 100,
+      }
+    })
+  })()`)
+}
+
+const browser = await chromium.launch()
+// The right panel is 320 px by default; the key is set so the width is explicit.
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+await ctx.addInitScript(() => window.localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await ctx.newPage()
+page.on('console', (m) => log.push(`console:${m.type()} ${m.text()}`))
+page.on('pageerror', (e) => log.push(`pageerror ${e.message}`))
+await page.goto(BASE, { waitUntil: 'networkidle' })
+await page.locator('.app').waitFor()
+
+// 1. Both self-hosted faces are registered and actually used.
+const fonts = await page.evaluate(async () => {
+  await document.fonts.ready
+  await Promise.all([
+    document.fonts.load('400 13px Archivo'),
+    document.fonts.load('500 13px Archivo'),
+    document.fonts.load("400 12px 'JetBrains Mono'"),
+    document.fonts.load("500 12px 'JetBrains Mono'"),
+  ])
+  return {
+    archivo13: document.fonts.check('13px Archivo'),
+    archivo500: document.fonts.check('500 13px Archivo'),
+    mono12: document.fonts.check("12px 'JetBrains Mono'"),
+    mono500: document.fonts.check("500 12px 'JetBrains Mono'"),
+    rootFamily: getComputedStyle(document.documentElement).fontFamily,
+    monoToken: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+    tabularRoot: getComputedStyle(document.documentElement).fontVariantNumeric,
+    faces: [...document.fonts].map((f) => `${f.family} ${f.weight} ${f.status}`),
+    // check() is also true for an unknown family, so prove the face is used.
+    archivoDiffers: (() => {
+      const c = document.createElement('canvas').getContext('2d')
+      c.font = '13px Archivo'; const a = c.measureText('Detect to effect 12:34').width
+      c.font = '13px monospace'; const b = c.measureText('Detect to effect 12:34').width
+      return a !== b
+    })(),
+  }
+})
+writeFileSync(`${OUT}/fonts.json`, JSON.stringify(fonts, null, 2))
+say('fonts', JSON.stringify(fonts))
+
+await loadFixture(page)
+
+// 2. One screenshot per right tab, at 1440 px with the panel at 320 px, and
+//    the contrast sample of every role that tab renders.
+const panelWidth = await page.evaluate(() => document.querySelector('.right-panel').clientWidth)
+say('right panel width', panelWidth)
+for (const tab of TABS) {
+  await openTab(page, tab)
+  await page.screenshot({ path: `${OUT}/tab-${tab}-panel320.png` })
+  say(`screenshot ${OUT}/tab-${tab}-panel320.png`)
+  for (const row of await measureRoles(page)) {
+    if (row.found !== false && !roleRows.has(row.role)) roleRows.set(row.role, { ...row, tab })
+  }
+}
+const contrast = [...roleRows.values()]
+say('contrast', JSON.stringify(contrast))
+
+// 3. Nothing under the floor, nothing at weight 600 or above, and the classes
+//    that still sit at 11 px or still carry tracked caps.
+const audit = await page.evaluate(() => {
+  const leaf = [...document.querySelectorAll('.app *')].filter(
+    (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()),
+  )
+  const cs = (el) => getComputedStyle(el)
+  const name = (el) => `${el.tagName.toLowerCase()}.${String(el.className) || '(none)'}`
+  const isSvg = (el) => el.ownerSVGElement != null || el.tagName === 'svg'
+  const small = leaf.filter((el) => parseFloat(cs(el).fontSize) < 11)
+  return {
+    // SVG <text> sizes are user units in a chart or glyph viewBox, not CSS px.
+    under: small.filter((el) => !isSvg(el)).map((el) => ({ el: name(el), size: cs(el).fontSize })),
+    underSvg: [...new Set(small.filter(isSvg).map((el) => {
+      let n = el
+      while (n && n.tagName !== 'svg') n = n.parentElement
+      return `${n ? n.getAttribute('class') || 'svg' : 'svg'} @${cs(el).fontSize}`
+    }))],
+    heavy: leaf.filter((el) => Number(cs(el).fontWeight) >= 600).map((el) => ({ el: name(el), weight: cs(el).fontWeight })),
+    at11: [...new Set(leaf.filter((el) => parseFloat(cs(el).fontSize) === 11).map(name))],
+    caps: [...new Set(leaf.filter((el) => cs(el).textTransform === 'uppercase').map(name))],
+  }
+})
+say('audit', JSON.stringify(audit))
+
+// 4. No bar or panel scrolls sideways at the design width.
+const bars = await page.evaluate(() =>
+  [...document.querySelectorAll('.toolbar, .timeline, .tabs, .right-panel, .right-panel-body, section.wg, .detail, .tile, .outcome-metric, .tb, .event-row, .palette')]
+    .filter((el) => el.scrollWidth > el.clientWidth + 1)
+    .map((el) => ({ el: `${el.tagName.toLowerCase()}.${String(el.className)}`, client: el.clientWidth, scroll: el.scrollWidth })),
+)
+say('overflow at 1440 / panel 320', JSON.stringify(bars))
+
+// 5. 200 percent zoom: the app root at zoom 2 in the same viewport, so every
+//    panel lays out in 720 CSS px. The toolbar is measured against the sizes it
+//    carried before the fold, to separate a regression from the known 1440 px
+//    single-row assumption of the board bar.
+const zoomBefore = await page.evaluate(() => {
+  const r = document.documentElement.style
+  r.setProperty('--type-title-size', '12px')
+  r.setProperty('--type-title-weight', '700')
+  r.setProperty('--type-label-size', '11.5px')
+  document.getElementById('root').style.zoom = '2'
+  const t = document.querySelector('.toolbar')
+  const out = { client: t.clientWidth, scroll: t.scrollWidth }
+  r.removeProperty('--type-title-size')
+  r.removeProperty('--type-title-weight')
+  r.removeProperty('--type-label-size')
+  return out
+})
+await page.waitForTimeout(300)
+for (const tab of TABS) {
+  await openTab(page, tab)
+  await page.screenshot({ path: `${OUT}/zoom200-${tab}.png` })
+  say(`screenshot ${OUT}/zoom200-${tab}.png`)
+}
+const zoom = await page.evaluate(() => ({
+  cssWidth: document.getElementById('root').clientWidth,
+  overflow: [...document.querySelectorAll('.toolbar, .timeline, .tabs, .right-panel, .right-panel-body, section.wg, .detail, .tile, .outcome-metric, .tb, .event-row, .palette')]
+    .filter((el) => el.scrollWidth > el.clientWidth + 1)
+    .map((el) => ({ el: `${el.tagName.toLowerCase()}.${String(el.className)}`, client: el.clientWidth, scroll: el.scrollWidth })),
+}))
+say('zoom 200', JSON.stringify({ toolbarWithPreFoldSizes: zoomBefore, ...zoom }))
+await page.evaluate(() => { document.getElementById('root').style.zoom = '' })
+
+await ctx.close()
+await browser.close()
+
+writeFileSync(
+  `${OUT}/contrast.json`,
+  JSON.stringify({ panelWidth, roles: contrast, audit, overflow1440: bars, zoom200: { toolbarWithPreFoldSizes: zoomBefore, ...zoom } }, null, 2),
+)
+writeFileSync(`${OUT}/console.log`, log.join('\n') + '\n')
+say('done')

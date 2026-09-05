@@ -312,7 +312,7 @@ export function EngagementStrip() {
       <div className="engstrip-head" onClick={toggleOpen}>
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
         <span className="engstrip-title">
-          ENGAGEMENT TIMELINE · {lanes.length} threat{lanes.length === 1 ? '' : 's'}
+          Engagement timeline · {lanes.length} threat{lanes.length === 1 ? '' : 's'}
         </span>
         {open && (
           <div className="engstrip-legend" onClick={(e) => e.stopPropagation()}>

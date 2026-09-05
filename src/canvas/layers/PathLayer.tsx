@@ -43,7 +43,7 @@ export function PathLayer({ mouseWorld }: Props) {
         {p.points.map((pt, i) => (
           <Circle key={i} x={pt.x} y={pt.y} radius={3 / k} fill={color} />
         ))}
-        <Text fontFamily="IBM Plex Mono"
+        <Text fontFamily="JetBrains Mono"
           x={last.x + 8 / k}
           y={last.y}
           text={`${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`}
@@ -96,7 +96,7 @@ export function PathLayer({ mouseWorld }: Props) {
               strokeWidth={1.5}
               strokeScaleEnabled={false}
             />
-            <Text fontFamily="IBM Plex Mono"
+            <Text fontFamily="JetBrains Mono"
               x={(a.x + b.x) / 2}
               y={(a.y + b.y) / 2 - 16 / k}
               text={formatDistance(dist(a, b), units)}
@@ -125,7 +125,7 @@ function CalMark({ p, k, label }: { p: Vec2; k: number; label: string }) {
     <Group listening={false}>
       <Line points={[p.x - r, p.y, p.x + r, p.y]} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
       <Line points={[p.x, p.y - r, p.x, p.y + r]} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Text fontFamily="IBM Plex Mono" x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#a9b4bd" />
+      <Text fontFamily="JetBrains Mono" x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#a9b4bd" />
     </Group>
   )
 }

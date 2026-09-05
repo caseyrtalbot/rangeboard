@@ -97,7 +97,7 @@ function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }
     <div className={`run-validity validity-${assessment.validity}`}>
       <div className="debrief-header">
         <div>
-          <span className="debrief-kicker">RUN VALIDITY</span>
+          <span className="debrief-kicker">Run validity</span>
           <strong>{text.line}</strong>
         </div>
         <span className={`status ${text.cls}`}>{text.pill}</span>
@@ -188,7 +188,7 @@ export function DebriefRecord({
     <div className="debrief-record" role="status">
       <div className="debrief-header">
         <div>
-          <span className="debrief-kicker">RUN EVIDENCE RECORD</span>
+          <span className="debrief-kicker">Run evidence record</span>
           <strong>{formatRunLabel(runSeq)} · COMPLETE</strong>
         </div>
         <span className={`status ${requirements.overall === 'pass' ? 'good' : 'bad'}`}>

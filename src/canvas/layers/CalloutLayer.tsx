@@ -31,7 +31,7 @@ export function CalloutLayer({ placements }: Props) {
             <Line points={p.points} stroke="#82887e" strokeWidth={1} />
             <Circle x={p.points[0]} y={p.points[1]} radius={1.8} fill="#82887e" />
             <Text
-              fontFamily="IBM Plex Mono"
+              fontFamily="JetBrains Mono"
               x={p.tx}
               y={p.ty}
               width={p.width}

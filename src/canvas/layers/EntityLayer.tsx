@@ -141,7 +141,7 @@ function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: str
         strokeScaleEnabled={false}
       />
       <Text
-        fontFamily="IBM Plex Mono"
+        fontFamily="JetBrains Mono"
         x={-9}
         y={-4.5}
         width={18}
@@ -441,7 +441,7 @@ function EntityNode({
         <Glyph entity={heading} color={color} ghost={ghost} filled={effectorFilled} />
         {off && <Line points={[-11, 11, 11, -11]} stroke="#c4564a" strokeWidth={2} />}
         {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
-          <Text fontFamily="IBM Plex Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
+          <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
         )}
         {jammed && (
           <>
@@ -453,7 +453,7 @@ function EntityNode({
               listening={false}
             />
             <Text
-              fontFamily="IBM Plex Mono"
+              fontFamily="JetBrains Mono"
               x={JAM_DIAMOND_R * 0.62 + 3}
               y={-JAM_DIAMOND_R * 0.62 - 11}
               text="J"
@@ -465,7 +465,7 @@ function EntityNode({
         )}
         {depleted && (
           <Text
-            fontFamily="IBM Plex Mono"
+            fontFamily="JetBrains Mono"
             x={13}
             y={-4}
             text="EMPTY"
@@ -475,7 +475,7 @@ function EntityNode({
           />
         )}
         {labelDrawn && (
-          <Text fontFamily="IBM Plex Mono"
+          <Text fontFamily="JetBrains Mono"
             x={-60}
             y={LABEL_ANCHOR_TOP}
             width={120}
@@ -488,7 +488,7 @@ function EntityNode({
         )}
         {ghost && (
           <Text
-            fontFamily="IBM Plex Mono"
+            fontFamily="JetBrains Mono"
             x={-60}
             y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
             width={120}
@@ -524,7 +524,7 @@ function EntityNode({
               strokeWidth={1}
             />
             <Text
-              fontFamily="IBM Plex Mono"
+              fontFamily="JetBrains Mono"
               x={-34}
               y={4}
               width={68}

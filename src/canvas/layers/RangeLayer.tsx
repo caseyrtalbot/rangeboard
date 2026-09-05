@@ -44,7 +44,7 @@ export function RangeLayer() {
             />
             <Group x={launch.x} y={launch.y} scaleX={1 / k} scaleY={1 / k}>
               <Text
-                fontFamily="IBM Plex Mono"
+                fontFamily="JetBrains Mono"
                 x={-90}
                 y={-26}
                 width={180}
@@ -60,7 +60,7 @@ export function RangeLayer() {
                 <Line points={[-6, -6, 6, 6]} stroke="#c4564a" strokeWidth={2} />
                 <Line points={[-6, 6, 6, -6]} stroke="#c4564a" strokeWidth={2} />
                 <Text
-                  fontFamily="IBM Plex Mono"
+                  fontFamily="JetBrains Mono"
                   x={12}
                   y={-5}
                   text={`endurance limit · ${formatDistance(exhaust.distM, units)}`}

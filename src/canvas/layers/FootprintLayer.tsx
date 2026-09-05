@@ -169,7 +169,7 @@ function RingLabel({ pos, radiusM, bearing, text, color, scale }: RingLabelProps
   return (
     <Group x={p.x} y={p.y} scaleX={1 / scale} scaleY={1 / scale} listening={false}>
       <Text
-        fontFamily="IBM Plex Mono"
+        fontFamily="JetBrains Mono"
         x={right ? -LABEL_BOX_PX - LABEL_GAP_PX : LABEL_GAP_PX}
         y={-LABEL_FONT_PX - LABEL_GAP_PX}
         width={LABEL_BOX_PX}

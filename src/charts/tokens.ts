@@ -39,8 +39,8 @@ const GRID = 'rgba(255,255,255,.07)'
 /** The panel surface, `--surface-panel`. The endpoint dot strokes with it. */
 const SURFACE = '#171a1d'
 
-const FONT_MONO = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
-const FONT_UI = "'IBM Plex Sans', Inter, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif"
+const FONT_MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+const FONT_UI = "'Archivo', system-ui, sans-serif"
 
 /**
  * Resolved values of the `index.css` tokens the kit reads. `--text-dim` is an alpha ramp
