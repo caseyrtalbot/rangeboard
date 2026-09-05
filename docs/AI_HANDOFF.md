@@ -13,10 +13,10 @@ Read [AGENTS.md](../AGENTS.md) (contract and ownership by path), this record, th
 
 ## Shared state
 
-[V] Pre-commit HEAD was `74eb94d docs: lock the design contract and split ownership
-between Astra and Fable`, one commit ahead of the origin tracking ref. Casey subsequently
-authorized this R1 commit. This session did not fetch or push. The prior C4 remote
-verification remains historical evidence.
+[V] R1 first extraction is committed as `7c9b577`, following Fable's `74eb94d`.
+Both commits were ahead of the origin tracking ref before this pilot-decision commit.
+This session did not fetch or push. The prior C4 remote verification remains historical
+evidence.
 
 [D] Casey split ownership by domain on 2026-09-05 (R-D-32, second note). Astra keeps the
 engineering plan as written and absorbs design step 1 into R1. Claude Fable owns the locked
@@ -35,9 +35,9 @@ restored to `HEAD` on Casey's instruction after an accidental edit. No source fi
 74-warning baseline and zero errors, build with the existing chunk warning, schema drift
 check. Exact deterministic/seeded numerical parity and real-browser worker checks pass.
 See [R1 brief and evidence](field-te/R1_LEAF_EXTRACTION.md). The incoming baseline was
-1,355 tests in 77 files with the same warnings. The other session's pilot-decision edits
-in this shared header, the register and PLAN section 9 are preserved in the working tree
-and excluded from this R1 commit.
+1,355 tests in 77 files with the same warnings. The pilot-decision edits in this shared
+header, the register and PLAN section 9 are included in this separately authorized
+documentation commit; they were excluded from R1 implementation commit `7c9b577`.
 
 [U] Untracked and unowned at transfer: `.claude/settings.local.json`, `.claude/launch.json`,
 `docs/data-engine/build_mockup.py`, `docs/data-engine/build_mockup_te.py`,
@@ -46,8 +46,16 @@ files are an earlier IBM Plex mockup of the data-engine slices; they are not a d
 authority and are superseded by the design contract. Casey decides whether to delete them or
 commit them as historical. `.claude/` files are local tool configuration.
 
-[D] The other session's pilot-decision record is pending a separate commit; its working-tree
-edits are preserved. This R1 extraction does not implement or alter pilot requirements.
+[D] Casey authorized committing the pilot-decision record and four handoff status updates
+on 2026-09-05. This documentation commit does not implement or alter pilot requirements.
+
+[D] Field pilot decisions are made (R-D-33, 2026-09-05). Platform: MacBook Pro 13 or 15
+inch, macOS, Retina, trackpad, no touch, offline, one operator; Chrome checked, Safari
+secondary. Reference question: at least 90 s usable warning time from the KuRFS, FAAD C2,
+Coyote Block 2 chain at a defended point against a Group 3 one-way attack, at detect Pd 0.5
+and track 0.9. Owner: Casey and the company; independent-operator acceptance is deferred.
+Product focus: simulation and modeling design and T&E, so E2/E3 come before T1 packaging.
+The reference laydown is the verified firing fixture plus a defended asset.
 
 ## Astra: engineering
 
@@ -85,8 +93,8 @@ and the R-F-20 independently valid detection fixture. E2/E3 and R-F-30 numerical
 stay serial to parity-sensitive engine edits. Existing C3 already supplies schema version 1,
 validation, compatibility defaults, recovery copies and autosave suppression; F10's
 claimed absence is incorrect. Reconcile a concrete persistence gap and ownership before
-selecting a follow-on. Pilot decisions remain in the other session's uncommitted R-D-33 and PLAN edits, outside
-this R1 commit.
+selecting a follow-on. Pilot decisions are recorded in R-D-33 and PLAN section 9 and
+included in this documentation commit, following R1 implementation commit `7c9b577`.
 
 ## Claude Fable: design
 

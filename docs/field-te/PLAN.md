@@ -342,11 +342,22 @@ append another contradictory "current" summary. Use git history for superseded t
 
 - **Platform:** first field hardware/OS and whether offline single-operator use is the
   correct initial target. Blocks T1 packaging and final U1/A1 acceptance, not C1/E1.
+  Decided 2026-09-05 (R-D-33): Apple MacBook Pro, 13 or 15 inch, macOS, Retina, trackpad,
+  no touch, single operator, offline. Chrome is the checked browser; Safari is a secondary
+  check.
 - **Reference use case:** the first system/test question and operating conditions to
   prioritize. E1 can inventory everything now; comparative accuracy targets require this
   use case and appropriate evidence. No private trial dataset is expected at present.
+  Decided 2026-09-05 (R-D-33): does the KuRFS, FAAD C2, Coyote Block 2 chain give at least
+  90 s of usable warning time at a defended point against a Group 3 one-way attack inbound,
+  at detect Pd 0.5 and track 0.9. This is the laydown the verified firing fixture already
+  uses, plus the defended asset it lacks.
 - **Pilot acceptance:** who will exercise the workflow and accept task completion and
   model-use limits. Define the campaign and tolerances before calling it field ready.
+  Decided 2026-09-05 (R-D-33): Casey and the company. The application is not built for a
+  separate operator now; independent-operator task acceptance is deferred. The product
+  focus is simulation and modeling design and test and evaluation, which orders E2/E3
+  ahead of T1 packaging.
 - **Design order (2026-09-05, R-D-32):** the platform decision above is requested now
   because it sets the daylight-theme acceptance surface, touch target size and the density
   default in the [design contract](../design/DESIGN_CONTRACT.md). R1 runs first and absorbs
