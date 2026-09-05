@@ -1,7 +1,31 @@
-# RangeBoard: Astra working contract
+# RangeBoard: working contract
 
-Current repository instructions, optimized for Astra. These rules also apply to other
-contributors. `CLAUDE.md` points here; it is not a second engineering contract.
+Current repository instructions for both contributors. `CLAUDE.md` points here; it is not a
+second engineering contract.
+
+## Contributors and ownership
+
+Two models work in this repository in separate sessions. Casey holds product and acceptance
+decisions.
+
+- **Astra** owns engineering: the field T&E plan as written in
+  [docs/field-te/PLAN.md](docs/field-te/PLAN.md) (R1, E2, E3, T1, A1), the engine, the
+  stores, persistence and the T&E record model. Paths: `src/state`, `src/playback`,
+  `src/analysis`, `src/io`, `src/model`, `src/geometry`, `src/te/model`, `src/te/io`,
+  `src/te/calc`, `src/te/seed`, `docs/field-te`, `docs/data-engine`.
+- **Claude Fable** owns design: the locked
+  [design contract](docs/design/DESIGN_CONTRACT.md), which is the U1 acceptance
+  specification, and its implementation steps 2 to 14 after R1 is published. Paths:
+  `src/index.css`, `src/assets`, `src/panels`, `src/canvas`, `src/charts`, `src/te/ui`,
+  `docs/design`.
+
+Design step 1 (fixed simulation tick and selector subscriptions, F1 in the contract) is
+part of Astra's R1 brief and is gated by R1 parity. A change that crosses the boundary
+above is requested through a register row, not made in the other owner's paths. No two
+sessions hold uncommitted edits in the same file; read `git status --short` first and stop
+if the other owner's paths are dirty. Both owners follow every rule below, update only
+their own block of the current handoff plus its shared header, and use the register as the
+single status authority.
 
 ## Start with the selected task
 

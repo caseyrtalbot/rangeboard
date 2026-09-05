@@ -8,12 +8,13 @@ Source, tests and recorded verification determine implemented behavior.
 
 | Document | Purpose |
 | --- | --- |
-| [AGENTS.md](../AGENTS.md) | Astra working contract, task boundaries, verification and git rules |
+| [AGENTS.md](../AGENTS.md) | Working contract for both contributors: Astra (engineering) and Claude Fable (design); ownership by path, task boundaries, verification and git rules |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | One current transfer record: state, evidence and next bounded task |
 | [Outstanding register](data-engine/outstanding.md) | Only decision and follow-up status authority |
 | [Engineering reference](ENGINEERING_REFERENCE.md) | Detailed architecture, equations, invariants, UI and T&E contracts |
 | [Verification guide](VERIFICATION.md) | Test conventions and isolated browser/import/recovery procedures |
 | [Field T&E plan](field-te/PLAN.md) | Acceptance specification; later slices need selection |
+| [Design contract](design/DESIGN_CONTRACT.md) | Locked frontend design: surface rules, tokens, components, F1 to F10, order of work and sequencing; [concepts.html](design/concepts.html) is its visual reference |
 | [Backlog triage](field-te/BACKLOG_TRIAGE.md) | Routing index for inherited register rows, not a second status list |
 
 ## Verified records and evidence

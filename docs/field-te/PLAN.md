@@ -1,12 +1,14 @@
 # RangeBoard: field T&E development plan
 
 Status: C1/C2/C3/C4 IMPLEMENTED; E1 EVIDENCE BASELINE COMPLETE, 2026-09-05.
+Design direction for U1 locked 2026-09-05 (R-D-32); see [docs/design/DESIGN_CONTRACT.md](../design/DESIGN_CONTRACT.md).
 C4 was authorized by Casey's execution of the C4 packet and published as `7f10c92`,
 with the remote hash verified. See [C4 completion](C4_COMPLETION.md). C1 was published as `002684c`;
 C2/C3/E1 was published as `798380d`. Later slices remain PROPOSED. Stop after C4;
 Casey's subsequent commit/push instruction is complete. The plan body remains the acceptance specification;
 the current transfer/register hold execution status.
-Owner: Casey (product and acceptance decisions); Astra (engineering).
+Owner: Casey (product and acceptance decisions); Astra (engineering, this plan as written);
+Claude Fable (U1 through the [design contract](../design/DESIGN_CONTRACT.md), after R1).
 Prepared 2026-09-04 against `8b528f2` on `analysis-hardening`.
 
 ## 1. Outcome and evidence
@@ -69,7 +71,7 @@ integration, new dependencies, storage changes or a packaging choice.
 | E2 | Priority physics/kinematics corrections | E1, R1 | One model change at a time; independent analytical cases and declared output deltas |
 | E3 | Uncertainty and statistical claims match their coverage | C2, E1, R1 | Coverage/convergence studies; sampled/fixed parameter inventory; pairing checks |
 | T1 | Field evidence workflow and offline durability | C3, C4; platform decision | Offline cold start, interruption recovery, portable campaign restore and traceability |
-| U1 | A coherent, accessible operator experience | Early source study now; C2/C4 contracts | Task-based browser checks, accessibility review and measured performance |
+| U1 | A coherent, accessible operator experience, defined by the [design contract](../design/DESIGN_CONTRACT.md) since 2026-09-05 (R-D-32) | R1 first (design step 1 is inside R1); C2/C4 contracts | Per-step evidence in the contract's section 8: rule counts, parity on fixed IDs, browser checks at three densities and two themes, keyboard walkthrough |
 | A1 | Release candidate for a bounded field pilot | All relevant slices | Representative campaign rehearsal and accepted model-use limits |
 
 Early U1 work defines task flows and inspection criteria; it does not delay C1. E1 can
@@ -274,11 +276,22 @@ before proposing collaboration features.
 
 ## 7. U1: UI quality with measurable acceptance
 
-The source study preserves the existing graphite visual language while correcting usability
-failures. Current facts: `index.css` uses 13 px body text, 11.5 px chrome, 4/8/12/16/20/24 px
-spacing, 14 px panel padding, 3 px radius and 120/140 ms motion. Reduced-motion and focus
-styles exist. The contract's 320 px panel check currently allows critical text to ellipsize;
-Sources and Sensitivity need a different information layout, not progressively smaller text.
+Status 2026-09-05: the layer table below is HISTORICAL. Casey locked a design direction
+that replaces it (R-D-32). The current U1 contract is
+[docs/design/DESIGN_CONTRACT.md](../design/DESIGN_CONTRACT.md): eight surface rules, tokens,
+type roles, components, foundation items F1 to F10, a fourteen-step order of work with
+owners and acceptance evidence, and the sequencing against R1, E2, E3, T1 and the field
+pilot. The sentence "preserve the existing graphite visual language" no longer applies; the
+warm graphite tokens, the 11 px floor and the ink-only state rules in the contract do. The
+accessibility target below (WCAG 2.2 AA, focus, target size, alternatives to dragging)
+remains in force and is design step 14.
+
+Historical text follows. The source study preserved the existing graphite visual language
+while correcting usability failures. Facts at the time: `index.css` used 13 px body text,
+11.5 px chrome, 4/8/12/16/20/24 px spacing, 14 px panel padding, 3 px radius and 120/140 ms
+motion. Reduced-motion and focus styles existed. The contract's 320 px panel check allowed
+critical text to ellipsize; Sources and Sensitivity needed a different information layout,
+not progressively smaller text.
 
 | Layer | Planned work | Acceptance |
 | --- | --- | --- |
@@ -334,6 +347,10 @@ append another contradictory "current" summary. Use git history for superseded t
   use case and appropriate evidence. No private trial dataset is expected at present.
 - **Pilot acceptance:** who will exercise the workflow and accept task completion and
   model-use limits. Define the campaign and tolerances before calling it field ready.
+- **Design order (2026-09-05, R-D-32):** the platform decision above is requested now
+  because it sets the daylight-theme acceptance surface, touch target size and the density
+  default in the [design contract](../design/DESIGN_CONTRACT.md). R1 runs first and absorbs
+  design step 1. The remaining design steps need Casey's selection one at a time.
 
 C1 is verified complete (R-F-24; R-D-26/R-D-27). **C2 is the next implementation slice
 when selected**; begin with its bounded result-semantics brief. E1 remains the next

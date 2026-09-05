@@ -1,0 +1,1042 @@
+<meta charset="utf-8">
+<title>RangeBoard Interface Concepts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  /* Three surfaces. Warm graphite, not blue-black. */
+  --board:#121313;
+  --panel:#191a1a;
+  --sunken:#0e0f0f;
+  /* Rules. Two weights only. */
+  --rule:#2a2c2b;
+  --rule-strong:#454846;
+  /* Text. Warm off-white ramp. */
+  --t1:#ebe9e3;
+  --t2:#a9a9a3;
+  --t3:#74766f;
+  --ink:#121313;
+  /* Ink colours. Used as stroke, text, or a solid mark. Never as a tint. */
+  --ok:#7fc39a;
+  --warn:#e2ad55;
+  --crit:#e46f62;
+  --threat:#e25b4e;
+  --sensor:#6cb0e6;
+  --effector:#e4934f;
+  --c2:#d3d5cf;
+  --sans:'Archivo',ui-sans-serif,system-ui,'Helvetica Neue',Arial,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --fs-label:12px;
+  --fs-body:13px;
+  --fs-value:24px;
+  --row-h:36px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--board);color:var(--t1);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .035 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")}
+h1,h2,h3,h4{margin:0;font-weight:500;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+code{font-family:var(--mono);font-size:.92em}
+.mono{font-family:var(--mono)}
+.label{font-size:var(--fs-label);color:var(--t3);font-weight:500}
+.page{max-width:1320px;margin:0 auto;padding:0 32px 120px}
+
+/* ---------- document chrome ---------- */
+.masthead{display:grid;grid-template-columns:1.2fr 1fr;gap:48px;padding:56px 0 40px;border-bottom:1px solid var(--rule-strong)}
+.masthead h1{font-size:40px;font-weight:500;line-height:1.05}
+.masthead .brief{font-size:16px;color:var(--t2);max-width:60ch;margin-top:18px}
+.masthead .brief b{color:var(--t1);font-weight:500}
+.eyebrow{font-size:12px;color:var(--t3);font-weight:500;margin-bottom:14px}
+.audit{border-left:1px solid var(--rule);padding-left:32px}
+.audit table{border-collapse:collapse;width:100%;font-size:13px}
+.audit td{padding:8px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.audit td:last-child{text-align:right;font-family:var(--mono);color:var(--t1);white-space:nowrap;padding-left:16px}
+.audit td:first-child{color:var(--t2)}
+.rules{padding:28px 0 8px;border-bottom:1px solid var(--rule)}
+.rules ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:14px 28px;counter-reset:r}
+.rules li{counter-increment:r;font-size:13px;color:var(--t2);padding-top:8px;border-top:1px solid var(--rule)}
+.rules li::before{content:counter(r,decimal-leading-zero);display:block;font-family:var(--mono);font-size:11px;color:var(--t3);margin-bottom:4px}
+.rules li b{color:var(--t1);font-weight:500}
+.section{padding:56px 0 8px;display:grid;grid-template-columns:260px 1fr;gap:40px;border-top:1px solid var(--rule)}
+.section > aside{position:sticky;top:24px;align-self:start}
+.section .idx{font-family:var(--mono);font-size:12px;color:var(--t3);margin-bottom:8px}
+.section h2{font-size:22px}
+.section aside p{color:var(--t2);font-size:13.5px;margin-top:12px;max-width:34ch}
+.section aside .rule{margin-top:18px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--t3)}
+.section aside .rule b{color:var(--t2);font-weight:500}
+.block{margin-bottom:40px}
+.block > h3{font-size:13px;color:var(--t1);font-weight:500;margin-bottom:12px;display:flex;align-items:baseline;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.block > h3 span{font-family:var(--mono);font-weight:400;color:var(--t3);font-size:11.5px}
+.note{font-size:12.5px;color:var(--t3);margin-top:10px;max-width:70ch}
+.note b{color:var(--t2);font-weight:500}
+
+/* ---------- type scale ---------- */
+.scale{display:grid;grid-template-columns:130px 1fr 150px;gap:0 20px}
+.scale > div{padding:12px 0;border-bottom:1px solid var(--rule);display:flex;align-items:center;min-height:52px}
+.scale .role{font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+.scale .spec{font-family:var(--mono);font-size:11.5px;color:var(--t3);justify-content:flex-end;text-align:right}
+.s-display{font-size:26px;font-weight:500}
+.s-value{font-size:24px;font-weight:400}
+.s-value small{font-size:13px;color:var(--t3);margin-left:2px}
+.s-title{font-size:13px;font-weight:500}
+.s-body{font-size:13px}
+.s-meta{font-size:12px;color:var(--t2)}
+.s-label{font-size:12px;color:var(--t3);font-weight:500}
+.s-mono{font-family:var(--mono);font-size:12px}
+.s-mono span{color:var(--t3)}
+
+.density{display:inline-flex;border:1px solid var(--rule-strong)}
+.density button{appearance:none;border:0;background:transparent;color:var(--t2);font:inherit;font-size:12px;font-weight:500;padding:5px 12px;cursor:pointer;border-right:1px solid var(--rule-strong)}
+.density button:last-child{border-right:0}
+.density button[aria-pressed="true"]{background:var(--t1);color:var(--ink)}
+.density button:focus-visible{outline:2px solid var(--t1);outline-offset:-2px}
+
+/* ---------- palette ---------- */
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:18px 14px}
+.sw .chip{height:44px;border:1px solid var(--rule)}
+.sw .meta{padding:6px 0 0;font-size:12px}
+.sw .meta b{display:block;font-weight:500;color:var(--t1)}
+.sw .meta code{display:block;color:var(--t3);font-size:11px;margin-top:1px}
+.contrast{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+.contrast div{padding:10px 0;border-top:1px solid var(--rule);font-size:13px}
+.contrast div code{display:block;margin-top:4px;color:var(--t3);font-size:11px}
+
+/* ---------- controls ---------- */
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{appearance:none;font:inherit;font-size:13px;font-weight:500;line-height:1;height:28px;padding:0 12px;border-radius:2px;border:1px solid var(--rule-strong);background:transparent;color:var(--t1);cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:var(--t2)}
+.btn:focus-visible{outline:2px solid var(--t1);outline-offset:1px}
+.btn.primary{background:var(--t1);color:var(--ink);border-color:var(--t1)}
+.btn.primary:hover{background:#fff}
+.btn.ghost{border-color:transparent;color:var(--t2)}
+.btn.ghost:hover{color:var(--t1);border-color:transparent;text-decoration:underline;text-underline-offset:3px}
+.btn.danger{border-color:transparent;color:var(--crit)}
+.btn.danger:hover{border-color:var(--crit)}
+.btn.sm{height:24px;padding:0 9px;font-size:12px}
+.btn.icon{width:28px;padding:0;justify-content:center}
+.btn.icon.sm{width:24px}
+.btn kbd{font-family:var(--mono);font-size:10.5px;color:var(--t3);line-height:1.2}
+.btn.primary kbd{color:var(--ink);opacity:.7}
+.seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:2px;height:28px}
+.seg button{appearance:none;border:0;border-right:1px solid var(--rule-strong);background:transparent;color:var(--t2);font:inherit;font-size:13px;font-weight:500;padding:0 12px;cursor:pointer;white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--t1);color:var(--ink)}
+.seg.sm{height:24px}
+.seg.sm button{font-size:12px;padding:0 9px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:150px}
+.field label{font-size:12px;color:var(--t3);font-weight:500}
+.input{height:30px;border:1px solid var(--rule-strong);border-radius:2px;background:var(--sunken);color:var(--t1);font:inherit;font-size:13px;padding:0 10px;display:flex;align-items:center;justify-content:space-between}
+.input .unit{font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+.input.mono{font-family:var(--mono);font-size:12.5px}
+.input.focus{border-color:var(--t1)}
+.slider{height:30px;display:flex;align-items:center;gap:10px}
+.slider .track{flex:1;height:1px;background:var(--rule-strong);position:relative}
+.slider .track i{position:absolute;left:0;top:0;height:1px;background:var(--t1);width:67%}
+.slider .track b{position:absolute;top:50%;left:67%;width:10px;height:10px;background:var(--t1);transform:translate(-50%,-50%)}
+.slider .val{font-family:var(--mono);font-size:12px;min-width:44px;text-align:right}
+
+/* State: ink only. A solid square mark plus a word. One opaque fill for the single headline state. */
+.st{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--t2);white-space:nowrap;line-height:1}
+.st::before{content:"";width:8px;height:8px;background:currentColor;flex:none}
+.st.ok{color:var(--ok)}.st.warn{color:var(--warn)}.st.crit{color:var(--crit)}.st.info{color:var(--sensor)}
+.st.live::before{border-radius:50%}
+.st.hollow::before{background:transparent;border:1.5px solid currentColor}
+.st.fill{padding:3px 7px;background:currentColor}
+.st.fill span{color:var(--ink)}
+.st.fill::before{display:none}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:12px;font-weight:500;border:1px solid var(--rule-strong);color:var(--t2);white-space:nowrap}
+.tag.mono{font-family:var(--mono);font-size:11.5px}
+
+.mark{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;color:var(--t3);line-height:1}
+.mark::before{content:"";width:8px;height:8px;border:1.5px solid var(--t3);flex:none}
+.mark.src::before{background:var(--t2);border-color:var(--t2)}
+.mark.pf::before{background:transparent}
+.mark.prob::before{border-style:dashed}
+.mark.inf::before{border-radius:50%}
+.mark.est::before{background:linear-gradient(135deg,var(--t2) 50%,transparent 50%)}
+.legend{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--t2);align-items:center}
+.legend .mark{font-size:12px;color:var(--t2)}
+.legend .mark::before{width:9px;height:9px}
+.legend .mark small{color:var(--t3);font-family:var(--sans);font-size:12px}
+
+/* key value grid: rules only */
+.kv{display:grid;grid-template-columns:1fr auto 36px;gap:0 12px;align-items:center}
+.kv > div{min-height:30px;display:flex;align-items:center;border-bottom:1px solid var(--rule);font-size:13px}
+.kv .k{color:var(--t2)}
+.kv .v{font-family:var(--mono);font-size:12.5px;color:var(--t1);justify-content:flex-end}
+.kv .v small{color:var(--t3);margin-left:3px;font-size:11px}
+.kv .v.edit{border:1px solid var(--rule-strong);height:24px;padding:0 8px;min-width:70px;background:var(--sunken)}
+.kv .p{justify-content:flex-end}
+
+/* ---------- panel mockup ---------- */
+.panel{width:440px;background:var(--panel);border:1px solid var(--rule-strong);font-size:var(--fs-body)}
+.panel[data-density="compact"]{--fs-label:11px;--fs-body:12px;--fs-value:20px;--row-h:30px}
+.panel[data-density="standard"]{--fs-label:12px;--fs-body:13px;--fs-value:24px;--row-h:36px}
+.panel[data-density="relaxed"]{--fs-label:13px;--fs-body:14px;--fs-value:28px;--row-h:42px}
+.ptabs{display:flex;border-bottom:1px solid var(--rule-strong)}
+.ptabs button{appearance:none;background:transparent;border:0;color:var(--t3);font:inherit;font-size:13px;font-weight:500;padding:11px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ptabs button[aria-selected="true"]{color:var(--t1);border-bottom-color:var(--t1)}
+.ptabs .spacer{flex:1}
+.ptabs .tools{display:flex;align-items:center;gap:2px;padding:0 8px}
+.scan{padding:12px 14px 12px;border-bottom:1px solid var(--rule-strong)}
+.scan .top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.scan .top .run{font-family:var(--mono);font-size:12px;color:var(--t1)}
+.scan .top .run span{color:var(--t3)}
+.scan .top .t{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--t3)}
+.scan .top .t b{color:var(--t1);font-weight:500}
+.kstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:0 14px}
+.kstrip .l{font-size:var(--fs-label);color:var(--t3);font-weight:500;white-space:nowrap}
+.kstrip .v{font-size:var(--fs-value);font-weight:400;line-height:1.15;margin-top:2px;display:flex;align-items:baseline;gap:3px}
+.kstrip .v small{font-size:var(--fs-body);color:var(--t3)}
+.kstrip .v.ok{color:var(--ok)}.kstrip .v.crit{color:var(--crit)}.kstrip .v.warn{color:var(--warn)}
+.subtabs{display:flex;gap:14px;padding:9px 14px;border-bottom:1px solid var(--rule);overflow:auto}
+.subtabs button{appearance:none;border:0;background:transparent;color:var(--t3);font:inherit;font-size:12.5px;font-weight:500;padding:0;cursor:pointer;white-space:nowrap;border-bottom:1px solid transparent}
+.subtabs button[aria-pressed="true"]{color:var(--t1);border-bottom-color:var(--t1)}
+.subtabs .spacer{flex:1}
+.subtabs .cust{color:var(--t3);font-size:12px}
+.rail{padding:2px 0 8px}
+.w{border-bottom:1px solid var(--rule)}
+.w:last-child{border-bottom:0}
+.w .head{display:grid;grid-template-columns:16px 1fr auto auto;align-items:center;gap:8px;min-height:var(--row-h);padding:0 10px 0 10px;cursor:pointer;user-select:none}
+.w .head:hover .title{color:#fff}
+.w .head .chev{width:16px;height:16px;display:grid;place-items:center;color:var(--t3);transition:transform 120ms linear}
+.w.open .head .chev{transform:rotate(90deg)}
+.w .head .chev svg{width:9px;height:9px;fill:currentColor}
+.w .head .title{font-size:var(--fs-body);font-weight:500;color:var(--t1);display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.w .head .title .prov{font-family:var(--mono);font-size:11px;color:var(--t3);font-weight:400;overflow:hidden;text-overflow:ellipsis}
+.w .head .sum{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--t3);white-space:nowrap}
+.w .head .sum b{color:var(--t1);font-weight:500}
+.w .head .sum .spark{width:64px;height:16px}
+.w .head .acts{display:flex;gap:2px;opacity:0;transition:opacity 100ms linear}
+.w .head:hover .acts,.w.open .head .acts{opacity:1}
+.w .head .acts button{appearance:none;border:0;background:transparent;color:var(--t3);width:22px;height:22px;display:grid;place-items:center;cursor:pointer}
+.w .head .acts button:hover{color:var(--t1)}
+.w .head .acts button svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.w .head .acts button.on{color:var(--t1)}
+.w .body{display:none;padding:0 14px 14px 34px}
+.w.open .body{display:block}
+.w .body .foot{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid var(--rule);font-size:12px;color:var(--t3)}
+
+/* KPI: ruled rows, open columns */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px}
+.kpis > div{padding:8px 0 9px;border-top:1px solid var(--rule);min-width:0}
+.kpis .l{display:flex;justify-content:space-between;align-items:center;font-size:var(--fs-label);color:var(--t3);font-weight:500}
+.kpis .v{font-size:var(--fs-value);font-weight:400;line-height:1.15;margin-top:2px;display:flex;align-items:baseline;gap:3px}
+.kpis .v small{font-size:var(--fs-body);color:var(--t3)}
+.kpis .v.ok{color:var(--ok)}.kpis .v.warn{color:var(--warn)}.kpis .v.crit{color:var(--crit)}.kpis .v.dim{color:var(--t3)}
+.kpis .s{font-size:12px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* phase chain: a stepper, no boxes */
+.threat .hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.threat .hdr .name{font-weight:500}
+.threat .hdr .cnt{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+.chain{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.chain > div{padding:0 0 6px;border-bottom:2px solid var(--ok)}
+.chain > div.pend{border-bottom-color:var(--rule-strong);color:var(--t3)}
+.chain .k{font-family:var(--mono);font-size:11px;color:var(--t3)}
+.chain .n{font-family:var(--mono);font-size:13px;margin-top:2px;color:var(--t1)}
+.chain .pend .n{color:var(--t3)}
+.survive{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--t2)}
+.survive .bar{flex:1;height:1px;background:var(--rule-strong);position:relative}
+.survive .bar i{position:absolute;left:0;top:-1px;height:3px;width:29.9%;background:var(--threat)}
+.survive b{font-family:var(--mono);font-weight:500;color:var(--t1)}
+.tl{margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--t3);display:flex;gap:12px;flex-wrap:wrap}
+.tl b{color:var(--t2);font-weight:500}
+
+/* gates */
+.gates{display:flex;flex-direction:column}
+.gate{display:grid;grid-template-columns:8px 1fr auto 12px;gap:10px;align-items:center;min-height:32px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .stripe{width:8px;height:8px;background:var(--ok)}
+.gate.fail .stripe{background:var(--crit)}
+.gate .n{font-weight:500;font-size:var(--fs-body)}
+.gate .n span{font-weight:400;color:var(--t3);margin-left:8px;font-size:12px}
+.gate .v{font-family:var(--mono);font-size:12px;color:var(--t1)}
+.gate .v.fail{color:var(--crit)}
+.gate .more{color:var(--t3);font-size:12px;font-family:var(--mono)}
+.gsum{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:12.5px;color:var(--t2)}
+.gsum .st{margin-left:auto}
+
+/* ---------- board stage ---------- */
+.stage{position:relative;height:640px;border:1px solid var(--rule-strong);overflow:hidden;background:var(--board);
+  background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);background-size:80px 80px;background-position:36px 24px}
+.topbar{position:absolute;inset:0 0 auto 0;height:40px;background:var(--panel);border-bottom:1px solid var(--rule-strong);display:flex;align-items:center;gap:8px;padding:0 10px;z-index:5}
+.topbar .brand{font-weight:600;letter-spacing:.14em;font-size:12px;margin-right:8px}
+.topbar .sep{width:1px;height:18px;background:var(--rule-strong);margin:0 4px}
+.topbar .name{font-weight:500;font-size:13px;margin-right:4px}
+.topbar .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.ring{position:absolute;border-radius:50%;border:1px solid}
+.ent{position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--mono);font-size:11px;color:var(--t2);transform:translate(-50%,-50%)}
+.ent i{width:14px;height:14px;border:1.5px solid currentColor;display:block}
+.ent.s{color:var(--sensor)}.ent.e{color:var(--effector)}.ent.c2{color:var(--c2)}.ent.thr{color:var(--threat)}
+.ent.thr i{transform:rotate(45deg);background:currentColor}
+.ent.e i{border-radius:7px 7px 0 0}
+.dock{position:absolute;left:0;top:40px;bottom:0;width:52px;background:var(--panel);border-right:1px solid var(--rule-strong);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;z-index:6}
+.dock button{appearance:none;border:0;background:transparent;width:52px;height:40px;color:var(--t3);display:grid;place-items:center;cursor:pointer;position:relative}
+.dock button:hover{color:var(--t1)}
+.dock button[aria-pressed="true"]{color:var(--t1)}
+.dock button[aria-pressed="true"]::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--t1)}
+.dock button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.dock button .cnt{position:absolute;right:6px;top:4px;font-family:var(--mono);font-size:9.5px;color:var(--t3)}
+.dock .gap{flex:1}
+.dock .search{border-bottom:1px solid var(--rule);margin-bottom:6px}
+.fly{position:absolute;left:52px;top:40px;width:320px;max-height:calc(100% - 80px);background:var(--panel);border-right:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong);z-index:7;display:none;flex-direction:column;overflow:hidden}
+.fly.open{display:flex}
+.fly .fh{display:flex;align-items:center;gap:8px;padding:9px 8px 9px 14px;border-bottom:1px solid var(--rule)}
+.fly .fh .t{font-weight:500;font-size:13px}
+.fly .fh .t span{font-family:var(--mono);font-size:11px;color:var(--t3);margin-left:6px}
+.fly .fh .x{margin-left:auto}
+.fly .fs{padding:8px 14px;border-bottom:1px solid var(--rule)}
+.fly .fs .input{height:28px}
+.fly .fs .input span{color:var(--t3)}
+.fly .fs .input kbd{font-family:var(--mono);font-size:10.5px;color:var(--t3)}
+.fly .grp{padding:6px 0 4px}
+.fly .grp .gl{display:flex;align-items:center;padding:6px 14px 4px;font-size:12px;color:var(--t3);font-weight:500}
+.fly .grp .gl span{margin-left:auto;font-family:var(--mono);font-weight:400}
+.fly .it{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;padding:0 14px;height:30px;cursor:grab;font-size:12.5px}
+.fly .it:hover{background:var(--sunken)}
+.fly .it i{width:11px;height:11px;border:1.5px solid var(--sensor);display:block}
+.fly .it.e i{border-color:var(--effector);border-radius:6px 6px 0 0}
+.fly .it.thr i{border-color:var(--threat);background:var(--threat);transform:rotate(45deg) scale(.8)}
+.fly .it .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fly .it .n span{color:var(--t3);margin-left:6px;font-size:11.5px}
+.fly .it .k{font-family:var(--mono);font-size:10.5px;color:var(--t3)}
+.fly .ff{padding:8px 14px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t3)}
+.fly .ff .btn{margin-left:auto}
+.hud{position:absolute;left:600px;top:104px;width:300px;background:var(--panel);border:1px solid var(--rule-strong);z-index:4;font-size:12.5px}
+.hud .hh{display:flex;align-items:flex-start;gap:8px;padding:10px 12px 8px;border-bottom:1px solid var(--rule)}
+.hud .hh .t{font-weight:500;font-size:13px;line-height:1.2}
+.hud .hh .t span{display:block;color:var(--t3);font-weight:400;font-size:11.5px;margin-top:2px}
+.hud .hh .st{margin-left:auto;margin-top:2px}
+.hud .hk{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;padding:8px 12px;border-bottom:1px solid var(--rule)}
+.hud .hk .l{font-size:11.5px;color:var(--t3);font-weight:500}
+.hud .hk .v{font-family:var(--mono);font-size:13px;margin-top:2px}
+.hud .hk .v small{color:var(--t3);font-size:11px}
+.hud .hr{display:grid;grid-template-columns:70px 1fr;gap:2px 10px;padding:8px 12px;font-size:12px}
+.hud .hr .k{color:var(--t3);font-size:11.5px;font-weight:500;line-height:18px}
+.hud .hr .v{font-family:var(--mono);font-size:12px;color:var(--t1);line-height:18px}
+.hud .hr .v.dim{color:var(--t3)}
+.hud .hf{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--rule)}
+.hud .hf .btn.ghost{margin-left:auto}
+.timebar{position:absolute;left:52px;right:0;bottom:0;height:40px;background:var(--panel);border-top:1px solid var(--rule-strong);display:flex;align-items:center;gap:12px;padding:0 12px;z-index:5;font-family:var(--mono);font-size:12px;color:var(--t3)}
+.timebar .scrub{flex:1;height:1px;background:var(--rule-strong);position:relative}
+.timebar .scrub i{position:absolute;left:0;top:0;height:1px;width:72%;background:var(--t1)}
+.timebar .scrub b{position:absolute;left:72%;top:50%;width:9px;height:9px;background:var(--t1);transform:translate(-50%,-50%)}
+.timebar .scrub em{position:absolute;top:-4px;width:1px;height:9px;background:var(--t3)}
+.timebar .scrub em.k{background:var(--effector)}
+.timebar .cur b{color:var(--t1);font-weight:500}
+.drawer{position:absolute;left:52px;right:0;bottom:40px;height:0;background:var(--panel);border-top:1px solid var(--rule-strong);z-index:6;overflow:hidden;transition:height 160ms ease-out}
+.drawer.open{height:250px}
+.drawer .dh{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--rule)}
+.drawer .dh .t{font-weight:500;font-size:13px}
+.drawer .dh .prov{font-family:var(--mono);font-size:11.5px;color:var(--t3)}
+.drawer .dh .x{margin-left:auto}
+.drawer .db{display:grid;grid-template-columns:1.1fr 1fr;height:calc(100% - 41px)}
+.drawer .db > div{padding:10px 14px;overflow:auto}
+.drawer .db > div:first-child{border-right:1px solid var(--rule)}
+.drawer .gate{min-height:30px}
+.caveats{display:flex;flex-direction:column;gap:8px}
+.caveats .cv{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start;font-size:12.5px;color:var(--t2);line-height:1.4}
+.caveats .cv .st{margin-top:2px}
+.caveats .cv b{color:var(--t1);font-weight:500}
+.hint{position:absolute;left:386px;top:52px;z-index:5;font-size:12px;color:var(--t3);font-family:var(--mono)}
+
+/* ---------- inspector ---------- */
+.insp{width:400px;background:var(--panel);border:1px solid var(--rule-strong)}
+.insp .ih{padding:12px 14px 10px;border-bottom:1px solid var(--rule);display:flex;gap:10px;align-items:flex-start}
+.insp .ih .glyph{width:26px;height:26px;border:1.5px solid var(--sensor);display:grid;place-items:center;font-family:var(--mono);font-size:11px;color:var(--sensor);flex:none;margin-top:1px}
+.insp .ih .t{font-weight:500;font-size:14px;line-height:1.2}
+.insp .ih .t span{display:block;color:var(--t3);font-weight:400;font-size:12px;margin-top:2px}
+.insp .ih .st{margin-left:auto;margin-top:4px}
+.insp .inav{display:flex;gap:14px;border-bottom:1px solid var(--rule-strong);padding:0 14px;overflow:auto}
+.insp .inav button{appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--t3);font:inherit;font-size:12.5px;font-weight:500;padding:9px 0;cursor:pointer;white-space:nowrap}
+.insp .inav button[aria-selected="true"]{color:var(--t1);border-bottom-color:var(--t1)}
+.insp .inav button .n{font-family:var(--mono);font-size:10.5px;color:var(--t3);margin-left:4px}
+.insp .sec{padding:12px 14px;border-bottom:1px solid var(--rule)}
+.insp .sec:last-child{border-bottom:0}
+.insp .sec .sh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.insp .sec .sh .t{font-weight:500;font-size:13px}
+.insp .sec .sh .m{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--t3)}
+.ringrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;min-height:30px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--t2)}
+.ringrow:last-child{border-bottom:0}
+.ringrow .seg.sm{height:22px}
+.ringrow .seg.sm button{font-size:11.5px;padding:0 8px}
+.netrow{display:grid;grid-template-columns:1fr auto 36px;gap:10px;align-items:center;min-height:30px;border-bottom:1px solid var(--rule);font-size:12.5px}
+.netrow:last-child{border-bottom:0}
+.netrow .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.netrow .r{font-family:var(--mono);font-size:11.5px;color:var(--t2)}
+.netrow .mark{justify-self:end}
+.side-by-side{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:start}
+.side-by-side .why{font-size:13px;color:var(--t2);max-width:52ch}
+.side-by-side .why h4{margin:0 0 8px;font-size:13px;color:var(--t1);font-weight:500}
+.side-by-side .why ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.side-by-side .why li::marker{color:var(--t3);font-family:var(--mono);font-size:11px}
+.side-by-side .why .rulebox{margin-top:18px;padding:10px 0 0;border-top:1px solid var(--rule);font-size:12.5px}
+.side-by-side .why .rulebox b{color:var(--t1);font-weight:500}
+
+/* foundation table */
+.fnd .fr{display:grid;grid-template-columns:36px 1.3fr 1fr 170px;gap:16px;align-items:start;padding:11px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.fnd .fr.h{font-size:12px;color:var(--t3);font-weight:500;border-bottom:1px solid var(--rule-strong);padding:6px 0}
+.fnd .fr .i{font-family:var(--mono);color:var(--t3);font-size:11.5px;padding-top:2px}
+.fnd .fr .w2{color:var(--t2);font-size:12.5px}
+.fnd .fr b{font-weight:500;color:var(--t1)}
+.fnd .fr .mono{font-size:11.5px;color:var(--t2);padding-top:2px}
+/* plan */
+.plan .pr{display:grid;grid-template-columns:36px 1fr 190px 110px;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.plan .pr.h{font-size:12px;color:var(--t3);font-weight:500;border-bottom:1px solid var(--rule-strong)}
+.plan .pr .i{font-family:var(--mono);color:var(--t3);font-size:11.5px}
+.plan .pr .w2{color:var(--t2);font-size:12.5px}
+.plan .pr b{font-weight:500}
+.plan .pr .mono{font-size:11.5px;color:var(--t2)}
+@media (max-width:1000px){
+  .masthead,.section,.side-by-side{grid-template-columns:1fr}
+  .section > aside{position:static}
+  .audit{border-left:0;padding-left:0}
+  .swatches{grid-template-columns:repeat(3,1fr)}
+  .contrast,.rules ol{grid-template-columns:repeat(2,1fr)}
+  .stage{height:720px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <div>
+    <div class="eyebrow">RangeBoard · C-UAS test and evaluation board · interface concepts</div>
+    <h1>Read at a glance.<br>Open on demand.</h1>
+    <p class="brief">The board is the product. The panels beside it serve two jobs at once: a <b>scan surface</b> the operator reads in one second while the run streams, and a <b>detail surface</b> the analyst opens when a number needs its basis. Today both jobs share one long column of 10 pixel text. These concepts split them.</p>
+  </div>
+  <div class="audit">
+    <div class="eyebrow">What the screenshots and the stylesheet show</div>
+    <table>
+      <tr><td>Rules in <code>index.css</code> that set 10 px text</td><td>75</td></tr>
+      <tr><td>Rules at 11 px or smaller in total</td><td>117</td></tr>
+      <tr><td>Rules at 13 px, the declared base size</td><td>5</td></tr>
+      <tr><td>Widgets stacked in the Analysis column</td><td>12</td></tr>
+      <tr><td>Times "planning envelope" appears in one KPI widget</td><td>6</td></tr>
+      <tr><td>Caveat sentences repeated across six gate cards</td><td>18</td></tr>
+      <tr><td>Library width that never leaves the board</td><td>230 px</td></tr>
+      <tr><td>Library rows visible before any scroll</td><td>40+</td></tr>
+    </table>
+  </div>
+</header>
+
+<div class="rules">
+  <div class="eyebrow">Surface rules. Every component on this page follows them.</div>
+  <ol>
+    <li><b>Almost nothing is enclosed.</b> Separation comes from alignment, one hairline rule, and space. A border marks an input or a floating surface, nothing else.</li>
+    <li><b>One radius.</b> Containers are square. Controls are 2 px. Nothing is rounded past that.</li>
+    <li><b>Colour is ink.</b> A state is a text colour, a stroke, or a solid 8 px square. Never a translucent tint over the surface.</li>
+    <li><b>No blur, no shadow, no glow.</b> A floating surface is opaque with a 1 px edge. Depth comes from stacking order, not from effects.</li>
+    <li><b>Three surfaces.</b> Board, panel, and one sunken tone for an input. The board carries a faint grain so it reads as a material.</li>
+    <li><b>Sentence-case labels.</b> Size and colour separate a label from a value. No tracked caps, no condensed cuts.</li>
+    <li><b>One emphasis per region.</b> Values are large and regular weight. Titles are medium weight. Bold does not appear in a panel.</li>
+    <li><b>Mono for machine data only.</b> Ids, times, coordinates, units and keys. Prose, labels and titles are sans.</li>
+  </ol>
+</div>
+
+<!-- ============ 1 TYPE ============ -->
+<section class="section" id="type">
+  <aside>
+    <div class="idx">01</div>
+    <h2>Type system</h2>
+    <p>Two faces, seven roles, one floor. Nothing on a panel is set below 11 px, and a density control moves every role together.</p>
+    <div class="rule"><b>Archivo</b> carries the interface at normal width and regular or medium weight.<br><br><b>JetBrains Mono</b> carries machine data only. Mono no longer carries headings or labels.</div>
+  </aside>
+  <div>
+    <div class="block">
+      <h3>Roles <span>one scale, tabular figures throughout</span></h3>
+      <div class="scale">
+        <div class="role">display</div><div class="s-display">Shahed-136 / Geran-2 OWA</div><div class="spec">26 / 500</div>
+        <div class="role">value</div><div class="s-value">70.1<small>%</small> &nbsp; 5:26 &nbsp; 1<small>/1</small></div><div class="spec">24 / 400 tnum</div>
+        <div class="role">title</div><div class="s-title">Requirement gates</div><div class="spec">13 / 500</div>
+        <div class="role">body</div><div class="s-body">Release once predicted per-shot Pk reaches the effector commit Pk.</div><div class="spec">13 / 400</div>
+        <div class="role">meta</div><div class="s-meta">planning envelope · 0.7 of 1 ships</div><div class="spec">12 / 400</div>
+        <div class="role">label</div><div class="s-label">First detect &nbsp; Kill E[k] &nbsp; Min warning</div><div class="spec">12 / 500 · sentence case</div>
+        <div class="role">machine</div><div class="s-mono">RUN-0001 <span>·</span> T+5:24 <span>/</span> 7:34 <span>·</span> E 6.40 nm, N 0.60 nm</div><div class="spec">12 mono / 400</div>
+      </div>
+      <p class="note"><b>Why the floor is 11 px.</b> The current sheet sets three quarters of its small text at 10 px in a low contrast grey. On a 1440 px laptop at 100 percent zoom that is below the point where the counters close. The label role sits at 12 px in sentence case and is never used for a value.</p>
+    </div>
+    <div class="block">
+      <h3>Density control <span>one setting on the panel header, remembered per user</span></h3>
+      <div class="row">
+        <div class="density" role="group" aria-label="Panel density" data-for="panel-demo">
+          <button aria-pressed="false" data-d="compact">Compact</button>
+          <button aria-pressed="true" data-d="standard">Standard</button>
+          <button aria-pressed="false" data-d="relaxed">Relaxed</button>
+        </div>
+        <span class="note" style="margin:0">Changes the Analysis rail below. Compact tightens row height and value size and holds the 11 px floor.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 PALETTE ============ -->
+<section class="section" id="palette">
+  <aside>
+    <div class="idx">02</div>
+    <h2>Palette and contrast</h2>
+    <p>Warm graphite, three surfaces, two rule weights. Colour appears only where it carries meaning: a state, a channel, a threat.</p>
+    <div class="rule"><b>Chrome is monochrome.</b> Buttons, tabs, rules, focus and selection use the neutral ramp. A pressed control inverts to light ink on dark. That leaves red, blue and orange free to mean threat, sensor and effector everywhere.</div>
+  </aside>
+  <div>
+    <div class="block">
+      <h3>Tokens</h3>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#121313"></div><div class="meta"><b>board</b><code>#121313</code></div></div>
+        <div class="sw"><div class="chip" style="background:#191a1a"></div><div class="meta"><b>panel</b><code>#191a1a</code></div></div>
+        <div class="sw"><div class="chip" style="background:#0e0f0f"></div><div class="meta"><b>sunken</b><code>#0e0f0f · inputs</code></div></div>
+        <div class="sw"><div class="chip" style="background:#2a2c2b"></div><div class="meta"><b>rule</b><code>#2a2c2b</code></div></div>
+        <div class="sw"><div class="chip" style="background:#454846"></div><div class="meta"><b>rule strong</b><code>#454846</code></div></div>
+        <div class="sw"><div class="chip" style="background:#ebe9e3"></div><div class="meta"><b>text 1 · ink</b><code>#ebe9e3 · 14.9:1</code></div></div>
+        <div class="sw"><div class="chip" style="background:#a9a9a3"></div><div class="meta"><b>text 2</b><code>#a9a9a3 · 7.6:1</code></div></div>
+        <div class="sw"><div class="chip" style="background:#74766f"></div><div class="meta"><b>text 3</b><code>#74766f · 3.9:1</code></div></div>
+        <div class="sw"><div class="chip" style="background:#7fc39a"></div><div class="meta"><b>nominal</b><code>#7fc39a</code></div></div>
+        <div class="sw"><div class="chip" style="background:#e2ad55"></div><div class="meta"><b>warning</b><code>#e2ad55</code></div></div>
+        <div class="sw"><div class="chip" style="background:#e46f62"></div><div class="meta"><b>critical</b><code>#e46f62</code></div></div>
+        <div class="sw"><div class="chip" style="background:linear-gradient(90deg,#e25b4e 33%,#6cb0e6 33% 66%,#e4934f 66%)"></div><div class="meta"><b>threat · sensor · effector</b><code>board channels</code></div></div>
+      </div>
+      <div class="contrast">
+        <div style="color:var(--t1)">Primary on panel<code>14.9:1 · values, titles</code></div>
+        <div style="color:var(--t2)">Secondary on panel<code>7.6:1 · body, meta</code></div>
+        <div style="color:var(--t3)">Tertiary on panel<code>3.9:1 · labels at 12 px 500 only</code></div>
+        <div style="color:var(--ok)">Nominal as ink<code>8.9:1 · text, stroke, square</code></div>
+      </div>
+      <p class="note"><b>Why warm.</b> The current sheet and my first draft both used a blue-black ground. Blue-black with matte grey boxes reads as a phone screen. A warm graphite with a faint grain reads as a surface, and it does not fight the sensor blue.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 CONTROLS ============ -->
+<section class="section" id="controls">
+  <aside>
+    <div class="idx">03</div>
+    <h2>Controls, state, marks</h2>
+    <p>Buttons are 28 px at 2 px radius and come in four weights. A pressed control inverts. State is a solid square and a word. Provenance is a mark, not a pill.</p>
+    <div class="rule"><b>What looked improvised before.</b> Every tag on the panel was the same bordered mono box: PF, SRC, DOC, PROB, PASS, FAIL, LIMITS, ENGAGED, TRACK, READY. Basis, status and phase all shared one form, so none of them read at a glance.</div>
+  </aside>
+  <div>
+    <div class="block">
+      <h3>Buttons <span>primary · secondary · ghost · danger</span></h3>
+      <div class="row">
+        <button class="btn primary">Run Monte Carlo <kbd>⌘↵</kbd></button>
+        <button class="btn">Clean reset</button>
+        <button class="btn">Connect from here</button>
+        <button class="btn ghost">Suggest connections</button>
+        <button class="btn danger">Delete</button>
+        <button class="btn icon" aria-label="More"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="2.5" cy="7" r="1.4"/><circle cx="7" cy="7" r="1.4"/><circle cx="11.5" cy="7" r="1.4"/></svg></button>
+        <button class="btn sm">Details</button>
+        <button class="btn sm primary">Apply</button>
+      </div>
+    </div>
+    <div class="block">
+      <h3>Segmented and inputs</h3>
+      <div class="row" style="gap:18px;align-items:flex-end">
+        <div class="field"><label>Launch point</label><div class="seg"><button aria-pressed="false">Max range</button><button aria-pressed="false">Range fraction</button><button aria-pressed="true">Pk commit</button><button aria-pressed="false">Latest launch</button></div></div>
+        <div class="field"><label>ROE</label><div class="seg"><button aria-pressed="false">Hold</button><button aria-pressed="true">Tight</button><button aria-pressed="false">Free</button></div></div>
+        <div class="field"><label>Hostile declaration dwell</label><div class="input mono focus">10<span class="unit">s</span></div></div>
+        <div class="field" style="min-width:220px"><label>Release inside</label><div class="slider"><div class="track"><i></i><b></b></div><span class="val">67 %</span></div></div>
+        <div class="field"><label>Mount height</label><div class="input mono">4<span class="unit">m · PF</span></div></div>
+      </div>
+    </div>
+    <div class="block">
+      <h3>State <span>a solid square and a word · one opaque fill for the headline state</span></h3>
+      <div class="row" style="gap:18px">
+        <span class="st ok live">Live</span>
+        <span class="st hollow">Paused</span>
+        <span class="st ok">Valid</span>
+        <span class="st warn">Valid, limited</span>
+        <span class="st crit fill"><span>Requirements not met · 5/6</span></span>
+        <span class="st warn hollow">3 caveats</span>
+        <span class="tag mono">MC 30 · seed 4821</span>
+        <span class="st ok">Track</span>
+        <span class="st warn">Target</span>
+        <span class="st info">Routing</span>
+        <span class="st crit">Undetected</span>
+        <span class="st">Ready</span>
+      </div>
+      <p class="note">The square carries the colour. The word carries the meaning. The hollow square means a state that is not yet decided or a count that qualifies. The filled bar is reserved for the one headline judgement on a panel, and there is at most one on screen.</p>
+    </div>
+    <div class="block">
+      <h3>Provenance marks <span>replace the PF · SRC · DOC · PROB pills</span></h3>
+      <div class="legend">
+        <span class="mark src">SRC <small>sourced, manufacturer or test doc</small></span>
+        <span class="mark pf">PF <small>planning factor</small></span>
+        <span class="mark est">EST <small>estimated from a related figure</small></span>
+        <span class="mark prob">PROB <small>probable integration</small></span>
+        <span class="mark inf">INF <small>inferred</small></span>
+      </div>
+      <div class="kv" style="max-width:420px;margin-top:14px">
+        <div class="k">WEZ</div><div class="v">0.5 – 10.8<small>nm</small></div><div class="p"><span class="mark src"></span></div>
+        <div class="k">Single-shot Pk</div><div class="v">0.8</div><div class="p"><span class="mark pf"></span></div>
+        <div class="k">Flyout speed</div><div class="v">78<small>m/s</small></div><div class="p"><span class="mark src"></span></div>
+        <div class="k">Average flyout speed</div><div class="v">55<small>m/s</small></div><div class="p"><span class="mark est"></span></div>
+        <div class="k">Magazine</div><div class="v">4</div><div class="p"><span class="mark pf"></span></div>
+      </div>
+      <p class="note">The mark sits in a fixed column after the value. Its shape encodes the basis, so a row of figures scans as "solid, hollow, solid, half, hollow" and the eye finds the planning factors without reading a single tag. Hover or focus shows the full word and the source line.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 ANALYSIS RAIL ============ -->
+<section class="section" id="analysis">
+  <aside>
+    <div class="idx">04</div>
+    <h2>Analysis rail</h2>
+    <p>The right panel becomes three layers. A pinned <b>scan strip</b> that never scrolls. A <b>rail</b> of one-line widget rows that each carry their headline figure. A <b>focus drawer</b> on the board for the one widget that needs width.</p>
+    <div class="rule"><b>Rules the rail enforces.</b><br>Every widget row shows its headline figure while closed.<br>Provenance is stated once per widget, in the row, not once per tile.<br>Caveats are counted in the row and listed once in the drawer, never repeated per card.<br>Pin sends a figure to the scan strip. Focus sends the widget to the drawer.</div>
+  </aside>
+  <div>
+    <div class="side-by-side">
+      <div class="panel" id="panel-demo" data-density="standard">
+        <div class="ptabs" role="tablist">
+          <button role="tab" aria-selected="false">Inspect</button>
+          <button role="tab" aria-selected="false">Test cards</button>
+          <button role="tab" aria-selected="false">Model</button>
+          <button role="tab" aria-selected="true">Analysis</button>
+          <div class="spacer"></div>
+          <div class="tools"><button class="btn ghost icon sm" aria-label="Density"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 3h10M1 6h10M1 9h10"/></svg></button><button class="btn ghost icon sm" aria-label="Customize"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="9" height="9"/><path d="M1.5 6h9M6 1.5v9"/></svg></button></div>
+        </div>
+        <div class="scan">
+          <div class="top">
+            <span class="st ok live">Live</span>
+            <span class="run">RUN-0001 <span>· MC 30 · seed 4821</span></span>
+            <span class="t"><b>T+5:24</b> / 7:34</span>
+          </div>
+          <div class="kstrip">
+            <div><div class="l">Defeat</div><div class="v ok">70.1<small>%</small></div></div>
+            <div><div class="l">Gates</div><div class="v crit">5<small>/6</small></div></div>
+            <div><div class="l">Leakers</div><div class="v">0.03</div></div>
+            <div><div class="l">First effect</div><div class="v">5:26</div></div>
+          </div>
+        </div>
+        <div class="subtabs">
+          <button aria-pressed="true">Run</button><button aria-pressed="false">Sensors</button><button aria-pressed="false">Effectors</button><button aria-pressed="false">System</button><button aria-pressed="false">Threat</button>
+          <div class="spacer"></div><span class="cust">6 of 12 shown</span>
+        </div>
+        <div class="rail">
+
+          <div class="w open">
+            <div class="head" data-toggle>
+              <span class="chev"><svg viewBox="0 0 10 10"><path d="M3 1l4 4-4 4z"/></svg></span>
+              <span class="title">KPI tiles <span class="prov">planning envelope · MC mean</span></span>
+              <span class="sum"><b>1/1</b> detect <b>1/1</b> track <b>1.0</b> kill</span>
+              <span class="acts"><button class="on" title="Pinned to scan strip"><svg viewBox="0 0 12 12"><path d="M7 1l4 4-2 1-3 3-1 2-4-4 2-1 3-3z"/></svg></button><button title="Focus on board"><svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button></span>
+            </div>
+            <div class="body">
+              <div class="kpis">
+                <div><div class="l">Detect</div><div class="v">1<small>/1</small></div><div class="s">±0 · 0:33 first</div></div>
+                <div><div class="l">Track now</div><div class="v">1<small>/1</small></div><div class="s">100 % hold</div></div>
+                <div><div class="l">ID / class</div><div class="v">1<small>/1</small></div><div class="s">hostile at 0:33</div></div>
+                <div><div class="l">Engaged</div><div class="v">1<small>/1</small></div><div class="s">1 salvo · 1 kin</div></div>
+                <div><div class="l">Kill E[k]</div><div class="v">1.0</div><div class="s">±0.06 (95 %)</div></div>
+                <div><div class="l">Leak E[n]</div><div class="v dim">—</div><div class="s">no asset placed</div></div>
+              </div>
+              <div class="foot"><span class="mark pf">PF</span><span>6 of 13 tiles · 30 replicates · observed through 5:23</span><span style="margin-left:auto"><button class="btn ghost sm">Edit tiles</button></span></div>
+            </div>
+          </div>
+
+          <div class="w">
+            <div class="head" data-toggle>
+              <span class="chev"><svg viewBox="0 0 10 10"><path d="M3 1l4 4-4 4z"/></svg></span>
+              <span class="title">Expected kills <span class="prov">0.5 s · band</span></span>
+              <span class="sum"><svg class="spark" viewBox="0 0 64 16" preserveAspectRatio="none"><path d="M0 15h20v-1h4v-6h6v-2h4v-1h4v-2h3v-1h23" fill="none" stroke="#e2ad55" stroke-width="1.4"/><path d="M0 15h2v-13h62" fill="none" stroke="#6cb0e6" stroke-width="1.2"/></svg><b>0.7</b> of 1</span>
+              <span class="acts"><button title="Pin"><svg viewBox="0 0 12 12"><path d="M7 1l4 4-2 1-3 3-1 2-4-4 2-1 3-3z"/></svg></button><button title="Focus"><svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button></span>
+            </div>
+            <div class="body"><p class="note" style="margin:0">Chart opens here at panel width, or in the focus drawer at board width.</p></div>
+          </div>
+
+          <div class="w open">
+            <div class="head" data-toggle>
+              <span class="chev"><svg viewBox="0 0 10 10"><path d="M3 1l4 4-4 4z"/></svg></span>
+              <span class="title">Live threat picture <span class="prov">T+5:24</span></span>
+              <span class="sum"><b>1</b> trk · survives <b>29.9 %</b></span>
+              <span class="acts"><button title="Pin"><svg viewBox="0 0 12 12"><path d="M7 1l4 4-2 1-3 3-1 2-4-4 2-1 3-3z"/></svg></button><button title="Focus"><svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button></span>
+            </div>
+            <div class="body">
+              <div class="threat">
+                <div class="hdr"><span class="name">Shahed-136 / Geran-2 OWA (G3)</span><span class="st warn">Effect obs</span><span class="cnt">1 trk · 1 ship</span></div>
+                <div class="chain">
+                  <div><div class="k">DET</div><div class="n">1/1</div></div>
+                  <div><div class="k">TRK</div><div class="n">1/1</div></div>
+                  <div><div class="k">ID</div><div class="n">1/1</div></div>
+                  <div><div class="k">TGT</div><div class="n">1/1</div></div>
+                  <div><div class="k">ENG</div><div class="n">1/1</div></div>
+                  <div class="pend"><div class="k">FX</div><div class="n">0/1</div></div>
+                </div>
+                <div class="survive"><span>Survives</span><div class="bar"><i></i></div><b>29.9 %</b></div>
+                <div class="tl"><span>D <b>0:33</b></span><span>ID <b>0:33</b></span><span>ENG <b>0:59</b></span><span>FX <b>5:26</b></span><span>gap <b>0:00</b></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="w">
+            <div class="head" data-toggle>
+              <span class="chev"><svg viewBox="0 0 10 10"><path d="M3 1l4 4-4 4z"/></svg></span>
+              <span class="title">Full-run projection <span class="prov">not live · conditional</span></span>
+              <span class="sum"><b>70.1 %</b> defeat · <b>0:33</b> · <b>5:26</b></span>
+              <span class="acts"><button class="on" title="Pinned"><svg viewBox="0 0 12 12"><path d="M7 1l4 4-2 1-3 3-1 2-4-4 2-1 3-3z"/></svg></button><button title="Focus"><svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button></span>
+            </div>
+            <div class="body">
+              <div class="kpis">
+                <div><div class="l">Defeat</div><div class="v ok">70.1<small>%</small></div><div class="s">0.7 of 1 ships</div></div>
+                <div><div class="l">Leakers</div><div class="v dim">—</div><div class="s">no asset placed</div></div>
+                <div><div class="l">Late E[k]</div><div class="v">0</div><div class="s">after arrival</div></div>
+                <div><div class="l">First detect</div><div class="v">0:33</div><div class="s">earliest track</div></div>
+                <div><div class="l">First effect</div><div class="v">5:26</div><div class="s">kill mass removed</div></div>
+                <div><div class="l">Salvos</div><div class="v">1</div><div class="s">1 kin · 0 DE · 0 EW</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="w open">
+            <div class="head" data-toggle>
+              <span class="chev"><svg viewBox="0 0 10 10"><path d="M3 1l4 4-4 4z"/></svg></span>
+              <span class="title">Requirement gates <span class="prov">planning envelope</span></span>
+              <span class="sum"><span class="st crit">5/6 met</span></span>
+              <span class="acts"><button class="on" title="Pinned"><svg viewBox="0 0 12 12"><path d="M7 1l4 4-2 1-3 3-1 2-4-4 2-1 3-3z"/></svg></button><button title="Focus" data-focus><svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button></span>
+            </div>
+            <div class="body">
+              <div class="gsum"><span>Test-defined thresholds. No MC probability of pass.</span><span class="st warn hollow">3 caveats</span></div>
+              <div class="gates">
+                <div class="gate"><span class="stripe"></span><span class="n">Detect <span>first 0:33</span></span><span class="v">1/1</span><span class="more">›</span></div>
+                <div class="gate"><span class="stripe"></span><span class="n">Track <span>held at first shot</span></span><span class="v">1/1</span><span class="more">›</span></div>
+                <div class="gate"><span class="stripe"></span><span class="n">Identify <span>hostile</span></span><span class="v">1/1</span><span class="more">›</span></div>
+                <div class="gate"><span class="stripe"></span><span class="n">Target <span>window 4:47</span></span><span class="v">1/1</span><span class="more">›</span></div>
+                <div class="gate"><span class="stripe"></span><span class="n">Engage <span>1 salvo</span></span><span class="v">1/1</span><span class="more">›</span></div>
+                <div class="gate fail"><span class="stripe"></span><span class="n">Survival limit <span>≤ 10 % per track</span></span><span class="v fail">70.1 % defeat</span><span class="more">›</span></div>
+              </div>
+              <div class="foot"><span>Thresholds: detect Pd 0.5 · track 0.9</span><span style="margin-left:auto"><button class="btn ghost sm" data-focus>Open on board</button></span></div>
+            </div>
+          </div>
+
+          <div class="w">
+            <div class="head" data-toggle>
+              <span class="chev"><svg viewBox="0 0 10 10"><path d="M3 1l4 4-4 4z"/></svg></span>
+              <span class="title">Run validity</span>
+              <span class="sum"><span class="st warn">Valid, limited</span><b>3</b> limiting</span>
+              <span class="acts"><button title="Pin"><svg viewBox="0 0 12 12"><path d="M7 1l4 4-2 1-3 3-1 2-4-4 2-1 3-3z"/></svg></button><button title="Focus"><svg viewBox="0 0 12 12"><path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8"/></svg></button></span>
+            </div>
+            <div class="body">
+              <div class="caveats">
+                <div class="cv"><span class="st warn">Limits</span><span><b>No defended asset placed.</b> Warning time is not measurable and no track has an arrival time.</span></div>
+                <div class="cv"><span class="st warn">Limits</span><span><b>Point values from the threshold envelope.</b> Run Monte Carlo for an interval.</span></div>
+                <div class="cv"><span class="st hollow">Basis</span><span>Environment, track init, doctrine, kinetic Pk are planning factors, not validated models.</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="why">
+        <h4>What changed and why</h4>
+        <ol>
+          <li><b>Scan strip.</b> Four pinned figures and the run clock stay on screen at every scroll depth. The operator reads live state without hunting. Pins are per user and per tab.</li>
+          <li><b>Rows carry their headline.</b> A closed widget is no longer an empty caps title. It shows the one figure or state you would open it for, so most widgets stay closed most of the time.</li>
+          <li><b>Provenance once per widget.</b> "Planning envelope" moved from six tile captions into one row caption and one mark in the footer. Tile captions now carry a fact the tile alone owns.</li>
+          <li><b>Gates are rows, not cards.</b> Six gates fit in 200 px with a square, a value and a chevron. The eighteen repeated caveat sentences became one count and one list.</li>
+          <li><b>Sub-tabs filter the rail.</b> Run, Sensors, Effectors, System and Threat show a subset of the same twelve widgets. A widget can sit in two tabs. "Customize" becomes a count that opens the picker.</li>
+          <li><b>Hover reveals actions.</b> Pin and focus appear on hover or when open, so the row stays clean while the run streams.</li>
+        </ol>
+        <div class="rulebox"><b>Try it.</b> Click a row title to open or close it. Use the density control in section 01. Press <b>Focus</b> or <b>Open on board</b> on Requirement gates to see the drawer in section 05.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 BOARD, LIBRARY DOCK, DRAWER ============ -->
+<section class="section" id="board">
+  <aside>
+    <div class="idx">05</div>
+    <h2>Library dock and focus drawer</h2>
+    <p>The library leaves the layout. A 52 px dock holds one glyph per category. A category opens an opaque flyout over the board, and the flyout closes on drop or on Escape. Search is the first control, and ⌘K opens it from anywhere.</p>
+    <div class="rule"><b>The board never reflows.</b> The flyout and the drawer sit over the canvas. The dock replaces 230 px of permanent column with 52 px.<br><br><b>The drawer</b> is where a widget goes when it needs width: a chart at full run length, a gate table with its caveats beside it, an event ledger. One at a time, closes with Escape.<br><br><b>The scrubber</b> carries event ticks: detections in grey, shots in orange. The engagement timeline is no longer a collapsed strip.</div>
+  </aside>
+  <div>
+    <div class="stage" id="stage">
+      <div class="topbar">
+        <span class="brand">RANGEBOARD</span>
+        <div class="seg sm"><button aria-pressed="true">Board</button><button aria-pressed="false">T&amp;E Ops</button></div>
+        <span class="sep"></span>
+        <span class="name">Untitled scenario</span>
+        <span class="sep"></span>
+        <div class="seg sm"><button aria-pressed="true">Select</button><button aria-pressed="false">Boundary</button><button aria-pressed="false">Connect</button><button aria-pressed="false">Path</button><button aria-pressed="false">Calibrate</button></div>
+        <button class="btn ghost sm">View ▾</button>
+        <div class="right">
+          <span class="tag">ROE Tight</span>
+          <span class="tag mono">Saved 09:39</span>
+          <button class="btn ghost icon sm" aria-label="Undo">↶</button><button class="btn ghost icon sm" aria-label="Redo">↷</button>
+        </div>
+      </div>
+
+      <div class="dock" role="toolbar" aria-label="Library">
+        <button class="search" title="Search library ⌘K" data-cat="search"><svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5L17 17"/></svg></button>
+        <button title="Integrated systems" data-cat="sys"><svg viewBox="0 0 20 20"><rect x="3" y="3" width="6" height="6"/><rect x="11" y="3" width="6" height="6"/><rect x="3" y="11" width="6" height="6"/><rect x="11" y="11" width="6" height="6"/></svg><span class="cnt">13</span></button>
+        <button title="Sensors" data-cat="sensors" aria-pressed="true"><svg viewBox="0 0 20 20"><path d="M10 17V9M4 8a8 8 0 0 1 12 0M6.5 10.5a5 5 0 0 1 7 0"/><circle cx="10" cy="17" r="1"/></svg><span class="cnt">38</span></button>
+        <button title="Effectors" data-cat="effectors"><svg viewBox="0 0 20 20"><path d="M4 16l6-12 6 12M7 12h6"/></svg><span class="cnt">25</span></button>
+        <button title="Command and control" data-cat="c2"><svg viewBox="0 0 20 20"><circle cx="10" cy="5" r="2"/><circle cx="4" cy="15" r="2"/><circle cx="16" cy="15" r="2"/><path d="M10 7v3M10 10l-5 3M10 10l5 3"/></svg><span class="cnt">10</span></button>
+        <button title="Threats" data-cat="threats"><svg viewBox="0 0 20 20"><path d="M10 3l7 7-7 7-7-7z"/></svg><span class="cnt">15</span></button>
+        <button title="Assets and markers" data-cat="assets"><svg viewBox="0 0 20 20"><path d="M4 17V8l6-4 6 4v9M8 17v-5h4v5"/></svg><span class="cnt">2</span></button>
+        <div class="gap"></div>
+        <button title="Recent"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg></button>
+        <button title="Import / export"><svg viewBox="0 0 20 20"><path d="M10 3v10M6 9l4 4 4-4M4 17h12"/></svg></button>
+      </div>
+
+      <div class="fly open" id="fly" role="dialog" aria-label="Sensors">
+        <div class="fh"><span class="t" id="fly-title">Sensors <span>38</span></span><button class="btn ghost icon sm x" aria-label="Close" data-fly-close>✕</button></div>
+        <div class="fs"><div class="input"><span>Filter sensors…</span><kbd>⌘K</kbd></div></div>
+        <div style="overflow:auto">
+          <div class="grp"><div class="gl">Pinned <span>3</span></div>
+            <div class="it"><i></i><span class="n">AN/TPQ-50 LSTAR <span>SRC</span></span><span class="k">1</span></div>
+            <div class="it"><i></i><span class="n">AN/TPQ-53 multi-mission radar</span><span class="k">2</span></div>
+            <div class="it"><i></i><span class="n">RPS-42 radar panel <span>RADA</span></span><span class="k">3</span></div>
+          </div>
+          <div class="grp"><div class="gl">Radar <span>18</span></div>
+            <div class="it"><i></i><span class="n">KuRFS fire-control radar <span>Raytheon</span></span><span class="k"></span></div>
+            <div class="it"><i></i><span class="n">EchoShield tracking radar <span>Echodyne</span></span><span class="k"></span></div>
+            <div class="it"><i></i><span class="n">Giraffe 1X 3D radar <span>Saab</span></span><span class="k"></span></div>
+            <div class="it"><i></i><span class="n">Sentinel A4 air defense radar</span><span class="k"></span></div>
+          </div>
+          <div class="grp"><div class="gl">RF <span>8</span></div>
+            <div class="it"><i style="border-color:var(--effector)"></i><span class="n">RfOne Mk2 RF sensor <span>Dronebuster</span></span><span class="k"></span></div>
+            <div class="it"><i style="border-color:var(--effector)"></i><span class="n">CORIAN passive RF array</span><span class="k"></span></div>
+          </div>
+          <div class="grp"><div class="gl">EO/IR <span>7</span></div>
+            <div class="it"><i style="border-color:#b39ae6"></i><span class="n">CM262 EO/IR/SWIR gimbal <span>CACI</span></span><span class="k"></span></div>
+            <div class="it"><i style="border-color:#b39ae6"></i><span class="n">Ranger HDC MR EO/IR <span>FLIR</span></span><span class="k"></span></div>
+          </div>
+        </div>
+        <div class="ff"><span>Drag to the board, or press a pin number.</span><button class="btn sm">+ New model</button></div>
+      </div>
+      <div class="hint">flyout is opaque · board keeps its size</div>
+
+      <div class="ring" style="left:400px;top:140px;width:560px;height:560px;border-color:var(--sensor);opacity:.55"></div>
+      <div class="ring" style="left:530px;top:270px;width:300px;height:300px;border-color:var(--sensor);opacity:.4;border-style:dashed"></div>
+      <div class="ring" style="left:330px;top:70px;width:700px;height:700px;border-color:var(--threat);opacity:.6"></div>
+      <div class="ring" style="left:760px;top:250px;width:150px;height:150px;border-color:var(--effector);opacity:.7"></div>
+      <div class="ent s" style="left:690px;top:400px"><i></i>AN/TPQ-50 1</div>
+      <div class="ent s" style="left:600px;top:445px"><i></i>AN/TPQ-53 1</div>
+      <div class="ent c2" style="left:645px;top:425px"><i></i>FAAD C2 1</div>
+      <div class="ent e" style="left:835px;top:325px"><i></i>P-HEL 20 kW 1</div>
+      <div class="ent e" style="left:720px;top:430px"><i></i>MEROPS 1</div>
+      <div class="ent thr" style="left:560px;top:290px"><i></i>SHAHED-136 1</div>
+
+      <div class="hud">
+        <div class="hh"><span class="t">Shahed-136 / Geran-2 OWA (G3) 1<span>Red air · Group 3 · one-way attack</span></span><span class="st warn">Engaged</span></div>
+        <div class="hk">
+          <div><div class="l">Position</div><div class="v">W 3.66 <small>nm</small></div><div class="v" style="margin-top:0">N 8.48 <small>nm</small></div></div>
+          <div><div class="l">Speed / hdg</div><div class="v">97 <small>kt</small></div><div class="v" style="margin-top:0">147°</div></div>
+          <div><div class="l">Alt</div><div class="v">2,000 <small>ft</small></div><div class="v" style="margin-top:0;color:var(--t3)">band 0.2–16 k</div></div>
+        </div>
+        <div class="hr">
+          <span class="k">Hold</span><span class="v">2 sensors</span>
+          <span class="k">Class</span><span class="v">hostile · 0:33</span>
+          <span class="k">Salvos</span><span class="v">1 kin · 0 DE · 0 EW</span>
+          <span class="k">Effects</span><span class="v">E[k] 0.70 · 0 landed</span>
+          <span class="k">Closest</span><span class="v dim">no defended asset</span>
+        </div>
+        <div class="hf"><button class="btn sm">Inspect</button><button class="btn sm">Path</button><button class="btn ghost sm">Model · 0.5 s</button></div>
+      </div>
+
+      <div class="drawer" id="drawer">
+        <div class="dh"><span class="t">Requirement gates</span><span class="st crit">5/6 met</span><span class="prov">planning envelope · test-defined thresholds · RUN-0001 · T+5:24</span><button class="btn ghost icon sm x" aria-label="Close" data-drawer-close>✕</button></div>
+        <div class="db">
+          <div>
+            <div class="gates">
+              <div class="gate"><span class="stripe"></span><span class="n">Detect <span>first detection 0:33 · no defended asset placed</span></span><span class="v">1/1</span><span class="more">›</span></div>
+              <div class="gate"><span class="stripe"></span><span class="n">Track <span>sensor hold at first shot</span></span><span class="v">1/1 held</span><span class="more">›</span></div>
+              <div class="gate"><span class="stripe"></span><span class="n">Identify <span>every track reaches hostile</span></span><span class="v">1/1 hostile</span><span class="more">›</span></div>
+              <div class="gate"><span class="stripe"></span><span class="n">Target <span>shortest selected window 4:47</span></span><span class="v">1/1 usable</span><span class="more">›</span></div>
+              <div class="gate"><span class="stripe"></span><span class="n">Engage <span>1 total salvo assigned</span></span><span class="v">1/1 engaged</span><span class="more">›</span></div>
+              <div class="gate fail"><span class="stripe"></span><span class="n">Survival limit <span>requirement ≤ 10 % per track · 1 blocking track</span></span><span class="v fail">70.1 % defeat</span><span class="more">›</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="label" style="margin-bottom:8px">Caveats · apply to every gate</div>
+            <div class="caveats">
+              <div class="cv"><span class="st warn">Limits</span><span><b>No defended asset placed.</b> Warning time is not measurable and no track has an arrival time.</span></div>
+              <div class="cv"><span class="st warn">Limits</span><span><b>Point values from the threshold envelope.</b> Run Monte Carlo for an interval.</span></div>
+              <div class="cv"><span class="st hollow">Basis</span><span>Environment, track init, doctrine and kinetic Pk are planning factors, not validated models.</span></div>
+            </div>
+            <div class="row" style="margin-top:12px"><button class="btn sm primary">Run Monte Carlo</button><button class="btn sm">Thresholds</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="timebar">
+        <button class="btn icon sm" aria-label="Pause">❚❚</button>
+        <button class="btn ghost sm">↤ Reset</button>
+        <span>RUN-0001</span>
+        <span class="cur"><b>T+5:24</b> / 7:34</span>
+        <div class="scrub"><i></i><em style="left:7%"></em><em style="left:7.5%"></em><em class="k" style="left:13%"></em><em class="k" style="left:71%"></em><b></b></div>
+        <div class="seg sm"><button aria-pressed="false">1×</button><button aria-pressed="true">5×</button><button aria-pressed="false">20×</button></div>
+        <button class="btn ghost sm">+ Frame</button>
+      </div>
+    </div>
+    <p class="note" style="margin-top:14px"><b>Try it.</b> Click a dock glyph to switch or close the flyout. Press <b>Focus</b> on a rail row in section 04 to open the drawer. Escape closes both. The entity card replaces the fourteen-row mono table with three keyed figures, five facts, and the actions the operator reaches for.</p>
+  </div>
+</section>
+
+<!-- ============ 6 INSPECTOR ============ -->
+<section class="section" id="inspector">
+  <aside>
+    <div class="idx">06</div>
+    <h2>Inspector</h2>
+    <p>The same rail rules, applied to a selected entity. A sticky sub-nav replaces one long scroll. Values sit in a key and value grid with the provenance mark in a fixed third column.</p>
+    <div class="rule"><b>Identity, position and state</b> stay in the header and never scroll away. The Network section shows its count in the tab, so the analyst knows there are six links before opening it.</div>
+  </aside>
+  <div class="side-by-side">
+    <div class="insp">
+      <div class="ih"><span class="glyph">S</span><span class="t">AN/TPQ-50 LSTAR air-surveillance radar 1<span>Sensor · early warning · SRC</span></span><span class="st ok">Track</span></div>
+      <div class="inav" role="tablist">
+        <button role="tab" aria-selected="true">Performance</button>
+        <button role="tab" aria-selected="false">Position</button>
+        <button role="tab" aria-selected="false">Rings</button>
+        <button role="tab" aria-selected="false">Network<span class="n">6</span></button>
+        <button role="tab" aria-selected="false">Notes</button>
+      </div>
+      <div class="sec">
+        <div class="sh"><span class="t">Performance</span><span class="m">planning figures where marked</span></div>
+        <div class="kv">
+          <div class="k">Role</div><div class="v">early warning</div><div class="p"></div>
+          <div class="k">Detection range</div><div class="v">2.7<small>nm</small> at 0.4 m span</div><div class="p"><span class="mark src"></span></div>
+          <div class="k">Azimuth coverage</div><div class="v">360°</div><div class="p"><span class="mark src"></span></div>
+          <div class="k">Elevation coverage</div><div class="v">−16° to 90°</div><div class="p"><span class="mark src"></span></div>
+          <div class="k">Band</div><div class="v">dual</div><div class="p"><span class="mark src"></span></div>
+          <div class="k">Mount height</div><div class="v edit">4<small>m</small></div><div class="p"><span class="mark pf"></span></div>
+        </div>
+        <p class="note" style="margin-top:10px;font-size:12px">Height of the antenna phase centre above ground. The engine takes slant range and radio horizon from it.</p>
+      </div>
+      <div class="sec">
+        <div class="sh"><span class="t">Rings</span><span class="m">global unless overridden</span></div>
+        <div class="ringrow"><span>Placard ring</span><div class="seg sm"><button aria-pressed="true">Global</button><button aria-pressed="false">On</button><button aria-pressed="false">Off</button></div></div>
+        <div class="ringrow"><span>Envelope band</span><div class="seg sm"><button aria-pressed="true">Global</button><button aria-pressed="false">On</button><button aria-pressed="false">Off</button></div></div>
+        <div class="ringrow"><span>Pd contours</span><div class="seg sm"><button aria-pressed="false">Global</button><button aria-pressed="true">On</button><button aria-pressed="false">Off</button></div></div>
+      </div>
+      <div class="sec">
+        <div class="sh"><span class="t">Network</span><span class="m">6 known · 1 connected</span></div>
+        <div class="netrow"><span class="n">FAAD C2 (Northrop Grumman)</span><span class="r">track data</span><span class="mark src"></span></div>
+        <div class="netrow"><span class="n">Picogrid Legion edge node</span><span class="r">C2 interop</span><span class="mark src"></span></div>
+        <div class="netrow"><span class="n">Coyote Block 2 interceptor</span><span class="r">C2 interop</span><span class="mark prob"></span></div>
+        <div class="netrow"><span class="n">Lattice C2 (Anduril)</span><span class="r">cue</span><span class="mark prob"></span></div>
+        <div class="row" style="margin-top:10px"><button class="btn sm">Connect from here</button><button class="btn ghost sm">Suggest connections</button></div>
+      </div>
+    </div>
+    <div class="why">
+      <h4>What changed and why</h4>
+      <ol>
+        <li><b>Header holds identity and state.</b> Name, type, role and the live state stay visible. The name field moves to a rename action, since renaming is rare and reading is constant.</li>
+        <li><b>Sub-nav instead of one scroll.</b> The current Inspector runs Identity, Position, Performance, Rings, Network and Notes end to end. A tab row with counts lets the analyst jump.</li>
+        <li><b>Key, value, mark.</b> Three fixed columns. Values are mono and right aligned so units line up. The mark column is 36 px and always present, so its absence also means something: a fact with no basis to state.</li>
+        <li><b>Editable is visible.</b> Only fields that accept input carry an input frame. Read-only values sit flat. Today every value looks like a control or none does.</li>
+        <li><b>Explanations under the row.</b> The mount height note stays, at 12 px secondary, under the grid it explains, instead of interrupting the grid.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7 FOUNDATION AND FUNCTION ============ -->
+<section class="section" id="foundation">
+  <aside>
+    <div class="idx">07</div>
+    <h2>Foundation and function</h2>
+    <p>Ten changes below the skin. Each one was found in the source, not in a screenshot. The first three come before any panel work.</p>
+    <div class="rule"><b>Evidence.</b> The timeline advances the store on every animation frame and the Inspector subscribes to the whole scenario. The T&amp;E Ops surface carries a second kit of 33 components. The stylesheet has no light theme. Panels carry 11 aria labels in total. The layer state has 17 booleans. Persistence is one localStorage key with no version.</div>
+  </aside>
+  <div>
+    <div class="fnd">
+      <div class="fr h"><span>#</span><span>Change</span><span>What it fixes</span><span>Where</span></div>
+      <div class="fr"><span class="i">F1</span><span><b>Playback cadence.</b> <span class="w2">Advance the store at a fixed 10 Hz simulation tick. The canvas interpolates entity motion between ticks with its own frame loop. Every panel subscribes with a selector, never to the scenario object.</span></span><span class="w2">Sixty re-renders a second of every widget and the Inspector during a run. Scroll stutter, dropped frames, fan noise.</span><span class="mono">TimelineBar · store · Inspector</span></div>
+      <div class="fr"><span class="i">F2</span><span><b>One token layer, one kit.</b> <span class="w2">The board panels and the T&amp;E Ops kit read the same surface, rule, text and ink tokens. Field, segmented, state and provenance exist once.</span></span><span class="w2">Two products in one window. 367 classes on one side, 33 components on the other, no shared primitive.</span><span class="mono">index.css · te/ui/kit.tsx</span></div>
+      <div class="fr"><span class="i">F3</span><span><b>Daylight theme.</b> <span class="w2">A high-contrast light theme from the same tokens: paper ground, ink text, the same three ink colours. Follows the OS by default with a manual switch in the top bar.</span></span><span class="w2">No light theme exists. Outdoor laptops and briefing projectors wash the dark board out.</span><span class="mono">index.css tokens</span></div>
+      <div class="fr"><span class="i">F4</span><span><b>Keyboard on the board.</b> <span class="w2">Tab order across entities, arrow keys nudge, Enter inspects, Escape clears. A visible focus ring on the canvas and on every control. Every icon button gets a name.</span></span><span class="w2">11 aria labels across all panels, 14 focus rules, no keyboard path onto the canvas.</span><span class="mono">CanvasStage · EntityLayer · panels</span></div>
+      <div class="fr"><span class="i">F5</span><span><b>Events on the scrubber.</b> <span class="w2">Detection, classification, shot and effect ticks drawn on the timeline bar from the run record. Hover names the event, click seeks to it.</span></span><span class="w2">The bar is a bare slider. The engagement strip below it is collapsed and easy to miss.</span><span class="mono">TimelineBar · playback</span></div>
+      <div class="fr"><span class="i">F6</span><span><b>View presets.</b> <span class="w2">Four named layer sets the operator can switch and rename: Plan, Live, Debrief, Clean. The seventeen toggles stay under an Advanced disclosure.</span></span><span class="w2">17 booleans behind one menu. Nobody sets them twice the same way.</span><span class="mono">ViewMenu · LayerVisibility</span></div>
+      <div class="fr"><span class="i">F7</span><span><b>Charts drawn to the board.</b> <span class="w2">Live step charts render as one SVG path or a canvas stroke from the same series the widgets already hold. Line weight, grid and type match the board.</span></span><span class="w2">A general charting library rebuilds its tree on each data change at run cadence, and its defaults do not match the board.</span><span class="mono">charts/TimeSeries · TimeSeriesWidget</span></div>
+      <div class="fr"><span class="i">F8</span><span><b>Inspector split by tab.</b> <span class="w2">One file per tab. Each tab subscribes to its own slice. The sticky header and sub-nav from section 06 sit on top.</span></span><span class="w2">One 1,579 line file that re-renders whole on any store change.</span><span class="mono">Inspector · inspector/*</span></div>
+      <div class="fr"><span class="i">F9</span><span><b>Library search.</b> <span class="w2">Fuzzy match across name, maker and role. Recent items first. Numbered pins the operator sets. One list behind the dock flyout and ⌘K.</span></span><span class="w2">Substring filter only, no recents, no pins, a separate command palette.</span><span class="mono">Palette · CommandPalette</span></div>
+      <div class="fr"><span class="i">F10</span><span><b>Versioned persistence.</b> <span class="w2">A schema version on the saved scenario, a migration step on load, and an export file written on every save so a browser reset cannot lose work.</span></span><span class="w2">One localStorage key, no version, no recovery path.</span><span class="mono">io/persist · io/recovery</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8 PLAN ============ -->
+<section class="section" id="plan">
+  <aside>
+    <div class="idx">08</div>
+    <h2>Order of work</h2>
+    <p>Each step stands alone and ships alone. Foundations first, then the two stylesheet steps that change every panel at once, then the panels, then the board.</p>
+    <div class="rule"><b>Reach</b> says how much of the product a step touches. <b>Every panel</b> and <b>App</b> steps go first because later steps build on them.</div>
+  </aside>
+  <div>
+    <div class="plan">
+      <div class="pr h"><span>#</span><span>Change</span><span>Where</span><span>Reach</span></div>
+      <div class="pr"><span class="i">1</span><span><b>Playback cadence and selectors.</b> <span class="w2">F1. Fixed 10 Hz store tick, canvas interpolation, selector subscriptions in every panel.</span></span><span class="mono">TimelineBar · store · Inspector</span><span class="st ok">App</span></div>
+      <div class="pr"><span class="i">2</span><span><b>Type floor and roles.</b> <span class="w2">Replace the 10 px and 10.5 px rules with the label role, move headings from mono caps to sans sentence case, load Archivo and JetBrains Mono.</span></span><span class="mono">index.css tokens</span><span class="st ok">Every panel</span></div>
+      <div class="pr"><span class="i">3</span><span><b>Surface rules and one kit.</b> <span class="w2">F2. Warm graphite, three surfaces, two rule weights, one radius, no shadow or blur, state as ink, the provenance mark. The T&amp;E Ops kit reads the same tokens.</span></span><span class="mono">index.css · te/ui/kit.tsx</span><span class="st ok">Every panel</span></div>
+      <div class="pr"><span class="i">4</span><span><b>Daylight theme.</b> <span class="w2">F3. Light token set, OS follow, manual switch.</span></span><span class="mono">index.css tokens</span><span class="st ok">Every panel</span></div>
+      <div class="pr"><span class="i">5</span><span><b>Versioned persistence.</b> <span class="w2">F10. Schema version, migration on load, export on save.</span></span><span class="mono">io/persist · io/recovery</span><span class="st ok">App</span></div>
+      <div class="pr"><span class="i">6</span><span><b>Widget row and scan strip.</b> <span class="w2">WidgetFrame gains a summary slot, hover actions and a pin. AnalysisPanel gains the pinned strip and the density setting.</span></span><span class="mono">WidgetFrame · AnalysisPanel</span><span class="st">Analysis</span></div>
+      <div class="pr"><span class="i">7</span><span><b>Gates as rows, caveats once.</b> <span class="w2">RequirementGatesWidget renders one row per gate and lifts the shared caveat set to the widget.</span></span><span class="mono">RequirementGatesWidget</span><span class="st">Analysis</span></div>
+      <div class="pr"><span class="i">8</span><span><b>Charts drawn to the board.</b> <span class="w2">F7. One path per series, board line weights, no library tree rebuild.</span></span><span class="mono">charts/TimeSeries</span><span class="st">Analysis</span></div>
+      <div class="pr"><span class="i">9</span><span><b>Inspector split, sub-nav, key-value grid.</b> <span class="w2">F8 and section 06. One file per tab, sticky header, three column grid with the mark column.</span></span><span class="mono">Inspector · inspector/*</span><span class="st">Inspect</span></div>
+      <div class="pr"><span class="i">10</span><span><b>Library dock, flyout, search.</b> <span class="w2">F9 and section 05. Palette becomes a 52 px dock; the category list renders in a flyout; fuzzy search, recents and pins; ⌘K uses the same list.</span></span><span class="mono">Palette · CommandPalette</span><span class="st warn">Board layout</span></div>
+      <div class="pr"><span class="i">11</span><span><b>Focus drawer.</b> <span class="w2">One widget at a time renders in a bottom drawer over the canvas at board width.</span></span><span class="mono">App shell · registry</span><span class="st warn">Board layout</span></div>
+      <div class="pr"><span class="i">12</span><span><b>Scrubber events and entity card.</b> <span class="w2">F5. Detection and shot ticks on the timeline bar. The mono table on the board becomes the keyed card.</span></span><span class="mono">TimelineBar · HudLayer</span><span class="st">Board</span></div>
+      <div class="pr"><span class="i">13</span><span><b>View presets.</b> <span class="w2">F6. Plan, Live, Debrief, Clean. Toggles under Advanced.</span></span><span class="mono">ViewMenu</span><span class="st">Board</span></div>
+      <div class="pr"><span class="i">14</span><span><b>Keyboard on the board.</b> <span class="w2">F4. Tab order, arrow nudge, Enter and Escape, focus ring, names on every icon button.</span></span><span class="mono">CanvasStage · EntityLayer · panels</span><span class="st">Board</span></div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var dens=document.querySelector('.density');
+  var panel=document.getElementById('panel-demo');
+  dens.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    dens.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+    panel.setAttribute('data-density',b.getAttribute('data-d'));
+  });
+  document.querySelectorAll('[data-toggle]').forEach(function(h){
+    h.addEventListener('click',function(e){
+      if(e.target.closest('.acts'))return;
+      h.parentElement.classList.toggle('open');
+    });
+  });
+  var drawer=document.getElementById('drawer');
+  document.querySelectorAll('[data-focus]').forEach(function(b){
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      drawer.classList.add('open');
+      document.getElementById('stage').scrollIntoView({behavior:'smooth',block:'center'});
+    });
+  });
+  document.querySelector('[data-drawer-close]').addEventListener('click',function(){drawer.classList.remove('open')});
+  var fly=document.getElementById('fly');
+  var title=document.getElementById('fly-title');
+  var names={search:'Search library',sys:'Integrated systems <span>13</span>',sensors:'Sensors <span>38</span>',effectors:'Effectors <span>25</span>',c2:'Command and control <span>10</span>',threats:'Threats <span>15</span>',assets:'Assets and markers <span>2</span>'};
+  var dock=document.querySelector('.dock');
+  dock.addEventListener('click',function(e){
+    var b=e.target.closest('button[data-cat]');if(!b)return;
+    var was=b.getAttribute('aria-pressed')==='true';
+    dock.querySelectorAll('button[data-cat]').forEach(function(x){x.setAttribute('aria-pressed','false')});
+    if(was){fly.classList.remove('open');return;}
+    b.setAttribute('aria-pressed','true');
+    title.innerHTML=names[b.getAttribute('data-cat')];
+    fly.classList.add('open');
+  });
+  document.querySelector('[data-fly-close]').addEventListener('click',function(){
+    fly.classList.remove('open');
+    dock.querySelectorAll('button[data-cat]').forEach(function(x){x.setAttribute('aria-pressed','false')});
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){fly.classList.remove('open');drawer.classList.remove('open');
+      dock.querySelectorAll('button[data-cat]').forEach(function(x){x.setAttribute('aria-pressed','false')});}
+  });
+})();
+</script>
