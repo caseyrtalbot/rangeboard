@@ -1,20 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { defaultFrameName, formatRunLabel, useStore } from '../state/store'
 import {
-  defaultFrameName,
-  formatRunLabel,
-  useStore,
-  scenarioDurationS,
-} from '../state/store'
+  selectDurationS,
+  selectFrames,
+  selectPlaybackFlags,
+  selectSimTimeS,
+  selectWaves,
+} from '../state/selectors'
 import { formatTime } from '../geometry/geo'
 import { resetAnalysisRun, toggleAnalysisRun } from '../playback/runSession'
+import { nextPublishedTimeS } from '../canvas/frameClock'
 
 const SPEEDS = [1, 2, 5, 10, 30]
 
-/** Bottom transport: play/pause, scrub, speed, and the frames strip. */
+/**
+ * Bottom transport: play/pause, scrub, speed, and the frames strip. It owns
+ * the playback loop: one requestAnimationFrame loop that publishes
+ * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time at every speed
+ * (10 Hz). Each publication advances sim time by the measured wall time at
+ * playback speed, so the clock does not drift. The canvas interpolates
+ * between publications with its own frame clock (`useFrameClock`).
+ */
 export function TimelineBar() {
-  const playback = useStore((s) => s.playback)
-  const scenario = useStore((s) => s.scenario)
-  const frames = useStore((s) => s.scenario.frames)
+  const { playing, speedMult, runSeq, completedAtMs } = useStore(useShallow(selectPlaybackFlags))
+  const simTimeS = useStore(selectSimTimeS)
+  const durationS = useStore(selectDurationS)
+  const frames = useStore(selectFrames)
+  const waves = useStore(selectWaves)
+  const scenarioName = useStore((s) => s.scenario.name)
   const basemap = useStore((s) => s.ui.basemap)
   const {
     scrubTo,
@@ -25,19 +39,29 @@ export function TimelineBar() {
     setWaveDelay,
     patchScenario,
   } = useStore.getState()
-  const waves = scenario.raid?.waves ?? []
-  const durationS = scenarioDurationS(scenario)
   const [frameName, setFrameName] = useState('')
   const raf = useRef(0)
 
   useEffect(() => {
-    if (!playback.playing) return
+    if (!playing) return
+    // Wall time and speed of the last publication. A frame inside the period
+    // publishes nothing, except when the speed changed: the elapsed span is
+    // published at once at the old speed, so the canvas clock never runs past
+    // what the store then observes.
     let last = performance.now()
+    let speed = useStore.getState().playback.speedMult
     const tick = (now: number) => {
-      const dt = (now - last) / 1000
-      last = now
       const st = useStore.getState()
-      const next = st.playback.simTimeS + dt * st.playback.speedMult
+      const changed = st.playback.speedMult !== speed
+      const next = changed
+        ? st.playback.simTimeS + ((now - last) / 1000) * speed
+        : nextPublishedTimeS(st.playback.simTimeS, speed, now - last)
+      if (next == null) {
+        raf.current = requestAnimationFrame(tick)
+        return
+      }
+      last = now
+      speed = st.playback.speedMult
       if (next >= durationS) {
         st.advanceRun(durationS)
         st.completeRun(durationS)
@@ -48,22 +72,22 @@ export function TimelineBar() {
     }
     raf.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf.current)
-  }, [playback.playing, durationS])
+  }, [playing, durationS])
 
   return (
     <div className="timeline">
       <button
         className="play"
         onClick={toggleAnalysisRun}
-        title={playback.completedAtMs != null ? 'Start a new clean run' : 'Play / pause run'}
+        title={completedAtMs != null ? 'Start a new clean run' : 'Play / pause run'}
       >
-        {playback.playing ? '❚❚' : '▶'}
+        {playing ? '❚❚' : '▶'}
       </button>
       <button onClick={() => resetAnalysisRun('manual')} title="New run id; clear all live telemetry and return to T0">
         ⏮ Reset run
       </button>
       <span className="time-readout">
-        {formatRunLabel(playback.runSeq)} · T+{formatTime(playback.simTimeS)} / {formatTime(durationS)}
+        {formatRunLabel(runSeq)} · T+{formatTime(simTimeS)} / {formatTime(durationS)}
       </span>
       <input
         className="scrub"
@@ -71,11 +95,11 @@ export function TimelineBar() {
         min={0}
         max={durationS}
         step={0.5}
-        value={playback.simTimeS}
+        value={simTimeS}
         onChange={(e) => scrubTo(Number(e.target.value))}
       />
       <select
-        value={playback.speedMult}
+        value={speedMult}
         onChange={(e) => setSpeedMult(Number(e.target.value))}
         title="Playback speed"
       >
@@ -127,7 +151,7 @@ export function TimelineBar() {
         ))}
         <input
           className="frame-name"
-          placeholder={defaultFrameName(scenario.name, playback.simTimeS, basemap)}
+          placeholder={defaultFrameName(scenarioName, simTimeS, basemap)}
           value={frameName}
           onChange={(e) => setFrameName(e.target.value)}
           onKeyDown={(e) => {

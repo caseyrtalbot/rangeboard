@@ -22,8 +22,13 @@ Breaking one of these breaks the app.
 - **Playback is derived:** position at sim time comes from `posAtTime` in
   `src/geometry/geo.ts`, which `src/playback/sim.ts` imports. `playback.simTimeS` is the
   simulation clock; the playback slice also owns speed, flags, run identity and basis state.
-  `TimelineBar` owns the requestAnimationFrame loop. Any pulse, blink or playhead derives
-  from `simTimeS`; never a timer.
+  `TimelineBar` owns the requestAnimationFrame loop that publishes `simTimeS` every 100 ms of
+  wall time at every speed (10 Hz, `PUBLISH_PERIOD_MS` in `src/canvas/frameClock.ts`); each
+  publication advances by the measured wall time at playback speed. The canvas frame clock
+  (`useFrameClock`, mounted in `LiveScene` under the Konva stage) derives its display time
+  from the last published `simTimeS` plus the wall time since that publication at
+  `speedMult`, clamped to one period. Any pulse, blink or playhead derives from `simTimeS`
+  or that display time; never a timer. Panels subscribe through `src/state/selectors.ts`.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
   clears `future`. Only scenario changes are undoable. A scenario-touching action goes
   through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis

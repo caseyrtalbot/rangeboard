@@ -1,10 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { scenarioDurationS, useStore } from '../../state/store'
+import { selectSimTimeS } from '../../state/selectors'
 import type { ImpactSeverity, Scenario } from '../../model/types'
 import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
 import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
 import { tickStepS } from '../../charts/timeAxis'
+import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
 
 const OPEN_KEY = ENGSTRIP_OPEN_KEY
 
@@ -204,11 +206,20 @@ function LaneMarks({ lane, i, x, durationS }: { lane: Lane; i: number; x: (t: nu
   return <g>{els}</g>
 }
 
-/** Only this subscribes to simTimeS, so the 60 fps playback loop moves one div. */
+/**
+ * Only this subscribes to the published sim time, so the 10 Hz playback loop
+ * moves one div. A linear transition over one publication period carries it
+ * between publications without a subscription change.
+ */
 const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS: number }) {
-  const t = useStore((s) => s.playback.simTimeS)
+  const t = useStore(selectSimTimeS)
   const x = Math.round(Math.min(1, Math.max(0, t / durationS)) * w)
-  return <div className="engstrip-playhead" style={{ transform: `translateX(${x}px)` }} />
+  return (
+    <div
+      className="engstrip-playhead"
+      style={{ transform: `translateX(${x}px)`, transition: `transform ${PUBLISH_PERIOD_MS}ms linear` }}
+    />
+  )
 })
 
 /** Engagement timeline lane strip: detection, classification, window, shot, arrival per threat. */

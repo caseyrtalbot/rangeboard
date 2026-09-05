@@ -86,20 +86,24 @@ function Badge({
  *   outcome, not overlay geometry. Planning view (t = 0) shows one summary
  *   badge per asset at its highest severity, MODERATE and up; playback shows
  *   a badge per leaker from its arrival, all tiers, SEVERE with a pulse ring.
+ * The time comes in as a prop from the canvas frame clock, so this layer holds
+ * no playback subscription and the Konva root commits once per frame.
  * Never intercepts pointer events.
  */
 export function ThreatWezLayer({
   tracks,
   impacts,
+  displayTimeS,
 }: {
   tracks: Map<string, LiveTrack>
   impacts: LeakerImpact[]
+  /** The canvas frame clock's display time. Drives the badge gate, fade and pulse. */
+  displayTimeS: number
 }) {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
   const show = useStore((s) => s.ui.layers.threatWez)
   const units = useStore((s) => s.ui.units)
-  const simTimeS = useStore((s) => s.playback.simTimeS)
   const k = camera.scale
 
   const wezList = useMemo(() => threatWezList(scenario), [scenario])
@@ -144,10 +148,10 @@ export function ThreatWezLayer({
 
   // Playback: a badge per arrived leaker, stacked per asset in arrival order.
   const liveBadges = useMemo(() => {
-    if (simTimeS <= 0) return []
+    if (displayTimeS <= 0) return []
     const arrived = impacts
       .filter((i) => i.severity != null && i.assetId != null && i.arrivalS != null)
-      .filter((i) => simTimeS >= i.arrivalS!)
+      .filter((i) => displayTimeS >= i.arrivalS!)
       .sort((a, b) => a.arrivalS! - b.arrivalS!)
     const stackIndex = new Map<string, number>()
     return arrived.map((i) => {
@@ -155,9 +159,9 @@ export function ThreatWezLayer({
       stackIndex.set(i.assetId!, idx + 1)
       return { impact: i, stack: idx }
     })
-  }, [impacts, simTimeS])
+  }, [impacts, displayTimeS])
 
-  const pulse = 0.5 + 0.5 * Math.sin(simTimeS * Math.PI)
+  const pulse = 0.5 + 0.5 * Math.sin(displayTimeS * Math.PI)
 
   return (
     <Group listening={false}>
@@ -202,7 +206,7 @@ export function ThreatWezLayer({
             </Group>
           )
         })}
-      {simTimeS <= 0 &&
+      {displayTimeS <= 0 &&
         [...planBadges.entries()].map(([assetId, b]) => {
           const asset = entityById(assetId)
           if (!asset) return null
@@ -224,7 +228,7 @@ export function ThreatWezLayer({
         const asset = entityById(i.assetId)
         if (!asset) return null
         // Fade the badge in over the first second after arrival.
-        const fade = Math.min(1, Math.max(0.15, simTimeS - i.arrivalS!))
+        const fade = Math.min(1, Math.max(0.15, displayTimeS - i.arrivalS!))
         return (
           <Badge
             key={i.uasId}

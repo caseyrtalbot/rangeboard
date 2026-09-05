@@ -1,21 +1,20 @@
-import { Fragment } from 'react'
+import { Fragment, useMemo } from 'react'
 import type { DisplayUnits } from '../geometry/geo'
 import { formatDistance, formatSpeed, formatTime, NM_M } from '../geometry/geo'
 import { modelFor, pathSpeed, useStore } from '../state/store'
+import { selectSimTimeS } from '../state/selectors'
 import { trackQualityAt } from '../analysis/threatAggregation'
-import { threatAltitudeFt } from '../playback/sim'
-import type { DetectionHit, LiveTrack, ThreatAssessment } from '../playback/sim'
-import { PHASE_STYLE } from '../playback/trackState'
-import type { TrackPhase, TrackFileState } from '../playback/trackState'
+import type { Entity, Scenario } from '../model/types'
+import { detectionsAt, liveTracks, threatAltitudeFt } from '../playback/sim'
+import type { ThreatAssessment } from '../playback/sim'
+import { PHASE_STYLE, trackStatesAt } from '../playback/trackState'
+import type { TrackPhase, TrackTimeline } from '../playback/trackState'
 
 interface Props {
-  /** Track lifecycle at the current sim time, keyed by UAS id. */
-  trackStates: Map<string, TrackFileState>
-  /** Render-time sensor sweep, keyed by UAS id. Feeds the no-timeline fallback. */
-  detections: Map<string, DetectionHit[]>
+  /** Prefix-aggregated timeline, built once in CanvasStage. */
+  timeline: TrackTimeline
   /** Whole-run threat sweep, shared with the analysis panel. */
   assessments: ThreatAssessment[]
-  tracks: Map<string, LiveTrack>
   /** Canvas host size, screen px. The leader line draws in that frame. */
   size: { w: number; h: number }
 }
@@ -55,24 +54,33 @@ function axisText(m: number, units: DisplayUnits, plus: string, minus: string): 
  * a leader line to the track, so it never covers the inbound axis. Every
  * figure is derived from the planning sweep: nothing here is measured.
  *
+ * A DOM overlay and a snapped consumer: it reads the published sim time, not
+ * the canvas frame clock, so it repaints at the publication cadence and not
+ * once per animation frame.
+ *
  * Every row is a value at sim time t, with one exception: ALT is constant
  * along the path. The engine reads it (threatAltitudeFt) for the slant range
  * and the geometry gates, so the row states the altitude in use and keeps the
  * model band behind it as the envelope it sits in.
  */
-export function TrackFileReadout({ trackStates, detections, assessments, tracks, size }: Props) {
-  const scenario = useStore((s) => s.scenario)
+function ReadoutCard({
+  entity,
+  scenario,
+  timeline,
+  assessments,
+  size,
+}: { entity: Entity; scenario: Scenario } & Props) {
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
-  const show = useStore((s) => s.ui.layers.trackTelemetry)
-  const selectedIds = useStore((s) => s.selection.entityIds)
-  const simTimeS = useStore((s) => s.playback.simTimeS)
+  const simTimeS = useStore(selectSimTimeS)
   const select = useStore((s) => s.select)
   const setRightTab = useStore((s) => s.setRightTab)
 
-  if (!show || selectedIds.length !== 1) return null
-  const entity = scenario.entities.find((e) => e.id === selectedIds[0])
-  if (!entity || entity.kind !== 'uas') return null
+  // Snapped at the published time. The hidden card mounts none of this, so a
+  // board with the layer off holds no time subscription at all.
+  const trackStates = useMemo(() => trackStatesAt(timeline, simTimeS), [timeline, simTimeS])
+  const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
+  const tracks = useMemo(() => liveTracks(scenario, simTimeS), [scenario, simTimeS])
 
   const state = trackStates.get(entity.id)
   const assessment = assessments.find((a) => a.uasId === entity.id)
@@ -257,5 +265,30 @@ export function TrackFileReadout({ trackStates, detections, assessments, tracks,
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Selection gate for the track card. It subscribes only to the layer toggle,
+ * the selection and the scenario, so nothing time-dependent mounts until one
+ * UAS is selected and the telemetry layer is on.
+ */
+export function TrackFileReadout({ timeline, assessments, size }: Props) {
+  const scenario = useStore((s) => s.scenario)
+  const show = useStore((s) => s.ui.layers.trackTelemetry)
+  const selectedIds = useStore((s) => s.selection.entityIds)
+
+  if (!show || selectedIds.length !== 1) return null
+  const entity = scenario.entities.find((e) => e.id === selectedIds[0])
+  if (!entity || entity.kind !== 'uas') return null
+
+  return (
+    <ReadoutCard
+      entity={entity}
+      scenario={scenario}
+      timeline={timeline}
+      assessments={assessments}
+      size={size}
+    />
   )
 }

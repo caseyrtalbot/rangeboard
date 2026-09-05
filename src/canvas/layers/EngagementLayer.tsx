@@ -5,10 +5,13 @@ import { blinkOn, EW_JAM_COLOR } from '../../playback/trackState'
 import type { ShotInFlight } from '../../playback/trackState'
 
 interface Props {
-  /** Salvos drawn at the current sim time. Queried once in CanvasStage. */
+  /** Salvos in flight at the display time. Queried once in LiveScene. */
   shots: ShotInFlight[]
-  /** Drives the beam pulse. A paused run freezes it. */
-  simTimeS: number
+  /**
+   * The canvas frame clock's display time. Drives the beam blink; a paused run
+   * freezes it.
+   */
+  displayTimeS: number
 }
 
 const KILL = '#c4564a'
@@ -26,12 +29,12 @@ const ROUND = [0, -8, 6, 6, -6, 6]
  * round in flight is never removed early, so a salvo at a track that already
  * turned ghost still draws to completion.
  */
-export function EngagementLayer({ shots, simTimeS }: Props) {
+export function EngagementLayer({ shots, displayTimeS }: Props) {
   const show = useStore((s) => s.ui.layers.engagements)
   const camera = useStore((s) => s.camera)
   if (!show) return null
   const k = camera.scale
-  const lit = blinkOn(simTimeS)
+  const lit = blinkOn(displayTimeS)
 
   return (
     <Group listening={false}>

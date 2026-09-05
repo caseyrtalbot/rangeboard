@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react'
 import type { McState } from '../../state/store'
-import { scenarioDurationS, formatRunLabel, useStore } from '../../state/store'
+import { formatRunLabel, useStore } from '../../state/store'
+import {
+  selectDurationS,
+  selectObservedThroughStep,
+  selectObservedThroughWholeS,
+} from '../../state/selectors'
 import { engagementPicture } from '../../analysis/impact'
 import { buildLiveTimeline } from '../../analysis/liveStats'
 import { formatTime } from '../../geometry/geo'
@@ -226,14 +231,17 @@ function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McSta
  * Run header: run id, cursor time, phase, mode chip and the clean reset.
  * Only rAF playback advances the observed horizon; dragging either timeline
  * creates a clearly labeled preview/replay and can never complete a run or
- * promote future events into live telemetry.
+ * promote future events into live telemetry. The cursor and the preview flag
+ * read the DT grid and the horizon text reads whole seconds, so the strip
+ * re-renders at most 2 Hz during a run, not per publication.
  */
 export function LiveStrip() {
   const scenario = useStore((s) => s.scenario)
   const phase = useStore((s) => s.playback.phase)
   const runId = useStore((s) => s.playback.runId)
   const runSeq = useStore((s) => s.playback.runSeq)
-  const observedThroughS = useStore((s) => s.playback.observedThroughS)
+  const observedStepS = useStore(selectObservedThroughStep)
+  const observedThroughS = useStore(selectObservedThroughWholeS)
   const completedAtMs = useStore((s) => s.playback.completedAtMs)
   const resetReason = useStore((s) => s.playback.resetReason)
   const mc = useStore((s) => s.mc)
@@ -247,14 +255,14 @@ export function LiveStrip() {
     const { assessments, report } = engagementPicture(scenario)
     return buildLiveTimeline(assessments, report)
   }, [scenario, runId])
-  const durationS = useMemo(() => scenarioDurationS(scenario), [scenario])
+  const durationS = useStore(selectDurationS)
 
   if (tl.trackCount === 0) return null
 
   const t = Math.min(qt, durationS)
   const untouched = phase === 'ready'
   const preview =
-    phase === 'review' && completedAtMs == null && t > observedThroughS + 0.25
+    phase === 'review' && completedAtMs == null && t > observedStepS + 0.25
   const tag = untouched
     ? 'Ready'
     : phase === 'running'
@@ -282,9 +290,11 @@ export function LiveStrip() {
   const chip = chipOf(run, mc)
 
   function cleanReset() {
+    // Event-time read of the raw horizon: a run paused inside its first second
+    // has live telemetry the whole-second text does not show yet.
     if (
       completedAtMs == null &&
-      observedThroughS > 0 &&
+      useStore.getState().playback.observedThroughS > 0 &&
       !window.confirm('Discard this in-progress run and start with a clean telemetry buffer?')
     ) {
       return

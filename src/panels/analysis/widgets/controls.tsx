@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import type { Scenario } from '../../../model/types'
 import type { EngagementPicture } from '../../../analysis/impact'
 import { engagementPicture } from '../../../analysis/impact'
-import { DT } from '../../../playback/sim'
 import type { RunPhase } from '../../../state/store'
-import { scenarioDurationS, useStore } from '../../../state/store'
+import { useStore } from '../../../state/store'
+import { durationOf, selectSimTimeStep } from '../../../state/selectors'
 
 /** A labeled input row. */
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -46,7 +46,7 @@ export function Seg<T extends string>({
 
 /** The sim time quantized to the DT grid. The one time hook every widget reads. */
 export function useSimTimeStep(): number {
-  return useStore((s) => Math.round(s.playback.simTimeS / DT) * DT)
+  return useStore(selectSimTimeStep)
 }
 
 /**
@@ -71,6 +71,6 @@ export function useRunCursor(scenario: Scenario): {
 } {
   const tS = useSimTimeStep()
   const phase = useStore((s) => s.playback.phase)
-  const durationS = useMemo(() => scenarioDurationS(scenario), [scenario])
+  const durationS = durationOf(scenario)
   return { t: Math.min(tS, durationS), durationS, phase, untouched: phase === 'ready' }
 }

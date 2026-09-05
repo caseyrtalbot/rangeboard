@@ -8,21 +8,26 @@ except untracked `.claude/`. Contributor: Claude Fable under [AGENTS.md](../AGEN
 
 ## Verified
 
-- Gates at `edb0da7`, the last source change: type-check, 1,360 tests in 80 files, lint 74
-  warnings and 0 errors, build with the existing chunk warning, schema drift check.
-- Fixed-ID parity baseline: `docs/field-te/evidence/r1-leaf-2026-09-05/numerical-baseline.json`.
-- F1 playback baseline (R-F-32): [F1_CADENCE_BRIEF.md](field-te/F1_CADENCE_BRIEF.md). No
-  fixed cadence; the Analysis rail and the canvas carry the per-tick load, not the Inspector.
-- No source file has changed since `edb0da7`. Rerun the four gates before the first edit.
+- Gates at the commit that carries this file (the F1 slice, the last source change):
+  type-check, 1,369 tests in 82 files, lint 74 warnings (identical set) and 0 errors, build
+  with the existing chunk warning, schema drift check.
+- Fixed-ID parity baseline: `docs/field-te/evidence/r1-leaf-2026-09-05/numerical-baseline.json`,
+  byte-identical after F1 (`evidence/f1-slice-2026-09-05/parity-after.log`).
+- F1 done (R-F-32): store publishes at 10 Hz wall clock at every speed (58 publications per
+  6 s, gap p50 100 ms, both tabs), horizon equal to the published time with zero decreases,
+  completion exact at `durationS` at 1x, 5x, 10x, 30x, one react-dom commit per publication
+  on the Inspect tab, one Konva commit per frame: `evidence/f1-slice-2026-09-05/render-counts.json`
+  and `f1-render-probe.mjs.txt` (the F1 brief probe plus the horizon cells).
 
 ## Next
 
-1. Wave 1: the F1 slice (brief sections 3 to 7); then the R-F-31 worker budget with cancel
-   checkpoints in `mcClient.ts`, `mc.worker.ts`, `mcRun.ts`; then the R-F-20 detection
-   fixture that spawns outside every ring. Parallel where paths are disjoint.
+1. Wave 1 continues: the R-F-31 worker budget with cancel checkpoints in `mcClient.ts`,
+   `mc.worker.ts`, `mcRun.ts`; then the R-F-20 detection fixture that spawns outside every
+   ring. Parallel where paths are disjoint.
 2. Wave 2: larger store, sweep and attrition extraction beside design steps 2, 3, 4 in series.
 3. Wave 3: E2 one model at a time from R-F-30; E3 studies beside it, E3 source changes after.
-4. Wave 4: design steps 6, 7, 9, 10, 13 on disjoint panel paths; then 8, 11, 12; then 14.
+4. Wave 4: design steps 6, 7, 9, 10, 13 on disjoint panel paths; then 8 (carries R-F-33),
+   11, 12; then 14. R-F-34 (per-node canvas memo) goes with the canvas design step.
 5. Wave 5: T1 as a static offline bundle for Chrome on macOS; then A1 against R-D-33.
    The 74 lint warnings fold into the slices that own `src/te/ui`, `src/charts`, the widgets.
 
@@ -36,5 +41,6 @@ AGENTS.md need Casey's word each time.
 ## Open findings
 
 R-F-20 blocked-route presentation and valid detection fixture. R-F-30 jam geometry.
-R-F-31 execution budget. R-F-32 playback cadence; the design contract F1 problem text is
-wrong on the Inspector and the sixty-per-second claim, corrected in the F1 slice.
+R-F-31 execution budget. R-F-33 `ThreatPictureWidget` and `DebriefRecord` subscribe to the
+raw horizon; Recharts rebuilds per publication at 5x and above. R-F-34 every `EntityNode`
+re-renders per canvas frame; no per-node memo.

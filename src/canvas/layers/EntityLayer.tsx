@@ -21,15 +21,19 @@ import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from 
 
 interface Props {
   tracks: Map<string, LiveTrack>
+  /** Sensor sweep, snapped at the published sim time, keyed by UAS id. */
   detections: Map<string, DetectionHit[]>
   /** Entities whose labels render as spoke callouts in CalloutLayer instead. */
   spokeIds: Set<string>
-  /** Track lifecycle at the current sim time, keyed by UAS id. Built in CanvasStage. */
+  /** Track lifecycle, snapped at the published sim time, keyed by UAS id. */
   trackStates: Map<string, TrackFileState>
-  /** Effector glyph treatment at the current sim time, keyed by effector id. */
+  /** Effector glyph treatment, snapped at the published sim time, keyed by effector id. */
   effectorStates: Map<string, EffectorLiveState>
-  /** Drives every pulse. A paused run freezes it. */
-  simTimeS: number
+  /**
+   * The canvas frame clock's display time. Drives every pulse and the effector
+   * blink; a paused run freezes it.
+   */
+  displayTimeS: number
 }
 
 const FALLBACK: Record<Entity['kind'], string> = {
@@ -261,7 +265,7 @@ function EntityNode({
   spokeIds,
   trackStates,
   effectorStates,
-  simTimeS,
+  displayTimeS,
 }: { entity: Entity } & Props) {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
@@ -313,13 +317,13 @@ function EntityNode({
   const ewOnly = state != null && state.kineticSalvos + state.deSalvos === 0
   const bracketed = (phase === 'targeted' || phase === 'engaged') && !(jammed && ewOnly)
   // Pulse floor is 0.5: a dimmed engaged track must stay legible.
-  const pulse = phase === 'engaged' && !blinkOn(simTimeS) ? 0.5 : 1
+  const pulse = phase === 'engaged' && !blinkOn(displayTimeS) ? 0.5 : 1
   const effectorState: EffectorLiveState = effectorStates.get(entity.id) ?? 'idle'
   const depleted = effectorState === 'depleted'
   const effectorFilled =
     effectorState === 'semi-active' ||
     effectorState === 'beam' ||
-    (effectorState === 'active' && blinkOn(simTimeS))
+    (effectorState === 'active' && blinkOn(displayTimeS))
 
   const model = modelFor(scenario, entity)
   const sectorDeg =

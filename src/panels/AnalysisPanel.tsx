@@ -1,12 +1,23 @@
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
+import type { WidgetType } from '../state/analysisLayout'
 import { BUILTIN_LENSES, WIDGET_TYPES } from '../state/analysisLayout'
-import { scenarioDurationS, useStore } from '../state/store'
+import { useStore } from '../state/store'
+import { selectDurationS, selectRunComplete } from '../state/selectors'
 import { DebriefRecord } from './analysis/DebriefRecord'
 import { DetailPane, hasDetailPane } from './analysis/detail'
 import { LiveStrip } from './analysis/LiveStrip'
 import { WIDGETS } from './analysis/widgets/registry'
+import type { WidgetProps } from './analysis/widgets/registry'
+
+/**
+ * Every widget subscribes to the store on its own, so a panel render must not
+ * cascade into the stack. The props the panel passes are stable between
+ * layout edits, so `memo` holds each widget until its own selectors move.
+ */
+const MEMO_WIDGETS = {} as Record<WidgetType, React.ComponentType<WidgetProps>>
+for (const type of WIDGET_TYPES) MEMO_WIDGETS[type] = memo(WIDGETS[type].component)
 
 /** Lens bar: the built-in lenses, the user presets, then the customize toggle. */
 function LensBar() {
@@ -118,11 +129,10 @@ export function AnalysisPanel() {
   const scenario = useStore((state) => state.scenario)
   const entityIds = useStore((state) => state.selection.entityIds)
   const runId = useStore((state) => state.playback.runId)
-  const completedAtMs = useStore((state) => state.playback.completedAtMs)
-  const observedThroughS = useStore((state) => state.playback.observedThroughS)
+  const complete = useStore(selectRunComplete)
   const widgets = useStore((state) => state.ui.analysis.layout.widgets)
   const customize = useStore((state) => state.ui.analysisCustomize)
-  const durationS = useMemo(() => scenarioDurationS(scenario), [scenario])
+  const durationS = useStore(selectDurationS)
   const { assessments, report, impacts } = useMemo(() => {
     void runId
     return engagementPicture(scenario)
@@ -133,7 +143,6 @@ export function AnalysisPanel() {
   )
   const threats = assessments.filter((assessment) => assessment.status !== 'no-path')
   const noPath = assessments.length - threats.length
-  const complete = completedAtMs != null && durationS > 0 && observedThroughS >= durationS
 
   // Every hook above runs on each render. The branch stays after them.
   const selected =
@@ -181,7 +190,7 @@ export function AnalysisPanel() {
       )}
 
       {widgets.map((instance, index) => {
-        const Widget = WIDGETS[instance.type].component
+        const Widget = MEMO_WIDGETS[instance.type]
         return (
           <Widget
             key={instance.id}

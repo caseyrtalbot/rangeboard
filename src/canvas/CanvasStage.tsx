@@ -5,28 +5,15 @@ import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../model/types'
 import { useStore } from '../state/store'
-import { detectionsAt, liveTracks } from '../playback/sim'
+import { selectDurationS } from '../state/selectors'
+import { displayTimeNow } from './frameClock'
+import { liveTracks } from '../playback/sim'
 import { engagementPicture } from '../analysis/impact'
-import {
-  buildTrackTimeline,
-  effectorStatesAt,
-  shotsInFlightAt,
-  trackStatesAt,
-} from '../playback/trackState'
+import { buildTrackTimeline } from '../playback/trackState'
 import { GridLayer } from './layers/GridLayer'
 import { TileLayer } from './layers/TileLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
-import { BoundaryLayer } from './layers/BoundaryLayer'
-import { FootprintLayer } from './layers/FootprintLayer'
-import { ThreatWezLayer } from './layers/ThreatWezLayer'
-import { RangeLayer } from './layers/RangeLayer'
-import { PathLayer } from './layers/PathLayer'
-import { ConnectionLayer } from './layers/ConnectionLayer'
-import { EngagementLayer } from './layers/EngagementLayer'
-import { EntityLayer } from './layers/EntityLayer'
-import { CalloutLayer } from './layers/CalloutLayer'
-import { layoutLabels } from './labelLayout'
-import { SystemHandleLayer } from './layers/SystemHandleLayer'
+import { LiveScene } from './LiveScene'
 import { HudLayer } from './layers/HudLayer'
 import { TrackFileReadout } from './TrackFileReadout'
 import { ContextMenu } from './ContextMenu'
@@ -73,8 +60,13 @@ export function CanvasStage() {
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
   const setCamera = useStore((s) => s.setCamera)
-  const ui = useStore((s) => s.ui)
-  const simTimeS = useStore((s) => s.playback.simTimeS)
+  // Field subscriptions, not the whole `ui` object: a publication that moves an
+  // unrelated ui field must not re-render the stage.
+  const tool = useStore((s) => s.ui.tool)
+  const basemap = useStore((s) => s.ui.basemap)
+  const moveUnderlay = useStore((s) => s.ui.moveUnderlay)
+  const raidDraft = useStore((s) => s.ui.raidDraft)
+  const durationS = useStore(selectDurationS)
   const clearSelection = useStore((s) => s.clearSelection)
   const select = useStore((s) => s.select)
   const addEntityFromModel = useStore((s) => s.addEntityFromModel)
@@ -110,41 +102,16 @@ export function CanvasStage() {
     }
   }, [])
 
-  const tracks = useMemo(() => liveTracks(scenario, simTimeS), [scenario, simTimeS])
-  const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
   // Attrition is time-independent; engagementPicture shares one computation
   // per scenario object with AnalysisPanel (module-level WeakMap in impact.ts).
   const picture = useMemo(() => engagementPicture(scenario), [scenario])
   const { assessments, report, impacts } = picture
-  // One prefix-aggregated timeline per sweep. The per-frame queries below are
-  // binary searches over it, so no layer ever rebuilds it.
+  // One prefix-aggregated timeline per sweep. The per-frame queries in
+  // LiveScene are binary searches over it, so no layer ever rebuilds it.
   const timeline = useMemo(
     () => buildTrackTimeline(scenario, assessments, report),
     [scenario, assessments, report],
   )
-  const trackStates = useMemo(() => trackStatesAt(timeline, simTimeS), [timeline, simTimeS])
-  const shots = useMemo(() => shotsInFlightAt(timeline, simTimeS), [timeline, simTimeS])
-  const effectorStates = useMemo(() => effectorStatesAt(timeline, simTimeS), [timeline, simTimeS])
-  const prevSpokeIds = useRef<Set<string>>(new Set())
-  const labelPlacements = useMemo(
-    () =>
-      layoutLabels(
-        scenario.entities.map((e) => {
-          const pos = tracks.get(e.id)?.pos ?? e.pos
-          return { id: e.id, name: e.name, sx: pos.x * camera.scale + camera.x, sy: pos.y * camera.scale + camera.y }
-        }),
-        // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
-        { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
-      ),
-    [scenario.entities, tracks, camera, size],
-  )
-  const spokeIds = useMemo(
-    () => new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
-    [labelPlacements],
-  )
-  useEffect(() => {
-    prevSpokeIds.current = spokeIds
-  }, [spokeIds])
 
   function toWorld(pointer: Vec2): Vec2 {
     return { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
@@ -192,7 +159,7 @@ export function CanvasStage() {
   function beginMarquee(e: KonvaEventObject<MouseEvent>) {
     // A stale suppress flag (mouseup off-stage) must not eat this gesture's click.
     suppressClick.current = false
-    if (ui.tool !== 'select' || e.target !== stageRef.current) return
+    if (tool !== 'select' || e.target !== stageRef.current) return
     if (!(e.evt.metaKey || e.evt.ctrlKey || e.evt.shiftKey)) return
     const world = pointerWorld()
     if (!world) return
@@ -220,6 +187,9 @@ export function CanvasStage() {
     const x1 = Math.max(m.a.x, m.b.x)
     const y0 = Math.min(m.a.y, m.b.y)
     const y1 = Math.max(m.a.y, m.b.y)
+    // The stage holds no time subscription, so read the canvas display time
+    // once here: a box select tests the positions the user just saw.
+    const tracks = liveTracks(scenario, displayTimeNow())
     const ids = scenario.entities
       .filter((en) => {
         const p = tracks.get(en.id)?.pos ?? en.pos
@@ -253,21 +223,21 @@ export function CanvasStage() {
     // The armed raid draft owns the next canvas click: it places the ingress
     // axis and commits the raid. This branch must stay ahead of the draw
     // tools or the click would land as a stray vertex.
-    if (ui.raidDraft) {
+    if (raidDraft) {
       commitRaid(world)
       return
     }
-    if (ui.tool === 'boundary' || ui.tool === 'path') {
+    if (tool === 'boundary' || tool === 'path') {
       // The 2nd click of an in-place double-click is not a new vertex; the
       // dblclick handler finishes the shape instead.
       if (!isInPlacePair()) addDraftPoint(world)
       return
     }
-    if (ui.tool === 'calibrate') {
+    if (tool === 'calibrate') {
       setCalibratePoint(world)
       return
     }
-    if (onEmpty && ui.tool === 'select') clearSelection()
+    if (onEmpty && tool === 'select') clearSelection()
   }
 
   function handleDblClick() {
@@ -275,8 +245,8 @@ export function CanvasStage() {
     // far apart. Only a true in-place double-click finishes; rapid waypoint
     // clicks keep drawing.
     if (!isInPlacePair()) return
-    if (ui.tool === 'boundary') finishBoundary(true)
-    if (ui.tool === 'path') finishPath()
+    if (tool === 'boundary') finishBoundary(true)
+    if (tool === 'path') finishPath()
   }
 
   // A cancelled drag (Esc) may end without a leave; dragend on the source
@@ -296,12 +266,12 @@ export function CanvasStage() {
     return types.includes('text/rangeboard-model') || types.includes('text/rangeboard-system')
   }
 
-  const drawing = ui.tool !== 'select'
+  const drawing = tool !== 'select'
 
   return (
     <div
       ref={containerRef}
-      className={`canvas-host ${ui.basemap} ${drawing ? 'drawing' : ''} ${dropActive ? 'drop-active' : ''}`}
+      className={`canvas-host ${basemap} ${drawing ? 'drawing' : ''} ${dropActive ? 'drop-active' : ''}`}
       data-testid="canvas-host"
       onDragOver={(e) => e.preventDefault()}
       onDragEnter={(e) => {
@@ -336,7 +306,7 @@ export function CanvasStage() {
         y={camera.y}
         scaleX={camera.scale}
         scaleY={camera.scale}
-        draggable={ui.tool === 'select' && !modKey}
+        draggable={tool === 'select' && !modKey}
         onWheel={handleWheel}
         onClick={handleClick}
         onDblClick={handleDblClick}
@@ -360,30 +330,22 @@ export function CanvasStage() {
         <Layer listening={false}>
           <TileLayer size={size} />
         </Layer>
-        <Layer listening={ui.moveUnderlay}>
+        <Layer listening={moveUnderlay}>
           <UnderlayLayer />
         </Layer>
         <Layer listening={false}>
           <GridLayer size={size} />
         </Layer>
         <Layer>
-          <BoundaryLayer />
-          <FootprintLayer detections={detections} />
-          <ThreatWezLayer tracks={tracks} impacts={impacts} />
-          <RangeLayer />
-          <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
-          <ConnectionLayer />
-          <EngagementLayer shots={shots} simTimeS={simTimeS} />
-          <EntityLayer
-            tracks={tracks}
-            detections={detections}
-            spokeIds={spokeIds}
-            trackStates={trackStates}
-            effectorStates={effectorStates}
-            simTimeS={simTimeS}
+          <LiveScene
+            scenario={scenario}
+            camera={camera}
+            size={size}
+            mouseWorld={mouseWorld}
+            impacts={impacts}
+            timeline={timeline}
+            durationS={durationS}
           />
-          <SystemHandleLayer />
-          <CalloutLayer placements={labelPlacements} />
           {marquee && (
             <Rect
               x={Math.min(marquee.a.x, marquee.b.x)}
@@ -400,19 +362,13 @@ export function CanvasStage() {
           )}
         </Layer>
       </Stage>
-      {ui.basemap === 'sat' && scenario.geoRef && (
+      {basemap === 'sat' && scenario.geoRef && (
         <div className="tile-attribution">
           Imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics)
         </div>
       )}
       <HudLayer mouseWorld={mouseWorld} />
-      <TrackFileReadout
-        trackStates={trackStates}
-        detections={detections}
-        assessments={assessments}
-        tracks={tracks}
-        size={size}
-      />
+      <TrackFileReadout timeline={timeline} assessments={assessments} size={size} />
       <ContextMenu />
       <ConnectSuggestPopup />
     </div>
