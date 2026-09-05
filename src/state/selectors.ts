@@ -1,6 +1,6 @@
 import type { FrameSnap, RaidWave, Scenario } from '../model/types'
 import { scenarioDurationS } from '../model/scenario'
-import { DT } from '../playback/sim'
+import { DT } from '../playback/clock'
 import type { Store } from './store'
 
 /**

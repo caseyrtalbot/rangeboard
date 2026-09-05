@@ -4,7 +4,7 @@ import { parseAutosave, runExportObject } from './persist'
 import { engagementPicture } from '../analysis/impact'
 import { buildAarSummary } from '../analysis/aar'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
-import { analysisBasisSignature } from '../state/store'
+import { analysisBasisSignature } from '../state/analysisBasis'
 
 function fixture() {
   const scenario = parseAutosave(JSON.stringify(probe))!

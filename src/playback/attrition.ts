@@ -1,15 +1,4 @@
-import type {
-  EffectorSpec,
-  Entity,
-  FireDoctrine,
-  FlightPath,
-  JamBehavior,
-  Scenario,
-  SpecModel,
-  UasGroup,
-  UasSpec,
-  Vec2,
-} from '../model/types'
+import type { Entity, FlightPath, Scenario, SpecModel, UasSpec, Vec2 } from '../model/types'
 import {
   DEFAULT_REQUIREMENT_THRESHOLDS,
   defaultJamBehavior,
@@ -17,12 +6,64 @@ import {
   entityActive,
   mountHeightOf,
 } from '../model/types'
-import { dist, pointInWedge, posAtTime } from '../geometry/geo'
+import { dist, pointInWedge } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { assessJam, effectiveJamRangeM } from '../analysis/ewPhysics'
 import { FT_TO_M, effectorGeometryGate } from '../analysis/sensorEnv'
 import type { ThreatAssessment } from './sim'
-import { DT, assessAllThreats, killChainRoutes, memberPositions, threatAltitudeFt } from './sim'
+import { assessAllThreats } from './sim'
+import { DT } from './clock'
+import { threatAltitudeFt } from './tracks'
+import { killChainRoutes } from './killChain'
+import {
+  CONTINUE_TRACK_DEGRADE,
+  DEFAULT_PK,
+  DEFAULT_SALVO_COOLDOWN_S,
+  expenditureChannel,
+  isHardKill,
+  kineticPk,
+  SHIP_DEAD_BELOW,
+} from './pk'
+import type {
+  AttritionReport,
+  EffectorAttrition,
+  EngagementEvent,
+  ThreatAttrition,
+} from './attritionReport'
+import type { EffectorState, JamHold, PendingEffect, ShipState, ThreatState } from './sweepState'
+import { EPS, interceptAt, intervalIndexAt, launchPolicyReleases, membersAtTime } from './intercept'
+
+// Every attrition entrypoint stays resolvable from attrition.ts for the panels and the canvas.
+export {
+  CONTINUE_TRACK_DEGRADE,
+  DEFAULT_PK,
+  DEFAULT_SALVO_COOLDOWN_S,
+  distanceFalloff,
+  EVASION_PENALTY,
+  expenditureChannel,
+  FALLOFF_AT_MAX,
+  falloffRangeM,
+  isHardKill,
+  kineticPk,
+  SHIP_DEAD_BELOW,
+  SIZE_PENALTY,
+} from './pk'
+export type { ExpenditureChannel } from './pk'
+export type {
+  AttritionReport,
+  AttritionTotals,
+  EffectorAttrition,
+  EngagementEvent,
+  ThreatAttrition,
+} from './attritionReport'
+export type { EffectorState, ThreatState } from './sweepState'
+export {
+  FLYOUT_SPEED_FACTOR,
+  interceptAt,
+  intervalIndexAt,
+  launchPolicyReleases,
+  timeOfFlightS,
+} from './intercept'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
 import { effectivePathDelayS } from './raid'
@@ -120,288 +161,6 @@ import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
  * per-threat state at any sim time can be prefix-aggregated from it.
  */
 
-/** Type-baseline single-shot Pk for specs saved before the pk field existed. */
-export const DEFAULT_PK: Record<EffectorSpec['effectorType'], number> = {
-  interceptor: 0.8,
-  gun: 0.75,
-  net: 0.7,
-  de: 0.8,
-  hpm: 0.7,
-  jammer: 0.6,
-}
-
-/** Type-baseline seconds between salvos when the spec does not set one. */
-export const DEFAULT_SALVO_COOLDOWN_S: Record<EffectorSpec['effectorType'], number> = {
-  interceptor: 30,
-  gun: 10,
-  net: 60,
-  de: 15,
-  hpm: 5,
-  jammer: 5,
-}
-
-/** Smaller airframes are harder to hit (source: Group 1 = 0.7 ... Group 4+ = 1.0). */
-export const SIZE_PENALTY: Record<UasGroup, number> = { 1: 0.7, 2: 0.8, 3: 0.9, 4: 1, 5: 1 }
-
-/** Pk multiplier for an evading target (source: x0.7). FPV airframes are
- *  hand-flown and jink; every other airframe flies waypoints. */
-export const EVASION_PENALTY = 0.7
-
-/**
- * Average flyout speed as a fraction of the stated speed (PF). Every stated
- * flyoutSpeedMps is a maximum or a muzzle velocity, not the mean speed to the
- * target, so the flight time is charged at this fraction of it.
- */
-export const FLYOUT_SPEED_FACTOR = 0.7
-
-/** Pk fraction lost at max range (PF, source formula: 30%). The falloff is
- *  linear from 1 at the launcher to 1 - FALLOFF_AT_MAX at max range. */
-export const FALLOFF_AT_MAX = 0.3
-
-/** Distance falloff: 30% Pk reduction at max range (source formula). Zero
- *  beyond max range: no envelope means no kill probability at all.
- *  `distM` is the slant range from the launcher to the intercept point. */
-export function distanceFalloff(distM: number, maxRangeM: number): number {
-  if (maxRangeM <= 0 || distM > maxRangeM) return 0
-  return 1 - FALLOFF_AT_MAX * (distM / maxRangeM)
-}
-
-/** Inverse of distanceFalloff on [0, maxRangeM]: the slant range where the
- *  falloff equals `factor`, clamped to the envelope. */
-export function falloffRangeM(factor: number, maxRangeM: number): number {
-  if (maxRangeM <= 0) return 0
-  const r = (maxRangeM * (1 - factor)) / FALLOFF_AT_MAX
-  return Math.min(maxRangeM, Math.max(0, r))
-}
-
-/**
- * The one kinetic per-shot Pk: basePk * distanceFalloff(slantM, maxRangeM) *
- * SIZE_PENALTY[group] * (EVASION_PENALTY for an fpv airframe), clamped to
- * [0, 1]. Pure; the footprint style imports it for the commit ring.
- */
-export function kineticPk(
-  basePk: number,
-  maxRangeM: number,
-  uas: UasSpec | undefined,
-  slantM: number,
-): number {
-  const falloff = distanceFalloff(slantM, maxRangeM)
-  const size = uas ? SIZE_PENALTY[uas.group] : 1
-  const evasion = uas?.airframe === 'fpv' ? EVASION_PENALTY : 1
-  return Math.min(1, Math.max(0, basePk * falloff * size * evasion))
-}
-
-/**
- * Kill-shot Pk penalty against a ship inbound under a 'continue' jam: the
- * denied GNSS/RF link silences emissions and degrades the track, so the
- * firing solution suffers. Planning factor on the source's 30% falloff scale.
- */
-export const CONTINUE_TRACK_DEGRADE = 0.3
-
-/**
- * Expected-survival cutoff (shoot-look doctrine). A ship whose effective
- * survival — alive discounted by kill salvos already in flight at it — falls
- * below this is expected dead: no kill or jam salvo targets it again, and a
- * threat with every ship below the cutoff draws no further fire. The same
- * threshold caps 'continue' jamming: once a ship's un-jammed probability
- * (discounted by jam salvos in flight) falls below it, the track is
- * saturated and jam salvos stop.
- */
-export const SHIP_DEAD_BELOW = 0.05
-
-/** Effector types whose success destroys the airframe (vs a jammer soft kill). */
-export function isHardKill(effectorType: EffectorSpec['effectorType']): boolean {
-  return effectorType !== 'jammer'
-}
-
-/** What a salvo costs the battery, as opposed to how it kills. */
-export type ExpenditureChannel = 'kinetic' | 'directed-energy' | 'ew'
-
-const EXPENDITURE_CHANNEL: Record<EffectorSpec['effectorType'], ExpenditureChannel> = {
-  interceptor: 'kinetic',
-  gun: 'kinetic',
-  net: 'kinetic',
-  de: 'directed-energy',
-  hpm: 'directed-energy',
-  jammer: 'ew',
-}
-
-/**
- * Expenditure channel of an effector type. This answers what the salvo SPENT,
- * which is a different question from isHardKill's what the salvo DESTROYS.
- * Directed energy is both: a DE or HPM burst is a hard kill that fires no
- * round, so rolling it into the kinetic count misreports rounds expended and
- * reads on the board as interceptors that were never launched.
- */
-export function expenditureChannel(
-  effectorType: EffectorSpec['effectorType'],
-): ExpenditureChannel {
-  return EXPENDITURE_CHANNEL[effectorType]
-}
-
-export interface ThreatAttrition {
-  uasId: string
-  /** Ships in the formation; 1 when the entity flies alone. */
-  shipCount: number
-  /**
-   * DEFEATS: expected ships killed at or before arrival, hard plus soft. Kill
-   * mass whose effect landed after the threat was already inside the defended
-   * asset's boundary is NOT here; it is in expectedLateKills.
-   */
-  expectedKills: number
-  /** Pre-arrival ships destroyed by hard-kill effectors. */
-  expectedHardKills: number
-  /** Pre-arrival mission kills through the soft channel (jam ends the approach). */
-  expectedSoftKills: number
-  /**
-   * Kill mass whose effect landed strictly after arrival. Real destruction,
-   * but it did not defend the asset, so it never counts toward the defeat
-   * rate. Always 0 for a threat with no arrival.
-   */
-  expectedLateKills: number
-  /** Post-arrival hard-kill mass; part of expectedLateKills. */
-  expectedLateHardKills: number
-  /** Post-arrival soft-kill mass; part of expectedLateKills. */
-  expectedLateSoftKills: number
-  /**
-   * True when this threat crossed a defended boundary, i.e. its assessment
-   * carries an arrivalS. False for a fly-by and for every threat when no
-   * asset is placed.
-   */
-  arrived: boolean
-  /**
-   * Ships of this threat that reached the defended asset undefeated:
-   * shipCount minus the pre-arrival kill mass. Zero when arrived is false.
-   * Kill mass that landed after the crossing stays inside this figure; a
-   * leaker destroyed too late still leaked.
-   */
-  expectedLeakers: number
-  /**
-   * Ships of this threat that were neither defeated nor arrived: they never
-   * crossed a defended boundary. Zero when arrived is true. Together with
-   * expectedKills and expectedLeakers this partitions shipCount exactly.
-   */
-  expectedNoArrival: number
-  /** Mean per-ship survival probability AT ARRIVAL; 1 = certain leaker. */
-  leakProbability: number
-  /** Mean probability a ship's track is jam-degraded on arrival ('continue'). */
-  continueJamProb: number
-  /** First salvo of any channel at this threat; null when never engaged. */
-  firstShotS: number | null
-  /** Kinetic salvos (interceptor, gun, net) fired at this threat. */
-  shotsFired: number
-  /** Directed-energy bursts (DE, HPM) directed at this threat. */
-  deSalvos: number
-  /** Jammer salvos of every behavior directed at this threat. */
-  jamSalvos: number
-  /** Effector with the largest expected-kill contribution, late mass included. */
-  killedByEffectorId: string | null
-  /** True when killedByEffectorId is a jammer: the dominant kill is soft. */
-  killedBySoft: boolean
-}
-
-export interface EffectorAttrition {
-  effectorId: string
-  /** Kinetic salvos; 0 for DE, HPM, and jammers (see deSalvos, jamSalvos). */
-  shotsFired: number
-  /** Directed-energy bursts; 0 for every other effector class. */
-  deSalvos: number
-  /** Jammer salvos of every behavior; 0 for every other effector class. */
-  jamSalvos: number
-  /** Null when the magazine is unlimited (jammers, DE, HPM). */
-  expectedRoundsRemaining: number | null
-}
-
-export interface AttritionTotals {
-  /** Total ships across all threats with flight paths. */
-  raidSize: number
-  /** Pre-arrival hard plus soft kills: the raid's defeat mass. */
-  expectedKills: number
-  expectedHardKills: number
-  expectedSoftKills: number
-  /**
-   * Kill mass that landed after arrival. Excluded from expectedKills and
-   * included in expectedLeakers: it is a sub-measure of the leaker mass, not
-   * a deduction from it.
-   */
-  expectedLateKills: number
-  /**
-   * PARTITION TERM, not a display value: ships that reached a defended asset
-   * undefeated. Zero when nothing arrived, which an asset-free run cannot
-   * tell apart from a perfect defence, so print reportedLeakers instead.
-   */
-  expectedLeakers: number
-  /**
-   * Ships neither defeated nor arrived: they never crossed a defended
-   * boundary. A fly-by that turned away short, or a run with no asset placed.
-   * expectedKills + expectedLeakers + expectedNoArrival === raidSize.
-   */
-  expectedNoArrival: number
-  /**
-   * The leaker figure a caller may DISPLAY: expectedLeakers when the scenario
-   * places at least one asset, null when it places none. Null means "not
-   * measurable", so render a dash, never 0.
-   */
-  reportedLeakers: number | null
-  /** Kinetic salvos (interceptor, gun, net) only. */
-  shotsFired: number
-  /** Directed-energy bursts (DE, HPM). */
-  deSalvos: number
-  /** Jammer salvos of every behavior. */
-  jamSalvos: number
-}
-
-/**
- * One salvo in the engagement ledger. Events are emitted in assignment-time
- * order; killDelta is filled in when the effect applies at tEffectS. Prefix
- * aggregation by tS gives shots-so-far; by tEffectS it gives kills-so-far
- * and per-threat expected state at any sim time.
- */
-export interface EngagementEvent {
-  /** Assignment (trigger) time; magazine, cooldown, and counts land here. */
-  tS: number
-  /** Effect time: tS + engageTimeS + the flyout (interceptAt); kill or jam math lands here. */
-  tEffectS: number
-  effectorId: string
-  uasId: string
-  /** Formation ship the salvo is aimed at; 0 for a lone airframe. */
-  shipIdx: number
-  /** 'jam' = a 'continue' jam salvo (degrades the track, removes no
-   *  survival); 'kill' = any salvo that removes survival, hard or soft. */
-  channel: 'kill' | 'jam'
-  /** True when the firing effector is a jammer (soft channel). */
-  softShot: boolean
-  /** Firing effector's type, so a reader never has to re-look up the spec. */
-  effectorType: EffectorSpec['effectorType']
-  /** What the salvo cost: kinetic round, directed-energy burst, or EW dwell. */
-  channelClass: ExpenditureChannel
-  /**
-   * True when tEffectS is strictly after the target threat's arrivalS. The
-   * kill still happens; it just lands too late to have defended the asset, so
-   * its mass is credited to expectedLateKills. False when the threat has no
-   * arrival.
-   */
-  lateEffect: boolean
-  /** Geometry Pk evaluated at tEffect. */
-  pk: number
-  /** Expected-kill mass removed when the effect applied; 0 for 'continue' jams. */
-  killDelta: number
-  /**
-   * Present only when the flight time was capped at the end of the in-range
-   * window: the target would have left the envelope before the interceptor
-   * arrived, so the effect lands at the window end (R-F-7).
-   */
-  flightCapped?: true
-}
-
-export interface AttritionReport {
-  threats: ThreatAttrition[]
-  effectors: EffectorAttrition[]
-  totals: AttritionTotals
-  /** Every salvo, in assignment-time order (see EngagementEvent). */
-  events: EngagementEvent[]
-}
-
 function specFor(scenario: Scenario, entity: Entity): SpecModel | undefined {
   return scenario.library.find((m) => m.id === entity.specId) ?? undefined
 }
@@ -414,67 +173,9 @@ function speedFor(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
-/**
- * One jammer's 'continue' hold on one ship. Jamming is illumination, not
- * damage: the denial exists only while the transmitter keeps painting the
- * target, so the hold is valid only while the ship stays inside the SAME
- * in-range interval of that jammer that produced the dwells. A fixed cone
- * stops jamming the moment the target flies out behind it; a later re-entry
- * starts a fresh hold from zero.
- */
-interface JamHold {
-  /** Compounded probability the jam degrades this ship's track. */
-  value: number
-  /** Index of the jammer's in-range interval the dwells landed in; -1 when
-   *  the geometry is unknown (hold never lapses, the legacy behavior). */
-  intervalIdx: number
-}
-
-interface ShipState {
-  /** Probability the ship is still inbound (not hard- or mission-killed). */
-  alive: number
-  /** Expected hard kills of this ship credited AT OR BEFORE arrival. */
-  hard: number
-  /** Expected soft (mission) kills of this ship credited AT OR BEFORE arrival. */
-  soft: number
-  /** Hard-kill mass that landed after arrival: destroyed, but too late. */
-  lateHard: number
-  /** Soft-kill mass that landed after arrival: destroyed, but too late. */
-  lateSoft: number
-  /** 'Continue' jam holds by jammer entity id (see JamHold). */
-  jamBy: Map<string, JamHold>
-  /**
-   * Doctrine shoot-look-shoot lockout: no kill salvo targets this ship
-   * before this time (assigned salvo's effect time + the BDA dwell).
-   * Always 0 when doctrine is off.
-   */
-  holdUntilS: number
-  /** Kill-channel salvos in flight at this ship (assigned, effect pending). */
-  pendingKill: Set<PendingEffect>
-  /** 'Continue' jam salvos in flight at this ship. */
-  pendingJam: Set<PendingEffect>
-  /** Running product of (1 - pk) over pendingKill, maintained on push/retire. */
-  killDiscount: number
-  /** Running product of (1 - pk) over pendingJam. */
-  jamDiscount: number
-}
-
 /** Survival discounted by the kill salvos already in flight at the ship. */
 function effectiveAlive(s: ShipState): number {
   return s.alive * s.killDiscount
-}
-
-/** Index of the interval containing t, or -1 (none, or intervals unknown). */
-export function intervalIndexAt(
-  intervals: Array<[number, number]> | undefined,
-  t: number,
-): number {
-  if (!intervals) return -1
-  for (let i = 0; i < intervals.length; i++) {
-    const [s0, s1] = intervals[i]
-    if (t >= s0 - EPS && t <= s1 + EPS) return i
-  }
-  return -1
 }
 
 /**
@@ -507,171 +208,6 @@ function retirePending(set: Set<PendingEffect>, discount: number, fx: PendingEff
   let p = 1
   for (const rem of set) p *= 1 - rem.pk
   return p
-}
-
-/** Engine-internal state of one threat during the attrition sweep. */
-export interface ThreatState {
-  a: ThreatAssessment
-  entity: Entity
-  uasSpec: UasSpec | undefined
-  /** Flight altitude, meters AGL (threatAltitudeFt), constant along the path. */
-  altM: number
-  path: FlightPath | undefined
-  speedMps: number
-  /** Effective path start delay, seconds (effectivePathDelayS). */
-  delayS: number
-  /** One expected-value state per ship in the formation. */
-  ships: ShipState[]
-  /** Response to a successful jam; spec value or nav-mode default. */
-  jamBehavior: JamBehavior
-  /** In-range intervals per connected effector; empty unless engageable. */
-  windows: Map<string, Array<[number, number]>>
-  /**
-   * Minimum kill-chain route latency from the detecting sensors to each
-   * connected effector, seconds. Charged from gateS, not from T0: the cue has
-   * to reach the shooter before it can be told to fire.
-   */
-  routeLatencyS: Map<string, number>
-  /** Time the required track quality was met; shots start no earlier. */
-  gateS: number | null
-  /**
-   * Doctrine: per-effector RELEASE-READY times from
-   * ThreatAssessment.effectorGates[].readyS (route-aware firm track +
-   * declaration + route latency + target dwell). Empty when doctrine is off.
-   * An effector with no entry cannot fire at this threat under doctrine.
-   */
-  effectorReadyS: Map<string, number>
-  shotsFired: number
-  deSalvos: number
-  jamSalvos: number
-  /** Effect time of the last 'continue' jam dwell; null when never jammed. */
-  lastJamEffectS: number | null
-  firstShotS: number | null
-  /** Expected kills contributed per effector, for killedByEffectorId. */
-  killContrib: Map<string, number>
-}
-
-/** Engine-internal state of one effector during the attrition sweep. */
-export interface EffectorState {
-  entity: Entity
-  spec: EffectorSpec
-  /** Launcher or emitter height above ground, meters. */
-  mountM: number
-  pk: number
-  cooldownS: number
-  /** Seconds from assignment to release; 0 for pre-latency saves. */
-  engageTimeS: number
-  /** Null = unlimited. */
-  rounds: number | null
-  nextReadyS: number
-  shotsFired: number
-  deSalvos: number
-  jamSalvos: number
-}
-
-/**
- * Seconds of flight to a slant range at the average flyout speed (the stated
- * speed times FLYOUT_SPEED_FACTOR); 0 when the effector states no speed.
- */
-export function timeOfFlightS(spec: EffectorSpec, slantM: number): number {
-  const v = spec.flyoutSpeedMps
-  // A jammer, DE or HPM effect arrives with the beam: no flyout even if a speed is stored.
-  if (v == null || !(v > 0) || expenditureChannel(spec.effectorType) !== 'kinetic') return 0
-  return slantM / (v * FLYOUT_SPEED_FACTOR)
-}
-
-/** Formation member positions of a threat at one sim time. */
-function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
-  const s = posAtTime(ts.path!.points, ts.speedMps, ts.delayS, tS)
-  return memberPositions(ts.entity, s.pos, s.headingDeg)
-}
-
-/**
- * Predicted intercept for one ship: the target position at tS + engageTimeS + timeOfFlight,
- * solved by three fixed-point passes (flight time from the slant at the previous pass).
- * The returned position and slant are sampled at the returned tEffectS. With no stated
- * speed the flight time is 0 and the result is the position at tS + engageTimeS.
- * `membersAt` lets the sweep supply its per-tick geometry cache; the default samples the path.
- * `capS` is the end of the in-range interval that contains tS: a target faster than the
- * interceptor recedes and the passes never close, so a flight past the cap is held at
- * the cap, sampled there, and reported `capped` (R-F-7). Only the flight is capped: a
- * release at or before the cap with a flight past it; a release after the cap is not.
- */
-export function interceptAt(
-  ts: ThreatState,
-  es: EffectorState,
-  tS: number,
-  memberIdx: number,
-  membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
-  capS = Number.POSITIVE_INFINITY,
-): { pos: Vec2; slantM: number; tEffectS: number; capped: boolean } {
-  const dAltM = ts.altM - es.mountM
-  const sampleAt = (tEffectS: number) => {
-    const members = membersAt(ts, tEffectS)
-    const pos = members[Math.min(memberIdx, members.length - 1)]
-    return { pos, slantM: slantRangeM(dist(es.entity.pos, pos), dAltM) }
-  }
-  let tofS = 0
-  for (let pass = 0; pass < 3; pass++) {
-    const next = timeOfFlightS(es.spec, sampleAt(tS + es.engageTimeS + tofS).slantM)
-    if (next === tofS) break
-    tofS = next
-  }
-  // The geometry is sampled at the returned time, so the last update is kept.
-  // The cap trims the flight only: a release (tS + engageTimeS) already past
-  // the window end is not a flight to cap, and without a stated speed there
-  // is no flight, so the flyout-free arithmetic is unchanged.
-  const releaseS = tS + es.engageTimeS
-  const capped = releaseS <= capS && releaseS + tofS > capS
-  const tEffectS = capped ? capS : releaseS + tofS
-  return { ...sampleAt(tEffectS), tEffectS, capped }
-}
-
-/** A salvo in flight: assigned, magazine spent, effect not yet applied. */
-interface PendingEffect {
-  tEffectS: number
-  effectorId: string
-  target: ThreatState
-  shipIdx: number
-  /**
-   * Salvos this effector committed at this ship before this one, every
-   * channel together: the kill draw key.
-   */
-  salvoIdx: number
-  /** Geometry Pk evaluated at tEffect (position, falloff, size, evasion). */
-  pk: number
-  softShot: boolean
-  continueJam: boolean
-  /** Ledger entry to receive killDelta when the effect applies. */
-  event: EngagementEvent
-}
-
-const EPS = 1e-9
-
-/**
- * Launch-point policy test for one candidate shot, evaluated at the effect
- * point. True when the policy volunteers the shot now; the caller still fires
- * at the deadline when this is false. 'latest' never volunteers.
- */
-export function launchPolicyReleases(
-  doctrine: FireDoctrine,
-  pk: number,
-  commitPk: number,
-  interceptDistM: number,
-  maxRangeM: number,
-): boolean {
-  switch (doctrine.launchPolicy) {
-    case 'max-range':
-      return true
-    case 'range-fraction':
-      return interceptDistM <= doctrine.launchRangeFraction * maxRangeM + EPS
-    case 'pk-commit':
-      return pk >= commitPk - EPS
-    case 'latest':
-      return false
-    default:
-      return true
-  }
 }
 
 /**

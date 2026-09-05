@@ -24,7 +24,8 @@ import { meanInterval, quantile, wilson } from '../te/calc/stats'
 import { resolveEngagements } from './attrition'
 import { monteCarloPolicy } from './policy'
 import type { ThreatAssessment } from './sim'
-import { assessAllThreats, DT } from './sim'
+import { assessAllThreats } from './sim'
+import { DT } from './clock'
 
 /**
  * Summary statistics over the finite samples of one quantity. Every numeric

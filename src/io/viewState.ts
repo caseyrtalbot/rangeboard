@@ -1,11 +1,14 @@
 import type { BasemapMode } from '../model/types'
+import type { DisplayUnits } from '../geometry/geo'
+import type { LayerVisibility } from '../state/layers'
+import { DEFAULT_LAYERS } from '../state/layers'
 import type { AnalysisViewState } from '../state/analysisLayout'
 import { defaultAnalysisView, sanitizeAnalysisView } from '../state/analysisLayout'
 import type { Camera, RightTab } from '../state/store'
 import type { RingKey, RingOverrides } from '../state/rings'
 import { RING_KEYS } from '../state/rings'
 import type { Workspace } from '../te/state/teStore'
-import { ANALYSIS_KEY, RINGS_KEY, VIEW_KEY } from './storageKeys'
+import { ANALYSIS_KEY, LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } from './storageKeys'
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
@@ -170,3 +173,72 @@ export function writeViewCamera(camera: Camera): void {
   cameraTimer = setTimeout(flushViewWrites, CAMERA_WRITE_DELAY_MS)
 }
 
+
+/**
+ * Run sequence the next startup issues. Written on a manual reset (the fresh
+ * run's own number, so a reload shows the same run) and on the first start of
+ * a run (that number plus one, so a run that produced telemetry is never
+ * reissued after a reload).
+ */
+export function savedRunSeq(): number {
+  if (typeof localStorage === 'undefined') return 1
+  const n = Number(localStorage.getItem(RUNSEQ_KEY))
+  return Number.isInteger(n) && n >= 1 ? n : 1
+}
+
+/** Store the run sequence the next startup issues. */
+export function writeRunSeq(seq: number): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(RUNSEQ_KEY, String(seq))
+  } catch {
+    // A lost sequence write costs a reused label, never data.
+  }
+}
+
+/** Display units from localStorage; anything other than the exact metric value is aviation. */
+export function savedUnits(): DisplayUnits {
+  if (typeof localStorage === 'undefined') return 'aviation'
+  return localStorage.getItem(UNITS_KEY) === 'metric' ? 'metric' : 'aviation'
+}
+
+/** Store the display units. */
+export function writeUnits(v: DisplayUnits): void {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
+}
+
+/**
+ * Layer visibility from localStorage, spread over DEFAULT_LAYERS so a layer key
+ * added after the save still gets a value. A save from before the ring split
+ * carries `sensorFootprints` and `effectorEnvelopes`: they seed the placard and
+ * the max-range ring, then both old keys go.
+ */
+export function savedLayers(): LayerVisibility {
+  const defaults = { ...DEFAULT_LAYERS }
+  if (typeof localStorage === 'undefined') return defaults
+  const raw = localStorage.getItem(LAYERS_KEY)
+  if (raw == null) return defaults
+  try {
+    const saved = JSON.parse(raw) as Partial<LayerVisibility> & {
+      sensorFootprints?: boolean
+      effectorEnvelopes?: boolean
+    }
+    if (typeof saved.sensorFootprints === 'boolean' && saved.sensorPlacard === undefined) {
+      saved.sensorPlacard = saved.sensorFootprints
+    }
+    if (typeof saved.effectorEnvelopes === 'boolean' && saved.effectorMaxRange === undefined) {
+      saved.effectorMaxRange = saved.effectorEnvelopes
+    }
+    delete saved.sensorFootprints
+    delete saved.effectorEnvelopes
+    return { ...defaults, ...saved }
+  } catch {
+    return defaults
+  }
+}
+
+/** Store the layer visibility. */
+export function writeLayers(layers: LayerVisibility): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(LAYERS_KEY, JSON.stringify(layers))
+}

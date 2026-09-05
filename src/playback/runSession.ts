@@ -1,4 +1,4 @@
-import type { RunResetReason } from '../state/store'
+import type { RunResetReason } from '../state/runState'
 import { useStore } from '../state/store'
 
 /**

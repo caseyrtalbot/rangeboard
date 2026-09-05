@@ -10,7 +10,7 @@ import type {
   Entity, EntityKind, Scenario, SensorSpec, SpecModel, UasSpec,
 } from '../model/types'
 import { effectiveDoctrine, entityActive, runSettings } from '../model/types'
-import { expenditureChannel } from '../playback/attrition'
+import { expenditureChannel } from '../playback/pk'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
 

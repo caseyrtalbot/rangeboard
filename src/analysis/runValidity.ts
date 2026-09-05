@@ -1,7 +1,7 @@
 import type { RunValidity, Scenario } from '../model/types'
 import { entityActive, runSettings } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
-import { spawnInRingViolations } from '../playback/sim'
+import { spawnInRingViolations } from '../playback/detection'
 import type { ModelId, ModelTag } from './fidelity'
 import { MODEL_TAGS, modelsUsed } from './fidelity'
 import type { RequirementGateId } from './requirements'

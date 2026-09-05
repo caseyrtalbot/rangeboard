@@ -3,7 +3,7 @@ import type { AttritionReport } from '../playback/attrition'
 import type { DetectionHit, ThreatAssessment } from '../playback/sim'
 import { waveIndexFor } from '../playback/raid'
 import { THREAT_TACTICS } from '../playback/tactics'
-import { SHIP_DEAD_BELOW } from '../playback/attrition'
+import { SHIP_DEAD_BELOW } from '../playback/pk'
 
 export interface ThreatOperationalRow {
   uasId: string

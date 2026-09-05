@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from './store'
+import { buildRaid, raidDraftFor } from './raidBuilder'
 import { emptyScenario } from '../model/seed'
 import { fanAxes } from '../playback/tactics'
 import { bearingDeg, dist } from '../geometry/geo'
@@ -344,5 +345,32 @@ describe('tactic raid builder: commitRaid', () => {
       expect(sy).toBeGreaterThanOrEqual(0)
       expect(sy).toBeLessThanOrEqual(700)
     }
+  })
+})
+
+describe('tactic raid builder: pure functions', () => {
+  beforeEach(reset)
+
+  it('raidDraftFor is null for an unknown tactic and buildRaid is null while blocked', () => {
+    const assetId = placeAsset()
+    const { scenario } = useStore.getState()
+    expect(raidDraftFor(scenario, 'NO-SUCH-TACTIC')).toBeNull()
+    const draft = raidDraftFor(scenario, 'GEN-WAVE')!
+    expect(draft).toEqual({
+      tacticId: 'GEN-WAVE', platformSpecId: null, targetEntityId: assetId, shipCount: 8,
+    })
+    expect(buildRaid(scenario, draft, null)).toBeNull()
+  })
+
+  it('buildRaid leaves the scenario untouched and returns ships, paths and waves in step', () => {
+    placeAsset()
+    const { scenario } = useStore.getState()
+    const frozen = JSON.stringify(scenario)
+    const raid = buildRaid(scenario, raidDraftFor(scenario, 'RUS-TAC-02')!, null)!
+    expect(JSON.stringify(scenario)).toBe(frozen)
+    expect(raid.entities).toHaveLength(8)
+    expect(raid.paths.map((p) => p.entityId)).toEqual(raid.entities.map((e) => e.id))
+    expect(raid.starts).toEqual(raid.entities.map((e) => e.pos))
+    expect(raid.waves.flatMap((w) => w.entityIds)).toEqual(raid.entities.map((e) => e.id))
   })
 })

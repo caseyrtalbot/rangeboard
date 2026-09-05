@@ -1,7 +1,7 @@
 import type { RequirementThresholds } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../model/types'
 import { hashU01, idHash } from '../geometry/prng'
-import { stepIndex } from './sim'
+import { stepIndex } from './clock'
 
 /** Draw kinds, one integer per engine draw point. */
 export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5 } as const

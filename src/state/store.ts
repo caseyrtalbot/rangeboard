@@ -16,32 +16,41 @@ import type {
   TestCard,
   Vec2,
 } from '../model/types'
-import {
-  DEFAULT_REQUIREMENT_THRESHOLDS,
-  dropEditedProvenance,
-  effectiveDoctrine,
-  entityActive,
-  newId,
-  runSettings,
-} from '../model/types'
+import { dropEditedProvenance, newId, runSettings } from '../model/types'
 import type { RingKey, RingOverrides } from './rings'
+import { pruneRingOverrides } from './rings'
+import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
+import { LAYER_PRESETS } from './layers'
+import type { McState, PlaybackState, RunResetReason } from './runState'
+import { freshPlayback, IDLE_MC, mcForScenarioChange, playbackForScenarioChange } from './runState'
+import { analysisBasisSignature } from './analysisBasis'
+import { buildRaid, raidDraftFor } from './raidBuilder'
+import {
+  bumpCardVersion,
+  defaultConnectionLabel,
+  defaultFrameName,
+  KIND_NAMES,
+  typedConnections,
+} from './labels'
+import { fitCameraTo } from './camera'
 import { emptyScenario, SEED_LIBRARY } from '../model/seed'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
-import { bearingDeg, destination, dist, formationOffsets, formatTime, rotatePoint } from '../geometry/geo'
+import { rotatePoint } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
-import { buildRaidPlan } from '../playback/raid'
-import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
-import { defendedRadiusOf, sensorHoldsPoint, threatAltitudeFt } from '../playback/sim'
-import { uncertainFields } from '../analysis/parameterBasis'
-import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
 import {
   savedAnalysis,
+  savedLayers,
   savedRingOverrides,
+  savedRunSeq,
+  savedUnits,
   savedView,
   writeAnalysis,
+  writeLayers,
   writeRingOverrides,
+  writeRunSeq,
+  writeUnits,
   writeView,
   writeViewCamera,
 } from '../io/viewState'
@@ -56,14 +65,8 @@ import {
   setWidgetParams,
   toggleCollapsed,
 } from './analysisLayout'
-import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
 // Keep worker execution behind mcClient; summaries are types, not store runtime dependencies.
-import type {
-  McSensitivityMessage,
-  McSummary,
-  McWorkerMessage,
-  SensitivitySummary,
-} from '../playback/mcRun'
+import type { McSensitivityMessage, McWorkerMessage } from '../playback/mcRun'
 import {
   cancelMcRun,
   cancelSensitivity,
@@ -77,6 +80,11 @@ import {
 export { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
 export { SENSOR_RING_KEYS, EFFECTOR_RING_KEYS, RING_KEYS } from './rings'
 export type { RingKey, RingOverrides } from './rings'
+export type { LayerKey, LayerPreset } from './layers'
+export { ringVisible } from './layers'
+export type { McState, RunPhase } from './runState'
+export { IDLE_MC, IDLE_SENSITIVITY } from './runState'
+export { defaultFrameName, formatRunLabel } from './labels'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -107,21 +115,6 @@ const EMPTY_SELECTION: Selection = {
 const HISTORY_LIMIT = 100
 
 /**
- * Spawn clamp for the tactic builder: raid origins sit beyond every enabled
- * sensor's detection ring (measured from each sensor position) by this
- * factor, so first detection happens inside the play, never at T0.
- */
-const STANDOFF_CLEAR_FACTOR = 1.1
-/** Standoff search: multiply by this per step until no ship is held, up to the step cap. */
-const STANDOFF_STEP = 1.05
-const STANDOFF_MAX_STEPS = 200
-/** In-trail spacing for raid ships when the tactic carries no formation, meters. */
-const RAID_TRAIL_SPACING_M = 300
-/** Camera scale bounds, pixels per meter (mirrors CanvasStage zoom limits). */
-const FIT_MIN_SCALE = 0.0005
-const FIT_MAX_SCALE = 20
-
-/**
  * Armed tactic-builder state. UI only, never part of the scenario and never
  * undoable; commitRaid turns it into scenario changes in one mutate().
  */
@@ -131,40 +124,6 @@ export interface RaidDraft {
   targetEntityId: string | null
   shipCount: number
 }
-
-/** Canvas layer visibility. View state only: not undoable, not in the scenario. */
-export interface LayerVisibility {
-  grid: boolean
-  boundaries: boolean
-  /** Thin ring at the sensor placard detect range. */
-  sensorPlacard: boolean
-  /** Band between the smallest and largest effective detect range over the placed threats. */
-  sensorEnvelope: boolean
-  /** Pd contours for the selected threat. */
-  sensorPdContours: boolean
-  classifyRings: boolean
-  /** Effector max-range ring. */
-  effectorMaxRange: boolean
-  /** Effector min-range ring. */
-  effectorMinRange: boolean
-  /** Release and commit-Pk rings for the selected threat. */
-  effectorDoctrinal: boolean
-  /** Defended-area ring around every asset (Entity.defendedRadiusM, else the 500 m default). */
-  defendedAreas: boolean
-  threatWez: boolean
-  flightPaths: boolean
-  connections: boolean
-  rangeRings: boolean
-  engagements: boolean
-  labels: boolean
-  trackTelemetry: boolean
-}
-
-/** Name of a single canvas layer toggle. */
-export type LayerKey = keyof LayerVisibility
-
-/** Named declutter set applied to every layer at once. */
-export type LayerPreset = 'full' | 'planning' | 'engagement' | 'clean'
 
 export interface UiState {
   basemap: BasemapMode
@@ -222,80 +181,6 @@ export interface SaveState {
   lastAutosaveAt: number | null
   /** Why the last write failed; null when the last write succeeded. */
   error: string | null
-}
-
-export type RunPhase = 'ready' | 'running' | 'paused' | 'complete' | 'review'
-export type RunResetReason = 'manual' | 'configuration-changed' | 'scenario-loaded' | 'initial'
-
-export interface PlaybackState {
-  playing: boolean
-  simTimeS: number
-  speedMult: number
-  /** Unique, non-persisted identity for this clean playback run. */
-  runId: string
-  /** Human-scale sequence shown as RUN-0001, RUN-0002, ... */
-  runSeq: number
-  phase: RunPhase
-  /** Highest time actually traversed by playback; scrubbing never advances it. */
-  observedThroughS: number
-  startedAtMs: number | null
-  completedAtMs: number | null
-  /** Analysis-only configuration snapshot used to detect mid-run changes. */
-  basisSignature: string | null
-  resetReason: RunResetReason
-}
-
-/** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */
-export type McStatus = 'idle' | 'running' | 'done' | 'stale' | 'error'
-
-/** Lifecycle of the sensitivity run behind the Sensitivity widget. */
-interface SensitivityState {
-  runId: string | null
-  status: McStatus
-  /** Uncertain fields done, and the total. */
-  progress: number
-  total: number
-  summary: SensitivitySummary | null
-  basisSignature: string | null
-  error: string | null
-}
-
-/** The sensitivity slice before any run. */
-export const IDLE_SENSITIVITY: SensitivityState = {
-  runId: null,
-  status: 'idle',
-  progress: 0,
-  total: 0,
-  summary: null,
-  basisSignature: null,
-  error: null,
-}
-
-export interface McState {
-  /** playback.runId the summary belongs to; null while idle. */
-  runId: string | null
-  status: McStatus
-  /** Replicates done, and the total. After a run both equal summary.replicates. */
-  progress: number
-  total: number
-  summary: McSummary | null
-  /** analysisBasisSignature of the scenario the summary was computed on. */
-  basisSignature: string | null
-  error: string | null
-  /** The sensitivity run, on its own worker and its own lifecycle. */
-  sensitivity: SensitivityState
-}
-
-/** The Monte Carlo slice before any run: no summary, no signature, no error. */
-export const IDLE_MC: McState = {
-  runId: null,
-  status: 'idle',
-  progress: 0,
-  total: 0,
-  summary: null,
-  basisSignature: null,
-  error: null,
-  sensitivity: IDLE_SENSITIVITY,
 }
 
 export interface Store {
@@ -479,278 +364,6 @@ export interface Store {
 
 
 /**
- * Layer state a first run starts from and the fallback for a save that lacks a
- * key. Two rings only: the sensor placard and the effector max range. The other
- * five rings answer a narrower question, so the board opens uncluttered.
- */
-export const DEFAULT_LAYERS: LayerVisibility = {
-  grid: true,
-  boundaries: true,
-  sensorPlacard: true,
-  sensorEnvelope: false,
-  sensorPdContours: false,
-  classifyRings: false,
-  effectorMaxRange: true,
-  effectorMinRange: false,
-  effectorDoctrinal: false,
-  defendedAreas: true,
-  threatWez: false,
-  flightPaths: true,
-  connections: true,
-  rangeRings: true,
-  engagements: true,
-  labels: true,
-  trackTelemetry: true,
-}
-
-/** Declutter sets. None of them is the default layer state; that is DEFAULT_LAYERS. */
-const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
-  full: {
-    grid: true,
-    boundaries: true,
-    sensorPlacard: true,
-    sensorEnvelope: true,
-    sensorPdContours: true,
-    classifyRings: true,
-    effectorMaxRange: true,
-    effectorMinRange: true,
-    effectorDoctrinal: true,
-    defendedAreas: true,
-    threatWez: false,
-    flightPaths: true,
-    connections: true,
-    rangeRings: true,
-    engagements: true,
-    labels: true,
-    trackTelemetry: true,
-  },
-  planning: {
-    grid: true,
-    boundaries: true,
-    sensorPlacard: true,
-    sensorEnvelope: true,
-    sensorPdContours: false,
-    classifyRings: false,
-    effectorMaxRange: true,
-    effectorMinRange: true,
-    effectorDoctrinal: false,
-    defendedAreas: true,
-    threatWez: false,
-    flightPaths: true,
-    connections: true,
-    rangeRings: true,
-    engagements: false,
-    labels: true,
-    trackTelemetry: true,
-  },
-  engagement: {
-    grid: true,
-    boundaries: true,
-    sensorPlacard: true,
-    sensorEnvelope: false,
-    sensorPdContours: false,
-    classifyRings: false,
-    effectorMaxRange: true,
-    effectorMinRange: false,
-    effectorDoctrinal: true,
-    defendedAreas: true,
-    threatWez: false,
-    flightPaths: true,
-    connections: false,
-    rangeRings: false,
-    engagements: true,
-    labels: true,
-    trackTelemetry: true,
-  },
-  clean: {
-    grid: true,
-    boundaries: false,
-    sensorPlacard: false,
-    sensorEnvelope: false,
-    sensorPdContours: false,
-    classifyRings: false,
-    effectorMaxRange: false,
-    effectorMinRange: false,
-    effectorDoctrinal: false,
-    defendedAreas: false,
-    threatWez: false,
-    flightPaths: false,
-    connections: false,
-    rangeRings: false,
-    engagements: false,
-    labels: true,
-    trackTelemetry: true,
-  },
-}
-
-/** Effective visibility of one ring for one entity: the override, else the layer flag. */
-export function ringVisible(ui: UiState, entityId: string, key: RingKey): boolean {
-  return ui.ringOverrides[entityId]?.[key] ?? ui.layers[key]
-}
-
-/**
- * Drop overrides for entities the scenario no longer holds. Returns the same
- * object when every id is still live, so a caller can skip the storage write.
- */
-function pruneRingOverrides(overrides: RingOverrides, scenario: Scenario): RingOverrides {
-  const live = new Set(scenario.entities.map((e) => e.id))
-  const ids = Object.keys(overrides)
-  if (ids.every((id) => live.has(id))) return overrides
-  const next: RingOverrides = {}
-  for (const id of ids) if (live.has(id)) next[id] = overrides[id]
-  return next
-}
-
-export function formatRunLabel(seq: number): string {
-  return `RUN-${String(seq).padStart(4, '0')}`
-}
-
-function freshPlayback(
-  runSeq: number,
-  speedMult = 1,
-  resetReason: RunResetReason = 'initial',
-): PlaybackState {
-  return {
-    playing: false,
-    simTimeS: 0,
-    speedMult,
-    runId: newId('simrun'),
-    runSeq,
-    phase: 'ready',
-    observedThroughS: 0,
-    startedAtMs: null,
-    completedAtMs: null,
-    basisSignature: null,
-    resetReason,
-  }
-}
-
-/** Remove only known metadata: future input fields are included by default. */
-function without<T extends object, K extends keyof T>(value: T, keys: K[]): Omit<T, K> {
-  const result = { ...value }
-  for (const key of keys) delete result[key]
-  return result
-}
-
-/** Object key insertion order is not an input; array order (including draw order) is. */
-function basisJson(value: unknown): string {
-  return JSON.stringify(value, (_key, part) => {
-    if (part == null || typeof part !== 'object' || Array.isArray(part)) return part
-    return Object.fromEntries(Object.keys(part).sort().map((key) => [key, part[key]]))
-  })
-}
-
-/**
- * Numerical/configuration identity, excluding named presentation and evidence fields.
- * New domain fields are included automatically. Defaults use the engine's resolvers;
- * uncertainFields is also the sampler's enumeration, including connection draw IDs.
- * Keep the input/consumer matrix in docs/field-te/C1_COMPLETION.md alongside regressions.
- */
-export function analysisBasisSignature(s: Scenario): string {
-  const doctrine = effectiveDoctrine(s)
-  const kindOf = new Map(s.entities.map((e) => [e.id, e.kind]))
-  return basisJson({
-    ...without(s, [
-      'schemaVersion', 'name', 'systemPresets', 'deletedSeedIds', 'observedPresetId',
-      'engageOn', 'mcdaWeights', 'scorecards', 'boundaries', 'testCards', 'frames',
-      'underlay', 'geoRef', 'runMode', 'seed', 'replicates', 'targetHalfWidth', 'uncertainty',
-    ]),
-    environment: {
-      ...s.environment,
-      precipitation: s.environment.precipitation ?? 'clear',
-      light: s.environment.light ?? 'day',
-      emBackground: s.environment.emBackground ?? 'rural',
-      visibilityM: s.environment.visibilityM ?? null,
-    },
-    roe: s.roe ?? 'tight',
-    raid: s.raid ?? { waves: [] },
-    doctrine,
-    requirements: { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...s.requirements },
-    run: runSettings(s),
-    spreads: uncertainFields(s),
-    library: s.library.map((m) => ({
-      ...without(m, ['name', 'description', 'color', 'builtin', 'provenance']),
-      uas: m.uas ? without(m.uas, ['emissionsNote', 'rangeNote']) : undefined,
-      // routeIntent is read by hostile-ID logic, so it is an input despite being text.
-      threatProfile: m.threatProfile ? without(m.threatProfile, ['designator']) : undefined,
-    })),
-    entities: s.entities.map((e) => ({
-      ...without(e, ['name', 'color', 'notes', 'systemId', 'showRange']),
-      enabled: entityActive(e),
-      formation: e.formation ?? null,
-      altitudeFt: e.kind === 'uas' ? threatAltitudeFt(s, e) : e.altitudeFt ?? null,
-      defendedRadiusM: e.kind === 'asset' ? defendedRadiusOf(e) : e.defendedRadiusM ?? null,
-    })),
-    connections: s.connections.map((c) => ({
-      ...without(c, ['label', 'note']),
-      medium: c.medium ?? null,
-      confidence: c.confidence ?? null,
-      latencyS: c.latencyS ?? (doctrine.enabled
-        ? defaultLinkLatencyS(kindOf.get(c.fromId) ?? 'sensor', kindOf.get(c.toId) ?? 'c2')
-        : 0),
-    })),
-  })
-}
-
-/**
- * A configuration change invalidates the run in progress: the telemetry it
- * produced no longer describes the board. The run keeps its sequence number;
- * only a manual reset issues a new one.
- */
-function playbackForScenarioChange(playback: PlaybackState, next: Scenario): PlaybackState {
-  if (
-    playback.basisSignature == null ||
-    playback.basisSignature === analysisBasisSignature(next)
-  ) {
-    return playback
-  }
-  return freshPlayback(playback.runSeq, playback.speedMult, 'configuration-changed')
-}
-
-/**
- * The replicates describe the board they ran on. A configuration change makes
- * them stale: the worker is stopped and the summary is kept for reference, but
- * it is no longer the current answer. Bands read `status === 'done'` only. The
- * sensitivity run carries its own signature, so each side goes stale on its own.
- */
-function mcForScenarioChange(mc: McState, next: Scenario): McState {
-  const live = (status: McStatus): boolean => status === 'running' || status === 'done'
-  if (!live(mc.status) && !live(mc.sensitivity.status)) return mc
-  const signature = analysisBasisSignature(next)
-  const mcStale = live(mc.status) && mc.basisSignature !== signature
-  const sensStale = live(mc.sensitivity.status) && mc.sensitivity.basisSignature !== signature
-  if (!mcStale && !sensStale) return mc
-  if (mcStale) cancelMcRun()
-  if (sensStale) cancelSensitivity()
-  return {
-    ...mc,
-    status: mcStale ? 'stale' : mc.status,
-    sensitivity: sensStale ? { ...mc.sensitivity, status: 'stale' } : mc.sensitivity,
-  }
-}
-
-/**
- * Run sequence the next startup issues. Written on a manual reset (the fresh
- * run's own number, so a reload shows the same run) and on the first start of
- * a run (that number plus one, so a run that produced telemetry is never
- * reissued after a reload). Exported for tests.
- */
-export function savedRunSeq(): number {
-  if (typeof localStorage === 'undefined') return 1
-  const n = Number(localStorage.getItem(RUNSEQ_KEY))
-  return Number.isInteger(n) && n >= 1 ? n : 1
-}
-
-function writeRunSeq(seq: number): void {
-  if (typeof localStorage === 'undefined') return
-  try {
-    localStorage.setItem(RUNSEQ_KEY, String(seq))
-  } catch {
-    // A lost sequence write costs a reused label, never data.
-  }
-}
-
-/**
  * The observed lens belongs to the run, not to the edit history: a snapshot
  * restored by undo or redo keeps the stamp the current scenario carries.
  */
@@ -806,130 +419,6 @@ const CLEARED_DRAFT: Pick<
   locationDialogOpen: false,
   raidDraft: null,
   connectSuggestion: null,
-}
-
-function savedUnits(): DisplayUnits {
-  if (typeof localStorage === 'undefined') return 'aviation'
-  return localStorage.getItem(UNITS_KEY) === 'metric' ? 'metric' : 'aviation'
-}
-
-/**
- * Layer visibility from localStorage, spread over DEFAULT_LAYERS so a layer key
- * added after the save still gets a value. A save from before the ring split
- * carries `sensorFootprints` and `effectorEnvelopes`: they seed the placard and
- * the max-range ring, then both old keys go.
- */
-export function savedLayers(): LayerVisibility {
-  const defaults = { ...DEFAULT_LAYERS }
-  if (typeof localStorage === 'undefined') return defaults
-  const raw = localStorage.getItem(LAYERS_KEY)
-  if (raw == null) return defaults
-  try {
-    const saved = JSON.parse(raw) as Partial<LayerVisibility> & {
-      sensorFootprints?: boolean
-      effectorEnvelopes?: boolean
-    }
-    if (typeof saved.sensorFootprints === 'boolean' && saved.sensorPlacard === undefined) {
-      saved.sensorPlacard = saved.sensorFootprints
-    }
-    if (typeof saved.effectorEnvelopes === 'boolean' && saved.effectorMaxRange === undefined) {
-      saved.effectorMaxRange = saved.effectorEnvelopes
-    }
-    delete saved.sensorFootprints
-    delete saved.effectorEnvelopes
-    return { ...defaults, ...saved }
-  } catch {
-    return defaults
-  }
-}
-
-function writeLayers(layers: LayerVisibility): void {
-  if (typeof localStorage === 'undefined') return
-  localStorage.setItem(LAYERS_KEY, JSON.stringify(layers))
-}
-
-const KIND_NAMES: Record<EntityKind, string> = {
-  sensor: 'Sensor',
-  effector: 'Effector',
-  c2: 'C2',
-  uas: 'UAS',
-  asset: 'Asset',
-  marker: 'Marker',
-}
-
-/** Default kill-chain label from the endpoint kinds; empty when the pair implies none. */
-export function defaultConnectionLabel(fromKind: EntityKind, toKind: EntityKind): string {
-  if (fromKind === 'sensor' && toKind === 'c2') return 'track data'
-  if (fromKind === 'c2' && toKind === 'effector') return 'engage order'
-  if (fromKind === 'sensor' && toKind === 'effector') return 'direct cue'
-  return ''
-}
-
-/** Typed connections for accepted or auto-applied suggestions; skips existing pairs. */
-function typedConnections(s: Scenario, links: SuggestedLink[]): Connection[] {
-  const added: Connection[] = []
-  for (const { fromId, toId, verdict } of links) {
-    const dupe = (c: Connection) => c.fromId === fromId && c.toId === toId
-    if (s.connections.some(dupe) || added.some(dupe)) continue
-    added.push({
-      id: newId('con'),
-      fromId,
-      toId,
-      label: verdict.label,
-      medium: verdict.medium,
-      confidence: verdict.confidence,
-      note: verdict.note,
-      latencyS: verdict.latencyS,
-    })
-  }
-  return added
-}
-
-/** Default frame name: scenario, sim time, and basemap. */
-export function defaultFrameName(
-  scenarioName: string,
-  simTimeS: number,
-  basemap: BasemapMode,
-): string {
-  return `${scenarioName} T+${formatTime(simTimeS)} ${basemap}`
-}
-
-/**
- * Camera that fits the given world points in the canvas viewport. Reads the
- * mounted canvas host for its pixel size and falls back to a representative
- * viewport when none is mounted (tests, T&E workspace).
- */
-function fitCameraTo(points: Vec2[]): Camera | null {
-  if (points.length === 0) return null
-  let vw = 1000
-  let vh = 700
-  if (typeof document !== 'undefined') {
-    const host = document.querySelector('[data-testid="canvas-host"]')
-    if (host instanceof HTMLElement && host.clientWidth > 50 && host.clientHeight > 50) {
-      vw = host.clientWidth
-      vh = host.clientHeight
-    }
-  }
-  const xs = points.map((p) => p.x)
-  const ys = points.map((p) => p.y)
-  const minX = Math.min(...xs)
-  const maxX = Math.max(...xs)
-  const minY = Math.min(...ys)
-  const maxY = Math.max(...ys)
-  // 15% margin around the raid extent.
-  const w = Math.max(1, (maxX - minX) * 1.15)
-  const h = Math.max(1, (maxY - minY) * 1.15)
-  const scale = Math.min(FIT_MAX_SCALE, Math.max(FIT_MIN_SCALE, Math.min(vw / w, vh / h)))
-  const cx = (minX + maxX) / 2
-  const cy = (minY + maxY) / 2
-  return { scale, x: vw / 2 - cx * scale, y: vh / 2 - cy * scale }
-}
-
-/** Minor version bump: '1.0' -> '1.1'. Non-standard strings get a '.1' suffix. */
-export function bumpCardVersion(v: string): string {
-  const m = /^(\d+)\.(\d+)$/.exec(v.trim())
-  if (m) return `${m[1]}.${Number(m[2]) + 1}`
-  return `${v.trim() || '1'}.1`
 }
 
 export const useStore = create<Store>()((set, get) => {
@@ -1470,24 +959,8 @@ export const useStore = create<Store>()((set, get) => {
       }),
 
     armRaidDraft: (tacticId) => {
-      const { scenario } = get()
-      const tactic = THREAT_TACTICS.find((t) => t.id === tacticId)
-      if (!tactic) return
-      // Seed-id-first designator match; generic tactics fall back to the most
-      // recently placed UAS model and stay editable in the builder card.
-      let platformSpecId = resolvePlatform(tactic, scenario.library)?.id ?? null
-      if (!platformSpecId) {
-        for (let i = scenario.entities.length - 1; i >= 0; i--) {
-          const e = scenario.entities[i]
-          if (e.kind !== 'uas' || !e.specId) continue
-          const m = scenario.library.find((x) => x.id === e.specId)
-          if (m?.uas) {
-            platformSpecId = m.id
-            break
-          }
-        }
-      }
-      const assets = scenario.entities.filter((e) => e.kind === 'asset')
+      const raidDraft = raidDraftFor(get().scenario, tacticId)
+      if (!raidDraft) return
       // Arming replaces any in-progress draw draft so the next canvas click
       // can only mean "place the raid axis".
       set((st) => ({
@@ -1499,12 +972,7 @@ export const useStore = create<Store>()((set, get) => {
           connectFromId: null,
           calibrateA: null,
           calibrateB: null,
-          raidDraft: {
-            tacticId,
-            platformSpecId,
-            targetEntityId: assets.length === 1 ? assets[0].id : null,
-            shipCount: tactic.defaultShipCount,
-          },
+          raidDraft,
         },
       }))
     },
@@ -1519,135 +987,21 @@ export const useStore = create<Store>()((set, get) => {
 
     commitRaid: (axisAnchor) => {
       const { ui, scenario } = get()
-      const draft = ui.raidDraft
-      if (!draft) return
-      const tactic = THREAT_TACTICS.find((t) => t.id === draft.tacticId)
-      const platform = draft.platformSpecId
-        ? scenario.library.find((m) => m.id === draft.platformSpecId)
-        : undefined
-      const target = draft.targetEntityId
-        ? scenario.entities.find((e) => e.id === draft.targetEntityId)
-        : undefined
+      if (!ui.raidDraft) return
       // Blocked until a UAS platform and a target asset are chosen; the draft
       // stays armed so the builder card can complete it.
-      if (!tactic || !platform?.uas || !target) return
-
-      const shipCount = Number.isFinite(draft.shipCount)
-        ? Math.min(60, Math.max(1, Math.floor(draft.shipCount)))
-        : 1
-      // Ingress bearing: click point toward the target; no anchor (or a click
-      // on the target itself) uses the tactic default.
-      const ingressDeg =
-        axisAnchor && dist(axisAnchor, target.pos) > 1
-          ? bearingDeg(axisAnchor, target.pos)
-          : tactic.defaultBearingDeg
-      const axes = fanAxes(ingressDeg, tactic.axes, tactic.axisSpreadDeg)
-
-      // Decoy platform, resolved like a one-designator tactic. Unresolvable
-      // decoys degrade to an all-strike raid rather than blocking.
-      const decoySpec = tactic.decoy
-        ? resolvePlatform(
-            { ...tactic, platforms: [{ designator: tactic.decoy.designator }] },
-            scenario.library,
-          )
-        : null
-      const specFor = (shipIdx: number): SpecModel =>
-        tactic.decoy != null && decoySpec != null && (shipIdx + 1) % tactic.decoy.everyNth === 0
-          ? decoySpec
-          : platform
-
-      // Spawn standoff clamp: no ship's own start point (after formation
-      // offsets, against its OWN spec: a decoy has its own signature) may be
-      // held by an enabled sensor at T0, under the real per-sensor rule
-      // (sector wedge, environment, target scaling, RF silence and bands,
-      // the EO/IR cue rule). The standoff steps outward until the group is
-      // clear, then takes the clearance margin.
-      const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
-      const layoutFor = (heading: number, members: number[], standoffM: number): Vec2[] => {
-        const origin = destination(target.pos, heading + 180, standoffM)
-        const f = tactic.formation
-        const offsets = f
-          ? formationOffsets(f.shape, members.length, f.spacingM, heading)
-          : formationOffsets('column', members.length, RAID_TRAIL_SPACING_M, heading)
-        return members.map((_, j) => ({ x: origin.x + offsets[j].x, y: origin.y + offsets[j].y }))
-      }
-      const held = (members: number[], pts: Vec2[]): boolean =>
-        pts.some((p, j) => sensorHoldsPoint(scenario, sensors, specFor(members[j]), p))
-      const clearLayout = (heading: number, members: number[]): Vec2[] => {
-        let d = tactic.standoffM
-        let pts = layoutFor(heading, members, d)
-        if (!held(members, pts)) return pts
-        for (let i = 0; i < STANDOFF_MAX_STEPS && held(members, pts); i++) {
-          d *= STANDOFF_STEP
-          pts = layoutFor(heading, members, d)
-        }
-        return layoutFor(heading, members, d * STANDOFF_CLEAR_FACTOR)
-      }
-
-      // Ship i flies wave floor(i / shipsPerWave) on axis i % axes, so every
-      // wave draws from every ingress axis. Each wave-axis group is laid out
-      // with the tactic formation (in-trail column when the tactic has none).
-      const perWave = Math.max(1, Math.floor(tactic.shipsPerWave))
-      const groups = new Map<string, number[]>()
-      for (let i = 0; i < shipCount; i++) {
-        const key = `${Math.floor(i / perWave)}:${i % axes.length}`
-        const members = groups.get(key)
-        if (members) members.push(i)
-        else groups.set(key, [i])
-      }
-      const starts: Vec2[] = new Array(shipCount)
-      const headings: number[] = new Array(shipCount)
-      for (const [key, members] of groups) {
-        const heading = axes[Number(key.split(':')[1])]
-        // Origin: target displaced along the reciprocal of the ingress axis.
-        const pts = clearLayout(heading, members)
-        members.forEach((shipIdx, j) => {
-          starts[shipIdx] = pts[j]
-          headings[shipIdx] = heading
-        })
-      }
-
-      const entities: Entity[] = []
-      const paths: FlightPath[] = []
-      for (let i = 0; i < shipCount; i++) {
-        const spec = specFor(i)
-        const designator =
-          spec.threatProfile?.designator ?? spec.name.split(':').pop()?.trim() ?? spec.name
-        const id = newId('ent')
-        entities.push({
-          id,
-          name: `${designator} ${i + 1}`,
-          kind: 'uas',
-          specId: spec.id,
-          pos: starts[i],
-          headingDeg: headings[i],
-          color: null,
-          notes: `${tactic.id} ship ${i + 1} of ${shipCount}`,
-          altitudeFt: spec.threatProfile?.altitudeFt ?? null,
-        })
-        paths.push({
-          id: newId('pth'),
-          entityId: id,
-          points: [starts[i], { ...target.pos }],
-          speedMps: null,
-          startDelayS: 0,
-        })
-      }
-      const plan = buildRaidPlan(
-        { shipsPerWave: perWave, waveSpacingS: tactic.waveSpacingS },
-        entities.map((e) => e.id),
-      )
-
+      const raid = buildRaid(scenario, ui.raidDraft, axisAnchor)
+      if (!raid) return
       // ONE mutate: a single Cmd+Z removes the entire raid.
       mutate((s) => ({
         ...s,
-        entities: [...s.entities, ...entities],
-        paths: [...s.paths, ...paths],
-        raid: { waves: [...(s.raid?.waves ?? []), ...plan.waves] },
+        entities: [...s.entities, ...raid.entities],
+        paths: [...s.paths, ...raid.paths],
+        raid: { waves: [...(s.raid?.waves ?? []), ...raid.waves] },
       }))
       set((st) => ({ ui: { ...st.ui, raidDraft: null } }))
       // Bring the raid origins and the target into view (camera is not undoable).
-      const cam = fitCameraTo([target.pos, ...starts])
+      const cam = fitCameraTo([raid.target.pos, ...raid.starts])
       if (cam) set({ camera: cam })
     },
 
@@ -2026,7 +1380,7 @@ export const useStore = create<Store>()((set, get) => {
     setAnalysisCustomize: (on) => set((st) => ({ ui: { ...st.ui, analysisCustomize: on } })),
     setSaveState: (lastAutosaveAt, error) => set({ save: { lastAutosaveAt, error } }),
     setUnits: (v) => {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
+      writeUnits(v)
       set((st) => ({ ui: { ...st.ui, units: v } }))
     },
 

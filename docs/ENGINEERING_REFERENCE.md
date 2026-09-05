@@ -71,8 +71,8 @@ Breaking one of these breaks the app.
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
   `attrition.ts`; worker execution stays behind `mcClient.ts`. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.
-  `runSession.ts` is a main-thread store adapter, outside that graph. `policy.ts` and
-  `sim.ts` retain a function-only cycle that works by hoisting; preserve load order.
+  `runSession.ts` is a main-thread store adapter, outside that graph. `policy.ts` imports
+  `stepIndex` from `playback/clock.ts`, so `sim.ts` and `policy.ts` no longer form a cycle.
   `src/analysis/fidelity.ts` reads the scenario, never the picture, so it stays cycle-free.
 - **Monte Carlo worker:** the store action `runMonteCarlo` posts a request through
   `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`
@@ -123,9 +123,19 @@ src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basi
 src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant
                range, horizon), prng.ts (mulberry32, idHash, hashU01), webmerc.ts
 src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui +
-               playback + mc), analysisLayout.ts (lens presets and pure layout reducers)
-src/playback/  sim.ts (detection sweep at DT = 0.5 s, assessThreat, kill-chain routes),
-               attrition.ts (fire distribution, expected kills, events), trackState.ts
+               playback + mc), analysisLayout.ts (lens presets and pure layout reducers),
+               layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
+               MC state shapes and their scenario-change reducers), analysisBasis.ts
+               (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
+               labels.ts (run, connection, frame and card-version labels), camera.ts
+               (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts
+src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), detection.ts
+               (sensor sweep, detectionsAt, spawn ring check), killChain.ts (kill-chain
+               routes), sim.ts (assessThreat, assessAllThreats), pk.ts (Pk model and
+               expenditure channels), intercept.ts (time of flight, intercept, launch
+               releases), attritionReport.ts (report types), sweepState.ts (sweep state
+               types), attrition.ts (resolveEngagements: fire distribution, expected
+               kills, events), trackState.ts
                (phase at t), tactics.ts (threat tactics), raid.ts, runSession.ts,
                policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
                McSummary), mc.worker.ts + mcClient.ts (the replicate worker)
@@ -148,7 +158,8 @@ src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and
                import/export, runExportObject), runResultGroups.ts (per-group basis/units),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
                runtimeValidation.ts + validateScenario.ts (runtime semantics),
-               viewState.ts, storageKeys.ts, recovery.ts
+               viewState.ts (view, layers, rings, run sequence and units keys), storageKeys.ts,
+               recovery.ts
 src/te/        T&E Operations workspace (own store, section 8)
 src/main.tsx   loads the autosave, starts both autosaves, exposes window.__store and
                window.__teStore in dev

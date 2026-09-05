@@ -3,7 +3,7 @@ import { defaultSensorRole, entityActive } from '../model/types'
 import { profileFor } from '../model/integration'
 import type { AttritionReport } from '../playback/attrition'
 import type { DetectionHit, ThreatAssessment } from '../playback/sim'
-import { killChainRoutes } from '../playback/sim'
+import { killChainRoutes } from '../playback/killChain'
 import { expectedDeadTimes } from './threatAggregation'
 
 export type ComponentTelemetryState =

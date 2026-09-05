@@ -1,6 +1,6 @@
 import type { Scenario, SpecModel } from '../model/types'
 import { scenarioDurationS, pathSpeed } from '../model/scenario'
-import { DT } from '../playback/sim'
+import { DT } from '../playback/clock'
 import { pathLength } from '../geometry/geo'
 import { idsOf, MAX_ARRAY_LENGTH, invalid, objectAt, reference, validateShape } from './runtimeValidation'
 

@@ -1,23 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  analysisBasisSignature,
-  bumpCardVersion,
-  DEFAULT_LAYERS,
-  IDLE_MC,
-  IDLE_SENSITIVITY,
-  ringVisible,
-  savedLayers,
-  savedRunSeq,
-  useStore,
-  scenarioDurationS,
-} from './store'
-import type { LayerVisibility } from './store'
+import { useStore, scenarioDurationS } from './store'
+import { analysisBasisSignature } from './analysisBasis'
+import { bumpCardVersion } from './labels'
+import { DEFAULT_LAYERS, ringVisible } from './layers'
+import type { LayerVisibility } from './layers'
+import { IDLE_MC, IDLE_SENSITIVITY } from './runState'
 import { defaultAnalysisView } from './analysisLayout'
 import type { AnalysisViewState } from './analysisLayout'
 import { emptyScenario } from '../model/seed'
 import type { Scenario } from '../model/types'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
-import { flushViewWrites, savedAnalysis, savedRingOverrides, savedView } from '../io/viewState'
+import {
+  flushViewWrites,
+  savedAnalysis,
+  savedLayers,
+  savedRingOverrides,
+  savedRunSeq,
+  savedView,
+} from '../io/viewState'
 import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
 

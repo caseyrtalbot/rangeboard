@@ -22,7 +22,7 @@ import type {
 import { effectiveDoctrine } from '../model/types'
 import { rcsM2For } from '../model/rcsFactors'
 import { bdaSFor, defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
-import { DEFAULT_PK } from '../playback/attrition'
+import { DEFAULT_PK } from '../playback/pk'
 import { betaQuantile } from '../te/calc/stats'
 
 // Pure resolution is shared with analysis identity; sampling remains here.
