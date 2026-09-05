@@ -1,7 +1,10 @@
 # RangeBoard: technical handoff to a follow-on coding model
 
-Written 2026-09-04 by Claude (Fable 5.1) for Astra (GPT 6). Tree at `e55aa86` on branch
-`analysis-hardening`. This file is the state transfer. It does not change the app.
+Status: CURRENT TRANSFER RECORD.
+
+Written 2026-09-04 by Claude (Fable 5.1) for Astra (GPT 6) at tree `e55aa86` on branch
+`analysis-hardening`. Updated the same day in the ownership-transfer pass at `2d367ba`
+(section 18 lists every edit). This file is the state transfer. It does not change the app.
 
 ## 0. How to read this file
 
@@ -14,10 +17,11 @@ Every statement carries one of four marks.
 | [I] | Inferred from code reading. Plausible, not proven by a test or a browser run. |
 | [U] | Uncertain. Conversation history, memory, or a guess. Check before you rely on it. |
 
-Read order after this file: `CLAUDE.md` (127 lines, the one contract for the code), then
-`docs/engine-refactor/handoff-post-wave3.md`, then `docs/data-engine/handoff-orchestrator.md`,
-then `docs/data-engine/outstanding.md`. Section 2.3 says which planning files are in git
-and which were left out.
+Read order: `AGENTS.md` (the one engineering contract, model-neutral), then this file, then
+`docs/data-engine/outstanding.md`. The two orchestrator handoffs
+(`docs/engine-refactor/handoff-post-wave3.md`, `docs/data-engine/handoff-orchestrator.md`)
+are historical; read them for the browser recipe and the protocol lessons. Section 2.3 says
+which planning files are in git and which were left out.
 
 ## 1. Purpose
 
@@ -46,21 +50,33 @@ never deployed by any script in the repo.
 
 | Fact | Value |
 | --- | --- |
-| [V] Branch | `analysis-hardening`, HEAD `e55aa86` |
-| [V] Remote | `origin` = `https://github.com/caseyrtalbot/rangeboard.git`; `origin/analysis-hardening` at `e55aa86`; zero commits ahead |
-| [V] `main` | `3620fca` (2026-08-24). The branch is 28 commits ahead of `main`. No merge or PR exists. |
-| [V] History | 69 commits, first on 2026-08-19. Slice and wave commits carry long messages; `git log -15 --format=%B` is the build record. |
+| [V] Branch | `analysis-hardening`, HEAD `2d367ba` (2026-09-04). The three commits after `e55aa86` are documentation only: `e981c10` (this file), `8af337c` (the planning record), `2d367ba` (a handoff note). |
+| [V] Remote | `origin` = `https://github.com/caseyrtalbot/rangeboard.git`; `origin/analysis-hardening` at `2d367ba`; zero commits ahead and zero behind (checked 2026-09-04 in the transfer pass). |
+| [V] `main` | `3620fca` (2026-08-24), equal to `origin/main`. The branch is 31 commits ahead of `main`, and `main` is the merge base, so a fast-forward is possible. No merge or PR exists. |
+| [V] History | 72 commits, first on 2026-08-19. Slice and wave commits carry long messages; `git log -20 --format=%B` is the build record. |
 | [V] Stashes | none |
-| [V] Tracked tree | clean |
+| [V] Tracked tree | clean at `2d367ba`. The transfer pass then changed only `AGENTS.md` (new), `CLAUDE.md`, this file, `docs/data-engine/outstanding.md` and the status headers of eight documents (section 18). No file under `src/` changed. |
+| [V] Untracked | `docs/data-engine/build_mockup.py`, `build_mockup_te.py`, `mockup.html`, `mockup-te.html` (section 2.3). They are not ignored, so `git status` lists them. `.claude/settings.local.json` exists and is ignored by the user's global git ignore. |
 
-### 2.2 Verification run in this session at `e55aa86`
+### 2.2 Verification
+
+At `e55aa86`, the session that wrote this file:
 
 | Command | Result |
 | --- | --- |
 | [V] `npx tsc --noEmit -p tsconfig.app.json` | clean |
 | [V] `npx vitest run` (scratch files excluded) | 1202 tests in 69 files, all pass |
 | [V] `npm run lint` | 75 warnings, 0 errors. One warning is from the untracked scratch file `src/playback/zz_rf20b.scratch.test.ts`. Without it the count is 74, the documented baseline. |
-| [U] `npm run build` | Not run in this session. The wave 3 handoff records it clean at `e55aa86` (main chunk 1,981.57 kB, worker 287.24 kB). |
+| [U] `npm run build` | Not run in that session. |
+
+At `2d367ba` plus the transfer-pass document edits (2026-09-04, section 18):
+
+| Command | Result |
+| --- | --- |
+| [V] `npx tsc --noEmit -p tsconfig.app.json` | clean, exit 0 |
+| [V] `npx vitest run` | 1202 tests in 69 files, all pass, exit 0 |
+| [V] `npm run lint` | 74 warnings, 0 errors: 72 `react(only-export-components)`, 2 `react(set-state-in-effect)`. Equal to the baseline. |
+| [V] `npm run build` | clean, exit 0. Main chunk 1,981.57 kB / 572.08 kB gzip, worker `mc.worker-*.js` 287.24 kB, CSS 75.42 kB / 13.15 kB gzip; the one chunk-size warning above 500 kB. Equal to the wave 3 gate. |
 
 ### 2.3 Untracked files
 
@@ -73,11 +89,9 @@ its content is process, not code), `mockup.html`, `mockup-te.html`, `build_mocku
 A reference to one of those five files points at nothing in the repo.
 
 [V] The three `zz_rf20*` scratch files named in sections 2.2 and 2.4 were deleted on
-2026-09-04. The lint count without them is 74. Section 12 keeps the R-F-20 finding.
-
-[V] The three `zz_rf20*` files are scratch tests from the session that was cut off (section
-12). They are not part of any commit. They pass. They add one lint warning. Delete them or
-keep them as the R-F-20 reproduction; the choice is the user's.
+2026-09-04 (confirmed absent at `2d367ba`). The lint count without them is 74. Section 12
+keeps the R-F-20 finding. An earlier paragraph here that still offered the user the choice
+to keep them was retired in the transfer pass (`outstanding.md` M-10).
 
 ### 2.4 The session that was cut off
 
@@ -98,7 +112,8 @@ records them here.
 
 Recommendation on the user's two options: option 2, a smooth handoff. There is nothing to
 roll back. No tracked file changed after `e55aa86`. The residue is three scratch files and
-one scratchpad folder.
+one scratchpad folder. [V] Resolved: the user took option 2; the handoff commits `e981c10`,
+`8af337c` and `2d367ba` followed and the scratch files were deleted.
 
 ## 3. Architecture
 
@@ -245,7 +260,12 @@ with a Wilson interval), band series over time, per-effector and per-threat stat
 
 ## 6. T&E Ops module (`src/te/`)
 
-[V] Built in two commits: `c3f9853` (2026-08-19) and `901248e` (2026-08-22). Files: `model/`
+[V] First built in `c3f9853` (2026-08-19) and `901248e` (2026-08-22), then rebuilt as a
+guided decision workflow in `3d93aa1` (2026-08-25: every `ui/` panel, `teStore.ts`,
+`validate.ts`, `calc/readiness.ts`, about 15,000 lines), with `persistTe.ts` hardened in
+`7e5a5ae` (2026-09-02). After that only `calc/stats.ts` changed (`c5ec3c0`, `965a62b`, the
+exports the engine imports). The earlier statement here that it was built in two commits
+was wrong; `git log --stat -- src/te` is the record. Files: `model/`
 (`types.ts` 1,111 lines, `ids.ts`, `empty.ts`), `state/teStore.ts` (1,046 lines),
 `calc/` (accounting, matrix, measures, priority, readiness, stats, timeline, each with a
 test), `seed/` (measure dictionary, templates, vignettes, `jiatf401.ts` demo campaign),
@@ -261,9 +281,9 @@ no analysis, no traceability no finding). Never embed campaign data in `Scenario
 
 [D] Spec sources: `docs/te-plan.md` and `docs/te-compilation/MASTER-*.md`. The JIATF-401
 campaign is illustrative and renders a banner. [U] Whether every stage C1 to C5 of
-`docs/te-plan.md` section 11 was completed is not recorded in the repo. The module has been
-untouched since 2026-08-22 and every later plan put `src/te/` out of scope, so treat it as
-frozen and unreviewed by the later work. Known stale string: `src/te/ui/DesignPanel.tsx`
+`docs/te-plan.md` section 11 was completed is not recorded in the repo. No logic in the
+module has changed since 2026-09-02 and every plan from 2026-09-03 on put `src/te/` out of
+scope, so treat it as frozen and unreviewed by the later work. Known stale string: `src/te/ui/DesignPanel.tsx`
 carries "Recorded, not modeled. The board is plan view.", false since data-engine slice 1
 (D-2, open).
 
@@ -339,19 +359,25 @@ tokens, not literals, in CSS (`src/index.css`); monospace is machine data only; 
 
 ## 9. Documents on disk and what each is
 
+[V] Every document below carries a status header as of the transfer pass; `AGENTS.md`
+section 10 holds the same table and is the one to keep current.
+
 | Path | Status | Use |
 | --- | --- | --- |
-| `CLAUDE.md` | tracked, current | the code contract; cite by heading and bullet, never by line |
-| `docs/data-engine/PLAN.md` | tracked, frozen | 23 settled decisions (D1 to D23), nine slice contracts. Its status header still says "not built"; that is stale by rule (the file is never edited; discrepancies go to `outstanding.md`). |
-| `docs/data-engine/HANDOFF.md` | not in git | the slice protocol, gate agents, ownership tables, report template. Same stale header. |
-| `docs/data-engine/outstanding.md` | tracked, live | the decision and follow-up log: D-1 to D-77 (no D-58), F-1 to F-72, R-D-1 to R-D-24, R-F-1 to R-F-23, M-1 to M-9. Append only. |
-| `docs/data-engine/handoff-orchestrator.md` | tracked, current as of slice 9 | protocol lessons, the browser recipe, the brief skeleton |
-| `docs/data-engine/mockup.html`, `build_mockup.py` | not in git | the approved visual target for slices 4 to 8; the mockup wins on appearance, PLAN wins on behavior |
-| `docs/engine-refactor/PLAN.md` | tracked, complete | ten decisions R-1 to R-10, eight slices, the wave schedule, the standards table |
-| `docs/engine-refactor/handoff-post-wave3.md` | tracked, current | the last orchestrator handoff; read first |
-| `docs/inventory/` | tracked, history | the August 2026 source record behind the seed library. The current provenance record is `SpecModel.provenance` in `seedLibrary.ts`, not this folder. |
-| `docs/threat/` | tracked | the public-source UAS threat study |
-| `docs/te-plan.md`, `docs/te-compilation/` | tracked | the T&E Ops spec |
+| `AGENTS.md` | tracked, CURRENT CONTRACT | the one engineering contract, model-neutral; cite by section and bullet, never by line |
+| `CLAUDE.md` | tracked, CURRENT CONTRACT (pointer) | points at `AGENTS.md`; holds only Claude Code environment notes |
+| `docs/AI_HANDOFF.md` | tracked, CURRENT TRANSFER RECORD | this file |
+| `docs/data-engine/outstanding.md` | tracked, CURRENT OUTSTANDING REGISTER | the decision and follow-up log: D-1 to D-77 (no D-58), F-1 to F-72, R-D-1 to R-D-24, R-F-1 to R-F-23, M-1 to M-10. Append only. |
+| `docs/data-engine/PLAN.md` | tracked, COMPLETED / HISTORICAL IMPLEMENTATION SPEC | 23 settled decisions (D1 to D23), nine slice contracts. Its body is frozen; discrepancies go to `outstanding.md`. |
+| `docs/data-engine/HANDOFF.md` | not in git, absent on purpose | the slice protocol, gate agents, ownership tables, report template. A reference to it points at nothing. |
+| `docs/data-engine/handoff-orchestrator.md` | tracked, HISTORICAL HANDOFF | protocol lessons, the browser recipe (Scenario A and B do not fire a Coyote, R-F-20), the brief skeleton |
+| `docs/data-engine/mockup.html`, `mockup-te.html`, `build_mockup.py`, `build_mockup_te.py` | not in git, present untracked | the approved visual targets for built slices; the code is the truth now |
+| `docs/engine-refactor/PLAN.md` | tracked, COMPLETED / HISTORICAL IMPLEMENTATION SPEC | ten decisions R-1 to R-10, eight slices, the wave schedule, the standards table (section 12 is cited by `fidelity.ts`) |
+| `docs/engine-refactor/handoff-post-wave3.md` | tracked, HISTORICAL HANDOFF | the wave 3 orchestrator handoff at `e55aa86`; superseded by this file |
+| `docs/inventory/` | tracked, REFERENCE / RESEARCH | the August 2026 source record behind the seed library. The current provenance record is `SpecModel.provenance` in `seedLibrary.ts`, not this folder. |
+| `docs/threat/` | tracked, REFERENCE / RESEARCH | the public-source UAS threat study |
+| `docs/te-plan.md`, `docs/te-compilation/` | tracked, HISTORICAL SPEC and REFERENCE for `src/te/` | the T&E Ops spec; `MASTER-CALCULATIONS.md` is the fixture source of the `src/te/calc/` tests |
+| `README.md` | tracked, STALE | the unmodified Vite template |
 
 ## 10. Architectural decisions and abandoned approaches
 
@@ -392,7 +418,11 @@ tokens, not literals, in CSS (`src/index.css`); monospace is machine data only; 
 ## 11. Known bugs, technical debt, incomplete work
 
 [D] The full list is `docs/data-engine/outstanding.md`. Every row with status `open` is
-still open. The items a follow-on is most likely to meet:
+still open. [V] In the transfer pass five rows whose code had landed but whose status cell
+still read `open` were closed against the source: R-F-1 (the Stinger and Leonidas `pk`
+rows), R-F-5 and R-F-8 (the `pseudo` flag), R-F-10 (`scanPeriodS(spec, false)` in the
+panels), R-F-13 (`timeStatSub` wording). Nothing else was closed. The items a follow-on is
+most likely to meet:
 
 Open defects and semantic questions
 
@@ -471,16 +501,18 @@ under a typed route needs a KuRFS or TPQ-53 fire-control source. The engine fixt
 because hand-written connections are untyped and the gate does not bind. The demo laydowns
 (Scenario A and B in the browser recipe) are the wrong laydowns for a Coyote.
 
-What remains to close R-F-20.
+What remains to close R-F-20 (updated in the transfer pass, 2026-09-04).
 
-1. Write the finding as an `R-F-20` status update in `outstanding.md` (append, never edit a
-   row's text; add `decided:` or `done:` to its status cell) and let the user decide whether
-   the Inspector or the threat status should explain `no-fc-uplink` more loudly. [U] The
-   status word already exists in the UI; whether it was visible in the panels the cut-off
-   session looked at was not checked.
-2. Replace Scenario A and B in the browser recipe with a laydown that carries a KuRFS (the
-   `repro2.mjs` fixture), so the sensitivity widget can be demonstrated.
-3. Delete or keep the three `zz_rf20*` scratch files (section 2.3).
+1. Done: the trace above is recorded in the R-F-20 status cell of `outstanding.md`. The
+   row stays `open`. Still the user's: whether the panels should explain `no-fc-uplink`.
+   [V] No panel or canvas file renders `ThreatStatus` (`git grep ThreatStatus -- src
+   ':!*.test.*'` hits `sim.ts` only), so the word reaches no user today; the earlier [U]
+   guess that it "already exists in the UI" was wrong.
+2. Open: replace Scenario A and B in the browser recipe with a laydown that carries a
+   KuRFS (the `repro2.mjs` fixture), and confirm in a browser that it fires. [U] The one
+   browser run that fired was in the cut-off session; its screenshot is gone with that
+   scratchpad, so no surviving artifact shows a browser laydown firing.
+3. Done: the three `zz_rf20*` scratch files were deleted on 2026-09-04.
 
 [V] The cut-off session then started R-F-22 (Sources table at 320 px): `sources.mjs`
 measured the Stinger Sources table and took `sources-320.png`. No code changed.
@@ -500,8 +532,8 @@ suggest:
 5. A provenance pass over non-radar sensors, effectors and threat RCS was refactor slice 0
    and is done; the remaining pedigree gaps are in R-F-4 and R-F-6.
 
-[U] No plan document exists past wave 3. Both `PLAN.md` files are complete. The user has
-not named the next body of work.
+[V] No plan document exists past wave 3. Both `PLAN.md` files are complete and carry a
+historical status header. The user has not named the next body of work.
 
 ## 14. Highest-risk areas
 
@@ -522,15 +554,21 @@ not named the next body of work.
 - **Seed values.** `seedLibrary.ts` values are load-bearing for fixtures and for the claims
   the tool makes. A value change needs a provenance row and a fixture repair, never a
   fixture move that hides it.
-- **The `src/te/` module.** Large, untested in the browser since August, and excluded from
-  every review since. Its `stats.ts` is now an engine dependency.
+- **The `src/te/` module.** Large (58 files), rebuilt on 2026-08-25, no logic change since
+  2026-09-02, and excluded from every review since. Its `stats.ts` is now an engine
+  dependency.
 - **Statistical tests.** Several assert within 3 standard errors; a reviewer found one that
   passed by the entity ids it happened to get (R-D-23). Sweep ids when you touch one.
 
 ## 15. Knowledge that is not in the repository
 
-Everything below lives in Claude memory files, conversation history, or files outside the
-repo. Nothing here is verifiable from `git`.
+Everything below lived in Claude memory files, conversation history, or files outside the
+repo when this section was written. [V] Transfer status (2026-09-04): every project rule
+below now lives in `AGENTS.md` (evidence and source-of-truth order, scope, the register
+rules, the git rules, STE copy, "event" not "ledger", the fixture pins, the three kinds of
+number, the fc-uplink rule behind R-F-20). What stays out of the repo is personal (the
+user's prose rules, the delegation rule for Claude subagents, the memory pointers), and a
+follow-on model does not need it to work on the code. The list is kept so nothing is lost.
 
 [U] User working rules, from `~/.claude/CLAUDE.md`, the memory files and the handoffs:
 
@@ -594,51 +632,53 @@ project settings, hooks, skills or agents.
 [V] Memory drift found: `data-engine-orchestrator-handoff.md` and the `MEMORY.md` index line
 still say slice 9 is unpushed. It was pushed on 2026-09-04. This session corrects both.
 
-### 16.2 Recommended root `AGENTS.md`
+### 16.2 Root `AGENTS.md`: done
 
-Migrate these into a model-neutral `AGENTS.md` at the repo root. Keep `CLAUDE.md` as a
-one-line pointer to it, or keep both identical; the content below is the recommendation.
-
-1. Everything now in `CLAUDE.md`: what the app is, commands, core invariants, the
-   architecture map, Konva conventions, one source per fact, the T&E module rules, the
-   design system, working conventions. It is already model-neutral.
-2. From the handoffs, the durable protocol facts that no code records:
-   - never edit `docs/data-engine/PLAN.md` or `HANDOFF.md`; append discrepancies to
-     `outstanding.md` as `D`, `F`, `R-D`, `R-F` or `M` rows, never delete a row, keep the
-     numbering contiguous, update the "Committed so far" line after a commit or push;
-   - do not touch `src/te/` unless the task names it;
-   - do not bump `schemaVersion`; every new field is optional with a default in
-     `emptyScenario()`;
-   - a blank stays PF; never invent a value;
-   - commit only on the user's word; one commit per slice or wave; report the ahead-of-origin
-     count before a commit or push; push only on "push";
-   - the four verification commands and the lint baseline (74);
-   - the fixture-pin rules (altitude, Swerling, planning basis, the zustand static-markup
-     sync);
-   - the browser recipe facts that are environment-independent: `window.__store` actions,
-     the autosave keys, the Scenario A and B laydowns with the KuRFS correction from section
-     12, the `cleanReset` confirm dialog;
-   - the module-cycle rule for `store.ts`.
-3. From the user rules, the project-relevant writing rules: STE for every user-facing string
-   and document, no em-dashes in deliverables, "event" not "ledger". The T&E terminology
-   skill's lexicon and banned-terms list could move into `docs/` as a reference the
-   `AGENTS.md` points at, since it governs deliverables the repo produces.
-4. From memory, the delegation rule in neutral words: assign work by effort class; the
-   orchestrator and the correctness reviewer are the highest class; mechanical work is
-   never run at the highest class; pre-assign per owner in the plan.
-
-Keep out of `AGENTS.md`: the Fable trait rules, the output style file, the hooks, the agent
-definition files, the personal banned-pattern list (put it in the user's own agent config
-for the new model), the sandbox and port facts (environment, not project; keep them in the
-handoff docs).
+[V] Created on 2026-09-04 in the transfer pass at `2d367ba`. It holds the content of the
+former `CLAUDE.md` (architecture map, invariants, one source per fact, T&E rules, design
+system, Konva conventions), the protocol facts the handoffs stated (the register rules, the
+fixture pins, the browser conventions, the git rules, the module-cycle rule), the three
+kinds of number, the engagement vocabulary and a status table of every document.
+`CLAUDE.md` is a pointer to it plus the Claude Code sandbox notes. The recommendation that
+stood here is in git history (`e981c10`). The T&E terminology lexicon named in that
+recommendation was not moved into `docs/`; it is a user skill, not a project file.
 
 ### 16.3 A note on the Claude memory directory
 
-The three memory files are pointers to `docs/` files. Astra has no access to them. Every
-fact they hold is either in section 15 above or in the handoff files on disk.
+The memory files are pointers to `docs/` files. Astra has no access to them. Every fact
+they hold is in section 15 above, in `AGENTS.md`, or in the handoff files on disk.
 
 ## 17. Verification of this file
 
-[V] `docs/AI_HANDOFF.md` was written by this session. No file under `src/` changed. The
-verification results in section 2.2 were produced before this file was written and are
-unaffected by it.
+[V] `docs/AI_HANDOFF.md` was written at `e55aa86` and updated at `2d367ba`. No file under
+`src/` changed in either session. The verification results in section 2.2 were produced
+by the tools named there.
+
+## 18. The ownership-transfer pass of 2026-09-04
+
+[V] Run at `2d367ba` with the working tree clean. No branch, commit, merge, stash or push
+was made. Every edit below is uncommitted documentation; the user commits it.
+
+| File | Change |
+| --- | --- |
+| `AGENTS.md` | new: the model-neutral engineering contract |
+| `CLAUDE.md` | rewritten as a pointer to `AGENTS.md` plus Claude Code environment notes; the former content moved into `AGENTS.md` |
+| `docs/AI_HANDOFF.md` | header, read order, sections 2.1 to 2.4, 9, 11, 12, 13, 15, 16, 17; this section |
+| `docs/data-engine/outstanding.md` | status header; "Committed so far" line; status cells of R-F-1, R-F-5, R-F-8, R-F-10, R-F-13 (closed against the source) and R-F-20 (the trace, still open); row M-10 |
+| `docs/data-engine/PLAN.md`, `docs/engine-refactor/PLAN.md` | status header: COMPLETED / HISTORICAL IMPLEMENTATION SPEC |
+| `docs/data-engine/handoff-orchestrator.md`, `docs/engine-refactor/handoff-post-wave3.md` | status header: HISTORICAL HANDOFF |
+| `docs/inventory/README.md`, `docs/threat/UAS_CUAS_Threat_Study_Public_Source_2026-08-22.md` | status header: REFERENCE / RESEARCH |
+| `docs/te-plan.md`, `docs/te-compilation/_BRIEF.md` | status header: HISTORICAL SPEC and REFERENCE for `src/te/` |
+
+[V] Facts re-verified against the tree in this pass, beyond the git table in 2.1: no
+`Math.random` under `src/`; `schemaVersion` 1 everywhere; the storage key list; `DT`,
+`stepIndex` and `DRAW_KIND` locations; the fourteen `ModelId` values; `store.ts` imports
+no value from `mcRun.ts`, `series.ts`, `impact.ts` or `attrition.ts`; the engine's only
+`src/te/` import is `src/te/calc/stats.ts`; the `DesignPanel.tsx` stale string; the
+`fillScenario` deep-fill list; the `emptyScenario()` run-setting defaults; `mutate` at
+`store.ts` line 913; `window.__store` and `window.__teStore` in `main.tsx`; the
+`completeConnect` typing, the fc-uplink gate in `sim.ts` and `attrition.ts`, the Coyote
+profile's `fcSources`; the `pseudo` flag; the Stinger and Leonidas `pk` rows; the panels'
+`scanPeriodS(spec, false)` calls; the `MAX_SEED` bound in `LiveStrip.tsx`; the `src/te/`
+commit history (section 6 corrected: the 2026-08-25 rebuild and the 2026-09-02 persistence
+change were missed at `e55aa86`); the absence of the `zz_rf20*` files.

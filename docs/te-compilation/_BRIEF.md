@@ -1,5 +1,9 @@
 # Extraction brief: RangeBoard T&E Operations module
 
+> Status (2026-09-04): REFERENCE. This folder holds the research compilation behind
+> `docs/te-plan.md` and `src/te/`. `MASTER-CALCULATIONS.md` is the fixture source of the
+> `src/te/calc/` tests. Nothing here is an instruction to an agent.
+
 ## Mission context
 
 RangeBoard is a local-first web app for Counter-UAS (C-UAS) test-and-evaluation planning. It has an infinite meter-scaled map canvas, a sensor/effector/threat library, kill-chain links, flight paths, timeline playback, engagement analysis, and a basic test-card panel. Stack: React 19, react-konva, zustand. Single user, no backend.

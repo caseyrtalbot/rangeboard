@@ -1,127 +1,33 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Read `AGENTS.md` first and follow it. It is the one engineering contract for this
+repository: what RangeBoard is, the commands and their baseline, the architectural
+invariants, one source per fact, the domain rules, the UI rules, the working conventions,
+and the status of every document. Nothing in this file overrides it, and nothing from it is
+copied here.
 
-## What this is
+Then read `docs/AI_HANDOFF.md` (the state transfer, with `[V]` `[D]` `[I]` `[U]` marks) and
+`docs/data-engine/outstanding.md` (the live register).
 
-RangeBoard: a local-first web "integrated air defense whiteboard" for Counter-UAS test-and-evaluation planning. Infinite meter-scaled canvas with sensor footprints, kill-chain links, threat flight paths, test cards, timeline playback, and engagement analysis. Single user, no backend. Stack: React 19, react-konva, zustand, recharts 3, vitest, oxlint. Deliberately not tldraw (license and document-model friction).
+## Claude Code environment notes
 
-## Commands
+These facts are about the Claude Code tool environment, not about the project.
 
-```
-npm run dev                          # Vite dev server (picks the next port if busy)
-npm run test                         # vitest run, every test
-npx vitest run src/analysis/series   # one file or directory
-npx tsc --noEmit -p tsconfig.app.json   # type-check only
-npm run build                        # tsc -b && vite build
-npm run lint                         # oxlint; react(only-export-components) is warn-level and has known hits
-```
-
-No jsdom or testing-library. Component tests use `renderToStaticMarkup` and assert on the HTML string; Recharts sizes its chart in an effect, so a chart renders only its wrapper div in static markup. Playwright is a devDependency for scripted browser checks only. Under the Claude Code sandbox the Vite port bind and Chromium both fail; run the dev server and Playwright with the sandbox disabled.
-
-## Core invariants (breaking these breaks the app)
-
-- **World frame:** meters. +x east, **+y south** (screen-down). Heading 0 = north, clockwise degrees. All conversions live in `src/geometry/geo.ts` (pure, unit-tested). `bearingDeg({0,0},{0,-100}) === 0`.
-- **Camera:** `{x, y, scale}` = Konva Stage pixel offset plus **pixels per meter**. `sx = wx*scale + x`. Layer children are positioned in meters; the Stage transform scales.
-- **Single source of truth:** the `Scenario` object in `src/state/store.ts` (zustand). The Konva tree and every panel are pure views of it. Never write derived state (positions at time t, detections, assessments) into the scenario.
-- **Playback is derived:** position at sim time comes from `posAtTime` in `src/playback/sim.ts`. `playback.simTimeS` is the only mutable playback state. Any pulse, blink, or playhead derives from it; never a timer.
-- **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and clears `future`. Only scenario changes are undoable. A scenario-touching action goes through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis layout, the `mc` slice) goes through `set` and never pushes history. One exception: `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo and redo carry the current stamp over a restored snapshot.
-- **Schema:** `Scenario.schemaVersion = 1`. `fillScenario` (`src/io/persist.ts`) spreads a save over `emptyScenario()` and deep-fills one level into `environment`, `requirements`, `doctrine`, `mcdaWeights`, `underlay`, `raid`. A new top-level field, or a field inside one of those, needs only a default in `emptyScenario()`; a new nested object needs its own `fillScenario` line. Bump the version only for a breaking shape change. A save that cannot load is copied to `rangeboard.scenario.recovered.<ms>` before anything writes. `loadScenario` is the one load path; `replaceScenario` clears history, selection, drafts and the tool, and prunes per-entity view state.
-- **Storage keys live in `src/io/storageKeys.ts`;** never rename one. View state outside the `Scenario` has its own key (`rangeboard.view.v1`, `rangeboard.layers.v1`, `rangeboard.rings.v1`, `rangeboard.runseq.v1`, `rangeboard.analysis.v1`) and is written eagerly by its setter in `src/io/viewState.ts`. Shared constants that both `store.ts` and `viewState.ts` need live in a leaf module, never in `store.ts` (module cycle).
-- **Thresholds are test-defined:** `Scenario.requirements` (`RequirementThresholds`, defaults in `DEFAULT_REQUIREMENT_THRESHOLDS`) holds what the test asks the system to meet. Every reader spreads `{ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }`. Never gate a requirement on an engine constant: a gate at `SHIP_DEAD_BELOW` passes itself by construction.
-- **Planning factors are labeled:** every unsourced number is a PF. Never invent a value to fill a blank; record the source instead.
-
-## Architecture map
-
-```
-src/model/     types.ts (domain types, newId, resolvers like mountHeightOf), seed.ts (emptyScenario),
-               seedLibrary.ts (builtin specs), rcsFactors / signatureFactors / weaponFactors (PF tiers)
-src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant range,
-               horizon), prng.ts (mulberry32)
-src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui + playback),
-               analysisLayout.ts (lens presets and pure layout reducers)
-src/playback/  sim.ts (detection sweep at DT = 0.5 s, assessThreat, kill-chain routes),
-               attrition.ts (fire distribution, expected kills, events), trackState.ts (phase at t),
-               tactics.ts (threat tactics), runSession.ts (run reset / play),
-               policy.ts (DrawPolicy), mcRun.ts (runReplicates, McSummary),
-               mc.worker.ts + mcClient.ts (the replicate worker)
-src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts (jam),
-               doctrineFactors.ts (per-system factors), impact.ts (engagementPicture cache, WEZ),
-               liveStats.ts (KPIs at t), series.ts (chart series on the DT grid), runValidity.ts,
-               requirements.ts, uncertainty.ts (parameter spreads), fidelity.ts (model tags),
-               mcda.ts, aar.ts
-src/charts/    recharts kit: types.ts (Series), tokens.ts, timeAxis.ts, ChartFrame, TimeSeries,
-               Ladder, Tornado, Sparkline. Props only; never reads the store.
-src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target), TrackFileReadout.tsx,
-               layers/ (one Konva layer per concern; footprintStyle.ts is the ring style source)
-src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx), LibraryEditor,
-               TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/, analysis/detail/),
-               TimelineBar (owns the rAF loop), CommandPalette, Glyph.tsx (symbology),
-               ringLabels.ts (ring names)
-src/io/        persist.ts (autosave, JSON and library import/export), viewState.ts, storageKeys.ts
-src/te/        T&E Operations workspace (own store, see below)
-```
-
-Data flow for a click or drag: Konva event, store action, new scenario, React re-render of layers. Drag-in-progress is Konva-native; the store updates once on `dragend`. Analysis reads `engagementPicture(scenario)` (`src/analysis/impact.ts`), a WeakMap cache keyed on the scenario object, so the sweep runs once per scenario change.
-
-## Konva conventions
-
-- Constant screen-size strokes: `strokeScaleEnabled={false}` (stroke width and dash are then in px).
-- Constant screen-size icons and labels: a Group with `scale={1/camera.scale}`; inner units are px.
-- Footprints and other large fills are `listening={false}` or they swallow stage clicks.
-- Thin-line hit tolerance: `hitStrokeWidth={n}` in screen px (do not divide by `camera.scale`).
-- Drawing tools do not use Konva drag: the stage is `draggable` only when `ui.tool === 'select'`; other tools consume plain clicks and keep the rubber-band draft in `ui.draftPoints`.
-- Each layer reads its own `ui.layers` flag and returns `null`; `CanvasStage` does no gating.
-
-## One source per fact
-
-Each fact below has exactly one definition. Read it there; never add a second copy.
-
-- **Sample grid:** `DT` exported from `src/playback/sim.ts`. `tickStepS` in `src/charts/timeAxis.ts`. A chart's `tS` prop is quantized to DT by the caller.
-- **Altitude and geometry:** `threatAltitudeFt(scenario, uas)` (entity value, else the threat profile, else the `altBandFt` midpoint) and `mountHeightOf(spec)` are the resolvers. Slant range, not ground range, feeds every sensor and effector range test; the azimuth wedge stays a ground-plane bearing test. Board rings against a selected threat ground-project through `groundRangeM`; the placard ring is unprojected. Terrain, per-waypoint altitude and refraction beyond the 4/3 horizon stay out.
-- **Sensor physics** (`src/analysis/sensorEnv.ts`): a placard range is quoted against a reference target and scales to another target by a physical law per technology (radar fourth root of RCS, EO/IR Johnson linear, acoustic transmission-loss solve, RF none). `rangeBasis: 'planning'` turns scaling off. `sensorHoldGate` is the one hold gate, `sensorGeometryGate` the one vertical gate, with a 0.001 degree tolerance (PF) at both elevation edges, `radarPdAt` the one Pd evaluation, `effectiveDetectRangeM` the one range. The environment multiplier enters radar SNR as the fourth power.
-- **Track initiation** (`sim.ts`): `scanPeriodS(spec, pdModeled)` (`doctrineFactors.ts`) is the one scan period: a stated `updateRateS`, else `SCAN_S` by role for a Pd-modeled radar, else null. A sensor with a period runs the scan model (M-of-N over scans, coast on a missed scan, drop at the miss limit); a null period takes the `TRACK_INIT_S` role table; RF and acoustic initiate no fire-control track. Scan k falls at the scan origin plus k periods, snapped forward to the first step at or after it; the origin is the sweep start (`effectivePathDelayS`) plus `policy.phase(sensorId)` times the period. The scan state is created at the sweep start with a `none` hold. A Pd-modeled radar draws once per scan per admitted member and only at a scan step; a threshold radar with a stated period samples its range test there. Between its scans a scan radar, Pd-modeled or threshold, has no hit of its own and cues EO/IR through its carried hold only; `ScanSteering.scanStep` answers true for a sensor with no scan state. A scan before admission is a miss at Pd 0 that advances the counter and stays out of the M-of-N window. `SensorObservation.trackInitAtS` is the one field consumers read; `pdSeriesStartS` is where `pdSeries` starts, the first scan taken. A coast is extrapolation, not a measurement: it holds continuity and never moves the classification ladder.
-- **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and route-aware (a firm track from a sensor routed to that effector, hostile ID, the declaration dwell); `readyS` = gate + route latency + target dwell is the first possible release. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows `doctrine.launchPolicy`. `tEffect = t + engageTimeS + timeOfFlightS(spec, interceptSlant)` from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, in `attrition.ts` beside `SIZE_PENALTY`) because a stated speed is a maximum. `interceptAt` is the one predicted intercept, solved by three fixed-point passes, and it caps the flight at the end of the envelope interval that holds the release: a flight past that end lands at the end and the event carries `flightCapped`. `kineticPk(basePk, maxRangeM, uas, slantM)` is the one kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` stay PF. Per-system factors and spec overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy instant-release path; keep it for regression and pin legacy fixtures with `doctrine.enabled = false`.
-- **Draw policy** (`src/playback/policy.ts`): `DrawPolicy` is the one draw point. The engine draws in exactly five places (`sensorHit` detect, `applyEffect` kill, `applyEffect` continue-jam, `phase`, drawn once per scan state, and `param`, drawn once per uncertain field per replicate under `total`), through a policy passed as the defaulted last parameter of `sweepSensorHits`, `assessThreat`, `assessAllThreats` and `resolveEngagements`; a bare call is the deterministic policy, so its output is unchanged by construction (a test pins it). `detect` carries the `memberIdx` of the admitted member. `deterministicPolicy` is the planning envelope: it compares `pd >= pdDetect`, returns `pk` and `p` as mass and phases every scan at 0, and the chip meta names it `envelope · Pd threshold` against `estimate · n replicates`, which gains `· total` under the total uncertainty mode. `monteCarloPolicy(seed, replicate, thresholds)` keeps no stream: every draw is `hashU01(seed, replicate, kind, idHash(id), ...)` (`src/geometry/prng.ts`), keyed detect by sensor, threat, member and `stepIndex(tS)`, kill by effector, threat, ship and `salvoIdx`, the salvos that effector already committed at that ship, jam by effector, threat and step, phase by sensor, param by model id and field. `DRAW_KIND` names the kinds and `stepIndex` (`sim.ts`, beside `DT`) is the one draw-step index, so common random numbers hold across laydowns. Ships are discrete (`killDelta` 0 or 1). No `Math.random` under `src/`. `runMode`, `seed`, `replicates`, `targetHalfWidth` and `uncertainty` are scenario facts read through `runSettings` (defaults in `emptyScenario()`, `DEFAULT_SEED` 4821, no schema bump), edited through `patchScenario` and part of `analysisBasisSignature`. The `mc` slice (`McState`) is view state set through `set`, never persisted and never in `past`; `resetRun` and `replaceScenario` clear it, a basis change marks it `stale`, and `runReplicates` (`src/playback/mcRun.ts`) runs in `mc.worker.ts` through `mcClient.ts` with the store ignoring a message whose `runId` is not current. `engagementPicture` stays the deterministic path; the replicate loop never touches its cache. `Stat` (`mcRun.ts`) is the one statistic shape: mean, sd, se, the t-interval `lo` and `hi` at `conf`, the quantiles, `n` finite samples of `total` run, and the `defined` fraction with a Wilson interval, built from `meanInterval`, `quantile` and `wilson` in `src/te/calc/stats.ts`. The replicate loop stops after 30 replicates, and every 10 after that, when the 95 percent half-width of the end-of-run leaker mean is under `targetHalfWidth`; `McSummary.stopped` records the rule and the replicate. Panels read a time `Stat` through `timeStatSub(stat, quantity)` and a band step through `countSub` (`widgets/mc.ts`). Bands and tile subs read `McSummary` only through `withBands` (`series.ts`) and only when `mc.status` is `done` for the current run id; under a summary the line becomes the replicate mean.
-- **Provenance** (`Provenance` in `src/model/types.ts`): a `SpecModel` carries one row per field (field, value, source, url, date, basis, spread); `basisFor(model, field)` is the one basis resolver and answers `pf` when the field has no row. `PfTag` (`src/panels/inspector/kit.tsx`) is the one tag: `.pf` for a planning factor, `.pf.src` for a sourced value, hover title `basis · source · date`. Every sensor, effector and threat seed carries rows: a sensor leads with `detectRangeM`, an effector with `maxRangeM`, a threat with `rcsM2`; an unsourced value keeps the basis `pf`. `Provenance.spread` is the row's epistemic spread (`Spread`: lognormal `sigmaDb`, triangular fraction bounds, beta counts); a `pf` row may carry a spread, and then it may also carry the url of the trial count behind that spread (the Stinger and Leonidas `pk` rows). `adoptSeedProvenance` (`src/io/persist.ts`), called from `fillScenario`, copies seed rows onto a saved builtin only for fields the user has not edited, and `updateModel` drops the row of a spec field it changes (`dropEditedProvenance`); an edited field takes no row and stays PF. "Reset to seed" (`resetModelToSeed`, undoable) puts a builtin back to its seed.
-- **Parameter uncertainty** (`src/analysis/uncertainty.ts`): `spreadFor(model, field)` is the one spread resolver: the row's spread, else `PF_SPREAD` by field, else null; a row with `spread: null` is pinned and fixed. `sampleSpread` is the one inverse-CDF sample (lognormal `sigmaDb` a power ratio, triangular bounds fractions of the nominal, a beta with `pseudo` the PF table rescaled to the nominal, a beta without it the row's stated counts under a Jeffreys prior). `sampleScenario` is pure and returns a new scenario, and a `null` from its sampler keeps that field at its nominal; `uncertainFields` is the stable field order, over the library models an active entity uses, then connections, then doctrine; `sampleScenario` samples the same models. `Scenario.uncertainty` (`UncertaintyMode`, `aleatory` or `total`, default `aleatory`) is what a replicate varies: under `total` the loop draws one `param` uniform per uncertain field through the policy and calls `sampleScenario` once per replicate before `assessAllThreats`, under `aleatory` it never calls it. `runSensitivity` (`mcRun.ts`) is one-at-a-time on the end-of-run leaker mean, the field at its p10 and at its p90 with every other field nominal, paired by the same seed and replicate index, rows sorted by swing; the `sensitivity` widget runs it on demand on its own worker slot into `mc.sensitivity`, which a basis change marks stale. `spreadText` (`src/panels/inspector/spreadText.ts`) is the one spread wording, shown by the Sources table and appended to the `PfTag` title.
-- **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row for each of the fourteen model ids with a tier and a validation status. `modelsUsed(scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture, so they stay pure and cycle-free; the run-validity widget and the detail pane header show the tags, and the export carries `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with `total` only. `radar-pd` is `datasheet`: `validation.verify.test.ts` checks the range law against the Blighter A400 and Echodyne sheets, and `convergence.verify.test.ts` holds the closed forms.
-- **Arrival vs closest approach:** never merge them. Arrival (`arrivalS`) is the first sample inside an asset's `defendedRadiusM`; null without an asset or a crossing. CPA is pure geometry to the nearest asset. Warning time is arrival minus first detection.
-- **Raid partition** (`attrition.ts`): `expectedKills + expectedLeakers + expectedNoArrival === raidSize`. `expectedKills` is pre-arrival mass only; `expectedLateKills` is a sub-measure of the leaker mass. Display `totals.reportedLeakers` (null with no asset), never the partition term.
-- **Expenditure channels:** `shotsFired` kinetic, `deSalvos` directed energy, `jamSalvos` EW, independent of hard versus soft kill (`expenditureChannel` versus `isHardKill`). DE and HPM are hard kills that fire no round. The engine round counter drops on every salvo.
-- **Jam physics** (`src/analysis/ewPhysics.ts`): a jam holds only when nav mode, band coverage, boresight taper and power-range closure all pass. A 'continue' jam is illumination, not damage; the hold lapses when the target leaves the beam.
-- **Run validity** (`src/analysis/runValidity.ts`): findings are `invalidating` or `limiting`; the requirement gates, the exported record and the toolbar chip all derive from it. `planning-envelope` is limiting on every gate under every deterministic run; `unvalidated-model` is limiting on every gate and names the used models with validation `none`. Derived live, never stored.
-- **Symbology** (`src/panels/Glyph.tsx`, `src/playback/trackState.ts`): MIL-STD-2525 split, the frame carries affiliation and the icon carries function; `FRAME_FOR`, `FUNCTION_LETTER` and `FRIEND_FRAME_D` are shared by the palette, the library lists and `EntityLayer`. `PHASE_STYLE` is the one track-phase color and label table. Canvas labels draw `boardDesignator(entity.name)`.
-- **Rings** (`src/canvas/layers/footprintStyle.ts`, `src/panels/ringLabels.ts`): seven ring keys under `ui.layers`, per-entity overrides under `ui.ringOverrides`, `ringVisible(ui, entityId, key)` the one resolver, `RING_STYLE` the one style source, `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in `--danger`; a jammer keeps its entity-color cone. Only a selected-threat ring carries a label.
-- **Analysis layout** (`src/state/analysisLayout.ts`): `BUILTIN_LENSES` the five lenses, `WIDGETS` (`src/panels/analysis/widgets/registry.ts`) the one type-to-component map, `ui.analysis` view state under `ANALYSIS_KEY` written eagerly by every layout action, builtin lenses never persisted. `Scenario.observedPresetId` is written on reset and first play only and stays out of the basis signature. `SURVIVAL_LABELS` and `KPI_LABELS` (`widgets/labels.ts`) are the one name table (Leakers, Survives, Survival limit; the effect gate is relabeled at render); `useSimTimeStep` (`widgets/controls.tsx`) is the one quantized time in the panels.
-- **Selection detail** (`src/panels/analysis/detail/`): `DetailPane` is the one kind-to-pane map (sensor, effector, uas, c2); the panel reads `selection.entityIds` and nothing else from selection; exactly one entity with a pane replaces the widget stack, two or more keep it with a note, and the preset id never changes on selection. A pane carries no edit action; the Inspector owns edits. Series and ladder rows memo on `[scenario, runId]`, so only the now-readouts read the quantized time. `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL` (`SystemStatus.tsx`) the one component-state word.
-- **Chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) => Series[]`, `LadderRow[]` or `ChartMark[]`, a series sampled from t = 0 at DT to `scenarioDurationS`, NaN where undefined, one `engagementPicture` call per builder. `trackSlots` assigns the five chart hues by first detection and never reassigns under a filter; status colors never color a series.
-- **Model versus instance:** `SpecModel` (library entry, `builtin` flag, duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model deletion with `specId → null`). `Scenario.deletedSeedIds` keeps the seed merge from resurrecting a deleted builtin. A seed field change does not reach an existing save's copy of a builtin model.
-- **Other:** kill chain = `Connection` list, sensor to C2 to effector or direct; route latency is charged from the ROE gate, not from T0. Threat tactics live in `src/playback/tactics.ts`; the raid builder commits entities, paths and waves in one `mutate`. Threat WEZ geometry is `src/analysis/impact.ts`; `effectRadiusM` values are PF. Basemap modes are render toggles and never move data. `src/analysis/mcda.ts` scores 0 to 100 from `Scenario.mcdaWeights`.
-
-## T&E Operations module (src/te/)
-
-- Second workspace ("T&E Ops" toggle): end-to-end C-UAS test campaigns from customer request to delivered evidence. Spec sources: `docs/te-plan.md` and the MASTER-*.md files in `docs/te-compilation/`.
-- **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`, recovery copy at `rangeboard.te.recovered.<ms>`. Records are versioned and append-only (runs never renumber, issued cards freeze, changes create new versions). Never embed campaign data in `Scenario`.
-- IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the record. Cards use `id` (per version) plus `cardCode` (shared across versions).
-- Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no traceability no finding. `issueCard` enforces blockers in the store.
-- `src/te/calc/` is pure TS, fixture-tested from MASTER-CALCULATIONS.md. Measure labels suppress pass/fail unless `thresholdApproved`.
-- Seeds in `src/te/seed/` (measure dictionary, templates, vignettes, `buildJiatf401()` demo campaign marked `illustrative`). Print artifacts in `src/te/print/` render into `PrintOverlay`; CSV exports in `src/te/io/exportCsv.ts`. Board frame capture (`src/te/io/frameCapture.ts`) works only from the Board workspace.
-
-## Design system (src/index.css)
-
-- **Tokens, not literals.** `:root` holds a graphite ramp (`--surface-*`, `--border-*`, `--text-*`, `--status-*`) and short aliases (`--bg`, `--text`, `--accent`, `--danger`, `--good`, `--warn`, `--ew`, `--chart-1` to `--chart-5`). New rules read the semantic names. Spacing is `--space-1` to `--space-6` plus `--panel-pad`; motion is `--dur-fast` / `--dur`. `--border-control` is the boundary of an interactive control (WCAG 1.4.11 needs 3:1); `--border-default` and `--border-subtle` are decorative hairlines and never go on an input.
-- **Monospace is machine data only:** ids, coordinates, timestamps, units, keys, numeric readouts, fixed abbreviation codes, chart axis ticks. Interface chrome and prose are `--font-ui`; mark a number in prose with `.num`.
-- **Type floor is 10 px.**
-- **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px rule and interaction state. `--radius` is 3 px. The only shadows are `--shadow-float` (menus, dialogs, palette), `--shadow-pop` (tooltips, popovers) and the wash on `.right-panel`.
-- **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render and keeps `TOKEN_FALLBACK` equal to the sheet (a test proves it) for node and static markup.
-- **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`, `Status`, `EmptyState`, `Kbd`, `ShortcutList`, `Actions`. A read-only property is a `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a keyboard-operable separator.
-
-## Working conventions
-
-- Style: 2-space indent, no semicolons, single quotes, named exports, `interface` for object shapes, JSDoc on exported symbols, short "why" comments only where the code is not obvious. Keep lines under about 100 characters; no formatter is installed.
-- User-facing copy is ASD-STE100 Simplified Technical English. No em-dashes.
-- Keep engine, geometry and store logic in pure TS so it tests without a DOM. Unit tests colocate as `*.test.ts`. Hand-built test threats resolve altitude to the `altBandFt` midpoint; pin `altitudeFt` where slant must equal ground range, and pin `swerling` on a fixed-wing fixture that feeds a Pd expectation.
-- Dev builds expose `window.__store` (the zustand hook). Browser checks drive real store actions through it with Playwright headless against the dev server. Playwright uses its own profile, so the user's autosave is never touched.
-- Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to select), Enter (finish boundary or path), Space (play/pause). Shortcuts are suppressed while typing in inputs.
-- `docs/` holds plans and reference material; do not create plan, status or summary files for a task.
+- The sandbox blocks the Vite port bind (`listen EPERM`) and Chromium's mach port
+  bootstrap. Run the dev server and every Playwright script with the sandbox disabled.
+  Ports 5173 to 5200 have been used by old processes; take a higher port with
+  `--strictPort`, start the server as one background command that writes its PID, and stop
+  only your own server.
+- The shell `grep` is ugrep (no `--exclude`). Use `git grep` (`--untracked` for new files).
+- `npx vite-node` is not installed. A scratch check that imports TypeScript runs as a
+  vitest file under `src/` and is deleted after; report it.
+- `WebFetch` returns binary for a PDF: save it and run `pdftotext`. Several manufacturer
+  domains return 403 or a bot challenge through the proxy (`outstanding.md` F-66, R-F-6).
+- Writes under `~/.claude/` are blocked from Bash; use the Edit or Write tool there.
+- Do not use the Workflow tool unless the user says "use a workflow".
+- Delegated agents are chosen by effort class: a reasoning model at medium effort by
+  default; high effort only where the semantics decide the outcome, and always for
+  orchestration and correctness review; a mechanical-work model at high effort for
+  plumbing, UI chrome, seed edits from a JSON, gates and browser checks. Pre-assign per
+  owner in the plan. The agent definitions live in the user's own configuration, outside
+  this repository.

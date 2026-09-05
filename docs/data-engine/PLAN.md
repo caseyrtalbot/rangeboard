@@ -1,5 +1,10 @@
 # Data engine: implementation plan
 
+> Status (2026-09-04): COMPLETED / HISTORICAL IMPLEMENTATION SPEC. Slices 0 to 9 are built
+> (`3b264e3` to `e6edbb4`). The imperative rules in sections 3, 4 and 6 and the agent
+> protocol are history; the current contract is `AGENTS.md` and the live register is
+> `outstanding.md`. Read this file for design intent, not for instructions.
+
 Status: **complete.** Slices 0 to 9 are built (commits `3b264e3` to `e6edbb4`, 2026-09-04).
 This file is frozen history: it says what was planned, and the code and `CLAUDE.md` say what
 was built. Where they differ, `outstanding.md` records the discrepancy. The mockup files and

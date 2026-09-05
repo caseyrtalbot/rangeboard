@@ -1,5 +1,10 @@
 # RangeBoard T&E Operations module: product plan and implementation plan
 
+> Status (2026-09-04): COMPLETED / HISTORICAL IMPLEMENTATION SPEC for `src/te/`. The module
+> was built in `c3f9853` (2026-08-19) and `901248e` (2026-08-22). Which of the stages in
+> section 11 were completed is not recorded in the repository. `src/te/` has not been
+> reviewed by any later work; see `AGENTS.md` section 8.
+
 Part B deliverable. Sources: `docs/te-compilation/MASTER-DATAMODEL.md`, `MASTER-CALCULATIONS.md`, `MASTER-FORMS.md`, `MASTER-SEEDDATA.md`. Those four documents are the authoritative build inputs. This plan selects scope, resolves decisions, and sequences the build.
 
 ## 1. Product summary

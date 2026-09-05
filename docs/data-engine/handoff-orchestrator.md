@@ -1,5 +1,10 @@
 # Handoff: RangeBoard data-engine orchestrator, after slice 9 (plan complete)
 
+> Status (2026-09-04): HISTORICAL HANDOFF. Its "Where things stand", "The user's operating
+> rules" and "Do not" sections are as of slice 9 and are superseded by `AGENTS.md` and
+> `docs/AI_HANDOFF.md`. The protocol lessons and the browser recipe remain useful reference.
+> Scenario A and B in the browser recipe do not fire a Coyote (`outstanding.md` R-F-20).
+
 Written 2026-09-04 by the orchestrator session that ran slice 9. The slice 0 to 2
 orchestrator wrote the first version; the slice 3 to 9 orchestrators rewrote it; their
 lessons are kept below. Read this, then the project documents. Do not duplicate them here.

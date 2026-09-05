@@ -1,5 +1,9 @@
 # Handoff: engine refactor complete, wave 3 committed and pushed
 
+> Status (2026-09-04): HISTORICAL HANDOFF, as of `e55aa86`. Superseded by
+> `docs/AI_HANDOFF.md`. The R-F-20 trace that followed this file is in `outstanding.md`
+> (R-F-20 status cell) and `docs/AI_HANDOFF.md` section 12.
+
 Written 2026-09-04 by the wave 3 orchestrator (session 64a02f7b). It replaces
 `handoff-wave3.md`. Read this, then `docs/engine-refactor/PLAN.md` (sections 5, 6, 10, 11),
 `docs/data-engine/handoff-orchestrator.md` (the protocol, the browser recipe, the lessons) and

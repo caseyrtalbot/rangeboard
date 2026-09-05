@@ -1,5 +1,12 @@
 # Engine refactor: a stochastic simulation the T&E community can accept as evidence
 
+> Status (2026-09-04): COMPLETED / HISTORICAL IMPLEMENTATION SPEC. Slices 0 to 7 were built
+> in three waves (`965a62b`, `eff6ecc`, `2d27e32`, `e55aa86`). The rules in sections 5 and 6,
+> the open items in section 10 and the agent assignment in section 11 are history; the
+> current contract is `AGENTS.md`, the current state is `docs/AI_HANDOFF.md`, and the
+> decisions taken while building are `outstanding.md` rows R-D-1 to R-D-24 and R-F-1 to
+> R-F-23. Section 12 (standards) is still cited by `src/analysis/fidelity.ts`.
+
 Written 2026-09-04 against the tree at `e6edbb4` (slice 9 of `docs/data-engine/PLAN.md`,
 branch `analysis-hardening`, 61 test files, 1071 tests green).
 
