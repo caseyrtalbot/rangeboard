@@ -1,32 +1,43 @@
-# React + TypeScript + Vite
+# RangeBoard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+RangeBoard is a local-first C-UAS Test & Evaluation planning application. The **Board**
+workspace combines a meter-scaled canvas, system/threat library, flight paths, playback
+and deterministic/Monte Carlo analysis. **T&E Ops** carries campaign questions, measures,
+test cards, runs, findings and deliverables in a separate store.
 
-Currently, two official plugins are available:
+The engine combines physical relationships with explicit planning factors and provenance.
+The next development stage targets field workflows, stronger model evidence and a more
+usable interface. The current application is a single-user React/TypeScript web app with
+localStorage persistence. Offline installation and field durability are planned work.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Engineering entrypoints
 
-## React Compiler
+1. [AGENTS.md](AGENTS.md): durable engineering contract for every contributor.
+2. [AI_HANDOFF.md](docs/AI_HANDOFF.md): current scope, state, evidence and next action.
+3. [Outstanding register](docs/data-engine/outstanding.md): decisions and follow-ups.
+4. [Field T&E plan](docs/field-te/PLAN.md): proposed correction and enhancement sequence.
+5. [Ownership findings](docs/field-te/OWNERSHIP_FINDINGS.md) and
+   [backlog triage](docs/field-te/BACKLOG_TRIAGE.md): evidence and inherited task routing.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Historical plans and research are classified in AGENTS.md. Source and tests determine
+implemented behavior; an old plan or accepted decision is not proof of completion.
 
-## Expanding the Oxlint configuration
+## Local development
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+Install the locked dependencies with `npm ci`, then start the Vite server:
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Run the engineering gates:
+
+```sh
+npx tsc --noEmit -p tsconfig.app.json
+npx vitest run
+npm run lint
+npm run build
+```
+
+Use a separate browser profile for scripted checks so the user's saved work is preserved.
+Read the persistence and browser rules in AGENTS.md before testing save/import changes.

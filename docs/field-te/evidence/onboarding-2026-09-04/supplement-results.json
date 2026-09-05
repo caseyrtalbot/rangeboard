@@ -1,0 +1,65 @@
+{
+  "facts": {
+    "sensorOnlyValidity": {
+      "validity": "valid",
+      "findings": []
+    },
+    "models": [
+      {
+        "id": "radar-pd",
+        "validation": "datasheet"
+      },
+      {
+        "id": "radar-scan",
+        "validation": "analytic"
+      },
+      {
+        "id": "horizon",
+        "validation": "analytic"
+      },
+      {
+        "id": "draw-policy",
+        "validation": "analytic"
+      }
+    ],
+    "invalidRunAcceptedByFindingHelper": true,
+    "cards": 1,
+    "runs": 14
+  },
+  "ui": [
+    {
+      "name": "1 Campaign",
+      "mounted": true
+    },
+    {
+      "name": "2 Design",
+      "mounted": true
+    },
+    {
+      "name": "3 Cards",
+      "mounted": true
+    },
+    {
+      "name": "4 Execute",
+      "mounted": true
+    },
+    {
+      "name": "5 Analyze",
+      "mounted": true
+    },
+    {
+      "name": "6 Deliver",
+      "mounted": true
+    },
+    {
+      "name": "Products",
+      "mounted": true
+    }
+  ],
+  "reload": {
+    "recovered": [],
+    "mode": "deterministic",
+    "uncertainty": "aleatory"
+  },
+  "errors": []
+}

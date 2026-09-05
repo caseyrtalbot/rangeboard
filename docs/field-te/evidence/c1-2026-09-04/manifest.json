@@ -1,0 +1,88 @@
+{
+  "date": "2026-09-04 America/Los_Angeles",
+  "baseHead": "8b528f2a096a64d5a3ead9c5456d29bed6bd1ad1",
+  "branch": "analysis-hardening",
+  "committed": false,
+  "gates": {
+    "typecheck": {
+      "command": "npx tsc --noEmit -p tsconfig.app.json",
+      "exitCode": 0
+    },
+    "tests": {
+      "command": "npx vitest run",
+      "exitCode": 0,
+      "files": 70,
+      "passed": 1222
+    },
+    "lint": {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "warnings": 74,
+      "errors": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "warning": "existing chunk-size warning",
+      "mainKB": 1982.77,
+      "mainGzipKB": 572.47,
+      "workerKB": 288.46
+    }
+  },
+  "numericalParity": {
+    "method": "exact serialized pre-edit vs post-edit engine output comparison",
+    "scenario": "../onboarding-2026-09-04/firing-scenario.json",
+    "scenarioSha256": "fb62cc6fce749f73f0809f7cf26962c81184d4e8d002005a6cc0277b11cffaa9",
+    "replicates": 4,
+    "outputs": [
+      "deterministic assessments",
+      "deterministic report",
+      "aleatory MC",
+      "total MC",
+      "sensitivity"
+    ],
+    "matched": true,
+    "elapsedMs": 0,
+    "preAndPostOutputSha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+    "scratchTestRemoved": "src/playback/c1-parity.verify.test.ts"
+  },
+  "browser": {
+    "isolatedSession": "rangeboard-c1",
+    "engine": "Chromium via Playwright CLI",
+    "replicates": 30,
+    "uncertainty": "total",
+    "pageExceptions": 0,
+    "initialConsoleIssue": "favicon.ico 404",
+    "validityLimits": [
+      "spawn-in-ring",
+      "unvalidated-model"
+    ],
+    "sessionClosed": true,
+    "devServerStopped": true
+  },
+  "sourceSha256": {
+    "src/state/store.ts": "9516b7eb6b82a36d4081dc3be0c1d1b424c8faa63ce2b81b97a17d82e3ba3217",
+    "src/state/store.test.ts": "2f9e6d2806300eacf19b9f2251336fe64fdbf7b4836ec245550f335e6e2b651f",
+    "src/state/store.analysis.test.ts": "734a0eb23146f9b08279516ec67ad3130c50ccf258e42abe888d0c280a386e6c",
+    "src/analysis/parameterBasis.ts": "68fd43c74f671888e383fffd83e2e886896418c76128724f622cefbb13cd09ca",
+    "src/analysis/uncertainty.ts": "239f3b40ed1247b768941b9411f669a299722e0e2f9d15b954142b7e9d3310d7",
+    "src/playback/mcClient.ts": "2ee3b97cb00ccbe6563b2a455a3a6082ff3a950b7754c34ef2aea3ff70525cf1",
+    "src/panels/analysis/widgets/SensitivityWidget.tsx": "63b74c355a25e6c1804a521b2f7dcc8a0b22287eadf781b0e9e7fc264096df0b",
+    "src/panels/analysis/widgets/SensitivityWidget.test.tsx": "c63e48cd5b76f958b2bf670e04b48128ac56dabf0ed737e1f47afaa2dacf182c"
+  },
+  "evidenceSha256": {
+    "browser-results.json": "87ebd117dc533168846bf78f37eb629dcedda524dff63622b4aa16e67761fe19",
+    "build-output.txt": "ba814b8db8cdfe4edf3577414d799de529e5f1992fcc461e44c718c655303b79",
+    "c1-current.png": "b101e71cec246d2ef866097a60026db4314a1b923434fc5b3122ad1f3e755ad9",
+    "c1-sensitivity-current.png": "13667a74cc552a90a5fa95728588019a97bb46e4633d9db7c023067e2f0b81db",
+    "c1-sensitivity-recomputed.png": "13667a74cc552a90a5fa95728588019a97bb46e4633d9db7c023067e2f0b81db",
+    "c1-sensitivity-stale.png": "617a838267cd05bd9ce160762498b95f3709c1f4e49e7074374960a68d007acb",
+    "c1-stale.png": "8f806074b91312b189dc61f78a613c33e5687018d9645305e1de575703f26c44",
+    "lint-output.txt": "7e9af0401f4edbc7648bd8caf0a4f382e0311c38193c8a3e1c3936acedb8b79c",
+    "parity-output.txt": "7a22c76d81b011e4be744bd4592bbf5552c1e25a5c73d2df03dea164ed0239ed",
+    "parity-probe.ts.txt": "4cd735221857c6f3587a417e1906d72d6c6d4df1a4c373c0d3b2a811ffc5a66f",
+    "reproduction.txt": "c25af74b6e9afe94574969991b03bad08aece31260e798e70d9377d8eb4e7edd",
+    "typecheck.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "vitest-output.txt": "66dbf7e3182aaf9cb7a6f3a9bc6c03861d0b0cf7e211ac3621b807c7aa9b92e9"
+  }
+}

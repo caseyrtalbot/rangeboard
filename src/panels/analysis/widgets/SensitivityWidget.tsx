@@ -5,7 +5,7 @@ import { uncertainFields } from '../../../analysis/uncertainty'
 import { runSettings } from '../../../model/types'
 import { useStore } from '../../../state/store'
 import { PfTag } from '../../inspector/kit'
-import { formatCount } from './mc'
+import { currentSensitivity, formatCount } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -18,12 +18,12 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
-  const sensitivity = useStore((s) => s.mc.sensitivity)
+  const mc = useStore((s) => s.mc)
+  const sensitivity = mc.sensitivity
   const start = useStore((s) => s.runSensitivity)
   const run = runSettings(scenario)
   const fields = useMemo(() => uncertainFields(scenario), [scenario])
-  // The same rule as currentSummary: a result belongs to the run id on the playhead.
-  const summary = sensitivity.runId === runId ? sensitivity.summary : null
+  const summary = currentSensitivity(mc, runId)
   const library = scenario.library
   const rows: TornadoRow[] = useMemo(
     () =>
@@ -62,11 +62,6 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
       ) : summary != null ? (
         <>
           <Tornado rows={rows} nominal={summary.nominal} unit={null} />
-          {sensitivity.status === 'stale' ? (
-            <div>
-              <span className="status warn">STALE</span>
-            </div>
-          ) : null}
           <table className="tb">
             <thead>
               <tr>
@@ -95,6 +90,7 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
         </>
       ) : (
         <>
+          {sensitivity.status === 'stale' ? <span className="status warn">STALE</span> : null}
           <button className="mc-run" onClick={() => start()}>
             Run sensitivity
           </button>

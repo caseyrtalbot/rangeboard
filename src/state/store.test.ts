@@ -1323,10 +1323,11 @@ describe('monte carlo slice', () => {
     }
   }
 
-  /** Monte Carlo mode, one launch (no Worker in node), then a done message. */
+  /** Model a running worker in node, then deliver its completion. */
   function primeDone(replicates = 4): McSummary {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     useStore.getState().runMonteCarlo()
+    useStore.setState((st) => ({ mc: { ...st.mc, status: 'running' } }))
     const runId = useStore.getState().mc.runId as string
     const summary = fakeSummary(replicates)
     useStore.getState().mcMessage({ type: 'done', runId, summary })
@@ -1470,10 +1471,13 @@ describe('sensitivity slice', () => {
     }
   }
 
-  /** Monte Carlo mode, one launch (no Worker in node), progress, then a done message. */
+  /** Model a running sensitivity worker in node, then progress and completion. */
   function primeSensitivity(): SensitivitySummary {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     useStore.getState().runSensitivity()
+    useStore.setState((st) => ({
+      mc: { ...st.mc, sensitivity: { ...st.mc.sensitivity, status: 'running' } },
+    }))
     const runId = useStore.getState().mc.sensitivity.runId as string
     const summary = fakeSensitivity()
     useStore.getState().sensitivityMessage({ type: 'sens-progress', runId, done: 1, total: 2 })

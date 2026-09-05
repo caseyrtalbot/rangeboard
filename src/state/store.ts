@@ -16,14 +16,23 @@ import type {
   TestCard,
   Vec2,
 } from '../model/types'
-import { dropEditedProvenance, entityActive, newId, runSettings } from '../model/types'
+import {
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  dropEditedProvenance,
+  effectiveDoctrine,
+  entityActive,
+  newId,
+  runSettings,
+} from '../model/types'
 import { emptyScenario, SEED_LIBRARY } from '../model/seed'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength, rotatePoint } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
 import { buildRaidPlan, effectivePathDelayS } from '../playback/raid'
 import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
-import { sensorHoldsPoint } from '../playback/sim'
+import { defendedRadiusOf, sensorHoldsPoint, threatAltitudeFt } from '../playback/sim'
+import { uncertainFields } from '../analysis/parameterBasis'
+import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
 import {
@@ -627,44 +636,70 @@ function freshPlayback(
   }
 }
 
+/** Remove only known metadata: future input fields are included by default. */
+function without<T extends object, K extends keyof T>(value: T, keys: K[]): Omit<T, K> {
+  const result = { ...value }
+  for (const key of keys) delete result[key]
+  return result
+}
+
+/** Object key insertion order is not an input; array order (including draw order) is. */
+function basisJson(value: unknown): string {
+  return JSON.stringify(value, (_key, part) => {
+    if (part == null || typeof part !== 'object' || Array.isArray(part)) return part
+    return Object.fromEntries(Object.keys(part).sort().map((key) => [key, part[key]]))
+  })
+}
+
 /**
- * Stable signature of inputs that can change detection, classification,
- * routing, engagement, or impact. Presentation and recordkeeping fields
- * (name, frames, cards, pins, underlay, MCDA weights) are intentionally out:
- * saving evidence after a run must not invalidate the run it records.
+ * Numerical/configuration identity, excluding named presentation and evidence fields.
+ * New domain fields are included automatically. Defaults use the engine's resolvers;
+ * uncertainFields is also the sampler's enumeration, including connection draw IDs.
+ * Keep the input/consumer matrix in docs/field-te/C1_COMPLETION.md alongside regressions.
  */
 export function analysisBasisSignature(s: Scenario): string {
-  return JSON.stringify({
-    environment: s.environment,
-    roe: s.roe,
-    raid: s.raid,
-    // Run mode, seed and replicate count change every drawn outcome.
+  const doctrine = effectiveDoctrine(s)
+  const kindOf = new Map(s.entities.map((e) => [e.id, e.kind]))
+  return basisJson({
+    ...without(s, [
+      'schemaVersion', 'name', 'systemPresets', 'deletedSeedIds', 'observedPresetId',
+      'engageOn', 'mcdaWeights', 'scorecards', 'boundaries', 'testCards', 'frames',
+      'underlay', 'geoRef', 'runMode', 'seed', 'replicates', 'targetHalfWidth', 'uncertainty',
+    ]),
+    environment: {
+      ...s.environment,
+      precipitation: s.environment.precipitation ?? 'clear',
+      light: s.environment.light ?? 'day',
+      emBackground: s.environment.emBackground ?? 'rural',
+      visibilityM: s.environment.visibilityM ?? null,
+    },
+    roe: s.roe ?? 'tight',
+    raid: s.raid ?? { waves: [] },
+    doctrine,
+    requirements: { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...s.requirements },
     run: runSettings(s),
+    spreads: uncertainFields(s),
     library: s.library.map((m) => ({
-      id: m.id,
-      kind: m.kind,
-      sensor: m.sensor,
-      effector: m.effector,
-      uas: m.uas,
-      threatProfile: m.threatProfile,
+      ...without(m, ['name', 'description', 'color', 'builtin', 'provenance']),
+      uas: m.uas ? without(m.uas, ['emissionsNote', 'rangeNote']) : undefined,
+      // routeIntent is read by hostile-ID logic, so it is an input despite being text.
+      threatProfile: m.threatProfile ? without(m.threatProfile, ['designator']) : undefined,
     })),
     entities: s.entities.map((e) => ({
-      id: e.id,
-      kind: e.kind,
-      specId: e.specId,
-      pos: e.pos,
-      headingDeg: e.headingDeg,
-      enabled: e.enabled,
-      formation: e.formation,
+      ...without(e, ['name', 'color', 'notes', 'systemId', 'showRange']),
+      enabled: entityActive(e),
+      formation: e.formation ?? null,
+      altitudeFt: e.kind === 'uas' ? threatAltitudeFt(s, e) : e.altitudeFt ?? null,
+      defendedRadiusM: e.kind === 'asset' ? defendedRadiusOf(e) : e.defendedRadiusM ?? null,
     })),
     connections: s.connections.map((c) => ({
-      fromId: c.fromId,
-      toId: c.toId,
-      medium: c.medium,
-      confidence: c.confidence,
-      latencyS: c.latencyS,
+      ...without(c, ['label', 'note']),
+      medium: c.medium ?? null,
+      confidence: c.confidence ?? null,
+      latencyS: c.latencyS ?? (doctrine.enabled
+        ? defaultLinkLatencyS(kindOf.get(c.fromId) ?? 'sensor', kindOf.get(c.toId) ?? 'c2')
+        : 0),
     })),
-    paths: s.paths,
   })
 }
 
@@ -2145,7 +2180,9 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => {
         // A message from a cancelled or superseded run describes another board;
         // so does a result that was already in flight when the basis changed.
-        if (m.runId !== st.mc.runId || st.mc.status === 'stale') return st
+        if (m.runId !== st.mc.runId || m.runId !== st.playback.runId ||
+          st.mc.status !== 'running' ||
+          st.mc.basisSignature !== analysisBasisSignature(st.scenario)) return st
         if (m.type === 'progress') {
           return { mc: { ...st.mc, progress: m.done, total: m.total } }
         }
@@ -2191,7 +2228,9 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => {
         const sens = st.mc.sensitivity
         // A message from a cancelled or superseded run describes another board.
-        if (m.runId !== sens.runId || sens.status === 'stale') return st
+        if (m.runId !== sens.runId || m.runId !== st.playback.runId ||
+          sens.status !== 'running' ||
+          sens.basisSignature !== analysisBasisSignature(st.scenario)) return st
         if (m.type === 'sens-progress') {
           return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
         }

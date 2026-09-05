@@ -2,7 +2,8 @@
 
 Status: CURRENT CONTRACT. Model-neutral. It binds every coding agent (Claude, GPT, Codex,
 Cursor, or a person) that changes this repository. `CLAUDE.md` is a thin pointer to this
-file. Written 2026-09-04 at tree `2d367ba` on branch `analysis-hardening`.
+file. Written 2026-09-04 at tree `2d367ba` on branch `analysis-hardening`. Ownership review
+updated factual corrections and document routing on 2026-09-04 against `8b528f2`.
 
 Read order for a new agent:
 
@@ -37,6 +38,11 @@ assumptions that drive the answer. It is not a simulation of truth and not a sou
 operational-effectiveness claims. Every number the tool shows carries its basis (sourced or
 planning factor), its model fidelity tags and its run-validity findings. Do not add a
 feature that presents a bare point as a result.
+
+This is the required result contract. The ownership review found implementation gaps in
+result freshness, matching estimates/intervals, runtime save validation and T&E record
+enforcement. They are recorded in `docs/field-te/OWNERSHIP_FINDINGS.md` and register rows
+R-F-24 to R-F-29; C1 has verified and closed R-F-24; the remaining gaps are still open.
 
 ## 2. Commands and verification
 
@@ -101,7 +107,8 @@ Breaking one of these breaks the app.
   Konva tree and every panel are pure views of it. Never write derived state (positions at
   time t, detections, assessments, Monte Carlo results) into the scenario.
 - **Playback is derived:** position at sim time comes from `posAtTime` in
-  `src/playback/sim.ts`. `playback.simTimeS` is the only mutable playback state.
+  `src/geometry/geo.ts`, which `src/playback/sim.ts` imports. `playback.simTimeS` is the
+  simulation clock; the playback slice also owns speed, flags, run identity and basis state.
   `TimelineBar` owns the requestAnimationFrame loop. Any pulse, blink or playhead derives
   from `simTimeS`; never a timer.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
@@ -118,7 +125,9 @@ Breaking one of these breaks the app.
   `emptyScenario()`; a new nested object needs its own `fillScenario` line. Every new field
   is optional with a default. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
-  `rangeboard.scenario.recovered.<ms>` before anything writes. `loadScenario` is the one
+  `rangeboard.scenario.recovered.<ms>` before anything writes when recovery storage is
+  available. This is best-effort; failed recovery is surfaced. Current parsers do not
+  reject every malformed nested shape (R-F-26). `loadScenario` is the one
   load path; `replaceScenario` clears history, selection, drafts and the tool, and prunes
   per-entity view state.
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
@@ -134,12 +143,18 @@ Breaking one of these breaks the app.
   `src/analysis/fidelity.ts` reads the scenario, never the picture, so it stays cycle-free.
 - **Monte Carlo worker:** the store action `runMonteCarlo` posts a request through
   `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`
-  (`src/playback/mcRun.ts`). The store ignores a message whose `runId` is not current. The
-  result lives in the `mc` slice: view state, never persisted, never in `past`.
-  `resetRun` and `replaceScenario` clear it; a basis change (`analysisBasisSignature`)
-  marks it `stale`; a `done` that arrives after a stale mark is ignored. A second worker
-  slot runs `runSensitivity` on demand. `engagementPicture` stays the deterministic path;
-  the replicate loop never touches its cache.
+  (`src/playback/mcRun.ts`). Each client slot forwards callbacks only from its current
+  worker instance, including repeated requests within one playback run. The store accepts
+  progress, completion and errors only while that slot is running, for the current playback
+  id and analysis basis. Terminal states reject later callbacks. The result lives in the
+  `mc` slice: view state, never persisted, never in `past`. `resetRun` and `replaceScenario`
+  clear it; edits, undo and redo use `analysisBasisSignature` to mark mismatched results
+  stale. The signature includes domain fields by default, removes named presentation and
+  evidence metadata, resolves scenario/entity/link defaults, and uses `uncertainFields`
+  for effective spreads and draw identities. Raw model specs are conservatively included;
+  object key order is ignored and array order is preserved. See the input matrix in
+  `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` on demand.
+  `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
 - **Thresholds are test-defined:** `Scenario.requirements` (`RequirementThresholds`,
   defaults in `DEFAULT_REQUIREMENT_THRESHOLDS`) holds what the test asks the system to
   meet. Every reader spreads `{ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }`.
@@ -172,7 +187,7 @@ src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPh
                (jam), doctrineFactors.ts (per-system factors), impact.ts
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), series.ts (chart
                series on the DT grid), runValidity.ts, requirements.ts, uncertainty.ts
-               (parameter spreads), fidelity.ts (model tags), mcda.ts, aar.ts,
+               (sampling), parameterBasis.ts (pure spread resolution/enumeration), fidelity.ts (model tags), mcda.ts, aar.ts,
                systemTelemetry.ts, threatAggregation.ts, range.ts
 src/charts/    recharts kit: types.ts (Series), tokens.ts, timeAxis.ts, ChartFrame,
                TimeSeries, Ladder, Tornado, Sparkline. Props only; never reads the store.
@@ -305,7 +320,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   drops the row of a spec field it changes (`dropEditedProvenance`); an edited field takes
   no row and stays PF. "Reset to seed" (`resetModelToSeed`, undoable) puts a builtin back
   to its seed.
-- **Parameter uncertainty** (`src/analysis/uncertainty.ts`): `spreadFor(model, field)` is
+- **Parameter uncertainty** (`src/analysis/parameterBasis.ts`, re-exported by
+  `uncertainty.ts`): `spreadFor(model, field)` is
   the one spread resolver: the row's spread, else `PF_SPREAD` by field, else null; a row
   with `spread: null` is pinned and fixed. `sampleSpread` is the one inverse-CDF sample
   (lognormal `sigmaDb` a power ratio, triangular bounds fractions of the nominal, a beta
@@ -321,7 +337,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   end-of-run leaker mean, the field at its p10 and at its p90 with every other field
   nominal, paired by the same seed and replicate index, rows sorted by swing; the
   `sensitivity` widget runs it on demand on its own worker slot into `mc.sensitivity`,
-  which a basis change marks stale. `spreadText` (`src/panels/inspector/spreadText.ts`) is
+  which a basis change marks stale. The sensitivity widget reads `currentSensitivity`
+  and hides stale rows and replicate metadata. `spreadText` (`src/panels/inspector/spreadText.ts`) is
   the one spread wording, shown by the Sources table and appended to the `PfTag` title.
 - **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row
   for each of the fourteen model ids with a tier and a validation status. `modelsUsed
@@ -348,8 +365,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `limiting`; the requirement gates, the exported record and the toolbar chip all derive
   from it. `planning-envelope` is limiting on every gate under every deterministic run;
   `unvalidated-model` is limiting on every gate and names the used models with validation
-  `none`. Derived live, never stored. `valid` is unreachable with the real `MODEL_TAGS`
-  (the environment model has validation `none`); accepted as is (R-F-14).
+  `none`. Derived live, never stored. `valid` depends on the models and conditions used.
+  A sensor-only MC case at neutral covariates with environment application and doctrine
+  disabled can be `valid`; the old universal claim in R-F-14 was disproved in onboarding.
 - **Symbology** (`src/panels/Glyph.tsx`, `src/playback/trackState.ts`): MIL-STD-2525
   split, the frame carries affiliation and the icon carries function; `FRAME_FOR`,
   `FUNCTION_LETTER` and `FRIEND_FRAME_D` are shared by the palette, the library lists and
@@ -490,11 +508,14 @@ Design system (`src/index.css`):
 - **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`,
   recovery copy at `rangeboard.te.recovered.<ms>`. Records are versioned and append-only
   (runs never renumber, issued cards freeze, changes create new versions). Never embed
-  campaign data in `Scenario`.
+  campaign data in `Scenario`. This is the required invariant; current generic patch/remove
+  actions bypass issued-card freezing (R-F-27).
 - IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the
   record. Cards use `id` (per version) plus `cardCode` (shared across versions).
 - Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
-  traceability no finding. `issueCard` enforces blockers in the store.
+  traceability no finalized finding. `issueCard` enforces blockers in the store. Complete
+  transition/reference enforcement and purpose-aware inclusion remain R-F-27/R-F-28;
+  an invalid run may still be relevant to an explicitly qualified failure finding.
 - `src/te/calc/` is pure TypeScript, fixture-tested from MASTER-CALCULATIONS.md. The Board
   engine imports `meanInterval`, `quantile`, `wilson` and `betaQuantile` from
   `src/te/calc/stats.ts`; that is the one dependency from the engine on `src/te/`.
@@ -569,6 +590,11 @@ Scope and git:
 | `CLAUDE.md` | CURRENT CONTRACT (pointer) | the Claude Code entrypoint; points here and holds only Claude-specific environment notes |
 | `docs/AI_HANDOFF.md` | CURRENT TRANSFER RECORD | the state transfer with epistemic marks; verify its section 2 against git before you rely on it |
 | `docs/data-engine/outstanding.md` | CURRENT OUTSTANDING REGISTER | every decision and follow-up; append only |
+| `docs/field-te/PLAN.md` | DEVELOPMENT PLAN; C1 VERIFIED, later slices PROPOSED | correctness, refactor, model credibility, field workflow and UI slices; the current handoff selects one next task |
+| `docs/field-te/OWNERSHIP_FINDINGS.md` | VERIFIED ONBOARDING RECORD | source-linked findings and corrections to the old transfer, at `8b528f2` |
+| `docs/field-te/C1_COMPLETION.md` | VERIFIED C1 RECORD | input/consumer/test matrix, request lifecycle and verification evidence |
+| `docs/field-te/BACKLOG_TRIAGE.md` | PROPOSED ROUTING INDEX | all 204 inherited register rows routed; not a second status authority |
+| `docs/field-te/evidence/onboarding-2026-09-04/` | CAPTURED EVIDENCE | browser outputs, illustrative probe save, screenshots, gate output and hash manifest; not field-validation data |
 | `docs/data-engine/PLAN.md` | COMPLETED / HISTORICAL IMPLEMENTATION SPEC | the data-engine plan, slices 0 to 9, built `3b264e3` to `e6edbb4`; its imperative rules are history |
 | `docs/data-engine/handoff-orchestrator.md` | HISTORICAL HANDOFF; browser recipe still useful | the slice 9 orchestrator handoff; its status table and "Do not" list are as of slice 9 |
 | `docs/engine-refactor/PLAN.md` | COMPLETED / HISTORICAL IMPLEMENTATION SPEC | the engine refactor plan, slices 0 to 7 in three waves, built `965a62b` to `e55aa86`; section 12 (standards) is still cited by `fidelity.ts` |
@@ -576,9 +602,17 @@ Scope and git:
 | `docs/inventory/` | REFERENCE / RESEARCH | the August 2026 source record behind the seed library; the current provenance record is `SpecModel.provenance` in `seedLibrary.ts` |
 | `docs/threat/` | REFERENCE / RESEARCH | the public-source UAS threat study, 2026-08-22 |
 | `docs/te-plan.md`, `docs/te-compilation/` | COMPLETED / HISTORICAL IMPLEMENTATION SPEC and REFERENCE for `src/te/` | the T&E Ops product plan and its compiled sources; MASTER-CALCULATIONS.md is the fixture source of `src/te/calc/` tests |
-| `README.md` | STALE | the unmodified Vite template |
+| `README.md` | CURRENT ENTRYPOINT | product orientation, development commands and current document links |
 | `docs/data-engine/mockup.html`, `mockup-te.html`, `build_mockup.py`, `build_mockup_te.py` | NOT IN GIT | visual targets of built slices, present in the working tree as untracked files by the user's choice; the code is the truth |
 | `docs/data-engine/HANDOFF.md` | NOT IN GIT, absent on purpose | the agent-team slice protocol; a reference to it points at nothing in the repo |
 
-No plan document exists past the engine refactor. The next body of work is the user's to
-name; candidates are listed in `docs/AI_HANDOFF.md` section 13.
+The field T&E plan follows the engine refactor. `docs/AI_HANDOFF.md` records the current
+stop point and next selected task; the plan does not authorize every later slice.
+
+Keep one current handoff at `docs/AI_HANDOFF.md`. Each handoff states scope, branch/source
+revision, working-tree ownership, completed work, actual verification/evidence, open risks
+and decisions, active plan/register IDs, the exact next step and authorization limits.
+Keep the evidence marks; link the contract instead of copying it. Superseded transfers
+remain recoverable in git. Update current docs in the same slice as behavior changes;
+preserve historical research/specifications with explicit status. Temporary deprecated
+surfaces need a removal condition; supported save migrations are not dead code.

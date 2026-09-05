@@ -1,0 +1,143 @@
+{
+  "setup": {
+    "without": {
+      "statuses": [
+        "no-fc-uplink"
+      ],
+      "totals": {
+        "raidSize": 1,
+        "expectedKills": 0,
+        "expectedHardKills": 0,
+        "expectedSoftKills": 0,
+        "expectedLateKills": 0,
+        "expectedLeakers": 1,
+        "expectedNoArrival": 0,
+        "reportedLeakers": 1,
+        "shotsFired": 0,
+        "deSalvos": 0,
+        "jamSalvos": 0
+      },
+      "events": 0
+    },
+    "withKu": {
+      "statuses": [
+        "engageable"
+      ],
+      "totals": {
+        "raidSize": 1,
+        "expectedKills": 0.9599700431317969,
+        "expectedHardKills": 0.9599700431317969,
+        "expectedSoftKills": 0,
+        "expectedLateKills": 0,
+        "expectedLeakers": 0.0400299568682031,
+        "expectedNoArrival": 0,
+        "reportedLeakers": 0.0400299568682031,
+        "shotsFired": 4,
+        "deSalvos": 0,
+        "jamSalvos": 0
+      },
+      "events": 4
+    },
+    "uasId": "ent-mtnvzhmr-25",
+    "effectorId": "ent-mtnvzhmr-24",
+    "kurfsId": "ent-mtnvzhmx-29"
+  },
+  "mc": {
+    "status": "done",
+    "perEffector": {
+      "ent-mtnvzhmr-24": {
+        "salvos": {
+          "mean": 1.6666666666666667,
+          "sd": 0.8022955570857538,
+          "se": 0.1464784581340137,
+          "lo": 1.3670845821570883,
+          "hi": 1.9662487511762452,
+          "conf": 0.95,
+          "p10": 1,
+          "p90": 3,
+          "p025": 1,
+          "p975": 3.2749999999999986,
+          "n": 30,
+          "total": 30,
+          "defined": {
+            "p": 1,
+            "lo": 0.8864829086095221,
+            "hi": 1
+          }
+        },
+        "kills": {
+          "mean": 0.9666666666666667,
+          "sd": 0.18257418583505525,
+          "se": 0.03333333333333331,
+          "lo": 0.8984923452622434,
+          "hi": 1.03484098807109,
+          "conf": 0.95,
+          "p10": 1,
+          "p90": 1,
+          "p025": 0.7250000000000001,
+          "p975": 1,
+          "n": 30,
+          "total": 30,
+          "defined": {
+            "p": 1,
+            "lo": 0.8864829086095221,
+            "hi": 1
+          }
+        }
+      }
+    },
+    "leakers": 0.03333333333333333
+  },
+  "invalidation": [
+    {
+      "name": "altitude",
+      "sameSignature": true,
+      "mcStatus": "done",
+      "oldSummaryStillCurrent": true,
+      "changedInput": true,
+      "deterministicEvents": 0
+    },
+    {
+      "name": "defendedRadius",
+      "sameSignature": true,
+      "mcStatus": "done",
+      "oldSummaryStillCurrent": true,
+      "changedInput": true,
+      "deterministicEvents": 4
+    },
+    {
+      "name": "doctrine",
+      "sameSignature": true,
+      "mcStatus": "done",
+      "oldSummaryStillCurrent": true,
+      "changedInput": true,
+      "deterministicEvents": 4
+    },
+    {
+      "name": "requirements",
+      "sameSignature": true,
+      "mcStatus": "done",
+      "oldSummaryStillCurrent": true,
+      "changedInput": true,
+      "deterministicEvents": 4
+    },
+    {
+      "name": "spread",
+      "sameSignature": true,
+      "mcStatus": "done",
+      "oldSummaryStillCurrent": true,
+      "changedInput": true,
+      "deterministicEvents": 4
+    }
+  ],
+  "malformed": {
+    "boardAcceptsNullEntities": true,
+    "teAcceptsNullCards": true
+  },
+  "te": {
+    "issuedCardMutable": true,
+    "versionUnchanged": true,
+    "issuedCardRemovable": true
+  },
+  "errors": []
+}

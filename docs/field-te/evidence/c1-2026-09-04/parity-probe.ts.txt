@@ -1,0 +1,18 @@
+import { expect, it } from 'vitest'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { assessAllThreats } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates, runSensitivity } from './mcRun'
+import type { Scenario } from '../model/types'
+import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+it('preserves the original deterministic and seeded outputs', () => {
+  const scenario = { ...probe, replicates: 4 } as Scenario
+  const assessments = assessAllThreats(scenario)
+  const value = JSON.stringify({ assessments, report: resolveEngagements(scenario, assessments),
+    aleatory: runReplicates({ ...scenario, uncertainty: 'aleatory' }),
+    total: runReplicates({ ...scenario, uncertainty: 'total' }),
+    sensitivity: runSensitivity(scenario) })
+  const file = '/private/tmp/rangeboard-c1/numerical-baseline.json'
+  if (process.env.C1_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+})

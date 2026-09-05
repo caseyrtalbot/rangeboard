@@ -25,10 +25,16 @@ export function startMcRun(
 ): boolean {
   cancelMcRun()
   if (typeof Worker === 'undefined') return false
-  worker = new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' })
-  worker.onmessage = (e: MessageEvent<McWorkerMessage>) => onMessage(e.data)
-  worker.onerror = (e: ErrorEvent) => onMessage({ type: 'error', runId, message: e.message })
-  worker.postMessage({ type: 'run', runId, scenario })
+  const owned = new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' })
+  worker = owned
+  // Termination cannot retract a callback already queued for an older request.
+  owned.onmessage = (e: MessageEvent<McWorkerMessage>) => {
+    if (worker === owned) onMessage(e.data)
+  }
+  owned.onerror = (e: ErrorEvent) => {
+    if (worker === owned) onMessage({ type: 'error', runId, message: e.message })
+  }
+  owned.postMessage({ type: 'run', runId, scenario })
   return true
 }
 
@@ -51,11 +57,15 @@ export function startSensitivity(
 ): boolean {
   cancelSensitivity()
   if (typeof Worker === 'undefined') return false
-  sensWorker = new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' })
-  sensWorker.onmessage = (e: MessageEvent<McSensitivityMessage>) => onMessage(e.data)
-  sensWorker.onerror = (e: ErrorEvent) =>
-    onMessage({ type: 'sens-error', runId, message: e.message })
-  sensWorker.postMessage({ type: 'sensitivity', runId, scenario })
+  const owned = new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' })
+  sensWorker = owned
+  owned.onmessage = (e: MessageEvent<McSensitivityMessage>) => {
+    if (sensWorker === owned) onMessage(e.data)
+  }
+  owned.onerror = (e: ErrorEvent) => {
+    if (sensWorker === owned) onMessage({ type: 'sens-error', runId, message: e.message })
+  }
+  owned.postMessage({ type: 'sensitivity', runId, scenario })
   return true
 }
 

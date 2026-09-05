@@ -1,0 +1,60 @@
+{
+  "date": "2026-09-04",
+  "sourceRevision": "8b528f2a096a64d5a3ead9c5456d29bed6bd1ad1",
+  "scope": "Documentation-only planning pass; source and package configuration unchanged",
+  "commands": [
+    {
+      "command": "npx tsc --noEmit -p tsconfig.app.json",
+      "exitCode": 0,
+      "output": "No diagnostics"
+    },
+    {
+      "command": "npx vitest run",
+      "exitCode": 0,
+      "filesPassed": 69,
+      "testsPassed": 1202,
+      "durationSeconds": 4.65
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "warnings": 74,
+      "errors": 0,
+      "categories": {
+        "react(only-export-components)": 72,
+        "react(set-state-in-effect)": 2
+      },
+      "outputFile": "planning-lint-output.txt"
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "warning": "Chunk size exceeds 500 kB",
+      "mainKB": 1981.57,
+      "mainGzipKB": 572.08,
+      "workerKB": 287.24,
+      "outputFile": "planning-build-output.txt"
+    }
+  ],
+  "documentationChecks": {
+    "originalRegisterItemsPreserved": 204,
+    "inheritedIdsRoutedExactlyOnce": 204,
+    "newRegisterIds": [
+      "R-D-25",
+      "R-F-24",
+      "R-F-25",
+      "R-F-26",
+      "R-F-27",
+      "R-F-28",
+      "R-F-29",
+      "M-11"
+    ],
+    "markdownTargetsExist": true,
+    "gitDiffCheck": "passed"
+  },
+  "limits": [
+    "Browser probes were run during onboarding, not repeated for documentation-only changes.",
+    "No independent trial data or empirical field acceptance completed.",
+    "No commit or push."
+  ]
+}

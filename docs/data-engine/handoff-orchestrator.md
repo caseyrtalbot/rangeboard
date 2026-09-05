@@ -4,6 +4,8 @@
 > rules" and "Do not" sections are as of slice 9 and are superseded by `AGENTS.md` and
 > `docs/AI_HANDOFF.md`. The protocol lessons and the browser recipe remain useful reference.
 > Scenario A and B in the browser recipe do not fire a Coyote (`outstanding.md` R-F-20).
+> A reproduced typed-route firing probe and its validity limits are now in
+> `docs/field-te/OWNERSHIP_FINDINGS.md` section 7. Use that record for current evidence.
 
 Written 2026-09-04 by the orchestrator session that ran slice 9. The slice 0 to 2
 orchestrator wrote the first version; the slice 3 to 9 orchestrators rewrote it; their

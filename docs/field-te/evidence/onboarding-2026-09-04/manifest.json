@@ -1,0 +1,65 @@
+{
+  "captured": "2026-09-04",
+  "sourceRevision": "8b528f2a096a64d5a3ead9c5456d29bed6bd1ad1",
+  "kind": "captured onboarding observations, not automated acceptance tests",
+  "files": [
+    {
+      "file": "browser-results.json",
+      "sha256": "302d1722c9fc8016584deb64638020316c39ccd915a37d19ec882b8480fbad34",
+      "bytes": 3366
+    },
+    {
+      "file": "supplement-results.json",
+      "sha256": "e02c689b43e2df7f4da60705dbc1a74c2ffb6ffd7b876ec6b430fc6830de4571",
+      "bytes": 1072
+    },
+    {
+      "file": "firing-scenario.json",
+      "sha256": "fb62cc6fce749f73f0809f7cf26962c81184d4e8d002005a6cc0277b11cffaa9",
+      "bytes": 176427
+    },
+    {
+      "file": "board.png",
+      "sha256": "0ba4050cd5c8435593ee0098075afa680ebb6c6b82df3676687b56ab146c2314",
+      "bytes": 219124
+    },
+    {
+      "file": "te.png",
+      "sha256": "a84e06c24c32fb6285417db31c48009b0a6ecd329d24d9c924c4e79bd4da34cd",
+      "bytes": 127521
+    },
+    {
+      "file": "vitest-output.txt",
+      "sha256": "536766eaa42f6d4ff7d4d90467293fd95eb1431c11a7a7fa6d4d04fff396002f",
+      "bytes": 233
+    },
+    {
+      "file": "lint-output.txt",
+      "sha256": "38239de77b3a9fe1591962488c6e82721fffaa990fa2781a413731dc20d43105",
+      "bytes": 15695
+    },
+    {
+      "file": "build-output.txt",
+      "sha256": "e92c78feebc27a5fdd5ef91c9219cf72ce0a6050ef5f6dc3ca0e335f659ac61e",
+      "bytes": 6252
+    },
+    {
+      "file": "planning-verification.json",
+      "sha256": "f527acfccdf85b92d4b21a6b9e8e69ebdd5f3b42436d6a83e2dcbda8344adbeb",
+      "bytes": 1539,
+      "phase": "documentation-pass verification"
+    },
+    {
+      "file": "planning-lint-output.txt",
+      "sha256": "0853310221b571e8fc0c8720a8b0cb1387aa03d5e2e3f9a1cfcbd03ce7cd7bad",
+      "bytes": 15695,
+      "phase": "documentation-pass verification"
+    },
+    {
+      "file": "planning-build-output.txt",
+      "sha256": "cddcdef1998a991d2a3b1178ff1c9636df5e678ab72fe20d52b6468d0c7b0a6b",
+      "bytes": 6252,
+      "phase": "documentation-pass verification"
+    }
+  ]
+}

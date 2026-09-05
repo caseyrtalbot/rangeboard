@@ -1,0 +1,100 @@
+
+ RUN  v4.1.11 /Users/caseytalbot/Projects/rangeboard
+
+ ❯ src/state/store.analysis.test.ts (13 tests | 9 failed) 19ms
+     × altitude invalidates completed results through edits, undo and redo 5ms
+     × defended radius invalidates completed results through edits, undo and redo 1ms
+     × doctrine invalidates completed results through edits, undo and redo 1ms
+     × requirements invalidates completed results through edits, undo and redo 1ms
+     × effective spread invalidates completed results through edits, undo and redo 1ms
+     × connection draw identity invalidates completed results through edits, undo and redo 1ms
+     × basis rejects canceled callbacks in both slots 2ms
+     × repeated requests in the same playback run reject all replaced callbacks 1ms
+     × a terminal result cannot be overwritten by later progress, errors or completion 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > altitude invalidates completed results through edits, undo and redo
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > defended radius invalidates completed results through edits, undo and redo
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > doctrine invalidates completed results through edits, undo and redo
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > requirements invalidates completed results through edits, undo and redo
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > effective spread invalidates completed results through edits, undo and redo
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > connection draw identity invalidates completed results through edits, undo and redo
+AssertionError: expected 'done' to be 'stale' // Object.is equality
+
+Expected: "stale"
+Received: "done"
+
+ ❯ src/state/store.analysis.test.ts:92:43
+     90|     expectCurrent(true)
+     91|     edit()
+     92|     expect(useStore.getState().mc.status).toBe('stale')
+       |                                           ^
+     93|     expect(useStore.getState().mc.sensitivity.status).toBe('stale')
+     94|     expectCurrent(false)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > basis rejects canceled callbacks in both slots
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/state/store.analysis.test.ts:115:49
+    113|     old.sens.send({ type: 'sens-done', runId: old.runId, summary: sens…
+    114|     old.sens.onerror?.({ message: 'late error' })
+    115|     expect(useStore.getState().mc === snapshot).toBe(true)
+       |                                                 ^
+    116|     expect(old.mc.terminated).toBe(true)
+    117|     expect(old.sens.terminated).toBe(true)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > repeated requests in the same playback run reject all replaced callbacks
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/state/store.analysis.test.ts:133:49
+    131|     old.sens.send({ type: 'sens-error', runId: old.runId, message: 'ol…
+    132|     old.sens.onerror?.({ message: 'old native error' })
+    133|     expect(useStore.getState().mc === snapshot).toBe(true)
+       |                                                 ^
+    134|     fresh.mc.send({ type: 'progress', runId: fresh.runId, done: 1, tot…
+    135|     fresh.sens.send({ type: 'sens-progress', runId: fresh.runId, done:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  src/state/store.analysis.test.ts > complete analysis basis and request ownership > a terminal result cannot be overwritten by later progress, errors or completion
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/state/store.analysis.test.ts:152:49
+    150|     work.sens.onerror?.({ message: 'late' })
+    151|     work.sens.send({ type: 'sens-done', runId: work.runId, summary: { …
+    152|     expect(useStore.getState().mc === snapshot).toBe(true)
+       |                                                 ^
+    153|   })
+    154|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 4 passed (13)
+   Start at  22:38:21
+   Duration  307ms (transform 162ms, setup 0ms, import 224ms, tests 19ms, environment 0ms)
+

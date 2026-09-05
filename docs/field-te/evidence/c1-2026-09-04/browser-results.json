@@ -1,0 +1,244 @@
+{
+  "baseline": {
+    "mc": "done",
+    "sensitivity": "done",
+    "meanKills": 0.9666666666666667,
+    "meanLeakers": 0.03333333333333333,
+    "currentMc": true,
+    "currentSensitivity": true,
+    "deterministicEvents": 4,
+    "validity": [
+      "spawn-in-ring",
+      "unvalidated-model"
+    ],
+    "sensitivityTables": [
+      {
+        "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48210.00pkPF0.070.00detectRangeMSRC0.000.00trackInitSPF0.000.00detectRangeMSRC0.000.00trackInitSPF0.000.00engageTimeSPF0.000.00targetSPF0.000.00bdaSPF0.000.00rcsM2PF0.000.00latencySPF0.000.00latencySPF0.000.00latencySPF0.000.00declareHost\u2026PF0.000.00ModelFieldLowHighSwingCoyote Block 2 interceptorpk0.100.1KuRFS fire-control radar (Raytheon)detectRangeM000KuRFS fire-control radar (Raytheon)trackInitS000Giraffe 1X 3D radar (Saab)detectRangeM000Giraffe 1X 3D radar (Saab)trackInitS000Coyote Block 2 interceptorengageTimeS000Coyote Block 2 interceptortargetS000Coyote Block 2 interceptorbdaS000Red air: DJI Mavic 3 (G1 quad)rcsM2000track datalatencyS000engage orderlatencyS000track datalatencyS000DoctrinedeclareHostileS000Run again",
+        "rows": 13
+      }
+    ]
+  },
+  "edits": [
+    {
+      "name": "altitude",
+      "stale": {
+        "mc": "stale",
+        "sensitivity": "stale",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": false,
+        "currentSensitivity": false,
+        "deterministicEvents": 0,
+        "validity": [
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakersSTALERun sensitivity",
+            "rows": 0
+          }
+        ]
+      },
+      "recomputed": {
+        "mc": "done",
+        "sensitivity": "done",
+        "meanKills": 0,
+        "meanLeakers": 1,
+        "currentMc": true,
+        "currentSensitivity": true,
+        "deterministicEvents": 0,
+        "validity": [
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48211.00detectRangeMSRC1.001.00trackInitSPF1.001.00detectRangeMSRC1.001.00trackInitSPF1.001.00pkPF1.001.00engageTimeSPF1.001.00targetSPF1.001.00bdaSPF1.001.00rcsM2PF1.001.00latencySPF1.001.00latencySPF1.001.00latencySPF1.001.00declareHost\u2026PF1.001.00ModelFieldLowHighSwingKuRFS fire-control radar (Raytheon)detectRangeM110KuRFS fire-control radar (Raytheon)trackInitS110Giraffe 1X 3D radar (Saab)detectRangeM110Giraffe 1X 3D radar (Saab)trackInitS110Coyote Block 2 interceptorpk110Coyote Block 2 interceptorengageTimeS110Coyote Block 2 interceptortargetS110Coyote Block 2 interceptorbdaS110Red air: DJI Mavic 3 (G1 quad)rcsM2110track datalatencyS110engage orderlatencyS110track datalatencyS110DoctrinedeclareHostileS110Run again",
+            "rows": 13
+          }
+        ]
+      }
+    },
+    {
+      "name": "defended radius",
+      "stale": {
+        "mc": "stale",
+        "sensitivity": "stale",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": false,
+        "currentSensitivity": false,
+        "deterministicEvents": 4,
+        "validity": [
+          "spawn-in-ring",
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakersSTALERun sensitivity",
+            "rows": 0
+          }
+        ]
+      },
+      "recomputed": {
+        "mc": "done",
+        "sensitivity": "done",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": true,
+        "currentSensitivity": true,
+        "deterministicEvents": 4,
+        "validity": [
+          "spawn-in-ring",
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48210.00pkPF0.070.00detectRangeMSRC0.030.00engageTimeSPF0.000.03trackInitSPF0.000.00detectRangeMSRC0.000.00trackInitSPF0.000.00targetSPF0.000.00bdaSPF0.000.00rcsM2PF0.000.00latencySPF0.000.00latencySPF0.000.00latencySPF0.000.00declareHost\u2026PF0.000.00ModelFieldLowHighSwingCoyote Block 2 interceptorpk0.100.1KuRFS fire-control radar (Raytheon)detectRangeM0.000.0Coyote Block 2 interceptorengageTimeS00.00.0KuRFS fire-control radar (Raytheon)trackInitS000Giraffe 1X 3D radar (Saab)detectRangeM000Giraffe 1X 3D radar (Saab)trackInitS000Coyote Block 2 interceptortargetS000Coyote Block 2 interceptorbdaS000Red air: DJI Mavic 3 (G1 quad)rcsM2000track datalatencyS000engage orderlatencyS000track datalatencyS000DoctrinedeclareHostileS000Run again",
+            "rows": 13
+          }
+        ]
+      }
+    },
+    {
+      "name": "doctrine",
+      "stale": {
+        "mc": "stale",
+        "sensitivity": "stale",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": false,
+        "currentSensitivity": false,
+        "deterministicEvents": 4,
+        "validity": [
+          "spawn-in-ring",
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakersSTALERun sensitivity",
+            "rows": 0
+          }
+        ]
+      },
+      "recomputed": {
+        "mc": "done",
+        "sensitivity": "done",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": true,
+        "currentSensitivity": true,
+        "deterministicEvents": 4,
+        "validity": [
+          "spawn-in-ring",
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48210.00pkPF0.070.00detectRangeMSRC0.030.00engageTimeSPF0.000.03trackInitSPF0.000.00detectRangeMSRC0.000.00trackInitSPF0.000.00targetSPF0.000.00bdaSPF0.000.00rcsM2PF0.000.00latencySPF0.000.00latencySPF0.000.00latencySPF0.000.00declareHost\u2026PF0.000.00ModelFieldLowHighSwingCoyote Block 2 interceptorpk0.100.1KuRFS fire-control radar (Raytheon)detectRangeM0.000.0Coyote Block 2 interceptorengageTimeS00.00.0KuRFS fire-control radar (Raytheon)trackInitS000Giraffe 1X 3D radar (Saab)detectRangeM000Giraffe 1X 3D radar (Saab)trackInitS000Coyote Block 2 interceptortargetS000Coyote Block 2 interceptorbdaS000Red air: DJI Mavic 3 (G1 quad)rcsM2000track datalatencyS000engage orderlatencyS000track datalatencyS000DoctrinedeclareHostileS000Run again",
+            "rows": 13
+          }
+        ]
+      }
+    },
+    {
+      "name": "requirements",
+      "stale": {
+        "mc": "stale",
+        "sensitivity": "stale",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": false,
+        "currentSensitivity": false,
+        "deterministicEvents": 4,
+        "validity": [
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakersSTALERun sensitivity",
+            "rows": 0
+          }
+        ]
+      },
+      "recomputed": {
+        "mc": "done",
+        "sensitivity": "done",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": true,
+        "currentSensitivity": true,
+        "deterministicEvents": 4,
+        "validity": [
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48210.00pkPF0.070.00detectRangeMSRC0.000.00trackInitSPF0.000.00detectRangeMSRC0.000.00trackInitSPF0.000.00engageTimeSPF0.000.00targetSPF0.000.00bdaSPF0.000.00rcsM2PF0.000.00latencySPF0.000.00latencySPF0.000.00latencySPF0.000.00declareHost\u2026PF0.000.00ModelFieldLowHighSwingCoyote Block 2 interceptorpk0.100.1KuRFS fire-control radar (Raytheon)detectRangeM000KuRFS fire-control radar (Raytheon)trackInitS000Giraffe 1X 3D radar (Saab)detectRangeM000Giraffe 1X 3D radar (Saab)trackInitS000Coyote Block 2 interceptorengageTimeS000Coyote Block 2 interceptortargetS000Coyote Block 2 interceptorbdaS000Red air: DJI Mavic 3 (G1 quad)rcsM2000track datalatencyS000engage orderlatencyS000track datalatencyS000DoctrinedeclareHostileS000Run again",
+            "rows": 13
+          }
+        ]
+      }
+    },
+    {
+      "name": "spread",
+      "stale": {
+        "mc": "stale",
+        "sensitivity": "stale",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": false,
+        "currentSensitivity": false,
+        "deterministicEvents": 4,
+        "validity": [
+          "spawn-in-ring",
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakersSTALERun sensitivity",
+            "rows": 0
+          }
+        ]
+      },
+      "recomputed": {
+        "mc": "done",
+        "sensitivity": "done",
+        "meanKills": 0.9666666666666667,
+        "meanLeakers": 0.03333333333333333,
+        "currentMc": true,
+        "currentSensitivity": true,
+        "deterministicEvents": 4,
+        "validity": [
+          "spawn-in-ring",
+          "unvalidated-model"
+        ],
+        "sensitivityTables": [
+          {
+            "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48210.00detectRangeMSRC0.000.00trackInitSPF0.000.00detectRangeMSRC0.000.00trackInitSPF0.000.00engageTimeSPF0.000.00targetSPF0.000.00bdaSPF0.000.00rcsM2PF0.000.00latencySPF0.000.00latencySPF0.000.00latencySPF0.000.00declareHost\u2026PF0.000.00ModelFieldLowHighSwingKuRFS fire-control radar (Raytheon)detectRangeM000KuRFS fire-control radar (Raytheon)trackInitS000Giraffe 1X 3D radar (Saab)detectRangeM000Giraffe 1X 3D radar (Saab)trackInitS000Coyote Block 2 interceptorengageTimeS000Coyote Block 2 interceptortargetS000Coyote Block 2 interceptorbdaS000Red air: DJI Mavic 3 (G1 quad)rcsM2000track datalatencyS000engage orderlatencyS000track datalatencyS000DoctrinedeclareHostileS000Run again",
+            "rows": 12
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "restored": {
+    "mc": "done",
+    "sensitivity": "done",
+    "meanKills": 0.9666666666666667,
+    "meanLeakers": 0.03333333333333333,
+    "currentMc": true,
+    "currentSensitivity": true,
+    "deterministicEvents": 4,
+    "validity": [
+      "spawn-in-ring",
+      "unvalidated-model"
+    ],
+    "sensitivityTables": [
+      {
+        "text": "\u25beSensitivityleakers \u00b7 30 reps \u00b7 seed 48210.00pkPF0.070.00detectRangeMSRC0.000.00trackInitSPF0.000.00detectRangeMSRC0.000.00trackInitSPF0.000.00engageTimeSPF0.000.00targetSPF0.000.00bdaSPF0.000.00rcsM2PF0.000.00latencySPF0.000.00latencySPF0.000.00latencySPF0.000.00declareHost\u2026PF0.000.00ModelFieldLowHighSwingCoyote Block 2 interceptorpk0.100.1KuRFS fire-control radar (Raytheon)detectRangeM000KuRFS fire-control radar (Raytheon)trackInitS000Giraffe 1X 3D radar (Saab)detectRangeM000Giraffe 1X 3D radar (Saab)trackInitS000Coyote Block 2 interceptorengageTimeS000Coyote Block 2 interceptortargetS000Coyote Block 2 interceptorbdaS000Red air: DJI Mavic 3 (G1 quad)rcsM2000track datalatencyS000engage orderlatencyS000track datalatencyS000DoctrinedeclareHostileS000Run again",
+        "rows": 13
+      }
+    ]
+  }
+}
