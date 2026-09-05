@@ -1,0 +1,10 @@
+{
+  "mcStatus": "done",
+  "sensitivityStatus": "done",
+  "independentWorker": "exact parity excluding elapsedMs",
+  "deterministicEvents": 4,
+  "seed": 4821,
+  "replicates": 4,
+  "sensitivityRows": 13,
+  "pageErrors": []
+}

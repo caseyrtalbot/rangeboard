@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-05",
+  "baseline": "74eb94dc06b5c6550cf3d427d3b7510aad9a9931",
+  "branch": "analysis-hardening",
+  "sourceSha256": {
+    "src/model/scenario.ts": "1dcc582bb3199806e5684b36f0e3ee2a28841d31685c9c2c22ac6cf949d2e696",
+    "src/model/scenario.test.ts": "c8bfbc0aa3ec75be213fa7d8869c21a16474b6a75ea9b5a8be966509cbeb7032",
+    "src/state/rings.ts": "46bd610e2e2caa268b5d50af3631d4efa1f085bc9ec1946798baa81ad51e20ba",
+    "src/state/store.ts": "84edeb571b7be9c4dac03ae41a87edb1e38b460e41c73f4707cbed96a9f479a6",
+    "src/state/store.exports.test.ts": "3488e91084a2482d2961991f25b8ef61e94c59d89309e711a3c958b2c91e7fbe",
+    "src/playback/sim.ts": "a88144e25dae940e01244d9d1d2cb6797d3c03ead5592f952cde28d738835913",
+    "src/playback/workerGraph.test.ts": "5d926b8ddcbe89aa7b6639d869ea759a8eb1bc7635fd4e9f756fa50d528674fd",
+    "src/analysis/series.ts": "3e84feef5f631f66e90700b62f03b245505779691e03f39150b06473078f01f3",
+    "src/io/validateScenario.ts": "74a62ab020f87655c3320f921e9d35d197d0e6cfbb6212a10ffe065fb9e9edf0",
+    "src/io/viewState.ts": "214e4deaf65df7cc491162ef147b3d52939b0c19d2e85b7f194e46d382642af5"
+  },
+  "fixtureSha256": "fb62cc6fce749f73f0809f7cf26962c81184d4e8d002005a6cc0277b11cffaa9",
+  "checks": {
+    "tsc": "pass",
+    "vitest": {
+      "files": 80,
+      "tests": 1360
+    },
+    "lint": {
+      "warnings": 74,
+      "errors": 0,
+      "baselineWarningSetIdentical": true
+    },
+    "build": "pass; existing chunk warning",
+    "schema": "pass",
+    "movedDefinitionsByteIdentical": true,
+    "scratchParityRemoved": true
+  },
+  "files": {
+    "after-build.log": "58c6b20dbc46b12e77b5db9a08459c4b982cc3d0aaa652fc43a6d7c85740a99a",
+    "after-lint.log": "83551144128bf36b3f26d53b13b45addc737341e323d1663d796a69f4b3c38d4",
+    "after-schema.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "after-tests.log": "de761e843272d1d89226043defcb75cb3d039445c4734ddf1f85f8c29f2f8218",
+    "after-tsc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "before-build.log": "ced5c912e9e05dc075afb2938f71fa5cb5a7de12960d08b2c71104412a9d94ab",
+    "before-lint.log": "185407bf364c008a4b5a173dd7fabb068d30e643e30cbfd7f2b066c3c7670c33",
+    "before-tests.log": "7a738cf6c39a41ad066a54706b38424e7cc2048a29898c3f7f687bef841fd02c",
+    "before-tsc.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "browser-console.log": "5260a1391477709863a1abf0cf45e0c98f577ccc2519cdfb9436eb74df7bcea8",
+    "browser-probe.js.txt": "25208cd42ac53b0d9c3636cdf756ebb60a5d37315e1343cdb479861c65f7fedd",
+    "browser-results.json": "ad844453e7752434244ed98478558f18840cabfe891958e0b7498e3ccd52a6f0",
+    "browser-worker.png": "9e250a8dbcf43e870bd989be8bf781b18fe5f5749239cb1b4977d6adbcf68a5b",
+    "browser.log": "4e86e157b24fc9cf6b7fe7c75902ce51d0879d67c21305970cc3a559a4dc9433",
+    "focused.log": "c3546ecbda13c46e49a61289915eaba35cdc4f9609be5a2782eb2f8fc15d4b23",
+    "graph-before.log": "78930f25b43c758b0a929467df077b442965c92877413058873d27fc12618287",
+    "numerical-baseline.json": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+    "parity-after.log": "4bb1b2cf30ed84f26b04d7e35bda4828b052aa6f7001ff2d509c53068d9bb7b1",
+    "parity-before.log": "ae0281ad0529d93d91dbcf755ff5ab2365f5cc96cc53975b2d33824f505af0c2",
+    "parity-probe.ts.txt": "49e717d3a270377557da0363e03701dba0c141e1bb90fb535edd9e67c0ddce2d",
+    "worker-graph.json": "e47b8c56d7845c10ab4a3e6d0e87f2a93aaa27fc4729c380a52c674160b206e9"
+  }
+}

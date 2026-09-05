@@ -1,0 +1,62 @@
+
+ RUN  v4.1.11 /Users/caseytalbot/Projects/rangeboard
+
+ ❯ src/playback/workerGraph.test.ts (2 tests | 2 failed) 197ms
+   × keeps the worker engine independent of stores, UI and browser persistence 160ms
+   × keeps view-state persistence free of runtime store imports 36ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/playback/workerGraph.test.ts > keeps the worker engine independent of stores, UI and browser persistence
+AssertionError: src/state/store.ts -> zustand: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ visit src/playback/workerGraph.test.ts:19:89
+     17|     for (const dep of ts.preProcessFile(outputText).importedFiles) {
+     18|       // Any external runtime dependency must be reviewed before joini…
+     19|       expect(dep.fileName.startsWith('.'), `${relative('.', file)} -> …
+       |                                                                                         ^
+     20|       const target = resolve(dirname(file), dep.fileName)
+     21|       visit(target.endsWith('.ts') ? target : `${target}.ts`)
+ ❯ visit src/playback/workerGraph.test.ts:21:7
+ ❯ visit src/playback/workerGraph.test.ts:21:7
+ ❯ visit src/playback/workerGraph.test.ts:21:7
+ ❯ visit src/playback/workerGraph.test.ts:21:7
+ ❯ valueGraph src/playback/workerGraph.test.ts:24:3
+ ❯ src/playback/workerGraph.test.ts:29:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/playback/workerGraph.test.ts > keeps view-state persistence free of runtime store imports
+AssertionError: src/state/store.ts -> zustand: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ visit src/playback/workerGraph.test.ts:19:89
+     17|     for (const dep of ts.preProcessFile(outputText).importedFiles) {
+     18|       // Any external runtime dependency must be reviewed before joini…
+     19|       expect(dep.fileName.startsWith('.'), `${relative('.', file)} -> …
+       |                                                                                         ^
+     20|       const target = resolve(dirname(file), dep.fileName)
+     21|       visit(target.endsWith('.ts') ? target : `${target}.ts`)
+ ❯ visit src/playback/workerGraph.test.ts:21:7
+ ❯ valueGraph src/playback/workerGraph.test.ts:24:3
+ ❯ src/playback/workerGraph.test.ts:38:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  12:25:23
+   Duration  457ms (transform 43ms, setup 0ms, import 195ms, tests 197ms, environment 0ms)
+

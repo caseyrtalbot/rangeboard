@@ -18,7 +18,7 @@ import {
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
-import { modelFor, pathSpeed, scenarioDurationS } from '../state/store'
+import { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
 import { effectivePathDelayS } from './raid'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'

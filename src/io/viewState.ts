@@ -1,8 +1,9 @@
 import type { BasemapMode } from '../model/types'
 import type { AnalysisViewState } from '../state/analysisLayout'
 import { defaultAnalysisView, sanitizeAnalysisView } from '../state/analysisLayout'
-import type { Camera, RightTab, RingKey, RingOverrides } from '../state/store'
-import { RING_KEYS } from '../state/store'
+import type { Camera, RightTab } from '../state/store'
+import type { RingKey, RingOverrides } from '../state/rings'
+import { RING_KEYS } from '../state/rings'
 import type { Workspace } from '../te/state/teStore'
 import { ANALYSIS_KEY, RINGS_KEY, VIEW_KEY } from './storageKeys'
 
@@ -45,8 +46,6 @@ function oneOf<T extends string>(v: unknown, allowed: T[]): T | undefined {
 
 /** Validated view state from localStorage; a field the record lacks or that fails validation is absent. */
 export function savedView(): SavedView {
-  // The allowed sets stay inside the call: the store reads this during its own
-  // module evaluation, and store.ts and this file import each other.
   const BASEMAPS: BasemapMode[] = ['canvas', 'sat', 'airspace']
   const RIGHT_TABS: RightTab[] = ['inspect', 'cards', 'library', 'analysis']
   const WORKSPACES: Workspace[] = ['board', 'ops']

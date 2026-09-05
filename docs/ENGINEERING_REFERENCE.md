@@ -58,11 +58,15 @@ Breaking one of these breaks the app.
   `rangeboard.layers.v1`, `rangeboard.rings.v1`, `rangeboard.runseq.v1`,
   `rangeboard.analysis.v1`, `rangeboard.units.v1`, the panel chrome keys) and is written
   eagerly by its setter in `src/io/viewState.ts`.
-- **Module cycles:** `sim.ts` imports from `store.ts`, so `store.ts` must never
-  value-import `mcRun.ts`, `series.ts`, `impact.ts` or `attrition.ts` (`import type` is
-  safe). Shared constants that both `store.ts` and `viewState.ts` need live in a leaf
-  module, never in `store.ts`. `policy.ts` and `sim.ts` share a function-only cycle that
-  works by hoisting; a value import at module scope in the wrong direction crashes at load.
+- **Module cycles:** `model/scenario.ts` owns `modelFor`, `pathSpeed` and
+  `scenarioDurationS`; engine and validation consumers import that leaf directly.
+  `state/rings.ts` owns shared ring keys/types, so `viewState.ts` has no runtime store
+  dependency. `store.ts` re-exports these public symbols for existing UI consumers.
+  Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
+  `attrition.ts`; worker execution stays behind `mcClient.ts`. The worker value-import
+  graph must stay independent of stores, React, zustand, localStorage and panel modules.
+  `runSession.ts` is a main-thread store adapter, outside that graph. `policy.ts` and
+  `sim.ts` retain a function-only cycle that works by hoisting; preserve load order.
   `src/analysis/fidelity.ts` reads the scenario, never the picture, so it stays cycle-free.
 - **Monte Carlo worker:** the store action `runMonteCarlo` posts a request through
   `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`

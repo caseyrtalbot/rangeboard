@@ -1,0 +1,51 @@
+async page => {
+  const errors = []
+  page.on('pageerror', e => errors.push(e.message))
+  page.on('dialog', dialog => dialog.accept())
+  await page.evaluate(async () => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const raw = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).text()
+    window.__store.getState().loadScenario(parseAutosave(raw))
+    window.__store.getState().patchScenario({ runMode: 'monte-carlo', uncertainty: 'total', replicates: 4 })
+    window.__store.getState().setRightTab('analysis')
+    window.__store.getState().runMonteCarlo()
+    window.__store.getState().runSensitivity()
+  })
+  await page.waitForFunction(() => {
+    const s = window.__store.getState()
+    return s.mc.status === 'done' && s.mc.sensitivity.status === 'done'
+  }, null, { timeout: 30000 })
+  const result = await page.evaluate(async () => {
+    const { runReplicates, runSensitivity } = await import('/src/playback/mcRun.ts')
+    const { engagementPicture } = await import('/src/analysis/impact.ts')
+    const s = window.__store.getState()
+    const directMc = runReplicates(s.scenario)
+    const directSensitivity = runSensitivity(s.scenario)
+    const normalized = x => JSON.stringify({ ...x, elapsedMs: 0 })
+    if (normalized(s.mc.summary) !== normalized(directMc)) throw Error('Worker MC differs from direct engine')
+    if (normalized(s.mc.sensitivity.summary) !== normalized(directSensitivity)) throw Error('Worker sensitivity differs from direct engine')
+    const independent = await new Promise((resolve, reject) => {
+      const worker = new Worker('/src/playback/mc.worker.ts', { type: 'module' })
+      const timeout = setTimeout(() => { worker.terminate(); reject(Error('Independent worker timeout')) }, 30000)
+      worker.onerror = e => { clearTimeout(timeout); worker.terminate(); reject(Error(e.message)) }
+      worker.onmessage = e => {
+        if (e.data.type === 'done' || e.data.type === 'error') {
+          clearTimeout(timeout)
+          worker.terminate()
+          if (e.data.type === 'error') reject(Error(e.data.message))
+          else resolve(e.data.summary)
+        }
+      }
+      worker.postMessage({ type: 'run', runId: 'r1-independent', scenario: s.scenario })
+    })
+    if (normalized(independent) !== normalized(directMc)) throw Error('Independent worker differs')
+    const events = engagementPicture(s.scenario).report.events.length
+    if (events !== 4) throw Error(`Expected 4 firing events, saw ${events}`)
+    return { mcStatus: s.mc.status, sensitivityStatus: s.mc.sensitivity.status,
+      independentWorker: 'exact parity excluding elapsedMs', deterministicEvents: events,
+      seed: s.scenario.seed, replicates: directMc.replicates, sensitivityRows: directSensitivity.rows.length }
+  })
+  if (errors.length) throw Error(JSON.stringify(errors))
+  await page.screenshot({ path: 'output/playwright/r1-worker.png' })
+  await page.evaluate(result => { window.__r1BrowserResult = result }, { ...result, pageErrors: errors })
+}

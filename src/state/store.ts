@@ -24,11 +24,12 @@ import {
   newId,
   runSettings,
 } from '../model/types'
+import type { RingKey, RingOverrides } from './rings'
 import { emptyScenario, SEED_LIBRARY } from '../model/seed'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
-import { bearingDeg, destination, dist, formationOffsets, formatTime, pathLength, rotatePoint } from '../geometry/geo'
+import { bearingDeg, destination, dist, formationOffsets, formatTime, rotatePoint } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
-import { buildRaidPlan, effectivePathDelayS } from '../playback/raid'
+import { buildRaidPlan } from '../playback/raid'
 import { fanAxes, resolvePlatform, THREAT_TACTICS } from '../playback/tactics'
 import { defendedRadiusOf, sensorHoldsPoint, threatAltitudeFt } from '../playback/sim'
 import { uncertainFields } from '../analysis/parameterBasis'
@@ -56,8 +57,7 @@ import {
   toggleCollapsed,
 } from './analysisLayout'
 import { LAYERS_KEY, RUNSEQ_KEY, UNITS_KEY } from '../io/storageKeys'
-// Types only: a value import of mcRun.ts would close the cycle
-// mcRun -> series -> impact -> attrition -> sim -> store.
+// Keep worker execution behind mcClient; summaries are types, not store runtime dependencies.
 import type {
   McSensitivityMessage,
   McSummary,
@@ -65,6 +65,11 @@ import type {
   SensitivitySummary,
 } from '../playback/mcRun'
 import { cancelMcRun, cancelSensitivity, startMcRun, startSensitivity } from '../playback/mcClient'
+
+// Preserve the public entrypoints used by panel and canvas consumers.
+export { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
+export { SENSOR_RING_KEYS, EFFECTOR_RING_KEYS, RING_KEYS } from './rings'
+export type { RingKey, RingOverrides } from './rings'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
@@ -150,37 +155,6 @@ export interface LayerVisibility {
 
 /** Name of a single canvas layer toggle. */
 export type LayerKey = keyof LayerVisibility
-
-/** A ring one sensor or effector entity can draw. Every ring key is also a layer key. */
-export type RingKey =
-  | 'sensorPlacard'
-  | 'sensorEnvelope'
-  | 'sensorPdContours'
-  | 'classifyRings'
-  | 'effectorMaxRange'
-  | 'effectorMinRange'
-  | 'effectorDoctrinal'
-
-/** Ring keys that apply to a sensor entity, in display order. */
-export const SENSOR_RING_KEYS: readonly RingKey[] = [
-  'sensorPlacard',
-  'sensorEnvelope',
-  'sensorPdContours',
-  'classifyRings',
-]
-
-/** Ring keys that apply to an effector entity, in display order. */
-export const EFFECTOR_RING_KEYS: readonly RingKey[] = [
-  'effectorMaxRange',
-  'effectorMinRange',
-  'effectorDoctrinal',
-]
-
-/** The seven ring keys in display order. */
-export const RING_KEYS: readonly RingKey[] = [...SENSOR_RING_KEYS, ...EFFECTOR_RING_KEYS]
-
-/** Per-entity ring overrides. An absent key falls through to ui.layers. */
-export type RingOverrides = Record<string, Partial<Record<RingKey, boolean>>>
 
 /** Named declutter set applied to every layer at once. */
 export type LayerPreset = 'full' | 'planning' | 'engagement' | 'clean'
@@ -2258,26 +2232,3 @@ export const useStore = create<Store>()((set, get) => {
 
   }
 })
-
-/** Model referenced by an entity, if any. */
-export function modelFor(scenario: Scenario, entity: Entity): SpecModel | undefined {
-  return scenario.library.find((m) => m.id === entity.specId) ?? undefined
-}
-
-/** Effective speed for a flight path: override, spec cruise, or 15 m/s fallback. */
-export function pathSpeed(scenario: Scenario, path: FlightPath): number {
-  if (path.speedMps && path.speedMps > 0) return path.speedMps
-  const entity = scenario.entities.find((e) => e.id === path.entityId)
-  const model = entity ? modelFor(scenario, entity) : undefined
-  return model?.uas?.cruiseSpeedMps ?? 15
-}
-
-/** Scenario duration: longest path flight time plus path and wave delays, minimum 60 s. */
-export function scenarioDurationS(scenario: Scenario): number {
-  let max = 60
-  for (const p of scenario.paths) {
-    const t = effectivePathDelayS(scenario, p) + pathLength(p.points) / pathSpeed(scenario, p)
-    if (t > max) max = t
-  }
-  return Math.ceil(max)
-}
