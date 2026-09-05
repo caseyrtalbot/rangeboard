@@ -1,10 +1,10 @@
 # RangeBoard: field T&E development plan
 
 Status: C1/C2/C3/C4 IMPLEMENTED; E1 EVIDENCE BASELINE COMPLETE, 2026-09-05.
-C4 was authorized by Casey's execution of the C4 packet and is verified in
-this working tree. See [C4 completion](C4_COMPLETION.md). C1 was published as `002684c`;
+C4 was authorized by Casey's execution of the C4 packet and published as `7f10c92`,
+with the remote hash verified. See [C4 completion](C4_COMPLETION.md). C1 was published as `002684c`;
 C2/C3/E1 was published as `798380d`. Later slices remain PROPOSED. Stop after C4;
-Casey subsequently authorized C4 commit and push. The plan body remains the acceptance specification;
+Casey's subsequent commit/push instruction is complete. The plan body remains the acceptance specification;
 the current transfer/register hold execution status.
 Owner: Casey (product and acceptance decisions); Astra (engineering).
 Prepared 2026-09-04 against `8b528f2` on `analysis-hardening`.

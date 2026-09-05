@@ -1,7 +1,7 @@
 # RangeBoard: current engineering handoff
 
-Status: CURRENT TRANSFER RECORD, 2026-09-05. C4 implemented in the working tree;
-all acceptance checks passed. Casey subsequently authorized commit and push.
+Status: CURRENT TRANSFER RECORD, 2026-09-05. C4 published as `7f10c92`;
+all acceptance checks passed. This documentation publication record follows it.
 
 Marks: `[V]` verified; `[D]` documented direction; `[I]` inference; `[U]` unresolved.
 Read [AGENTS.md](../AGENTS.md), this record and the [register](data-engine/outstanding.md).
@@ -14,9 +14,10 @@ execution as orchestrator. Scope is C4/R-F-27/R-F-28 only: authoritative T&E rec
 transitions, purpose-aware evidence and isolated campaign verification. Work remained
 serial; no independent agent review is claimed.
 
-[V] Branch `analysis-hardening`, HEAD `1b919e5` (documentation hygiene), one commit ahead
-of origin after a fresh fetch. C2/C3/E1 `798380d` and publication record `66db3ad`
-remain published. The authorized push includes documentation hygiene and the owned C4 slice.
+[V] C4 implementation `7f10c92857e905a930c54314f545cb78750ce239` and preceding
+documentation hygiene `1b919e5` are published on `origin/analysis-hardening`. The remote
+branch hash matched the implementation commit after the authorized push. This
+documentation-only publication record follows that verified revision.
 [V] The six incoming unowned paths are preserved by SHA-256: `CLAUDE.md`,
 `.claude/launch.json`, and `docs/data-engine/{build_mockup.py,build_mockup_te.py,mockup.html,mockup-te.html}`.
 Do not stage, repair or delete them.
@@ -60,8 +61,9 @@ Earlier C1/C2/C3/E1 verification remains in its dated completion records. The cu
 
 ## Stop and next exact task
 
-[D] Publish the verified C4 slice and existing documentation commit on Casey's subsequent
-commit/push instruction, then stop. No R1, E2/E3, T1 or U1 implementation is selected.
+[V] Casey's subsequent commit/push instruction was executed for C4 and the existing
+documentation commit. The publication gate rerun passed with the same counts and warnings.
+[D] Stop after publication. No R1, E2/E3, T1 or U1 implementation is selected.
 Keep all six unowned files unstaged.
 [I] Next recommended task: select the **R1 store/worker dependency boundary** from
 [PLAN R1](field-te/PLAN.md#4-r1-refactor-with-a-behavioral-boundary). First trace current

@@ -1,7 +1,11 @@
 # C4: authoritative T&E record transitions
 
-Verification record, 2026-09-05. R-F-27/R-F-28. Implementation is in the working tree
-on `analysis-hardening`, based on `1b919e5`. Casey subsequently authorized commit and push.
+Verification record, 2026-09-05. R-F-27/R-F-28. Implementation `7f10c92` is published
+on `origin/analysis-hardening`, following `1b919e5`. Casey authorized commit and push;
+the remote hash matched `7f10c92857e905a930c54314f545cb78750ce239` after publication.
+All four gates and schema drift check passed again before publication with the same counts
+and accepted warnings. This documentation-only publication record follows the implementation.
+Captured evidence and its manifest retain their original verification-time metadata.
 The [register](../data-engine/outstanding.md) is the status authority.
 
 ## Record rules
