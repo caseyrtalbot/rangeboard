@@ -2,7 +2,10 @@
 
 Status: VERIFIED in the working tree, 2026-09-04. Source baseline `8b528f2`, branch
 `analysis-hardening`. R-F-24 is closed; R-D-26 selects this slice and R-D-27 records the
-bounded implementation choices. No commit or push. Stop before C2.
+bounded implementation choices. Publication update, 2026-09-05: Casey authorized commit
+and push; C1 and its records are published as `002684c` on `origin/analysis-hardening`.
+The verification below predates publication; its source/evidence hashes were rechecked.
+Stop before C2.
 
 ## Behavior and scope
 
@@ -108,5 +111,6 @@ Preserved evidence: [manifest](evidence/c1-2026-09-04/manifest.json),
 
 C2 is the next implementation slice when selected: consistent result estimators, intervals,
 units, gates and exports (R-F-25). C3/C4, R1 and model-credibility findings remain open.
-No schema/storage/draw changes, T&E changes, new numerical claims, commit or push occurred.
+No schema/storage/draw changes, T&E changes or new numerical claims occurred. Commit and
+push were subsequently authorized and completed as recorded above.
 Pre-existing documentation changes and Casey's four untracked mockup files were preserved.

@@ -2,7 +2,8 @@
 
 Status: C1 IMPLEMENTED AND VERIFIED, 2026-09-04; later slices remain PROPOSED.
 C1 completion and the input/consumer/test matrix are in [C1_COMPLETION.md](C1_COMPLETION.md).
-Stop before C2 and before commit or push. C2 is the next implementation slice when selected.
+C1 was committed and pushed as `002684c` on 2026-09-05 after Casey authorized publication.
+Stop before C2; it is the next implementation slice when selected.
 Owner: Casey (product and acceptance decisions); Astra (engineering).
 Prepared 2026-09-04 against `8b528f2` on `analysis-hardening`.
 
@@ -335,4 +336,4 @@ append another contradictory "current" summary. Use git history for superseded t
 C1 is verified complete (R-F-24; R-D-26/R-D-27). **C2 is the next implementation slice
 when selected**; begin with its bounded result-semantics brief. E1 remains the next
 independent analysis/research slice. Later slices require their own bounded briefs and
-task selection. Stop before C2 and before commit or push.
+task selection. C1 publication is complete; stop before C2.

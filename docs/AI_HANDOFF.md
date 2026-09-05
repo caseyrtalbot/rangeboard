@@ -1,7 +1,7 @@
 # RangeBoard: current engineering handoff
 
-Status: CURRENT TRANSFER RECORD. Updated 2026-09-04. C1 is implemented and verified in the
-working tree. Stop before C2 and before commit or push.
+Status: CURRENT TRANSFER RECORD. Updated 2026-09-05. C1 is implemented, verified and
+published as `002684c` on `origin/analysis-hardening`. Stop before C2.
 
 Marks: `[V]` source/test/tool verified; `[D]` documented intent or user direction;
 `[I]` reasoned implication; `[U]` unresolved. Read [AGENTS.md](../AGENTS.md), this record,
@@ -14,13 +14,15 @@ C1, complete analysis identity/result invalidation (R-F-24), verify and update r
 stop. [PLAN.md](field-te/PLAN.md) sufficed; no new project-wide plan was needed. R-D-26
 records selection and R-D-27 records bounded implementation choices.
 
-[V] Baseline HEAD remains `8b528f2a096a64d5a3ead9c5456d29bed6bd1ad1`, branch
-`analysis-hardening`, equal to local `origin/analysis-hardening` (no fetch). No commit,
-push, branch, stash or schema/storage/dependency/draw-contract change was made.
+[V] Implementation baseline was `8b528f2a096a64d5a3ead9c5456d29bed6bd1ad1`, branch
+`analysis-hardening`. [D] Casey authorized commit and push on 2026-09-05. [V] After fetching
+and checking origin, C1 was committed and pushed as `002684c`; this publication record
+follows it. No branch, stash or schema/storage/dependency/draw-contract change was made.
 
-[V] The incoming documentation changes remain uncommitted and retained: AGENTS.md,
+[V] The incoming documentation changes were retained and committed with C1: AGENTS.md,
 README.md, the current handoff/register, historical status headers, and `docs/field-te/`.
-C1 adds source/test changes listed in the completion record and updates current records.
+The source/test changes are listed in the completion record. The verified source/evidence
+hashes were checked again before committing; no source edits were needed for publication.
 Casey's four pre-existing untracked files remain untouched: `docs/data-engine/build_mockup.py`,
 `build_mockup_te.py`, `mockup.html`, `mockup-te.html`. Do not delete, stage, overwrite or
 regenerate them as cleanup. Inspect live git status before continuing.
@@ -64,7 +66,8 @@ Onboarding findings/evidence remain historical, with a C1 status note.
 Start with a bounded brief around R-F-25: inventory headline/chart/gate/export quantity,
 unit, denominator, horizon, definedness and deterministic/MC basis. Define the MC
 requirement rule before changing it. This packet does not authorize C2 implementation,
-R1 extraction, later physics/UI work, commit or push.
+R1 extraction or later physics/UI work. The later user request authorized publication of
+C1 and its records only.
 
 | IDs | Remaining scope | Slice |
 | --- | --- | --- |
