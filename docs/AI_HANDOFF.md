@@ -2,9 +2,9 @@
 
 Status: CURRENT TRANSFER RECORD, 2026-09-05. Contributor: Claude Fable 5.1, for the
 engineering plan and the design contract. Verified source revision `edb0da7` on
-`analysis-hardening`, three commits ahead of `origin/analysis-hardening`, not pushed.
-This record follows Astra's R1 first-extraction commit `7c9b577` and pilot-decision
-record `edb0da7`. It replaces the two-owner handoff (R-D-34).
+`analysis-hardening`; this transfer is committed as `2b834fa`, four commits ahead of
+`origin/analysis-hardening`, not pushed. It follows Astra's R1 first-extraction commit
+`7c9b577` and pilot-decision record `edb0da7`, and replaces the two-owner handoff (R-D-34).
 
 Marks: `[V]` verified; `[D]` documented direction; `[I]` inference; `[U]` unresolved.
 Read [AGENTS.md](../AGENTS.md), this record, the [register](data-engine/outstanding.md),
@@ -30,7 +30,7 @@ local tool configuration and stays untracked. The four untracked data-engine moc
 Plex mockup superseded by the design contract, were deleted on Casey's instruction on
 2026-09-05. They were never in git.
 
-[D] Documentation paths changed by this session, uncommitted: `AGENTS.md` (single
+[V] Documentation paths changed by this session, committed as `2b834fa`: `AGENTS.md` (single
 contributor section; type-floor sentence), `CLAUDE.md` (reading order; one environment
 note), `docs/README.md` (AGENTS row; R1 record row), `docs/AI_HANDOFF.md`,
 `docs/ENGINEERING_REFERENCE.md` (type floor and shadow bullets point at the design
