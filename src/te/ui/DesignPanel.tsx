@@ -477,14 +477,7 @@ function ConfigsGroup({ campaign }: { campaign: TeCampaign }) {
   const snapshot = () => {
     if (!cfg) return
     const sc = useStore.getState().scenario
-    const snap = JSON.stringify({
-      name: sc.name,
-      entities: sc.entities,
-      connections: sc.connections,
-      boundaries: sc.boundaries,
-      paths: sc.paths,
-      environment: sc.environment,
-    })
+    const snap = JSON.stringify(sc)
     set({
       scenarioSnapshot: snap,
       driftLog: [
@@ -2158,7 +2151,7 @@ function GateGroup({ campaign }: { campaign: TeCampaign }) {
         ]}
         issues={issues}
         passLabel="Approve design"
-        onPass={approveDesign}
+        onPass={() => approveDesign(acked)}
         disabled={approved || (warnings.length > 0 && !acked)}
       />
       {!approved && warnings.length > 0 && (

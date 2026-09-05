@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-05",
+  "baseRevision": "1b919e503ae703691322c2911d200fdaf2a20e2a",
+  "publication": "uncommitted and unpushed",
+  "gates": {
+    "typecheck": {
+      "exitCode": 0
+    },
+    "vitest": {
+      "exitCode": 0,
+      "tests": 1355,
+      "files": 77
+    },
+    "lint": {
+      "exitCode": 0,
+      "warnings": 74,
+      "errors": 0,
+      "newWarnings": 0
+    },
+    "build": {
+      "exitCode": 0,
+      "warning": "existing chunk-size warning"
+    },
+    "schema": {
+      "exitCode": 0,
+      "schemaVersion": 1,
+      "storageKeysChanged": false
+    }
+  },
+  "scratchArtifactRoundtrip": {
+    "tests": 1,
+    "passed": true,
+    "removed": true
+  },
+  "unownedPreserved": true,
+  "initialRed": {
+    "failed": 13,
+    "passed": 1
+  },
+  "independentAgentReview": false,
+  "directC4Regressions": 28,
+  "documentationAudit": {
+    "existingRegisterRowsPreserved": 220,
+    "addedRow": "R-D-31",
+    "localLinksChecked": 46
+  }
+}

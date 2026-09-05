@@ -1,3 +1,4 @@
+import { runEvidenceLabel } from '../validate'
 /**
  * Deliver-stage building blocks (SPEC groups L1-L6). Derived evidence
  * generation, package section generators, disposition suggestions, and the
@@ -35,8 +36,10 @@ export function measureSummary(c: MeasureComputation): string {
 
 /** Computations for every measure the finding links. */
 export function findingComputations(campaign: TeCampaign, f: TeFinding): MeasureComputation[] {
+  const ids = new Set([...f.supportingRunIds, ...f.contradictingRunIds])
+  const linked = { ...campaign, runs: campaign.runs.filter(r => ids.has(r.id)) }
   return f.measureIds
-    .map((id) => computeMeasure(campaign, id))
+    .map((id) => computeMeasure(linked, id))
     .filter((c): c is MeasureComputation => c !== null)
 }
 
@@ -134,7 +137,7 @@ export function generatedEvidence(campaign: TeCampaign, f: TeFinding): Partial<T
     put(
       'missingAndExcludedData',
       f.missingAndExcludedData,
-      `Across ${linkedRuns.length} linked run(s): ${missing} missing, ${invalid} invalid, ${censored} censored observation(s); ${excluded} excluded run(s).`,
+      `Across ${linkedRuns.length} linked run(s): ${missing} missing, ${invalid} invalid, ${censored} censored observation(s); ${excluded} excluded run(s).\n${linkedRuns.map(r => `${r.id}: ${runEvidenceLabel(r)}`).join('\n')}`,
     )
   }
   const config = campaign.configs.find((x) => x.id === f.configId)
@@ -390,12 +393,18 @@ export function generatedSection(c: TeCampaign, s: PackageSection): string {
     case 9:
       return c.findings
         .filter((f) => f.strength === 'conclusive' || f.strength === 'directional')
-        .map((f) => `${f.id} (${f.strength}): ${f.statement}`)
+        .map((f) => `${f.id} (${f.strength}): ${f.statement}\n${[...new Set([...f.supportingRunIds, ...f.contradictingRunIds])].map(id => {
+          const run = c.runs.find(r => r.id === id)
+          return `${id}: ${run ? runEvidenceLabel(run) : 'missing run'}`
+        }).join('\n')}`)
         .join('\n')
     case 10:
       return c.findings
         .filter((f) => f.strength === 'insufficient' || f.strength === 'not-tested')
-        .map((f) => `${f.id} (${f.strength}): ${f.statement}`)
+        .map((f) => `${f.id} (${f.strength}): ${f.statement}\n${[...new Set([...f.supportingRunIds, ...f.contradictingRunIds])].map(id => {
+          const run = c.runs.find(r => r.id === id)
+          return `${id}: ${run ? runEvidenceLabel(run) : 'missing run'}`
+        }).join('\n')}`)
         .join('\n')
     case 12:
       return c.findings

@@ -9,7 +9,7 @@ import { useState } from 'react'
 import type { TeCampaign, TeEvidencePackage, TeFinding } from '../model/types'
 import { newId } from '../../model/types'
 import { useTeStore } from '../state/teStore'
-import { closeoutBlockers, findingBlockers, runIncludable } from '../validate'
+import { closeoutBlockers, deliveryBlockers, findingBlockers, runEvidenceLabel, runIncludable } from '../validate'
 import { AAR_QUESTIONS } from '../seed/questionBanks'
 import {
   AdvancedDisclosure,
@@ -156,7 +156,7 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
     linkPatch(patch)
   }
 
-  const blockers = findingBlockers(f)
+  const blockers = findingBlockers(campaign, f)
   const refuted = refutedClaimMatches(f.statement)
   const people = allPeople(campaign)
   const comps = findingComputations(campaign, f)
@@ -168,15 +168,15 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
   const linkedRunIds = [...new Set([...f.supportingRunIds, ...f.contradictingRunIds])]
   const nonIncludable = linkedRunIds.filter((id) => {
     const r = campaign.runs.find((x) => x.id === id)
-    return r !== undefined && !runIncludable(r)
+    return r !== undefined && !runIncludable(r, 'failure-investigation')
   }).length
   const runOptions = [...campaign.runs]
-    .sort((a, b) => Number(runIncludable(b)) - Number(runIncludable(a)))
+    .sort((a, b) => Number(runIncludable(b, 'failure-investigation')) - Number(runIncludable(a, 'failure-investigation')))
     .map((r) => ({
       id: r.id,
       label: r.id,
-      sub: `${r.validity}${r.excluded ? ', excluded' : ''}`,
-      pill: runIncludable(r) ? undefined : ('warn' as const),
+      sub: runEvidenceLabel(r),
+      pill: runIncludable(r, 'failure-investigation') ? undefined : ('warn' as const),
     }))
   const strengthSugg = suggestedStrength(comps)
   const findingsRight = decisionRightHolder(campaign, 'findings')
@@ -274,10 +274,18 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
         values={f.contradictingRunIds}
         onChangeMulti={(v) => linkPatch({ contradictingRunIds: v })}
       />
+      {linkedRunIds.map(id => {
+        const run = campaign.runs.find(r => r.id === id)
+        return <p key={id} className="muted small">{id}: {run ? runEvidenceLabel(run) : 'missing run'}</p>
+      })}
+      <p className="muted small">
+        Invalid or excluded runs support qualified failure investigation. Quantitative results
+        include valid trials and only the named measures from conditional trials.
+      </p>
       {nonIncludable > 0 && (
         <div className="field-row">
           <Pill kind="warn" text="check linked runs" />
-          <div className="muted small">{nonIncludable} linked run(s) are not includable (pending or excluded).</div>
+          <div className="muted small">{nonIncludable} linked run(s) are pending adjudication.</div>
         </div>
       )}
       <div className="field-row">
@@ -778,7 +786,7 @@ const CLAIM_DISPOSITIONS = [
 
 function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { patchItem, patchCampaign, markPackageDelivered } = useTeStore.getState()
-  const blockers = closeoutBlockers(campaign)
+  const blockers = deliveryBlockers(campaign)
   const claims = campaign.registers.filter((r) => r.kind === 'claim')
   const pkg = campaign.evidencePackage
   const openActions = campaign.actions.filter((a) => a.status === 'open')
@@ -790,7 +798,7 @@ function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: Group
     .filter((x) => x.n > 0)
     .map((x) => `${x.n} ${x.s}`)
     .join(', ')
-  const findingsBad = campaign.findings.filter((f) => findingBlockers(f).length > 0).length
+  const findingsBad = campaign.findings.filter((f) => findingBlockers(campaign, f).length > 0).length
   return (
     <DecisionGroup id="deliver-closeout" question="Can we close?" hint="Dispose every question and claim, close or transfer actions, deliver the package." tier="required" state={state}>
       <SubTitle>Question dispositions</SubTitle>
@@ -890,7 +898,7 @@ export function DeliverPanel({ campaign }: { campaign: TeCampaign }) {
   const findingsState: GroupState =
     campaign.findings.length === 0
       ? 'empty'
-      : campaign.findings.every((f) => findingBlockers(f).length === 0)
+      : campaign.findings.every((f) => findingBlockers(campaign, f).length === 0)
         ? 'done'
         : 'partial'
   const effectState: GroupState =

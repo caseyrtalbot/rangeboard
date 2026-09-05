@@ -140,7 +140,7 @@ export function deliverPct(c: TeCampaign): number {
   const sectionFrac = sections.length === 0 ? 0 : complete / sections.length
   const haveFindings = c.findings.length > 0
   const cleanFindings =
-    haveFindings && c.findings.every((f) => findingBlockers(f).length === 0)
+    haveFindings && c.findings.every((f) => findingBlockers(c, f).length === 0)
   const closeoutClean = haveFindings && closeoutBlockers(c).length === 0
   const score =
     (haveFindings ? 1 : 0) + (cleanFindings ? 1 : 0) + (closeoutClean ? 1 : 0) + sectionFrac
@@ -230,7 +230,7 @@ export function artifactList(c: TeCampaign): ReadinessArtifact[] {
   const active = activeCards(c).length
   const issued = issuedCards(c).length
   const adjudicated = adjudicatedRuns(c).length
-  const cleanFindings = c.findings.filter((f) => findingBlockers(f).length === 0).length
+  const cleanFindings = c.findings.filter((f) => findingBlockers(c, f).length === 0).length
   const sections = c.evidencePackage.sections
   const sectionsDone = sections.filter((s) => filled(s.content)).length
 

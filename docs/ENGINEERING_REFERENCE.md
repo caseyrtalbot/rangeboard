@@ -446,14 +446,18 @@ Design system (`src/index.css`):
 - **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`,
   recovery copy at `rangeboard.te.recovered.<ms>`. Records are versioned and append-only
   (runs never renumber, issued cards freeze, changes create new versions). Never embed
-  campaign data in `Scenario`. This is the required invariant; current generic patch/remove
-  actions bypass issued-card freezing (R-F-27).
+  campaign data in `Scenario`. C4 enforces issued/superseded card immutability, frozen
+  baselines and generic action guards. Delivery freezes campaign evidence; closure remains
+  available. See [C4 record rules](field-te/C4_COMPLETION.md#record-rules).
 - IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the
   record. Cards use `id` (per version) plus `cardCode` (shared across versions).
 - Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
-  traceability no finalized finding. `issueCard` enforces blockers in the store. Complete
-  transition/reference enforcement and purpose-aware inclusion remain R-F-27/R-F-28;
-  an invalid run may still be relevant to an explicitly qualified failure finding.
+  traceability no finalized finding. Qualification, acknowledged design review, issue and
+  delivery enforce blockers in the store. Delivery finalizes findings; prefilled approver
+  names are not finalization. Quantitative and failure-investigation inclusion use the
+  explicit policy in `validate.ts`; invalid runs cannot count as valid quantitative trials.
+  Observation corrections preserve both values and require re-adjudication. Optional
+  history fields do not fabricate past snapshots on legacy loads.
 - `src/te/calc/` is pure TypeScript, fixture-tested from MASTER-CALCULATIONS.md. The Board
   engine imports `meanInterval`, `quantile`, `wilson` and `betaQuantile` from
   `src/te/calc/stats.ts`; that is the one dependency from the engine on `src/te/`.
@@ -465,7 +469,7 @@ Design system (`src/index.css`):
   `3d93aa1` (2026-08-25), and its persistence hardened in `7e5a5ae` (2026-09-02). Since
   then `calc/stats.ts` gained the engine exports. C3 now also hardens persistence and
   imports through `io/validateTe.ts`, including embedded Board snapshots and campaign-local
-  references. This does not enforce internal store transitions (C4). Do not touch
+  references. C4 adds internal transition and evidence-history checks. Do not touch
   `src/te/` unless the task names it. One known stale string:
   `src/te/ui/DesignPanel.tsx` says "Recorded, not modeled. The board is plan view.", false
   since the Board gained altitude and slant range (`outstanding.md` D-2, open).

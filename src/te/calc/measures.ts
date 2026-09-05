@@ -10,9 +10,9 @@ import type {
   ResultLabel,
   TeCampaign,
   TeMeasure,
-  TeRun,
 } from '../model/types'
 import type { Interval } from './stats'
+import { runIncludable } from '../validate'
 import { betaPosterior, clopperPearson, meanInterval, wilson } from './stats'
 
 export interface PerRunValue {
@@ -42,13 +42,6 @@ export interface MeasureComputation {
   thresholdShown: boolean
   perRun: PerRunValue[]
   notes: string[]
-}
-
-/** A run contributes only when valid, or conditionally valid for this named measure. */
-function runIncludable(run: TeRun, measureId: string): boolean {
-  if (run.excluded) return false
-  if (run.validity === 'valid') return true
-  return run.validity === 'conditionally-valid' && run.allowedMeasureIds.includes(measureId)
 }
 
 /** Only an observed outcome with its payload feeds the estimate. */
@@ -91,7 +84,7 @@ function compute(campaign: TeCampaign, measure: TeMeasure): MeasureComputation {
     const eligible = attempted && obs.status !== 'no-test'
     const valid =
       eligible &&
-      runIncludable(run, measure.id) &&
+      runIncludable(run, 'quantitative', measure.id) &&
       (obs.status === 'observed' || obs.status === 'censored' || obs.status === 'unknown-outcome')
     const included = valid && feedsEstimate(measure, obs)
     if (attempted) nAttempted++

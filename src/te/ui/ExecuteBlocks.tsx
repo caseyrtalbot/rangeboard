@@ -348,9 +348,12 @@ export function StartRunBlock({ campaign }: { campaign: TeCampaign }) {
 // ---------------------------------------------------------------------------
 
 function ObservationRow({ campaign, run, measureId }: { campaign: TeCampaign; run: TeRun; measureId: string }) {
-  const { patchItem } = useTeStore.getState()
+  const { patchItem, amendRunObservations } = useTeStore.getState()
+  const [correction, setCorrection] = useState<MeasureObservation | null>(null)
+  const [by, setBy] = useState('')
+  const [reason, setReason] = useState('')
   const measure = campaign.measures.find((m) => m.id === measureId)
-  const obs: MeasureObservation = run.observations.find((o) => o.measureId === measureId) ?? {
+  const obs: MeasureObservation = correction ?? run.observations.find((o) => o.measureId === measureId) ?? {
     measureId,
     status: 'no-test',
     success: null,
@@ -358,6 +361,7 @@ function ObservationRow({ campaign, run, measureId }: { campaign: TeCampaign; ru
     note: '',
   }
   const setObs = (patch: Partial<MeasureObservation>) => {
+    if (run.adjudications.length > 0) { setCorrection({ ...obs, ...patch }); return }
     const has = run.observations.some((o) => o.measureId === measureId)
     const next = has
       ? run.observations.map((o) => (o.measureId === measureId ? { ...o, ...patch } : o))
@@ -365,7 +369,8 @@ function ObservationRow({ campaign, run, measureId }: { campaign: TeCampaign; ru
     patchItem('runs', run.id, { observations: next })
   }
   return (
-    <div className="field-row te-table-row">
+    <div className="te-table-row">
+      <div className="field-row">
       <div className="field">
         <span>Measure</span>
         <div className="muted small">
@@ -406,6 +411,37 @@ function ObservationRow({ campaign, run, measureId }: { campaign: TeCampaign; ru
         />
       )}
       <TextField label="Note" value={obs.note} onChange={(v) => setObs({ note: v })} />
+      </div>
+      {correction && <div>
+        <div className="field-row">
+        <TextField label="Correction by" value={by} onChange={setBy} />
+        <TextField label="Correction reason" value={reason} onChange={setReason} />
+        </div>
+        <div className="inspector-actions">
+        <button className="mini" disabled={!by.trim() || !reason.trim()} onClick={() => {
+          const observations = run.observations.some(o => o.measureId === measureId)
+            ? run.observations.map(o => o.measureId === measureId ? correction : o)
+            : [...run.observations, correction]
+          amendRunObservations(run.id, observations, by, reason)
+          setCorrection(null)
+        }}>Save correction for re-adjudication</button>
+        <button className="mini" onClick={() => setCorrection(null)}>Cancel correction</button>
+        </div>
+      </div>}
+      {(run.observationAmendments ?? []).filter(a =>
+        JSON.stringify(a.previous.find(o => o.measureId === measureId)) !==
+        JSON.stringify(a.corrected.find(o => o.measureId === measureId)),
+      ).map((a, i) => {
+        const previous = a.previous.find(o => o.measureId === measureId)
+        const corrected = a.corrected.find(o => o.measureId === measureId)
+        return <p key={i} className="muted small">
+          Correction {i + 1}: {a.by}, {fmtDate(a.at)}, {a.reason}.
+          Previous: {previous?.status ?? 'absent'}, {String(previous?.value ?? previous?.success ?? 'no value')}
+          {' '}{measure?.unit}; {previous?.note}.
+          Corrected: {corrected?.status ?? 'absent'}, {String(corrected?.value ?? corrected?.success ?? 'no value')}
+          {' '}{measure?.unit}; {corrected?.note}.
+        </p>
+      })}
     </div>
   )
 }
@@ -534,7 +570,7 @@ export function ActiveRunBlock({
       <SubTitle>Observations per measure</SubTitle>
       {card.measureIds.length === 0 && <p className="muted small">The card links no measures.</p>}
       {card.measureIds.map((mid) => (
-        <ObservationRow key={mid} campaign={campaign} run={run} measureId={mid} />
+        <ObservationRow key={`${run.id}/${mid}`} campaign={campaign} run={run} measureId={mid} />
       ))}
 
       <TextField
@@ -1063,11 +1099,12 @@ export function DebriefBlock({
 // ---------------------------------------------------------------------------
 
 export function AdjudicationBlock({ campaign, run }: { campaign: TeCampaign; run: TeRun }) {
-  const { adjudicateRun, patchItem, selectRecord } = useTeStore.getState()
+  const { adjudicateRun, patchItem, selectRecord, setRunExcluded } = useTeStore.getState()
   const card = campaign.cards.find((c) => c.id === run.cardId)
   const people = allPeople(campaign)
   const validityHolder = decisionRightHolder(campaign, 'run validity')
   const [validity, setValidity] = useState<TeRunValidity>(run.validity)
+  const [exclusionReason, setExclusionReason] = useState(run.exclusionReason ?? '')
   const [by, setBy] = useState(validityHolder)
   const [reason, setReason] = useState('')
   const hasOverride =
@@ -1098,7 +1135,8 @@ export function AdjudicationBlock({ campaign, run }: { campaign: TeCampaign; run
   if (validity === 'pending') issues.push({ level: 'block', text: 'Pick a validity status.' })
   if (validity === 'conditionally-valid' && run.allowedMeasureIds.length === 0)
     issues.push({ level: 'block', text: 'Pick the allowed measures.' })
-  if (reason.trim() === '') issues.push({ level: 'warn', text: 'State the reason. It is the defensibility record.' })
+  if (!by.trim()) issues.push({ level: 'block', text: 'Name the adjudicator.' })
+  if (reason.trim() === '') issues.push({ level: 'block', text: 'State the adjudication reason.' })
   if (files.total > 0 && files.got < files.total)
     issues.push({ level: 'warn', text: `Data files: ${files.got} of ${files.total} received.` })
   if (openAnomalies > 0) issues.push({ level: 'warn', text: `${openAnomalies} anomaly record(s) still open.` })
@@ -1273,11 +1311,13 @@ export function AdjudicationBlock({ campaign, run }: { campaign: TeCampaign; run
         onBack={() => selectRecord('runs', null)}
       />
 
+      <TextField label="Exclusion reason" value={exclusionReason} onChange={setExclusionReason} />
       <CheckField
         label="Leave this run out of the counts"
         help="An accounting decision, not an adjudication."
         value={run.excluded}
-        onChange={(v) => patchItem('runs', run.id, { excluded: v })}
+        onChange={(v) => setRunExcluded(run.id, v, exclusionReason)}
+        disabled={!run.excluded && !exclusionReason.trim()}
       />
       {run.adjudications.length > 0 && (
         <>

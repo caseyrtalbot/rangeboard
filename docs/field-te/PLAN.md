@@ -1,11 +1,11 @@
 # RangeBoard: field T&E development plan
 
-Status: C1/C2/C3 IMPLEMENTED AND VERIFIED; E1 EVIDENCE BASELINE COMPLETE, 2026-09-05.
-C1 was published as `002684c`; the C2/C3/E1 wave is published as `798380d` to
-`origin/analysis-hardening` (remote verified 2026-09-05). See [wave completion](WAVE_C2_C3_E1_COMPLETION.md) and
-[model evidence](model-evidence/README.md). Later slices remain PROPOSED. Stop after this wave;
-C4 is the next recommended bounded task when Casey selects it. The original plan body below
-is retained as the acceptance specification; the current transfer/register hold execution status.
+Status: C1/C2/C3/C4 IMPLEMENTED; E1 EVIDENCE BASELINE COMPLETE, 2026-09-05.
+C4 was authorized by Casey's execution of the C4 packet and is verified in
+this working tree. See [C4 completion](C4_COMPLETION.md). C1 was published as `002684c`;
+C2/C3/E1 was published as `798380d`. Later slices remain PROPOSED. Stop after C4;
+Casey subsequently authorized C4 commit and push. The plan body remains the acceptance specification;
+the current transfer/register hold execution status.
 Owner: Casey (product and acceptance decisions); Astra (engineering).
 Prepared 2026-09-04 against `8b528f2` on `analysis-hardening`.
 

@@ -393,7 +393,8 @@ export function StartGroup({ campaign }: { campaign: TeCampaign }) {
           label="Code"
           value={campaign.code}
           onChange={(v) => patchCampaign({ code: v })}
-          help="Short code used inside record identifiers, e.g. J401."
+          disabled={Object.values(campaign.seq).some(n => n > 0)}
+          help="Short code used inside record identifiers. Fixed after the first record is allocated."
         />
       </div>
       {seeded ? (

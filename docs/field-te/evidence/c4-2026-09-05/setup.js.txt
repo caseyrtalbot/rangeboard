@@ -1,0 +1,42 @@
+async page => {
+  await page.setViewportSize({ width: 1400, height: 900 })
+  const result = await page.evaluate(async () => {
+    const s = window.__teStore.getState()
+    s.setWorkspace('ops')
+    s.createCampaign('C4 illustrative acceptance', 'C4')
+    const c = () => window.__teStore.getState().campaigns.find(c => c.id === window.__teStore.getState().activeCampaignId)
+    s.patchCampaign({ illustrative: true, decision: {
+      ...c().decision, authorizedDecisionOwner: 'Illustrative reviewer', boundedChoice: 'Compare A and B',
+      decisionDate: '2026-09-05', blockingUncertainty: 'Illustrative timing difference',
+      acceptanceConditions: 'Software verification only',
+    }, charter: { ...c().charter, acceptance: {
+      ...c().charter.acceptance, relyingOrganization: 'Illustrative test team',
+    } } })
+    s.passQualificationGate()
+    const q = s.addQuestion()
+    s.patchItem('questions', q, { wording: 'What is the observed response time?', disposition: 'answered' })
+    const m = s.addMeasure(q)
+    s.patchItem('measures', m, { name: 'Response time', family: 'latency', unit: 's', frozen: true,
+      truth: { ...c().measures[0].truth, primarySource: 'Illustrative independent clock', independenceFromSut: 'Separate recorder' },
+    })
+    const cfg = s.addConfig()
+    s.patchItem('configs', cfg, { name: 'Illustrative baseline A' })
+    const thr = s.addThreat(), cond = s.addCondition(), matrix = s.addMatrixCell()
+    s.patchItem('threats', thr, { name: 'Illustrative surrogate' })
+    s.patchItem('conditions', cond, { name: 'Illustrative clear-day cell' })
+    s.patchItem('matrix', matrix, { questionId: q, measureIds: [m], configId: cfg,
+      threatId: thr, conditionId: cond, plannedReps: 3, minValidEvidence: 1, method: 'baseline' })
+    const id = s.addCard({ title: 'C4 illustrative timing card', purpose: 'Measure response time.',
+      questionIds: [q], measureIds: [m], configId: cfg, threatId: thr, conditionId: cond, matrixCellId: matrix,
+      procedure: [{ id: 'step1', action: 'Execute the illustrative input', role: 'test-conductor',
+        observableCompletion: 'Recorder observes completion', canSilentlyInvalidate: false, isRecorderStartStop: false }],
+      coldReaderAt: '2026-09-05T18:00:00Z', coldReaderBy: 'Illustrative reader',
+      dryRunAt: '2026-09-05T18:00:00Z', dryRunBy: 'Illustrative lead',
+    })
+    s.approveDesign(true)
+    s.selectRecord('configs', cfg)
+    s.setPhase('design')
+    return { campaignId: c().id, q, m, cfg, thr, cond, matrix, cardId: id, qualification: c().qualificationPassedAt, design: c().designApprovedAt }
+  })
+  console.log(JSON.stringify(result))
+}

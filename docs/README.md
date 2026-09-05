@@ -21,6 +21,7 @@ Source, tests and recorded verification determine implemented behavior.
 | Document or directory | Purpose |
 | --- | --- |
 | [Ownership findings](field-te/OWNERSHIP_FINDINGS.md) | Dated source-linked findings; current resolution is in the register |
+| [C4 completion](field-te/C4_COMPLETION.md) | Record transition, evidence-purpose and isolated campaign acceptance rules/results |
 | [C1 completion](field-te/C1_COMPLETION.md) | Freshness input/consumer matrix, lifecycle checks and evidence |
 | [C2/C3/E1 completion](field-te/WAVE_C2_C3_E1_COMPLETION.md) | Integrated result/persistence work, model evidence and verification |
 | [C2 measure matrix](field-te/wave-c2-c3-e1/C2_MATRIX.md) and [result record](field-te/wave-c2-c3-e1/C2_RESULT.md) | Quantity, basis, interval and export contracts |

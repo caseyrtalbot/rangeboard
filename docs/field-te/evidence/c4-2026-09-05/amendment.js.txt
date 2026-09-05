@@ -1,0 +1,12 @@
+async page => {
+  const result = await page.evaluate(() => {
+    const st = window.__teStore.getState()
+    const c = st.campaigns.find(c => c.id === st.activeCampaignId)
+    const r = c.runs[2]
+    if (r.validity !== 'pending' || r.observations[0].value !== 30 || r.observationAmendments[0].previous[0].value !== 20) throw Error('UI correction failed')
+    return { uiCorrection: true, run: r }
+  })
+  await page.getByText('Correction 1:', { exact: false }).scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/correction.png' })
+  return result
+}

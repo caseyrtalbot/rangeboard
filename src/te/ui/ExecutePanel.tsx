@@ -17,6 +17,7 @@ import { useTeStore } from '../state/teStore'
 import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
 import { templateByKey, templatesForPhase } from '../seed/checklistTemplates'
+import { checklistBlockers } from '../validate'
 import { nowIso } from '../model/empty'
 import { HELP, allPeople } from './help'
 import {
@@ -397,6 +398,8 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
             <div className="inspector-actions">
               <button
                 className="primary"
+                disabled={checklistBlockers(inst).length > 0}
+                title={checklistBlockers(inst).join(' ')}
                 onClick={() => patchItem('checklists', inst.id, { completedAt: nowIso() })}
               >
                 Complete checklist

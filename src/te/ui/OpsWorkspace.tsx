@@ -262,6 +262,10 @@ export function OpsWorkspace() {
           })}
         </nav>
         <main className="te-main">
+          {campaign.evidencePackage.deliveredAt && <p className="status warn">
+            Delivered record: campaign evidence is frozen. Export this record and start a
+            follow-on campaign for further work.
+          </p>}
           {phase === 'campaign' && <CampaignPanel key={campaign.id} campaign={campaign} />}
           {phase === 'design' && <DesignPanel key={campaign.id} campaign={campaign} />}
           {phase === 'cards' && <CardsPanel key={campaign.id} campaign={campaign} />}

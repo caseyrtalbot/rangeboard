@@ -1,0 +1,264 @@
+{
+  "execution-result.txt": {
+    "issuedCardImmutable": true,
+    "uiFullBaselineSnapshot": true,
+    "runIds": [
+      "VLK-C4-RUN-0001",
+      "VLK-C4-RUN-0002",
+      "VLK-C4-RUN-0003"
+    ],
+    "invalidExcludedFromQuantitative": {
+      "measureId": "VLK-C4-M-001",
+      "name": "Response time",
+      "unit": "s",
+      "family": "latency",
+      "nPlanned": 3,
+      "nAttempted": 3,
+      "nEligible": 3,
+      "nValid": 2,
+      "nIncluded": 2,
+      "successes": null,
+      "values": [
+        10,
+        20
+      ],
+      "estimate": 15,
+      "interval": {
+        "lo": -48.53102368087248,
+        "hi": 78.53102368087248,
+        "method": "exact"
+      },
+      "label": "descriptive",
+      "thresholdShown": false,
+      "perRun": [
+        {
+          "runId": "VLK-C4-RUN-0001",
+          "status": "observed",
+          "included": true,
+          "success": null,
+          "value": 10,
+          "note": "Illustrative observation"
+        },
+        {
+          "runId": "VLK-C4-RUN-0002",
+          "status": "observed",
+          "included": false,
+          "success": null,
+          "value": 999,
+          "note": "Illustrative observation"
+        },
+        {
+          "runId": "VLK-C4-RUN-0003",
+          "status": "observed",
+          "included": true,
+          "success": null,
+          "value": 20,
+          "note": "Illustrative observation"
+        }
+      ],
+      "notes": [
+        "interval is a t-based 95% confidence interval on the mean"
+      ]
+    },
+    "findingId": "VLK-C4-FIND-001"
+  },
+  "amendment-result.txt": {
+    "uiCorrection": true,
+    "run": {
+      "id": "VLK-C4-RUN-0003",
+      "cardId": "tec-mtooyuot-22",
+      "cardVersion": "v1.0",
+      "matrixCellId": "VLK-C4-MTX-001",
+      "plannedPurpose": "Measure response time.",
+      "startAt": "2026-09-05T18:04:46.965Z",
+      "endAt": null,
+      "roles": [],
+      "actualConfigId": "VLK-C4-CFG-001",
+      "actualThreatId": "VLK-C4-THR-001",
+      "actualConditionId": "VLK-C4-COND-001",
+      "actualsNote": "",
+      "events": [
+        {
+          "id": "evt-mtop083a-26",
+          "mark": "recorded",
+          "at": "2026-09-05T18:04:46.966Z",
+          "note": ""
+        }
+      ],
+      "observations": [
+        {
+          "measureId": "VLK-C4-M-001",
+          "status": "observed",
+          "value": 30,
+          "success": null,
+          "note": "Illustrative observation"
+        }
+      ],
+      "operatorObservations": "",
+      "dataFilesNote": "",
+      "initialDataQuality": "",
+      "deviationIds": [],
+      "anomalyIds": [],
+      "validity": "pending",
+      "allowedMeasureIds": [
+        "VLK-C4-M-001"
+      ],
+      "prohibitedUses": "",
+      "limits": "",
+      "adjudications": [
+        {
+          "version": 1,
+          "at": "2026-09-05T18:04:46.966Z",
+          "by": "Illustrative reviewer",
+          "validity": "conditionally-valid",
+          "reason": "Illustrative adjudication",
+          "observations": [
+            {
+              "measureId": "VLK-C4-M-001",
+              "status": "observed",
+              "value": 20,
+              "success": null,
+              "note": "Illustrative observation"
+            }
+          ],
+          "allowedMeasureIds": [
+            "VLK-C4-M-001"
+          ],
+          "limits": "",
+          "prohibitedUses": ""
+        }
+      ],
+      "excluded": false,
+      "preliminaryUse": null,
+      "debrief": {
+        "plannedVsOccurred": "",
+        "differences": "",
+        "sourcesRecorded": "",
+        "warningsOrFailures": "",
+        "unexpectedResult": "",
+        "repeatNeeded": ""
+      },
+      "frameIds": [],
+      "observationAmendments": [
+        {
+          "at": "2026-09-05T18:06:09.755Z",
+          "by": "Illustrative recorder",
+          "reason": "Corrected transcription against illustrative source",
+          "previous": [
+            {
+              "measureId": "VLK-C4-M-001",
+              "status": "observed",
+              "value": 20,
+              "success": null,
+              "note": "Illustrative observation"
+            }
+          ],
+          "corrected": [
+            {
+              "measureId": "VLK-C4-M-001",
+              "status": "observed",
+              "value": 30,
+              "success": null,
+              "note": "Illustrative observation"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "verify-result.txt": {
+    "nativeExportReimportExact": true,
+    "count": 2,
+    "originalId": "tecamp-mtooyuoo-21",
+    "importedId": "tecamp-mtop3kwj-23",
+    "oldRunReferencesPreserved": true,
+    "snapshotSchemaVersion": 1,
+    "estimateAfterCorrectionAndExclusion": {
+      "measureId": "VLK-C4-M-001",
+      "name": "Response time",
+      "unit": "s",
+      "family": "latency",
+      "nPlanned": 3,
+      "nAttempted": 3,
+      "nEligible": 3,
+      "nValid": 1,
+      "nIncluded": 1,
+      "successes": null,
+      "values": [
+        30
+      ],
+      "estimate": 30,
+      "interval": null,
+      "label": "descriptive",
+      "thresholdShown": false,
+      "perRun": [
+        {
+          "runId": "VLK-C4-RUN-0001",
+          "status": "observed",
+          "included": false,
+          "success": null,
+          "value": 10,
+          "note": "Illustrative observation"
+        },
+        {
+          "runId": "VLK-C4-RUN-0002",
+          "status": "observed",
+          "included": false,
+          "success": null,
+          "value": 999,
+          "note": "Illustrative observation"
+        },
+        {
+          "runId": "VLK-C4-RUN-0003",
+          "status": "observed",
+          "included": true,
+          "success": null,
+          "value": 30,
+          "note": "Illustrative observation"
+        }
+      ],
+      "notes": []
+    },
+    "observationHistory": [
+      {
+        "at": "2026-09-05T18:06:09.755Z",
+        "by": "Illustrative recorder",
+        "reason": "Corrected transcription against illustrative source",
+        "previous": [
+          {
+            "measureId": "VLK-C4-M-001",
+            "status": "observed",
+            "value": 20,
+            "success": null,
+            "note": "Illustrative observation"
+          }
+        ],
+        "corrected": [
+          {
+            "measureId": "VLK-C4-M-001",
+            "status": "observed",
+            "value": 30,
+            "success": null,
+            "note": "Illustrative observation"
+          }
+        ]
+      }
+    ],
+    "runSequence": 5,
+    "finalized": "2026-09-05T18:07:22.803Z",
+    "reload": {
+      "exact": true,
+      "recoveryKeys": []
+    },
+    "layout": {
+      "horizontalOverflow": false,
+      "observationInputWidth": 227,
+      "minimumVisibleTextPx": 10
+    },
+    "errors": []
+  },
+  "finding-view-result.txt": {
+    "mainWidth": 1080,
+    "horizontalOverflow": false
+  }
+}

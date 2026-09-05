@@ -5,6 +5,7 @@
  */
 
 import type { TeCampaign, TeRun } from '../model/types'
+import { runEvidenceLabel } from '../validate'
 import { displayId } from '../model/ids'
 import { PBlank, PRow, PSection } from './PrintOverlay'
 
@@ -37,6 +38,7 @@ export function RunRecordPrint({ campaign, run }: { campaign: TeCampaign; run: T
         <span>Cell: {run.matrixCellId ?? 'not set'}</span>
         <span>Validity: {run.validity.toUpperCase()}</span>
       </div>
+      <p className="p-note">{runEvidenceLabel(run)}</p>
       <h2>{card?.title || 'Run record'}</h2>
       {campaign.illustrative && <p className="p-illustrative">ILLUSTRATIVE: every value is notional.</p>}
 
@@ -48,6 +50,18 @@ export function RunRecordPrint({ campaign, run }: { campaign: TeCampaign; run: T
         <PRow label="Campaign" value={`${campaign.code}: ${campaign.name}`} />
       </PSection>
 
+      {(run.observationAmendments ?? []).map((a, i) => (
+        <PSection key={i} title={`Observation correction ${i + 1}`}>
+          <PRow label="Attribution" value={`${a.at}; ${a.by}; ${a.reason}`} />
+          {([['Previous', a.previous], ['Corrected', a.corrected]] as const).map(([label, observations]) =>
+            observations.map(o => <PRow
+              key={`${label}-${o.measureId}`}
+              label={`${label}: ${measureName(campaign, o.measureId)}`}
+              value={`${o.status}; ${String(o.value ?? o.success ?? 'no value')}; ${o.note}`}
+            />),
+          )}
+        </PSection>
+      ))}
       <PSection n={2} title="Times">
         <PRow label="Start" value={run.startAt ?? 'not recorded'} />
         <PRow label="End" value={run.endAt ?? 'not recorded'} />

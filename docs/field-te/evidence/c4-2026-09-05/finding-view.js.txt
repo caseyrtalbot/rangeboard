@@ -1,0 +1,8 @@
+async page => {
+  await page.getByText('VLK-C4-RUN-0002: invalid; Illustrative adjudication; Timing source invalid', { exact: true }).scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/finding.png' })
+  return await page.evaluate(() => {
+    const main = document.querySelector('.te-main')
+    return { mainWidth: main.clientWidth, horizontalOverflow: main.scrollWidth > main.clientWidth }
+  })
+}

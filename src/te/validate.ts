@@ -4,7 +4,9 @@
  * Blockers stop an action. Warnings render on gate dashboards.
  */
 
-import type { TeCampaign, TeCard, TeFinding, TeRun } from './model/types'
+import type { TeCampaign, TeCard, TeFinding, TeRun, TeChecklist } from './model/types'
+import { templateByKey } from './seed/checklistTemplates'
+import { validateCampaignReferences } from './io/validateTe'
 
 export interface GateWarning {
   level: 'block' | 'warn'
@@ -28,6 +30,8 @@ export function sanitizeCardTemplatePatch(
   const out = { ...patch }
   delete out.cardCode // the allocator's campaign-scoped code stands
   if (out.version && hasPlaceholder(out.version)) delete out.version
+  if (out.claimIds)
+    out.claimIds = out.claimIds.filter(id => c.registers.some(x => x.id === id))
   if (out.questionIds)
     out.questionIds = out.questionIds.filter((id) => c.questions.some((x) => x.id === id))
   if (out.hypothesisIds)
@@ -38,13 +42,17 @@ export function sanitizeCardTemplatePatch(
   if (out.threatId && !c.threats.some((x) => x.id === out.threatId)) out.threatId = null
   if (out.conditionId && !c.conditions.some((x) => x.id === out.conditionId)) out.conditionId = null
   if (out.matrixCellId && !c.matrix.some((x) => x.id === out.matrixCellId)) out.matrixCellId = null
+  for (const key of ['independentFactorIds', 'heldFactorIds', 'covariateFactorIds'] as const) {
+    if (out[key]) out[key] = out[key].filter(id => c.factors.some(x => x.id === id))
+  }
   if (out.linkedEntityIds) out.linkedEntityIds = out.linkedEntityIds.filter((id) => !hasPlaceholder(id))
   return out
 }
 
 /** Blockers that keep a card from advancing to issued. */
 export function cardIssueBlockers(c: TeCampaign, card: TeCard): string[] {
-  const out: string[] = []
+  const out = campaignReferenceBlockers(c)
+  if (!c.designApprovedAt) out.push('Approve the design before issuing a card.')
   if (!card.title.trim()) out.push('Card has no title.')
   if (!card.purpose.trim()) out.push('Card has no purpose sentence.')
   if (card.questionIds.length === 0 || !c.questions.some((x) => x.id === card.questionIds[0]))
@@ -54,7 +62,8 @@ export function cardIssueBlockers(c: TeCampaign, card: TeCard): string[] {
     out.push('Card links no configuration baseline. No configuration record, no comparison.')
   if (!card.threatId || !c.threats.some((x) => x.id === card.threatId))
     out.push('Card links no threat profile.')
-  if (!card.conditionId) out.push('Card links no condition.')
+  if (!card.conditionId || !c.conditions.some(x => x.id === card.conditionId))
+    out.push('Card links no condition.')
   if (card.procedure.length === 0) out.push('Card has no procedure steps.')
   for (const step of card.procedure) {
     if (!step.action.trim()) out.push('A procedure step has no action.')
@@ -88,14 +97,42 @@ export function canStartRun(card: TeCard | undefined): boolean {
   return card?.status === 'issued'
 }
 
-/** Only adjudicated, non-excluded runs enter analysis. */
-export function runIncludable(run: TeRun): boolean {
-  return run.validity !== 'pending' && !run.excluded
+/** Campaign-local links are checked for every store mutation and completed record. */
+export function campaignReferenceBlockers(c: TeCampaign): string[] {
+  try { validateCampaignReferences(c); return [] } catch (error) {
+    return [error instanceof Error ? error.message : 'Invalid campaign references.']
+  }
+}
+
+/** Quantitative trials and fault investigation use explicitly different evidence purposes. */
+export function runIncludable(
+  run: TeRun,
+  purpose: 'quantitative' | 'failure-investigation',
+  measureId?: string,
+): boolean {
+  if (purpose === 'failure-investigation') return run.validity !== 'pending'
+  if (run.excluded) return false
+  if (run.validity === 'valid') return true
+  return run.validity === 'conditionally-valid' && measureId !== undefined &&
+    run.allowedMeasureIds.includes(measureId)
+}
+
+/** Human-readable status travels with evidence in findings and printed packages. */
+export function runEvidenceLabel(run: TeRun): string {
+  const decision = run.adjudications.at(-1)
+  return [
+    run.validity,
+    run.excluded ? `excluded: ${run.exclusionReason || 'reason not recorded'}` : '',
+    run.validity === 'conditionally-valid' ? `allowed measures: ${run.allowedMeasureIds.join(', ')}` : '',
+    decision?.reason,
+    run.limits,
+    run.prohibitedUses,
+  ].filter(Boolean).join('; ')
 }
 
 /** Pocket rule 8: no traceability, no finding. */
-export function findingBlockers(f: TeFinding): string[] {
-  const out: string[] = []
+export function findingBlockers(c: TeCampaign, f: TeFinding): string[] {
+  const out = campaignReferenceBlockers(c)
   if (!f.statement.trim()) out.push('Finding has no statement.')
   if (!f.questionId) out.push('Finding links no question.')
   if (f.supportingRunIds.length === 0 && f.contradictingRunIds.length === 0)
@@ -103,7 +140,19 @@ export function findingBlockers(f: TeFinding): string[] {
   if (!f.configId) out.push('Finding names no exact configuration.')
   if (f.measureIds.length === 0) out.push('Finding links no measures.')
   if (!f.appliesTo.trim()) out.push('Finding states no applicability bounds.')
-  return out
+  for (const id of new Set([...f.supportingRunIds, ...f.contradictingRunIds])) {
+    const run = c.runs.find(r => r.id === id)
+    if (!run) continue // Reference validator reports the missing record.
+    if (!runIncludable(run, 'failure-investigation')) out.push(`Run ${id} is pending adjudication.`)
+    if (f.measureIds.some(mid => !runIncludable(run, 'quantitative', mid)) &&
+        !f.missingAndExcludedData.trim()) {
+      out.push(`Qualify the evidence limits for run ${id} in missing and excluded data.`)
+    }
+    const card = c.cards.find(x => x.id === run.cardId)
+    if (!card || !['issued', 'superseded'].includes(card.status))
+      out.push(`Run ${id} has no issued card version.`)
+  }
+  return [...new Set(out)]
 }
 
 /** Closeout blocks while any question or claim is undisposed. */
@@ -135,6 +184,45 @@ export function qualificationBlockers(c: TeCampaign): string[] {
   const infeasible = c.feasibility.filter((f) => f.score === 'infeasible')
   for (const f of infeasible) out.push(`Feasibility item "${f.item}" is infeasible.`)
   return out
+}
+
+/** Qualification is a hard prerequisite; design lint remains acknowledged warnings. */
+export function designBlockers(c: TeCampaign, warningsAcknowledged = false): string[] {
+  const out = campaignReferenceBlockers(c)
+  if (!c.qualificationPassedAt) out.push('Pass the qualification gate first.')
+  if (designLint(c).length > 0 && !warningsAcknowledged)
+    out.push('Review and acknowledge the open design warnings.')
+  return out
+}
+
+/** Completed checklists retain the answered controls and their release decision. */
+export function checklistBlockers(checklist: TeChecklist): string[] {
+  const out: string[] = []
+  const template = templateByKey(checklist.templateKey)
+  for (const item of checklist.items) {
+    if (item.state === 'unchecked') out.push(`Answer the control: ${item.text}`)
+    if (item.state === 'na' && !item.naReason.trim()) out.push(`Explain N/A: ${item.text}`)
+    if (item.state === 'checked' && item.type !== 'check' && !item.value.trim())
+      out.push(`Record the value or signature: ${item.text}`)
+  }
+  if (template?.gate && checklist.outcome === null) out.push('Record the gate outcome.')
+  if (checklist.outcome === 'conditional-go' && !checklist.conditionalLimits.trim())
+    out.push('Record the conditional limits.')
+  return out
+}
+
+/** Delivery finalizes findings; draft creation and incremental editing are not gated. */
+export function deliveryBlockers(c: TeCampaign): string[] {
+  const out = [...campaignReferenceBlockers(c), ...closeoutBlockers(c)]
+  if (c.findings.length === 0) out.push('The package has no findings.')
+  for (const f of c.findings) out.push(...findingBlockers(c, f).map(b => `${f.id}: ${b}`))
+  const p = c.evidencePackage
+  if (!p.methodAcceptance.trim()) out.push('Record method acceptance.')
+  if (!p.evidenceAcceptance.trim()) out.push('Record evidence acceptance.')
+  if (!p.finalAuthorityAndDate.trim()) out.push('Record the final authority and date.')
+  if (p.sections.length === 0 || p.sections.some(s => !s.content.trim() || hasPlaceholder(s.content)))
+    out.push('Complete the package sections and resolve their placeholders.')
+  return [...new Set(out)]
 }
 
 /**

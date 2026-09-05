@@ -795,12 +795,26 @@ export interface MeasureObservation {
   note: string
 }
 
+/** A correction preserves both versions and requires a new adjudication. */
+export interface ObservationAmendment {
+  at: string
+  by: string
+  reason: string
+  previous: MeasureObservation[]
+  corrected: MeasureObservation[]
+}
+
 export interface RunAdjudicationEntry {
   version: number
   at: string
   by: string
   validity: TeRunValidity
   reason: string
+  /** Optional on legacy records; never backfill an unrecorded historical snapshot. */
+  observations?: MeasureObservation[]
+  allowedMeasureIds?: string[]
+  limits?: string
+  prohibitedUses?: string
 }
 
 /** One execution attempt. Immutable identity, versionless, never renumbered. */
@@ -831,6 +845,8 @@ export interface TeRun {
   limits: string
   adjudications: RunAdjudicationEntry[]
   excluded: boolean
+  exclusionReason?: string
+  observationAmendments?: ObservationAmendment[]
   preliminaryUse: PreliminaryUse | null
   debrief: {
     plannedVsOccurred: string

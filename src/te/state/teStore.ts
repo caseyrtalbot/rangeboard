@@ -13,6 +13,7 @@ import type {
   DebriefKind,
   GoNoGo,
   GoNoGoScope,
+  MeasureObservation,
   TeAction,
   TeCampaign,
   TeCard,
@@ -42,7 +43,12 @@ import {
   nowIso,
 } from '../model/empty'
 import { newId } from '../../model/types'
-import { cardIssueBlockers, sanitizeCardTemplatePatch } from '../validate'
+import {
+  campaignReferenceBlockers, cardIssueBlockers, checklistBlockers, deliveryBlockers, designBlockers,
+  qualificationBlockers, sanitizeCardTemplatePatch,
+} from '../validate'
+import { validateShape } from '../../io/runtimeValidation'
+import { validateCampaignShape } from '../io/validateTe'
 import { MEASURE_DICTIONARY, measureFromDict } from '../seed/measureDictionary'
 import { CARD_TEMPLATES } from '../seed/cardTemplates'
 import { THREAT_VIGNETTES } from '../seed/vignettes'
@@ -143,7 +149,7 @@ export interface TeStore {
 
   // Gate decisions
   passQualificationGate: () => void
-  approveDesign: () => void
+  approveDesign: (warningsAcknowledged?: boolean) => void
 
   // Card lifecycle
   /** Issue is blocked while cardIssueBlockers returns any blocker. */
@@ -155,7 +161,11 @@ export interface TeStore {
   createRunFromCard: (cardId: string) => string | null
   markRunEvent: (runId: string, mark: string, note?: string) => void
   adjudicateRun: (runId: string, validity: TeRunValidity, by: string, reason: string) => void
-  /** Removes the run and strips its id from every finding's run links. */
+  /** Correct an adjudicated observation with the original values retained; re-adjudication follows. */
+  amendRunObservations: (runId: string, observations: MeasureObservation[], by: string, reason: string) => void
+  /** Exclusion has a recorded reason and never deletes evidence. */
+  setRunExcluded: (runId: string, excluded: boolean, reason: string) => void
+  /** Discard only an empty, unadjudicated attempt; never reuse its number. */
   discardRun: (runId: string) => void
   addDeviation: (runId: string) => string | null
   addAnomaly: (runId: string | null) => string
@@ -304,24 +314,37 @@ export function linkedRecordFill(c: TeCampaign, card: TeCard, all = false): Part
 export const useTeStore = create<TeStore>()((set, get) => {
   /** Apply a change to the active campaign. */
   function mutate(fn: (c: TeCampaign) => TeCampaign) {
+    let accepted = false
     set((s) => {
       const active = requireCampaign(s)
-      if (!active) return s
+      if (!active || active.phase === 'closed') return s
       const next = fn(active)
-      if (next === active) return s
+      if (active.evidencePackage.deliveredAt &&
+          (next.phase !== 'closed' || JSON.stringify({ ...next, phase: active.phase }) !==
+            JSON.stringify(active))) return s
+      if (next === active || campaignReferenceBlockers(next).length > 0) return s
+      try { validateCampaignShape(next) } catch { return s }
+      accepted = true
       return { campaigns: s.campaigns.map((c) => (c.id === active.id ? next : c)) }
     })
+    return accepted
   }
 
   /** Allocate a grammar id on the active campaign and hand it to `build`. */
   function allocate(code: TypeCode, build: (c: TeCampaign, id: string) => TeCampaign): string {
     let allocated = ''
-    mutate((c) => {
-      const { id, seq } = nextId(c.seq, c.code, code)
-      allocated = id
-      return build({ ...c, seq }, id)
+    const accepted = mutate((c) => {
+      const used = new Set(Object.values(c).flatMap(value => Array.isArray(value)
+        ? value.flatMap(r => r && typeof r === 'object' && 'id' in r
+          ? [r.id, ...('cardCode' in r ? [r.cardCode] : [])] : []) : []))
+      let allocation = nextId(c.seq, c.code, code)
+      while (used.has(allocation.id) && Number.isSafeInteger(allocation.seq[code]))
+        allocation = nextId(allocation.seq, c.code, code)
+      if (!Number.isSafeInteger(allocation.seq[code])) return c
+      allocated = allocation.id
+      return build({ ...c, seq: allocation.seq }, allocation.id)
     })
-    return allocated
+    return accepted ? allocated : ''
   }
 
   function push<K extends TeListKey>(c: TeCampaign, key: K, item: TeCampaign[K][number]): TeCampaign {
@@ -359,10 +382,16 @@ export const useTeStore = create<TeStore>()((set, get) => {
         activeCampaignId: s.activeCampaignId === id ? null : s.activeCampaignId,
       })),
 
-    setActiveCampaign: (id) => set({ activeCampaignId: id }),
+    setActiveCampaign: (id) => {
+      if (get().campaigns.some(c => c.id === id)) set({ activeCampaignId: id })
+    },
 
     loadCampaign: (c) =>
       set((s) => {
+        try { validateCampaignShape(c) } catch { return s }
+        if (campaignReferenceBlockers(c).length > 0 ||
+            (c.evidencePackage.deliveredAt && deliveryBlockers(c).length > 0)) return s
+        c = structuredClone(c)
         const item = s.campaigns.some((x) => x.id === c.id) ? { ...c, id: newId('tecamp') } : c
         return { campaigns: [...s.campaigns, item], activeCampaignId: item.id }
       }),
@@ -688,21 +717,98 @@ export const useTeStore = create<TeStore>()((set, get) => {
       get().patchCampaign({ presetKey })
     },
 
-    replaceState: (st) =>
-      set({ schemaVersion: 1, campaigns: st.campaigns, activeCampaignId: st.activeCampaignId }),
+    replaceState: (st) => {
+      try { validateShape(st, 'TeState', 'te', true) } catch { return }
+      if (st.schemaVersion !== 1 || new Set(st.campaigns.map(c => c.id)).size !== st.campaigns.length ||
+          (st.activeCampaignId !== null && !st.campaigns.some(c => c.id === st.activeCampaignId))) return
+      for (const c of st.campaigns) {
+        try { validateCampaignShape(c) } catch { return }
+        if (campaignReferenceBlockers(c).length > 0 ||
+            (c.evidencePackage.deliveredAt && deliveryBlockers(c).length > 0)) return
+      }
+      // Adoption cannot rewrite existing evidence. Imported copies use loadCampaign instead.
+      for (const old of get().campaigns) {
+        const incoming = st.campaigns.find(c => c.id === old.id)
+        if (old.cards.some(card => card.status === 'issued' || card.status === 'superseded') ||
+            old.runs.length > 0 || old.evidencePackage.deliveredAt) {
+          if (JSON.stringify(old) !== JSON.stringify(incoming)) return
+        }
+      }
+      set(structuredClone({ schemaVersion: 1 as const, campaigns: st.campaigns,
+        activeCampaignId: st.activeCampaignId }))
+    },
 
-    patchCampaign: (patch) => mutate((c) => ({ ...c, ...patch })),
+    patchCampaign: (patch) => mutate((c) => {
+      if (patch.code !== undefined && Object.values(c.seq).some(n => n > 0)) return c
+      if (Object.keys(patch).some(key => ['id', 'seq', 'createdAt',
+        'qualificationPassedAt', 'designApprovedAt'].includes(key) ||
+        Array.isArray(c[key as keyof TeCampaign]))) return c
+      if (patch.phase !== undefined && (patch.phase !== 'closed' ||
+          !c.evidencePackage.deliveredAt || deliveryBlockers(c).length > 0)) return c
+      if (patch.evidencePackage?.deliveredAt !== c.evidencePackage.deliveredAt &&
+          patch.evidencePackage?.deliveredAt !== undefined) return c
+      return { ...c, ...structuredClone(patch) }
+    }),
 
-    addItem: (key, item) => mutate((c) => push(c, key, item)),
+    addItem: (key, item) => mutate((c) => {
+      if (key === 'runs' || key === 'cards') return c
+      if (key === 'checklists' && (item as TeChecklist).completedAt &&
+          checklistBlockers(item as TeChecklist).length > 0) return c
+      return push(c, key, structuredClone(item))
+    }),
 
-    patchItem: (key, id, patch) =>
-      mutate((c) => ({
-        ...c,
-        [key]: c[key].map((r) => (r.id === id ? { ...r, ...patch } : r)),
-      })),
+    patchItem: (key, id, patch) => mutate((c) => {
+      const record = c[key].find(r => r.id === id)
+      if (!record || ('id' in patch && patch.id !== id)) return c
+      if (key === 'cards') {
+        const card = record as TeCard
+        if (['issued', 'superseded'].includes(card.status) ||
+            Object.keys(patch).some(k => ['cardCode', 'version', 'effectiveAt', 'status'].includes(k))) return c
+      }
+      if ('frozen' in record && record.frozen) {
+        // Question dispositions are post-test conclusions, not changes to the frozen question.
+        const allowed = key === 'questions' ? ['disposition', 'dispositionNote', 'evidenceLevel']
+          : key === 'configs' ? ['driftLog'] : []
+        if (Object.keys(patch).some(k => !allowed.includes(k))) return c
+        if (key === 'configs' && 'driftLog' in patch) {
+          const old = (record as TeCampaign['configs'][number]).driftLog
+          const next = (patch as Partial<TeCampaign['configs'][number]>).driftLog
+          if (!next || next.length < old.length || old.some((entry, i) =>
+            entry.time !== next[i]?.time || (entry.note !== '' && entry.note !== next[i]?.note))) return c
+        }
+      }
+      if (key === 'checklists') {
+        const checklist = record as TeChecklist
+        const updated = { ...checklist, ...patch }
+        if (checklist.completedAt || (updated.completedAt && checklistBlockers(updated).length > 0)) return c
+      }
+      if (key === 'runs') {
+        const run = record as TeRun
+        if (Object.keys(patch).some(k => ['cardId', 'cardVersion', 'matrixCellId',
+          'plannedPurpose', 'startAt', 'events', 'validity', 'adjudications',
+          'observationAmendments', 'excluded', 'exclusionReason'].includes(k))) return c
+        if (run.adjudications.length > 0 && 'observations' in patch) return c
+      }
+      return { ...c, [key]: c[key].map(r => {
+        if (r.id !== id) return r
+        const updated = { ...r, ...structuredClone(patch) }
+        if (key === 'runs' && (r as TeRun).validity !== 'pending' &&
+            Object.keys(patch).some(k => ['allowedMeasureIds', 'limits', 'prohibitedUses',
+              'actualConfigId', 'actualThreatId', 'actualConditionId'].includes(k))) {
+          return { ...updated, validity: 'pending' }
+        }
+        return updated
+      }) }
+    }),
 
-    removeItem: (key, id) =>
-      mutate((c) => ({ ...c, [key]: c[key].filter((r) => r.id !== id) })),
+    removeItem: (key, id) => mutate((c) => {
+      const record = c[key].find(r => r.id === id)
+      if (!record || key === 'runs' ||
+          (key === 'cards' && ['issued', 'superseded'].includes((record as TeCard).status)) ||
+          ('frozen' in record && record.frozen) ||
+          (key === 'checklists' && (record as TeChecklist).completedAt)) return c
+      return { ...c, [key]: c[key].filter(r => r.id !== id) }
+    }),
 
     addQuestion: () => allocate('Q', (c, id) => push(c, 'questions', emptyQuestion(id))),
 
@@ -734,10 +840,11 @@ export const useTeStore = create<TeStore>()((set, get) => {
           if (last.storagePath.trim() !== '') defaults.storagePath = last.storagePath
           defaults.siteCalls = { ...last.siteCalls }
         }
-        const card = { ...emptyCard(internalId, code), ...defaults, ...patch }
+        const card = { ...emptyCard(internalId, code), ...defaults, ...structuredClone(patch),
+          id: internalId, cardCode: code, version: 'v1.0', status: 'draft' as const, effectiveAt: null }
         return push(c, 'cards', card)
       })
-      return internalId
+      return requireCampaign(get())?.cards.some(card => card.id === internalId) ? internalId : ''
     },
 
     createCardFromMatrixCell: (cellId) => {
@@ -828,24 +935,30 @@ export const useTeStore = create<TeStore>()((set, get) => {
         [key]: c[key].map((r) => {
           if (r.id !== id) return r
           const rec = r as { version?: string; frozen?: boolean }
-          if (typeof rec.version !== 'string' || rec.frozen) return r
+          if (typeof rec.version !== 'string' || rec.frozen ||
+              (key === 'cards' && ['issued', 'superseded'].includes((r as TeCard).status))) return r
           return { ...r, version: bumpMinor(rec.version) }
         }),
       })),
 
     passQualificationGate: () =>
-      mutate((c) => advance({ ...c, qualificationPassedAt: nowIso() }, 'qualified')),
+      mutate((c) => c.qualificationPassedAt || qualificationBlockers(c).length > 0
+        ? c : advance({ ...c, qualificationPassedAt: nowIso() }, 'qualified')),
 
-    approveDesign: () =>
-      mutate((c) => advance({ ...c, designApprovedAt: nowIso() }, 'designed')),
+    approveDesign: (acknowledged = false) =>
+      mutate((c) => c.designApprovedAt || designBlockers(c, acknowledged).length > 0
+        ? c : advance({ ...c, designApprovedAt: nowIso() }, 'designed')),
 
     issueCard: (cardId) => {
       const c = requireCampaign(get())
       const card = c?.cards.find((x) => x.id === cardId)
       if (!c || !card) return ['Card not found.']
+      if (c.evidencePackage.deliveredAt) return ['The delivered campaign is frozen.']
+      if (['issued', 'superseded', 'withdrawn', 'closed'].includes(card.status))
+        return ['Only a draft or reviewed card can be issued.']
       const blockers = cardIssueBlockers(c, card)
       if (blockers.length > 0) return blockers
-      mutate((camp) =>
+      const issued = mutate((camp) =>
         advance(
           {
             ...camp,
@@ -856,13 +969,13 @@ export const useTeStore = create<TeStore>()((set, get) => {
           'ready',
         ),
       )
-      return []
+      return issued ? [] : ['Card issue rejected: campaign state or version lineage is invalid.']
     },
 
     reviseCard: (cardId) => {
       const c = requireCampaign(get())
       const card = c?.cards.find((x) => x.id === cardId)
-      if (!c || !card) return null
+      if (!c || !card || card.status !== 'issued' || c.evidencePackage.deliveredAt) return null
       const nid = newId('tec')
       const revised: TeCard = {
         ...JSON.parse(JSON.stringify(card)),
@@ -882,20 +995,21 @@ export const useTeStore = create<TeStore>()((set, get) => {
           revised,
         ],
       }))
-      return nid
+      return requireCampaign(get())?.cards.some(card => card.id === nid) ? nid : null
     },
 
     createRunFromCard: (cardId) => {
       const c = requireCampaign(get())
       const card = c?.cards.find((x) => x.id === cardId)
-      if (!c || !card || card.status !== 'issued') return null
+      if (!c || !card || card.status !== 'issued' || c.evidencePackage.deliveredAt ||
+          campaignReferenceBlockers(c).length > 0) return null
       let runId: string | null = null
       allocate('RUN', (camp, id) => {
         runId = id
         const run: TeRun = { ...emptyRun(id, card), startAt: nowIso() }
         return advance(push(camp, 'runs', run), 'executing')
       })
-      return runId
+      return requireCampaign(get())?.runs.some(run => run.id === runId) ? runId : null
     },
 
     markRunEvent: (runId, mark, note = '') =>
@@ -908,42 +1022,47 @@ export const useTeStore = create<TeStore>()((set, get) => {
         ),
       })),
 
-    adjudicateRun: (runId, validity, by, reason) =>
-      mutate((c) =>
-        advance(
-          {
-            ...c,
-            runs: c.runs.map((r) =>
-              r.id === runId
-                ? {
-                    ...r,
-                    validity,
-                    adjudications: [
-                      ...r.adjudications,
-                      { version: r.adjudications.length + 1, at: nowIso(), by, validity, reason },
-                    ],
-                  }
-                : r,
-            ),
-          },
-          'analyzing',
-        ),
-      ),
+    adjudicateRun: (runId, validity, by, reason) => mutate((c) => {
+      const run = c.runs.find(r => r.id === runId)
+      if (!run || validity === 'pending' || !by.trim() || !reason.trim() ||
+          (validity === 'conditionally-valid' && run.allowedMeasureIds.length === 0)) return c
+      return advance({ ...c, runs: c.runs.map(r => r.id === runId ? {
+        ...r, validity,
+        adjudications: [...r.adjudications, {
+          version: r.adjudications.length + 1, at: nowIso(), by, validity, reason,
+          observations: structuredClone(r.observations), allowedMeasureIds: [...r.allowedMeasureIds],
+          limits: r.limits, prohibitedUses: r.prohibitedUses,
+        }],
+      } : r) }, 'analyzing')
+    }),
 
-    discardRun: (runId) =>
-      mutate((c) => ({
-        ...c,
-        runs: c.runs.filter((r) => r.id !== runId),
-        findings: c.findings.map((f) =>
-          f.supportingRunIds.includes(runId) || f.contradictingRunIds.includes(runId)
-            ? {
-                ...f,
-                supportingRunIds: f.supportingRunIds.filter((x) => x !== runId),
-                contradictingRunIds: f.contradictingRunIds.filter((x) => x !== runId),
-              }
-            : f,
-        ),
-      })),
+    amendRunObservations: (runId, observations, by, reason) => mutate((c) => {
+      const run = c.runs.find(r => r.id === runId)
+      if (!run || !by.trim() || !reason.trim() || run.adjudications.length === 0) return c
+      return { ...c, runs: c.runs.map(r => r.id === runId ? {
+        ...r, observations: structuredClone(observations), validity: 'pending' as const,
+        observationAmendments: [...(r.observationAmendments ?? []), {
+          at: nowIso(), by, reason, previous: structuredClone(r.observations),
+          corrected: structuredClone(observations),
+        }],
+      } : r) }
+    }),
+
+    setRunExcluded: (runId, excluded, reason) => mutate((c) => {
+      if (excluded && !reason.trim()) return c
+      return { ...c, runs: c.runs.map(r => r.id === runId
+        ? { ...r, excluded, exclusionReason: reason } : r) }
+    }),
+
+    discardRun: (runId) => mutate((c) => {
+      const r = c.runs.find(run => run.id === runId)
+      if (!r || r.events.length || r.adjudications.length || r.observationAmendments?.length ||
+          r.deviationIds.length || r.anomalyIds.length || r.frameIds.length ||
+          r.operatorObservations.trim() || r.dataFilesNote.trim() || r.endAt ||
+          r.observations.some(o => o.status !== 'no-test' || o.value !== null ||
+            o.success !== null || o.note.trim())) return c
+      return { ...c, runs: c.runs.filter(run => run.id !== runId) }
+    }),
 
     addDeviation: (runId) => {
       const c = requireCampaign(get())
@@ -960,7 +1079,7 @@ export const useTeStore = create<TeStore>()((set, get) => {
           ),
         }
       })
-      return devId
+      return requireCampaign(get())?.deviations.some(dev => dev.id === devId) ? devId : null
     },
 
     addAnomaly: (runId) =>
@@ -1028,7 +1147,7 @@ export const useTeStore = create<TeStore>()((set, get) => {
       ),
 
     markPackageDelivered: () =>
-      mutate((c) =>
+      mutate((c) => deliveryBlockers(c).length > 0 ? c :
         advance(
           { ...c, evidencePackage: { ...c.evidencePackage, deliveredAt: nowIso() } },
           'decision-ready',

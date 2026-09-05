@@ -8,6 +8,37 @@ function campaign() {
   return s.campaigns.find((c) => c.id === s.activeCampaignId)!
 }
 
+function prepareGates() {
+  const st = useTeStore.getState()
+  const c = campaign()
+  st.patchCampaign({
+    decision: { ...c.decision, authorizedDecisionOwner: 'Owner', boundedChoice: 'A or B',
+      decisionDate: '2026-09-05', blockingUncertainty: 'Detection range', acceptanceConditions: 'Trial results' },
+    charter: { ...c.charter, acceptance: { ...c.charter.acceptance, relyingOrganization: 'Test organization' } },
+  })
+  st.passQualificationGate()
+  st.approveDesign(true)
+}
+
+function issueFixtureCard(id: string) {
+  const st = useTeStore.getState()
+  const card = campaign().cards.find(c => c.id === id)!
+  const q = card.questionIds[0] ?? st.addQuestion()
+  const m = card.measureIds[0] ?? st.addMeasure(q)
+  const cfg = card.configId ?? st.addConfig()
+  st.patchItem('measures', m, { frozen: true })
+  st.patchItem('configs', cfg, { frozen: true })
+  st.patchItem('cards', id, {
+    purpose: 'Measure detection range', questionIds: [q], measureIds: [m], configId: cfg,
+    threatId: card.threatId ?? st.addThreat(), conditionId: card.conditionId ?? st.addCondition(),
+    procedure: [{ id: 'p1', action: 'Fly the route', role: 'red-threat-lead',
+      observableCompletion: 'Route complete', canSilentlyInvalidate: false, isRecorderStartStop: false }],
+    coldReaderAt: '2026-09-05', coldReaderBy: 'Reader', dryRunAt: '2026-09-05', dryRunBy: 'Lead',
+  })
+  prepareGates()
+  expect(st.issueCard(id)).toEqual([])
+}
+
 beforeEach(() => {
   useTeStore.setState({ campaigns: [], activeCampaignId: null })
   useTeStore.getState().createCampaign('Test campaign', 'J401')
@@ -107,7 +138,8 @@ describe('config duplication and version bumps', () => {
     expect(campaign().configs[0].version).toBe('v1.0')
     st.patchItem('configs', cfg, { frozen: false })
     st.bumpRecordVersion('configs', cfg)
-    expect(campaign().configs[0].version).toBe('v1.1')
+    expect(campaign().configs[0].version).toBe('v1.0')
+    expect(campaign().configs[0].frozen).toBe(true)
   })
 })
 
@@ -152,6 +184,7 @@ describe('card lifecycle gates', () => {
       dryRunAt: '2026-08-19T00:00:00Z',
       dryRunBy: 'B. Runner',
     })
+    prepareGates()
     const blockers = st.issueCard(id)
     expect(blockers).toEqual([])
     expect(campaign().cards.find((c) => c.id === id)!.status).toBe('issued')
@@ -160,6 +193,7 @@ describe('card lifecycle gates', () => {
   it('revision supersedes the old version and keeps the card code', () => {
     const st = useTeStore.getState()
     const id = st.addCard({ title: 'Card A' })
+    issueFixtureCard(id)
     const newId = st.reviseCard(id)!
     const c = campaign()
     const oldCard = c.cards.find((x) => x.id === id)!
@@ -181,12 +215,13 @@ describe('runs', () => {
   it('creates versionless runs, marks events, and versions adjudications', () => {
     const st = useTeStore.getState()
     const id = st.addCard({ title: 'Card A' })
-    // Force-issue for the run test; gate behavior is covered above.
-    st.patchItem('cards', id, { status: 'issued' })
+    // Exercise the gate before the execution actions.
+    issueFixtureCard(id)
     const runId = st.createRunFromCard(id)!
     expect(runId).toBe('VLK-J401-RUN-0001')
     st.markRunEvent(runId, 'first-detection', 'radar')
     st.adjudicateRun(runId, 'valid', 'Board', 'clean run')
+    st.patchItem('runs', runId, { allowedMeasureIds: campaign().cards[0].measureIds })
     st.adjudicateRun(runId, 'conditionally-valid', 'Board', 'late truth gap found')
     const run = campaign().runs[0]
     expect(run.events).toHaveLength(1)
@@ -195,10 +230,10 @@ describe('runs', () => {
     expect(run.adjudications[0].validity).toBe('valid')
   })
 
-  it('discarding a run strips it from finding run links', () => {
+  it('discarding a referenced run preserves the run and finding links', () => {
     const st = useTeStore.getState()
     const id = st.addCard({ title: 'Card A' })
-    st.patchItem('cards', id, { status: 'issued' })
+    issueFixtureCard(id)
     const runId = st.createRunFromCard(id)!
     const findingId = st.addFinding()
     st.patchItem('findings', findingId, {
@@ -207,16 +242,16 @@ describe('runs', () => {
     })
     st.discardRun(runId)
     const c = campaign()
-    expect(c.runs).toHaveLength(0)
+    expect(c.runs).toHaveLength(1)
     const f = c.findings.find((x) => x.id === findingId)!
-    expect(f.supportingRunIds).not.toContain(runId)
-    expect(f.contradictingRunIds).not.toContain(runId)
+    expect(f.supportingRunIds).toContain(runId)
+    expect(f.contradictingRunIds).toContain(runId)
   })
 
   it('links deviations both ways', () => {
     const st = useTeStore.getState()
     const id = st.addCard({ title: 'Card A' })
-    st.patchItem('cards', id, { status: 'issued' })
+    issueFixtureCard(id)
     const runId = st.createRunFromCard(id)!
     const devId = st.addDeviation(runId)!
     const c = campaign()
@@ -234,6 +269,7 @@ function addIssuableCard() {
   const cond = st.addCondition()
   const cfg = st.addConfig()
   st.patchItem('configs', cfg, { frozen: true })
+  prepareGates()
   return st.addCard({
     title: 'Detection characterization',
     purpose: 'Measure first detection range.',
@@ -301,10 +337,10 @@ describe('campaign phase lifecycle', () => {
     st.issueCard(second)
     expect(campaign().phase).toBe('analyzing')
     st.markPackageDelivered()
-    expect(campaign().phase).toBe('decision-ready')
-    expect(campaign().evidencePackage.deliveredAt).not.toBeNull()
+    expect(campaign().phase).toBe('analyzing')
+    expect(campaign().evidencePackage.deliveredAt).toBeNull()
     st.adjudicateRun(runId, 'conditionally-valid', 'Board', 'gap found')
-    expect(campaign().phase).toBe('decision-ready')
+    expect(campaign().phase).toBe('analyzing')
   })
 })
 
@@ -516,7 +552,7 @@ describe('startFromCampaign', () => {
       frozen: true,
       thresholdApproved: true,
       threshold: 0.9,
-      hypothesisIds: ['VLK-OLD-HYP-001'],
+      hypothesisIds: [st.addHypothesis(q)],
     })
     const cfg = st.addConfig()
     st.patchItem('configs', cfg, {
@@ -533,7 +569,7 @@ describe('startFromCampaign', () => {
     st.addFactor()
     // Evidence that must never copy.
     const cardId = st.addCard({ title: 'Card A' })
-    st.patchItem('cards', cardId, { status: 'issued' })
+    issueFixtureCard(cardId)
     st.createRunFromCard(cardId)
     st.addFinding()
     return campaign()
@@ -696,7 +732,7 @@ describe('deleteImpacts', () => {
     const cell = st.addMatrixCell()
     st.patchItem('matrix', cell, { measureIds: [m] })
     const cardId = st.addCard({ title: 'Card A', measureIds: [m] })
-    st.patchItem('cards', cardId, { status: 'issued' })
+    issueFixtureCard(cardId)
     st.createRunFromCard(cardId)
     const f = st.addFinding()
     st.patchItem('findings', f, { measureIds: [m] })
@@ -752,7 +788,7 @@ describe('deleteImpacts', () => {
     expect(deleteImpacts(campaign(), 'conditions', cond)).toEqual(['1 card'])
     expect(deleteImpacts(campaign(), 'configs', cfg)).toEqual(['1 card'])
     expect(deleteImpacts(campaign(), 'cards', cardId)).toEqual([])
-    st.patchItem('cards', cardId, { status: 'issued' })
+    issueFixtureCard(cardId)
     st.createRunFromCard(cardId)
     expect(deleteImpacts(campaign(), 'cards', cardId)).toEqual(['1 run'])
     expect(deleteImpacts(campaign(), 'threats', thr)).toEqual(['1 card', '1 run'])

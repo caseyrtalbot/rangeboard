@@ -9,6 +9,9 @@ import {
   emptyCampaign,
   emptyCard,
   emptyFinding,
+  emptyConfig,
+  emptyThreat,
+  emptyCondition,
   emptyHypothesis,
   emptyMatrixCell,
   emptyMeasure,
@@ -190,8 +193,19 @@ describe('deliverPct', () => {
     f.configId = 'cfg1'
     f.measureIds = ['m1']
     f.appliesTo = 'Group 1, day, rain'
+    c.questions.push({ ...emptyQuestion('q1'), disposition: 'answered' })
+    c.measures.push(emptyMeasure('m1', 'q1'))
+    c.configs.push(emptyConfig('cfg1'))
+    const card = emptyCard('card1', 'TC-1')
+    card.status = 'issued'
+    c.threats.push(emptyThreat('t1')); c.conditions.push(emptyCondition('cond1'))
+    Object.assign(card, { questionIds: ['q1'], measureIds: ['m1'], configId: 'cfg1', threatId: 't1', conditionId: 'cond1' })
+    c.cards.push(card)
+    const run = emptyRun('r1', card)
+    run.validity = 'valid'
+    c.runs.push(run)
     c.findings.push(f)
-    // findings exist + clean findings + clean closeout (no questions, claims,
+    // findings exist + clean findings + clean closeout (disposed question, no claims
     // or open actions) + 0/20 sections = 3/4
     expect(deliverPct(c)).toBe(75)
   })

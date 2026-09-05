@@ -56,7 +56,8 @@ thresholds or probabilities of meeting a requirement. Keep illustrative campaign
   replicate quantiles distinct. Requirement gates use test-defined thresholds.
 - T&E records have their own identity, version lineage, references and evidence-purpose
   rules. Preserve run numbering, baseline snapshots, observations and amendments. Required
-  transition enforcement still has gaps; consult the live register before claiming it holds.
+  transitions are enforced by the store. Consult the live register and C4 evidence for
+  verified scope and legacy limits.
 
 Read [the reference](docs/ENGINEERING_REFERENCE.md) for precise exceptions, domain equations,
 source locations, provenance/fixture rules, UI constraints and T&E contracts before touching them.

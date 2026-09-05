@@ -1,4 +1,5 @@
 import type { TeCampaign, TeState } from '../model/types'
+import { deliveryBlockers } from '../validate'
 import { emptyCampaign, emptyPackage } from '../model/empty'
 import { useTeStore } from '../state/teStore'
 import { allowAutosave, assertAutosaveAllowed, blockAutosave, notifyRecovery, recoverUnreadableSave } from '../../io/recovery'
@@ -27,6 +28,10 @@ export function fillCampaign(parsed: TeCampaign): TeCampaign {
     evidencePackage: parsed.evidencePackage ?? emptyPackage(),
   }
   validateCampaignReferences(filled)
+  if (filled.evidencePackage.deliveredAt) {
+    const blockers = deliveryBlockers(filled)
+    if (blockers.length) invalid('campaign.evidencePackage.deliveredAt', blockers.join(' '))
+  }
   filled.configs.forEach((config, i) => {
     if (config.scenarioSnapshot !== null) {
       try { parseAutosave(config.scenarioSnapshot) } catch (error) { invalid(`campaign.configs[${i}].scenarioSnapshot`, (error as Error).message) }

@@ -1,0 +1,86 @@
+async page => {
+  const errors = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.evaluate(() => {
+    const s = window.__teStore.getState()
+    const c = s.campaigns.find(c => c.id === s.activeCampaignId)
+    s.adjudicateRun(c.runs[2].id, 'conditionally-valid', 'Illustrative reviewer', 'Correction reviewed; timing measure allowed')
+    s.setRunExcluded(c.runs[0].id, true, 'Illustrative duplicate experimental unit')
+    s.setPhase('cards')
+    s.selectRecord('cards', c.cards[0].id)
+  })
+  await page.getByRole('button', { name: 'Revise (new version)', exact: true }).click()
+  const beforeDelivery = await page.evaluate(async () => {
+    const st = () => window.__teStore.getState()
+    const c = () => st().campaigns.find(c => c.id === st().activeCampaignId)
+    const { deliveryBlockers } = await import('/src/te/validate.ts')
+    const { computeMeasure } = await import('/src/te/calc/measures.ts')
+    const old = c().cards[0], revised = c().cards[1]
+    if (old.status !== 'superseded' || revised.version !== 'v2.0' || revised.cardCode !== old.cardCode) throw Error('UI revision failed')
+    if (c().runs.some(r => r.cardId !== old.id || r.cardVersion !== 'v1.0')) throw Error('Old run references changed')
+    st().patchItem('cards', revised.id, { coldReaderAt: old.coldReaderAt, dryRunAt: old.dryRunAt })
+    const blockers = st().issueCard(revised.id)
+    if (blockers.length) throw Error(blockers.join('; '))
+    const discarded = st().createRunFromCard(revised.id)
+    st().discardRun(discarded)
+    const next = st().createRunFromCard(revised.id)
+    st().discardRun(next)
+    if (!discarded || !next || discarded === next) throw Error('Run numbers reused')
+    const result = computeMeasure(c(), c().measures[0].id)
+    if (result.nIncluded !== 1 || result.estimate !== 30) throw Error('Exclusion/amendment estimate failed')
+    st().patchCampaign({ evidencePackage: { ...c().evidencePackage,
+      methodAcceptance: 'Accepted for illustrative software verification',
+      evidenceAcceptance: 'Accepted for illustrative software verification',
+      finalAuthorityAndDate: 'Illustrative reviewer, 2026-09-05',
+      sections: c().evidencePackage.sections.map(s => ({ ...s, edited: true,
+        content: `Illustrative software acceptance section ${s.n}. No trial claim.` })),
+    } })
+    const finalBlockers = deliveryBlockers(c())
+    if (finalBlockers.length) throw Error(finalBlockers.join('; '))
+    st().setPhase('deliver')
+    return { uiRevision: true, oldRunReferencesPreserved: true, discarded, next,
+      estimateAfterCorrectionAndExclusion: result, finalBlockers }
+  })
+  await page.getByRole('button', { name: 'Mark package delivered', exact: true }).click()
+  const original = await page.evaluate(() => {
+    const s = window.__teStore.getState()
+    const c = s.campaigns.find(c => c.id === s.activeCampaignId)
+    if (!c.evidencePackage.deliveredAt) throw Error('UI delivery failed')
+    const before = JSON.stringify(c)
+    s.patchItem('findings', c.findings[0].id, { statement: 'Forbidden finalized rewrite' })
+    s.patchCampaign({ evidencePackage: { ...c.evidencePackage, deliveredAt: null } })
+    const current = window.__teStore.getState().campaigns.find(x => x.id === c.id)
+    if (JSON.stringify(current) !== before) throw Error('Finalized evidence changed')
+    return c
+  })
+  await page.getByText('Delivered record:', { exact: false }).scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/delivered.png' })
+  const downloadEvent = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Export JSON', exact: true }).click()
+  const download = await downloadEvent
+  await download.saveAs('output/playwright/rangeboard-c4/campaign.te.json')
+  await page.waitForFunction(id => JSON.parse(localStorage.getItem('rangeboard.te.v1')).campaigns.find(c => c.id === id)?.evidencePackage.deliveredAt, original.id)
+  await page.reload()
+  await page.waitForFunction(() => window.__teStore?.getState().campaigns.length > 0)
+  const reloaded = await page.evaluate(() => {
+    const s = window.__teStore.getState()
+    return { campaign: s.campaigns.find(c => c.id === s.activeCampaignId),
+      recoveryKeys: Object.keys(localStorage).filter(k => k.startsWith('rangeboard.te.recovered.')) }
+  })
+  if (JSON.stringify(reloaded.campaign) !== JSON.stringify(original) || reloaded.recoveryKeys.length) throw Error('Reload changed evidence or recovered unexpectedly')
+  const chooserEvent = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Import', exact: true }).click()
+  const chooser = await chooserEvent
+  await chooser.setFiles('output/playwright/rangeboard-c4/campaign.te.json')
+  await page.waitForFunction(() => window.__teStore.getState().campaigns.length === 2)
+  const imported = await page.evaluate(() => {
+    const s = window.__teStore.getState()
+    return s.campaigns.find(c => c.id === s.activeCampaignId)
+  })
+  if (JSON.stringify({ ...imported, id: original.id }) !== JSON.stringify(original)) throw Error('Native import changed evidence')
+  await page.getByRole('button', { name: '6 Deliver', exact: true }).click()
+  await page.getByText('Delivered record:', { exact: false }).scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/reimported.png' })
+  return { ...beforeDelivery, uiDelivery: true, finalizedEditsRejected: true, nativeExportReimport: true,
+    exactReload: true, recoveryKeys: reloaded.recoveryKeys, originalId: original.id, importedId: imported.id, errors }
+}

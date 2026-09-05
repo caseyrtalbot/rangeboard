@@ -4,6 +4,7 @@
  * non-excluded runs count as coverage evidence.
  */
 
+import { runIncludable } from '../validate'
 import type { TeCampaign } from '../model/types'
 
 export interface CellCoverage {
@@ -19,7 +20,7 @@ export function coverage(campaign: TeCampaign): CellCoverage[] {
   return campaign.matrix.map((cell): CellCoverage => {
     const runs = campaign.runs.filter((run) => run.matrixCellId === cell.id)
     const attempted = runs.filter((run) => run.startAt !== null).length
-    const valid = runs.filter((run) => run.validity === 'valid' && !run.excluded).length
+    const valid = runs.filter((run) => runIncludable(run, 'quantitative')).length
     const minValid = cell.minValidEvidence
     const state =
       valid === 0 ? 'empty' : valid < minValid ? 'thin' : valid > 2 * minValid ? 'redundant' : 'met'

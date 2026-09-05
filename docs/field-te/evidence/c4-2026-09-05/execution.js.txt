@@ -1,0 +1,40 @@
+async page => {
+  const result = await page.evaluate(async () => {
+    const st = () => window.__teStore.getState()
+    const c = () => st().campaigns.find(c => c.id === st().activeCampaignId)
+    const { parseCampaignData } = await import('/src/te/io/persistTe.ts')
+    const { computeMeasure } = await import('/src/te/calc/measures.ts')
+    const old = c().cards[0]
+    if (old.status !== 'issued') throw Error('UI issue did not succeed')
+    const snapshot = c().configs[0].scenarioSnapshot
+    if (!snapshot || JSON.parse(snapshot).schemaVersion !== 1) throw Error('UI baseline snapshot is incomplete')
+    parseCampaignData({ rangeboardCampaign: 1, campaign: c() })
+    st().patchItem('cards', old.id, { title: 'FORBIDDEN' })
+    st().removeItem('cards', old.id)
+    if (JSON.stringify(c().cards[0]) !== JSON.stringify(old)) throw Error('Issued card changed')
+    const mid = c().measures[0].id
+    const runs = []
+    for (const [value, validity] of [[10, 'valid'], [999, 'invalid'], [20, 'conditionally-valid']]) {
+      const id = st().createRunFromCard(old.id)
+      if (!id) throw Error('Run not created')
+      runs.push(id)
+      st().markRunEvent(id, 'recorded')
+      st().patchItem('runs', id, { observations: [{ measureId: mid, status: 'observed', value, success: null, note: 'Illustrative observation' }],
+        allowedMeasureIds: validity === 'conditionally-valid' ? [mid] : [], limits: validity === 'invalid' ? 'Timing source invalid' : '' })
+      st().adjudicateRun(id, validity, 'Illustrative reviewer', 'Illustrative adjudication')
+    }
+    const result = computeMeasure(c(), mid)
+    if (result.nIncluded !== 2 || result.estimate !== 15) throw Error('Invalid trial entered denominator')
+    const f = st().addFinding()
+    st().patchItem('findings', f, { statement: 'Illustrative response timing and timing-source failure.',
+      questionId: c().questions[0].id, configId: c().configs[0].id, measureIds: [mid],
+      supportingRunIds: [runs[0], runs[2]], contradictingRunIds: [runs[1]], appliesTo: 'This illustrative software walkthrough only.',
+      missingAndExcludedData: 'The invalid run supports timing-source fault investigation only; no quantitative trial credit.',
+    })
+    st().selectRecord('findings', f)
+    st().setPhase('deliver')
+    return { issuedCardImmutable: true, uiFullBaselineSnapshot: true, runIds: runs, invalidExcludedFromQuantitative: result, findingId: f }
+  })
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/finding.png', fullPage: true })
+  return result
+}

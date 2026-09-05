@@ -1,0 +1,50 @@
+async page => {
+  const expected = (await (await page.request.get('http://localhost:5186/output/playwright/rangeboard-c4/campaign.te.json')).json()).campaign
+  const errors = []
+  page.on('pageerror', e => errors.push(e.message))
+  const first = await page.evaluate(async expected => {
+    const s = window.__teStore.getState()
+    const active = s.campaigns.find(c => c.id === s.activeCampaignId)
+    if (s.campaigns.length !== 2) throw Error('Expected original and native imported copy')
+    for (const c of s.campaigns) {
+      if (JSON.stringify({ ...c, id: expected.id }) !== JSON.stringify(expected)) throw Error('Imported/reloaded evidence differs from native export')
+    }
+    const { computeMeasure } = await import('/src/te/calc/measures.ts')
+    const result = computeMeasure(active, active.measures[0].id)
+    if (result.nIncluded !== 1 || result.estimate !== 30) throw Error('Expected corrected conditional run alone')
+    if (active.cards[0].status !== 'superseded' || active.cards[1].status !== 'issued') throw Error('Revision lineage failed')
+    if (active.runs.some(r => r.cardId !== active.cards[0].id || r.cardVersion !== 'v1.0')) throw Error('Run references changed')
+    s.setPhase('execute')
+    s.selectRecord('runs', active.runs[2].id)
+    return { nativeExportReimportExact: true, count: s.campaigns.length, originalId: expected.id,
+      importedId: active.id, oldRunReferencesPreserved: true, snapshotSchemaVersion: JSON.parse(active.configs[0].scenarioSnapshot).schemaVersion,
+      estimateAfterCorrectionAndExclusion: result, observationHistory: active.runs[2].observationAmendments,
+      runSequence: active.seq.RUN, finalized: active.evidencePackage.deliveredAt }
+  }, expected)
+  await page.getByRole('button', { name: 'Run console', exact: true }).click()
+  await page.getByText('Correction 1:', { exact: false }).scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/correction.png' })
+  const layout = await page.evaluate(() => {
+    const main = document.querySelector('.te-main')
+    const input = [...document.querySelectorAll('input')].find(el => el.type === 'number' && el.value === '30')
+    const bounds = input.getBoundingClientRect()
+    return { horizontalOverflow: main.scrollWidth > main.clientWidth, observationInputWidth: bounds.width,
+      minimumVisibleTextPx: Math.min(...[...main.querySelectorAll('p,span,input,button')]
+        .filter(el => el.getBoundingClientRect().height > 0).map(el => parseFloat(getComputedStyle(el).fontSize))) }
+  })
+  if (layout.horizontalOverflow || layout.observationInputWidth < 80) throw Error('Observation layout failed')
+  await page.reload()
+  await page.waitForFunction(() => window.__teStore?.getState().campaigns.length === 2)
+  const reload = await page.evaluate(expected => {
+    const s = window.__teStore.getState()
+    const c = s.campaigns.find(c => c.id === s.activeCampaignId)
+    const exact = JSON.stringify({ ...c, id: expected.id }) === JSON.stringify(expected)
+    const recoveryKeys = Object.keys(localStorage).filter(k => k.startsWith('rangeboard.te.recovered.'))
+    if (!exact || recoveryKeys.length) throw Error('Reload lost evidence')
+    return { exact, recoveryKeys }
+  }, expected)
+  await page.getByRole('button', { name: '6 Deliver', exact: true }).click()
+  await page.getByText('Delivered record:', { exact: false }).scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'output/playwright/rangeboard-c4/reimported.png' })
+  return { ...first, reload, layout, errors }
+}

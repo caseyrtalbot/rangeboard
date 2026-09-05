@@ -1,89 +1,76 @@
 # RangeBoard: current engineering handoff
 
-Status: CURRENT TRANSFER RECORD, 2026-09-05. C2/C3/E1 wave verified and published.
-The documentation hygiene and Astra-focused AGENTS.md are recorded in this commit.
-Casey authorized committing the cleanup; it has not been pushed. Stop before C4.
+Status: CURRENT TRANSFER RECORD, 2026-09-05. C4 implemented in the working tree;
+all acceptance checks passed. Casey subsequently authorized commit and push.
 
-Marks: `[V]` source/test/tool verified; `[D]` user direction/documented intent;
-`[I]` reasoned implication; `[U]` unresolved. Read [AGENTS.md](../AGENTS.md), this record,
-then the [register](data-engine/outstanding.md). Source/tests outrank documents.
+Marks: `[V]` verified; `[D]` documented direction; `[I]` inference; `[U]` unresolved.
+Read [AGENTS.md](../AGENTS.md), this record and the [register](data-engine/outstanding.md).
+Source/tests outrank documents.
 
-## 1. Scope and working tree
+## Scope and ownership
 
-[D] Casey requested execution of the fresh orchestrator handoff at
-`/private/tmp/caseytalbot-rangeboard-parallel-handoff.md`: parallel C2 (R-F-25),
-C3 (R-F-26), E1 evidence, followed by serial integration, independent review and verification.
-This superseded the prior C1-only stop for those scopes only. R-D-28 to R-D-30 record choices.
+[D] Casey selected `/private/tmp/caseytalbot-rangeboard-c4-handoff.md` and instructed
+execution as orchestrator. Scope is C4/R-F-27/R-F-28 only: authoritative T&E record
+transitions, purpose-aware evidence and isolated campaign verification. Work remained
+serial; no independent agent review is claimed.
 
-[V] Branch `analysis-hardening`. C2/C3/E1 implementation `798380d787f12b5cea729aefcd9570b3f51c3f0c`
-is published to `origin/analysis-hardening` (remote hash checked on 2026-09-05).
-This documentation commit follows publication record `66db3ad`; C1 `002684c` and its
-record `d8a76f1` remain published. The cleanup changes no source, dependency,
-schema/storage key, draw-key or physics.
-[V] Incoming modified `CLAUDE.md` and four untracked data-engine mockup/build files were
-preserved by SHA-256 check. A later untracked `.claude/launch.json` appeared during final
-QA; this task did not create/edit it and leaves it unowned and untouched. Do not stage,
-repair or delete these files as cleanup. All wave
-changes are identified by the [completion record](field-te/WAVE_C2_C3_E1_COMPLETION.md) and
-[evidence manifest](field-te/evidence/wave-c2-c3-e1-2026-09-05/manifest.json). Recheck live status.
+[V] Branch `analysis-hardening`, HEAD `1b919e5` (documentation hygiene), one commit ahead
+of origin after a fresh fetch. C2/C3/E1 `798380d` and publication record `66db3ad`
+remain published. The authorized push includes documentation hygiene and the owned C4 slice.
+[V] The six incoming unowned paths are preserved by SHA-256: `CLAUDE.md`,
+`.claude/launch.json`, and `docs/data-engine/{build_mockup.py,build_mockup_te.py,mockup.html,mockup-te.html}`.
+Do not stage, repair or delete them.
 
-## 2. Completed and verified
+[D] Owned paths are the changed T&E store/model/validation/calculation/UI/print files and
+regressions, generated `src/io/runtimeSchema.ts`, C4 evidence, current contract/reference,
+plan/register/index, this handoff and the C4 transfer packet. The
+[C4 completion record](field-te/C4_COMPLETION.md) defines correction versus supersession,
+delivery as finding finalization and the verified boundaries.
 
-[V] Documentation hygiene: two superseded handoffs and five completed dispatch files removed;
-originals remain in git at `66db3ad`. [Document index](README.md) routes current versus
-historical material. [AGENTS.md](../AGENTS.md) is the concise Astra contract; its detailed
-technical rules remain in [the engineering reference](ENGINEERING_REFERENCE.md), and browser
-procedures in [the verification guide](VERIFICATION.md). Source and captured evidence are
-unchanged. Hygiene verification: 277 local Markdown file links and seven heading/line
-anchors resolve; all 219 prior register rows and preserved hashes match. Type-check,
-1,327 tests in 76 files, lint (74 existing warnings, zero errors), build (existing chunk
-warning) and schema drift check pass. No browser rerun was needed for this docs-only change.
-M-12 records this cleanup; C4 has not started.
+## Result and verification
 
-[V] C2: matching estimates/mean intervals/percentage denominators; quantile versus mean-CI
-labels; conditional time and no-statistic basis/definedness; deterministic requirement gates
-with envelope findings; per-group run export basis/validity/quantity semantics and configuration
-equality identity. Complete [measure matrix](field-te/wave-c2-c3-e1/C2_MATRIX.md).
+[V] C4 store guards reject issued/superseded rewrites and deletion, forged lifecycle fields,
+duplicate/dangling/cross-campaign references, and replacement of existing evidence.
+Revision preserves card-code lineage and old run references. Frozen baselines remain
+locked; their drift notes can append. Qualification/design/issue/delivery and checklist
+completion enforce their blockers. Delivered campaign evidence freezes; closure remains.
 
-[V] C3: runtime shape and semantic/reference checks before Board/T&E save/import adoption,
-legacy default preservation, image validation and representability checks. Read denial or
-failed verified recovery pauses autosave to preserve the raw key. Generated shape descriptors
-must be regenerated/reviewed when domain types change. Internal T&E transitions remain C4.
+[V] Invalid/excluded evidence remains available for qualified failure investigation and
+cannot count as valid quantitative trials. Conditional trials contribute only to named
+measures. Finding calculations use linked runs only; UI and print retain evidence labels.
+Observation corrections preserve both values, attribution and earlier adjudications, then
+require re-adjudication. Optional histories preserve schema-1 legacy loads without invented
+past snapshots. Board baseline capture now saves the complete scenario for valid reload.
 
-[V] E1: [model evidence baseline](field-te/model-evidence/README.md), eight dossiers/crosswalk,
-seven original primary captures, source/configuration/independence reconciliation. No trial
-validation, seed correction or fidelity upgrade is claimed. Historical research is preserved.
+[V] Isolated browser exercised UI capture/issue/correction/revision/delivery, native export
+and reimport, exact reload, old v1.0 references after v2.0 issue, excluded/invalid trial
+handling and monotonic numbering. The final illustrative result is 30 s from one included
+conditional run; the 10 s excluded and 999 s invalid observations remain stored. No interval
+exists at n=1. Screenshots were inspected; the corrected row has no horizontal overflow,
+a 227 px value input and 10 px minimum visible text. No final page exceptions. A favicon
+404 and a stale CLI file-chooser flag are documented tool/browser observations.
 
-[V] Final checks: type-check clean; **1,327 tests in 76 files pass**; lint **74 existing warnings,
-zero errors**; build passes with the existing chunk-size warning; descriptor drift check passes.
-Exact pre/post deterministic, aleatory/total MC and sensitivity parity on the fixed probe at
-four replicates. Temporary parity/review probes were removed before final gates.
+[V] Final gates pass: type-check, **1,355 tests in 77 files**, lint with **74 existing
+warnings and zero errors**, build with the existing chunk-size warning, and generated-schema
+drift check. The final source also parsed the preserved native browser export/autosave
+without changing evidence in one passing task-created scratch test; the scratch file was
+removed. See the [evidence manifest](field-te/evidence/c4-2026-09-05/manifest.json).
+Earlier C1/C2/C3/E1 verification remains in its dated completion records. The current
+[C3 legacy/recovery tests](../src/te/io/persistTe.test.ts) also run in the full gate.
 
-[V] Independent verifier PASS after four fixes: triangular-offset compatibility, reserved-ID
-serialization loss, malformed base64 padding, and consistent envelope requirement validity.
-Isolated browser verified real-worker means/CI units, rendered quantile charts, edit/undo
-freshness, native export/import, legacy reload and failed-recovery raw preservation. No captured
-page exceptions. Screenshots inspected; tested 320 px content has no overflow/type-floor failure.
-Typed probe fires four events; MC mean kills 0.9666666667 and leakers 0.0333333333 at 30 total
-replicates. Spawn-in-ring/unvalidated-model findings limit this to integration evidence.
+## Stop and next exact task
 
-## 3. Next bounded task and limits
+[D] Publish the verified C4 slice and existing documentation commit on Casey's subsequent
+commit/push instruction, then stop. No R1, E2/E3, T1 or U1 implementation is selected.
+Keep all six unowned files unstaged.
+[I] Next recommended task: select the **R1 store/worker dependency boundary** from
+[PLAN R1](field-te/PLAN.md#4-r1-refactor-with-a-behavioral-boundary). First trace current
+value-import cycles and choose one bounded leaf-module extraction. Preserve numerical
+behavior; stop after its focused parity and repository gates. This recommendation is not
+authorization to execute it.
 
-[D] The verified wave is published. Stop. No further implementation slice is selected.
-[I] Recommended next selection:
-**C4 for R-F-27/R-F-28**, using [PLAN C4](field-te/PLAN.md#c4-authoritative-te-record-transitions).
-Begin by defining issued-card/version immutability, finalized-reference blockers and purpose-aware
-inclusion at store boundaries. Verify with direct store regressions and a complete illustrative
-campaign walkthrough. Stop before R1 or additional model/UI work. This recommendation is not
-implementation authorization.
-
-[U] R-F-31: practical execution budgets/cancellation for large representable runs remain a
-policy/performance question. LocalStorage recovery is not crash/cross-tab durability (T1).
-C4 internal mutations can still produce invalid records; C3 rejects them on later external adoption
-and preserves the raw save rather than inventing repairs.
-[U] E2/E3: radar quantity/configuration/calibration limits, capped-intercept feasibility,
-R-F-30 jam horizontal/slant mismatch, vendor-count applicability, sampled/fixed uncertainty
-coverage and stop-rule adequacy. E1's dossiers qualify these; they do not resolve the physics.
-[U] R-F-20 retains per-threat blocked-route presentation and a valid detection fixture;
-general panel cleanup remains U1. Field hardware/OS, initial test question and pilot owner
-remain undecided. Existing evidence includes no independent trial dataset.
+[U] Existing unresolved work remains: R-F-31 practical execution budgets/cancellation (R1/T1),
+E2/E3 model and uncertainty evidence, R-F-30 jam geometry, R-F-20 per-threat blocked-route
+presentation/valid detection fixture, U1 panel cleanup, T1 packaging/durability and field-pilot
+hardware/test question/owner. No independent trial dataset was supplied. C4 acceptance uses
+illustrative data and does not validate model physics or free-text performance claims.
