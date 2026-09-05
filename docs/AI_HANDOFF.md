@@ -2,9 +2,9 @@
 
 Status: CURRENT TRANSFER RECORD, 2026-09-05. Contributor: Claude Fable 5.1, for the
 engineering plan and the design contract. Verified source revision `edb0da7` on
-`analysis-hardening`; this transfer is committed as `2b834fa` and `dc10895`, five commits
-ahead of `origin/analysis-hardening`, not pushed. The F1 brief of 2026-09-05 (later) is in
-the working tree, uncommitted. It follows Astra's R1 first-extraction commit
+`analysis-hardening`; this transfer is committed as `2b834fa` and `dc10895`. The F1 brief
+of 2026-09-05 (later) is committed as `70a71f3`; this hash-recording commit follows it, and
+Casey authorized the push of all of them to `origin/analysis-hardening` on 2026-09-05. It follows Astra's R1 first-extraction commit
 `7c9b577` and pilot-decision record `edb0da7`, and replaces the two-owner handoff (R-D-34).
 
 Marks: `[V]` verified; `[D]` documented direction; `[I]` inference; `[U]` unresolved.
@@ -60,7 +60,7 @@ frame with no fixed cadence: 120 Hz headless, 85 Hz headed, about 46 Hz on the A
 17 Hz with MC bands. `Inspector` renders 0 times per publication; `AnalysisPanel` and
 `LiveStrip` render every publication through `observedThroughS` and cascade to every widget
 and a double Recharts commit; the Konva root commits twice per publication. Recorded as
-R-F-32 and a note on R-D-34. The dev server used for the probe was started on port 5301 and
+R-F-32 and a note on R-D-34. Committed as `70a71f3`. The dev server used for the probe was started on port 5301 and
 stopped. The four gates were not rerun; no source changed.
 
 [V] Persistence facts checked this session, which withdrew design item F10: both stores
