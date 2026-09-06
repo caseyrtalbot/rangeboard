@@ -16,7 +16,10 @@ These facts are about the Claude Code tool environment, not about the project.
   `--strictPort`, start the server as one background command that writes its PID, and stop
   only your own server. Stopping that server (`kill`) and running the Playwright probe also
   need the sandbox disabled. Bash process substitution (`<(...)`) fails in the sandbox; write
-  temp files under `$TMPDIR` and diff those.
+  temp files under `$TMPDIR` and diff those. A sandbox-disabled command sees the system
+  `$TMPDIR` (`/var/folders/...`), not the sandbox one, so a file written by a sandboxed
+  command is absent there; write files both modes share under the session scratchpad by
+  its absolute path.
 - The Browser pane cannot render a `file://` page. Serve a local HTML file with
   `python3 -m http.server` on a high port with the sandbox disabled, load it by URL, and
   stop the server when done.

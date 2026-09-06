@@ -10,7 +10,7 @@ recommendation; never park a choice in the register or a report.
 
 ## Verified
 
-- Gates at this commit (E3 intervals slice): type-check, 1,410 tests in 93 files, lint 74
+- Gates at `106cffe` (E3 intervals slice; this commit changes documents only): type-check, 1,410 tests in 93 files, lint 74
   warnings (identical set) and 0 errors, build (one pre-existing chunk-size warning).
 - Parity baseline: `evidence/e3-intervals-2026-09-05/numerical-after.json` (firing
   fixture, 4 replicates). Its `numerical-before.json` reproduces the r1-leaf baseline
@@ -25,14 +25,16 @@ recommendation; never park a choice in the register or a report.
   column; the Inspector size-factor tag has no spread.
 - Done 2026-09-05: Wave 2 engine (`a5d2ae3`); design steps 2, 3, 4 (`171ba23`, `dca021a`,
   `931f152`, `3c1282a`); E2 R-F-30 (`b7ec949`); E3 study (`7fe74dc`); R-F-38 study
-  (`8b6eed0`); E3 intervals slice (this commit): R-D-37, R-D-39 to R-D-43 implemented,
+  (`8b6eed0`); E3 intervals slice (`106cffe`): R-D-37, R-D-39 to R-D-43 implemented,
   R-F-38 and R-F-39 closed, register rows carry the notes.
 
 ## Next
 
-1. Register sweep: classify the 74 open pre-contract D rows as closed by code, superseded,
-   work for Fable, or a real choice; poll Casey on the real choices four at a time; close the
-   rest with dated notes. Casey chose this over leaving them.
+1. Register sweep: the 74 D rows whose status cell starts with `open` (D-1 to D-76 except
+   D-11, decided, and D-58, absent; D-77 is a note). For each row read the code it names, then classify it as
+   closed by code, superseded, work for Fable, or a real choice; poll Casey on the real
+   choices four at a time with one recommendation each; close the rest with dated notes.
+   Casey chose this over leaving them. Nothing of the sweep has started.
 2. Wave 3: next E2 family from PLAN section 5, decision polled, then capture. R-F-41 and
    R-F-42 (from the E3 intervals slice) are E3 follow-ups to poll with it: the all-zero sum
    interval and the stop rule's t half-width against the displayed Wilson interval.
