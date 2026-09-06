@@ -6,9 +6,9 @@ import { useStore } from '../state/store'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading panel needs the two in step.
-function render(): string {
+function render(entityId?: string): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<Inspector />)
+  return renderToStaticMarkup(<Inspector entityId={entityId} />)
 }
 
 /** Place one model on the board and select the entity it makes. */
@@ -27,6 +27,24 @@ describe('Inspector provenance marks', () => {
     st.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
     const sensor = useStore.getState().scenario.entities.find((e) => e.kind === 'sensor')!
     useStore.getState().select({ entityIds: [sensor.id] })
+  })
+
+  it('renders an explicit entity without changing the selected board object', () => {
+    const sensor = useStore.getState().scenario.entities[0]
+    useStore.getState().addEntityFromModel('lib-mavic3', { x: 100, y: 100 })
+    const threat = useStore.getState().scenario.entities.find((e) => e.kind === 'uas')!
+    useStore.getState().select({ entityIds: [threat.id] })
+    const selection = useStore.getState().selection
+    const html = render(sensor.id)
+    expect(html).toContain(sensor.name)
+    expect(html).toContain('Placard Pd')
+    expect(useStore.getState().selection).toBe(selection)
+  })
+
+  it('keeps an unavailable explicit entity separate from the current selection', () => {
+    const html = render('missing-entity')
+    expect(html).toContain('Entity unavailable')
+    expect(html).not.toContain('Placard Pd')
   })
 
   it('marks a sourced field filled with its basis, source and date in the title', () => {

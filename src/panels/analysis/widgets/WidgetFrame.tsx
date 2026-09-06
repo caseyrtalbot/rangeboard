@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import type { WidgetType } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 
@@ -33,29 +34,34 @@ export function WidgetFrame({
   const toggle = useStore((s) => s.toggleAnalysisWidget)
   const move = useStore((s) => s.moveAnalysisWidget)
   const remove = useStore((s) => s.removeAnalysisWidget)
+  const disclosureId = useId()
+  const titleId = `${disclosureId}-title`
+  const contentId = `${disclosureId}-content`
   return (
-    <section className="wg" data-widget-type={type}>
+    <section className="wg" data-widget-type={type} aria-labelledby={titleId}>
       <header className="wg-h">
         <button
           className="wg-toggle"
+          id={titleId}
+          type="button"
           aria-expanded={!collapsed}
+          aria-controls={contentId}
           aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
           onClick={() => toggle(id)}
         >
-          {collapsed ? '▸' : '▾'}
+          <span className="wg-chevron" aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+          <span className="wg-t">{title}</span>
         </button>
-        <span className="wg-t">{title}</span>
         {meta ? <span className="wg-m">{meta}</span> : null}
         {headerExtra ? (
-          <span className="wg-x" onClick={(event) => event.stopPropagation()}>
-            {headerExtra}
-          </span>
+          <span className="wg-x">{headerExtra}</span>
         ) : null}
         {customize ? (
           <span className="wh">
             <button
               className="wmv"
-              aria-label="Move up"
+              type="button"
+              aria-label={`Move ${title} up`}
               disabled={index <= 0}
               onClick={() => move(id, index - 1)}
             >
@@ -63,19 +69,25 @@ export function WidgetFrame({
             </button>
             <button
               className="wmv"
-              aria-label="Move down"
+              type="button"
+              aria-label={`Move ${title} down`}
               disabled={index >= count - 1}
               onClick={() => move(id, index + 1)}
             >
               ↓
             </button>
-            <button className="wx" aria-label="Remove" onClick={() => remove(id)}>
+            <button
+              className="wx"
+              type="button"
+              aria-label={`Remove ${title}`}
+              onClick={() => remove(id)}
+            >
               ×
             </button>
           </span>
         ) : null}
       </header>
-      {collapsed ? null : <div className="wg-b">{children}</div>}
+      {collapsed ? null : <div className="wg-b" id={contentId}>{children}</div>}
     </section>
   )
 }

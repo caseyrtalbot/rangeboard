@@ -384,12 +384,24 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (`widgets/labels.ts`) are the one name table (Leakers, Survives, Survival limit; the
   effect gate is relabeled at render); `useSimTimeStep` (`widgets/controls.tsx`) is the one
   quantized time in the panels.
-- **Selection detail** (`src/panels/analysis/detail/`): `DetailPane` is the one
-  kind-to-pane map (sensor, effector, uas, c2); the panel reads `selection.entityIds` and
-  nothing else from selection; exactly one entity with a pane replaces the widget stack,
-  two or more keep it with a note, and the preset id never changes on selection. A pane
-  carries no edit action; the Inspector owns edits. Series and ladder rows memo on
-  `[scenario, runId]`, so only the now-readouts read the quantized time.
+  `AnalysisNavigation` keeps all five destinations outside the content scroller;
+  `AnalysisLayoutControls` owns view-only preset/add/edit/save controls. WidgetFrame and
+  AnalysisSection use keyboard-operable disclosure buttons with named content regions.
+  Analyze groups the unmodified Run summary at render time only; customized widgets keep
+  their stored order and parameters. Full-run time series remain distinct from cursor
+  statistics. DebriefRecord retains completion guards, current-result readers and exports
+  behind Evidence products, without rendering a second OutcomeSummary. Environment,
+  doctrine, thresholds and the mode chip route Board scenario edits to Prepare.
+- **Selection detail** (`src/panels/EntityWorkspace.tsx`): the Board shell routes one
+  selected entity into Telemetry, Configure and Model basis. `DetailPane` is the one
+  telemetry kind-to-pane map (sensor, effector, uas, c2); Inspector owns configuration
+  and LibraryEditor owns shared model edits. Overview preserves entity selection and
+  the preset id. Multi-selection, boundaries, connections and raid drafts retain the
+  existing Inspector. Standalone AnalysisPanel retains its optional selection detail.
+  Series and ladder rows memo on `[scenario, runId]`, so only the now-readouts read
+  quantized time. `threatReadoutAt` (`panels/analysis/threatReadout.ts`) shares the existing
+  telemetry readers between the compact canvas card and complete threat detail; full-path
+  fields remain explicitly scoped. Model source disclosures preserve all provenance fields.
   `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL`
   (`SystemStatus.tsx`) the one component-state word.
 - **Chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) =>
@@ -492,7 +504,10 @@ Design system (`src/index.css`):
 - **Type floor is 11 px** (`--type-dense-size`); no `font-size` rule in the sheet is
   below it. Sizes and weights come from the `--type-*` role tokens (display, value, title,
   body, meta, label, machine); weights are 400 and 500 only. The right panel is checked at
-  320 px width: no element under it may overflow (`scrollWidth <= clientWidth`).
+  both 1440 by 900 and 1280 by 800 viewports, including a saved 320 px panel width:
+  no panel content may be clipped or inaccessible. Lifecycle views are local UI composition;
+  they do not advance playback or change the analysis basis. The five built-in analysis
+  destinations remain outside the scrolling content, including during object inspection.
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
   rule and interaction state. `--radius-control` (2 px) is the only non-zero radius and
   applies to controls; containers are square. The sheet has no `box-shadow`,

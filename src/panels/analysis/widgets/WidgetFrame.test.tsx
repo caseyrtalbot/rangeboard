@@ -27,19 +27,20 @@ describe('WidgetFrame', () => {
     expect(html).toContain('6 of 13')
     expect(html).toContain('body-marker')
     expect(html).toContain('aria-expanded="true"')
-    expect(html).not.toContain('Move up')
-    expect(html).not.toContain('aria-label="Remove"')
+    expect(html).toMatch(/<button[^>]*aria-controls="[^"]+-content"[^>]*>[\s\S]*KPI tiles[\s\S]*<\/button>/)
+    expect(html).not.toContain('Move KPI tiles up')
+    expect(html).not.toContain('aria-label="Remove KPI tiles"')
   })
 
   it('shows move and remove handles only in customize mode', () => {
     const html = frame({ customize: true, index: 0, count: 3 })
-    expect(html).toContain('aria-label="Move up"')
-    expect(html).toContain('aria-label="Move down"')
-    expect(html).toContain('aria-label="Remove"')
+    expect(html).toContain('aria-label="Move KPI tiles up"')
+    expect(html).toContain('aria-label="Move KPI tiles down"')
+    expect(html).toContain('aria-label="Remove KPI tiles"')
     // The first widget cannot move up; the last cannot move down.
-    expect(html).toMatch(/aria-label="Move up" disabled=""/)
+    expect(html).toMatch(/aria-label="Move KPI tiles up" disabled=""/)
     expect(frame({ customize: true, index: 2, count: 3 })).toMatch(
-      /aria-label="Move down" disabled=""/,
+      /aria-label="Move KPI tiles down" disabled=""/,
     )
   })
 

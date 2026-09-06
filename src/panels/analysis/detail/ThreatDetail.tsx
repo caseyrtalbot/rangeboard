@@ -5,7 +5,7 @@ import { phaseLadderRow, threatSeries, trackMarks, withBands } from '../../../an
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
 import type { ChartMark, Series } from '../../../charts/types'
-import { bearingDeg, formatDistance, formatSpeed, formatTime } from '../../../geometry/geo'
+import { bearingDeg, formatTime } from '../../../geometry/geo'
 import { slantRangeM } from '../../../geometry/slant'
 import { rcsM2For, swerlingFor } from '../../../model/rcsFactors'
 import type { Entity } from '../../../model/types'
@@ -13,11 +13,12 @@ import { mountHeightOf } from '../../../model/types'
 import { entityPosAt, threatAltitudeFt } from '../../../playback/tracks'
 import { PHASE_STYLE } from '../../../playback/trackState'
 import type { TrackPhase } from '../../../playback/trackState'
-import { buildTrackTimeline, trackStatesAt } from '../../../playback/trackState'
+import { buildTrackTimeline } from '../../../playback/trackState'
 import { useStore } from '../../../state/store'
-import { modelFor, pathSpeed } from '../../../model/scenario'
+import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { profileFor } from '../../../model/integration'
+import { threatReadoutAt } from '../threatReadout'
 import { SURVIVAL_LABELS } from '../widgets/labels'
 import { bandNote, currentSummary } from '../widgets/mc'
 import { DetailHeader } from './DetailHeader'
@@ -31,10 +32,6 @@ import {
   Rows,
   useDetailRun,
 } from './detailRows'
-
-/** No timeline covers this threat, so the figure has no value to state. */
-const NA = 'not available'
-const NO_ASSET = 'no defended asset placed'
 
 /** The threat pane: the track file at t, the phase ladder, Pd by sensor and survival. */
 export function ThreatDetail({ entity }: { entity: Entity }) {
@@ -51,7 +48,11 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     void runId
     return buildTrackTimeline(scenario, assessments, report)
   }, [scenario, runId, assessments, report])
-  const state = useMemo(() => trackStatesAt(timeline, t).get(entity.id), [timeline, t, entity.id])
+  const readout = useMemo(
+    () => threatReadoutAt({ scenario, entity, timeline, assessments, tS: t, units }),
+    [scenario, entity, timeline, assessments, t, units],
+  )
+  const state = readout.state
 
   const series = useMemo(() => {
     void runId
@@ -97,11 +98,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     }))
 
   const fileRows = useMemo<DetailRow[]>(() => {
-    const path = scenario.paths.find((p) => p.entityId === entity.id)
     const holdIds = state?.holdingSensorIds ?? []
-    const holdNames = holdIds
-      .map((id) => scenario.entities.find((e) => e.id === id)?.name)
-      .filter((n): n is string => n != null)
     const sensor = scenario.entities.find((e) => e.id === holdIds[0])
     let slantText = DASH
     let bearingText = DASH
@@ -113,25 +110,6 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       slantText = (slantRangeM(groundM, altM - hM) / 1000).toFixed(1)
       bearingText = `${Math.round(bearingDeg(sensor.pos, pos))}`
     }
-    const hasAsset = scenario.entities.some((e) => e.kind === 'asset')
-    const arrivalText = !state
-      ? NA
-      : state.arrivalS != null
-        ? `T+${formatTime(state.arrivalS)}`
-        : hasAsset
-          ? 'never crossed the defended boundary'
-          : NO_ASSET
-    const cpaAsset = assessment?.cpaAssetId
-      ? scenario.entities.find((e) => e.id === assessment.cpaAssetId)
-      : undefined
-    const cpaText =
-      assessment?.cpaS != null && assessment.cpaDistanceM != null
-        ? `T+${formatTime(assessment.cpaS)} · ${formatDistance(assessment.cpaDistanceM, units)}${
-            cpaAsset ? ` from ${cpaAsset.name}` : ''
-          }`
-        : hasAsset
-          ? NA
-          : NO_ASSET
     const firstSensor = assessment?.firstDetectSensorId
       ? scenario.entities.find((e) => e.id === assessment.firstDetectSensorId)
       : undefined
@@ -153,33 +131,30 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
             })
             .join(' · ')}`
         : assessment.status.replaceAll('-', ' ')
-    const rows: DetailRow[] = [
-      {
-        label: 'Altitude',
-        value: threatAltitudeFt(scenario, entity).toLocaleString(),
-        unit: ' ft AGL',
-        tag: entity.altitudeFt == null ? <PfTag model={model} field="altitudeFt" absent /> : null,
-      },
-      { label: 'Speed', value: path ? formatSpeed(pathSpeed(scenario, path), units) : DASH },
+    const rows: DetailRow[] = readout.rows.map((row) => ({
+      label: row.label,
+      value: row.value,
+      tag:
+        row.id === 'altitude' && entity.altitudeFt == null
+          ? <PfTag model={model} field="altitudeFt" absent />
+          : null,
+    }))
+    rows.push(
       { label: 'Slant range', value: slantText, unit: sensor ? ' km' : undefined },
       { label: 'Bearing', value: bearingText, unit: sensor ? ' °' : undefined },
-      { label: 'Held by', value: holdNames.length > 0 ? holdNames.join(' · ') : 'none' },
-      { label: 'Classification', value: state ? state.classification : DASH },
-      { label: 'Engage', value: engageText },
-      { label: 'Arrival', value: arrivalText },
-      { label: 'CPA', value: cpaText },
+      { label: 'Engage status (full run)', value: engageText },
       {
-        label: 'Warning',
+        label: 'Warning (full path)',
         value: assessment?.warningS != null ? formatTime(assessment.warningS) : DASH,
       },
       {
-        label: 'First detect',
+        label: 'First detect (full path)',
         value:
           assessment?.firstDetectS != null
             ? `${firstSensor?.name ?? DASH} · T+${formatTime(assessment.firstDetectS)}`
             : DASH,
       },
-    ]
+    )
     if (uasSpec) {
       rows.push(
         {
@@ -201,14 +176,13 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       )
     }
     return rows
-  }, [scenario, entity, model, uasSpec, state, assessment, t, units])
+  }, [scenario, entity, model, uasSpec, state, assessment, t, readout.rows])
 
-  const phase: TrackPhase = state?.phase ?? 'undetected'
+  const phase: TrackPhase = readout.phase
   const style = PHASE_STYLE[phase]
-  const coast = state?.coasting && (phase === 'tracked' || phase === 'identified')
   const pillColor = style.color ?? color
   const pill = {
-    word: coast ? 'COAST' : style.label,
+    word: readout.pillLabel,
     style: { color: pillColor, borderColor: pillColor },
   }
   const modelLine = model && uasSpec ? `${model.name} · ${uasSpec.airframe}` : 'no model linked'
@@ -222,7 +196,12 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         modelLine={modelLine}
         tags={modelsForEntity(scenario, entity.id)}
       />
-      <DetailSection id="file" title="Track file" meta="planning envelope">
+      <DetailSection
+        id="file"
+        title="Track file"
+        meta={`${readout.cursorText} cursor · full-path/full-run fields marked`}
+      >
+        {readout.ghostLine ? <p className="detail-ghost">{readout.ghostLine}</p> : null}
         <Rows rows={fileRows} />
       </DetailSection>
       <DetailSection id="phase" title="Phase" meta="planning envelope">

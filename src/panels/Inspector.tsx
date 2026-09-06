@@ -645,6 +645,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
     updatePath,
     deletePathForEntity,
     selectSystem,
+    select,
     assignToWave,
   } = useStore.getState()
   const model = modelFor(scenario, entity)
@@ -1289,8 +1290,14 @@ function EntityInspector({ entity }: { entity: Entity }) {
       </Section>
 
       <Actions>
-        <button onClick={() => setTool('connect')}>Connect from here</button>
-        <button className="danger" onClick={deleteSelection}>
+        <button onClick={() => {
+          select({ entityIds: [entity.id] })
+          setTool('connect')
+        }}>Connect from here</button>
+        <button className="danger" onClick={() => {
+          select({ entityIds: [entity.id] })
+          deleteSelection()
+        }}>
           Delete
         </button>
       </Actions>
@@ -1476,13 +1483,22 @@ function MultiInspector({ ids }: { ids: string[] }) {
   )
 }
 
-export function Inspector() {
+export function Inspector({ entityId }: { entityId?: string } = {}) {
   const scenario = useStore((s) => s.scenario)
   const selection = useStore((s) => s.selection)
   const raidDraft = useStore((s) => s.ui.raidDraft)
 
   // The armed raid builder replaces the whole Inspector body.
   if (raidDraft) return <RaidBuilderCard draft={raidDraft} />
+
+  if (entityId != null) {
+    const explicitEntity = scenario.entities.find((e) => e.id === entityId)
+    return explicitEntity ? <EntityInspector entity={explicitEntity} /> : (
+      <div className="inspector-body insp">
+        <EmptyState title="Entity unavailable" body="This entity is no longer on the board." />
+      </div>
+    )
+  }
 
   const entity =
     selection.entityIds.length === 1

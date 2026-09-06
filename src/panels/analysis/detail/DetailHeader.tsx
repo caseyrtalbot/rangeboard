@@ -1,10 +1,11 @@
-import type { CSSProperties } from 'react'
+import { useContext, type CSSProperties } from 'react'
 import type { ModelTag } from '../../../analysis/fidelity'
 import type { Entity } from '../../../model/types'
 import { Glyph } from '../../Glyph'
 import { useStore } from '../../../state/store'
 import { State } from '../../../ui/kit'
 import type { StateTone } from '../../../ui/kit'
+import { DetailOverviewContext } from './DetailNavigation'
 
 /** The state: the word, its tone, and an inline colour for a track phase. */
 interface DetailPill {
@@ -29,12 +30,13 @@ export function DetailHeader({
   tags?: ModelTag[]
 }) {
   const clearSelection = useStore((s) => s.clearSelection)
+  const onOverview = useContext(DetailOverviewContext)
   return (
     <div className="det-h">
       <button
         className="mini det-back"
-        aria-label="Back to the lens stack"
-        onClick={clearSelection}
+        aria-label={onOverview ? 'Back to overview' : 'Back to the lens stack'}
+        onClick={onOverview ?? clearSelection}
       >
         ‹ Back
       </button>

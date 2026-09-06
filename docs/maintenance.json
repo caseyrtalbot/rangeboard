@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "c9cc27fffc9bc84398fa43b098d2034088e0cde2595bfc7b5b541a3f326b836d",
+      "sha256": "c02b7f2c6ea113c2c96f2a24246612a0e1f2cf861fc0a77d4e14f8bb2ff59bbd",
       "reviewedAt": "2026-09-06",
-      "note": "Checked project description, Node requirement, setup and complete gate against package scripts and application startup. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+      "note": "Reviewed final Board workspace integration and keyboard overlay precedence; setup and persistence narrative remain accurate."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "aba5052a7850bc1204916fdcb43e9280815cc77d9f2f113d6c2b823130424e19",
+      "sha256": "875f840ae2aff822fc9f4d9cee751c8ee57c3c1de25122d169dcb7bf0c29bf5a",
       "reviewedAt": "2026-09-06",
-      "note": "Traced Board and T&E features to their source entry points, store actions, workers, validation, prints and exports; corrected campaign reuse ownership and network/origin boundaries."
+      "note": "Reviewed four completed UI stages, unchanged result basis, actual playback, saved layouts, exports, Prepare routes and overlay focus."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1750b6b8136e2fa01494d19a7f486dcf23f5c1b194006b6baff6f15cec3d97f4",
+      "sha256": "0eb5302b7fc8a34d5c4ce71d6931cfde6d90a5cc437ac080d2ccefca8ab4b350",
       "reviewedAt": "2026-09-06",
-      "note": "Reviewed engine, state, persistence and UI contracts against source and passing tests; corrected chart fallback coverage and schema guidance; retained numerical boundaries."
+      "note": "Reviewed final render-only hierarchy and scope labels, unchanged calculation/persistence producers, evidence export guards and topmost overlay Escape routing."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -101,9 +101,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "2649cadb7882de0bd17420d3f969c421b6a816c6b5d7c37e449d76ef3edcdf54",
+      "sha256": "b9c1bca2197f5a78e07d96bbef0ab70e88c5bc14c24af841628ac6281589f1b3",
       "reviewedAt": "2026-09-06",
-      "note": "Reviewed CSS and shared primitives, checked chart hue tests and visually inspected Board analysis and T&E Products; design rules remain accurate for implemented surfaces."
+      "note": "Reviewed both viewport sizes, persistent navigation, compact readout, readable evidence fields, keyboard disclosures and bounded layout tools."
     }
   ],
   "historical": [

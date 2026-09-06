@@ -59,7 +59,7 @@ Spacing is `--space-1` (4 px) to `--space-6` (24 px) plus `--panel-pad` (14 px).
 nominal `#378154`, warning `#98691b`, critical `#d43725` (4.4:1 each). Two blocks map the
 palette onto the semantic tokens: `:root[data-theme='light']` for the manual switch and
 `@media (prefers-color-scheme: light)` for the OS setting, with `data-theme='dark'` as the
-override. The switch is a `Seg` in the toolbar (`system`, `dark`, `light`); the choice is
+override. The switch is a `Seg` in Board View controls and the T&E toolbar (`system`, `dark`, `light`); the choice is
 the `theme` field of the saved view record. Channel colours are the same in both themes;
 the contrast findings for them on paper are in
 `../field-te/evidence/design-step4-2026-09-05/findings.json`.
@@ -84,8 +84,9 @@ tabular-nums` is set on `:root`.
 
 The floor is 11 px. No `font-size` rule in the sheet is below it. Only dense machine rows
 reach it: the detail and register tables, the event ledger, the phase chips, the timeline
-axis and rows, and the KPI sub-line. The right panel is 320 px wide (280 px minimum) and no
-element under it may overflow.
+axis and rows, and the KPI sub-line. The Board right panel defaults to 408 px (280 px minimum, 560 px maximum, capped at
+44 percent of the viewport); an existing saved width is preserved. Its lifecycle and
+analysis navigation sit outside the scroll body. Labels wrap and no panel text may be inaccessible.
 
 ## 4. Components
 
@@ -113,3 +114,23 @@ element under it may overflow.
   Label in text 3 (`.tl`), value in mono at value size with a small denominator (`.tv`).
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
+
+The Board has a 60 px resource rail and an overlaid Library drawer (306 px default,
+existing saved width retained). Drawing tools and the View and Range setup disclosures
+sit above the canvas. Drawer search receives focus on opening; Escape returns it to the
+resource button. Library names and scoped control labels wrap. Scenario input sections
+use native disclosures; menus scroll within the available viewport height.
+
+The selected entity workspace keeps its Telemetry / Configure / Model basis tabs outside
+one content scroller. Long names, values, source records and statistical subtitles wrap;
+source rows disclose labeled fields instead of squeezing evidence into a narrow table.
+The canvas readout is 252 px wide, with cursor, speed/heading, altitude and a Details
+control. Complete telemetry stays in the canonical pane, including full-path scope labels.
+
+Analysis separates full-run results, full-run series and cursor statistics with explicit
+scope labels. Evidence products and supporting findings use native disclosures; metric
+intervals, denominator labels and names wrap in the two-column outcome grid. Layout opens
+a bounded non-modal surface below persistent navigation. Presets scroll within that
+surface; widget editing uses named move/remove buttons and accessible title toggles.
+Escape and close controls return focus to Layout. Scenario readouts link to Prepare
+without changing data until an input is edited.

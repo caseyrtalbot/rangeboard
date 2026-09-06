@@ -51,5 +51,10 @@ describe('RunValidityWidget', () => {
     // The spawn sits inside the radar ring, so one invalidating finding stands
     // beside the three limiting ones.
     expect(html).toContain('1 invalidating · 3 limiting')
+    expect(html).toContain('<details class="analysis-disclosure validity-details">')
+    expect(html).toContain('<summary>Findings and model fidelity')
+    expect(html).toContain('Gates: detect.')
+    expect(html).toContain('Tracks: DJI Mavic 3 (G1 quad) 1.')
+    expect(html.indexOf('>INVALID</span>')).toBeLessThan(html.indexOf('<details'))
   })
 })

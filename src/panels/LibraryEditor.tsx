@@ -237,7 +237,7 @@ function emptyDraft(): SourceDraft {
   }
 }
 
-/** The Spread cell: the resolved spread, `pinned` on a null row, else `none`. */
+/** The resolved spread, `pinned` on a null row, else `none`. */
 function spreadCell(model: SpecModel, row: Provenance): string {
   const spread = spreadFor(model, row.field)
   if (spread) return spreadText(spread)
@@ -248,7 +248,7 @@ function spreadCell(model: SpecModel, row: Provenance): string {
  * Where each recorded value of the model comes from. A field with no row is
  * a planning factor. A seed model is read only: the Reset to seed action
  * restores its rows. A custom model adds and removes rows, one row per field.
- * The Spread column reads what a total-uncertainty replicate samples.
+ * Each Spread value reads what a total-uncertainty replicate samples.
  */
 function Sources({
   model,
@@ -285,52 +285,59 @@ function Sources({
       {rows.length === 0 ? (
         <p className="muted small">No source is recorded. Every value is a planning factor.</p>
       ) : (
-        <table className="tb src-tb">
-          <thead>
-            <tr>
-              <th>Field</th>
-              <th>Value</th>
-              <th>Basis</th>
-              <th>Spread</th>
-              <th>Source</th>
-              <th>Date</th>
-              {custom && <th aria-label="Remove" />}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.field}>
-                <td className="mono">{row.field}</td>
-                <td className="mono">{row.value}</td>
-                <td>
-                  <PfTag model={model} field={row.field} />
-                </td>
-                <td className="mono">{spreadCell(model, row)}</td>
-                <td>
-                  {row.url && row.url.startsWith('http') ? (
-                    <a href={row.url} target="_blank" rel="noreferrer">
-                      {row.source}
-                    </a>
-                  ) : (
-                    row.source
-                  )}
-                </td>
-                <td className="mono">{row.date}</td>
-                {custom && (
-                  <td>
-                    <button
-                      className="mini"
-                      aria-label={`Delete source for ${row.field}`}
-                      onClick={() => onChange(rows.filter((r) => r.field !== row.field))}
-                    >
-                      ×
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="source-entries">
+          {rows.map((row) => (
+            <details className="source-entry" key={row.field}>
+              <summary>{row.field} · {row.value}</summary>
+              <dl>
+                <div className="source-field">
+                  <dt>Field</dt>
+                  <dd className="mono">{row.field}</dd>
+                </div>
+                <div className="source-field">
+                  <dt>Value</dt>
+                  <dd className="mono">{row.value}</dd>
+                </div>
+                <div className="source-field">
+                  <dt>Basis</dt>
+                  <dd>
+                    {row.basis}{' '}
+                    <PfTag model={model} field={row.field} />
+                  </dd>
+                </div>
+                <div className="source-field">
+                  <dt>Spread</dt>
+                  <dd className="mono">{spreadCell(model, row)}</dd>
+                </div>
+                <div className="source-field">
+                  <dt>Source</dt>
+                  <dd>
+                    {row.url && row.url.startsWith('http') ? (
+                      <a href={row.url} target="_blank" rel="noreferrer">
+                        {row.source}
+                      </a>
+                    ) : (
+                      row.source
+                    )}
+                  </dd>
+                </div>
+                <div className="source-field">
+                  <dt>Date</dt>
+                  <dd className="mono">{row.date}</dd>
+                </div>
+              </dl>
+              {custom && (
+                <button
+                  className="mini"
+                  aria-label={`Delete source for ${row.field}`}
+                  onClick={() => onChange(rows.filter((r) => r.field !== row.field))}
+                >
+                  Delete source
+                </button>
+              )}
+            </details>
+          ))}
+        </div>
       )}
       {custom && (
         <form
@@ -405,22 +412,26 @@ function Sources({
   )
 }
 
-/** Right-panel editor for the selected library model. All capability fields are editable. */
-export function LibraryEditor() {
+/** Edit an explicit shared model, or the library selection when no model id is supplied. */
+export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
   const scenario = useStore((s) => s.scenario)
   const units = useStore((s) => s.ui.units)
   const libraryId = useStore((s) => s.selection.libraryId)
-  const { updateModel, duplicateModel, deleteModel, resetModelToSeed, select } =
+  const [copiedModel, setCopiedModel] = useState<{ id: string; sourceId: string } | null>(null)
+  const { updateModel, duplicateModel, deleteModel, resetModelToSeed, select, setRightTab } =
     useStore.getState()
 
-  const model = scenario.library.find((m) => m.id === libraryId)
+  const model = scenario.library.find((m) => m.id === (modelId ?? libraryId))
+  const availableCopy = scenario.library.find((m) => m.id === copiedModel?.id)
   if (!model) {
     return (
       <div className="inspector-body insp">
         <Section label="Model">
           <EmptyState
-            title="No model selected"
-            body="Select a model in the library panel, or create one with the + buttons to edit its recorded specification."
+            title={modelId == null ? 'No model selected' : 'Model unavailable'}
+            body={modelId == null
+              ? 'Select a model in the library panel, or create one with the + buttons to edit its recorded specification.'
+              : 'This model is no longer in the library. Choose a model in Configure to link an available specification.'}
           />
         </Section>
       </div>
@@ -1222,17 +1233,32 @@ export function LibraryEditor() {
             Reset to seed
           </button>
         )}
-        <button onClick={() => select({ libraryId: duplicateModel(model.id) })}>Duplicate</button>
+        <button onClick={() => {
+          const id = duplicateModel(model.id)
+          if (modelId == null) select({ libraryId: id })
+          else setCopiedModel({ id, sourceId: model.id })
+        }}>Duplicate</button>
         <button
           className="danger"
           onClick={() => {
             deleteModel(model.id)
-            select({ libraryId: null })
+            if (modelId == null) select({ libraryId: null })
           }}
         >
           Delete model
         </button>
       </div>
+      {modelId != null && copiedModel?.sourceId === model.id && availableCopy && (
+        <p className="note" role="status">
+          Added {availableCopy.name} to the library. This entity still uses {model.name}.
+          Choose the copy in Configure to change its model.
+          {' '}
+          <button className="mini" onClick={() => {
+            select({ libraryId: copiedModel.id })
+            setRightTab('library')
+          }}>Open duplicate in model library</button>
+        </p>
+      )}
     </div>
   )
 }

@@ -6,9 +6,9 @@ import { useStore } from '../state/store'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading panel needs the two in step.
-function render(): string {
+function render(modelId?: string): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<LibraryEditor />)
+  return renderToStaticMarkup(<LibraryEditor modelId={modelId} />)
 }
 
 describe('LibraryEditor sources', () => {
@@ -16,23 +16,61 @@ describe('LibraryEditor sources', () => {
     useStore.getState().replaceScenario(emptyScenario())
   })
 
+  it('edits an explicit model without changing selection or using the selected library model', () => {
+    const store = useStore.getState()
+    store.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    const entity = useStore.getState().scenario.entities[0]
+    store.select({ entityIds: [entity.id], libraryId: 'lib-mavic3' })
+    const selection = useStore.getState().selection
+    const html = render('lib-giraffe1x')
+    expect(html).toContain('href="https://www.saab.com/products/giraffe-1x"')
+    expect(html).toContain('Sensor capability')
+    expect(html).not.toContain('Threat flight profile')
+    expect(useStore.getState().selection).toBe(selection)
+  })
+
+  it('does not fall back to a selected model when the explicit model is missing', () => {
+    useStore.getState().select({ libraryId: 'lib-giraffe1x' })
+    const html = render('missing-model')
+    expect(html).toContain('Model unavailable')
+    expect(html).not.toContain('Sensor capability')
+    expect(html).not.toContain('source-entries')
+  })
+
   it('shows the seed rows of a builtin model and no add form', () => {
     useStore.getState().select({ libraryId: 'lib-giraffe1x' })
     const html = render()
-    expect(html).toContain('src-tb')
+    expect(html).toContain('source-entries')
     expect(html).toContain('updateRateS')
     expect(html).toContain('href="https://www.saab.com/products/giraffe-1x"')
     expect(html).toContain('Reset to seed')
     expect(html).not.toContain('src-add')
   })
 
+  it('keeps every source field in a native disclosure with readable label/value pairs', () => {
+    useStore.getState().select({ libraryId: 'lib-giraffe1x' })
+    const html = render()
+    const entries = [...html.matchAll(/<details class="source-entry">([\s\S]*?)<\/details>/g)]
+    const rows = useStore.getState().scenario.library.find((model) => model.id === 'lib-giraffe1x')!.provenance!
+    expect(entries).toHaveLength(rows.length)
+    for (const [index, entry] of entries.entries()) {
+      for (const field of ['Field', 'Value', 'Basis', 'Spread', 'Source', 'Date']) {
+        expect(entry[1]).toContain(`<dt>${field}</dt>`)
+      }
+      expect(entry[1]).toContain(`<dd class="mono">${rows[index].field}</dd>`)
+      expect(entry[1]).toContain(`<dd class="mono">${rows[index].date}</dd>`)
+      expect(entry[1]).toContain('class="prov-mark"')
+    }
+    expect(html).not.toContain('<table')
+  })
+
   it('reads the spread of every source row of a builtin model', () => {
     useStore.getState().select({ libraryId: 'lib-giraffe1x' })
     const html = render()
-    expect(html).toContain('<th>Spread</th>')
+    expect(html).toContain('<dt>Spread</dt>')
     // detectRangeM takes the PF table lognormal; updateRateS carries no spread.
-    expect(html).toContain('<td class="mono">±3 dB</td>')
-    expect(html).toContain('<td class="mono">none</td>')
+    expect(html).toContain('<dd class="mono">±3 dB</dd>')
+    expect(html).toContain('<dd class="mono">none</dd>')
   })
 
   it('reads a pinned row and a triangular spread on a custom model', () => {
@@ -60,8 +98,8 @@ describe('LibraryEditor sources', () => {
     })
     useStore.getState().select({ libraryId: id })
     const html = render()
-    expect(html).toContain('<td class="mono">pinned</td>')
-    expect(html).toContain('<td class="mono">-20% to +30%</td>')
+    expect(html).toContain('<dd class="mono">pinned</dd>')
+    expect(html).toContain('<dd class="mono">-20% to +30%</dd>')
   })
 
   it('edits the flyout speed of an effector model', () => {

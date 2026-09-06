@@ -11,6 +11,37 @@ maps changes to checks.
 
 ## Board features
 
+The Board shell provides Prepare, Execute and Analyze lifecycle views. These are local
+navigation choices: changing a view preserves the playback cursor, observed horizon and
+analysis basis. Prepare composes the existing run inputs, validity findings and a
+keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPreparation.tsx).
+The five built-in [analysis destinations](../src/panels/analysis/AnalysisNavigation.tsx)
+remain outside the scrolling panel, including while an object is selected. Test cards,
+selected-object configuration and the model library remain available in the panel tabs.
+
+The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
+editing, tactics and library import/export. `L` toggles it and Escape returns focus to its
+button. Prepare groups run configuration, environment, doctrine and requirement inputs.
+The canvas toolbar separates View preferences (theme, layers, units and basemap) from
+Range setup (location, calibrated image, image movement and saved opacity). Existing
+scenario actions govern changes and undo; automatic documented connections remain their
+own undo step. Pending placement is cancelled by competing tools or workspace changes.
+
+A single selected entity opens [EntityWorkspace](../src/panels/EntityWorkspace.tsx):
+Telemetry, Configure and Model basis share one content scroller. Overview preserves the
+selection. Model basis names all linked instances and reuses the model editor; duplication
+leaves the selected instance linked to its original model until explicitly changed.
+The compact canvas readout links to full Telemetry, which retains the complete track-file
+fields and distinguishes cursor, constant and full-path quantities.
+
+Analyze presents the untouched Run summary with full-run validity and outcome first,
+then separately disclosed full-run time series and cursor data. Execute retains the
+cursor-oriented stack. Each view labels its horizon; custom widget order and parameters
+remain as saved. Completed-run Evidence products retain export, final-frame capture,
+reset and full-run records without repeating the outcome summary. The persistent Layout
+control manages saved layouts, widgets and editing mode. Scenario-input readouts route
+to the matching Prepare section; view and layout changes preserve the result basis.
+
 | Activity | Implemented features | Source entry points |
 | --- | --- | --- |
 | Build a laydown | Model palette, system presets, placement, duplication, rotation, inspection, selection and undo/redo | [store](../src/state/store.ts), [Palette](../src/panels/Palette.tsx), [Inspector](../src/panels/Inspector.tsx) |

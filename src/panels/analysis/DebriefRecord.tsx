@@ -16,8 +16,6 @@ import { exportRunRecord } from '../../io/persist'
 import { downloadBoardFrame } from '../../te/io/frameCapture'
 import { resetAnalysisRun } from '../../playback/runSession'
 import { residualSectionHeadline, totalSalvos } from '../headlines'
-import { AnalysisSection } from './AnalysisSection'
-import { OutcomeSummary } from './OutcomeSummary'
 import { RequirementGates } from './RequirementGates'
 import { SystemStatus } from './SystemStatus'
 import { ThreatPicture } from './ThreatPicture'
@@ -125,12 +123,15 @@ export function DebriefRecord({
   report,
   aar,
   durationS,
+  showValidity = true,
 }: {
   scenario: Scenario
   assessments: ThreatAssessment[]
   report: AttritionReport
   aar: AarSummary
   durationS: number
+  /** A lens with the validity widget already exposes the full finding record. */
+  showValidity?: boolean
 }) {
   const completedAtMs = useStore((state) => state.playback.completedAtMs)
   const startedAtMs = useStore((state) => state.playback.startedAtMs)
@@ -187,20 +188,29 @@ export function DebriefRecord({
         ? 'REQUIREMENTS NOT MET'
         : 'REQUIREMENTS NOT RUN'
   return (
-    <div className="debrief-record" role="status">
+    <details className="debrief-record evidence-products">
+      <summary className="debrief-header">
+        <strong>Evidence products</strong>
+        <span>{formatRunLabel(runSeq)} · COMPLETE</span>
+        <State tone={VALIDITY_TEXT[validity.validity].tone}>
+          {VALIDITY_TEXT[validity.validity].pill}
+        </State>
+      </summary>
       <div className="debrief-header">
-        <div>
-          <span className="debrief-kicker">Run evidence record</span>
-          <strong>{formatRunLabel(runSeq)} · COMPLETE</strong>
-        </div>
+        <span className="debrief-kicker">Full-run requirement record</span>
         <State tone={requirements.overall === 'pass' ? 'nominal' : 'critical'}>
           {requirementLabel}
         </State>
       </div>
       <div className="debrief-meta">
-        planning envelope · {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events
+        full run · planning envelope · {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events
       </div>
-      <RunValidityBanner assessment={validity} />
+      {showValidity && (
+        <details className="analysis-disclosure">
+          <summary>Full-run validity · {VALIDITY_TEXT[validity.validity].pill}</summary>
+          <RunValidityBanner assessment={validity} />
+        </details>
+      )}
       <RunActions
         scenario={scenario}
         assessments={assessments}
@@ -210,38 +220,26 @@ export function DebriefRecord({
         mc={mc}
         sensitivity={sensitivity}
       />
-      <OutcomeSummary scenario={scenario} assessments={assessments} report={report} mc={mc} />
-      <AnalysisSection
-        title="Requirement record · planning envelope"
-        headline={`${requirements.met}/${requirements.required} met`}
-        defaultOpen
-      >
+      <details className="analysis-disclosure">
+        <summary>Full-run requirement record · {requirements.met}/{requirements.required} met</summary>
         <RequirementGates report={requirements} />
-      </AnalysisSection>
-      <AnalysisSection
-        title="System and component record · planning envelope"
-        headline={`${componentCount} components · ${totalSalvos(report.totals)} salvos`}
-        defaultOpen
-      >
+      </details>
+      <details className="analysis-disclosure">
+        <summary>Full-run system and component record · {componentCount} components · {totalSalvos(report.totals)} salvos</summary>
         <SystemStatus groups={systems} expanded endOfRun />
-      </AnalysisSection>
-      <AnalysisSection
-        title="Threat record · planning envelope"
-        headline={`${trackCount} tracks · ${residualSectionHeadline(report.totals)}${
+      </details>
+      <details className="analysis-disclosure">
+        <summary>Full-run threat record · {`${trackCount} tracks · ${residualSectionHeadline(report.totals)}${
           report.totals.expectedLateKills > 0.005
             ? ` · ${report.totals.expectedLateKills.toFixed(2)} late E[k]`
             : ''
-        }`}
-        defaultOpen
-      >
+        }`}</summary>
         <ThreatPicture groups={threats} mode="debrief" />
-      </AnalysisSection>
-      <AnalysisSection
-        title="Engagement event ledger · planning envelope"
-        headline={`${report.events.length} events`}
-      >
+      </details>
+      <details className="analysis-disclosure">
+        <summary>Full-run engagement event ledger · {report.events.length} events</summary>
         <EventLedgerList scenario={scenario} report={report} />
-      </AnalysisSection>
-    </div>
+      </details>
+    </details>
   )
 }

@@ -1,8 +1,10 @@
 import type { EmBackground, LightLevel, Precipitation } from '../../../model/types'
 import { formatSpeed } from '../../../geometry/geo'
+import { MODEL_TAGS } from '../../../analysis/fidelity'
 import { visibilityMFor } from '../../../analysis/sensorEnv'
 import { useStore } from '../../../state/store'
 import { environmentHeadline } from '../../headlines'
+import { Rows } from '../detail/detailRows'
 import { Info } from '../Info'
 import { Field, Seg } from '../../../ui/kit'
 import type { WidgetProps } from './registry'
@@ -138,8 +140,98 @@ function EnvironmentInfo() {
   )
 }
 
+/** Environment header controls and editor fields for a scenario preparation surface. */
+export function EnvironmentSettings() {
+  return (
+    <>
+      <div className="prepare-setting-controls">
+        <ApplyEffectsCheck />
+        <EnvironmentInfo />
+      </div>
+      <EnvironmentBody />
+    </>
+  )
+}
+
+function resolvedWord(value: string, defaulted: boolean): string {
+  return `${value}${defaulted ? ' · default' : ''}`
+}
+
+function EnvironmentReadout({ onEdit }: { onEdit: () => void }) {
+  const environment = useStore((state) => state.scenario.environment)
+  const units = useStore((state) => state.ui.units)
+  const precipitation = environment.precipitation ?? 'clear'
+  const light = environment.light ?? 'day'
+  const emBackground = environment.emBackground ?? 'rural'
+  const cardinal = CARDINALS[Math.round(environment.windFromDeg / 45) % 8]
+  const visibility =
+    environment.visibilityM == null
+      ? `Unspecified · ${visibilityMFor({ ...environment, visibilityM: null })} m from sky`
+      : `${environment.visibilityM} m`
+  const model = MODEL_TAGS.environment
+  return (
+    <div className="analysis-settings-readout" data-settings-scope="environment">
+      <div className="analysis-settings-context">
+        <span>Scenario inputs · edit in Prepare</span>
+        <span
+          className="fid-tag"
+          data-tier={model.tier}
+          data-validation={model.validation}
+          title={model.note}
+        >
+          {model.label} · {model.tier} · {model.validation}
+        </span>
+      </div>
+      <Rows
+        rows={[
+          { label: 'Effects', value: environment.apply ? 'Applied' : 'Off' },
+          {
+            label: 'Sky',
+            value: resolvedWord(
+              precipitation[0].toUpperCase() + precipitation.slice(1),
+              environment.precipitation == null,
+            ),
+          },
+          {
+            label: 'Light',
+            value: resolvedWord(light[0].toUpperCase() + light.slice(1), environment.light == null),
+          },
+          {
+            label: 'EM clutter',
+            value: resolvedWord(
+              emBackground === 'rural' ? 'Rural (quiet)' : 'Urban (dense)',
+              environment.emBackground == null,
+            ),
+          },
+          { label: 'Visibility', value: visibility },
+          { label: 'Wind speed', value: formatSpeed(environment.windSpeedMps, units) },
+          { label: 'Wind from', value: `${environment.windFromDeg}° (${cardinal})` },
+          { label: 'Temperature', value: String(environment.temperatureC), unit: ' °C' },
+          { label: 'Field elevation', value: String(environment.fieldElevationFt), unit: ' ft' },
+        ]}
+      />
+      <button
+        className="mini analysis-settings-edit"
+        type="button"
+        data-preparation-section="environment"
+        onClick={onEdit}
+      >
+        Edit environment in Prepare
+      </button>
+    </div>
+  )
+}
+
 /** The environment covariates: sky, light, EM clutter, wind, temperature, elevation. */
-export function EnvironmentWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function EnvironmentWidget({
+  id,
+  params,
+  collapsed,
+  customize,
+  index,
+  count,
+  onOpenPreparation,
+}: WidgetProps) {
   void params
   const environment = useStore((state) => state.scenario.environment)
   const units = useStore((state) => state.ui.units)
@@ -150,17 +242,25 @@ export function EnvironmentWidget({ id, params, collapsed, customize, index, cou
       title="Environment"
       meta={environmentHeadline(environment, units)}
       headerExtra={
-        <>
-          <ApplyEffectsCheck />
+        onOpenPreparation ? (
           <EnvironmentInfo />
-        </>
+        ) : (
+          <>
+            <ApplyEffectsCheck />
+            <EnvironmentInfo />
+          </>
+        )
       }
       collapsed={collapsed}
       customize={customize}
       index={index}
       count={count}
     >
-      <EnvironmentBody />
+      {onOpenPreparation ? (
+        <EnvironmentReadout onEdit={() => onOpenPreparation('environment')} />
+      ) : (
+        <EnvironmentBody />
+      )}
     </WidgetFrame>
   )
 }

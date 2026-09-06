@@ -1,7 +1,9 @@
 import type { LaunchPolicy, Roe } from '../../../model/types'
 import { effectiveDoctrine } from '../../../model/types'
 import { LAUNCH_POLICIES, launchPolicyLabel } from '../../../analysis/doctrineFactors'
+import { MODEL_TAGS } from '../../../analysis/fidelity'
 import { useStore } from '../../../state/store'
+import { Rows } from '../detail/detailRows'
 import { Info } from '../Info'
 import { Field, Seg } from '../../../ui/kit'
 import { RoleSeg } from './controls'
@@ -143,8 +145,126 @@ function DoctrineControls() {
   )
 }
 
+/** ROE, doctrine header controls, and doctrine fields for scenario preparation. */
+export function FireDoctrineSettings() {
+  return (
+    <>
+      <div className="prepare-setting-controls">
+        <DoctrineControls />
+      </div>
+      <DoctrineBody />
+    </>
+  )
+}
+
+function defaulted(value: string, isDefault: boolean): string {
+  return `${value}${isDefault ? ' · default' : ''}`
+}
+
+function unitDefault(unit: string, isDefault: boolean): string {
+  return ` ${unit}${isDefault ? ' · default' : ''}`
+}
+
+function FireDoctrineReadout({ onEdit }: { onEdit: () => void }) {
+  const scenario = useStore((state) => state.scenario)
+  const doctrine = effectiveDoctrine(scenario)
+  const stored = scenario.doctrine
+  const model = MODEL_TAGS.doctrine
+  return (
+    <div className="analysis-settings-readout" data-settings-scope="doctrine">
+      <div className="analysis-settings-context">
+        <span>Scenario inputs · edit in Prepare</span>
+        <span
+          className="fid-tag"
+          data-tier={model.tier}
+          data-validation={model.validation}
+          title={model.note}
+        >
+          {model.label} · {model.tier} · {model.validation}
+        </span>
+      </div>
+      <Rows
+        rows={[
+          {
+            label: 'ROE',
+            value: defaulted(
+              (scenario.roe ?? 'tight').replace(/^./, (letter) => letter.toUpperCase()),
+              scenario.roe == null,
+            ),
+          },
+          {
+            label: 'Doctrine',
+            value: defaulted(doctrine.enabled ? 'On' : 'Off', stored?.enabled == null),
+          },
+          {
+            label: 'Launch point',
+            value: defaulted(
+              launchPolicyLabel(doctrine.launchPolicy),
+              stored?.launchPolicy == null,
+            ),
+          },
+          {
+            label: 'Release inside max range',
+            value: String(Math.round(doctrine.launchRangeFraction * 100)),
+            unit: unitDefault('%', stored?.launchRangeFraction == null),
+          },
+          {
+            label: 'Re-engagement depth',
+            value: String(doctrine.opportunities),
+            unit: unitDefault('cycles', stored?.opportunities == null),
+          },
+          {
+            label: 'Hostile declaration dwell',
+            value: String(doctrine.declareHostileS),
+            unit: unitDefault('s', stored?.declareHostileS == null),
+          },
+          {
+            label: 'Track initiation fallback',
+            value: String(doctrine.trackFirmS),
+            unit: unitDefault('s', stored?.trackFirmS == null),
+          },
+          {
+            label: 'Target dwell fallback',
+            value: String(doctrine.targetS),
+            unit: unitDefault('s', stored?.targetS == null),
+          },
+          {
+            label: 'BDA dwell fallback',
+            value: String(doctrine.bdaS),
+            unit: unitDefault('s', stored?.bdaS == null),
+          },
+          {
+            label: 'Commit Pk fallback',
+            value: defaulted(String(doctrine.pkCommit), stored?.pkCommit == null),
+          },
+        ]}
+      />
+      <p className="muted analysis-empty">
+        Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role
+        and effector type tables in doctrineFactors, or the model's own override.
+      </p>
+      <button
+        className="mini analysis-settings-edit"
+        type="button"
+        data-preparation-section="doctrine"
+        onClick={onEdit}
+      >
+        Edit fire doctrine in Prepare
+      </button>
+    </div>
+  )
+}
+
 /** Fire doctrine: ROE, the doctrine switch, launch policy, depth and the declaration dwell. */
-export function FireDoctrineWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function FireDoctrineWidget({
+  id,
+  params,
+  collapsed,
+  customize,
+  index,
+  count,
+  onOpenPreparation,
+}: WidgetProps) {
   void params
   const scenario = useStore((state) => state.scenario)
   return (
@@ -153,13 +273,17 @@ export function FireDoctrineWidget({ id, params, collapsed, customize, index, co
       type="fire-doctrine"
       title="Fire doctrine"
       meta={doctrineHeadline(scenario)}
-      headerExtra={<DoctrineControls />}
+      headerExtra={onOpenPreparation ? <DoctrineInfo /> : <DoctrineControls />}
       collapsed={collapsed}
       customize={customize}
       index={index}
       count={count}
     >
-      <DoctrineBody />
+      {onOpenPreparation ? (
+        <FireDoctrineReadout onEdit={() => onOpenPreparation('doctrine')} />
+      ) : (
+        <DoctrineBody />
+      )}
     </WidgetFrame>
   )
 }

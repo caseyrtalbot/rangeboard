@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { Seg } from '../ui/kit'
 import { useStore } from '../state/store'
+import type { Theme } from '../state/store'
 import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
 import type { RingKey } from '../state/rings'
 import type { LayerKey, LayerPreset } from '../state/layers'
 import type { BasemapMode } from '../model/types'
 import type { DisplayUnits } from '../geometry/geo'
-import { importUnderlayImage } from '../io/persist'
 import { RING_HINTS, RING_LABELS } from './ringLabels'
 
 const PRESETS: { id: LayerPreset; label: string; hint: string }[] = [
@@ -61,27 +62,17 @@ const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
   { id: 'metric', label: 'm km', hint: 'Metric units: m/s and km. Altitude is always feet.' },
 ]
 
+const THEMES: Array<{ v: Theme; label: string }> = [
+  { v: 'system', label: 'System' },
+  { v: 'dark', label: 'Dark' },
+  { v: 'light', label: 'Light' },
+]
+
 /**
- * Toolbar View dropdown. Holds the four layer presets, the seventeen layer
- * toggles, the basemap, the units, and the satellite underlay controls.
- * Layer visibility is view state, so nothing here is undoable.
+ * Board View dropdown. Every control here is saved view state and stays out
+ * of scenario history: theme, layer visibility, basemap and display units.
  */
 export function ViewMenu() {
-  const layers = useStore((s) => s.ui.layers)
-  const basemap = useStore((s) => s.ui.basemap)
-  const units = useStore((s) => s.ui.units)
-  const moveUnderlay = useStore((s) => s.ui.moveUnderlay)
-  const opacity = useStore((s) => s.scenario.underlay.opacity)
-  const {
-    setBasemap,
-    toggleLayer,
-    applyLayerPreset,
-    setLocationDialogOpen,
-    setMoveUnderlay,
-    setUnits,
-    updateUnderlay,
-  } = useStore.getState()
-
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -91,9 +82,8 @@ export function ViewMenu() {
     function onDown(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
     }
-    // Capture phase: Escape must close only the menu, never also reach the
-    // global canvas shortcut in App.tsx that clears the tool and the selection.
-    // The command palette can open over the menu, and then it owns Escape.
+    // Capture phase keeps Escape from also reaching the global canvas shortcut.
+    // The command palette can open over this surface, and then it owns Escape.
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
       if (document.querySelector('.cmdk-panel')) return
@@ -113,118 +103,106 @@ export function ViewMenu() {
     <div className="tb-menu-wrap" ref={wrapRef}>
       <button
         ref={buttonRef}
+        type="button"
         className={`tb-menu ${open ? 'active' : ''}`}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
         aria-expanded={open}
-        title="Layers, presets, basemap and units"
+        aria-controls="view-menu-panel"
+        title="Theme, layers, basemap and units"
         onClick={() => setOpen((v) => !v)}
       >
         View <span className="tb-caret">▾</span>
       </button>
-      {open && (
-        <div className="tb-menu-panel" role="menu" aria-label="View">
-          <div className="tb-menu-head">Preset</div>
-          <div className="seg tb-menu-seg" aria-label="Layer preset">
-            {PRESETS.map((p) => (
-              <button
-                key={p.id}
-                title={p.hint}
-                onClick={() => {
-                  applyLayerPreset(p.id)
-                  setOpen(false)
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          {LAYER_GROUPS.map((g) => (
-            <div key={g.title}>
-              <div className="tb-menu-head">{g.title}</div>
-              {g.layers.map((l) => (
-                <button
-                  key={l.id}
-                  className="tb-menu-item"
-                  role="menuitemcheckbox"
-                  aria-checked={layers[l.id]}
-                  title={l.hint}
-                  onClick={() => toggleLayer(l.id)}
-                >
-                  <span className="tb-menu-tick">{layers[l.id] ? '✓' : ''}</span>
-                  {l.label}
-                </button>
-              ))}
-            </div>
+      {open && <ViewMenuPanel onRequestClose={() => setOpen(false)} />}
+    </div>
+  )
+}
+
+export function ViewMenuPanel({ onRequestClose }: { onRequestClose: () => void }) {
+  const layers = useStore((s) => s.ui.layers)
+  const basemap = useStore((s) => s.ui.basemap)
+  const units = useStore((s) => s.ui.units)
+  const theme = useStore((s) => s.ui.theme)
+  const {
+    setBasemap,
+    toggleLayer,
+    applyLayerPreset,
+    setUnits,
+    setTheme,
+  } = useStore.getState()
+
+  return (
+    <div
+      id="view-menu-panel"
+      className="tb-menu-panel view-menu-panel"
+      role="dialog"
+      aria-label="View controls"
+    >
+      <div className="tb-menu-head">Theme</div>
+      <Seg value={theme} options={THEMES} label="Theme" onChange={setTheme} />
+      <div className="tb-menu-head">Layer preset</div>
+      <div className="seg tb-menu-seg" role="group" aria-label="Layer preset">
+        {PRESETS.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            title={p.hint}
+            onClick={() => {
+              applyLayerPreset(p.id)
+              onRequestClose()
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      {LAYER_GROUPS.map((g) => (
+        <div key={g.title} role="group" aria-label={`${g.title} layers`}>
+          <div className="tb-menu-head">{g.title}</div>
+          {g.layers.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              className="tb-menu-item"
+              aria-pressed={layers[l.id]}
+              title={l.hint}
+              onClick={() => toggleLayer(l.id)}
+            >
+              <span className="tb-menu-tick" aria-hidden="true">{layers[l.id] ? '✓' : ''}</span>
+              {l.label}
+            </button>
           ))}
-          <div className="tb-menu-head">Basemap</div>
-          <div className="seg tb-menu-seg" aria-label="Basemap">
-            {BASEMAPS.map((b) => (
-              <button
-                key={b.id}
-                className={basemap === b.id ? 'active' : ''}
-                onClick={() => setBasemap(b.id)}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
-          <div className="tb-menu-head">Units</div>
-          <div className="seg tb-menu-seg" aria-label="Units">
-            {UNITS.map((u) => (
-              <button
-                key={u.id}
-                className={units === u.id ? 'active' : ''}
-                title={u.hint}
-                onClick={() => setUnits(u.id)}
-              >
-                {u.label}
-              </button>
-            ))}
-          </div>
-          {basemap === 'sat' && (
-            <>
-              <div className="tb-menu-head">Satellite</div>
-              <button
-                className="tb-menu-item"
-                onClick={() => {
-                  setOpen(false)
-                  setLocationDialogOpen(true)
-                }}
-              >
-                Location…
-              </button>
-              <button
-                className="tb-menu-item"
-                onClick={() => {
-                  setOpen(false)
-                  importUnderlayImage()
-                }}
-              >
-                Image…
-              </button>
-              <label className="tb-menu-item tb-menu-row">
-                <input
-                  type="checkbox"
-                  checked={moveUnderlay}
-                  onChange={(e) => setMoveUnderlay(e.target.checked)}
-                />
-                Move image
-              </label>
-              <label className="tb-menu-item tb-menu-row">
-                Opacity
-                <input
-                  type="range"
-                  min={0.1}
-                  max={1}
-                  step={0.05}
-                  value={opacity}
-                  onChange={(e) => updateUnderlay({ opacity: Number(e.target.value) })}
-                />
-              </label>
-            </>
-          )}
         </div>
-      )}
+      ))}
+      <div className="tb-menu-head">Basemap</div>
+      <div className="seg tb-menu-seg" role="group" aria-label="Basemap">
+        {BASEMAPS.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            aria-pressed={basemap === b.id}
+            className={basemap === b.id ? 'active' : ''}
+            onClick={() => setBasemap(b.id)}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+      <div className="tb-menu-head">Units</div>
+      <div className="seg tb-menu-seg" role="group" aria-label="Units">
+        {UNITS.map((u) => (
+          <button
+            key={u.id}
+            type="button"
+            aria-pressed={units === u.id}
+            className={units === u.id ? 'active' : ''}
+            title={u.hint}
+            onClick={() => setUnits(u.id)}
+          >
+            {u.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

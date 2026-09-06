@@ -2,7 +2,9 @@ import { useMemo } from 'react'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../../../model/types'
 import { DT } from '../../../playback/clock'
 import { threatPictureAt } from '../../../analysis/threatAggregation'
+import { assessRunValidity } from '../../../analysis/runValidity'
 import { useStore } from '../../../state/store'
+import { State } from '../../../ui/kit'
 import { residualSectionHeadline } from '../../headlines'
 import { AnalysisSection } from '../AnalysisSection'
 import { Info } from '../Info'
@@ -12,6 +14,7 @@ import { useEngagement } from './controls'
 import { currentSummary } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
+import { VALIDITY_TEXT } from './RunValidityWidget'
 
 /** Methodology note for the full-run projection. */
 export function AboutProjection() {
@@ -53,6 +56,7 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
   const mc = useStore((s) => s.mc)
   const summary = currentSummary(mc, runId)
   const { assessments, report } = useEngagement(scenario, runId)
+  const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
   const projectionGroups = useMemo(
     () => threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map()),
     [scenario, assessments, report],
@@ -64,8 +68,13 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
       id={id}
       type="projection"
       title="Full-run projection"
-      meta="not live · conditional"
-      headerExtra={<AboutProjection />}
+      meta="full run · not live · conditional"
+      headerExtra={(
+        <span className="projection-header-extra">
+          <State tone={VALIDITY_TEXT[validity.validity].tone}>{VALIDITY_TEXT[validity.validity].pill}</State>
+          <AboutProjection />
+        </span>
+      )}
       collapsed={collapsed}
       customize={customize}
       index={index}

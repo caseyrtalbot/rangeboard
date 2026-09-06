@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 /** Compact disclosure matching the existing inspector rhythm. */
 export function AnalysisSection({
@@ -17,21 +17,27 @@ export function AnalysisSection({
   className?: string
 }) {
   const [open, setOpen] = useState(defaultOpen)
+  const disclosureId = useId()
+  const titleId = `${disclosureId}-title`
+  const contentId = `${disclosureId}-content`
   return (
-    <div className={`subsection ${className}`.trim()}>
-      <div className="panel-subtitle section-head" onClick={() => setOpen((value) => !value)}>
-        <span className={`chevron${open ? ' open' : ''}`}>▸</span>
-        <span>{title}</span>
-        <span className="section-right">
+    <section className={`subsection ${className}`.trim()} aria-labelledby={titleId}>
+      <div className="panel-subtitle section-head">
+        <button
+          className="section-toggle"
+          id={titleId}
+          type="button"
+          aria-expanded={open}
+          aria-controls={contentId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span className={`chevron${open ? ' open' : ''}`} aria-hidden="true">▸</span>
+          <span className="section-title">{title}</span>
           {!open && headline ? <span className="section-headline">{headline}</span> : null}
-          {headerExtra ? (
-            <span className="section-extra" onClick={(event) => event.stopPropagation()}>
-              {headerExtra}
-            </span>
-          ) : null}
-        </span>
+        </button>
+        {headerExtra ? <span className="section-extra">{headerExtra}</span> : null}
       </div>
-      {open && children}
-    </div>
+      {open ? <div className="section-content" id={contentId}>{children}</div> : null}
+    </section>
   )
 }

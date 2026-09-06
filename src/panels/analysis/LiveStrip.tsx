@@ -248,7 +248,7 @@ export function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc
  * read the DT grid and the horizon text reads whole seconds, so the strip
  * re-renders at most 2 Hz during a run, not per publication.
  */
-export function LiveStrip() {
+export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = {}) {
   const scenario = useStore((s) => s.scenario)
   const phase = useStore((s) => s.playback.phase)
   const runId = useStore((s) => s.playback.runId)
@@ -331,8 +331,9 @@ export function LiveStrip() {
         <button
           className={chip.cls}
           title={chip.title}
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          aria-expanded={onOpenSettings ? undefined : open}
+          aria-label={onOpenSettings ? `${chip.text} · Edit run settings in Prepare` : undefined}
+          onClick={() => onOpenSettings ? onOpenSettings() : setOpen((v) => !v)}
         >
           {chip.text}
         </button>

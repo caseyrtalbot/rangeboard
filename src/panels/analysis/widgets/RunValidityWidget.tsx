@@ -51,7 +51,7 @@ function metaOf(findings: RunValidityFinding[]): string {
 }
 
 /** Run validity: the status pill, its reading, and every finding with its severity. */
-export function RunValidityWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function RunValidityWidget({ id, params, collapsed, customize, index, count, onOpenPreparation }: WidgetProps) {
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
@@ -64,7 +64,7 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
     <WidgetFrame
       id={id}
       type="run-validity"
-      title="Run validity"
+      title="Full-run validity"
       meta={metaOf(validity.findings)}
       collapsed={collapsed}
       customize={customize}
@@ -75,27 +75,42 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
         <State tone={text.tone}>{text.pill}</State>
         <span>{text.line}</span>
       </div>
-      <div className="fid-tags">
-        {tags.map((tag) => (
-          <span
-            className="fid-tag"
-            key={tag.id}
-            data-tier={tag.tier}
-            data-validation={tag.validation}
-            title={tag.note}
-          >
-            {tag.label} · {tag.tier} · {tag.validation}
-          </span>
-        ))}
-      </div>
-      {validity.findings.map((finding) => (
-        <div className="validity-finding" key={finding.id}>
-          <State tone={SEVERITY_PILL[finding.severity].tone}>
-            {SEVERITY_PILL[finding.severity].text}
-          </State>
-          <span>{finding.message}</span>
+      <details className="analysis-disclosure validity-details">
+        <summary>Findings and model fidelity · {metaOf(validity.findings)}</summary>
+        <div className="fid-tags">
+          {tags.map((tag) => (
+            <span
+              className="fid-tag"
+              key={tag.id}
+              data-tier={tag.tier}
+              data-validation={tag.validation}
+              title={tag.note}
+            >
+              {tag.label} · {tag.tier} · {tag.validation}
+            </span>
+          ))}
         </div>
-      ))}
+        {validity.findings.map((finding) => (
+          <div className="validity-finding" key={finding.id}>
+            <State tone={SEVERITY_PILL[finding.severity].tone}>
+              {SEVERITY_PILL[finding.severity].text}
+            </State>
+            <div>
+              <p>{finding.message}</p>
+              <p>Gates: {finding.gates.join(', ')}.</p>
+              {finding.uasIds.length > 0 && (
+                <p>Tracks: {finding.uasIds.map((id) => scenario.entities.find((entity) => entity.id === id)?.name ?? id).join(', ')}.</p>
+              )}
+              {onOpenPreparation && finding.id === 'environment-not-applied' && (
+                <button className="mini" onClick={() => onOpenPreparation('environment')}>Review environment in Prepare</button>
+              )}
+            </div>
+          </div>
+        ))}
+        {onOpenPreparation && (
+          <button className="mini" onClick={() => onOpenPreparation('requirements')}>Review requirement inputs in Prepare</button>
+        )}
+      </details>
     </WidgetFrame>
   )
 }

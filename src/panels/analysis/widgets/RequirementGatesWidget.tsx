@@ -7,6 +7,7 @@ import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../../../model/types'
 import { useStore } from '../../../state/store'
 import { AnalysisSection } from '../AnalysisSection'
 import { RequirementGates } from '../RequirementGates'
+import { Rows } from '../detail/detailRows'
 import { Field } from '../../../ui/kit'
 import { useEngagement } from './controls'
 import type { WidgetProps } from './registry'
@@ -101,6 +102,71 @@ function thresholdsHeadline(scenario: Pick<Scenario, 'requirements'>): string {
   return `detect Pd ${t.pdDetect} · track ${t.pdTrackCumulative}`
 }
 
+/** Requirement threshold inputs for a scenario preparation surface. */
+export function RequirementSettings() {
+  return <ThresholdsBody />
+}
+
+function thresholdValue(value: number, defaulted: boolean): string {
+  return `${value}${defaulted ? ' · default' : ''}`
+}
+
+function RequirementReadout({ onEdit }: { onEdit: () => void }) {
+  const scenario = useStore((state) => state.scenario)
+  const stored = scenario.requirements as Partial<RequirementThresholds>
+  const thresholds = thresholdsOf(scenario)
+  const warning =
+    thresholds.minWarningS == null
+      ? `Unspecified${stored.minWarningS === undefined ? ' · default' : ''}`
+      : String(thresholds.minWarningS)
+  return (
+    <div className="analysis-settings-readout" data-settings-scope="requirements">
+      <div className="analysis-settings-context">
+        <span>Scenario inputs · edit in Prepare</span>
+      </div>
+      <Rows
+        rows={[
+          {
+            label: 'Detect: single-scan Pd',
+            value: thresholdValue(thresholds.pdDetect, stored.pdDetect === undefined),
+          },
+          {
+            label: 'Track: cumulative Pd',
+            value: thresholdValue(
+              thresholds.pdTrackCumulative,
+              stored.pdTrackCumulative === undefined,
+            ),
+          },
+          {
+            label: 'Effect: max residual per track',
+            value: thresholdValue(
+              thresholds.maxResidualPerTrack,
+              stored.maxResidualPerTrack === undefined,
+            ),
+          },
+          {
+            label: 'Detect: min warning',
+            value: warning,
+            unit: thresholds.minWarningS == null ? undefined : ' s',
+          },
+        ]}
+      />
+      <p className="muted analysis-empty">
+        The test defines these pass lines. The engine never sets them. A radar contact counts
+        as DETECT when its single-scan Pd reaches the detect value.
+      </p>
+      <button
+        className="mini analysis-settings-edit"
+        type="button"
+        data-preparation-section="requirements"
+        onClick={onEdit}
+      >
+        Edit requirement inputs in Prepare
+      </button>
+    </div>
+  )
+}
+
 function gateIdsOf(params: Record<string, unknown>): string[] {
   const raw = params.gates
   return Array.isArray(raw) ? raw.filter((g): g is string => typeof g === 'string') : []
@@ -129,7 +195,15 @@ function filterReport(report: RequirementGateReport, ids: string[]): Requirement
 }
 
 /** The six kill-chain gates, or the subset the params name, over the whole run. */
-export function RequirementGatesWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function RequirementGatesWidget({
+  id,
+  params,
+  collapsed,
+  customize,
+  index,
+  count,
+  onOpenPreparation,
+}: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
   const { assessments, report } = useEngagement(scenario, runId)
@@ -162,9 +236,13 @@ export function RequirementGatesWidget({ id, params, collapsed, customize, index
       ) : (
         <RequirementGates report={shown} />
       )}
-      <AnalysisSection title="Thresholds" headline={thresholdsHeadline(scenario)}>
-        <ThresholdsBody />
-      </AnalysisSection>
+      {onOpenPreparation ? (
+        <RequirementReadout onEdit={() => onOpenPreparation('requirements')} />
+      ) : (
+        <AnalysisSection title="Thresholds" headline={thresholdsHeadline(scenario)}>
+          <ThresholdsBody />
+        </AnalysisSection>
+      )}
     </WidgetFrame>
   )
 }

@@ -22,6 +22,8 @@ export interface WidgetProps {
   customize: boolean
   index: number
   count: number
+  /** Analysis context routes scenario edits to the corresponding Prepare section. */
+  onOpenPreparation?: (section: 'run' | 'environment' | 'doctrine' | 'requirements') => void
 }
 
 /** Catalog label and component of every widget type. The panel maps the stack through it. */

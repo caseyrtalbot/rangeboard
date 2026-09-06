@@ -35,7 +35,10 @@ interface Marquee {
   additive: boolean
 }
 
-export function CanvasStage() {
+export function CanvasStage({ onOpenDetail, onPlace }: {
+  onOpenDetail?: () => void
+  onPlace?: (world: Vec2, screen?: Vec2) => void
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
 
@@ -273,6 +276,8 @@ export function CanvasStage() {
       ref={containerRef}
       className={`canvas-host ${basemap} ${drawing ? 'drawing' : ''} ${dropActive ? 'drop-active' : ''}`}
       data-testid="canvas-host"
+      tabIndex={0}
+      aria-label="Board canvas"
       onDragOver={(e) => e.preventDefault()}
       onDragEnter={(e) => {
         if (!isPaletteDrag(e)) return
@@ -306,7 +311,7 @@ export function CanvasStage() {
         y={camera.y}
         scaleX={camera.scale}
         scaleY={camera.scale}
-        draggable={tool === 'select' && !modKey}
+        draggable={tool === 'select' && !modKey && !onPlace}
         onWheel={handleWheel}
         onClick={handleClick}
         onDblClick={handleDblClick}
@@ -368,9 +373,22 @@ export function CanvasStage() {
         </div>
       )}
       <HudLayer mouseWorld={mouseWorld} />
-      <TrackFileReadout timeline={timeline} assessments={assessments} size={size} />
+      <TrackFileReadout onOpenDetail={onOpenDetail} timeline={timeline} assessments={assessments} size={size} />
       <ContextMenu />
       <ConnectSuggestPopup />
+      {onPlace && (
+        <button
+          className="canvas-placement-target"
+          aria-label="Place library item on board"
+          onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect()
+            const screen = event.detail === 0
+              ? { x: rect.width / 2, y: rect.height / 2 }
+              : { x: event.clientX - rect.left, y: event.clientY - rect.top }
+            onPlace(toWorld(screen), screen)
+          }}
+        />
+      )}
     </div>
   )
 }

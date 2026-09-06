@@ -149,9 +149,36 @@ describe('DetailPane', () => {
       ['survival', 'Survival'],
     ])
     const file = section(html, 'file')
-    for (const label of ['Altitude', 'Speed', 'Held by', 'Engage', 'Arrival', 'CPA', 'RCS', 'Swerling']) {
+    for (const label of [
+      'Platform',
+      'Navigation',
+      'Position',
+      'Speed / heading',
+      'Held by',
+      'Classification',
+      'EW',
+      'Salvos',
+      'Effects',
+      'Residual',
+      'CPA (full path)',
+      'Arrival (full path)',
+      'Altitude (constant)',
+      'Slant range',
+      'Bearing',
+      'Engage status (full run)',
+      'Warning (full path)',
+      'First detect (full path)',
+      'RCS',
+      'Swerling',
+    ]) {
       expect(file).toContain(`<span class="rl">${label}</span>`)
     }
+    expect(file.match(/<div class="row">/g)?.length).toBe(20)
+    expect(file).toContain('T+0:00 cursor · full-path/full-run fields marked')
+    expect(file).toContain('Group 1 · quad')
+    expect(file).toContain('GPS and RF mixed')
+    expect(file).toContain('E[k] 0.00')
+    expect(file).toContain('1.00 of 1 ships')
     expect(file).toContain('no defended asset placed')
     expectNoControls(html)
   })
@@ -168,7 +195,7 @@ describe('DetailPane', () => {
       connections: store.scenario.connections.map((c) => ({ ...c, confidence: 'documented' as const })),
     })
     const file = section(render(uas.id), 'file')
-    expect(file).toContain('<span class="rl">Engage</span>')
+    expect(file).toContain('<span class="rl">Engage status (full run)</span>')
     expect(file).toContain('no fire-control source on the route')
     expect(file).toContain('needs a fire-control track from')
     expect(file).toContain('KuRFS')
