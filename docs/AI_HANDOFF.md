@@ -3,34 +3,32 @@
 ## Revision
 
 `analysis-hardening` at the commit that carries this file; `main` fast-forwarded to it on
-2026-09-05 on Casey's word (after the register sweep and D-20). Remote verified equal after
-each push. Tree clean except untracked `.claude/`. Contributor: Claude Fable under
-[AGENTS.md](../AGENTS.md). Rule: at every choice, stop and poll Casey in the conversation
-with the evidence and one recommendation; never park a choice in a report or a list. The
-findings register (`docs/data-engine/outstanding.md`) was retired on 2026-09-05; open items
-live in this file under Next.
+2026-09-06 on Casey's word. Remote verified equal after each push. Tree clean except
+untracked `.claude/`. Contributor: Claude Fable under [AGENTS.md](../AGENTS.md). Rule: at
+every choice, stop and poll Casey in the conversation with the evidence and one
+recommendation; never park a choice in a report or a list. There is no findings register
+(retired 2026-09-05); open work lives in this file under Next.
 
 ## Verified
 
-- Gates at the D-20 commit (this commit; it changes `CLASSIFY_DASH`, its test pin and
-  documents): type-check, 1,410 tests in 93 files, lint 74 warnings (identical set) and
-  0 errors, build (one pre-existing chunk-size warning). The register-sweep commit
-  `c0737da` before it passed the same gates.
-- Parity baseline: `evidence/e3-intervals-2026-09-05/numerical-after.json` (firing
-  fixture, 4 replicates); no engine change since `106cffe`. Its `numerical-before.json`
-  reproduces the r1-leaf baseline byte-identically; `diff.md` lists every changed leaf.
-- Browser check 2026-09-05 (`evidence/d20-classify-dash-2026-09-05/`, detection fixture
-  plus one RPS-42, Full preset, Mavic 3 selected, no page errors): the live Konva nodes
-  carry three Pd 0.9 contours at `[4, 6]` and two classify rings at `[10, 4]`.
-- Browser check 2026-09-05 (`evidence/e3-intervals-2026-09-05/`, detection fixture, real
-  worker runs, no page errors): tiles name "first single-scan hit", show the defined
-  fraction's Wilson interval, withhold the mean CI under 30 defined, print count intervals
-  as two ends; time-series note words the band minimums; Sensitivity table has the SE
-  column; the Inspector size-factor tag has no spread. The sweep's one copy change (the
-  T&E altitude-band help string, `DesignPanel.tsx`) had no browser check.
-- Register sweep 2026-09-05 (`c0737da`): all 74 open D rows read against source, tests
-  and git; 69 closed by code, 2 superseded (D-61, D-69), 3 done (D-2, D-31, D-59 plus the
-  `Scenario.seed` JSDoc), D-20 decided and done in this commit. No D row is open.
+- Gates at `f2dccd4` (the last source commit): type-check 0 errors, 1,413 tests in 93 files,
+  lint 74 warnings (the same pre-existing set, all `react(only-export-components)`), build
+  (one pre-existing chunk-size warning). Every source commit since `785b4c3` passed the same
+  four gates before it was pushed.
+- Parity baseline: `field-te/evidence/e2-radar-2026-09-05/numerical-after.json` (firing
+  fixture, `replicates: 4`; assessments, deterministic report, aleatory, total, sensitivity),
+  byte-identical to `e2-solver-spreads-2026-09-05/numerical-after.json`. The same directories
+  hold `detection-after.json` (detection fixture, 30 total replicates, seed 4821) and
+  `layered-after.json` (layered fixture, report and 30 aleatory replicates, seed 7). A
+  refactor of engine, store or playback code reproduces all three byte for byte with the probe
+  `e2r-capture.ts.txt` run as a scratch vitest file.
+- Browser checks 2026-09-05, all with real store actions and no page errors: F-16 editor
+  coupling (`track-c2-slice-2026-09-05/browser-check.md`), the Threat detail `Engage` row
+  (`e2-solver-spreads-2026-09-05/browser-check.md`), plus the earlier D-20 classify dash and E3
+  intervals checks (`d20-classify-dash-2026-09-05/`, `e3-intervals-2026-09-05/`).
+
+## Done
+
 - Done 2026-09-05: Wave 2 engine (`a5d2ae3`); design steps 2, 3, 4 (`171ba23`, `dca021a`,
   `931f152`, `3c1282a`); E2 R-F-30 (`b7ec949`); E3 study (`7fe74dc`); R-F-38 study
   (`8b6eed0`); E3 intervals slice (`106cffe`); E3 follow-ups R-F-41 and R-F-42 (this
@@ -61,8 +59,45 @@ live in this file under Next.
 
 ## Next
 
-1. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
-   then A1.
+Wave 4 is the design contract, [docs/design/DESIGN_CONTRACT.md](design/DESIGN_CONTRACT.md),
+steps 6 to 14 in the order below. Steps 1 to 4 are done (`51ce6cb`, `171ba23`, `dca021a`,
+`931f152`, `3c1282a`); step 5 was withdrawn. Each step ships alone with the four gates, a
+browser check with real store actions (`VERIFICATION.md`), screenshots in
+`field-te/evidence/design-stepN-<date>/`, and a Done line here. The contract's surface rules
+(section 2), tokens (3), type roles (4) and components (5) bind every step; a review that
+finds a violation fails the step. Open the contract by section, not cover to cover.
+
+1. Step 6, Analysis rail: widget rows and the pinned scan strip. Every closed row shows its
+   headline figure or state; rows open on click; pin and focus actions on hover; sub-tabs
+   Run, Sensors, Effectors, System and Threat filter the same twelve widgets; a density
+   control (compact, standard, relaxed) on the panel header, remembered per user in the view
+   record (no new storage key); a cancel control for a running Monte Carlo in the scan strip
+   (the worker already honours `DEFAULT_BUDGET`; this is the affordance). Acceptance: every
+   closed row shows its headline; pins persist; browser check at the three densities.
+   Start by reading `src/panels/AnalysisPanel.tsx`, `src/state/analysisLayout.ts` and
+   `src/panels/analysis/widgets/`.
+2. Step 7, gates as rows with caveats stated once per widget. Six gate rows fit in 200 px
+   (component "Gate row"). The per-threat blocked-route explanation is already built as the
+   `Engage` row in `ThreatDetail.tsx` (2026-09-05); step 7 carries the same text into the
+   new threat row and does not build it twice.
+3. Step 9, Inspector split (F8): one file per tab under `src/panels/inspector/`, each with
+   its own selector; sticky identity header; sub-nav with counts; key and value grid with the
+   mark column. Existing Inspector tests pass unchanged.
+4. Step 10, library dock (F9): 52 px dock, opaque flyout over the board that closes on drop
+   or Escape, one fuzzy search list behind the dock and ⌘K, numbered pins. Board width
+   unchanged when the flyout opens; drag to board still works.
+5. Step 13, view presets (F6): Plan, Live, Debrief, Clean; the seventeen toggles stay under
+   Advanced.
+6. Then step 8 (charts drawn to the board, F7: same series values on the fixed fixture,
+   render cost per tick measured; parity is the gate), step 11 (focus drawer), step 12
+   (scrubber events and the entity card, F5: parity is the gate), step 14 (keyboard on the
+   board, F4: keyboard-only walkthrough, WCAG 2.2 AA focus and target size).
+7. Wave 5: T1 static bundle (PLAN section 6), then A1 (PLAN section 8).
+
+Choices to poll Casey on as they arrive, one recommendation each: the density default;
+whether pins live in the view record or a new field of it; the cancel control's placement
+and wording; any change to the eleven channel colours that read badly on paper (steps 8, 12
+and 14 own them, `design-step4-2026-09-05/findings.json`).
 
 ## Inputs Casey holds
 
