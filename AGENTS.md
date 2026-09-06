@@ -12,9 +12,12 @@ invented to fill a gap. `CLAUDE.md` holds tool-environment notes only.
 - One contributor, Claude Fable, with standing authorization for everything outside the
   hard exceptions below. Casey holds product decisions and those exceptions. Take the next
   item from [the handoff](docs/AI_HANDOFF.md), do it end to end, verify, commit, move on.
-  Do not stop to ask permission for reversible work. Ask only when a decision materially
-  changes scope or correctness and the input exists only with Casey; continue other work
-  while waiting.
+  Do not ask permission for work whose path is fixed. When the work reaches a choice (a
+  model, a distribution, a threshold, a design, a presentation, a fixture's validity), stop
+  at that point and poll Casey in the conversation: the evidence, the options, and the one
+  recommendation that best serves realism, evidence, design, simulation, modeling and
+  performance quality. Continue on the answer. Never defer a choice into the register or
+  a report; a study ends in a polled decision, not an options table.
 - Read before starting: this file and the handoff. Then read only the source, tests,
   reference sections and register rows the item touches. Specs are consulted by section,
   not read cover to cover.
@@ -95,9 +98,10 @@ are in the reference; type floor and tokens follow the [design contract](docs/de
   defaults taken); Open findings (register IDs, one line each). Rewrite it whole at every
   commit that changes state; never append, never add a section, never create a second
   handoff, brief record or completion narrative for a slice. Superseded text lives in git.
-- [The register](docs/data-engine/outstanding.md) holds decisions Casey holds and open
-  findings. Append rows with the next ID and dated status notes; closed rows are history.
-  Never renumber; D-58 stays absent.
+- [The register](docs/data-engine/outstanding.md) holds Casey's decisions and open
+  findings. A decision row records an answer Casey gave in the conversation, with the date;
+  it never holds a pending choice. Append rows with the next ID and dated status notes;
+  closed rows are history. Never renumber; D-58 stays absent.
 - Evidence is kept only where it proves something later work depends on: numerical
   baselines and parity captures, browser screenshots, measurement JSON, and the script that
   produced them, under `docs/field-te/evidence/<slice>-<date>/`. No hashes of logs, no
