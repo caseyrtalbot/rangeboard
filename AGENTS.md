@@ -91,8 +91,9 @@ are in the reference; type floor and tokens follow the [design contract](docs/de
 ## Records
 
 - Status authority is the code, the tests and git. Documents describe; they do not decide.
-- [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md) is the one handoff, at most forty lines, with
-  these headings in this order and nothing else: Revision (branch, hash, remote state,
+- [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md) is the one handoff: concise, every line
+  necessary to resume, no information dropped to meet a length, with these headings in this
+  order and nothing else: Revision (branch, hash, remote state,
   tree); Verified (gates and their revision, parity baseline path, measured facts with
   their register IDs); Next (the ordered work); Inputs Casey holds (blocking inputs, and
   defaults taken); Open findings (register IDs, one line each). Rewrite it whole at every
