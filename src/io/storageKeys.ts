@@ -17,7 +17,7 @@ export const LAYERS_KEY = 'rangeboard.layers.v1'
 export const RINGS_KEY = 'rangeboard.rings.v1'
 /** Display units, `metric` or `aviation`. */
 export const UNITS_KEY = 'rangeboard.units.v1'
-/** Camera, basemap, right tab and workspace (`SavedView`). */
+/** Camera, basemap, right tab, workspace and theme (`SavedView`). */
 export const VIEW_KEY = 'rangeboard.view.v1'
 /** Run sequence the next startup issues (integer). */
 export const RUNSEQ_KEY = 'rangeboard.runseq.v1'

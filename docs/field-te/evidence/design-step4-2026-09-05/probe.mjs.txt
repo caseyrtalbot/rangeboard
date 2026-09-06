@@ -1,0 +1,292 @@
+// Design step 4 browser probe: the daylight theme (F3) on real surfaces.
+// Both themes over the Board right tabs with a typed run loaded and stepped,
+// the Inspector on a sensor, the context menu, the command palette and every
+// T&E Ops phase panel. Theme is set through the real store action, so the
+// probe exercises the same path the top-bar switch does. It also emulates the
+// OS light setting with theme 'system', and reloads to prove the saved choice
+// survives. Contrast is read from getComputedStyle on the live document.
+// Run: npx vite --port 5311 --strictPort, then PORT=5311 node probe.mjs
+import { chromium } from 'playwright'
+import { mkdirSync, writeFileSync } from 'node:fs'
+
+const PORT = process.env.PORT || '5311'
+const BASE = `http://localhost:${PORT}`
+const OUT = 'docs/field-te/evidence/design-step4-2026-09-05'
+mkdirSync(OUT, { recursive: true })
+
+const log = []
+const say = (...a) => { const s = a.join(' '); log.push(s); console.log(s) }
+
+// WCAG 2.1 relative luminance and contrast, on '#rrggbb' or 'rgb(r, g, b)'.
+function lum(css) {
+  const n = css.startsWith('#')
+    ? [1, 3, 5].map((i) => parseInt(css.slice(i, i + 2), 16))
+    : css.match(/[\d.]+/g).slice(0, 3).map(Number)
+  const c = n.map((v) => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+const ratio = (a, b) => {
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p)
+  return Math.round(((x + 0.05) / (y + 0.05)) * 100) / 100
+}
+const hex = (css) =>
+  css.startsWith('#')
+    ? css
+    : '#' + css.match(/[\d.]+/g).slice(0, 3).map((v) => Number(v).toString(16).padStart(2, '0')).join('')
+
+async function loadFixture(page) {
+  await page.evaluate(async () => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const raw = await (
+      await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')
+    ).text()
+    const s = window.__store.getState()
+    s.loadScenario(parseAutosave(raw))
+    s.setRightTab('analysis')
+    s.applyLens('run-summary')
+    s.startRun()
+    s.advanceRun(300)
+  })
+  await page.waitForTimeout(400)
+}
+
+const shot = async (page, name) => {
+  await page.screenshot({ path: `${OUT}/${name}.png` })
+  say(`screenshot ${OUT}/${name}.png`)
+}
+
+async function openTab(page, tab, kind) {
+  await page.evaluate(([t, k]) => {
+    const s = window.__store.getState()
+    s.setRightTab(t)
+    if (t === 'inspect') {
+      const e = s.scenario.entities.find((x) => x.kind === k) ?? s.scenario.entities[0]
+      if (e) s.select({ entityIds: [e.id] })
+    }
+    if (t === 'library') {
+      const spec = s.scenario.library[0]
+      if (spec) s.select({ libraryId: spec.id })
+    }
+  }, [tab, kind ?? 'sensor'])
+  await page.waitForTimeout(350)
+}
+
+// The six tokens the contract measures, read off the live document and
+// measured against the panel surface; text 1 is also measured on the board.
+async function readContrast(page, label) {
+  const t = await page.evaluate(() => {
+    const cs = getComputedStyle(document.documentElement)
+    const v = (n) => cs.getPropertyValue(n).trim()
+    return {
+      dataTheme: document.documentElement.getAttribute('data-theme'),
+      colorScheme: v('color-scheme'),
+      board: v('--surface-board'),
+      panel: v('--surface-panel'),
+      sunken: v('--surface-sunken'),
+      rule: v('--rule'),
+      ruleStrong: v('--rule-strong'),
+      ink: v('--ink'),
+      'text 1': v('--text-primary'),
+      'text 2': v('--text-secondary'),
+      'text 3': v('--text-tertiary'),
+      nominal: v('--status-nominal'),
+      warning: v('--status-warning'),
+      critical: v('--status-critical'),
+      bodyBg: getComputedStyle(document.body).backgroundColor,
+    }
+  })
+  const rows = []
+  const on = (token, surface, surfaceName, floor) =>
+    rows.push({
+      token,
+      on: surfaceName,
+      fg: hex(t[token]),
+      bg: hex(surface),
+      ratio: ratio(t[token], surface),
+      floor,
+      pass: ratio(t[token], surface) >= floor,
+    })
+  on('text 1', t.panel, 'panel', 4.5)
+  on('text 2', t.panel, 'panel', 4.5)
+  on('text 3', t.panel, 'panel', 3)
+  on('nominal', t.panel, 'panel', 3)
+  on('warning', t.panel, 'panel', 3)
+  on('critical', t.panel, 'panel', 3)
+  on('text 1', t.board, 'board', 4.5)
+  say(`contrast ${label}`, JSON.stringify({ dataTheme: t.dataTheme, colorScheme: t.colorScheme, bodyBg: t.bodyBg }))
+  for (const r of rows) say(`  ${label} ${r.token} on ${r.on} ${r.fg} on ${r.bg} ${r.ratio}:1 ${r.pass ? 'pass' : 'FAIL'}`)
+  return { theme: label, tokens: t, rows }
+}
+
+// Canvas and chart colours are hardcoded for the night board: they do not read
+// a token, so they cannot follow the theme. Measured against the paper ground
+// and recorded, never changed (charts are step 8, the canvas steps 12 and 14).
+const CANVAS_INK = [
+  ['--threat (PHASE_STYLE, EntityLayer)', '#e25b4e'],
+  ['--sensor (EntityLayer)', '#6cb0e6'],
+  ['--effector (EntityLayer)', '#e4934f'],
+  ['--c2 (EntityLayer)', '#d3d5cf'],
+  ['--ew (jam channel)', '#7da7c4'],
+  ['--de (directed energy)', '#9aa8b0'],
+  ['--ghost (defeated trackfile)', '#6a7178'],
+  ['--chart-1', '#3987e5'],
+  ['--chart-2', '#d95926'],
+  ['--chart-3', '#199e70'],
+  ['--chart-4', '#c98500'],
+  ['--chart-5', '#d55181'],
+  ['canvas grid minor (GridLayer)', '#1d2023'],
+  ['canvas grid major (GridLayer)', '#26292c'],
+  ['canvas scale bar (GridLayer)', '#82887e'],
+  ['canvas ring stroke (RingLayer)', '#565b58'],
+  ['track label (EntityLayer)', '#b7bdb2'],
+  ['track detected (trackState)', '#c4564a'],
+  ['track engaged (trackState)', '#c96458'],
+]
+
+const browser = await chromium.launch()
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+await ctx.addInitScript(() => window.localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await ctx.newPage()
+page.on('console', (m) => log.push(`console:${m.type()} ${m.text()}`))
+page.on('pageerror', (e) => log.push(`pageerror ${e.message}`))
+await page.goto(BASE, { waitUntil: 'networkidle' })
+await page.locator('.app').waitFor()
+await loadFixture(page)
+
+const contrast = []
+
+for (const theme of ['dark', 'light']) {
+  await page.evaluate((t) => window.__store.getState().setTheme(t), theme)
+  await page.waitForTimeout(300)
+  contrast.push(await readContrast(page, theme))
+
+  // 1. Board right tabs on a run stepped to 300 s.
+  for (const tab of ['analysis', 'cards', 'library']) {
+    await openTab(page, tab)
+    await shot(page, `${theme}-tab-${tab}`)
+  }
+
+  // 2. Inspector on a sensor, selected through the store.
+  await openTab(page, 'inspect', 'sensor')
+  const sel = await page.evaluate(() => {
+    const s = window.__store.getState()
+    const e = s.scenario.entities.find((x) => x.id === s.selection.entityIds[0])
+    return e ? `${e.kind} ${e.name}` : null
+  })
+  say(`${theme} inspector selection: ${sel}`)
+  await shot(page, `${theme}-inspector-sensor`)
+
+  // 3. Context menu, opened through the real store action at a canvas point.
+  await page.evaluate(() => {
+    const s = window.__store.getState()
+    const e = s.scenario.entities.find((x) => x.kind === 'sensor')
+    s.openContextMenu({ x: 520, y: 420 }, { x: 0, y: 0 }, e ? e.id : null)
+  })
+  await page.waitForTimeout(300)
+  await shot(page, `${theme}-context-menu`)
+  await page.evaluate(() => window.__store.getState().closeContextMenu())
+  await page.waitForTimeout(200)
+
+  // 4. Command palette.
+  await page.keyboard.press('Meta+k')
+  await page.waitForTimeout(300)
+  await page.locator('.cmdk-panel').waitFor({ timeout: 3000 })
+  await shot(page, `${theme}-command-palette`)
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(200)
+
+  // 5. T&E Ops: every phase panel on a campaign built through the store.
+  await page.evaluate(() => {
+    const te = window.__teStore.getState()
+    if (te.campaigns.length === 0) te.createCampaign('Step 4 theme check', 'STEP4')
+    te.setWorkspace('ops')
+  })
+  await page.waitForTimeout(400)
+  for (const p of ['campaign', 'design', 'cards', 'execute', 'analyze', 'deliver', 'products']) {
+    await page.evaluate((ph) => window.__teStore.getState().setPhase(ph), p)
+    await page.waitForTimeout(300)
+    await shot(page, `${theme}-te-${p}`)
+  }
+  await page.evaluate(() => window.__teStore.getState().setWorkspace('board'))
+  await page.waitForTimeout(300)
+}
+
+// 6. The OS setting: theme 'system' under an emulated light colour scheme.
+await page.evaluate(() => window.__store.getState().setTheme('system'))
+await page.emulateMedia({ colorScheme: 'light' })
+await page.waitForTimeout(300)
+const system = await readContrast(page, 'system+os-light')
+await shot(page, 'system-os-light-board')
+say('system attribute removed:', String(system.tokens.dataTheme === null))
+say('system resolves the paper ground:', system.tokens.board)
+
+// 7. Persistence: set light, reload, read the store and the document back.
+await page.emulateMedia({ colorScheme: 'dark' })
+await page.evaluate(() => window.__store.getState().setTheme('light'))
+await page.waitForTimeout(200)
+const stored = await page.evaluate(() => window.localStorage.getItem('rangeboard.view.v1'))
+say('stored view record:', stored)
+await page.reload({ waitUntil: 'networkidle' })
+await page.locator('.app').waitFor()
+await page.waitForTimeout(400)
+const afterReload = await page.evaluate(() => ({
+  theme: window.__store.getState().ui.theme,
+  attr: document.documentElement.getAttribute('data-theme'),
+  board: getComputedStyle(document.documentElement).getPropertyValue('--surface-board').trim(),
+}))
+say('after reload:', JSON.stringify(afterReload))
+await shot(page, 'light-persisted-after-reload')
+
+// 8. Canvas and chart legibility on paper.
+const paper = contrast.find((c) => c.theme === 'light').tokens
+// Two ways a night colour fails on paper. A channel or series ink goes too
+// faint below 3:1. A ground mark, drawn as a faint separator on graphite,
+// goes too heavy: the grid lines land near black on the paper ground.
+const GROUND_MARK = /grid|ring stroke/
+const findings = CANVAS_INK.map(([what, colour]) => {
+  const board = ratio(colour, paper.board)
+  const heavy = GROUND_MARK.test(what) && board >= 5
+  return {
+    layer: what,
+    colour,
+    onPaperPanel: ratio(colour, paper.panel),
+    onPaperBoard: board,
+    verdict: board < 3 ? 'too faint on paper' : heavy ? 'too heavy on paper' : 'reads on paper',
+  }
+}).sort((a, b) => a.onPaperBoard - b.onPaperBoard)
+
+await ctx.close()
+await browser.close()
+
+writeFileSync(
+  `${OUT}/contrast.json`,
+  JSON.stringify(
+    {
+      note: 'Contrast measured from getComputedStyle on the live document, both themes plus the OS light setting under theme system. Floor 4.5:1 for text 1 and text 2, 3:1 for text 3 and the three state inks.',
+      themes: contrast.concat([system]),
+      persistence: { stored: JSON.parse(stored), afterReload },
+    },
+    null,
+    2,
+  ) + '\n',
+)
+writeFileSync(
+  `${OUT}/findings.json`,
+  JSON.stringify(
+    {
+      note: 'Canvas and chart colours are hardcoded for the night board and read no token, so they do not follow the theme. Measured against the light paper ground and panel. Not changed: charts are design step 8, the canvas is steps 12 and 14.',
+      paperBoard: paper.board,
+      paperPanel: paper.panel,
+      tooFaint: findings.filter((f) => f.verdict === 'too faint on paper').length,
+      tooHeavy: findings.filter((f) => f.verdict === 'too heavy on paper').length,
+      items: findings,
+    },
+    null,
+    2,
+  ) + '\n',
+)
+writeFileSync(`${OUT}/console.log`, log.join('\n') + '\n')
+say('done')

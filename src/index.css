@@ -175,6 +175,80 @@
   color-scheme: dark;
 }
 
+/* ---------------------------------------------------------------
+   Daylight theme, design contract F3. Paper ground, ink text, the same
+   three state inks. The values live once here as the --paper-* palette;
+   the two blocks after it only map them onto the semantic tokens, so a
+   retune moves one value and both the manual switch and the OS setting
+   follow. Every semantic token keeps its full definition on :root above.
+   The three state inks keep their hue and are darkened until each clears
+   3:1 on the paper panel: the dark greens, ambers and reds of the night
+   set measure 1.9, 1.9 and 2.9 to 1 on paper.
+   --------------------------------------------------------------- */
+
+:root {
+  /* Three surfaces on paper. The board is a warm off-white, never pure
+     white; the panel lifts one step off it; the sunken tone drops below
+     it for an input. The grain is unchanged: grey noise at 3.5 percent
+     lifts the graphite board and gives the paper its tooth. */
+  --paper-board: #eeebe4;
+  --paper-panel: #f7f5f0;
+  --paper-sunken: #e4e0d8;
+
+  /* Two rules and no third, at the same two steps of separation. */
+  --paper-rule: #d8d3c9;
+  --paper-rule-strong: #b0aa9e;
+
+  /* Text ramp, measured on the paper panel: 14.4, 7.5 and 3.8 to 1, the
+     same three steps the night set holds. */
+  --paper-text-1: #212220;
+  --paper-text-2: #4e504b;
+  --paper-text-3: #7b7d73;
+
+  /* State inks, same hue, darkened to 4.4, 4.4 and 4.4 to 1 on the paper
+     panel. Hue 144, 37 and 6 degrees, unchanged from the night set. */
+  --paper-nominal: #378154;
+  --paper-warning: #98691b;
+  --paper-critical: #d43725;
+}
+
+/* The manual switch in the top bar. `--ink` is the board ground in both
+   themes: a pressed control inverts to text 1 on ink. */
+:root[data-theme='light'] {
+  --surface-board: var(--paper-board);
+  --surface-panel: var(--paper-panel);
+  --surface-sunken: var(--paper-sunken);
+  --rule: var(--paper-rule);
+  --rule-strong: var(--paper-rule-strong);
+  --text-primary: var(--paper-text-1);
+  --text-secondary: var(--paper-text-2);
+  --text-tertiary: var(--paper-text-3);
+  --ink: var(--paper-board);
+  --status-nominal: var(--paper-nominal);
+  --status-warning: var(--paper-warning);
+  --status-critical: var(--paper-critical);
+  color-scheme: light;
+}
+
+/* The OS setting. `data-theme='dark'` is the user overriding it. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --surface-board: var(--paper-board);
+    --surface-panel: var(--paper-panel);
+    --surface-sunken: var(--paper-sunken);
+    --rule: var(--paper-rule);
+    --rule-strong: var(--paper-rule-strong);
+    --text-primary: var(--paper-text-1);
+    --text-secondary: var(--paper-text-2);
+    --text-tertiary: var(--paper-text-3);
+    --ink: var(--paper-board);
+    --status-nominal: var(--paper-nominal);
+    --status-warning: var(--paper-warning);
+    --status-critical: var(--paper-critical);
+    color-scheme: light;
+  }
+}
+
 /* Rule 7: weight 600 and above never appears inside a panel. The user agent
    sets b, strong, th and the headings to 700, so the sheet folds them onto
    the title weight instead. */

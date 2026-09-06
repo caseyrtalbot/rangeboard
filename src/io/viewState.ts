@@ -4,7 +4,7 @@ import type { LayerVisibility } from '../state/layers'
 import { DEFAULT_LAYERS } from '../state/layers'
 import type { AnalysisViewState } from '../state/analysisLayout'
 import { defaultAnalysisView, sanitizeAnalysisView } from '../state/analysisLayout'
-import type { Camera, RightTab } from '../state/store'
+import type { Camera, RightTab, Theme } from '../state/store'
 import type { RingKey, RingOverrides } from '../state/rings'
 import { RING_KEYS } from '../state/rings'
 import type { Workspace } from '../te/state/teStore'
@@ -12,7 +12,7 @@ import { ANALYSIS_KEY, LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } 
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
- * basemap, right panel tab and workspace. Written eagerly by the store
+ * basemap, right panel tab, workspace and theme. Written eagerly by the store
  * setters, read once at store construction. Every field is optional so a
  * partial or older record still loads.
  */
@@ -21,6 +21,7 @@ export interface SavedView {
   basemap?: BasemapMode
   rightTab?: RightTab
   workspace?: Workspace
+  theme?: Theme
 }
 
 function readRaw(): Record<string, unknown> {
@@ -52,16 +53,19 @@ export function savedView(): SavedView {
   const BASEMAPS: BasemapMode[] = ['canvas', 'sat', 'airspace']
   const RIGHT_TABS: RightTab[] = ['inspect', 'cards', 'library', 'analysis']
   const WORKSPACES: Workspace[] = ['board', 'ops']
+  const THEMES: Theme[] = ['system', 'dark', 'light']
   const raw = readRaw()
   const out: SavedView = {}
   const camera = validCamera(raw.camera)
   const basemap = oneOf(raw.basemap, BASEMAPS)
   const rightTab = oneOf(raw.rightTab, RIGHT_TABS)
   const workspace = oneOf(raw.workspace, WORKSPACES)
+  const theme = oneOf(raw.theme, THEMES)
   if (camera) out.camera = camera
   if (basemap) out.basemap = basemap
   if (rightTab) out.rightTab = rightTab
   if (workspace) out.workspace = workspace
+  if (theme) out.theme = theme
   return out
 }
 

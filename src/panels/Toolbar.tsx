@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
 import { useStore } from '../state/store'
+import type { Theme } from '../state/store'
 import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
@@ -22,6 +23,12 @@ const TOOLS = [
 ] as const
 
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
+
+const THEMES: Array<{ v: Theme; label: string }> = [
+  { v: 'system', label: 'System' },
+  { v: 'dark', label: 'Dark' },
+  { v: 'light', label: 'Light' },
+]
 
 const ROE_PILLS: Record<Roe, { label: string; tone: StateTone; hint: string }> = {
   free: { label: 'ROE Free', tone: 'nominal', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
@@ -161,6 +168,8 @@ export function Toolbar() {
   const canRedo = useStore((s) => s.future.length > 0)
   const { setTool, setBoundaryType, setScenarioName, undo, redo } = useStore.getState()
 
+  const theme = useStore((s) => s.ui.theme)
+  const setTheme = useStore((s) => s.setTheme)
   const workspace = useTeStore((s) => s.ui.workspace)
   const setWorkspace = useTeStore((s) => s.setWorkspace)
   const workspaces: Array<{ id: Workspace; label: string }> = [
@@ -195,6 +204,8 @@ export function Toolbar() {
             </button>
           ))}
         </div>
+        <div className="spacer" />
+        <Seg value={theme} options={THEMES} label="Theme" onChange={setTheme} />
       </header>
     )
   }
@@ -240,6 +251,8 @@ export function Toolbar() {
       </div>
 
       <ViewMenu />
+
+      <Seg value={theme} options={THEMES} label="Theme" onChange={setTheme} />
 
       <div className="spacer" />
 

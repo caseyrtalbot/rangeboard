@@ -79,6 +79,8 @@ import {
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'cards' | 'library' | 'analysis'
+/** Theme choice. `system` follows the OS colour-scheme query; the other two pin it. */
+export type Theme = 'system' | 'dark' | 'light'
 
 export interface Camera {
   x: number
@@ -128,6 +130,8 @@ export interface UiState {
   calibrateA: Vec2 | null
   calibrateB: Vec2 | null
   rightTab: RightTab
+  /** Theme choice. Render state only: ui state, not undoable, kept in the saved view record. */
+  theme: Theme
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
   /** Canvas layer visibility, 17 keys. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
@@ -303,6 +307,7 @@ export interface Store {
   setBasemap: (b: BasemapMode) => void
   setBoundaryType: (t: BoundaryType) => void
   setRightTab: (t: RightTab) => void
+  setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
   setLayer: (key: LayerKey, v: boolean) => void
   toggleLayer: (key: LayerKey) => void
@@ -461,6 +466,7 @@ export const useStore = create<Store>()((set, get) => {
       calibrateA: null,
       calibrateB: null,
       rightTab: view.rightTab ?? 'inspect',
+      theme: view.theme ?? 'system',
       moveUnderlay: false,
       layers: savedLayers(),
       ringOverrides: savedRingOverrides(),
@@ -1324,6 +1330,10 @@ export const useStore = create<Store>()((set, get) => {
     setRightTab: (t) => {
       writeView({ rightTab: t })
       set((st) => ({ ui: { ...st.ui, rightTab: t } }))
+    },
+    setTheme: (t) => {
+      writeView({ theme: t })
+      set((st) => ({ ui: { ...st.ui, theme: t } }))
     },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
     setLayer: (key, v) => {

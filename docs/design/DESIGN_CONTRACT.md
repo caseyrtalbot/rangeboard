@@ -68,6 +68,12 @@ mean threat, sensor and effector everywhere.
 | critical | `#e46f62` | state ink |
 | threat, sensor, effector, C2 | `#e25b4e`, `#6cb0e6`, `#e4934f`, `#d3d5cf` | board channels, unchanged in meaning from `PHASE_STYLE` and the chart tokens |
 
+Daylight set (step 4, 2026-09-05): board `#eeebe4`, panel `#f7f5f0`, sunken `#e4e0d8`, rule
+`#d8d3c9`, rule strong `#b0aa9e`, text 1 `#212220` (14.7:1), text 2 `#4e504b` (7.5:1), text 3
+`#7b7d73` (3.8:1), ink `#eeebe4`, nominal `#378154`, warning `#98691b`, critical `#d43725`
+(4.4:1 each). Channel colours are unchanged and eleven of them read badly on paper
+(`evidence/design-step4-2026-09-05/findings.json`); steps 8, 12 and 14 own them.
+
 Motion stays at the existing 120 and 140 ms. Reduced motion is honoured. A pressed
 control inverts to text 1 on ink. Focus is a 2 px outline in text 1.
 
@@ -148,7 +154,7 @@ Found in source at `9e1c5e2`, not in screenshots.
 | --- | --- | --- | --- |
 | F1 | Playback cadence. Publish the store at a fixed 10 Hz wall-clock cadence at every speed (engine DT 0.5 s unchanged); the canvas interpolates with its own frame loop; every panel subscribes with a selector, never to the scenario object. | Measured 2026-09-05 (R-F-32, `F1_CADENCE_BRIEF.md`): `TimelineBar` published on every animation frame with no fixed cadence (120 Hz headless, 85 Hz headed, 46 Hz on the Analysis tab), the canvas committed twice per publication and the Analysis rail re-rendered every publication through `observedThroughS`. `Inspector` rendered 0 times per publication; the earlier Inspector and sixty-per-second claims were unmeasured and wrong. Done 2026-09-05 in the F1 slice. | `TimelineBar` · `selectors` · `frameClock` · `LiveScene` · `AnalysisPanel` |
 | F2 | One token layer, one kit. The board panels and the T&E Ops kit read the same tokens; field, segmented, state and provenance exist once. | 367 classes in `index.css` and a second kit of 33 components in `te/ui/kit.tsx` with no shared primitive. | `index.css` · `te/ui/kit.tsx` |
-| F3 | Daylight theme from the same tokens: paper ground, ink text, the same three state inks. Follows the OS, manual switch in the top bar. | No light theme and no colour-scheme query exist. | `index.css` |
+| F3 | Daylight theme from the same tokens: paper ground, ink text, the three state inks at the same hue, darkened for paper (`#378154`, `#98691b`, `#d43725`; the night values measure 1.9:1 to 2.9:1 on paper). Follows the OS, manual switch in the top bar; the choice is a field of the existing view record. Done 2026-09-05, step 4. | No light theme and no colour-scheme query exist. | `index.css` |
 | F4 | Keyboard on the board: tab order across entities, arrow nudge, Enter inspects, Escape clears, visible focus on the canvas and every control, a name on every icon button. | 11 aria labels across all panels, 14 focus rules, no keyboard path onto the canvas. | `CanvasStage` · `EntityLayer` · panels |
 | F5 | Events on the scrubber from the run record; hover names, click seeks. | The bar is a bare slider; the engagement strip is collapsed. | `TimelineBar` · playback |
 | F6 | View presets Plan, Live, Debrief, Clean; the toggles stay under Advanced. | `LayerVisibility` has 17 booleans behind one menu. | `ViewMenu` |

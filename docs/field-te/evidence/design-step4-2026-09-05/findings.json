@@ -1,0 +1,142 @@
+{
+  "note": "Canvas and chart colours are hardcoded for the night board and read no token, so they do not follow the theme. Measured against the light paper ground and panel. Not changed: charts are design step 8, the canvas is steps 12 and 14.",
+  "paperBoard": "#eeebe4",
+  "paperPanel": "#f7f5f0",
+  "tooFaint": 8,
+  "tooHeavy": 3,
+  "items": [
+    {
+      "layer": "--c2 (EntityLayer)",
+      "colour": "#d3d5cf",
+      "onPaperPanel": 1.36,
+      "onPaperBoard": 1.24,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "track label (EntityLayer)",
+      "colour": "#b7bdb2",
+      "onPaperPanel": 1.76,
+      "onPaperBoard": 1.61,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--sensor (EntityLayer)",
+      "colour": "#6cb0e6",
+      "onPaperPanel": 2.14,
+      "onPaperBoard": 1.96,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--effector (EntityLayer)",
+      "colour": "#e4934f",
+      "onPaperPanel": 2.25,
+      "onPaperBoard": 2.05,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--de (directed energy)",
+      "colour": "#9aa8b0",
+      "onPaperPanel": 2.24,
+      "onPaperBoard": 2.05,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--ew (jam channel)",
+      "colour": "#7da7c4",
+      "onPaperPanel": 2.35,
+      "onPaperBoard": 2.15,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--chart-4",
+      "colour": "#c98500",
+      "onPaperPanel": 2.82,
+      "onPaperBoard": 2.58,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--chart-3",
+      "colour": "#199e70",
+      "onPaperPanel": 3.13,
+      "onPaperBoard": 2.86,
+      "verdict": "too faint on paper"
+    },
+    {
+      "layer": "--threat (PHASE_STYLE, EntityLayer)",
+      "colour": "#e25b4e",
+      "onPaperPanel": 3.3,
+      "onPaperBoard": 3.02,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "--chart-1",
+      "colour": "#3987e5",
+      "onPaperPanel": 3.34,
+      "onPaperBoard": 3.06,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "canvas scale bar (GridLayer)",
+      "colour": "#82887e",
+      "onPaperPanel": 3.34,
+      "onPaperBoard": 3.06,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "track engaged (trackState)",
+      "colour": "#c96458",
+      "onPaperPanel": 3.54,
+      "onPaperBoard": 3.24,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "--chart-2",
+      "colour": "#d95926",
+      "onPaperPanel": 3.56,
+      "onPaperBoard": 3.26,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "--chart-5",
+      "colour": "#d55181",
+      "onPaperPanel": 3.62,
+      "onPaperBoard": 3.31,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "track detected (trackState)",
+      "colour": "#c4564a",
+      "onPaperPanel": 4.03,
+      "onPaperBoard": 3.69,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "--ghost (defeated trackfile)",
+      "colour": "#6a7178",
+      "onPaperPanel": 4.54,
+      "onPaperBoard": 4.15,
+      "verdict": "reads on paper"
+    },
+    {
+      "layer": "canvas ring stroke (RingLayer)",
+      "colour": "#565b58",
+      "onPaperPanel": 6.35,
+      "onPaperBoard": 5.82,
+      "verdict": "too heavy on paper"
+    },
+    {
+      "layer": "canvas grid major (GridLayer)",
+      "colour": "#26292c",
+      "onPaperPanel": 13.42,
+      "onPaperBoard": 12.28,
+      "verdict": "too heavy on paper"
+    },
+    {
+      "layer": "canvas grid minor (GridLayer)",
+      "colour": "#1d2023",
+      "onPaperPanel": 15.02,
+      "onPaperBoard": 13.75,
+      "verdict": "too heavy on paper"
+    }
+  ]
+}

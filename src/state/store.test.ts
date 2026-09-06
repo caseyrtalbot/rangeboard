@@ -1162,6 +1162,17 @@ describe('view state', () => {
     expect(savedView()).toEqual({ basemap: 'sat' })
   })
 
+  it('round-trips the theme and keeps it out of history', () => {
+    const store = stubStorage()
+    const past = useStore.getState().past.length
+    useStore.getState().setTheme('light')
+    expect(useStore.getState().ui.theme).toBe('light')
+    expect(useStore.getState().past.length).toBe(past)
+    expect(JSON.parse(store.get(VIEW_KEY)!)).toEqual({ theme: 'light' })
+    expect(savedView().theme).toBe('light')
+    useStore.getState().setTheme('system')
+  })
+
   it('is empty on unreadable data', () => {
     stubStorage({ [VIEW_KEY]: 'not json' })
     expect(savedView()).toEqual({})

@@ -228,6 +228,7 @@ function LocationDialogForm({ geoRef }: { geoRef: GeoRef | null }) {
 export default function App() {
   const rightTab = useStore((s) => s.ui.rightTab)
   const setRightTab = useStore((s) => s.setRightTab)
+  const theme = useStore((s) => s.ui.theme)
   const workspace = useTeStore((s) => s.ui.workspace)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [rightW, setRightW] = useState(savedRightWidth)
@@ -269,6 +270,13 @@ export default function App() {
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }
+
+  // The one place the theme reaches the document. `system` removes the
+  // attribute so the prefers-color-scheme query in index.css decides.
+  useEffect(() => {
+    if (theme === 'system') document.documentElement.removeAttribute('data-theme')
+    else document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
