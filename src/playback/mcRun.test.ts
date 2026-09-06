@@ -15,7 +15,7 @@ import { heldTracksSeries, kpiSeries, sampleCount, threatSeries } from '../analy
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import * as uncertainty from '../analysis/uncertainty'
 import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
-import { betaQuantile } from '../te/calc/stats'
+import { betaQuantile, wilson } from '../te/calc/stats'
 import { resolveEngagements } from './attrition'
 import { FALLOFF_AT_MAX } from './pk'
 import { replicateLoop, runReplicates, runSensitivity, sensitivityLoop, summaryNumbers } from './mcRun'
@@ -257,14 +257,19 @@ describe('runReplicates', () => {
     const { scenario, uasId, effId } = build(1 / (1 - FALLOFF_AT_MAX))
     scenario.replicates = 10
     const summary = runReplicates(scenario)
+    // One ship and one track: every band is a 0/1 statistic, so a constant
+    // column reads the rule-of-three bound, 3 / 10 from the observed end
+    // (R-D-39); the 95 percent quantiles are unavailable under 40 (R-D-40).
     for (const band of bands(summary)) {
       for (let k = 0; k < band.mean.length; k += 1) {
-        expect(band.p10[k]).toBe(band.mean[k])
-        expect(band.p90[k]).toBe(band.mean[k])
-        expect(band.p025[k]).toBe(band.mean[k])
-        expect(band.p975[k]).toBe(band.mean[k])
-        expect(band.lo[k]).toBe(band.mean[k])
-        expect(band.hi[k]).toBe(band.mean[k])
+        const m = band.mean[k]
+        expect([0, 1]).toContain(m)
+        expect(band.p10[k]).toBe(m)
+        expect(band.p90[k]).toBe(m)
+        expect(Number.isNaN(band.p025[k])).toBe(true)
+        expect(Number.isNaN(band.p975[k])).toBe(true)
+        expect(band.lo[k]).toBeCloseTo(m === 1 ? 0.7 : 0, 12)
+        expect(band.hi[k]).toBeCloseTo(m === 1 ? 1 : 0.3, 12)
       }
     }
     const det = resolveEngagements(scenario)
@@ -295,35 +300,47 @@ describe('runReplicates', () => {
     expect(summary.perThreat[uasId].killed.p90).toBe(1)
     expect(summary.perEffector[effId].salvos.mean).toBe(1)
     expect(summary.perEffector[effId].kills.mean).toBe(kills)
-    // Bernoulli(0.5): sd near 0.5, se = sd / sqrt(200) near 0.035, and the
-    // 95 percent t-interval on the mean is symmetric with half-width near 0.07.
+    // Bernoulli(0.5): sd near 0.5, se = sd / sqrt(200) near 0.035. A one-ship
+    // kill count is a 0/1 statistic, so the interval is Wilson on k of 200
+    // (R-D-39), half-width near 1.96 * 0.5 / sqrt(200) = 0.07; the unbounded
+    // salvo count keeps the t-interval.
     const killed = summary.perThreat[uasId].killed
     expect(Math.abs(killed.sd - 0.5)).toBeLessThan(0.05)
     expect(killed.se).toBeCloseTo(killed.sd / Math.sqrt(200), 12)
     expect(killed.conf).toBe(0.95)
-    expect(killed.hi - killed.mean).toBeCloseTo(killed.mean - killed.lo, 12)
+    expect(killed.interval).toBe('wilson')
+    const w = wilson(Math.round(kills * 200), 200)
+    expect(killed.lo).toBe(w.lo)
+    expect(killed.hi).toBe(w.hi)
     expect(Math.abs((killed.hi - killed.lo) / 2 - 0.07)).toBeLessThan(0.01)
+    expect(summary.perEffector[effId].salvos.interval).toBe('t')
+    expect(summary.perEffector[effId].kills.interval).toBe('wilson')
     expect(killed.total).toBe(200)
     expect(killed.defined).toEqual({ p: 1, lo: expect.any(Number), hi: 1 })
     expect(summary.stopped).toEqual({ rule: 'replicates', at: 200 })
   })
 
-  it('one replicate gives a Stat with lo = hi = mean and se 0', () => {
+  it('one replicate gives sd 0, no quantiles, and an interval by kind', () => {
+    // A 1 of 1 kill is a 0/1 statistic at k = n: the rule of three gives
+    // 1 - 3 / 1, clamped to 0, up to 1. The unbounded salvo count keeps the
+    // t-interval, lo = hi = mean with one sample.
     const { scenario, uasId, effId } = build(1 / (1 - FALLOFF_AT_MAX))
     scenario.replicates = 1
     const summary = runReplicates(scenario)
-    for (const stat of [summary.perThreat[uasId].killed, summary.perEffector[effId].salvos]) {
+    const killed = summary.perThreat[uasId].killed
+    const salvos = summary.perEffector[effId].salvos
+    for (const stat of [killed, salvos]) {
       expect(stat.n).toBe(1)
       expect(stat.total).toBe(1)
       expect(stat.mean).toBe(1)
-      expect(stat.lo).toBe(1)
-      expect(stat.hi).toBe(1)
       expect(stat.sd).toBe(0)
       expect(stat.se).toBe(0)
-      expect(stat.p10).toBe(1)
-      expect(stat.p975).toBe(1)
+      expect(Number.isNaN(stat.p10)).toBe(true)
+      expect(Number.isNaN(stat.p975)).toBe(true)
       expect(stat.defined.p).toBe(1)
     }
+    expect([killed.interval, killed.lo, killed.hi]).toEqual(['rule-of-three', 0, 1])
+    expect([salvos.interval, salvos.lo, salvos.hi]).toEqual(['t', 1, 1])
   })
 
   it('each replicate keeps the raid partition, nominal and under total', () => {
@@ -688,6 +705,12 @@ describe('runReplicates', () => {
       expect(t.firstDetectS.n).toBe(10)
     }
     expect(summary.firstDetectS.n).toBe(10)
+    // R-D-43: the earliest stable track file per replicate, at or after the
+    // first hit, and the same as the deterministic value when Pd is 1 at the
+    // first scan for the fire-control-quality radar.
+    expect(summary.firmTrackS.n).toBe(10)
+    expect(summary.firmTrackS.interval).toBe('t')
+    expect(summary.firmTrackS.mean).toBeGreaterThanOrEqual(summary.firstDetectS.mean)
     // No asset: no arrival, no warning, no leaker.
     expect(summary.minWarningS.n).toBe(0)
     expect(last(summary.leakers.mean)).toBe(0)
@@ -930,6 +953,13 @@ describe('runSensitivity', () => {
     expect(Math.abs(pkRow.swing - expected)).toBeLessThan(3 * se)
     expect(pkRow.low).toBeGreaterThanOrEqual(pkRow.high)
     expect(pkRow.swing).toBe(Math.abs(pkRow.high - pkRow.low))
+    // R-D-42: the per-replicate difference high - low is 0 or -1, so its
+    // sample sd is sqrt(n / (n - 1) * p (1 - p)) with p the swing, and the
+    // paired SE is that over sqrt(n): sqrt(p (1 - p) / (n - 1)). A row that
+    // moves nothing has se 0.
+    const p = pkRow.swing
+    expect(pkRow.se).toBeCloseTo(Math.sqrt((p * (1 - p)) / 19), 12)
+    expect(rcsRow.se).toBe(0)
   })
 
   it('pairing by common random numbers lowers the swing variance', () => {

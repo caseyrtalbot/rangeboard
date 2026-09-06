@@ -1,0 +1,155 @@
+{
+  "mc30": "done",
+  "sens": "done",
+  "summary30": {
+    "replicates": 30,
+    "firstDetect": {
+      "mean": 165.85,
+      "sd": 273.6832472541683,
+      "se": 49.967496044123926,
+      "lo": 63.65499594740935,
+      "hi": 268.0450040525906,
+      "interval": "t",
+      "conf": 0.95,
+      "p10": 0.5,
+      "p90": 593.7,
+      "p025": null,
+      "p975": null,
+      "n": 30,
+      "total": 30,
+      "defined": {
+        "p": 1,
+        "lo": 0.8864829086095221,
+        "hi": 1
+      }
+    },
+    "firmTrack": {
+      "mean": 513.3666666666667,
+      "sd": 467.20020690634686,
+      "se": 85.2986973978957,
+      "lo": 338.91124231318304,
+      "hi": 687.8220910201503,
+      "interval": "t",
+      "conf": 0.95,
+      "p10": 1.5,
+      "p90": 1130.7,
+      "p025": null,
+      "p975": null,
+      "n": 30,
+      "total": 30,
+      "defined": {
+        "p": 1,
+        "lo": 0.8864829086095221,
+        "hi": 1
+      }
+    },
+    "killedInterval": "wilson",
+    "killedLoHi": [
+      0.7437855868473339,
+      0.9654007400402839
+    ],
+    "p975End": null,
+    "p90End": 1,
+    "sensRows": [
+      {
+        "field": "pk",
+        "swing": 0.1,
+        "se": 0.055708601453115555
+      },
+      {
+        "field": "detectRangeM",
+        "swing": 0.03333333333333333,
+        "se": 0.03333333333333332
+      },
+      {
+        "field": "rcsM2",
+        "swing": 0.03333333333333333,
+        "se": 0.03333333333333332
+      },
+      {
+        "field": "trackInitS",
+        "swing": 0,
+        "se": 0
+      }
+    ]
+  },
+  "at30": {
+    "tiles": [
+      "First detect: full-run · MC conditional mean · first single-scan hit · ±102 s (95% mean CI) · n=30 · detected in 30 of 30 · 89% to 100% (95% Wilson)",
+      "First effect: planning envelope · not yet",
+      "Detect to effect: planning envelope · not yet",
+      "Min warning: full-run · MC conditional mean · arrival minus first single-scan hit · ±102 s (95% mean CI) · n=30 · warning time in 30 of 30 · 89% to 100% (95% Wilson)"
+    ],
+    "notes": [
+      "Planning envelope · test-defined thresholds. No MC probability of pass is calculated.",
+      "Full-run MC mean leakers (ships). One parameter at p10/p90, all others nominal; paired replicates. Endpoints are parameter perturbations, not uncertainty intervals. SE is the paired standard error of the swing."
+    ],
+    "sensHead": [
+      "Model",
+      "Field",
+      "At parameter p10",
+      "At parameter p90",
+      "Swing",
+      "SE"
+    ],
+    "sensRows": [
+      [
+        "Coyote Block 2 interceptor",
+        "pk",
+        "0.1",
+        "0",
+        "0.1",
+        "0.06"
+      ],
+      [
+        "KuRFS fire-control radar (Raytheon)",
+        "detectRangeM",
+        "0",
+        "0.0",
+        "0.0",
+        "0.03"
+      ],
+      [
+        "Red air: DJI Mavic 3 (G1 quad)",
+        "rcsM2",
+        "0",
+        "0.0",
+        "0.0",
+        "0.03"
+      ]
+    ],
+    "metrics": [],
+    "chip": "MC 30 · total · seed 4821"
+  },
+  "mc10": "done",
+  "at10": {
+    "tiles": [
+      "Detect: MC mean · 0.7 to 1 (95% mean CI) · n=10",
+      "Track now: MC mean · 0.6 to 1.0 (95% mean CI) · n=10",
+      "ID / class: planning envelope",
+      "Engaged: MC mean · 0.4 to 0.9 (95% mean CI) · n=10",
+      "Kill E[k]: MC mean · 0 to 0.3 (95% mean CI) · n=10",
+      "Leak E[n]: MC mean · 0 to 0.3 (95% mean CI) · n=10",
+      "First detect: full-run · MC conditional mean · first single-scan hit · mean CI unavailable under 30 defined · n=10 · detected in 10 of 10 · 72% to 100% (95% Wilson)",
+      "Min warning: full-run · MC conditional mean · arrival minus first single-scan hit · mean CI unavailable under 30 defined · n=10 · warning time in 10 of 10 · 72% to 100% (95% Wilson)"
+    ],
+    "notes": [
+      "MC bands: 80% replicate quantiles · 95% band unavailable under 40 replicates; tiles report confidence intervals on means.",
+      "Effect state uses surviving mass, including late effects. Requirement verdicts are in Requirement gates."
+    ],
+    "sensHead": [],
+    "sensRows": [],
+    "metrics": [
+      "Defeat: MC mean · 70 to 100% (95% mean CI) · n=10",
+      "Leakers: MC mean · 0 to 0.3 (95% mean CI) · n=10 · ships",
+      "Late E[k]: planning envelope · after arrival, not a defeat",
+      "First detect: MC conditional mean · first single-scan hit · mean CI unavailable under 30 defined · n=10 · detected in 10 of 10 · 72% to 100% (95% Wilson)",
+      "First effect: planning envelope · kill mass removed",
+      "Min warning: MC conditional mean · arrival minus first single-scan hit · mean CI unavailable under 30 defined · n=10 · warning time in 10 of 10 · 72% to 100% (95% Wilson)",
+      "Salvos: planning envelope · 4 kin · 0 DE · 0 EW"
+    ],
+    "chip": "MC 10 · total · seed 4821"
+  },
+  "inspector": [],
+  "errors": []
+}

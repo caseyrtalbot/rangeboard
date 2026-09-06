@@ -76,8 +76,9 @@ describe('run group basis and import compatibility', () => {
     )))
     expect(out.mcSummary.firstDetectS).toMatchObject({ mean: null, lo: null, hi: null, n: 0, total: 4 })
     expect(out.mcSummary.minWarningS).toMatchObject({ mean: 12, n: 1, total: 4 })
-    expect(out.resultGroups.mcSummary.measures['lo, hi']).toContain('unavailable with n<2')
+    expect(out.resultGroups.mcSummary.measures['lo, hi, interval']).toContain('interval on the mean by method')
     expect(out.resultGroups.mcSummary.measures['p10, p90, p025, p975']).toContain('replicate quantiles')
+    expect(out.resultGroups.mcSummary.measures['p10, p90, p025, p975']).toContain('unavailable under 10')
   })
 
   it('records non-unit raid denominators, no-asset definedness and late-effect distinctions', () => {
@@ -94,7 +95,7 @@ describe('run group basis and import compatibility', () => {
     expect(out.attrition.totals.reportedLeakers).toBeNull()
     expect(out.summary.expectedLeakers).toBe(report.totals.expectedLeakers + report.totals.expectedNoArrival)
     expect(out.resultGroups.mcSummary?.measures['perEffector.kills']).toContain('including late effects')
-    expect(out.resultGroups.mcSummary?.measures.defeatInterval).toContain('percentage points')
+    expect(out.resultGroups.mcSummary?.measures.defeatInterval).toContain('in percent')
   })
 
   it('identifies sensitivity endpoints as paired parameter perturbations, not intervals', () => {

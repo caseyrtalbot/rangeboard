@@ -1,0 +1,23 @@
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+const [baseUrl, outDir] = process.argv.slice(2)
+const browser = await chromium.launch({ headless: true })
+const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })
+await context.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await context.newPage()
+await page.goto(baseUrl, { waitUntil: 'networkidle' })
+await page.waitForFunction(() => Boolean(window.__store))
+const titles = await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const raw = await (await fetch('/src/playback/__fixtures__/detection-outside-rings.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setRightTab('inspect')
+  s.select({ entityIds: ['ent-mtnvzhmr-25'], boundaryId: null, connectionId: null, libraryId: null, cardId: null })
+  await new Promise((r) => setTimeout(r, 400))
+  const rows = [...document.querySelectorAll('.prov-mark')].map((m) => `${m.closest('div')?.textContent?.slice(0, 40)} | ${m.getAttribute('title')}`)
+  return rows
+})
+console.log(JSON.stringify(titles, null, 1))
+await page.screenshot({ path: `${outDir}/inspector-mavic3.png` })
+await browser.close()

@@ -59,7 +59,7 @@ function band(n: number, mean: number, p10: number, p90: number): BandSeries {
  */
 function timeStat(n: number): Stat {
   return {
-    mean: 12, sd: 10, se: 1, lo: 10, hi: 14, conf: 0.95,
+    mean: 12, sd: 10, se: 1, lo: 10, hi: 14, conf: 0.95, interval: 't',
     p10: 10, p90: 15, p025: 9, p975: 16, n, total: 100,
     defined: { p: n / 100, lo: 0, hi: 1 },
   }
@@ -80,6 +80,7 @@ function summaryOf(scenario: Scenario, detectedIn = 100): McSummary {
     tracked: band(n, 4, 4, 4),
     engaged: band(n, 1, 1, 1),
     firstDetectS: stat,
+    firmTrackS: stat,
     minWarningS: stat,
     perThreat: {},
     perEffector: {},
@@ -158,8 +159,8 @@ describe('KpiTilesWidget', () => {
     setMc('done')
     const html = render({ tiles: ['detect', 'killEk', 'firstDetect'] })
     expect(html).toContain('4.5<small>/1</small>')
-    // Count bands carry lo 4, hi 5 (and 0, 1): half-width 0.5 over 100 replicates.
-    expect(html).toContain('±0.5 (95% mean CI) · n=100')
+    // Count bands carry lo 4, hi 5 (and 0, 1), printed as the two ends over 100 replicates.
+    expect(html).toContain('4 to 5 (95% mean CI) · n=100')
     expect(html).not.toContain('p10 to p90')
     expect(html).toContain('3 of 13 · 100 replicates · basis per tile')
     // This statistic covers the entire run, explicitly separate from cursor counts.
@@ -173,11 +174,16 @@ describe('KpiTilesWidget', () => {
     useStore.getState().pauseRun()
     setMc('done')
     const full = render({ tiles: ['firstDetect'] })
-    expect(full).toContain('±2.0 s (95% mean CI) · n=100')
-    expect(full).toContain('detected in 100 of 100')
+    expect(full).toContain('first single-scan hit · ±2.0 s (95% mean CI) · n=100')
+    expect(full).toContain('detected in 100 of 100 · 0% to 100% (95% Wilson)')
     setMc('done', 98)
     const partial = render({ tiles: ['firstDetect'] })
     expect(partial).toContain('±2.0 s (95% mean CI) · n=98 · detected in 98 of 100')
+    // R-D-41: under 30 defined replicates the mean CI is not claimed.
+    setMc('done', 12)
+    const few = render({ tiles: ['firstDetect'] })
+    expect(few).toContain('mean CI unavailable under 30 defined · n=12 · detected in 12 of 100')
+    expect(few).not.toContain('(95% mean CI)')
     useStore.setState({ mc: IDLE_MC })
   })
 
@@ -191,7 +197,7 @@ describe('KpiTilesWidget', () => {
     useStore.getState().pauseRun()
     setMc('done', 40)
     const partial = render({ tiles: ['minWarning'] })
-    expect(partial).toContain('±2.0 s (95% mean CI) · n=40 · warning time in 40 of 100')
+    expect(partial).toContain('arrival minus first single-scan hit · ±2.0 s (95% mean CI) · n=40 · warning time in 40 of 100')
     expect(partial).not.toContain('detected in')
     setMc('done', 0)
     const none = render({ tiles: ['minWarning'] })

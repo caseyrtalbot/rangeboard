@@ -28,8 +28,8 @@ function summary(): SensitivitySummary {
   return {
     stat: 'leakers',
     rows: [
-      { modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1.2, high: 1.9, swing: 0.7 },
-      { modelId: 'lib-mavic3', field: 'rcsM2', label: 'Mavic 3', low: 1.5, high: 1.6, swing: 0.1 },
+      { modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1.2, high: 1.9, swing: 0.7, se: 0.12 },
+      { modelId: 'lib-mavic3', field: 'rcsM2', label: 'Mavic 3', low: 1.5, high: 1.6, swing: 0.1, se: 0.05 },
     ],
     nominal: 1.5,
     replicates: 20,
@@ -117,9 +117,10 @@ describe('SensitivityWidget', () => {
     expect(html).toContain('>rcsM2<')
     expect(html).toContain('<td>Coyote</td>')
     expect(html).toContain('<td>0.7</td>')
+    expect(html).toContain('<td>0.12</td>')
     expect(html).toContain('Run again')
     expect(html).toContain('parameter perturbations, not uncertainty intervals')
-    expect(html).toContain('Mean CI unavailable')
+    expect(html).toContain('paired standard error of the swing')
     expect(html).not.toContain('STALE')
   })
 

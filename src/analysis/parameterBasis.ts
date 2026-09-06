@@ -28,8 +28,6 @@ export const PF_SPREAD: Record<string, PfSpreadRow> = {
   declareHostileS: pf({ kind: 'triangular', lo: -0.3, hi: 0.5 }), // PF
   targetS: pf({ kind: 'triangular', lo: -0.3, hi: 0.5 }), // PF
   bdaS: pf({ kind: 'triangular', lo: -0.3, hi: 0.5 }), // PF
-  sizePenalty: pf({ kind: 'lognormal', sigmaDb: 1 }), // PF
-  evasionPenalty: pf({ kind: 'lognormal', sigmaDb: 1 }), // PF
 }
 
 /**

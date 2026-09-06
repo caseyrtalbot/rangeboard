@@ -223,7 +223,7 @@ describe('AAR export payload', () => {
 describe('run export Monte Carlo basis', () => {
   function mcSummary(): McSummary {
     const stat: Stat = {
-      mean: 1, sd: 0, se: 0, lo: 1, hi: 1, conf: 0.95,
+      mean: 1, sd: 0, se: 0, lo: 1, hi: 1, conf: 0.95, interval: 't',
       p10: 1, p90: 1, p025: 1, p975: 1, n: 5, total: 5,
       defined: { p: 1, lo: 0.57, hi: 1 },
     }
@@ -241,6 +241,7 @@ describe('run export Monte Carlo basis', () => {
       tracked: band,
       engaged: band,
       firstDetectS: stat,
+      firmTrackS: stat,
       minWarningS: stat,
       perThreat: {},
       perEffector: {},
@@ -327,7 +328,7 @@ describe('run export Monte Carlo basis', () => {
     scenario.runMode = 'monte-carlo'
     const sensitivity: SensitivitySummary = {
       stat: 'leakers',
-      rows: [{ modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1 }],
+      rows: [{ modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1, se: 0.1 }],
       nominal: 1.5,
       replicates: 20,
       seed: 4821,

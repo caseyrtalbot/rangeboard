@@ -10,7 +10,7 @@ function band(mean: number, lo: number, hi: number): BandSeries {
   return { mean: [mean], lo: [lo], hi: [hi], p10: [0], p90: [4], p025: [0], p975: [4] }
 }
 function stat(mean: number, n = 4): Stat {
-  return { mean, sd: 1, se: 0.5, lo: mean - 1, hi: mean + 1, conf: 0.95,
+  return { mean, sd: 1, se: 0.5, lo: mean - 1, hi: mean + 1, conf: 0.95, interval: 't',
     p10: mean - 2, p90: mean + 2, p025: mean - 3, p975: mean + 3, n, total: 4,
     defined: { p: n / 4, lo: 0, hi: 1 } }
 }
@@ -35,9 +35,9 @@ describe('C2 projection source consistency', () => {
     const { render } = fixture()
     const html = render()
     expect(metric(html, 'Defeat')).toContain('75.0%')
-    expect(metric(html, 'Defeat')).toContain('±10.0 pp (95% mean CI)')
+    expect(metric(html, 'Defeat')).toContain('65 to 85% (95% mean CI)')
     expect(metric(html, 'Leakers')).toContain('>1.0</strong>')
-    expect(metric(html, 'Leakers')).toContain('±0.4 (95% mean CI)')
+    expect(metric(html, 'Leakers')).toContain('0.6 to 1.4 (95% mean CI)')
     expect(metric(html, 'First detect')).toContain('0:12')
     expect(metric(html, 'Min warning')).toContain('0:25')
     expect(metric(html, 'Late E[k]')).toContain('>0.3</strong>')
@@ -74,7 +74,7 @@ describe('C2 projection source consistency', () => {
     const html = render()
     expect(metric(html, 'Defeat')).toContain('75.0%')
     expect(html).toContain('CI unavailable')
-    expect(html).not.toContain('mean CI')
+    expect(html).not.toContain('(95% mean CI)')
   })
 
   it('renders empty/zero-replicate estimates unavailable and an empty raid undefined', () => {

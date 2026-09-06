@@ -1,0 +1,93 @@
+// E3 intervals browser check: the detection fixture through the store, a 30-replicate
+// total run (tiles, sensitivity SE), a 10-replicate run (withheld mean CI, band note),
+// and the Inspector size-factor tag with no spread.
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+import { writeFileSync } from 'node:fs'
+const [baseUrl = 'http://localhost:5347/', outDir = '.'] = process.argv.slice(2)
+const browser = await chromium.launch({ headless: true })
+const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })
+await context.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await context.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(String(e)))
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+await page.goto(baseUrl, { waitUntil: 'networkidle' })
+await page.waitForFunction(() => Boolean(window.__store))
+const waitMc = () => page.evaluate(() => new Promise((resolve) => {
+  const timer = setInterval(() => {
+    const mc = window.__store.getState().mc
+    if (mc.status !== 'running') { clearInterval(timer); resolve(mc.status) }
+  }, 20)
+}))
+const waitSens = () => page.evaluate(() => new Promise((resolve) => {
+  const timer = setInterval(() => {
+    const s = window.__store.getState().mc.sensitivity
+    if (s.status !== 'running') { clearInterval(timer); resolve(s.status) }
+  }, 20)
+}))
+const subs = () => page.evaluate(() => ({
+  tiles: [...document.querySelectorAll('.tile')].map((t) => `${t.querySelector('.tl')?.textContent}: ${t.querySelector('.ts')?.textContent ?? ''}`),
+  notes: [...document.querySelectorAll('p.muted.small')].map((p) => p.textContent),
+  sensHead: [...document.querySelectorAll('table.tb th')].map((th) => th.textContent),
+  sensRows: [...document.querySelectorAll('table.tb tbody tr')].slice(0, 3).map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent)),
+  metrics: [...document.querySelectorAll('.outcome-metric')].map((m) => `${m.querySelector('span')?.textContent}: ${m.querySelector('small')?.textContent}`),
+  chip: document.querySelector('.chip.mc')?.textContent ?? null,
+}))
+await page.evaluate(async () => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const raw = await (await fetch('/src/playback/__fixtures__/detection-outside-rings.json')).text()
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setRightTab('analysis')
+  s.applyLens('iads')
+  window.__store.getState().patchScenario({ runMode: 'monte-carlo', replicates: 30, uncertainty: 'total' })
+  window.__store.getState().runMonteCarlo()
+})
+const mc30 = await waitMc()
+// The tiles read the cursor: advance the run past the deterministic firm track.
+await page.evaluate(() => { window.__store.getState().advanceRun(600); window.__store.getState().pauseRun() })
+await page.evaluate(() => window.__store.getState().runSensitivity())
+const sens = await waitSens()
+await page.waitForTimeout(300)
+const at30 = await subs()
+const summary30 = await page.evaluate(() => {
+  const m = window.__store.getState().mc.summary
+  const r = window.__store.getState().mc.sensitivity.summary
+  return {
+    replicates: m.replicates, firstDetect: m.firstDetectS, firmTrack: m.firmTrackS,
+    killedInterval: Object.values(m.perThreat)[0].killed.interval,
+    killedLoHi: [Object.values(m.perThreat)[0].killed.lo, Object.values(m.perThreat)[0].killed.hi],
+    p975End: m.kills.p975.at(-1), p90End: m.kills.p90.at(-1),
+    sensRows: r?.rows.slice(0, 4).map((x) => ({ field: x.field, swing: x.swing, se: x.se })),
+  }
+})
+await page.screenshot({ path: `${outDir}/analysis-iads-30-total.png` })
+// Run summary at 10 replicates: withheld mean CI, 80 percent band only.
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.applyLens('run-summary')
+  s.patchScenario({ replicates: 10 })
+  window.__store.getState().runMonteCarlo()
+})
+const mc10 = await waitMc()
+await page.evaluate(() => { window.__store.getState().advanceRun(600); window.__store.getState().pauseRun() })
+await page.waitForTimeout(300)
+await page.evaluate(() => window.__store.getState().addAnalysisWidget('kpi-tiles', { tiles: ['firstDetect', 'minWarning'] }))
+await page.waitForTimeout(200)
+const at10 = await subs()
+await page.screenshot({ path: `${outDir}/analysis-run-summary-10.png` })
+// Inspector: the Mavic 3 size-factor tag carries no spread after R-D-37.
+const inspector = await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.setRightTab('inspector')
+  s.select({ entityIds: ['ent-mtnvzhmr-25'], boundaryId: null, connectionId: null, libraryId: null, cardId: null })
+  return new Promise((resolve) => setTimeout(() => resolve(
+    [...document.querySelectorAll('.prov-mark')].map((m) => m.getAttribute('title')).filter((t) => t),
+  ), 300))
+})
+await page.screenshot({ path: `${outDir}/inspector-mavic3.png` })
+const result = { mc30, sens, summary30, at30, mc10, at10, inspector, errors }
+writeFileSync(`${outDir}/browser-results.json`, JSON.stringify(result, null, 2))
+console.log(JSON.stringify({ ...result, summary30: undefined }, null, 1))
+await browser.close()

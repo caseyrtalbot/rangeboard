@@ -15,7 +15,7 @@ import type { ThreatAssessment } from '../../../playback/sim'
 import type { TimeSeriesPreset } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { useEngagement, useRunCursor } from './controls'
-import { currentSummary } from './mc'
+import { bandNote, currentSummary } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -133,7 +133,7 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
       index={index}
       count={count}
     >
-      {summary && <p className="muted small">MC bands: 80% and 95% replicate quantiles; tiles report confidence intervals on means.</p>}
+      {summary && <p className="muted small">MC bands: {bandNote(summary.replicates)}; tiles report confidence intervals on means.</p>}
       {threats === 0 ? (
         <p className="muted small">No threats with flight paths.</p>
       ) : (

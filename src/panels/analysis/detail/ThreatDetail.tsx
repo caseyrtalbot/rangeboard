@@ -17,7 +17,7 @@ import { buildTrackTimeline, trackStatesAt } from '../../../playback/trackState'
 import { useStore } from '../../../state/store'
 import { modelFor, pathSpeed } from '../../../model/scenario'
 import { SURVIVAL_LABELS } from '../widgets/labels'
-import { currentSummary } from '../widgets/mc'
+import { bandNote, currentSummary } from '../widgets/mc'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -222,7 +222,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="survival"
         title="Survival"
-        meta={survival?.band80 ? 'MC mean · 80/95% replicate quantiles' : summary ? 'MC estimate unavailable' : 'planning envelope'}
+        meta={survival && summary ? `MC mean · ${bandNote(summary.replicates)}` : summary ? 'MC estimate unavailable' : 'planning envelope'}
       >
         <p className="muted small">Event markers use the planning envelope.</p>
         {survival ? (

@@ -101,7 +101,7 @@ export function OutcomeSummary({
           value={defeatPct == null ? '—' : `${defeatPct.toFixed(1)}%`}
           sub={
             raid <= 0 ? 'no ships' : mc
-              ? countSub(mc.kills, mc.kills.mean.length - 1, mc.replicates, 100 / raid, ' pp')
+              ? countSub(mc.kills, mc.kills.mean.length - 1, mc.replicates, 100 / raid, '%')
               : `planning envelope · ${expectedCount(totals.expectedKills)} of ${raid} ships`
           }
           cls="good"

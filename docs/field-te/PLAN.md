@@ -230,8 +230,8 @@ Each such change needs a decision row and Casey's approval under AGENTS.md.
 ### E3. Quantified uncertainty that matches the model
 
 - Enumerate sampled and fixed parameters from `uncertainFields` and `sampleScenario`.
-  Resolve the unused size/evasion spread definitions and the unimplemented flyout-factor
-  spread decision. "Total" currently covers an implemented subset of parameter uncertainty;
+  The unused size/evasion spread rows are removed (R-D-37) and the flyout factor carries no
+  spread (R-D-38). "Total" currently covers an implemented subset of parameter uncertainty;
   it does not cover all planning factors or model discrepancy.
 - Review each distribution's evidence, support, units and conditioning. Re-examine very
   small or selected success-count demonstrations before using them outside that trial

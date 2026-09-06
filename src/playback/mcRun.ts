@@ -36,10 +36,17 @@ export interface Stat {
   sd: number
   /** Standard error of the mean, sd / sqrt(n); 0 with one sample. */
   se: number
-  /** t-interval on the mean at conf (meanInterval from src/te/calc/stats.ts). */
+  /**
+   * Interval on the mean at conf, by `interval`. A time keeps the t-interval
+   * (meanInterval from src/te/calc/stats.ts). A count clamps it to the
+   * count's support. A 0/1 count (support {0, 1}) takes the Wilson interval,
+   * and at 0 of n or n of n the rule-of-three bound (3 / n) instead.
+   */
   lo: number
   hi: number
   conf: number
+  interval: IntervalMethod
+  /** Replicate quantiles; NaN under BAND80_MIN_N samples (p10, p90) or BAND95_MIN_N (p025, p975). */
   p10: number
   p90: number
   p025: number
@@ -51,8 +58,23 @@ export interface Stat {
   defined: { p: number; lo: number; hi: number }
 }
 
+/** How a Stat's `lo` and `hi` were built; 'none' with no finite sample. */
+export type IntervalMethod = 't' | 'wilson' | 'rule-of-three' | 'none'
+
 /** Confidence level of every Stat interval and band interval. */
 export const STAT_CONF = 0.95
+
+/**
+ * Minimum samples before a replicate quantile is reported (R-D-40): below
+ * these, the type-7 quantile interpolates toward one extreme sample.
+ */
+export const BAND80_MIN_N = 10
+export const BAND95_MIN_N = 40
+
+/** What a Stat measures: a count with its support maximum, or a time. */
+type StatKind = { kind: 'time' } | { kind: 'count'; max: number }
+const TIME: StatKind = { kind: 'time' }
+const count = (max: number): StatKind => ({ kind: 'count', max })
 
 /** First replicate count the stopping rule checks, then every STOP_EVERY after it. */
 const STOP_FIRST = 30
@@ -103,9 +125,10 @@ export type Loop<T> = Generator<Checkpoint, T, StopRule | undefined>
 /** Per DT step from t = 0 to scenarioDurationS inclusive (series.ts sampleCount). */
 export interface BandSeries {
   mean: number[]
-  /** t-interval on the mean at STAT_CONF, per step. */
+  /** The Stat interval on the mean at STAT_CONF, per step (a count Stat). */
   lo: number[]
   hi: number[]
+  /** Replicate quantiles per step; NaN under BAND80_MIN_N or BAND95_MIN_N replicates. */
   p10: number[]
   p90: number[]
   p025: number[]
@@ -147,8 +170,13 @@ export interface McSummary {
   /** Held-track count at each step, the heldPass rule of series.ts. */
   tracked: BandSeries
   engaged: BandSeries
-  /** Earliest first detection over the tracks, per replicate. */
+  /** Earliest first detection over the tracks, per replicate: the first single-scan hit. */
   firstDetectS: Stat
+  /**
+   * Earliest stable track file over the tracks, per replicate: the first
+   * fire-control-quality hold of the initiation time (ThreatAssessment.stableTrackAtS).
+   */
+  firmTrackS: Stat
   /** Shortest warning (arrival minus first detection) over the tracks, per replicate. */
   minWarningS: Stat
   perThreat: Record<string, McThreatSummary>
@@ -207,6 +235,11 @@ export interface SensitivityRow {
   high: number
   /** |high - low|; rows sort by it, largest first. */
   swing: number
+  /**
+   * Paired standard error of the swing: the sample sd of the per-replicate
+   * difference (high minus low) over sqrt(replicates); 0 with one replicate.
+   */
+  se: number
 }
 
 /** The sensitivity run result: one row per uncertain field, paired by common random numbers. */
@@ -234,33 +267,56 @@ function definedOf(n: number, total: number): Stat['defined'] {
 }
 
 /**
+ * The interval on the mean of `sorted` (R-D-39). A 0/1 count is a
+ * proportion: Wilson at STAT_CONF (z 1.96, the `wilson` default), and at 0
+ * of n or n of n the rule of three, 3 / n from the observed end. Any other
+ * count clamps the t-interval to [0, max]. A time keeps the t-interval.
+ */
+function intervalOf(
+  sorted: number[],
+  kind: StatKind,
+  t: { lo: number; hi: number },
+): { lo: number; hi: number; interval: IntervalMethod } {
+  if (kind.kind === 'time') return { ...t, interval: 't' }
+  if (kind.max !== 1) {
+    return { lo: Math.max(0, t.lo), hi: Math.min(kind.max, t.hi), interval: 't' }
+  }
+  const n = sorted.length
+  const k = sorted.reduce((s, v) => s + v, 0)
+  if (k === 0) return { lo: 0, hi: Math.min(1, 3 / n), interval: 'rule-of-three' }
+  if (k === n) return { lo: Math.max(0, 1 - 3 / n), hi: 1, interval: 'rule-of-three' }
+  const w = wilson(k, n)
+  return { lo: w.lo, hi: w.hi, interval: 'wilson' }
+}
+
+/**
  * Stat over the finite entries of `samples`; `total` is the sample count
  * before the finite filter. Sorted once here; `quantile` sorts its input
  * again, and that second sort of an ascending array is accepted.
  */
-function statOf(samples: number[]): Stat {
+function statOf(samples: number[], kind: StatKind): Stat {
   const total = samples.length
   const sorted = samples.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
   const n = sorted.length
   const defined = definedOf(n, total)
   if (n === 0) {
     return {
-      mean: NaN, sd: NaN, se: NaN, lo: NaN, hi: NaN, conf: STAT_CONF,
+      mean: NaN, sd: NaN, se: NaN, lo: NaN, hi: NaN, conf: STAT_CONF, interval: 'none',
       p10: NaN, p90: NaN, p025: NaN, p975: NaN, n: 0, total, defined,
     }
   }
   const { mean, sd, lo, hi } = meanInterval(sorted, STAT_CONF)
+  const q = (p: number, min: number) => (n < min ? NaN : quantile(sorted, p))
   return {
     mean,
     sd,
     se: sd / Math.sqrt(n),
-    lo,
-    hi,
+    ...intervalOf(sorted, kind, { lo, hi }),
     conf: STAT_CONF,
-    p10: quantile(sorted, 0.1),
-    p90: quantile(sorted, 0.9),
-    p025: quantile(sorted, 0.025),
-    p975: quantile(sorted, 0.975),
+    p10: q(0.1, BAND80_MIN_N),
+    p90: q(0.9, BAND80_MIN_N),
+    p025: q(0.025, BAND95_MIN_N),
+    p975: q(0.975, BAND95_MIN_N),
     n,
     total,
     defined,
@@ -273,13 +329,13 @@ function halfWidthOf(values: number[]): number {
   return (hi - lo) / 2
 }
 
-/** The same Stat per step over `rows` (one row per replicate, one entry per step). */
-function bandOf(rows: number[][], n: number): BandSeries {
+/** The same count Stat per step over `rows` (one row per replicate, one entry per step). */
+function bandOf(rows: number[][], n: number, max: number): BandSeries {
   const band: BandSeries = { mean: [], lo: [], hi: [], p10: [], p90: [], p025: [], p975: [] }
   const column = new Array<number>(rows.length)
   for (let k = 0; k < n; k += 1) {
     for (let i = 0; i < rows.length; i += 1) column[i] = rows[i][k]
-    const s = statOf(column)
+    const s = statOf(column, count(max))
     band.mean.push(s.mean)
     band.lo.push(s.lo)
     band.hi.push(s.hi)
@@ -417,6 +473,7 @@ export function* replicateLoop(
   const tracked: number[][] = []
   const engaged: number[][] = []
   const raidFirstDetect: Samples = []
+  const raidFirmTrack: Samples = []
   const raidMinWarning: Samples = []
   const threatKilled = new Map<string, Samples>()
   const threatLeaked = new Map<string, Samples>()
@@ -461,9 +518,11 @@ export function* replicateLoop(
     tracked.push(trackedOnGrid(tracks, enabledSensorIds, n))
 
     let firstDetect = NaN
+    let firmTrack = NaN
     let minWarning = NaN
     for (const a of tracks) {
       if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
+      if (a.stableTrackAtS != null) firmTrack = minOf(firmTrack, a.stableTrackAtS)
       if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
       const att = report.threats.find((x) => x.uasId === a.uasId)
       sample(threatKilled, a.uasId, att?.expectedKills ?? 0)
@@ -478,6 +537,7 @@ export function* replicateLoop(
       }
     }
     raidFirstDetect.push(firstDetect)
+    raidFirmTrack.push(firmTrack)
     raidMinWarning.push(minWarning)
 
     for (const ef of report.effectors) {
@@ -506,22 +566,28 @@ export function* replicateLoop(
     }
   }
 
+  // Count supports: ships for kills, leakers and residual; tracks for the
+  // detected, tracked and engaged counts; salvos are unbounded.
+  let raidSize = 0
+  for (const ships of threatShips.values()) raidSize += ships
+  const trackCount = threatResidual.size
   const perThreat: Record<string, McThreatSummary> = {}
   for (const [uasId, rows] of threatResidual) {
+    const ships = threatShips.get(uasId) ?? 1
     perThreat[uasId] = {
-      killed: statOf(threatKilled.get(uasId) ?? []),
-      leaked: statOf(threatLeaked.get(uasId) ?? []),
-      firstDetectS: statOf(threatFirstDetect.get(uasId) ?? []),
+      killed: statOf(threatKilled.get(uasId) ?? [], count(ships)),
+      leaked: statOf(threatLeaked.get(uasId) ?? [], count(ships)),
+      firstDetectS: statOf(threatFirstDetect.get(uasId) ?? [], TIME),
       arrivalS: threatArrival.get(uasId) ?? null,
-      shipCount: threatShips.get(uasId) ?? 1,
-      residual: bandOf(rows, n),
+      shipCount: ships,
+      residual: bandOf(rows, n, ships),
     }
   }
   const perEffector: Record<string, McEffectorSummary> = {}
   for (const [effectorId, salvos] of effectorSalvos) {
     perEffector[effectorId] = {
-      salvos: statOf(salvos),
-      kills: statOf(effectorKills.get(effectorId) ?? []),
+      salvos: statOf(salvos, count(Infinity)),
+      kills: statOf(effectorKills.get(effectorId) ?? [], count(raidSize)),
     }
   }
 
@@ -531,13 +597,14 @@ export function* replicateLoop(
     // The duration is an integer number of seconds and DT divides one, so
     // the grid recovers it exactly without a store import.
     durationS: (n - 1) * DT,
-    kills: bandOf(kills, n),
-    leakers: bandOf(leakers, n),
-    detected: bandOf(detected, n),
-    tracked: bandOf(tracked, n),
-    engaged: bandOf(engaged, n),
-    firstDetectS: statOf(raidFirstDetect),
-    minWarningS: statOf(raidMinWarning),
+    kills: bandOf(kills, n, raidSize),
+    leakers: bandOf(leakers, n, raidSize),
+    detected: bandOf(detected, n, trackCount),
+    tracked: bandOf(tracked, n, trackCount),
+    engaged: bandOf(engaged, n, trackCount),
+    firstDetectS: statOf(raidFirstDetect, TIME),
+    firmTrackS: statOf(raidFirmTrack, TIME),
+    minWarningS: statOf(raidMinWarning, TIME),
     perThreat,
     perEffector,
     elapsedMs: 0,
@@ -551,30 +618,45 @@ interface Halt {
 }
 
 /**
- * End-of-run leaker mean over the replicates of `runSettings(scenario)`:
- * the same number `runReplicates(scenario).leakers.mean[n - 1]` reports,
- * without the bands. The caller passes an aleatory scenario with no stopping
- * rule, so every replicate runs. One checkpoint per replicate, reporting the
- * caller's field progress; a stop records itself in `halt` and returns NaN.
+ * End-of-run leakers per replicate over the replicates of
+ * `runSettings(scenario)`; their sum over the count is the number
+ * `runReplicates(scenario).leakers.mean[n - 1]` reports, without the bands.
+ * The caller passes an aleatory scenario with no stopping rule, so every
+ * replicate runs. One checkpoint per replicate, reporting the caller's field
+ * progress; a stop records itself in `halt` and returns null.
  */
-function* leakerMeanLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<number> {
+function* leakerLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<Samples | null> {
   const { seed, replicates } = runSettings(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const tEndS = (sampleCount(scenario) - 1) * DT
-  let sum = 0
+  const leakers: Samples = []
   for (let i = 0; i < replicates; i += 1) {
     const policy = monteCarloPolicy(seed, i, thresholds)
     const assessments = assessAllThreats(scenario, policy)
     const report = resolveEngagements(scenario, assessments, policy)
-    sum += liveKpisAt(buildLiveTimeline(assessments, report), tEndS).leakerShips
+    leakers.push(liveKpisAt(buildLiveTimeline(assessments, report), tEndS).leakerShips)
     const stop = yield cp
     if (stop) {
       // The half-width rule never runs here, so a stop is a budget or a cancel.
       halt.rule = stop === 'cancelled' ? 'cancelled' : 'budget'
-      return NaN
+      return null
     }
   }
-  return sum / replicates
+  return leakers
+}
+
+/** The mean of per-replicate samples, summed in replicate order. */
+function meanOf(samples: Samples): number {
+  let sum = 0
+  for (const v of samples) sum += v
+  return sum / samples.length
+}
+
+/** The paired standard error of `high - low` over the replicates (R-D-42). */
+function pairedSe(low: Samples, high: Samples): number {
+  const d = high.map((v, i) => v - low[i])
+  const { sd } = meanInterval(d, STAT_CONF)
+  return sd / Math.sqrt(d.length)
 }
 
 /** The panel label of one uncertain field's owner: model name, connection label, or Doctrine. */
@@ -627,26 +709,28 @@ export function* sensitivityLoop(
     const done = { stat: 'leakers' as const, rows, nominal, replicates, seed, elapsedMs: 0 }
     return halt.rule ? { ...done, stopped: { rule: halt.rule, at: cp.done } } : done
   }
-  const nominal = yield* leakerMeanLoop(base, cp, halt)
-  if (halt.rule) return summary(nominal)
+  const nominalLeakers = yield* leakerLoop(base, cp, halt)
+  if (nominalLeakers == null) return summary(NaN)
+  const nominal = meanOf(nominalLeakers)
   for (const f of fields) {
     const at = (q: number) =>
-      leakerMeanLoop(
+      leakerLoop(
         sampleScenario(base, (m, fl) => (m === f.modelId && fl === f.field ? q : null)),
         cp,
         halt,
       )
     const low = yield* at(0.1)
-    if (halt.rule) break
+    if (low == null) break
     const high = yield* at(0.9)
-    if (halt.rule) break
+    if (high == null) break
     rows.push({
       modelId: f.modelId,
       field: f.field,
       label: fieldLabel(base, f.modelId),
-      low,
-      high,
-      swing: Math.abs(high - low),
+      low: meanOf(low),
+      high: meanOf(high),
+      swing: Math.abs(meanOf(high) - meanOf(low)),
+      se: pairedSe(low, high),
     })
     cp.done += 1
     onProgress?.(cp.done, fields.length)

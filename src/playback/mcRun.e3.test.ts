@@ -4,7 +4,9 @@ import type { Connection, Entity, EntityKind, FlightPath, Scenario, SpecModel, V
 import { MOUNT_HEIGHT_M, newId } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { bandMean, countSub, statMean, timeStatSub } from '../panels/analysis/widgets/mc'
+import { wilson } from '../te/calc/stats'
 import { resolveEngagements } from './attrition'
+import { FALLOFF_AT_MAX } from './pk'
 import { runReplicates } from './mcRun'
 import type { McSummary } from './mcRun'
 
@@ -219,11 +221,13 @@ describe('stopping, rare outcomes and undefined times', () => {
     // / (n (n - 1)) = 1 / 30) and se = sd / sqrt(30) = 0.0333; the type-7 p90
     // is 0 and the p975 interpolates between the 29th and 30th order statistic
     // at position 0.975 * 29 = 28.275, so 0.275. For 0 of 30 every statistic is
-    // 0 and the mean interval has zero width: that is arithmetic, not coverage;
-    // the rule-of-three bound 3 / 30 = 0.1 is the statement an adequacy rule
-    // gives. The t-interval lower bound for 1 of 30 is 1 / 30 - 2.045 * 0.0333 =
-    // -0.035, below the support of a count; that behavior is recorded in the
-    // crosswalk and not asserted here.
+    // 0. The killed count of a one-ship threat is a 0/1 statistic (R-D-39):
+    // 1 of 30 takes the Wilson interval, 0.0059 to 0.167 (wilson(1, 30)), and
+    // 0 of 30 the rule-of-three bound, 0 to 3 / 30 = 0.1, in place of the
+    // t-interval (1 / 30 - 2.045 * 0.0333 = -0.035, below the support) and the
+    // zero-width interval. The p975 at 30 replicates is unavailable
+    // (BAND95_MIN_N 40, R-D-40); the 0.275 interpolation is recorded in the
+    // crosswalk and no longer reported.
     const { scenario, uasId } = build(0.03)
     const p = resolveEngagements(scenario).totals.expectedKills
     expect(Math.abs(p - 0.0291)).toBeLessThan(0.0001)
@@ -234,14 +238,37 @@ describe('stopping, rare outcomes and undefined times', () => {
     expect(one.se).toBeCloseTo(Math.sqrt(1 / 30) / Math.sqrt(30), 12)
     expect(one.p10).toBe(0)
     expect(one.p90).toBe(0)
-    expect(one.p975).toBeCloseTo(0.275, 12)
+    expect(Number.isNaN(one.p975)).toBe(true)
+    expect(one.interval).toBe('wilson')
+    const w = wilson(1, 30)
+    expect(one.lo).toBe(w.lo)
+    expect(one.hi).toBe(w.hi)
+    expect(Math.abs(w.lo - 0.0059)).toBeLessThan(0.0001)
+    expect(Math.abs(w.hi - 0.167)).toBeLessThan(0.001)
     expect(one.defined).toEqual({ p: 1, lo: expect.any(Number), hi: 1 })
     const none = runReplicates({ ...scenario, seed: 1, replicates: 30 }).perThreat[uasId].killed
     expect(none.mean).toBe(0)
     expect(none.sd).toBe(0)
+    expect(none.interval).toBe('rule-of-three')
     expect(none.lo).toBe(0)
-    expect(none.hi).toBe(0)
-    expect(none.p975).toBe(0)
+    expect(none.hi).toBeCloseTo(0.1, 12)
+    expect(none.p90).toBe(0)
+    expect(Number.isNaN(none.p975)).toBe(true)
+  })
+
+  it('replicate quantiles need 10 samples for p10/p90 and 40 for p025/p975', () => {
+    // R-D-40: at 9 replicates no quantile is reported, at 10 the 80 percent
+    // pair is, at 40 both pairs are. Pd 1 and Pk 1 give a constant 1, so
+    // every reported quantile equals the mean.
+    const { scenario, uasId } = build(1 / (1 - FALLOFF_AT_MAX))
+    const at = (replicates: number) => runReplicates({ ...scenario, replicates }).perThreat[uasId].killed
+    const nine = at(9)
+    for (const v of [nine.p10, nine.p90, nine.p025, nine.p975]) expect(Number.isNaN(v)).toBe(true)
+    const ten = at(10)
+    expect([ten.p10, ten.p90]).toEqual([1, 1])
+    expect(Number.isNaN(ten.p025)).toBe(true)
+    const forty = at(40)
+    expect([forty.p10, forty.p90, forty.p025, forty.p975]).toEqual([1, 1, 1, 1])
   })
 
   it('an undefined time reads unavailable in the panel sub-line while a count reads zero', () => {
@@ -254,12 +281,28 @@ describe('stopping, rare outcomes and undefined times', () => {
     expect(summary.firstDetectS.n).toBe(0)
     expect(summary.firstDetectS.total).toBe(10)
     expect(statMean(summary.firstDetectS)).toBeNull()
+    // wilson(0, 10): 0 to 3.8416 / 13.8416 = 0.2775, shown as whole percents (R-D-41).
     expect(timeStatSub(summary.firstDetectS, 'detected'))
-      .toBe('MC estimate unavailable · detected in 0 of 10')
+      .toBe('MC estimate unavailable · detected in 0 of 10 · 0% to 28% (95% Wilson)')
     expect(timeStatSub(summary.minWarningS, 'warning'))
-      .toBe('MC estimate unavailable · warning time in 0 of 10')
+      .toBe('MC estimate unavailable · warning time in 0 of 10 · 0% to 28% (95% Wilson)')
+    // One track, so the detected count is a 0/1 statistic: 0 of 10 reads the
+    // rule-of-three bound 0 to 0.3, printed as the interval, not a half-width.
     const k = summary.detected.mean.length - 1
     expect(bandMean(summary.detected, k, 10)).toBe(0)
-    expect(countSub(summary.detected, k, 10)).toBe('MC mean · ±0 (95% mean CI) · n=10')
+    expect(countSub(summary.detected, k, 10)).toBe('MC mean · 0 to 0.3 (95% mean CI) · n=10')
+  })
+
+  it('a defined time under 30 replicates shows the defined fraction but no mean CI', () => {
+    // Every replicate detects at the first scan (planning radar, Pd 1), so the
+    // time is defined in 10 of 10: wilson(10, 10) is 0.722 to 1 (72% to 100%),
+    // and the mean CI is withheld under TIME_CI_MIN_N 30 (R-D-41).
+    const { scenario } = build(1)
+    const summary = runReplicates({ ...scenario, replicates: 10 })
+    expect(summary.firstDetectS.n).toBe(10)
+    expect(summary.firstDetectS.interval).toBe('t')
+    expect(timeStatSub(summary.firstDetectS, 'detected')).toBe(
+      'MC conditional mean · first single-scan hit · mean CI unavailable under 30 defined · n=10 · detected in 10 of 10 · 72% to 100% (95% Wilson)',
+    )
   })
 })

@@ -54,7 +54,7 @@ function chipOf(
 /** Chip title phrase per early stop rule. */
 const STOP_BY: Record<StopRule, string> = {
   replicates: 'the replicate count',
-  halfWidth: 'the half-width rule',
+  halfWidth: 'the half-width rule on the end-of-run leaker mean',
   budget: 'the execution budget',
   cancelled: 'a cancel',
 }

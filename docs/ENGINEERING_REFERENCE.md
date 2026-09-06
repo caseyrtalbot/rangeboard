@@ -259,21 +259,31 @@ Each fact below has exactly one definition. Read it there; never add a second co
   schema bump), edited through `patchScenario` and part of `analysisBasisSignature`. The
   seed is bounded to `[0, 4294967295]` because `hashU01` reads every key part modulo 2^32.
 - **Statistics** (`mcRun.ts`): `Stat` is the one statistic shape: mean, sd, se, the
-  t-interval `lo` and `hi` at `conf`, the quantiles, `n` finite samples of `total` run, and
-  the `defined` fraction with a Wilson interval, built from `meanInterval`, `quantile` and
-  `wilson` in `src/te/calc/stats.ts` (the one engine dependency on `src/te/`; import a
-  statistic from there, never copy it). The replicate loop stops after 30 replicates, and
-  every 10 after that, when the 95 percent half-width of the end-of-run leaker mean is
-  under `targetHalfWidth`; `McSummary.stopped` records the rule and the replicate. Panels
-  read a time `Stat` through `timeStatSub(stat, quantity)` and a band step through
-  `countSub` (`widgets/mc.ts`). Bands and tile subs read current `McSummary` through `withBands` (`series.ts`) and
-  `currentSummary`, only when `mc.status` is `done` for the current run id. Covered chart
-  lines become replicate means with 80/95 percent replicate-quantile bands. Tile intervals
-  describe means, not those quantiles. Values and intervals share quantity/denominator;
-  Defeat converts ship count and interval to percent/percentage points by the same raid size.
-  Missing/zero-sample estimates remain unavailable and n=1 carries no claimed mean CI.
-  Full-run conditional time means are labeled; quantities without a replicate statistic
-  retain an individual planning-envelope label.
+  interval `lo` and `hi` at `conf` with its `interval` method, the quantiles, `n` finite
+  samples of `total` run, and the `defined` fraction with a Wilson interval, built from
+  `meanInterval`, `quantile` and `wilson` in `src/te/calc/stats.ts` (the one engine
+  dependency on `src/te/`; import a statistic from there, never copy it). `statOf` takes
+  the statistic's kind (R-D-39): a time keeps the t-interval; a count clamps it to
+  [0, max] (ships, tracks, or unbounded for salvos); a 0/1 count (max 1) takes the Wilson
+  interval, and at 0 of n or n of n the rule-of-three bound 3 / n from the observed end.
+  `p10`/`p90` are NaN under `BAND80_MIN_N` (10) samples and `p025`/`p975` under
+  `BAND95_MIN_N` (40) (R-D-40). `McSummary.firmTrackS` is the earliest `stableTrackAtS`
+  per replicate; `firstDetectS` is the first single-scan hit (R-D-43). The replicate loop
+  stops after 30 replicates, and every 10 after that, when the 95 percent t half-width of
+  the end-of-run leaker mean is under `targetHalfWidth`; `McSummary.stopped` records the
+  rule and the replicate. Panels read a time `Stat` through `timeStatSub(stat, quantity)`
+  (names the single-scan-hit basis, shows the defined fraction's Wilson interval, withholds
+  the mean CI under `TIME_CI_MIN_N` 30 defined; R-D-41) and a band step through
+  `countSub` (the interval as its two ends, since a count interval is not symmetric)
+  (`widgets/mc.ts`). Bands and tile subs read current `McSummary` through `withBands`
+  (`series.ts`) and `currentSummary`, only when `mc.status` is `done` for the current run
+  id. Covered chart lines become replicate means with 80/95 percent replicate-quantile
+  bands, each drawn only when its quantiles are finite; `bandNote` words the rule. Tile
+  intervals describe means, not those quantiles. Values and intervals share
+  quantity/denominator; Defeat converts ship count and interval to percent by the same raid
+  size. Missing/zero-sample estimates remain unavailable and n=1 carries no claimed mean
+  CI. Full-run conditional time means are labeled; quantities without a replicate
+  statistic retain an individual planning-envelope label.
 - **Provenance** (`Provenance` in `src/model/types.ts`): a `SpecModel` carries one row per
   field (field, value, source, url, date, basis, spread); `basisFor(model, field)` is the
   one basis resolver and answers `pf` when the field has no row. `PfTag`
@@ -304,7 +314,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   policy and calls `sampleScenario` once per replicate before `assessAllThreats`, under
   `aleatory` it never calls it. `runSensitivity` (`mcRun.ts`) is one-at-a-time on the
   end-of-run leaker mean, the field at its p10 and at its p90 with every other field
-  nominal, paired by the same seed and replicate index, rows sorted by swing; the
+  nominal, paired by the same seed and replicate index, rows sorted by swing, each row
+  with `se`, the paired standard error of the per-replicate difference (R-D-42); the
   `sensitivity` widget runs it on demand on its own worker slot into `mc.sensitivity`,
   which a basis change marks stale. The sensitivity widget reads `currentSensitivity`
   and hides stale rows and replicate metadata. `spreadText` (`src/panels/inspector/spreadText.ts`) is

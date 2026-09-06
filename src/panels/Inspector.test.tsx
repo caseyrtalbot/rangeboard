@@ -66,6 +66,14 @@ describe('Inspector effector and threat marks', () => {
     const rcs = html.slice(html.indexOf('Radar cross section'), html.indexOf('Fluctuation model'))
     expect(rcs).toContain('<span class="prov-mark pf" title="planning factor · spread ±6 dB"')
   })
+
+  it('tags the size factor as a planning factor with no spread (R-D-37)', () => {
+    selectFromModel('lib-mavic3')
+    const html = render()
+    const size = html.slice(html.indexOf('Kinetic size factor'), html.indexOf('Navigation'))
+    expect(size).toContain('<span class="prov-mark pf" title="planning factor"')
+    expect(size).not.toContain('spread')
+  })
 })
 
 describe('Inspector flyout speed rows', () => {

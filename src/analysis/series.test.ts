@@ -685,7 +685,7 @@ describe('sensorSeries Pd per track', () => {
 
 describe('withBands', () => {
   const stat: Stat = {
-    mean: 1, sd: 1, se: 0.577, lo: 0, hi: 2, conf: 0.95,
+    mean: 1, sd: 1, se: 0.577, lo: 0, hi: 2, conf: 0.95, interval: 't',
     p10: 0, p90: 2, p025: 0, p975: 2, n: 3, total: 3,
     defined: { p: 1, lo: 0.44, hi: 1 },
   }
@@ -713,6 +713,7 @@ describe('withBands', () => {
       tracked: band(n, 40),
       engaged: band(n, 50),
       firstDetectS: stat,
+      firmTrackS: stat,
       minWarningS: stat,
       perThreat: {
         'uas-1': {
@@ -773,9 +774,22 @@ describe('withBands', () => {
     expect(out.band95?.every((bound) => bound.every(Number.isNaN))).toBe(true)
   })
 
-  it('hides estimates when quantile vectors are missing or no replicates exist', () => {
+  it('drops one band when its quantiles are NaN and keeps the mean and the other band', () => {
+    // The engine reports NaN p025/p975 under BAND95_MIN_N replicates (R-D-40).
     const summary = summaryOf(4)
-    summary.kills.p90 = []
+    summary.kills.p025.fill(NaN)
+    summary.kills.p975.fill(NaN)
+    const [out] = withBands([series('kpi.expectedKills', 4)], summary)
+    expect(out.values).toEqual([10, 10, 10, 10])
+    expect(out.band80).toEqual([[9, 9, 9, 9], [11, 11, 11, 11]])
+    expect(out.band95).toBeUndefined()
+    summary.kills.p10 = []
+    expect(withBands([series('kpi.expectedKills', 4)], summary)[0].band80).toBeUndefined()
+  })
+
+  it('hides estimates when the mean is missing or no replicates exist', () => {
+    const summary = summaryOf(4)
+    summary.kills.mean = []
     expect(withBands([series('kpi.expectedKills', 4)], summary)[0].values.every(Number.isNaN)).toBe(true)
     summary.replicates = 0
     expect(withBands([series('kpi.detected', 4)], summary)[0].label).toContain('MC estimate unavailable')

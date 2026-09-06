@@ -136,7 +136,7 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     tier: 'physics',
     validation: 'analytic',
     standard: 'Statistical rigor in T&E',
-    note: 'One seeded stream per replicate. The deterministic policy carries mass instead.',
+    note: 'Keyed draws: every uniform hashes the seed, the replicate and its event key. The deterministic policy carries mass instead.',
   },
   'parameter-spread': {
     id: 'parameter-spread',

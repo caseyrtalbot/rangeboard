@@ -65,7 +65,7 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
         </p>
       ) : summary != null ? (
         <>
-          <p className="muted small">Full-run MC mean leakers (ships). One parameter at p10/p90, all others nominal; paired replicates. Endpoints are parameter perturbations, not uncertainty intervals. Mean CI unavailable.</p>
+          <p className="muted small">Full-run MC mean leakers (ships). One parameter at p10/p90, all others nominal; paired replicates. Endpoints are parameter perturbations, not uncertainty intervals. SE is the paired standard error of the swing.</p>
           <Tornado rows={rows} nominal={summary.nominal} unit="ships" />
           <table className="tb">
             <thead>
@@ -75,6 +75,7 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
                 <th>At parameter p10</th>
                 <th>At parameter p90</th>
                 <th>Swing</th>
+                <th>SE</th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +86,7 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
                   <td>{formatCount(row.low)}</td>
                   <td>{formatCount(row.high)}</td>
                   <td>{formatCount(row.swing)}</td>
+                  <td>{row.se.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

@@ -1310,7 +1310,7 @@ describe('monte carlo slice', () => {
   beforeEach(reset)
 
   const ZERO_STAT = {
-    mean: 0, sd: 0, se: 0, lo: 0, hi: 0, conf: 0.95,
+    mean: 0, sd: 0, se: 0, lo: 0, hi: 0, conf: 0.95, interval: 't' as const,
     p10: 0, p90: 0, p025: 0, p975: 0, n: 1, total: 1,
     defined: { p: 1, lo: 0.2, hi: 1 },
   }
@@ -1328,6 +1328,7 @@ describe('monte carlo slice', () => {
       tracked: ZERO_BAND,
       engaged: ZERO_BAND,
       firstDetectS: ZERO_STAT,
+      firmTrackS: ZERO_STAT,
       minWarningS: ZERO_STAT,
       perThreat: {},
       perEffector: {},
@@ -1466,10 +1467,11 @@ describe('sensitivity slice', () => {
     return {
       stat: 'leakers',
       rows: [
-        { modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1 },
+        { modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1, se: 0.1 },
         {
           modelId: 'lib-mavic3',
           field: 'rcsM2',
+          se: 0,
           label: 'Mavic 3',
           low: 1.4,
           high: 1.6,

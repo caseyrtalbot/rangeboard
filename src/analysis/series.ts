@@ -847,16 +847,18 @@ function bandFor(summary: McSummary, id: string, uasId?: string): BandSeries | n
 
 /**
  * Mean lines and replicate quantile bands share the same samples. Unsupported quantities
- * remain explicitly deterministic; missing/mismatched supported estimates stay unavailable.
+ * remain explicitly deterministic; a missing or mismatched mean stays unavailable. Each
+ * band is drawn only when both of its quantile vectors are finite on the grid: the
+ * engine reports NaN quantiles under BAND80_MIN_N and BAND95_MIN_N replicates (R-D-40).
  */
 export function withBands(series: Series[], summary: McSummary | null, uasId?: string): Series[] {
   const covered = new Set(['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected', 'kpi.engaged', 'tracksHeld', 'residual'])
   return series.map((s) => {
     if (!summary || !covered.has(s.id)) return { ...s, label: `${s.label} · planning envelope` }
     const band = bandFor(summary, s.id, uasId)
-    const vectors = band && [band.mean, band.p10, band.p90, band.p025, band.p975]
-    if (!band || summary.replicates < 1 || !vectors?.every((values) =>
-      values.length === s.values.length && values.every(Number.isFinite))) {
+    const onGrid = (values: number[]) =>
+      values.length === s.values.length && values.every(Number.isFinite)
+    if (!band || summary.replicates < 1 || !onGrid(band.mean)) {
       return { ...s, label: `${s.label} · MC estimate unavailable`, values: s.values.map(() => NaN), band80: undefined, band95: undefined }
     }
     // Leakers have no defined display value without a defended asset. The engine's
@@ -864,12 +866,14 @@ export function withBands(series: Series[], summary: McSummary | null, uasId?: s
     const mask = (values: number[]) => s.id === 'kpi.leakerShips'
       ? values.map((value, i) => Number.isFinite(s.values[i]) ? value : NaN)
       : values
+    const bandOf = (lo: number[], hi: number[]): [number[], number[]] | undefined =>
+      onGrid(lo) && onGrid(hi) ? [mask(lo), mask(hi)] : undefined
     return {
       ...s,
       label: `${s.label} · MC mean`,
       values: mask(band.mean),
-      band80: [mask(band.p10), mask(band.p90)],
-      band95: [mask(band.p025), mask(band.p975)],
+      band80: bandOf(band.p10, band.p90),
+      band95: bandOf(band.p025, band.p975),
     }
   })
 }
