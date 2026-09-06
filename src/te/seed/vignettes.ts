@@ -1,5 +1,5 @@
 /**
- * Nine seeded threat vignettes (MASTER-SEEDDATA section 3.5; file 08 sec 4.5).
+ * Nine seeded threat vignettes (MASTER-SEEDDATA).
  * Each instantiates the 22-item mission-thread package. Kinematics, nav modes,
  * raid notes, representation guidance, and fidelity-relevant notes are mapped
  * onto TeThreatProfile fields; fields the source does not provide stay unset.
@@ -7,7 +7,7 @@
 
 import type { TeThreatProfile } from '../model/types'
 
-export interface ThreatVignette {
+interface ThreatVignette {
   key: string
   name: string
   summary: string

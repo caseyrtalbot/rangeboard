@@ -7,7 +7,7 @@ import type { Store } from './store'
  * Store selectors the panels and the canvas subscribe with. Every selector is
  * a pure function of the store state; a panel that subscribes here re-renders
  * only when the value it reads changes, never on a publication that moves a
- * field it does not show (F1, design contract section 7).
+ * field it does not show.
  */
 
 /** The published sim time, at the 10 Hz publication cadence. */

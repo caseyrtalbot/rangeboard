@@ -2,6 +2,7 @@ import type { SensorHoldGate } from '../../analysis/sensorEnv'
 import type { FireDoctrine, UasSpec } from '../../model/types'
 import type { RingKey } from '../../state/rings'
 import { falloffRangeM, kineticPk } from '../../playback/pk'
+import { DANGER_INK } from '../../ui/ink'
 
 /**
  * One style source for every ring the board draws. Each ring is either a
@@ -42,18 +43,17 @@ import { falloffRangeM, kineticPk } from '../../playback/pk'
  * panel agree.
  */
 
-export type SensorRingKind = 'held' | 'cued' | 'inert' | 'off'
+type SensorRingKind = 'held' | 'cued' | 'inert' | 'off'
 
-/** Danger ink for the effector rings: `--danger` (`--status-critical`, index.css).
- *  A Konva layer cannot read a CSS variable, so the value is repeated here. */
-export const EFFECTOR_RING_COLOR = '#c96458'
+/** Danger ink for the effector rings. */
+export const EFFECTOR_RING_COLOR = DANGER_INK
 /** Ink for a disabled or inert entity's rings. */
 export const DISABLED_RING_COLOR = '#565b58'
 
 /** Placard ring behind the Pd contours: dotted. */
 export const PLACARD_DASH = [2, 5]
-/** Classify ring: long dash, distinct from the cued detect dash and the Pd 0.9 dash (D-20). */
-export const CLASSIFY_DASH = [10, 4]
+/** Classify ring: long dash, distinct from the cued detect dash and the Pd 0.9 dash. */
+const CLASSIFY_DASH = [10, 4]
 /** Placard ring dash per non-held kind. */
 export const DETECT_DASH: Record<Exclude<SensorRingKind, 'held'>, number[]> = {
   cued: [7, 4],
@@ -69,12 +69,12 @@ export const RELEASE_DASH = [7, 4]
 /** Commit-Pk range ring: dash-dot. */
 export const COMMIT_DASH = [6, 3, 1, 3]
 /** Two rings closer than this draw as one ring. */
-export const PLACARD_TOLERANCE_M = 1
+const PLACARD_TOLERANCE_M = 1
 /** Pd of the upper contour (PF, a display constant). Not a requirement
  *  threshold: the lower contour reads requirements.pdDetect. */
 export const PD_CONTOUR_HIGH = 0.9
 
-export interface RingStyle {
+interface RingStyle {
   /** Stroke dash in screen px, or null for solid. For a key that draws two
    *  rings, the primary ring. */
   dash: number[] | null
@@ -113,7 +113,7 @@ export function ringKindFor(gate: SensorHoldGate): Exclude<SensorRingKind, 'off'
   return 'inert'
 }
 
-export interface SensorRingInput {
+interface SensorRingInput {
   gate: SensorHoldGate
   /** entityActive(entity). */
   on: boolean
@@ -133,7 +133,7 @@ export interface SensorRingInput {
   envelopeOn: boolean
 }
 
-export interface SensorRingStyle {
+interface SensorRingStyle {
   kind: SensorRingKind
   /** Placard ring radius, meters. */
   placardM: number
@@ -203,7 +203,7 @@ export function envelopeBandM(groundRangesM: number[]): EnvelopeBand | null {
   return { innerM, outerM }
 }
 
-export interface EffectorRingInput {
+interface EffectorRingInput {
   /** entityActive(entity). */
   on: boolean
   /** Max range, ground projected for the selected threat, else the placard, meters. */
@@ -216,7 +216,7 @@ export interface EffectorRingInput {
   commitM: number | null
 }
 
-export interface EffectorRingStyle {
+interface EffectorRingStyle {
   /** Max range ring radius, meters. */
   maxM: number
   /** Min range ring radius, meters, or null when not > 0. */

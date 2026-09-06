@@ -1,6 +1,6 @@
 /**
- * Shared primitives for the Board panels and the T&E Ops kit (design contract
- * F2). Field, segmented control, state and provenance mark exist once, here.
+ * Shared primitives for the Board panels and the T&E Ops kit. Field,
+ * segmented control, state and provenance mark exist once, here.
  * The module reads only the classes and tokens in index.css and imports no
  * store. Anything that needs a model, a store or a phase lives in the kit that
  * owns it and wraps one of these.

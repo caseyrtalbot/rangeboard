@@ -14,7 +14,7 @@ import { useEngagement, useRunCursor } from '../widgets/controls'
 export const DASH = '—'
 
 /** The store reads and the engagement picture every pane shares. */
-export interface DetailRun {
+interface DetailRun {
   scenario: Scenario
   runId: string
   setSimTime: (t: number) => void
@@ -104,7 +104,7 @@ export function DetailTable({ head, rows }: { head: string[]; rows: ReactNode[][
 /** One legend entry: a token name or a hex, and its label. */
 /**
  * A ladder row with its span labels removed. The Ladder prints a span label
- * over the bar; the panes name the colors in a legend instead, as the mockup does.
+ * over the bar; the panes name the colors in a legend instead.
  */
 export function bareSpans(row: LadderRow): LadderRow {
   return { ...row, spans: row.spans.map(({ startS, endS, color }) => ({ startS, endS, color })) }

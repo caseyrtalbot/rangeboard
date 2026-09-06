@@ -41,7 +41,7 @@ import { stepIndex } from './clock'
  *   is u < Pd, a kill or jam draw is u < p, so pdDetect and
  *   pdTrackCumulative are set low only to state that the threshold is not
  *   the question.
- * - Doctrine is OFF (the legacy instant-release path): the gate is the first
+ * - Doctrine is OFF: the gate is the first
  *   detection under ROE free, the first salvo fires at t = 0 and each later
  *   salvo at the previous salvo plus salvoCooldownS while the window holds.
  *   With no flyout speed and engageTimeS 0 the effect lands at the release
@@ -113,9 +113,6 @@ type SpecBody = Omit<SpecModel, 'id' | 'name' | 'description' | 'color' | 'built
 function model(id: string, spec: SpecBody): SpecModel {
   return { id, name: id, description: '', color: '#fff', builtin: false, ...spec }
 }
-
-// ---------------------------------------------------------------------------
-// Cases 1 and 2: one scan radar at constant single-scan Pd
 
 /**
  * Hand-built 4 s scan radar, placard 4000 m against 0.01 m2 at Pd 0.5 and
@@ -294,9 +291,6 @@ describe('case 2: M-of-N track initiation at constant Pd', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Cases 3 and 5: one interceptor, per-shot Pk 0.45 at every release
-
 /**
  * Planning-basis omni radar with no scan period: it holds every step from
  * t = 0, so the ROE free gate is t = 0 and no Pd draw runs.
@@ -445,9 +439,6 @@ describe('case 3: kill mean at per-shot Pk q', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Case 4: one continue-jam dwell at p
-
 /**
  * Omni GNSS jammer at the origin, 3000 m placard at rated power, spec pk
  * 0.5, cooldown 60 s. The target is a GNSS quad with jamBehavior
@@ -553,9 +544,6 @@ describe('case 4: continue-jam hold fraction at p', () => {
     expect(Math.abs(observed - JAM_P)).toBeLessThanOrEqual(3 * se)
   })
 })
-
-// ---------------------------------------------------------------------------
-// Case 5: the raid partition in every replicate
 
 describe('case 5: raid partition with formation ships', () => {
   /**

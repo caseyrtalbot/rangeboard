@@ -25,7 +25,7 @@ import type { DetectionHit, ScanSteering } from './detection'
 import { pdTrackCumulativeOf, radarPdProbe, resolvedThresholds, sweepSensorHits } from './detection'
 import { connectedEffectorIds, killChainConnected, killChainRoutes } from './killChain'
 
-export type ThreatStatus =
+type ThreatStatus =
   | 'no-path'
   | 'never-detected'
   /** ROE 'tight' (or doctrine) and the track never reached hostile classification. */
@@ -41,15 +41,11 @@ export type ThreatStatus =
   | 'window-too-short'
   | 'engageable'
 
-/**
- * Derived track classification ladder, ported from the PicoGrid drone-swarm
- * track statuses (pending -> unknown -> suspected -> hostile). Never stored;
- * recomputed from the scenario.
- */
+/** Derived classification ladder (PicoGrid track statuses). Never stored. */
 export type ThreatClassification = 'pending' | 'unknown' | 'suspected' | 'hostile'
 
 /** Sim time each classification level was first reached; null = never. */
-export interface ClassificationTimes {
+interface ClassificationTimes {
   unknownAtS: number | null
   suspectedAtS: number | null
   hostileAtS: number | null
@@ -70,11 +66,9 @@ export interface SensorObservation {
   intervals: Array<[number, number]>
   /**
    * First time this sensor initiated a track: the M-of-N scan rule for a
-   * scan radar (a stated updateRateS, or a Pd model with the SCAN_S role
-   * period), else the TRACK_INIT_S role table (threshold radar with no
-   * period, and EO/IR). Null when it never did, and for RF and acoustic
-   * sensors, which initiate no fire-control track. Written once, never
-   * rewritten after a drop.
+   * scan radar, else continuous hold for the TRACK_INIT_S role time. Null
+   * for RF and acoustic sensors, which initiate no fire-control track.
+   * Written once, never rewritten after a drop.
    */
   trackInitAtS: number | null
   /**
@@ -96,7 +90,7 @@ export interface SensorObservation {
 }
 
 /** Track continuity from first detection through closest approach/path end. */
-export interface TrackQualitySummary {
+interface TrackQualitySummary {
   heldSamples: number
   totalSamples: number
   continuity: number
@@ -105,17 +99,13 @@ export interface TrackQualitySummary {
 }
 
 /** Estimated speed above which an unknown track becomes suspected, kph (source: 50). */
-export const SUSPECT_SPEED_KPH = 50
+const SUSPECT_SPEED_KPH = 50
 
 /**
- * Protected-boundary radius, meters, for an asset entity that carries no
- * `defendedRadiusM` of its own. The T&E catalog measures warning time to a
- * protected-boundary CROSSING, not to closest approach
- * (docs/te-compilation/MASTER-CALCULATIONS.md section 5; the JIATF-401
- * vignette in docs/te-compilation/12-jiatf401.md section 1.5 flies against a
- * 1,000 m boundary). 500 m is the conservative point-defence default used
- * here: a threat inside it is over the asset. Planning factor, not a measured
- * figure. Set `Entity.defendedRadiusM` per asset to match the real boundary.
+ * Protected-boundary radius, meters, for an asset with no `defendedRadiusM`.
+ * Warning time is measured to a boundary crossing, not to closest approach
+ * (docs/te-compilation/MASTER-CALCULATIONS.md section 5). 500 m is a
+ * point-defence planning factor, not a measured figure.
  */
 export const DEFAULT_DEFENDED_RADIUS_M = 500
 
@@ -126,13 +116,13 @@ export function defendedRadiusOf(asset: Entity): number {
 }
 
 /** Proximity multiple of a connected effector's max range that makes a track suspected. */
-export const SUSPECT_RANGE_FACTOR = 1.5
+const SUSPECT_RANGE_FACTOR = 1.5
 
 /** Route-intent wording that marks a threat profile as an attack profile. */
-export const ATTACK_INTENT_KEYWORDS = ['attack', 'strike', 'raid', 'one-way', 'pgm']
+const ATTACK_INTENT_KEYWORDS = ['attack', 'strike', 'raid', 'one-way', 'pgm']
 
 /** True when the model's route intent reads as an attack profile. */
-export function isAttackIntent(routeIntent: string | undefined): boolean {
+function isAttackIntent(routeIntent: string | undefined): boolean {
   if (!routeIntent) return false
   const s = routeIntent.toLowerCase()
   return ATTACK_INTENT_KEYWORDS.some((k) => s.includes(k))
@@ -159,17 +149,14 @@ export interface ThreatAssessment {
   cpaAssetId: string | null
   cpaS: number | null
   cpaDistanceM: number | null
-  /** Same value as cpaAssetId; kept for callers written before the CPA split. */
+  /** Alias of cpaAssetId. */
   assetId: string | null
-  /** Same value as cpaDistanceM; kept for callers written before the CPA split. */
+  /** Alias of cpaDistanceM. */
   closestApproachM: number | null
   /**
-   * ARRIVAL: the first sample time the threat is inside a defended asset's
-   * protected-boundary radius (Entity.defendedRadiusM, default
-   * DEFAULT_DEFENDED_RADIUS_M). Null when it never enters one, and null when
-   * no asset is placed. A threat that only reaches CPA has NOT arrived.
-   * attrition.ts credits a defeat as a defeat only when the effect lands at
-   * or before this time.
+   * First sample time the threat is inside a defended asset's boundary radius
+   * (defendedRadiusOf). Null when it never enters one or no asset is placed.
+   * attrition.ts credits a defeat only when the effect lands at or before it.
    */
   arrivalS: number | null
   /** arrival minus first detection; the early-warning buffer. Null when either is null. */
@@ -188,26 +175,20 @@ export interface ThreatAssessment {
    *  Doctrine enabled: max(hostile, stable track) + declaration dwell. */
   engageGateS: number | null
   /**
-   * First time a FIRE-CONTROL-QUALITY sensor (radar or EO/IR) had held the
-   * track continuously for doctrine.trackFirmS: the stable-track-file time.
-   * Computed from the scenario's doctrine planning factors whether or not
-   * doctrine is enabled, so the panel can always show it. Null when no such
-   * sensor ever holds that long. RF and acoustic holds never qualify: a
-   * bearing-only alert is a cue, not a firing solution. Optional so older
-   * hand-built fixtures stay valid; assessThreat always fills it.
+   * Earliest trackInitAtS over the fire-control-quality sensors (radar or
+   * EO/IR), computed whether or not doctrine is enabled. RF and acoustic
+   * holds never qualify. Optional so older hand-built fixtures stay valid;
+   * assessThreat always fills it.
    */
   stableTrackAtS?: number | null
   /** The doctrinal weapons-release time (the gate); null when doctrine is off. */
   declaredHostileAtS?: number | null
   /**
-   * Doctrine: per-effector release gates. `gateS` is engagement authority:
-   * a firm track from a sensor ROUTED TO the effector exists, hostile ID is
-   * made, and the declaration dwell has run. `readyS` is release-ready (the
-   * TARGET step complete): gateS plus the kill-chain route latency to this
-   * effector plus its weapon assignment / firing-solution dwell (targetSFor).
-   * No shot leaves before readyS. An effector absent here can never fire at
-   * this threat. Present only when doctrine is enabled; engageGateS carries
-   * the earliest gateS.
+   * Doctrine: per-effector release gates. `gateS` is engagement authority
+   * (firm track from a sensor routed to the effector, hostile ID, declaration
+   * dwell). `readyS` is gateS plus route latency plus the target dwell
+   * (targetSFor); no shot leaves before it. An effector absent here can never
+   * fire at this threat. Present only when doctrine is enabled.
    */
   effectorGates?: Array<{ effectorId: string; gateS: number; readyS: number }>
   /** Sensors that detected the threat at any time during the sweep. */
@@ -236,20 +217,14 @@ function extendIntervals(intervals: Array<[number, number]>, t: number): void {
 
 /**
  * Scan-model state of one scan radar (scanPeriodS non-null) against one
- * threat, created at the sweep start before any detection. Scans fall at
- * originS + k * periodS, where originS is the sweep start plus the policy's
- * phase times the period; each is snapped FORWARD to the first sweep step at
- * or after it, and a period below DT lands several nominal scans on one step
- * and counts one scan per step. A Pd-modeled radar draws once per admitted
- * member at each scan; a threshold radar samples its range test there. A
- * scan before the target is first admitted is a miss with Pd 0 that advances
- * the counter and stays out of the M-of-N window. Between scans the hold
- * carries the last scan result: none before the first detection, a detected
- * scan holds with a measurement, and a missed scan after the track has
- * initiated (M-of-N) coasts (held for continuity, no measurement) until the
- * next detection or the drop at the dropMisses-th consecutive miss. A missed
- * scan before initiation ends the hold: a tentative detection is not
- * extrapolated (F-15).
+ * threat. Scans fall at originS + k * periodS (originS = sweep start plus the
+ * policy's phase times the period), each snapped forward to the first sweep
+ * step at or after it; a period below DT counts one scan per step. A scan
+ * before the target is first admitted stays out of the M-of-N window.
+ * Between scans the hold carries the last scan result: a detected scan holds
+ * with a measurement; a missed scan after initiation coasts until the next
+ * detection or the drop at the dropMisses-th consecutive miss; a missed scan
+ * before initiation ends the hold.
  */
 interface ScanState {
   sensor: Entity
@@ -287,12 +262,9 @@ function scanDue(scan: ScanState, t: number): boolean {
 
 /**
  * Record one scan in the window and test the M-of-N initiation rule: at
- * least m of the last n scans detected AND mOfN(mean single-scan Pd over
- * those scans, m, n) reaches the test's pdTrackCumulative. Fewer than n
- * scans in the window so far: the mean runs over the scans recorded, n
- * unchanged. The window opens at the first admitted scan, so a missed scan
- * before the first detection enters it with no observation to write to;
- * trackInitAtS is written once, on the observation.
+ * least m of the last n scans detected and mOfN(mean single-scan Pd over the
+ * scans recorded, m, n) reaches pdTrackCumulative. trackInitAtS is written
+ * once, on the observation.
  */
 function recordScan(
   scan: ScanState,
@@ -358,8 +330,7 @@ export function assessThreat(
   const duration = scenarioDurationS(scenario)
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const assets = scenario.entities.filter((e) => e.kind === 'asset')
-  // Jammers cannot affect RF-silent, non-GNSS threats (fiber, inertial,
-  // optical), and cannot affect a threat whose link bands they do not cover.
+  // A jammer that cannot reach this threat's links is not an effector against it.
   const effectors = scenario.entities.filter((e) => {
     if (e.kind !== 'effector' || !entityActive(e)) return false
     const spec = modelFor(scenario, e)?.effector
@@ -375,8 +346,7 @@ export function assessThreat(
   const pdTrack = pdTrackCumulativeOf(scenario)
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const delayS = effectivePathDelayS(scenario, path)
-  // One scan state per scan radar, created at the sweep start: the phase is
-  // the run's one draw per (radar, threat) before any scan.
+  // The phase is the run's one draw per (radar, threat), taken before any scan.
   const scanStates = new Map<string, ScanState>()
   for (const sensor of sensors) {
     const spec = modelFor(scenario, sensor)?.sensor
@@ -405,8 +375,6 @@ export function assessThreat(
       pdSeriesStartS: null,
     })
   }
-  // Per-step scratch for the scan radars, allocated once: the radars due a
-  // scan this step and their fresh hits.
   const scanSteps = new Set<string>()
   const scanHits = new Map<string, DetectionHit>()
   const steering: ScanSteering = {
@@ -415,7 +383,6 @@ export function assessThreat(
   }
   const trackSamples: Array<{ tS: number; held: boolean }> = []
   const effectorInRange = new Map<string, Array<[number, number]>>()
-  // Classification ladder state (PicoGrid executeDetection promotion rules).
   let classification: ThreatClassification = 'pending'
   const clsAt = base.classificationAtS
   const speedKph = speed * 3.6
@@ -427,11 +394,8 @@ export function assessThreat(
     tS: null,
     distM: Number.POSITIVE_INFINITY,
   }
-  // First protected-boundary crossing, which is the ARRIVAL. Separate from
-  // closest approach: a threat can pass its CPA 2 km out and never arrive.
   let arrivalS: number | null = null
 
-  // Classification-loop route cache; see the rebuild rule at the use site.
   let connectedCache: Set<string> | null = null
   let connectedCacheSize = -1
 
@@ -442,11 +406,8 @@ export function assessThreat(
 
     const stepTechs = new Set<SensorType>()
     let fcClassifiedNow = false
-    // A coasting scan radar holds the track file with no measurement: held
-    // for continuity (D16), invisible to stepTechs and the ladder.
+    // A coast is held for continuity only: invisible to stepTechs and the ladder.
     let coastHeld = false
-    // The first detecting sensor of this step in sweep order (search sensors,
-    // then cued EO/IR), credited after both passes.
     let stepFirstId: string | null = null
     scanSteps.clear()
     scanHits.clear()
@@ -463,8 +424,7 @@ export function assessThreat(
       t,
       steering,
     )) {
-      // A scan radar's hit is a scan result only at its scan step; a
-      // threshold radar's hit between scans is dropped and the hold carries.
+      // A scan radar's hit is a scan result only at its scan step.
       if (scanStates.has(hit.sensorId)) {
         if (scanSteps.has(hit.sensorId)) {
           scanHits.set(hit.sensorId, hit)
@@ -504,11 +464,9 @@ export function assessThreat(
         fcClassifiedNow = true
       }
     }
-    // Scan pass. At a scan step the fresh hit is the scan result: detected,
-    // or missed with the probe Pd (1 on a hit and 0 on a miss without a Pd
-    // model, so M-of-N degenerates to a count). A miss before the target is
-    // first admitted stays out of the window. Every step then holds from the
-    // carried scan state. Pd telemetry runs every step from the first scan.
+    // Scan pass. Without a Pd model the scan Pd is 1 on a hit and 0 on a
+    // miss, so M-of-N degenerates to a count. Pd telemetry runs every step
+    // from the first scan.
     for (const [sensorId, scan] of scanStates) {
       const scanStep = scanSteps.has(sensorId)
       let observation = sensorObservations.get(sensorId)
@@ -557,15 +515,10 @@ export function assessThreat(
           scan.windowOpen = true
           recordScan(scan, observation, true, pd, t, pdTrack)
         } else {
-          // A Pd-modeled radar admits a target the geometry gate, the wedge
-          // and the instrumented cap pass (Pd above 0); a threshold radar
-          // admits one it holds.
           const admitted = scan.pdModeled && pd > 0
           if (scan.hold !== 'none') {
             scan.consecutiveMisses += 1
-            // A coast extrapolates a track file. Before the M-of-N rule has
-            // initiated one there is only a tentative detection, so a miss
-            // ends the hold and the window keeps counting (F-15).
+            // Before initiation a miss ends the hold; the window keeps counting.
             scan.hold =
               observation?.trackInitAtS == null
                 ? 'none'
@@ -602,17 +555,15 @@ export function assessThreat(
     for (const tech of stepTechs) techsSeen.add(tech)
     if (base.firstConfirmS == null && stepTechs.size >= 2) base.firstConfirmS = t
 
-    // Promotion rules run only while some sensor holds the track. A track can
-    // climb several rungs in one step (e.g. first detected already in range).
+    // A track can climb several rungs in one step.
     if (stepTechs.size > 0 && classification !== 'hostile') {
       if (classification === 'pending') {
         classification = 'unknown'
         clsAt.unknownAtS = t
       }
-      // Proximity is measured to effectors reachable from the sensors that
-      // have held the track so far (plain distance, matching the source).
-      // detectingSensors only grows, so the route set is rebuilt on a new
-      // sensor joining, not every 0.5 s sample.
+      // Proximity is plain distance to effectors routed from the detecting
+      // sensors (matching the source); the route set is rebuilt only when a
+      // sensor joins.
       let nearestRatio = Number.POSITIVE_INFINITY
       if (connectedCache == null || connectedCacheSize !== detectingSensors.size) {
         connectedCache = connectedEffectorIds(scenario, detectingSensors)
@@ -639,23 +590,17 @@ export function assessThreat(
       }
     }
 
-    // Lead-ship geometry, matching the rest of the asset math. Two questions
-    // per sample: how near did the track get (CPA), and is it inside a
-    // protected boundary yet (arrival)?
+    // Lead-ship geometry: CPA and the first boundary crossing (arrival).
     for (const asset of assets) {
       const d = dist(pos, asset.pos)
       if (d < closest.distM) closest = { assetId: asset.id, tS: t, distM: d }
       if (arrivalS == null && d <= defendedRadiusOf(asset)) arrivalS = t
     }
 
-    // A threat is in-range of an effector when ANY formation member is inside
-    // the envelope (min range, max range, sector), measured as slant range
-    // from the launcher, and the threat is under the effector's recorded
-    // ceiling. Effector reach is physical geometry per ship; whether sensors
-    // can split the formation (swarmMerged) is a separate track-resolution
-    // question. A jammer's reach is its power-scaled effective range against
-    // this target, so the window, the attrition jam gate and the drawn cone
-    // agree; a jammer's cone test takes slant range and nothing else.
+    // In range when any formation member is inside the envelope on slant
+    // range, under the effector ceiling. A jammer's reach is its effective
+    // range against this target, as attrition and the drawn cone use; its
+    // cone test takes no ceiling.
     for (const eff of effectors) {
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
@@ -703,8 +648,7 @@ export function assessThreat(
     base.warningS = base.arrivalS - base.firstDetectS
   }
   if (base.firstDetectS != null) {
-    // Track continuity is judged out to closest approach, not to arrival: a
-    // threat that never crosses a boundary still has a decision horizon.
+    // Continuity is judged out to closest approach: a fly-by still has a horizon.
     const horizonS = base.cpaS ?? trackSamples[trackSamples.length - 1]?.tS ?? base.firstDetectS
     const samples = trackSamples.filter(
       (sample) => sample.tS >= base.firstDetectS! - DT / 2 && sample.tS <= horizonS + DT / 2,
@@ -732,15 +676,9 @@ export function assessThreat(
     }
   }
 
-  // Stable track file, PER SENSOR, for the fire-control-quality sensors
-  // (radar or EO/IR). A scan-model radar wrote trackInitAtS in the sweep
-  // (M-of-N over its scans). Every other one initiates after continuous
-  // hold for its own initiation time (spec trackInitS, else the TRACK_INIT_S
-  // role table: a staring fire-control radar confirms in ~2 s, a rotating
-  // early-warning search radar needs several revolutions). Intervals are
-  // already split on every hold break, so an unbroken interval IS continuous
-  // hold. stableTrackAtS is the earliest over sensors: informational when
-  // doctrine is off, the gate input when it is on.
+  // Stable track file per fire-control-quality sensor. A scan radar wrote
+  // trackInitAtS in the sweep; every other one initiates after an unbroken
+  // interval of its initiation time (trackInitSFor).
   const doctrine = effectiveDoctrine(scenario)
   const firmBySensor = new Map<string, number>()
   for (const obs of sensorObservations.values()) {
@@ -752,7 +690,7 @@ export function assessThreat(
       for (const [s0, s1] of obs.intervals) {
         if (s1 - s0 + DT / 2 < initS) continue
         obs.trackInitAtS = s0 + initS
-        break // intervals are in time order; the first long-enough one is earliest
+        break
       }
     }
     const firmAt = obs.trackInitAtS
@@ -761,21 +699,14 @@ export function assessThreat(
     if (base.stableTrackAtS == null || firmAt < base.stableTrackAtS) base.stableTrackAtS = firmAt
   }
 
-  // Kill-chain routes from the detecting sensors: used for the doctrine
-  // gates here and the usable-window sweep below.
   const routes = killChainRoutes(scenario, detectingSensors)
 
-  // ROE gates the engagement window start: free = first detection,
-  // tight = hostile classification, hold = no engagement at all.
-  // Doctrine replaces the free/tight split with the full sequence PER
-  // EFFECTOR: a firm track from a sensor actually ROUTED to that effector
-  // (a track file that never reaches the shooter authorizes nothing), plus
-  // hostile ID, then the declaration dwell. Two-phenomenology confirmation
-  // at declaration start halves the dwell: correlated ID decides faster.
+  // ROE gates the window start: free = first detection, tight = hostile,
+  // hold = none. Doctrine gates per effector: a firm track from a sensor
+  // routed to it, hostile ID, then the declaration dwell (halved when two
+  // phenomenologies had confirmed by declaration start).
   const roe = scenario.roe ?? 'tight'
   const effectorGateS = new Map<string, number>()
-  // Doctrine: release-ready time per effector (gate + route latency + target
-  // dwell). The usable-window sweep and attrition both start from it.
   const effectorReadyS = new Map<string, number>()
   let gateS: number | null = null
   if (roe === 'hold') {
@@ -784,8 +715,7 @@ export function assessThreat(
     const hostileAtS = base.classificationAtS.hostileAtS
     if (hostileAtS != null && firmBySensor.size > 0) {
       for (const [effectorId, route] of routes) {
-        // A standalone effector (own radar, empty source set) self-acquires:
-        // it accepts the earliest firm track anywhere as its cue.
+        // A standalone effector (empty source set) accepts any firm track as its cue.
         const sources =
           route.sourceSensorIds.length > 0 ? route.sourceSensorIds : [...firmBySensor.keys()]
         let firmS: number | null = null
@@ -799,9 +729,6 @@ export function assessThreat(
         const dwellS = doctrine.declareHostileS * (confirmed ? CONFIRMED_DECLARE_FACTOR : 1)
         const effGate = declStartS + dwellS
         effectorGateS.set(effectorId, effGate)
-        // TARGET: the declared track reaches the shooter after the route
-        // latency, then the shooter needs its assignment / firing-solution
-        // dwell before it is release-ready.
         const effEnt = effectors.find((e) => e.id === effectorId)
         const effSpec = effEnt ? modelFor(scenario, effEnt)?.effector : undefined
         const targetS = effSpec ? targetSFor(effSpec, doctrine) : doctrine.targetS
@@ -819,22 +746,16 @@ export function assessThreat(
     gateS = roe === 'free' ? base.firstDetectS : base.classificationAtS.hostileAtS
   }
   base.engageGateS = gateS
-  // A gated interval is USABLE for an effector when its gated length covers
-  // that effector's OWN engage time plus the route latency. Under doctrine the
-  // interval opens at the effector's release-ready time instead (gate + route
-  // latency + target dwell already inside it), so the window start IS the
-  // first possible release and only the engage time must still fit. The
-  // longest usable interval wins the windowS slot (ties: first in entity
-  // order). When no interval is usable but gated geometry exists, windowS
-  // carries the longest gated interval as informative geometry and the status
-  // below is window-too-short (or no-fc-uplink when the fc gate alone blocked
-  // it).
+  // A gated interval is usable when its length covers the effector's engage
+  // time plus the route latency (under doctrine the interval opens at the
+  // release-ready time, so only the engage time must fit). The longest
+  // usable interval wins windowS; with none usable, windowS carries the
+  // longest gated interval and the status is window-too-short or
+  // no-fc-uplink.
   let anyUsable = false
   let fcBlockedUsable = false
   if (gateS != null) {
-    // Only effectors with a route from the detecting sensors can fire
-    // (resolveEngagements uses the same route set). Unrouted geometry stays
-    // available in effectorWindows.
+    // Only routed effectors can fire; unrouted geometry stays in effectorWindows.
     let bestUsableLen = -1
     let bestGatedLen = 0
     let gatedWindow: [number, number] | null = null
@@ -844,15 +765,10 @@ export function assessThreat(
       if (!route) continue
       const spec = modelFor(scenario, eff)?.effector
       if (!spec) continue
-      // Doctrine: each effector opens at ITS OWN release-ready time
-      // (route-aware firm track + declaration + route latency + target
-      // dwell); an effector with no gate has no usable window.
       const effGateS = doctrine.enabled ? effectorReadyS.get(eff.id) : gateS
       if (effGateS == null) continue
       const needS = (spec.engageTimeS ?? 0) + (doctrine.enabled ? 0 : route.latencyS)
-      // A fully typed route to an fc-uplink effector needs a researched
-      // fire-control sensor on the chain; without one its windows stay
-      // geometry only.
+      // A fully typed route to an fc-uplink effector needs a fire-control sensor on it.
       const fcBlocked =
         route.typed &&
         profileFor(eff.specId)?.guidance === 'fc-uplink' &&
@@ -896,9 +812,7 @@ export function assessThreat(
     (base.stableTrackAtS == null || effectorGateS.size === 0) &&
     !(base.stableTrackAtS != null && base.classificationAtS.hostileAtS == null)
   ) {
-    // No firm fire-control track at all, or none from a sensor routed to any
-    // shooter: nothing can be declared. (A firm track with no hostile ID
-    // falls through to not-confirmed instead.)
+    // A firm track with no hostile ID falls through to not-confirmed instead.
     base.status = 'no-stable-track'
   } else if (
     (roe === 'tight' || doctrine.enabled) &&
@@ -906,10 +820,6 @@ export function assessThreat(
   ) {
     base.status = 'not-confirmed'
   } else {
-    // Engageable when ANY routed effector has a usable interval; a long
-    // window that only fits another effector's engage time must not shadow a
-    // shorter window some effector can actually use. When the fc-uplink gate
-    // is the ONLY thing blocking a usable window, say so.
     base.status = anyUsable ? 'engageable' : fcBlockedUsable ? 'no-fc-uplink' : 'window-too-short'
   }
   return base

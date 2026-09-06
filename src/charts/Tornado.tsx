@@ -11,7 +11,7 @@ export interface TornadoRow {
   tag?: ReactNode
 }
 
-export interface TornadoProps {
+interface TornadoProps {
   rows: TornadoRow[]
   /** The headline statistic with every field nominal; drawn as a vertical rule. */
   nominal: number

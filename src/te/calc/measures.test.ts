@@ -1,7 +1,7 @@
 /**
  * Measure pipeline tests, including label-logic fixtures F-29..F-32 and the
  * proportion fixtures F-01/F-02/F-21/F-33 run through the full denominator
- * discipline (MASTER-CALCULATIONS 1.0, 3.13).
+ * discipline (MASTER-CALCULATIONS).
  */
 
 import { describe, expect, it } from 'vitest'

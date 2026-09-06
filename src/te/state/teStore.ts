@@ -54,7 +54,7 @@ import { CARD_TEMPLATES } from '../seed/cardTemplates'
 import { THREAT_VIGNETTES } from '../seed/vignettes'
 
 /** Campaign fields that are arrays of records keyed by `id`. */
-export type TeListKey = {
+type TeListKey = {
   [K in keyof TeCampaign]-?: TeCampaign[K] extends Array<{ id: string }> ? K : never
 }[keyof TeCampaign]
 
@@ -76,7 +76,7 @@ interface TeUi {
   selected: Partial<Record<TeListKey, string | null>>
 }
 
-export interface TeStore {
+interface TeStore {
   schemaVersion: 1
   campaigns: TeCampaign[]
   activeCampaignId: string | null
@@ -98,7 +98,7 @@ export interface TeStore {
   /** Adds an imported or seeded campaign and activates it. */
   loadCampaign: (c: TeCampaign) => void
   /**
-   * New campaign copying structure from an existing one (SPEC section 7).
+   * New campaign copying structure from an existing one.
    * Copies people, organizations, the acceptance block, roles, authorities,
    * decision rights, schedule, registers, factors, measures, threats,
    * conditions, configs, and question skeletons. Never copies evidence:
@@ -107,7 +107,7 @@ export interface TeStore {
    */
   startFromCampaign: (sourceId: string, name?: string, code?: string) => string | null
   /**
-   * Seeds the active campaign from a preset (SPEC section 7). Presets seed
+   * Seeds the active campaign from a preset. Presets seed
    * structure and recommended records only; text placeholders use [brackets]
    * so the card gate catches them. Facts are never fabricated.
    */

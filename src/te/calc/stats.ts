@@ -1,10 +1,8 @@
 /**
  * Statistics engine for T&E measure computation.
- * Source of truth: docs/te-compilation/MASTER-CALCULATIONS.md section 2.
+ * Source: docs/te-compilation/MASTER-CALCULATIONS.md.
  * Pure functions only; no DOM, no React, no external libraries.
  */
-
-import { mulberry32 } from '../../geometry/prng'
 
 export interface Interval {
   lo: number
@@ -14,10 +12,6 @@ export interface Interval {
 
 /** Guard against float noise pushing an exact integer over the next ceil step. */
 const CEIL_EPS = 1e-9
-
-// ---------------------------------------------------------------------------
-// Special functions: log-gamma, regularized incomplete beta, beta quantile
-// ---------------------------------------------------------------------------
 
 const LANCZOS = [
   676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059,
@@ -100,11 +94,7 @@ function tQuantile(p: number, df: number): number {
   return p < 0.5 ? -t : t
 }
 
-// ---------------------------------------------------------------------------
-// Binomial intervals (MASTER-CALCULATIONS 2.1 to 2.4)
-// ---------------------------------------------------------------------------
-
-/** Wilson interval, the default binomial interval (2.2). n must be positive. */
+/** Wilson interval, the default binomial interval. n must be positive. */
 export function wilson(x: number, n: number, z = 1.96): Interval & { p: number } {
   const p = x / n
   const z2 = z * z
@@ -114,7 +104,7 @@ export function wilson(x: number, n: number, z = 1.96): Interval & { p: number }
   return { p, lo: Math.max(0, center - half), hi: Math.min(1, center + half), method: 'wilson' }
 }
 
-/** Exact Clopper-Pearson interval via the beta quantile (2.3). */
+/** Exact Clopper-Pearson interval via the beta quantile. */
 export function clopperPearson(x: number, n: number, conf = 0.95): Interval & { p: number } {
   const alpha = 1 - conf
   const lo = x <= 0 ? 0 : betaQuantile(alpha / 2, x, n - x + 1)
@@ -122,7 +112,7 @@ export function clopperPearson(x: number, n: number, conf = 0.95): Interval & { 
   return { p: x / n, lo, hi, method: 'exact' }
 }
 
-/** Beta-binomial posterior with an equal-tailed credible interval (2.4). */
+/** Beta-binomial posterior with an equal-tailed credible interval. */
 export function betaPosterior(
   priorA: number,
   priorB: number,
@@ -143,39 +133,19 @@ export function betaPosterior(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Sample-size planners (2.5, 2.6, 2.8)
-// ---------------------------------------------------------------------------
-
-/** Precision-driven sample size for one proportion, rounded up (2.5). */
+/** Precision-driven sample size for one proportion, rounded up. */
 export function sampleSizeProportion(p: number, halfWidth: number, z = 1.96): number {
   return Math.ceil((z * z * p * (1 - p)) / (halfWidth * halfWidth) - CEIL_EPS)
 }
 
-/** Required attempts to yield the needed valid opportunities, rounded up (2.6). */
+/** Required attempts to yield the needed valid opportunities, rounded up. */
 export function attemptInflation(validNeeded: number, validFraction: number): number {
   return Math.ceil(validNeeded / validFraction - CEIL_EPS)
 }
 
-/** Approximate paired sample size, rounded up (2.8). Defaults: 95% two-sided, 80% power. */
-export function pairedSampleSize(
-  sdOfDiff: number,
-  meaningfulDiff: number,
-  zAlpha = 1.96,
-  zPower = 0.84,
-): number {
-  const root = ((zAlpha + zPower) * sdOfDiff) / meaningfulDiff
-  return Math.ceil(root * root - CEIL_EPS)
-}
-
-// ---------------------------------------------------------------------------
-// Continuous outcomes (2.9)
-// ---------------------------------------------------------------------------
-
 /**
- * Mean with a t-based confidence interval (2.9).
- * The t quantile is computed exactly from the regularized incomplete beta for
- * every sample size; no table lookup and no normal approximation is used.
+ * Mean with a t-based confidence interval. The t quantile is exact from the
+ * regularized incomplete beta for every sample size.
  * n = 0 returns NaN fields; n = 1 returns a degenerate interval at the mean.
  */
 export function meanInterval(
@@ -204,40 +174,3 @@ export function quantile(values: number[], q: number): number {
   return sorted[base] + frac * (sorted[base + 1] - sorted[base])
 }
 
-/** Seeded percentile bootstrap interval on the mean (2.9). */
-export function bootstrapMeanInterval(
-  values: number[],
-  iterations: number,
-  conf: number,
-  seed: number,
-): { lo: number; hi: number } {
-  const n = values.length
-  if (n === 0) return { lo: NaN, hi: NaN }
-  const rand = mulberry32(seed)
-  const means: number[] = []
-  for (let i = 0; i < iterations; i++) {
-    let sum = 0
-    for (let j = 0; j < n; j++) sum += values[Math.floor(rand() * n)]
-    means.push(sum / n)
-  }
-  const alpha = 1 - conf
-  return { lo: quantile(means, alpha / 2), hi: quantile(means, 1 - alpha / 2) }
-}
-
-// ---------------------------------------------------------------------------
-// Uncertainty and reliability (2.11, 2.12)
-// ---------------------------------------------------------------------------
-
-/** Root-sum-square of independent uncertainty components (2.12). */
-export function rss(components: number[]): number {
-  return Math.sqrt(components.reduce((s, u) => s + u * u, 0))
-}
-
-/**
- * One-sided upper bound on a constant failure rate after zero failures (2.11).
- * -ln(1 - conf) / n; at 95% this is the spec's "about 3 / total time at risk".
- * Model-dependent; it never proves zero risk.
- */
-export function zeroFailureBound(n: number, conf = 0.95): number {
-  return -Math.log(1 - conf) / n
-}

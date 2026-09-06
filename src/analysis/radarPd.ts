@@ -15,9 +15,7 @@
  * Eq. 13.51); the nonfluctuating case is the Marcum Q function Q1(a, b)
  * written as the noncentral chi-square tail (Shnidman's series: Poisson
  * weights over central chi-square tails), Richards, Fundamentals of Radar
- * Signal Processing, chapter 6. Albersheim's approximation was replaced on
- * 2026-09-05 (E2 radar study): its logistic inverse floored at about 0.017
- * below Pd 0.1 where the exact tail is Pfa.
+ * Signal Processing, chapter 6.
  */
 import type { SwerlingCase } from '../model/types'
 
@@ -43,7 +41,7 @@ export interface RadarCalibration {
  * holds every weight above 1e-15; the chi-square tail is carried by its
  * recurrence. a - b above 12 returns 1 (the deficit is under 1e-30). At a = 0
  * the sum is exp(-y) = Pfa exactly. Under 1e-12 absolute error against a
- * 20 000-point quadrature of the Rician density (E2 radar study 2026-09-05).
+ * 20 000-point quadrature of the Rician density.
  */
 function marcumQ1(a: number, b: number): number {
   if (!(b > 0)) return 1

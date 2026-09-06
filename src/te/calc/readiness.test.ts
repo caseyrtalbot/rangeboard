@@ -1,5 +1,5 @@
 /**
- * Campaign readiness tests (SPEC section 6.2). Stage gate completion, the
+ * Campaign readiness tests. Stage gate completion, the
  * stepper status, the artifact list, and the weighted overall percent.
  */
 

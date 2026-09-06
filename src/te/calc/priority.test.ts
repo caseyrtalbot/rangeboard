@@ -1,5 +1,5 @@
 /**
- * Adaptive next-run priority (MASTER-CALCULATIONS 3.9, Field Guide ratio).
+ * Adaptive next-run priority (MASTER-CALCULATIONS).
  * The sources give no numeric fixture; these tests pin the computable form.
  */
 

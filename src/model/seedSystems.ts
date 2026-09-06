@@ -296,7 +296,7 @@ export const SEED_SYSTEMS: SystemPreset[] = [
   },
 ]
 
-export interface FormationConstruct {
+interface FormationConstruct {
   name: string
   formation: FormationSpec
   description: string

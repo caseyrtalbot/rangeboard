@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   angleDiffDeg,
   bearingDeg,
-  closestApproach,
   destination,
   dist,
   formatDistance,
@@ -113,11 +112,6 @@ describe('paths', () => {
     expect(s.pos.y).toBeCloseTo(0)
   })
 
-  it('finds closest approach to a target', () => {
-    const best = closestApproach(square, 10, 0, { x: 100, y: 80 }, 60)
-    expect(best.distM).toBeLessThan(1)
-    expect(best.tS).toBeCloseTo(18, 0)
-  })
 })
 
 describe('rotatePoint', () => {

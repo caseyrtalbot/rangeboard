@@ -14,7 +14,7 @@ export interface JamHold {
   /** Compounded probability the jam degrades this ship's track. */
   value: number
   /** Index of the jammer's in-range interval the dwells landed in; -1 when
-   *  the geometry is unknown (hold never lapses, the legacy behavior). */
+   *  the geometry is unknown (the hold never lapses). */
   intervalIdx: number
 }
 

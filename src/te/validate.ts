@@ -1,6 +1,6 @@
 /**
  * Validation gates: the pocket rules and ordering rules rendered as hard
- * blockers or structured warnings (MASTER-DATAMODEL 4.7, MASTER-FORMS 5).
+ * blockers or structured warnings.
  * Blockers stop an action. Warnings render on gate dashboards.
  */
 
@@ -8,7 +8,7 @@ import type { TeCampaign, TeCard, TeFinding, TeRun, TeChecklist } from './model/
 import { templateByKey } from './seed/checklistTemplates'
 import { validateCampaignReferences } from './io/validateTe'
 
-export interface GateWarning {
+interface GateWarning {
   level: 'block' | 'warn'
   text: string
 }
@@ -271,7 +271,7 @@ export function designLint(c: TeCampaign): GateWarning[] {
 }
 
 /** Live traceability health counts for the chain dashboard. */
-export interface ChainHealth {
+interface ChainHealth {
   questionsWithoutMeasures: number
   measuresWithoutTruth: number
   cardsWithoutRuns: number
@@ -313,7 +313,7 @@ function counted(n: number, noun: string): string[] {
 }
 
 /**
- * Controlled deletion (SPEC section 11). Returns human-readable referrers of
+ * Controlled deletion. Returns human-readable referrers of
  * a record. Empty result: the caller may remove after one inline confirm.
  * Nonempty result: the remove control stays disabled and lists the referrers;
  * the user clears the references first.

@@ -1,12 +1,10 @@
 /**
  * Weapon planning factors for T&E laydown work.
  *
- * The threat study (docs/threat) explicitly declines to compute lethal blast
- * radius, fragmentation fan, or aimpoints (section 18.1, data gap #10), so
- * nothing here is study-derived lethality data. The tiers below are
- * representative PLANNING FACTORS: coarse effect-circle sizes used to draw a
- * weapon-engagement-zone footprint on the canvas so test designers can reason
- * about laydown geometry. They must not be read as real lethal radii.
+ * The threat study (docs/threat) gives no lethal blast radius, fragmentation
+ * fan, or aimpoints, so nothing here is lethality data. The tiers are
+ * PLANNING FACTORS: coarse effect-circle sizes that draw a WEZ footprint on
+ * the canvas for laydown geometry. Not real lethal radii.
  */
 import type { UasSpec } from './types'
 

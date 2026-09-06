@@ -3,6 +3,7 @@ import type { Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
+import { entityInk } from '../../ui/ink'
 import type { LiveTrack } from '../../playback/tracks'
 
 interface Props {
@@ -24,7 +25,7 @@ export function PathLayer({ mouseWorld }: Props) {
   const paths = (showPaths ? scenario.paths : []).map((p) => {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null
-    const color = entity.color ?? modelFor(scenario, entity)?.color ?? '#c46a5a'
+    const color = entityInk(entity, modelFor(scenario, entity))
     const flat = p.points.flatMap((pt) => [pt.x, pt.y])
     const lengthM = pathLength(p.points)
     const etaS = lengthM / pathSpeed(scenario, p)
@@ -55,7 +56,6 @@ export function PathLayer({ mouseWorld }: Props) {
     )
   })
 
-  // Rubber-band draft for boundary and path tools.
   let draft = null
   if ((ui.tool === 'boundary' || ui.tool === 'path') && (ui.draftPoints.length > 0 || ui.pathEntityId)) {
     const start =
@@ -81,7 +81,6 @@ export function PathLayer({ mouseWorld }: Props) {
     )
   }
 
-  // Calibration markers.
   let calibrate = null
   if (ui.tool === 'calibrate' && (ui.calibrateA || ui.calibrateB)) {
     const a = ui.calibrateA

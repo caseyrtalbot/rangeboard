@@ -1,5 +1,5 @@
 /**
- * Execute stage (SPEC groups E1 to E7). Tabs stay: Day, Run console,
+ * Execute stage. Tabs stay: Day, Run console,
  * Checklists, Adjudication. Inside each tab, ordered decision groups.
  * Gates: no issued card no run; holdOnUnknown items hold the run;
  * no validity status no analysis.

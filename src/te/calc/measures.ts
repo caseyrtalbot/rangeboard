@@ -1,8 +1,8 @@
 /**
  * Per-measure computation over adjudicated runs.
- * Denominator discipline: MASTER-CALCULATIONS 1.0 pipeline
+ * Denominator discipline, the MASTER-CALCULATIONS pipeline:
  * planned -> attempted -> eligible -> valid -> included; counts stay monotone.
- * Denominators derive from status; they are never hand-entered (3.8).
+ * Denominators derive from status; they are never hand-entered.
  */
 
 import type {
@@ -15,7 +15,7 @@ import type { Interval } from './stats'
 import { runIncludable } from '../validate'
 import { betaPosterior, clopperPearson, meanInterval, wilson } from './stats'
 
-export interface PerRunValue {
+interface PerRunValue {
   runId: string
   status: string
   included: boolean
@@ -123,7 +123,7 @@ function compute(campaign: TeCampaign, measure: TeMeasure): MeasureComputation {
 
   if (measure.family === 'binomial') {
     if (nIncluded > 0) {
-      // Estimate stays the observed proportion x/n (2.1); the method selects the interval.
+      // Estimate stays the observed proportion x/n; the method selects the interval.
       estimate = successCount / nIncluded
       if (measure.intervalMethod === 'exact') {
         interval = clopperPearson(successCount, nIncluded)
@@ -165,7 +165,7 @@ function compute(campaign: TeCampaign, measure: TeMeasure): MeasureComputation {
     }
   }
 
-  // Pass/fail exists only for a customer-approved threshold (1.0, 3.13).
+  // Pass/fail exists only for a customer-approved threshold.
   const threshold = measure.thresholdApproved ? measure.threshold : null
   const thresholdShown = threshold !== null
   if (!measure.thresholdApproved && measure.threshold !== null) {

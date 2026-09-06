@@ -20,9 +20,9 @@ export type LinkMedium =
 
 export type IntegrationConfidence = 'documented' | 'probable' | 'inferred'
 
-export type LinkRole = 'track-data' | 'cue' | 'engage-order' | 'fc-uplink' | 'c2-interop' | 'alert'
+type LinkRole = 'track-data' | 'cue' | 'engage-order' | 'fc-uplink' | 'c2-interop' | 'alert'
 
-export interface IntegrationPair {
+interface IntegrationPair {
   withSpecId: string
   role: LinkRole
   confidence: IntegrationConfidence
@@ -76,7 +76,7 @@ export const MEDIUM_SUGGEST_RADIUS_M: Record<LinkMedium, number> = {
   'operator-manual': 2000,
 }
 
-export interface IntegrationVerdict {
+interface IntegrationVerdict {
   ok: boolean
   role: LinkRole
   confidence: IntegrationConfidence | null
@@ -266,7 +266,7 @@ export function suggestLinksFor(scenario: Scenario, entityId: string): Suggested
   return found.slice(0, 6).map(({ fromId, toId, verdict }) => ({ fromId, toId, verdict }))
 }
 
-export interface IntegrationPartner {
+interface IntegrationPartner {
   specId: string
   name: string
   role: LinkRole
@@ -280,7 +280,7 @@ export interface IntegrationPartner {
  * no-candidates connect popup. Pure library-level facts: canvas proximity and
  * existing connections play no part here.
  */
-export interface IntegrationSummary {
+interface IntegrationSummary {
   program: string | null
   standalone: boolean
   /** Known partners that exist in the library, documented first. */

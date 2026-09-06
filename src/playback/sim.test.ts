@@ -864,8 +864,7 @@ describe('windows come only from effectors the detecting sensors can reach', () 
  * Typed integration semantics: routes over researched links carry latency and
  * the fc-uplink / requiredC2 / standalone rules. Scenarios are hand-built on
  * the x axis (ROE free so the gate is first detection); connections carry the
- * fields applyConnectSuggestion would set. Untyped links must keep today's
- * behavior, which the rest of this file proves.
+ * fields applyConnectSuggestion would set.
  */
 describe('typed kill-chain routing', () => {
   const common = { headingDeg: 0, color: null, notes: '' }
@@ -1051,7 +1050,7 @@ describe('typed kill-chain routing', () => {
     typedLink(s, c2, gun, 'mesh-radio')
     const uasId = overflight(s, -3007, 3007)
     expect(assessThreat(s, uasId).status).toBe('window-too-short')
-    // The same laydown over untyped links keeps its legacy zero latency.
+    // The same laydown over untyped links keeps zero latency.
     for (const c of s.connections) Object.assign(c, { confidence: null, latencyS: 0 })
     expect(assessThreat(s, uasId).status).toBe('engageable')
   })
@@ -1059,11 +1058,8 @@ describe('typed kill-chain routing', () => {
 
 /**
  * Arrival is a protected-boundary crossing; closest approach is geometry.
- * Before the fix `arrivalS` was the closest-approach time, so a threat that
- * turned away 2 km short still "arrived", and a laydown with no asset placed
- * reported null with no way to tell "never arrived" from "nothing to arrive
- * at". The CPA fields now always carry the geometry and arrivalS answers only
- * the boundary question.
+ * The CPA fields always carry the geometry; arrivalS answers only the
+ * boundary question.
  */
 describe('arrival versus closest approach', () => {
   /** 50 km radar at the origin, threat crossing west to east at 40 m/s. */
@@ -1106,7 +1102,7 @@ describe('arrival versus closest approach', () => {
     expect(a.cpaS).toBeCloseTo(50, 9)
     expect(a.cpaDistanceM).toBeCloseTo(0, 6)
     expect(a.cpaAssetId).toBe(assetId)
-    // Legacy fields still carry the CPA values for callers not yet updated.
+    // The alias fields carry the CPA values.
     expect(a.assetId).toBe(assetId)
     expect(a.closestApproachM).toBe(a.cpaDistanceM)
     // warningS = arrival - first detection; the 50 km radar holds from t = 0.
@@ -1158,11 +1154,7 @@ describe('arrival versus closest approach', () => {
   })
 })
 
-/**
- * Legacy instant-release engine (doctrine off). These fixtures assert the
- * pre-doctrine numbers: the ROE gate alone opens the window and every ready
- * effector volleys. New scenarios default to the doctrinal sequence.
- */
+/** Doctrine off: the ROE gate alone opens the window and every ready effector volleys. */
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }
@@ -1566,11 +1558,9 @@ describe('scan-model track initiation, coast and drop', () => {
     //   t = 1 (off-scan): x 3995, inside 4 km, but no scan: no radar hit
     //   t = 4 (scan):     x 3965, the first detected scan
     // The camera is 205 m from the target from t = 0, so only the cue gates
-    // it: earlier the radar's off-scan range test at t = 1 cued it and
-    // the camera took first detection at 1 s; now the hold from the scan at
-    // 4 s is the one cue, so both observations start at 4 and the radar
-    // keeps the credit. Between scans (4.5 to 7.5) the carried hold keeps
-    // the camera on the target.
+    // it: the hold from the scan at 4 s is the one cue, so both observations
+    // start at 4 and the radar keeps the credit. Between scans (4.5 to 7.5)
+    // the carried hold keeps the camera on the target.
     const { sensorId: radarId } = placeScanRadar({ updateRateS: 4, rangeBasis: 'planning' })
     useStore.getState().addEntityFromModel('lib-hdcmr', { x: 3800, y: 0 })
     const cameraId = useStore.getState().scenario.entities.at(-1)!.id
@@ -1594,8 +1584,7 @@ describe('scan-model track initiation, coast and drop', () => {
     expect(camera.firstDetectS).toBe(4)
     expect(camera.intervals[0][0]).toBe(4)
     expect(camera.intervals[0][1]).toBeGreaterThanOrEqual(8)
-    // The board view (a bare sweep, every step a scan step) still sees the
-    // radar hit at t = 1: the steering, not the range test, is what changed.
+    // The board view (a bare sweep, every step a scan step) sees the radar hit at t = 1.
     const at1 = detectionsAt(scenario, 1).get(uasId)!
     expect(at1.map((h) => h.sensorType).sort()).toEqual(['eo-ir', 'radar'])
   })

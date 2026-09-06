@@ -1,6 +1,5 @@
 /**
- * Design-stage builders (SPEC 1.2, groups D1 to D9). Panel-local components
- * owned by the Design agent. Every builder writes the schema field that
+ * Design-stage builders, panel-local components. Every builder writes the schema field that
  * exists today; nothing here stores derived state.
  */
 
@@ -51,9 +50,7 @@ export function progress(flags: boolean[]): GroupState {
   return 'partial'
 }
 
-// ---------------------------------------------------------------------------
-// Definition decks (one line each; copy rules section 9)
-// ---------------------------------------------------------------------------
+// Definition decks, one line each
 
 export const PATTERN_DEFS: Record<QuestionPattern, string> = {
   capability: 'Can it do the task at all?',
@@ -120,10 +117,6 @@ export const FACTOR_DEFS: Record<FactorClass, string> = {
   'prohibited-variable': 'It must not change. A change voids the run.',
   response: 'It is a result we measure, not an input.',
 }
-
-// ---------------------------------------------------------------------------
-// Small generic controls
-// ---------------------------------------------------------------------------
 
 /** Vertical radio list with a one-line definition per option. */
 export function RadioDefs<T extends string>({
@@ -217,7 +210,7 @@ export function ChipsString({
 }
 
 /**
- * Text field with a live derivation and provenance (SPEC 4.1). Empty field:
+ * Text field with a live derivation and provenance. Empty field:
  * the derivation renders as a pending suggestion and writes on confirm.
  * Stored value equals the derivation: inherited. Differs: edited, revert
  * restores the derivation. No derivation: plain field.
@@ -269,9 +262,7 @@ export function ProvText({
   )
 }
 
-// ---------------------------------------------------------------------------
 // Template sentence builder (D1 wording, D3/D4 generalization bounds)
-// ---------------------------------------------------------------------------
 
 type TplPart = { literal: true; text: string } | { literal: false; key: string }
 
@@ -368,9 +359,7 @@ export function GeneralizationFields({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Board-derived signals (SPEC 2.2). Ranking only; nothing is hidden.
-// ---------------------------------------------------------------------------
+// Board-derived signals. Ranking only; nothing is hidden.
 
 interface BoardSignals {
   kinetic: boolean
@@ -425,9 +414,7 @@ export function rankedDictionary(campaign: TeCampaign): MeasureDictEntry[] {
   return [...MEASURE_DICTIONARY].sort((a, b) => score(b) - score(a))
 }
 
-// ---------------------------------------------------------------------------
 // Board derivations (D2 config, D3 threat, D4 condition)
-// ---------------------------------------------------------------------------
 
 /** Sensor, C2, and effector text derived from the live board scenario. */
 export function boardDescribe(): { sensor: string; c2: string; effector: string } {
@@ -480,17 +467,15 @@ export function threatFromModel(specModelId: string | null): {
   }
 }
 
-/** True when any condition names a contested-or-worse spectrum (SPEC 2.3). */
+/** True when any condition names a contested-or-worse spectrum. */
 export function spectrumSevere(campaign: TeCampaign): boolean {
   return campaign.conditions.some((c) =>
     ['congested', 'contested', 'denied'].some((s) => c.emEnvironment.toLowerCase().includes(s)),
   )
 }
 
-// ---------------------------------------------------------------------------
 // Line rows: a newline-joined string edited as add/remove rows (D2 lists).
 // One line is one row; paste multi-line text into any row to keep bulk entry.
-// ---------------------------------------------------------------------------
 
 export function LineRows({
   label,
@@ -545,9 +530,7 @@ export function LineRows({
   )
 }
 
-// ---------------------------------------------------------------------------
 // D6: prediction value shaped by prediction type; result trio derivation
-// ---------------------------------------------------------------------------
 
 /** Measure record a hypothesis names in `measuredBy`, matched by name or id. */
 export function measureFor(campaign: TeCampaign, h: TeHypothesis): TeMeasure | undefined {
@@ -697,12 +680,10 @@ export function resultTrio(
   }
 }
 
-// ---------------------------------------------------------------------------
 // D8: sample-size decision and guided add-cells flow
-// ---------------------------------------------------------------------------
 
 /**
- * Sample-size decision (SPEC D8). One computation applies to the measure's
+ * Sample-size decision. One computation applies to the measure's
  * required repetitions and to the selected cell's minimums. Overrides stay
  * on the numeric fields.
  */
@@ -770,7 +751,7 @@ export function SampleSizeApply({ campaign }: { campaign: TeCampaign }) {
 }
 
 /**
- * Guided add-cells flow (SPEC D8). The method drives the build; links inherit
+ * Guided add-cells flow. The method drives the build; links inherit
  * from context; one cell lands per picked condition. Per-cell edit remains.
  */
 export function AddCellsFlow({ campaign }: { campaign: TeCampaign }) {

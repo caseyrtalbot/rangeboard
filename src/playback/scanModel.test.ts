@@ -8,7 +8,7 @@ import { assessAllThreats } from './sim'
 import { monteCarloPolicy } from './policy'
 
 /**
- * Slice 1 acceptance: one draw per scan gives the physical first-detection
+ * One draw per scan gives the physical first-detection
  * distribution. One quad (0.01 m2, Swerling 1 pinned) flies a 100 m tangent
  * at the range where a hand-built 4 s radar reads single-scan Pd 0.45, so
  * every scan is an independent 0.45 trial and the cumulative probability of

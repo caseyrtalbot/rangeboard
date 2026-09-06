@@ -4,7 +4,7 @@ import { useStore } from '../state/store'
 /**
  * Wall-clock period between store publications of `playback.simTimeS`, ms.
  * The store publishes at 10 Hz at every playback speed; engine DT and the
- * event horizons are untouched (F1, design contract section 7).
+ * event horizons are untouched.
  */
 export const PUBLISH_PERIOD_MS = 100
 

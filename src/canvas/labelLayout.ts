@@ -30,7 +30,7 @@ export interface SpokePlacement {
 
 export type LabelPlacement = { mode: 'anchored' } | SpokePlacement
 
-export interface LayoutOptions {
+interface LayoutOptions {
   /** Ids spoked last frame; their cluster tests get padding so labels do not flicker at the boundary. */
   sticky?: Set<string>
   /** Stage size; fans flip sides and clamp vertically to stay visible. */

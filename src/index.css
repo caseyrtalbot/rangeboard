@@ -2646,36 +2646,6 @@ button.chip {
 
 /* ---------- I&W strip, threat groups ---------- */
 
-.iw-strip {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.iw-asset {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--type-meta-size);
-  min-width: 0;
-}
-
-.iw-asset-name {
-  font-weight: var(--type-title-weight);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.iw-asset-stats {
-  margin-left: auto;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ---------- Info affordance ---------- */
 
 /* Small "i" dot; opens a methodology popover so prose stays out of the flow. */

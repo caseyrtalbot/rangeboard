@@ -1,9 +1,8 @@
 # RangeBoard design system
 
-This file describes the visual rules, tokens, type roles and shared components of the
-implemented UI in `src/index.css` and `src/ui/kit.tsx`. The design was locked on
-2026-09-05 and its first four steps shipped: self-hosted fonts, one token layer, one shared
-kit, and the daylight theme. Every rule below was checked against the source on 2026-09-06.
+Visual rules, tokens, type roles and shared components of the implemented UI in
+`src/index.css` and `src/ui/kit.tsx`. The sheet is the source; this file names the rules
+it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
 
 ## 1. Surface rules
 

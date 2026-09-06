@@ -31,7 +31,7 @@ export function nowIso(): string {
   return new Date().toISOString()
 }
 
-export function emptyCharter(): CampaignCharter {
+function emptyCharter(): CampaignCharter {
   return {
     sponsor: '',
     requestingOrganization: '',
@@ -67,7 +67,7 @@ export function emptyCharter(): CampaignCharter {
   }
 }
 
-export function emptyDecision(): DecisionCharter {
+function emptyDecision(): DecisionCharter {
   return {
     decisionDate: '',
     authorizedDecisionOwner: '',
@@ -93,7 +93,7 @@ export function emptyDecision(): DecisionCharter {
 }
 
 /** The 20 fixed sections of the decision evidence package. */
-export const PACKAGE_SECTION_TITLES: string[] = [
+const PACKAGE_SECTION_TITLES: string[] = [
   'Decision, owner, alternatives, and deadline',
   'Decision-critical uncertainty',
   'Executive answer and bounded recommendation',
@@ -233,7 +233,6 @@ export function emptyMeasure(id: string, questionId: string): TeMeasure {
       backupSource: '',
       independenceFromSut: '',
       timeToleranceS: null,
-      accuracyNote: '',
     },
     missingDataRule: '',
     invalidDataRule: '',
@@ -245,7 +244,6 @@ export function emptyMeasure(id: string, questionId: string): TeMeasure {
     thresholdApproved: false,
     higherIsBetter: true,
     requiredRepetitions: null,
-    borderlineRule: '',
     intervalMethod: 'wilson',
     priorAlpha: 1,
     priorBeta: 1,
@@ -542,8 +540,6 @@ export function emptyChange(id: string): TeChange {
     selectedChangeAndReason: '',
     variablesChanged: '',
     variablesHeld: '',
-    supersededIds: [],
-    newVersionIds: [],
     comparabilityEffect: '',
     approvals: '',
     briefed: false,

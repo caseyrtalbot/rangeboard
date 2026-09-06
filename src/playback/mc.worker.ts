@@ -1,14 +1,11 @@
 /// <reference lib="webworker" />
 /**
- * Monte Carlo worker: one run per worker instance. Receives a plain
- * `McRequest` (the scenario as JSON) and dispatches on its type. A replicate
- * run streams `progress` and posts `done`; a sensitivity run streams
- * `sens-progress` and posts `sens-done`. Both fill the wall time, or post the
- * thrown message. The loops run under `DEFAULT_BUDGET`: a summary that
- * cannot fit is refused, and the retained numbers or the wall time end the
- * run at a checkpoint with `stopped.rule` 'budget'. Between replicates the
- * driver yields to the event loop every YIELD_MS, so a `cancel` request for
- * the run is read and ends it at the next checkpoint with 'cancelled'.
+ * Monte Carlo worker: one run per worker instance. A replicate run streams
+ * `progress` and posts `done`; a sensitivity run streams `sens-progress` and
+ * posts `sens-done`; a throw posts the error message. Loops run under
+ * `DEFAULT_BUDGET` and stop at a checkpoint with `stopped.rule` 'budget'. The
+ * driver yields every YIELD_MS so a `cancel` request ends the run at the next
+ * checkpoint with 'cancelled'.
  */
 import type {
   Checkpoint,

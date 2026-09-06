@@ -1,10 +1,11 @@
 import { Group, Line, Text } from 'react-konva'
 import type { Boundary, BoundaryType } from '../../model/types'
 import { useStore } from '../../state/store'
+import { DANGER_INK, withAlpha } from '../../ui/ink'
 
 const STYLE: Record<BoundaryType, { stroke: string; dash: number[]; fill: string }> = {
   range: { stroke: '#7f9a86', dash: [10, 6], fill: 'rgba(127,154,134,0.06)' },
-  restricted: { stroke: '#c4564a', dash: [4, 4], fill: 'rgba(196,86,74,0.09)' },
+  restricted: { stroke: DANGER_INK, dash: [4, 4], fill: withAlpha(DANGER_INK, 0.09) },
   asset: { stroke: '#8fae7a', dash: [], fill: 'rgba(143,174,122,0.10)' },
   corridor: { stroke: '#7da7c4', dash: [14, 6], fill: 'rgba(125,167,196,0.06)' },
 }

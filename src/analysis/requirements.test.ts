@@ -153,7 +153,7 @@ describe('non-compensating requirement gates', () => {
     expect(result.met).toBe(6)
     expect(result.gates.every((gate) => gate.status === 'pass')).toBe(true)
     // A deterministic run carries the planning-envelope and unvalidated-model
-    // caveats on every gate (wave 2); no other caveat applies here.
+    // caveats on every gate; no other caveat applies here.
     expect(result.gates.every((gate) => gate.caveats.length === 2)).toBe(true)
     expect(result.gates.every((gate) => gate.notEvaluatedReason === null)).toBe(true)
   })
@@ -209,8 +209,8 @@ describe('the Effect requirement is test-defined, not an engine constant', () =>
 
   it('fails a residual the engine cutoff alone would have passed', () => {
     const { scenario, assessment, report } = fixture()
-    // 0.045 sits below SHIP_DEAD_BELOW (0.05), so the engine stops firing here
-    // and the old gate passed itself. The test asks for 3%, so this fails.
+    // 0.045 sits below SHIP_DEAD_BELOW (0.05), so the engine stops firing here.
+    // The test asks for 3%, so this fails.
     report.threats[0].leakProbability = 0.045
     scenario.requirements.maxResidualPerTrack = 0.03
     const result = buildRequirementGateReport(scenario, [assessment], report)

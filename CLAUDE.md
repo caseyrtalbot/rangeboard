@@ -75,7 +75,9 @@ the store updates once on `dragend`.
 - `src/panels/`: Toolbar, Palette, Inspector, LibraryEditor, AnalysisPanel (widgets and
   detail views under `analysis/`), TimelineBar (owns the rAF loop), CommandPalette.
 - `src/ui/kit.tsx` and `src/charts/`: shared primitives and the recharts kit. Props only.
-  They never read a store.
+  They never read a store. `src/ui/ink.ts` is the one Konva ink table (danger red, entity
+  kind fallback colors) that the layers, the palette glyphs, the detail panels and
+  `trackState` share.
 - `src/te/`: T&E Ops. Own store `te/state/teStore.ts` at `rangeboard.te.v1`, no undo,
   versioned append-only records, gates in `te/validate.ts`, pure calculations in
   `te/calc/`, print artifacts in `te/print/`. The Board engine imports only the statistics
@@ -101,7 +103,11 @@ These span files. Breaking one breaks the app.
   The worker import graph reaches no store, React, zustand, `localStorage` or panel module.
 - `DrawPolicy` is the one draw point. No `Math.random` under `src/`. The engine draws in
   exactly five places.
-- Storage keys live in `src/io/storageKeys.ts`. Never rename one; add a new key.
+- Storage keys live in `src/io/storageKeys.ts`. Never rename one; add a new key. Every
+  settings key (widths, collapse flags, units, layers, view, rings, analysis layout, run
+  sequence) is read and written through `readSetting` and `writeSetting` in
+  `src/io/viewState.ts`, which swallow a blocked or full store. The scenario and T&E
+  autosaves keep their own error path because a lost save must be reported.
   `Scenario.schemaVersion` is 1 and has never been bumped. A new scenario field is optional
   with a default in `emptyScenario()`; a new nested object needs a `fillScenario` line.
 - Saved and imported data pass runtime validation before adoption. A save that cannot load

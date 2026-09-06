@@ -16,11 +16,6 @@ export function registerStage(s: Konva.Stage | null): void {
   stage = s
 }
 
-/** True when a capture can succeed right now. */
-export function canCaptureFrame(): boolean {
-  return stage != null && useTeStore.getState().activeCampaignId != null
-}
-
 function safeName(name: string): string {
   return name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'rangeboard-frame'
 }

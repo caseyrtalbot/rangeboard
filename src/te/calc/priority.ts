@@ -1,5 +1,5 @@
 /**
- * Adaptive next-run priority, Field Guide ratio form (MASTER-CALCULATIONS 3.9).
+ * Adaptive next-run priority, Field Guide ratio form (MASTER-CALCULATIONS).
  * Advisory only; the score informs judgment and never overrides mission or
  * safety context. Inputs are High/Medium/Low scores on a 1..3 scale.
  */

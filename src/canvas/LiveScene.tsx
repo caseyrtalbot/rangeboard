@@ -45,7 +45,7 @@ interface Props {
  * Every time-dependent canvas layer, under one frame clock. This is the only
  * place `useFrameClock` is mounted: it sits inside the Konva `Layer`, so its
  * per-frame state updates commit in the react-konva root and never in
- * react-dom (F1, design contract section 7).
+ * react-dom.
  *
  * Two clocks draw this scene. Interpolated (`displayTimeS`, one value per
  * animation frame): track positions and headings, label placement, shots in

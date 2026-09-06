@@ -1,8 +1,8 @@
 import { Fragment, useMemo } from 'react'
-import type { DisplayUnits } from '../geometry/geo'
-import { formatDistance, formatSpeed, formatTime, NM_M } from '../geometry/geo'
+import { formatAxis, formatDistance, formatSpeed, formatTime } from '../geometry/geo'
 import { useStore } from '../state/store'
 import { modelFor, pathSpeed } from '../model/scenario'
+import { entityInk } from '../ui/ink'
 import { selectSimTimeS } from '../state/selectors'
 import { trackQualityAt } from '../analysis/threatAggregation'
 import type { Entity, Scenario } from '../model/types'
@@ -37,18 +37,6 @@ const NAV_LABEL: Record<string, string> = {
   optical: 'optical',
   fiber: 'fiber (wire guided)',
   mixed: 'GPS and RF mixed',
-}
-
-/**
- * One position axis as a hemisphere letter and a magnitude. A negative easting
- * is a westing, so the letter carries the sign and the number never does. The
- * caller passes the letters for that axis. Aviation keeps two decimals of a
- * nautical mile.
- */
-function axisText(m: number, units: DisplayUnits, plus: string, minus: string): string {
-  const mag = Math.abs(m)
-  const value = units === 'aviation' ? `${(mag / NM_M).toFixed(2)} nm` : formatDistance(mag, units)
-  return `${m < 0 ? minus : plus} ${value}`
 }
 
 /**
@@ -106,7 +94,7 @@ function ReadoutCard({
     state?.coasting && (phase === 'tracked' || phase === 'identified') ? 'COAST' : pill.label
   // Undetected shows the entity color, resolved the way PathLayer and
   // RangeLayer resolve it, so the pill matches the glyph the canvas draws.
-  const color = entity.color ?? model?.color ?? '#c46a5a'
+  const color = entityInk(entity, model)
 
   const path = scenario.paths.find((p) => p.entityId === entity.id)
   const speedMps = path ? pathSpeed(scenario, path) : (uas?.cruiseSpeedMps ?? null)
@@ -121,8 +109,7 @@ function ReadoutCard({
   // Closest approach and arrival answer two different questions. CPA is pure
   // geometry and exists whenever an asset is placed, so a fly-by that turns
   // away still has one. Arrival is the crossing of that asset's defended
-  // radius, so a fly-by has no arrival at all. Showing only arrival made the
-  // two look alike.
+  // radius, so a fly-by has no arrival at all.
   const hasAsset = scenario.entities.some((e) => e.kind === 'asset')
   const cpaAsset = assessment?.cpaAssetId
     ? scenario.entities.find((e) => e.id === assessment.cpaAssetId)
@@ -152,7 +139,7 @@ function ReadoutCard({
     ['NAV', uas ? (NAV_LABEL[uas.navMode] ?? uas.navMode) : 'unknown'],
     [
       'POSITION',
-      `${axisText(pos.x, units, 'E', 'W')}, ${axisText(-pos.y, units, 'N', 'S')}`,
+      `${formatAxis(pos.x, units, 'E', 'W')}, ${formatAxis(-pos.y, units, 'N', 'S')}`,
     ],
     [
       'SPEED / HDG',

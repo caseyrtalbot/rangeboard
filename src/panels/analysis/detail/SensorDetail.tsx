@@ -34,6 +34,7 @@ import { defaultSensorRole, effectiveDoctrine, mountHeightOf } from '../../../mo
 import { DT } from '../../../playback/clock'
 import { entityPosAt, threatAltitudeFt } from '../../../playback/tracks'
 import { modelFor } from '../../../model/scenario'
+import { entityInk } from '../../../ui/ink'
 import { pfaText } from '../../inspector/kit'
 import { STATE_LABEL, stateTone } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
@@ -60,7 +61,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const spec = model?.sensor
   const doctrine = effectiveDoctrine(scenario)
   const component = useComponentAt(run, entity.id)
-  const color = entity.color ?? model?.color ?? '#c46a5a'
+  const color = entityInk(entity, model)
 
   const series = useMemo(() => {
     void runId
@@ -145,7 +146,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const scan = scanRate != null || rolePeriod != null
   const initM = trackInitMFor(spec)
   const initN = trackInitNFor(spec)
-  // Legend words are lower case as in the mockup; the builder's labels are title case.
+  // Legend words are lower case; the builder's labels are title case.
   const legend: LegendEntry[] = LADDER_KINDS.map((kind) => {
     const word = TRACK_LADDER_STYLE[kind].label.toLowerCase()
     return {

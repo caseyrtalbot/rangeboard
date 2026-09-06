@@ -218,8 +218,6 @@ describe('PHASE_STYLE', () => {
   const rungs = ['searching', 'tracked', 'identified', 'targeted', 'engaged', 'ghost'] as const
 
   it('gives every rung its own color', () => {
-    // identified, targeted and engaged all used to be '#c4564a', so the ring
-    // could not tell HOSTILE, TARGETED and ENGAGED apart.
     const colors = rungs.map((p) => PHASE_STYLE[p].color)
     expect(new Set(colors).size).toBe(rungs.length)
     expect(PHASE_STYLE.undetected.color).toBeNull()
@@ -383,8 +381,8 @@ describe('phase transitions and precedence', () => {
   })
 
   it('latches ENGAGED from the first salvo to the end of the run', () => {
-    // A beam holds incoming for BEAM_DISPLAY_S only, so a phase driven by
-    // incomingSalvos dropped back to TARGETED between dwells and flickered.
+    // A beam holds incoming for BEAM_DISPLAY_S only; the phase must not
+    // drop back to TARGETED between dwells.
     const beams = reportOf(
       [
         jamEvent({ tS: 52, tEffectS: 52 }),
@@ -441,8 +439,7 @@ describe('ghost cutoff', () => {
     expect(at.residualFraction).toBeCloseTo(0.05, 9)
     expect(at.eliminated).toBe(false)
     expect(at.eliminatedAtS).toBeNull()
-    // Not a ghost. It is ENGAGED, not 'undetected': a salvo was assigned at
-    // t = 0 and the phase latches. The old expectation encoded the flicker.
+    // Not a ghost: a salvo was assigned at t = 0, so the phase latches ENGAGED.
     expect(at.phase).toBe('engaged')
   })
 
@@ -624,8 +621,7 @@ describe('salvo counting', () => {
   })
 
   it('keeps directed energy out of the kinetic and EW counts', () => {
-    // A DE burst is a hard kill that fires no round: it belongs in deSalvos
-    // alone. Counting it as kinetic reported interceptors that never flew.
+    // A DE burst is a hard kill that fires no round: it belongs in deSalvos alone.
     const mixed = reportOf([
       event({ tS: 10, tEffectS: 14, killDelta: 0.2 }),
       event({
@@ -673,7 +669,6 @@ describe('incomingSalvos', () => {
     expect(stateAt(a, report, 19.9).incomingSalvos).toBe(1)
     expect(stateAt(a, report, 20).incomingSalvos).toBe(0)
     // The phase is latched, so it does not fall back when the round lands.
-    // This assertion used to read 'undetected', which encoded the flicker.
     expect(stateAt(a, report, 20).phase).toBe('engaged')
   })
 

@@ -29,7 +29,6 @@ function basisJson(value: unknown): string {
  * Numerical/configuration identity, excluding named presentation and evidence fields.
  * New domain fields are included automatically. Defaults use the engine's resolvers;
  * uncertainFields is also the sampler's enumeration, including connection draw IDs.
- * Keep the input/consumer matrix in docs/field-te/C1_COMPLETION.md alongside regressions.
  */
 export function analysisBasisSignature(s: Scenario): string {
   const doctrine = effectiveDoctrine(s)

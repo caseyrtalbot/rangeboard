@@ -1,5 +1,5 @@
 /**
- * CSV export layer (MASTER-FORMS section 4 deliverables map).
+ * CSV export layer (MASTER-FORMS deliverables map).
  * UTF-8 BOM prefix and CRLF line endings so Excel opens the files cleanly.
  * Pure derivation from campaign state; no store writes.
  */

@@ -156,7 +156,7 @@ describe('card lifecycle gates', () => {
     const st = useTeStore.getState()
     const q = st.addQuestion()
     const m = st.addMeasure(q)
-    st.patchItem('measures', m, { frozen: true, truth: { primarySource: 'GPS truth pod', backupSource: '', independenceFromSut: 'separate receiver', timeToleranceS: 0.1, accuracyNote: '' } })
+    st.patchItem('measures', m, { frozen: true, truth: { primarySource: 'GPS truth pod', backupSource: '', independenceFromSut: 'separate receiver', timeToleranceS: 0.1} })
     const thr = st.addThreat()
     const cond = st.addCondition()
     const cfg = st.addConfig()
@@ -264,7 +264,7 @@ function addIssuableCard() {
   const st = useTeStore.getState()
   const q = st.addQuestion()
   const m = st.addMeasure(q)
-  st.patchItem('measures', m, { frozen: true, truth: { primarySource: 'GPS truth pod', backupSource: '', independenceFromSut: 'separate receiver', timeToleranceS: 0.1, accuracyNote: '' } })
+  st.patchItem('measures', m, { frozen: true, truth: { primarySource: 'GPS truth pod', backupSource: '', independenceFromSut: 'separate receiver', timeToleranceS: 0.1} })
   const thr = st.addThreat()
   const cond = st.addCondition()
   const cfg = st.addConfig()
@@ -372,7 +372,7 @@ describe('createCardFromMatrixCell', () => {
     st.patchItem('questions', q, { wording: 'How far does detection reach?' })
     const m = st.addMeasure(q)
     st.patchItem('measures', m, {
-      truth: { primarySource: 'GPS truth pod', backupSource: 'range radar', independenceFromSut: 'separate receiver', timeToleranceS: 0.5, accuracyNote: '' },
+      truth: { primarySource: 'GPS truth pod', backupSource: 'range radar', independenceFromSut: 'separate receiver', timeToleranceS: 0.5},
     })
     const thr = st.addThreat()
     st.patchItem('threats', thr, { redControlledVariables: 'ingress axis', blinding: 'operators blind to route' })

@@ -5,6 +5,8 @@ import { exportLibrary, importLibraryFile } from '../io/persist'
 import { THREAT_TACTICS } from '../playback/tactics'
 import { Glyph } from './Glyph'
 import { PALETTE_COLLAPSED_KEY, PALETTE_WIDTH_KEY } from '../io/storageKeys'
+import { readSetting, writeSetting } from '../io/viewState'
+import { KIND_INK } from '../ui/ink'
 
 const WIDTH_KEY = PALETTE_WIDTH_KEY
 const COLLAPSE_KEY = PALETTE_COLLAPSED_KEY
@@ -13,13 +15,13 @@ const MIN_W = 180
 const MAX_W = 480
 
 function savedWidth(): number {
-  const n = Number(localStorage.getItem(WIDTH_KEY))
+  const n = Number(readSetting(WIDTH_KEY))
   return n >= MIN_W && n <= MAX_W ? n : 230
 }
 
 function savedCollapsed(): Record<string, boolean> {
   try {
-    const v = JSON.parse(localStorage.getItem(COLLAPSE_KEY) ?? '{}')
+    const v = JSON.parse(readSetting(COLLAPSE_KEY) ?? '{}')
     return v && typeof v === 'object' ? v : {}
   } catch {
     return {}
@@ -123,7 +125,7 @@ function TacticsSection(props: { query: string; open: boolean; onToggle: () => v
             }}
             title={`${t.name}: ${t.description} (study ${t.sourceRef})`}
           >
-            <Glyph kind="uas" color="#c46a5a" size={10} />
+            <Glyph kind="uas" color={KIND_INK.uas} size={10} />
             <span className="palette-name">
               {t.id} · {t.name}
             </span>
@@ -155,7 +157,7 @@ export function Palette() {
   function toggleSection(key: string) {
     setCollapsed((c) => {
       const next = { ...c, [key]: !c[key] }
-      localStorage.setItem(COLLAPSE_KEY, JSON.stringify(next))
+      writeSetting(COLLAPSE_KEY, JSON.stringify(next))
       return next
     })
   }
@@ -168,7 +170,7 @@ export function Palette() {
       if (!from) return
       const w = Math.min(MAX_W, Math.max(MIN_W, from.w + ev.clientX - from.x))
       setWidth(w)
-      localStorage.setItem(WIDTH_KEY, String(w))
+      writeSetting(WIDTH_KEY, String(w))
     }
     function onUp() {
       dragFrom.current = null

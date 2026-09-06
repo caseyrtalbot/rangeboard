@@ -35,7 +35,7 @@ export type LayerKey = keyof LayerVisibility
 export type LayerPreset = 'full' | 'planning' | 'engagement' | 'clean'
 
 /** The two ui fields a ring visibility read needs; `UiState` satisfies it. */
-export interface RingView {
+interface RingView {
   layers: LayerVisibility
   ringOverrides: RingOverrides
 }

@@ -1,7 +1,7 @@
 /**
  * Chart kit tokens.
  *
- * The kit (`ChartFrame`, `TimeSeries`, `Ladder`, `Sparkline`) draws every color from the
+ * The kit (`ChartFrame`, `TimeSeries`, `Ladder`) draws every color from the
  * CSS custom properties in `src/index.css`. A series names its color by token
  * ('chart-1', 'accent', 'danger', 'ew', 'text-dim') or by a literal hex, and the frame
  * resolves the tokens ONCE per render through `readTokens()`. Static markup and the vitest
@@ -9,7 +9,7 @@
  *
  * Per-track series take the five chart hues in first-detection order and keep that slot
  * under filters; the sixth track and beyond fold into `OTHER_TOKEN`. Status colors carry
- * no series. The five hues were validated against the panel surface on 2026-09-03.
+ * no series. The five hues are validated against the panel surface.
  */
 
 /** The five categorical chart hues, in slot order. Fixed values. */

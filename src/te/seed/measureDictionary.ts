@@ -1,6 +1,6 @@
 /**
- * Controlled measure dictionary seed (MASTER-SEEDDATA section 4 cross-referenced
- * with MASTER-CALCULATIONS section 1). 20 canonical entries: the 18 CUAS-*
+ * Controlled measure dictionary seed (MASTER-SEEDDATA cross-referenced
+ * with MASTER-CALCULATIONS). 20 canonical entries: the 18 CUAS-*
  * registry rows plus the two campaign-local derived measures M-02 and M-10.
  * Full math lives in MASTER-CALCULATIONS.md; cards reference these IDs.
  */

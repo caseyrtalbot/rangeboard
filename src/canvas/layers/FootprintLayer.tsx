@@ -12,6 +12,7 @@ import { useStore } from '../../state/store'
 import { modelFor } from '../../model/scenario'
 import { ringVisible } from '../../state/layers'
 import { destination, formatDistance, wedgePoints } from '../../geometry/geo'
+import { entityInk, withAlpha } from '../../ui/ink'
 import { groundRangeM } from '../../geometry/slant'
 import {
   effectiveClassifyRangeM,
@@ -47,12 +48,6 @@ interface Props {
   detections: Map<string, DetectionHit[]>
 }
 
-const ASSET_COLOR = '#8fae7a'
-const SENSOR_COLOR = '#7da7c4'
-/** Jammer fallback ink. A jammer keeps the entity color; every other
- *  effector draws in EFFECTOR_RING_COLOR. */
-const JAMMER_COLOR = '#c9975a'
-
 // Fill alphas come from the one style source, never from a literal here.
 const PLACARD_FILL = RING_STYLE.sensorPlacard.fillAlpha ?? 0
 const ENVELOPE_FILL = RING_STYLE.sensorEnvelope.fillAlpha ?? 0
@@ -73,12 +68,6 @@ const EFFECTOR_LABEL_BRG = 315
 /** Label text box and its gap from the ring, screen px. */
 const LABEL_BOX_PX = 150
 const LABEL_GAP_PX = 4
-
-/** '#rrggbb' to 'rgba(...)' for Konva gradient color stops. */
-function rgba(hex: string, alpha: number): string {
-  const n = parseInt(hex.slice(1), 16)
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
-}
 
 /** Ring fill alpha: the style value, damped on the airspace basemap and
  *  lifted while the sensor holds a detection. */
@@ -317,7 +306,7 @@ function buildRings(scenario: Scenario, ui: UiState, selectedUasId: string | nul
         contoursOn: contoursOn && target != null,
         envelopeOn,
       })
-      const color = style.grey ? DISABLED_RING_COLOR : (e.color ?? model?.color ?? SENSOR_COLOR)
+      const color = style.grey ? DISABLED_RING_COLOR : entityInk(e, model)
       out.push({
         kind: 'sensor',
         entity: e,
@@ -357,14 +346,14 @@ function buildRings(scenario: Scenario, ui: UiState, selectedUasId: string | nul
 
       // A jammer keeps the flashlight cone: illumination, not a weapon arc.
       // No danger ink, no ground projection, no doctrinal ring. The min
-      // circle stays under the cone key, as before the ring split.
+      // circle stays under the cone key.
       if (spec.effectorType === 'jammer') {
         if (!maxOn) continue
         out.push({
           kind: 'jammer',
           entity: e,
           sectorDeg,
-          color: off ? DISABLED_RING_COLOR : (e.color ?? model?.color ?? JAMMER_COLOR),
+          color: off ? DISABLED_RING_COLOR : entityInk(e, model),
           off,
           rangeM: maxOn ? effectiveJamRangeM(spec, target) : null,
           minM: spec.minRangeM > 0 ? spec.minRangeM : null,
@@ -428,7 +417,7 @@ function buildRings(scenario: Scenario, ui: UiState, selectedUasId: string | nul
       out.push({
         kind: 'asset',
         entity: e,
-        color: e.color ?? model?.color ?? ASSET_COLOR,
+        color: entityInk(e, model),
         radiusM: defendedRadiusOf(e),
       })
     }
@@ -633,7 +622,7 @@ function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
     fillRadialGradientEndPoint: { x: e.pos.x, y: e.pos.y },
     fillRadialGradientStartRadius: 0,
     fillRadialGradientEndRadius: rangeM,
-    fillRadialGradientColorStops: [0, rgba(r.color, 0.38), 0.55, rgba(r.color, 0.14), 1, rgba(r.color, 0.02)],
+    fillRadialGradientColorStops: [0, withAlpha(r.color, 0.38), 0.55, withAlpha(r.color, 0.14), 1, withAlpha(r.color, 0.02)],
   }
   return (
     <Group listening={false} opacity={r.off ? 0.2 : dim ? 0.35 : 0.85}>

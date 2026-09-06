@@ -1,5 +1,5 @@
 /**
- * Campaign readiness (SPEC section 6.2). Gate completion per stage, the
+ * Campaign readiness. Gate completion per stage, the
  * overall percent, and the artifact list for the ReadinessRail.
  * Pure derivation from validate.ts outputs, chainHealth, and record counts.
  * Derived live, never stored.
@@ -14,9 +14,9 @@ import {
   qualificationBlockers,
 } from '../validate'
 
-export type StageId = 'campaign' | 'design' | 'cards' | 'execute' | 'analyze' | 'deliver'
+type StageId = 'campaign' | 'design' | 'cards' | 'execute' | 'analyze' | 'deliver'
 export type StageStatus = 'good' | 'warn' | 'neutral'
-export type ArtifactState = 'done' | 'partial' | 'missing'
+type ArtifactState = 'done' | 'partial' | 'missing'
 
 export type ArtifactKey =
   | 'charter'
@@ -32,7 +32,7 @@ export type ArtifactKey =
   | 'findings'
   | 'package'
 
-export interface StageReadiness {
+interface StageReadiness {
   id: StageId
   /** Gate completion 0..100 for this stage. */
   pct: number
@@ -40,7 +40,7 @@ export interface StageReadiness {
   status: StageStatus
 }
 
-export interface ReadinessArtifact {
+interface ReadinessArtifact {
   key: ArtifactKey
   label: string
   state: ArtifactState
@@ -49,7 +49,7 @@ export interface ReadinessArtifact {
   stage: StageId
 }
 
-export interface CampaignReadiness {
+interface CampaignReadiness {
   /** Weighted mean of stage gate completion, 0..100. */
   pct: number
   stages: StageReadiness[]
@@ -90,9 +90,7 @@ function adjudicatedRuns(c: TeCampaign) {
   return c.runs.filter((r) => r.validity !== 'pending')
 }
 
-// ---------------------------------------------------------------------------
 // Stage gate completion
-// ---------------------------------------------------------------------------
 
 export function qualifyPct(c: TeCampaign): number {
   if (c.qualificationPassedAt != null) return 100
@@ -147,9 +145,7 @@ export function deliverPct(c: TeCampaign): number {
   return pctOf(score / 4)
 }
 
-// ---------------------------------------------------------------------------
 // Stage stepper status (dots synced to the gates)
-// ---------------------------------------------------------------------------
 
 export function stageStatus(c: TeCampaign, id: StageId): StageStatus {
   switch (id) {
@@ -188,9 +184,7 @@ export function stageStatus(c: TeCampaign, id: StageId): StageStatus {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Artifact list
-// ---------------------------------------------------------------------------
 
 function threeState(done: boolean, started: boolean): ArtifactState {
   if (done) return 'done'
@@ -330,9 +324,7 @@ export function artifactList(c: TeCampaign): ReadinessArtifact[] {
   ]
 }
 
-// ---------------------------------------------------------------------------
 // Whole-campaign readiness
-// ---------------------------------------------------------------------------
 
 export function campaignReadiness(c: TeCampaign): CampaignReadiness {
   const stagePcts: Record<StageId, number> = {

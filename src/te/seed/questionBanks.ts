@@ -1,11 +1,10 @@
 /**
- * Question banks for guided intake and debrief prompts (MASTER-SEEDDATA
- * section 6). Each bank carries its ID, lifecycle anchor, and verbatim items.
+ * Question banks for guided intake and debrief prompts (MASTER-SEEDDATA). Each bank carries its ID, lifecycle anchor, and verbatim items.
  * The QB-FG-PHASE set ships as one bank per Field Guide phase. The after-action
- * and immediate-debrief lists come from MASTER-FORMS section 3.7.
+ * and immediate-debrief lists come from MASTER-FORMS
  */
 
-export interface QuestionBank {
+interface QuestionBank {
   key: string
   name: string
   phase: string
@@ -583,7 +582,7 @@ export const QUESTION_BANKS: QuestionBank[] = [
 ]
 
 /**
- * Nine-question after-action debrief (MASTER-FORMS section 3.7 C).
+ * Nine-question after-action debrief (MASTER-FORMS C).
  * Conduct within five working days while details remain current;
  * whole team, facilitated.
  */
@@ -599,19 +598,3 @@ export const AAR_QUESTIONS: string[] = [
   'What must change before the next campaign?',
 ]
 
-/**
- * Immediate post-run factual debrief prompts (MASTER-FORMS section 3.7 A,
- * canonical merged list; perishable-observation window ten minutes or less).
- * Rules: label opinion as opinion; save causal interpretation for analysis.
- */
-export const IMMEDIATE_DEBRIEF_QUESTIONS: string[] = [
-  'What was planned.',
-  'What occurred in time order.',
-  'What differed.',
-  'What sources recorded.',
-  'Which sources failed.',
-  'What warnings or failures occurred.',
-  'What each operator directly observed.',
-  'Which result was unexpected.',
-  'Whether a repeat is needed.',
-]

@@ -1,5 +1,5 @@
 /**
- * Qualify stage decision groups Q0-Q10 (strategist SPEC section 1.1).
+ * Qualify stage decision groups Q0-Q10.
  * Every control writes the existing schema field; builders render into the
  * stored strings and never parse legacy prose destructively. Derived fills
  * run on user triggers only; gate fields confirm before write.
@@ -55,10 +55,6 @@ import {
   SuggestField,
   TextField,
 } from './kit'
-
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
 
 type GroupState = 'done' | 'partial' | 'empty'
 
@@ -120,7 +116,7 @@ function addDaysIso(iso: string, days: number): string {
 const isIso = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v)
 
 /**
- * Charter people sync one way into the roles table (existing behavior kept):
+ * Charter people sync one way into the roles table:
  * the first non-empty value creates the matching roles row; later typing
  * fills it while its primary tracks the charter. Roles edits never write back.
  */
@@ -144,12 +140,10 @@ function setCharterPerson(
   useTeStore.getState().patchCampaign({ charter: { ...ch, [field]: v }, roles })
 }
 
-// ---------------------------------------------------------------------------
 // Line-backed register: structured rows that render into one stored string,
 // one row per line, columns joined with " | ". Legacy prose parses into the
 // first (or last, remainder-absorbing) column untouched. Rows live in local
 // state so an empty just-added row survives; the string omits empty rows.
-// ---------------------------------------------------------------------------
 
 type LineRow = { id: string } & Record<string, string>
 
@@ -250,10 +244,8 @@ function LineRegister({
   )
 }
 
-// ---------------------------------------------------------------------------
 // Value-with-unit over a stored string ("25 s"). Legacy prose that does not
 // parse stays a plain text field, untouched.
-// ---------------------------------------------------------------------------
 
 const BASE_UNITS = ['s', 'm', 'nm', 'ft', '%', 'count']
 const DICT_UNITS = [...new Set([...BASE_UNITS, ...MEASURE_DICTIONARY.map((e) => e.unit)])].filter(
@@ -368,9 +360,7 @@ function ResultBuilder({
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q0 Start
-// ---------------------------------------------------------------------------
 
 export function StartGroup({ campaign }: { campaign: TeCampaign }) {
   const { patchCampaign, applyPreset, startFromCampaign } = useTeStore.getState()
@@ -440,9 +430,7 @@ export function StartGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q1 Intake
-// ---------------------------------------------------------------------------
 
 export function IntakeGroup({ campaign }: { campaign: TeCampaign }) {
   const campaigns = useTeStore((s) => s.campaigns)
@@ -510,9 +498,7 @@ export function IntakeGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q2 Determination
-// ---------------------------------------------------------------------------
 
 const DETERMINATIONS: Array<{
   v: EngagementType
@@ -577,9 +563,7 @@ export function DeterminationGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q3 Mission
-// ---------------------------------------------------------------------------
 
 export function MissionGroup({ campaign }: { campaign: TeCampaign }) {
   const ch = campaign.charter
@@ -623,9 +607,7 @@ export function MissionGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q4 Decision
-// ---------------------------------------------------------------------------
 
 export function DecisionGroupQ4({ campaign }: { campaign: TeCampaign }) {
   const ch = campaign.charter
@@ -828,9 +810,7 @@ export function DecisionGroupQ4({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q5 People and authority
-// ---------------------------------------------------------------------------
 
 type RoleRow = { id: string; role: string; primary: string; backup: string }
 
@@ -1003,9 +983,7 @@ export function PeopleGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q6 Sufficient evidence
-// ---------------------------------------------------------------------------
 
 const INTERVAL_METHODS: IntervalMethod[] = ['wilson', 'exact', 'bayes']
 const FIDELITY_TERMS = ['live', 'live-virtual', 'hardware-in-the-loop', 'simulation']
@@ -1202,9 +1180,7 @@ export function EvidenceGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q7 Scope and limits
-// ---------------------------------------------------------------------------
 
 const MISSION_FUNCTIONS = ['detect', 'track', 'identify', 'defeat', 'assess']
 const EVIDENCE_LEVELS: EvidenceLevel[] = [
@@ -1372,9 +1348,7 @@ export function ScopeGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q8 Registers
-// ---------------------------------------------------------------------------
 
 const REGISTER_KINDS: Array<{ v: RegisterKind; label: string }> = [
   { v: 'assumption', label: 'Assumptions' },
@@ -1597,9 +1571,7 @@ export function RegistersGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q9 Authorities and schedule
-// ---------------------------------------------------------------------------
 
 type AuthorityRow = {
   id: string
@@ -1860,9 +1832,7 @@ export function AuthoritiesGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Q10 Gate
-// ---------------------------------------------------------------------------
 
 export function GateGroup({ campaign }: { campaign: TeCampaign }) {
   const { addItem, patchItem, removeItem, passQualificationGate } = useTeStore.getState()

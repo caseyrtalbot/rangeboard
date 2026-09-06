@@ -1,5 +1,5 @@
 /**
- * Post-run quick look (MASTER-FORMS 3.10-A). Auto-report within minutes:
+ * Post-run quick look (MASTER-FORMS). Auto-report within minutes:
  * identifiers, configuration match, event-derived times, per-measure quick
  * values, prediction comparison, and the six-option next-run recommendation.
  */

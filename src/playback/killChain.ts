@@ -7,7 +7,7 @@ import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
  * One effector's best kill-chain route from the detecting sensors.
  * latencyS is the minimum summed edge latency over every valid path.
  */
-export interface KillChainRoute {
+interface KillChainRoute {
   effectorId: string
   latencyS: number
   /** C2 entities on the min-latency path, in hop order (empty for direct/standalone). */

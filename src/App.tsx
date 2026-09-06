@@ -16,6 +16,7 @@ import { TimelineBar } from './panels/TimelineBar'
 import { CommandPalette } from './panels/CommandPalette'
 import { toggleAnalysisRun } from './playback/runSession'
 import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
+import { readSetting, writeSetting } from './io/viewState'
 
 const RIGHT_W_KEY = RIGHT_PANEL_WIDTH_KEY
 
@@ -23,7 +24,7 @@ const RIGHT_MIN_W = 280
 const RIGHT_MAX_W = 560
 
 function savedRightWidth(): number {
-  const n = Number(localStorage.getItem(RIGHT_W_KEY))
+  const n = Number(readSetting(RIGHT_W_KEY))
   return n >= RIGHT_MIN_W && n <= RIGHT_MAX_W ? n : 320
 }
 
@@ -236,7 +237,7 @@ export default function App() {
   function setRightWidth(w: number) {
     const next = Math.min(RIGHT_MAX_W, Math.max(RIGHT_MIN_W, w))
     setRightW(next)
-    localStorage.setItem(RIGHT_W_KEY, String(next))
+    writeSetting(RIGHT_W_KEY, String(next))
   }
 
   function nudgeRightWidth(e: React.KeyboardEvent) {

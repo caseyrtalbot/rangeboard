@@ -76,19 +76,12 @@ function admittedSlantsM(
 }
 
 /**
- * One sensor's hit on one threat at an instant, or null.
- * The hold gate (sensorHoldGate) decides technology eligibility: RF silence,
- * RF band coverage, a zero range, and the EO/IR cue rule (a needs-cue sensor
- * holds only when cued=true). Then, per member, the geometry gate and the
- * wedge (admittedSlantsM) decide who is in view, and the slant range from
- * the phase center decides detection: a sourced-basis radar with a target
- * reads the Pd model through the draw policy (deterministic: radarPdAt at or
- * above the test's pdDetect threshold; Monte Carlo: one draw per member),
- * and only when `scanStep` says this step is one of its scans (between scans
- * it has no hit of its own; assessThreat carries its hold); every other
- * sensor compares slant range with the effective range for this target
- * (environment derates, EO/IR span, acoustic level) at every step, or, for
- * a threshold radar with a stated period, at its scan steps only.
+ * One sensor's hit on one threat at an instant, or null. sensorHoldGate
+ * decides technology eligibility (RF silence, bands, zero range, the EO/IR cue
+ * rule). admittedSlantsM decides which members are in view. A Pd-modeled
+ * radar reads the Pd model through the draw policy, one draw per member, at
+ * its scan steps only; every other sensor compares slant range with the
+ * effective range for this target.
  */
 function sensorHit(
   sensor: Entity,
@@ -106,9 +99,7 @@ function sensorHit(
 ): DetectionHit | null {
   const gate = sensorHoldGate(spec, uasSpec)
   if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
-  // Between its scans a scan radar (Pd-modeled or a threshold radar with a
-  // stated period) has no hit of its own and cues nothing; the steering's
-  // carried hold is the only cue. A sensor with no scan state answers true.
+  // Between scans a scan radar has no hit of its own; the carried hold is the only cue.
   if (!scanStep) return null
   const env = scenario.environment
   let detected: number[]
@@ -174,21 +165,14 @@ export interface ScanSteering {
 }
 
 /**
- * Two-pass sensor sweep over one threat position set: search sensors first
- * (everything that does not need a cue: radar, RF, acoustic, and wide-area
- * EO/IR in a surveillance or early-warning role), then cued EO/IR, which
- * only hold when an earlier hit in the same sweep provides the cue
- * (COURAGEOUS: narrow-FOV cameras verify and track cued targets, they do
- * not search). One place owns the pass order and the cued flag;
- * detectionsAt, assessThreat, spawnInRingViolations and the raid-builder
- * standoff clamp all sweep through here. `formation` is the threat's
- * formation (track-resolution test); pass undefined for a single point.
- * `altitudeFt` is the threat altitude from threatAltitudeFt. A bare call
- * (no policy, no steering) is a deterministic board view in which every
- * step is a scan step; assessThreat passes its run policy with the threat
- * id, the sample time and the scan steering, so a Pd-modeled radar draws
- * only at its scan steps and its carried hold cues the EO/IR pass between
- * them (at a scan step the fresh scan result alone decides the cue).
+ * Two-pass sensor sweep over one threat position set: search sensors first,
+ * then cued EO/IR, which holds only when an earlier hit in the same sweep
+ * provides the cue (COURAGEOUS: narrow-FOV cameras verify, they do not
+ * search). The one owner of the pass order and the cued flag. `formation`
+ * feeds the track-resolution test; pass undefined for a single point. A bare
+ * call (no policy, no steering) is a deterministic board view in which every
+ * step is a scan step; with steering, a radar's carried hold cues the EO/IR
+ * pass between its scans.
  */
 export function sweepSensorHits(
   scenario: Scenario,
@@ -281,23 +265,17 @@ export function detectionsAt(scenario: Scenario, tS: number): Map<string, Detect
 }
 
 /** One threat whose path starts inside one sensor's effective detect ring. */
-export interface SpawnViolation {
+interface SpawnViolation {
   uasId: string
   sensorId: string
 }
 
 /**
- * Threats whose flight path STARTS inside a sensor's effective detect ring:
- * the track is held at T0, so under ROE free it is engaged at T0 and the run
- * never exercises the search problem. The raid builder clears spawn points at
- * commit time, but sensors move or get added afterward, delays change, and
- * hand-drawn paths get no standoff at all, so this is derived live from the
- * scenario and never stored. Uses the same per-sensor rules as sensorHit at
- * path.points[0] (lead position; formation offsets are ignored): environment
- * derates, target scaling (radar RCS, EO/IR span, acoustic level), sector
- * wedges, RF silence and band coverage, and the role-aware EO/IR cue rule
- * (a hold by a cued-only camera with no cue is not a violation; a wide-area
- * EO/IR search sensor holds on its own).
+ * Threats whose flight path starts inside a sensor's effective detect ring:
+ * the track is held at T0, so the run never exercises the search problem.
+ * Derived live and never stored, since sensors, delays and hand-drawn paths
+ * change after the raid builder's standoff clamp. Sweeps path.points[0] (lead
+ * position, formation offsets ignored) under the sensorHit rules.
  */
 export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))

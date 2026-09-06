@@ -1,19 +1,13 @@
 /**
  * Monte Carlo replicate loop. Replicate i runs the sweep and the attrition
- * with `monteCarloPolicy(seed, i, thresholds)`, a counter-based policy whose
- * every draw is a pure function of its key (seed, replicate, draw kind, the
- * ids, the indices, the step), and records the same
- * per-step counts the live panels read from the deterministic ledger. The
- * summary holds per-step bands and per-replicate scalars, never a replicate
- * ledger. Under `uncertainty: 'total'` each replicate first samples every
- * uncertain field through the policy's `param` draw (`sampleScenario`, once
- * per replicate) and runs the sweep and the attrition on that scenario;
- * under `aleatory` the nominal scenario runs and the sampler is never
- * called. Pure TS, no DOM, no store import at the value level, and it never
- * reads `engagementPicture` (that cache is the deterministic run).
- *
- * The grid is the chart grid: `sampleCount(scenario)` steps at DT from t = 0
- * through `scenarioDurationS`, index k is t = k * DT.
+ * with `monteCarloPolicy(seed, i, thresholds)` and records the per-step
+ * counts the live panels read from the deterministic ledger. The summary
+ * holds per-step bands and per-replicate scalars, never a replicate ledger.
+ * Under `uncertainty: 'total'` each replicate first samples every uncertain
+ * field through the policy's `param` draw; under `aleatory` the nominal
+ * scenario runs. No store import at the value level; never reads
+ * `engagementPicture`. The grid is the chart grid: `sampleCount(scenario)`
+ * steps at DT, index k is t = k * DT.
  */
 import { heldOnGrid, residualOnGrid, sampleCount } from '../analysis/series'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
@@ -89,18 +83,13 @@ const STOP_EVERY = 10
 export type StopRule = 'replicates' | 'halfWidth' | 'budget' | 'cancelled'
 
 /**
- * Execution budget of one run. `retainedNumbers` bounds the sample rows the
- * replicate loop keeps for the bands: one number per replicate per grid step
- * per series, five raid series plus one residual series per track. Measured
- * on 2026-09-05 (`docs/field-te/evidence/rf31-budget-2026-09-05/`): a
- * Chromium 151 worker on a 16 GB Mac took the whole page down, not the worker
- * alone, at 384 million retained numbers (3.1 GB of packed doubles against a
- * 3.76 GB isolate limit). The budget is one quarter of that, which leaves
- * room for the summary, the per-step sort scratch and smaller heaps. `timeMs`
- * is a wall-clock stop for a run nobody cancels: the measured cost is 3.2 ms
- * per replicate on the firing fixture and 100 ms on the Merops fixture, so
- * ten minutes covers 6,000 Merops replicates. A stop by either rule keeps the
- * replicates done and reports `stopped.rule` 'budget'.
+ * Execution budget of one run. `retainedNumbers` bounds the sample rows kept
+ * for the bands: one number per replicate per grid step per series, five raid
+ * series plus one residual series per track. A Chromium worker on a 16 GB Mac
+ * took the whole page down at 384 million retained numbers; the budget is one
+ * quarter of that. `timeMs` is a wall-clock stop for a run nobody cancels
+ * (about 100 ms per replicate on the largest fixture). A stop by either rule
+ * keeps the replicates done and reports `stopped.rule` 'budget'.
  */
 export interface ExecutionBudget {
   retainedNumbers: number
@@ -190,7 +179,7 @@ export interface McSummary {
 }
 
 /** One run request to the worker: plain JSON, never a store reference. */
-export interface McRunRequest {
+interface McRunRequest {
   type: 'run'
   runId: string
   scenario: Scenario
@@ -204,7 +193,7 @@ export interface McSensitivityRequest {
 }
 
 /** Ends the run at its next checkpoint; the run then posts its summary with `stopped.rule` 'cancelled'. */
-export interface McCancelRequest {
+interface McCancelRequest {
   type: 'cancel'
   runId: string
 }
@@ -225,7 +214,7 @@ export type McSensitivityMessage =
   | { type: 'sens-error'; runId: string; message: string }
 
 /** One tornado row: the headline statistic with one field at its p10 and at its p90. */
-export interface SensitivityRow {
+interface SensitivityRow {
   /** A library model id, a connection id, or 'doctrine' (uncertainFields). */
   modelId: string
   field: string
@@ -296,11 +285,7 @@ function intervalOf(
   return { lo: w.lo, hi: w.hi, interval: 'wilson' }
 }
 
-/**
- * Stat over the finite entries of `samples`; `total` is the sample count
- * before the finite filter. Sorted once here; `quantile` sorts its input
- * again, and that second sort of an ascending array is accepted.
- */
+/** Stat over the finite entries of `samples`; `total` is the count before the finite filter. */
 function statOf(samples: number[], kind: StatKind): Stat {
   const total = samples.length
   const sorted = samples.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
@@ -512,7 +497,7 @@ export function* replicateLoop(
   let retained = 0
   for (let i = 0; i < replicates; i += 1) {
     const policy = monteCarloPolicy(seed, i, thresholds)
-    // The ternary, not a null sampler: under aleatory the sampler never runs.
+    // Under aleatory the sampler never runs.
     const s = total ? sampleScenario(scenario, (m, f) => policy.param(m, f)) : scenario
     const assessments = assessAllThreats(s, policy)
     const report = resolveEngagements(s, assessments, policy)

@@ -1,5 +1,5 @@
 /**
- * Test-matrix coverage math (MASTER-CALCULATIONS 3.5).
+ * Test-matrix coverage math (MASTER-CALCULATIONS).
  * Runs map to cells via run.matrixCellId; only adjudicated valid,
  * non-excluded runs count as coverage evidence.
  */
@@ -28,15 +28,3 @@ export function coverage(campaign: TeCampaign): CellCoverage[] {
   })
 }
 
-export function matrixTotals(campaign: TeCampaign): {
-  cells: number
-  plannedRuns: number
-  estimatedHours: number | null
-} {
-  return {
-    cells: campaign.matrix.length,
-    plannedRuns: campaign.matrix.reduce((sum, cell) => sum + cell.plannedReps, 0),
-    // Per-cell durations are not modeled yet.
-    estimatedHours: null,
-  }
-}

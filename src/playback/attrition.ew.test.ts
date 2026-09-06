@@ -15,7 +15,7 @@ import { defaultJamBehavior } from '../model/types'
 import { resolveEngagements } from './attrition'
 
 /**
- * EW effect asymmetry (WS2). Same controlled geometry as attrition.test.ts:
+ * EW effect asymmetry. Same controlled geometry as attrition.test.ts:
  * group 4 fixed-wing target (size penalty 1.0, no evasion), effector pk set in
  * the test, first DT-grid shot at t = 5.5 and d = 990 m, so
  * falloff = 1 - 0.3 * 0.99 = 0.703 and per-shot Pk = 0.5 * 0.703 = 0.3515.
@@ -300,11 +300,7 @@ describe('continue behavior still leaks', () => {
   })
 })
 
-/**
- * Legacy instant-release engine (doctrine off). These fixtures assert the
- * pre-doctrine numbers: the ROE gate alone opens the window and every ready
- * effector volleys. New scenarios default to the doctrinal sequence.
- */
+/** Doctrine off: the ROE gate alone opens the window and every ready effector volleys. */
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }

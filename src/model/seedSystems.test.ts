@@ -8,7 +8,7 @@ import { evaluateIntegration } from './integration'
  * no spec copies of their own. These tests pin that convention so preset
  * numbers can never drift from the base library models: every referenced id
  * must resolve, and a fresh placement must carry the base model's numbers
- * end to end (the MEROPS "unlimited magazine" regression).
+ * end to end.
  */
 
 const byId = new Map(SEED_LIBRARY.map((m) => [m.id, m]))

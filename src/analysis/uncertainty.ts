@@ -25,7 +25,6 @@ import { bdaSFor, defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctr
 import { DEFAULT_PK } from '../playback/pk'
 import { betaQuantile } from '../te/calc/stats'
 
-// Pure resolution is shared with analysis identity; sampling remains here.
 import { FIELDS_BY_KIND, hasSpec, modelsInUse, PF_SPREAD, spreadFor } from './parameterBasis'
 export { PF_SPREAD, spreadFor, uncertainFields } from './parameterBasis'
 export type { PfSpreadRow, UncertainField } from './parameterBasis'

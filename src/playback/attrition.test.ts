@@ -6,7 +6,6 @@ import { FT_TO_M } from '../analysis/sensorEnv'
 import { posAtTime } from '../geometry/geo'
 import { resolveEngagements } from './attrition'
 import { distanceFalloff, expenditureChannel, isHardKill, SHIP_DEAD_BELOW } from './pk'
-import { FLYOUT_SPEED_FACTOR, timeOfFlightS } from './intercept'
 import { assessAllThreats } from './sim'
 
 /**
@@ -174,8 +173,6 @@ describe('single threat, single effector window math', () => {
     expect(r.totals.raidSize).toBe(1)
     expect(r.totals.shotsFired).toBe(1)
     // No asset on this board, so the surviving mass never arrived anywhere.
-    // The old expectation charged it as a leaker, which is the conflation the
-    // partition removes.
     expect(r.totals.expectedLeakers).toBe(0)
     expect(r.totals.expectedNoArrival).toBeCloseTo(1 - 0.3515, 6)
     expect(r.totals.reportedLeakers).toBeNull()
@@ -268,38 +265,12 @@ describe('out-of-window threats', () => {
 })
 
 /*
- * Ordering-correctness note for the assignment-to-effect latency model.
- *
- * A salvo assigned at t takes effect at tEffect = t + engageTimeS. The
- * question: may attrition.ts apply ship-state mutations immediately at
- * assignment time, or must it buffer them until tEffect?
- *
- * Double-killing probability mass is impossible under EITHER ordering.
- * Every kill shot multiplies ship.alive by (1 - pk'), so final survival is
- * the product of (1 - pk') over all shots — a product commutes, the same
- * mass is never subtracted twice, and total expected kills = 1 - product no
- * matter how assignments interleave with effects. A single effector also
- * cannot re-fire before its own effect lands in any case that changes state
- * twice ambiguously (interceptor cooldowns are >= 30 s).
- *
- * Ordering DOES matter for the jam coupling term, so effects are buffered.
- * A kill shot's magnitude is alive * pk * (1 - 0.3 * jammed), and jammed
- * enters non-multiplicatively. Jammer engage times are 0-20 s while
- * interceptor engage times are 45-120 s, so assignment order and effect
- * order diverge: an interceptor assigned BEFORE a jam takes hold can strike
- * AFTER it, and its firing solution must be degraded. Applying mutations at
- * assignment time would read `jammed` at the wrong time. attrition.ts
- * therefore queues every nonzero-latency effect and applies the queue in
- * tEffect order ahead of each sweep step (flushing leftovers after the
- * sweep); zero-latency effects apply inline, preserving the pre-latency
- * same-tick jam-then-kill coupling. The 'degrades a delayed kill shot' test
- * below locks in the effect-order behavior.
- *
- * Ship selection reads the applied state discounted by salvos still in
- * flight: outcomes of pending salvos are unknown at assignment time, so
- * aiming is not clairvoyant about them — it multiplies survival by their
- * expected (1 - Pk) instead, which spreads simultaneous volleys across
- * ships (see the fire-distribution suite below).
+ * Effect ordering. Survival is a product of (1 - pk') over kill shots, so
+ * kill mass cannot double-count under any ordering. The jam coupling term
+ * alive * pk * (1 - 0.3 * jammed) is not multiplicative, so effects apply in
+ * tEffect order: an interceptor assigned before a jam takes hold but landing
+ * after it must be degraded. Ship selection discounts survival by the
+ * expected (1 - Pk) of salvos still in flight, which spreads volleys.
  */
 
 /** Group 4 fixed-wing on mixed nav: jams 'continue' (degraded track, still inbound). */
@@ -522,7 +493,6 @@ describe('fire distribution: survival cutoff', () => {
     //      SHIP_DEAD_BELOW -> the fourth opportunity (t = 11.5) and every
     //      later one HOLDS: ~22 window opportunities go unused.
     //   B: same three shots at 65.5/67.5/69.5 from the held rounds.
-    // The pre-cutoff engine spent all 10 rounds on A and starved B.
     const scenario = legacyScenario()
     const model = interceptor({ pk: 0.9, magazineSize: 10, salvoCooldownS: 2 })
     scenario.library = [...scenario.library, SENSOR, TARGET, model]
@@ -670,12 +640,9 @@ describe('expenditure split: kinetic vs jam', () => {
 })
 
 /*
- * ===================== ARRIVAL RULE (late kills) ==========================
- * A defeat whose effect lands after the threat was already inside the
- * defended asset's boundary destroyed an airframe but protected nothing. The
- * engine used to credit that mass as a defeat, so a laydown whose every
- * intercept arrived after the threat was overhead reported a near-perfect
- * defeat rate. Kill physics is unchanged; the CREDIT now splits at arrival.
+ * Arrival rule. A defeat whose effect lands after the threat was inside the
+ * defended boundary destroyed an airframe but protected nothing: the kill
+ * physics is the same, only the credit splits at arrival.
  */
 describe('kills credited against arrival at the defended asset', () => {
   /** Interceptor whose single intercept lands at t = 125.5, x = 810. */
@@ -765,8 +732,7 @@ describe('kills credited against arrival at the defended asset', () => {
   })
 
   it('has no late mass at all when no asset is placed', () => {
-    // Nothing to arrive at: the whole ledger stays pre-arrival, so an
-    // asset-free laydown reports exactly what it did before the split.
+    // Nothing to arrive at: the whole ledger stays pre-arrival.
     const { scenario } = longScenario([slowInterceptor()])
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
@@ -778,11 +744,9 @@ describe('kills credited against arrival at the defended asset', () => {
 })
 
 /*
- * ================== EXPENDITURE CHANNEL (kinetic/DE/EW) ===================
- * isHardKill answers what a salvo DESTROYS; expenditureChannel answers what
- * it COSTS. Directed energy is a hard kill that fires no round, so its
- * expenditure used to land in shotsFired and read on the board as
- * interceptors that were never launched.
+ * Expenditure channel. isHardKill answers what a salvo destroys;
+ * expenditureChannel answers what it costs. Directed energy is a hard kill
+ * that fires no round.
  */
 describe('expenditure channel split', () => {
   it('maps every effector type to its expenditure channel', () => {
@@ -891,11 +855,8 @@ describe('expenditure channel split', () => {
 })
 
 /*
- * ================== RAID PARTITION (defeated / leaked / no arrival) =======
- * Every ship lands in exactly one bucket and the three sum to raidSize.
- * The engine used to report raidSize minus kills as leakers, which charged a
- * fly-by, and every ship of an asset-free run, as though it had reached a
- * defended asset.
+ * Raid partition. Every ship lands in exactly one of defeated, leaked and
+ * no-arrival, and the three sum to raidSize.
  */
 describe('raid partition', () => {
   /**
@@ -1060,11 +1021,7 @@ describe('altitude geometry in the envelope', () => {
   })
 })
 
-/**
- * Legacy instant-release engine (doctrine off). These fixtures assert the
- * pre-doctrine numbers: the ROE gate alone opens the window and every ready
- * effector volleys. New scenarios default to the doctrinal sequence.
- */
+/** Doctrine off: the ROE gate alone opens the window and every ready effector volleys. */
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }
@@ -1072,26 +1029,6 @@ function legacyScenario(): ReturnType<typeof emptyScenario> {
 }
 
 describe('flyout kinematics (flyoutSpeedMps)', () => {
-  const base = {
-    effectorType: 'interceptor' as const,
-    minRangeM: 0,
-    maxRangeM: 5000,
-    engageTimeS: 0,
-  }
-
-  it('timeOfFlightS is slant over the average speed; 0 without a speed or a kinetic type', () => {
-    // A stated 200 m/s is a maximum; the average is 200 * 0.7 = 140 m/s, so
-    // 4000 m takes 4000 / 140 = 28.5714 s.
-    expect(FLYOUT_SPEED_FACTOR).toBe(0.7)
-    expect(timeOfFlightS({ ...base, flyoutSpeedMps: 200 }, 4000)).toBeCloseTo(4000 / 140, 12)
-    expect(timeOfFlightS(base, 4000)).toBe(0)
-    expect(timeOfFlightS({ ...base, flyoutSpeedMps: null }, 4000)).toBe(0)
-    expect(timeOfFlightS({ ...base, flyoutSpeedMps: 0 }, 4000)).toBe(0)
-    for (const effectorType of ['jammer', 'de', 'hpm'] as const) {
-      expect(timeOfFlightS({ ...base, effectorType, flyoutSpeedMps: 200 }, 4000)).toBe(0)
-    }
-  })
-
   it('lands the effect at t + engageTimeS + flight time to the predicted intercept', () => {
     // Launcher at the origin, 4600 m envelope, engage time 10 s, 200 m/s
     // stated interceptor speed, so 140 m/s average (FLYOUT_SPEED_FACTOR 0.7).
@@ -1102,8 +1039,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // constant-speed meeting is 4400 / (140 + 20) = 27.5 s later, so
     // tEffectS = 42.5 and the intercept is sampled there, x 4700 - 20 * 42.5
     // = 3850 (the slant used for the falloff). Pk at the intercept:
-    // 0.5 * (1 - 0.3 * 3850/4600). Before the closed form, three fixed-point
-    // passes gave 42.5802 s and 3848.40 m.
+    // 0.5 * (1 - 0.3 * 3850/4600).
     const scenario = legacyScenario()
     const eff = interceptor({
       pk: 0.5,
@@ -1149,13 +1085,11 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // from x = 1100 at 97 m/s: x(tau) = 1100 + 97 tau, slant = x. Window from
     // t = 0 (ROE free, detection at 0) until x > 4000 at tau = 2900/97 =
     // 29.90, so the last in-range grid sample is s1 = 29.5 (x = 3961.5).
-    // The passes never close (pass 2 flight 119.52 s), so the flight is held
-    // at the cap, 29.5, and sampled there: x 3961.5. The interceptor has flown
-    // 54.6 * 29.5 = 1610.7 m by then, 2350.8 m short of the credited point,
-    // far past the one-DT tolerance 54.6 * 0.5 = 27.3 m. Before the
-    // feasibility test this event was credited at Pk 0.35144375 with
-    // flightCapped; now no shot is taken in either pass: no event, no round
-    // spent, the ship undefeated and never arriving (no asset).
+    // No meeting exists, so the flight is held at the cap, 29.5, and sampled
+    // there: x 3961.5. The interceptor has flown 54.6 * 29.5 = 1610.7 m by
+    // then, 2350.8 m short of the credited point, far past the one-DT
+    // tolerance 54.6 * 0.5 = 27.3 m, so no shot is taken in either pass: no
+    // event, no round spent, the ship undefeated and never arriving (no asset).
     const eff = interceptor({
       pk: 0.5,
       maxRangeM: 4000,
@@ -1192,10 +1126,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // engage time 10 s, 10 km envelope; the threat recedes from x = 500 at
     // 65 m/s, so r at release is 1150 m and the true intercept is at
     // 1150 / (70 - 65) = 230 s after release, x = 16.1 km, outside the
-    // envelope. The third pass lands at 45.85 s inside the 146 s window, so
-    // the cap does not fire; the E2 study (motion-effect-timing.md) found
-    // this credit at Pk 0.438 with reach 3209 m against need 4130 m. It is
-    // now declined in both passes.
+    // envelope, so the shot is declined in both passes.
     const near = interceptor({
       pk: 0.5,
       maxRangeM: 10000,

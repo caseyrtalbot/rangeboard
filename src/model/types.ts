@@ -189,10 +189,8 @@ export interface UasSpec {
   group: UasGroup
   /**
    * PLANNING FACTOR radar cross section, m2 (X/Ku-band, nose-on class
-   * value). The threat study lists RCS by aspect and frequency as a data gap
-   * (section 18), so this is a representative tier value from
-   * src/model/rcsFactors.ts or a sourced datasheet class, never measured
-   * signature data. Absent means the group tier.
+   * value): a tier value from src/model/rcsFactors.ts or a sourced datasheet
+   * class, never measured signature data. Absent means the group tier.
    */
   rcsM2?: number | null
   /** Fluctuation model. Absent: SWERLING_BY_AIRFRAME[airframe] (PF). */
@@ -252,10 +250,8 @@ export interface UasSpec {
    */
   warheadKg?: number | null
   /**
-   * PLANNING FACTOR effect radius, meters, for T&E laydown work. The study
-   * explicitly declines to compute lethal blast radii or fragmentation fans
-   * (section 18.1), so this is a representative tier value from
-   * weaponFactors.ts, not study-derived lethality data. Null when unknown.
+   * PLANNING FACTOR effect radius, meters, for T&E laydown work: a tier value
+   * from weaponFactors.ts, not lethality data. Null when unknown.
    */
   effectRadiusM?: number | null
   /**
@@ -485,7 +481,7 @@ export interface Connection {
   fromId: string
   toId: string
   label: string
-  // Typed-integration fields. All absent on old saves and hand-drawn links.
+  /** Typed-integration fields. Absent on old saves and hand-drawn links. */
   medium?: LinkMedium | null
   confidence?: IntegrationConfidence | null
   note?: string
@@ -667,8 +663,8 @@ export type LaunchPolicy = 'max-range' | 'range-fraction' | 'pk-commit' | 'lates
  *   holding the track continuously for its track initiation time; RF and
  *   acoustic hits cue but cannot build a firing solution).
  *   IDENTIFY. Hostile identification on the classification ladder, then a
- *   declareHostileS operator dwell after both. ROE 'free' vs 'tight' no longer
- *   changes the gate (both require the declaration); 'hold' still blocks.
+ *   declareHostileS operator dwell after both. ROE 'free' and 'tight' both
+ *   require the declaration; 'hold' blocks.
  *   TARGET. The declared track is routed to a shooter (kill-chain hop
  *   latency) and that shooter needs its weapon assignment and firing
  *   solution dwell (targetS; per type in doctrineFactors TARGET_S, spec
@@ -680,9 +676,9 @@ export type LaunchPolicy = 'max-range' | 'range-fraction' | 'pk-commit' | 'lates
  *   time + BDA) before arrival forces the shot regardless of policy.
  *   ASSESS. A bdaS battle-damage-assessment dwell after each effect before
  *   anyone re-engages that ship.
- * Disabled = legacy instant release: the ROE gate alone opens the window and
- * every ready effector volleys until the target is expected dead. Keep it for
- * regression comparison, not for planning.
+ * Disabled = instant release: the ROE gate alone opens the window and every
+ * ready effector volleys until the target is expected dead. Comparison only,
+ * not planning.
  * All values are planning factors, editable per scenario. trackFirmS,
  * targetS, bdaS and pkCommit are the UNIFORM fallbacks: with doctrine
  * enabled the engine derives per-system values instead (spec override, else
@@ -777,12 +773,9 @@ export interface AarThreatRow {
   engageS: number | null
   /** Kinetic salvos (interceptor, gun, net) at this threat. */
   shotsFired: number
-  /**
-   * Directed-energy bursts (DE, HPM) at this threat. Absent on pins made
-   * before the three-way expenditure split; read it as `deSalvos ?? 0`.
-   */
+  /** Directed-energy bursts (DE, HPM) at this threat. Absent on older pins; read as `?? 0`. */
   deSalvos?: number
-  /** EW salvos (jammer) at this threat. Absent on pins made before the split. */
+  /** EW salvos (jammer) at this threat. Absent on older pins. */
   jamSalvos?: number
   expectedHardKills: number
   expectedSoftKills: number
@@ -790,8 +783,7 @@ export interface AarThreatRow {
   outcome: AarOutcome
   /** Dominant killer's name at summary time; null when no kills. */
   killedByName: string | null
-  // Engagement-potential (I&W) fields. All optional: pinned scorecards made
-  // before they existed still parse and render, no storage key bump.
+  /** Engagement-potential (I&W) fields. All optional so older pins still parse. */
   /** Defended asset name at summary time; null when no asset is placed. */
   assetName?: string | null
   /** Arrival (closest approach) at the defended asset, sim seconds. */
@@ -819,12 +811,9 @@ export interface AarEffectorShots {
   effectorType: EffectorSpec['effectorType'] | null
   /** Kinetic salvos; 0 for DE, HPM, and jammers (see deSalvos, jamSalvos). */
   shotsFired: number
-  /**
-   * Directed-energy bursts; 0 for every other effector class. Absent on pins
-   * made before the three-way split; read it as `deSalvos ?? 0`.
-   */
+  /** Directed-energy bursts; 0 for every other class. Absent on older pins; read as `?? 0`. */
   deSalvos?: number
-  /** EW salvos (jammer). Absent on pins made before the expenditure split. */
+  /** EW salvos (jammer). Absent on older pins. */
   jamSalvos?: number
   /** Null = unlimited magazine (jammers, DE, HPM). */
   expectedRoundsRemaining: number | null
@@ -848,26 +837,24 @@ export interface AarSummary {
   /** DEFEATS: expectedHardKills + expectedSoftKills. */
   expectedKills: number
   /**
-   * UNDEFEATED ships: the ships the defence did not defeat before arrival.
-   * It is the leaker bucket plus the never-arrived bucket, because this
-   * pinned shape has always carried one combined figure. It claims only "not
-   * defeated", never "reached an asset". expectedNoArrival splits the second
-   * bucket out; AttritionTotals.reportedLeakers is the measurable leaker
-   * count. Absent on no pin: the field predates the split.
+   * UNDEFEATED ships: the leaker bucket plus the never-arrived bucket. It
+   * claims only "not defeated", never "reached an asset". expectedNoArrival
+   * splits the second bucket out; AttritionTotals.reportedLeakers is the
+   * measurable leaker count.
    */
   expectedLeakers: number
   /**
    * Ships neither defeated nor arrived: a fly-by that turned away short, or a
    * run with no defended asset placed at all. Part of expectedLeakers, so
-   * expectedLeakers minus this is the arrived-undefeated mass. Absent on pins
-   * made before the arrival split; read it as `expectedNoArrival ?? null`.
+   * expectedLeakers minus this is the arrived-undefeated mass. Absent on older
+   * pins; read as `?? null`.
    */
   expectedNoArrival?: number
   /**
    * Kill mass whose effect landed strictly after the threat was already over
    * the defended asset. Real destruction that did not protect the asset, so
-   * it is NEVER a defeat: it is a sub-measure of the undefeated mass, not a
-   * deduction from it. Absent on pins made before the arrival split.
+   * it is NEVER a defeat: a sub-measure of the undefeated mass, not a
+   * deduction from it. Absent on older pins.
    */
   expectedLateKills?: number
   /** Mean per-ship undefeated fraction over the raid; null when the raid is empty. */
@@ -878,12 +865,9 @@ export interface AarSummary {
   firstShotS: number | null
   /** Kinetic salvos (interceptor, gun, net) only. */
   shotsFired: number
-  /**
-   * Directed-energy bursts (DE, HPM). Absent on pins made before the
-   * three-way expenditure split; read it as `deSalvos ?? 0`.
-   */
+  /** Directed-energy bursts (DE, HPM). Absent on older pins; read as `?? 0`. */
   deSalvos?: number
-  /** EW salvos (jammer). Absent on pins made before the expenditure split. */
+  /** EW salvos (jammer). Absent on older pins. */
   jamSalvos?: number
   effectors: AarEffectorShots[]
   threats: AarThreatRow[]
@@ -896,7 +880,7 @@ export interface ScorecardSnap {
   /** Weighted 0-100 total at pin time. */
   score: number
   parts: McdaVector
-  /** Full AAR summary at pin time. Absent on pins made before WS5. */
+  /** Full AAR summary at pin time. Absent on older pins. */
   aar?: AarSummary
 }
 
@@ -979,7 +963,7 @@ export interface Scenario {
   /** Replicate uncertainty mode. Absent on old saves = aleatory. */
   uncertainty?: UncertaintyMode
   environment: EnvironmentSpec
-  /** Legacy field; persist migration maps it to `roe`. Never written anymore. */
+  /** Legacy field; persist migration maps it to `roe`. Never written. */
 
   engageOn?: EngagePolicy
   /** Absent on old saves; migrated from engageOn on load, default 'tight'. */

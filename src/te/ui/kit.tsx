@@ -12,7 +12,7 @@ import type { StateTone } from '../../ui/kit'
 
 export { Field, Seg }
 
-export type PillKind = 'good' | 'warn' | 'bad' | 'neutral'
+type PillKind = 'good' | 'warn' | 'bad' | 'neutral'
 
 /** The T&E gate words to the shared state tones. */
 const PILL_TONE: Record<PillKind, StateTone> = {
@@ -325,36 +325,6 @@ export function VersionField({
   )
 }
 
-/** One item per line; edits round-trip through a textarea. */
-export function LinesField({
-  label,
-  value,
-  onChange,
-  rows,
-  help,
-  disabled,
-}: {
-  label: string
-  value: string[]
-  onChange: (v: string[]) => void
-  rows?: number
-  help?: string
-  disabled?: boolean
-}) {
-  return (
-    <Field label={label} help={help}>
-      <textarea
-        rows={rows ?? 4}
-        value={value.join('\n')}
-        placeholder="One item per line"
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value.split('\n'))}
-        onBlur={(e) => onChange(e.target.value.split('\n').filter((l) => l.trim() !== ''))}
-      />
-    </Field>
-  )
-}
-
 /** Multi-select over record links, rendered as check rows. */
 export function MultiPicker({
   label,
@@ -492,15 +462,13 @@ export function fmtDate(iso: string | null): string {
   return iso.slice(0, 16).replace('T', ' ')
 }
 
-// ---------------------------------------------------------------------------
-// Strategist redesign components (SPEC section 5). All reuse the existing
-// tokens and the field / field-row / subsection / seg / card-chip idiom.
+// Composite decision-group components. They reuse the shared tokens and the
+// field / field-row / subsection / seg / card-chip idiom.
 // Keyboard: every control is tab-reachable; comboboxes filter on type,
 // Enter selects, Esc closes.
-// ---------------------------------------------------------------------------
 
 /** Small tier badge. One per group or field; never a wall of red. */
-export function RequiredBadge({ tier }: { tier: 'required' | 'recommended' | 'advanced' }) {
+function RequiredBadge({ tier }: { tier: 'required' | 'recommended' | 'advanced' }) {
   const label = tier === 'required' ? 'Required' : tier === 'recommended' ? 'Recommended' : 'Advanced'
   return <span className={`req-badge ${tier}`}>{label}</span>
 }
@@ -1222,7 +1190,7 @@ export function RangeField({
   )
 }
 
-export interface RegisterColumn<Row> {
+interface RegisterColumn<Row> {
   key: keyof Row & string
   label: string
   kind: 'text' | 'select' | 'person' | 'date' | 'number' | 'pill'

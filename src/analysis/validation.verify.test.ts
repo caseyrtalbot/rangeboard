@@ -228,7 +228,7 @@ describe('Echodyne EchoGuard sUAV pair (6JL sheet, read 2026-09-04)', () => {
     // residual +6.8 percent, outside the 2 percent tolerance.
     // KNOWN DEVIATION, pinned. The RCS the pair implies under the law is
     // 0.01 * 1.4^4 = 0.0384 m2, which is an unsourced derived value, not a
-    // seed fact. Reported for an R-F row.
+    // seed fact.
     const scenario = freeSpace()
     const spec = seedSensor(scenario, 'lib-echoguard')
     const m350 = scenario.library.find((m) => m.id === 'lib-m350')?.uas

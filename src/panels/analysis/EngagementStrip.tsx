@@ -6,6 +6,7 @@ import type { ImpactSeverity, Scenario } from '../../model/types'
 import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
 import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
+import { readSetting, writeSetting } from '../../io/viewState'
 import { tickStepS } from '../../charts/timeAxis'
 import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
 
@@ -231,7 +232,7 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
 export function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
   const scenario = useStore((s) => s.scenario)
   const [openFlag, setOpen] = useState(
-    () => !embedded && typeof localStorage !== 'undefined' && localStorage.getItem(OPEN_KEY) === '1',
+    () => !embedded && readSetting(OPEN_KEY) === '1',
   )
   const open = embedded || openFlag
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
@@ -283,7 +284,7 @@ export function EngagementStrip({ embedded = false }: { embedded?: boolean } = {
 
   function toggleOpen() {
     const next = !open
-    localStorage.setItem(OPEN_KEY, next ? '1' : '0')
+    writeSetting(OPEN_KEY, next ? '1' : '0')
     setOpen(next)
   }
 

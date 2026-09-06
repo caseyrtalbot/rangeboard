@@ -171,7 +171,7 @@ export interface UiState {
  * Autosave status. Its own slice, not part of `ui`, so a write does not
  * re-render every ui subscriber. Set by persist, never undoable.
  */
-export interface SaveState {
+interface SaveState {
   /** Epoch ms of the last successful autosave write; null before the first. */
   lastAutosaveAt: number | null
   /** Why the last write failed; null when the last write succeeded. */

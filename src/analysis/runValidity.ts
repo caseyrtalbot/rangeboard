@@ -22,7 +22,7 @@ import type { RequirementGateId } from './requirements'
  */
 
 /** Stable finding kinds. One finding per kind per run; tracks list in uasIds. */
-export type RunValidityFindingId =
+type RunValidityFindingId =
   | 'spawn-in-ring'
   | 'no-defended-asset'
   | 'environment-not-applied'
@@ -34,7 +34,7 @@ export type RunValidityFindingId =
  * 'invalidating' = the listed gates cannot be scored for the listed tracks.
  * 'limiting' = the listed gates are still scored, but they carry the caveat.
  */
-export type RunValiditySeverity = 'invalidating' | 'limiting'
+type RunValiditySeverity = 'invalidating' | 'limiting'
 
 /** One reason a run cannot carry the evidence it looks like it carries. */
 export interface RunValidityFinding {

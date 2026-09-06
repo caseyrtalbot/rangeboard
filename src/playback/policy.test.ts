@@ -51,7 +51,7 @@ describe('deterministicPolicy', () => {
 
 describe('monteCarloPolicy', () => {
   const SEED = 4821
-  // The four keys of contract 1.2, built by hand from the parts.
+  // The four keys, built by hand from the parts.
   const uDetect = (rep: number, sensor: string, uas: string, tS: number, memberIdx: number) =>
     hashU01(SEED, rep, DRAW_KIND.detect, idHash(sensor), idHash(uas), memberIdx, stepIndex(tS))
   const uKill = (rep: number, eff: string, uas: string, shipIdx: number, salvoIdx: number) =>

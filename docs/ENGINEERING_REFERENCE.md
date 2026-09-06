@@ -1,10 +1,9 @@
 # RangeBoard engineering reference
 
-Technical reference for the application as built. Read [CLAUDE.md](../CLAUDE.md) for the
-codebase guide and this file for details. Source and tests determine actual behavior;
-requirements and known implementation gaps are distinguished below. Repository paths in
-code spans are relative to the repository root. Section numbering starts at 3 because
-other documents link to these sections by number.
+Technical reference for the application as built. [CLAUDE.md](../CLAUDE.md) is the
+codebase guide and the contract; this file holds the details. Source and tests decide
+behavior. Paths in code spans are relative to the repository root. Section numbers start
+at 3 because other documents link to them by number.
 
 ## 3. Hard architectural invariants
 
@@ -42,27 +41,23 @@ Breaking one of these breaks the app.
   `emptyScenario()`; a new nested object needs its own `fillScenario` line. Every new field
   is optional with a default. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
-  `rangeboard.scenario.recovered.<ms>` before anything writes when recovery storage is
-  available. Recovery names avoid collisions and exact readback is verified. Read denial or failed
-  recovery pauses autosave so the only raw copy is retained; the notice explains export,
-  storage cleanup and reload. Runtime validation checks required/nested shapes, finite/ranged values,
-  IDs/references and engine representability before default filling and adoption.
-  Missing supported legacy fields fill; malformed present fields fail with a path/reason.
-  Unknown extension data and legitimate legacy edits remain. `loadScenario` is the one
-  load path; `replaceScenario` clears history, selection, drafts and the tool, and prunes
-  per-entity view state.
-  Validation descriptors share the domain types; semantic/reference rules remain explicit.
-  Reserved object-prototype IDs are rejected before object-backed engine maps can lose
-  records. Triangular spread bounds are fractional offsets around zero, matching the sampler.
-  Base64 image syntax follows native decoder padding rules. New underlay ingestion uses
-  a conservative 5 MiB storage admission budget; existing valid images are not size-capped.
-  Representation checks are not a crash journal; the execution budget is the worker's
-  (`DEFAULT_BUDGET` in `mcRun.ts`, below).
+  `rangeboard.scenario.recovered.<ms>` before anything writes; the copy is read back and
+  checked. Read denial or a failed recovery pauses autosave so the only raw copy survives,
+  and the notice explains export, storage cleanup and reload. Runtime validation
+  (`src/io/runtimeValidation.ts`, `validateScenario.ts`) checks shapes, finite and ranged
+  values, ids, references and engine representability before default filling. Missing
+  legacy fields fill; a malformed present field fails with a path and reason. Unknown
+  extension data survives. Reserved object-prototype ids are rejected. Triangular spread
+  bounds are fractional offsets around zero. Base64 image syntax follows native decoder
+  padding. A new underlay image passes a 5 MiB admission budget; an existing valid image
+  is not size-capped. `loadScenario` is the one load path; `replaceScenario` clears
+  history, selection, drafts and the tool, and prunes per-entity view state.
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
-  instead. View state outside the `Scenario` has its own keys (`rangeboard.view.v1`,
-  `rangeboard.layers.v1`, `rangeboard.rings.v1`, `rangeboard.runseq.v1`,
-  `rangeboard.analysis.v1`, `rangeboard.units.v1`, the panel chrome keys) and is written
-  eagerly by its setter in `src/io/viewState.ts`.
+  instead. The scenario and T&E autosaves have their own read and error paths. Every other
+  settings key (view, layers, rings, run sequence, analysis layout, units, panel widths,
+  collapse flags) is read and written through `readSetting` and `writeSetting` in
+  `src/io/viewState.ts`, the one guarded localStorage path for settings. The camera write
+  is queued and flushed by `flushViewWrites` on pagehide and tab hide.
 - **Module cycles:** `model/scenario.ts` owns `modelFor`, `pathSpeed` and
   `scenarioDurationS`; engine and validation consumers import that leaf directly.
   `state/rings.ts` owns shared ring keys/types, so `viewState.ts` has no runtime store
@@ -71,8 +66,8 @@ Breaking one of these breaks the app.
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
   `attrition.ts`; worker execution stays behind `mcClient.ts`. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.
-  `runSession.ts` is a main-thread store adapter, outside that graph. `policy.ts` imports
-  `stepIndex` from `playback/clock.ts`, so `sim.ts` and `policy.ts` no longer form a cycle.
+  `runSession.ts` is a main-thread store adapter, outside that graph. `playback/clock.ts`
+  owns `DT` and `stepIndex`, so `sim.ts` and `policy.ts` form no cycle.
   `src/analysis/fidelity.ts` reads the scenario, never the picture, so it stays cycle-free.
 - **Monte Carlo worker:** the store action `runMonteCarlo` posts a request through
   `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`
@@ -143,15 +138,18 @@ src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPh
                (jam), doctrineFactors.ts (per-system factors), impact.ts
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), series.ts (chart
                series on the DT grid), runValidity.ts, requirements.ts, uncertainty.ts
-               (sampling), parameterBasis.ts (pure spread resolution/enumeration), fidelity.ts (model tags), mcda.ts, aar.ts,
-               systemTelemetry.ts, threatAggregation.ts, range.ts
+               (sampling), parameterBasis.ts (pure spread resolution and enumeration),
+               fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
+               threatAggregation.ts, range.ts
 src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that both the
-               Board panels and the T&E kit render; reads index.css classes only, no store
+               Board panels and the T&E kit render; reads index.css classes only, no store.
+               ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
+               the layers, the palette glyphs, the detail panels and trackState share
 src/charts/    recharts kit: types.ts (Series), tokens.ts, timeAxis.ts, ChartFrame,
-               TimeSeries, Ladder, Tornado, Sparkline. Props only; never reads the store.
+               TimeSeries, Ladder, Tornado. Props only; never reads the store.
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target),
-               TrackFileReadout.tsx, layers/ (one Konva layer per concern;
-               footprintStyle.ts is the ring style source)
+               TrackFileReadout.tsx, frameClock.ts, layers/ (one Konva layer per
+               concern; footprintStyle.ts is the ring style source)
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
                LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/,
@@ -161,8 +159,8 @@ src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and
                import/export, runExportObject), runResultGroups.ts (per-group basis/units),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
                runtimeValidation.ts + validateScenario.ts (runtime semantics),
-               viewState.ts (view, layers, rings, run sequence and units keys), storageKeys.ts,
-               recovery.ts
+               viewState.ts (readSetting and writeSetting over every settings key),
+               storageKeys.ts, recovery.ts
 src/te/        T&E Operations workspace (own store, section 8)
 src/main.tsx   loads the autosave, starts both autosaves, exposes window.__store and
                window.__teStore in dev
@@ -181,7 +179,7 @@ policy?)` (`attrition.ts`) distributes fire and returns totals, events and per-e
 
 Each fact below has exactly one definition. Read it there; never add a second copy.
 
-- **Sample grid:** `DT` exported from `src/playback/sim.ts`. `tickStepS` in
+- **Sample grid:** `DT` (0.5 s) and `stepIndex` in `src/playback/clock.ts`. `tickStepS` in
   `src/charts/timeAxis.ts`. A chart's `tS` prop is quantized to DT by the caller.
 - **Altitude and geometry:** `threatAltitudeFt(scenario, uas)` (entity value, else the
   threat profile, else the `altBandFt` midpoint) and `mountHeightOf(spec)` are the
@@ -220,8 +218,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   release. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows
   `doctrine.launchPolicy`. `tEffect = t + engageTimeS + timeOfFlightS(spec, interceptSlant)`
   from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at
-  `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, in `attrition.ts` beside
-  `SIZE_PENALTY`) because a stated speed is a maximum. `interceptAt` is the one predicted
+  `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, `intercept.ts`) because a
+  stated speed is a maximum. `interceptAt` is the one predicted
   intercept: the exact constant-speed meeting time along the path (`analyticTofS`:
   the target holds the first point before its delay and the last point after the path ends,
   and on each straight segment the formation member moves at constant velocity, so the
@@ -233,7 +231,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   no meeting exists; both selection passes decline such a shot (no event, no round, no
   cooldown). `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
   kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
-  commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` stay PF. Per-system factors and spec
+  commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy
   instant-release path; keep it for regression and pin legacy fixtures with
   `doctrine.enabled = false`. Route latency is charged from the ROE gate, not from T0.
@@ -258,7 +256,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (`src/geometry/prng.ts`), keyed detect by sensor, threat, member and `stepIndex(tS)`,
   kill by effector, threat, ship and `salvoIdx`, the salvos that effector already committed
   at that ship, jam by effector, threat and step, phase by sensor, param by model id and
-  field. `DRAW_KIND` names the kinds and `stepIndex` (`sim.ts`, beside `DT`) is the one
+  field. `DRAW_KIND` names the kinds and `stepIndex` (`clock.ts`, beside `DT`) is the one
   draw-step index, so common random numbers hold across laydowns. A change to a key part
   (`memberIdx`, `salvoIdx`, `stepIndex`) silently breaks pairing; only the CRN tests in
   `mcRun.test.ts` and `policy.test.ts` catch it. Ships are discrete (`killDelta` 0 or 1).
@@ -364,9 +362,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   validity and quantity semantics, plus configuration equality identity. `packageBasis`
   scopes the legacy `dataBasis` field to its named groups. Sensitivity endpoints are
   paired OAT parameter perturbations, not mean CIs or outcome quantiles; leaker display
-  remains undefined without a defended asset.
-  A sensor-only MC case at neutral covariates with environment application and doctrine
-  disabled can be `valid`; an earlier claim that no MC run could be valid was wrong.
+  remains undefined without a defended asset. A sensor-only MC case at neutral covariates
+  with environment application and doctrine disabled can be `valid`.
 - **Symbology** (`src/panels/Glyph.tsx`, `src/playback/trackState.ts`): MIL-STD-2525
   split, the frame carries affiliation and the icon carries function; `FRAME_FOR`,
   `FUNCTION_LETTER` and `FRIEND_FRAME_D` are shared by the palette, the library lists and
@@ -375,12 +372,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
 - **Rings** (`src/canvas/layers/footprintStyle.ts`, `src/panels/ringLabels.ts`): seven
   ring keys under `ui.layers`, per-entity overrides under `ui.ringOverrides`,
   `ringVisible(ui, entityId, key)` the one resolver, `RING_STYLE` the one style source,
-  `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in `--danger`; a
-  jammer keeps its entity-color cone. Only a selected-threat ring carries a label.
+  `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in the danger
+  red from `src/ui/ink.ts`, the one Konva ink table; a jammer keeps its entity-color
+  cone. Only a selected-threat ring carries a label.
 - **Analysis layout** (`src/state/analysisLayout.ts`): `BUILTIN_LENSES` the five lenses,
   `WIDGETS` (`src/panels/analysis/widgets/registry.ts`) the one type-to-component map,
-  `ui.analysis` view state under `ANALYSIS_KEY` written eagerly by every layout action,
-  builtin lenses never persisted. `Scenario.observedPresetId` is written on reset and first
+  `ui.analysis` view state under `ANALYSIS_KEY` written by every layout action, builtin
+  lenses never persisted. `Scenario.observedPresetId` is written on reset and first
   play only and stays out of the basis signature. `SURVIVAL_LABELS` and `KPI_LABELS`
   (`widgets/labels.ts`) are the one name table (Leakers, Survives, Survival limit; the
   effect gate is relabeled at render); `useSimTimeStep` (`widgets/controls.tsx`) is the one
@@ -407,7 +405,6 @@ Each fact below has exactly one definition. Read it there; never add a second co
   tactics live in `src/playback/tactics.ts`; the raid builder commits entities, paths and
   waves in one `mutate`. Threat WEZ geometry is `src/analysis/impact.ts`; `effectRadiusM`
   values are PF. Basemap modes are render toggles and never move data.
-  `src/analysis/mcda.ts` scores 0 to 100 from `Scenario.mcdaWeights`.
 
 ## 6. Domain and analytical integrity
 
@@ -449,10 +446,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (interceptor cannot reach the credited point) is declined and leaves no event. `expectedKills` is
   pre-arrival mass; `expectedLateKills` is a sub-measure of the leaker mass. Arrival and
   closest approach are different quantities. `reportedLeakers` is the display value.
-- **Words.** User-facing copy is ASD-STE100 Simplified Technical English: short sentences,
-  active voice, one instruction per sentence, no em-dashes. Use one word for one thing
-  ("phase center", "event"). Measure labels in T&E Ops suppress pass or fail unless
-  `thresholdApproved`.
+- **Words.** UI copy follows the code style in CLAUDE.md: short active sentences in the
+  domain's terms, no em-dashes. Use one word for one thing ("phase center", "event").
+  Measure labels in T&E Ops suppress pass or fail unless `thresholdApproved`.
 
 ## 7. UI and rendering invariants
 
@@ -499,7 +495,7 @@ Design system (`src/index.css`):
 - **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render and keeps
   `TOKEN_FALLBACK` equal to the sheet (a test proves it) for node and static markup.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,
-  `Status`, `EmptyState`, `Kbd`, `ShortcutList`, `Actions`. A read-only property is a
+  `EmptyState`, `Kbd`, `ShortcutList`, `Actions`, `PfTag`. A read-only property is a
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to
@@ -532,11 +528,9 @@ Design system (`src/index.css`):
   campaign marked `illustrative`). Print artifacts in `src/te/print/` render into
   `PrintOverlay`; CSV exports in `src/te/io/exportCsv.ts`. Board frame capture
   (`src/te/io/frameCapture.ts`) works only from the Board workspace.
-- The module was built 2026-08-19 to 2026-08-22, rebuilt as a guided decision workflow in
-  `3d93aa1` (2026-08-25), and its persistence hardened in `7e5a5ae` (2026-09-02). Since
-  then `calc/stats.ts` gained the engine exports. Persistence and imports are validated
-  through `io/validateTe.ts`, including embedded Board snapshots and campaign-local
-  references, and the store checks internal transitions and evidence history.
+- Persistence and imports are validated through `io/validateTe.ts`, including embedded
+  Board snapshots and campaign-local references. The store checks internal transitions and
+  evidence history.
 
 ## 9. Standards referenced by model tags
 

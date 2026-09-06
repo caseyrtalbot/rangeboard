@@ -1,5 +1,5 @@
 /**
- * Decision evidence package (MASTER-FORMS 3.8, 20 ordered sections). Title
+ * Decision evidence package (MASTER-FORMS). Title
  * block, acceptance statuses, then each stored section as preformatted text.
  */
 

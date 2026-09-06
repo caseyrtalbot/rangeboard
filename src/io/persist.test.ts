@@ -14,7 +14,6 @@ import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {
-  aarExportObject,
   adoptSeedProvenance,
   fillScenario,
   loadAutosave,
@@ -154,17 +153,6 @@ describe('scorecard pins across save shapes', () => {
 })
 
 describe('AAR export payload', () => {
-  it('is valid JSON-serializable with the summary shape', () => {
-    const obj = aarExportObject('Demo Laydown', sampleSummary())
-    expect(obj.rangeboardAar).toBe(1)
-    expect(obj.scenario).toBe('Demo Laydown')
-    const round = JSON.parse(JSON.stringify(obj)) as typeof obj
-    expect(round).toEqual(obj)
-    expect(round.summary.raidSize).toBe(2)
-    expect(round.summary.threats[0].outcome).toBe('hard-kill')
-    expect(round.summary.effectors[0].expectedRoundsRemaining).toBe(4)
-  })
-
   it('builds a run-scoped package with configuration, ledger, and model-basis labels', () => {
     const scenario = emptyScenario()
     scenario.name = 'Clean run demo'
@@ -633,7 +621,7 @@ describe('nested object load fill', () => {
 
   it('a doctrine record saved before launch policies existed adopts the doctrinal sequence', () => {
     const s = emptyScenario() as unknown as Record<string, unknown>
-    // Pre-launch-policy shape: enabled false was the default of the day.
+    // A doctrine record with no launchPolicy takes the default enabled flag.
     s.doctrine = { enabled: false, trackFirmS: 5, declareHostileS: 10, bdaS: 10, pkCommit: 0.35, opportunities: 2 }
     const filled = fillScenario(s as unknown as Scenario)
     expect(filled.doctrine?.enabled).toBe(true)

@@ -22,7 +22,6 @@ import {
   sampleCount,
   scanLoadSeries,
   sensorSeries,
-  systemSeries,
   threatSeries,
   TRACK_LADDER_STYLE,
   trackLadderRows,
@@ -166,8 +165,8 @@ function pdScenario(): { scenario: Scenario; sensorId: string; uasId: string } {
     builtin: false,
     uas: { ...mohajer.uas!, swerling: 1 },
   }
-  // The threat flies over the radar at 14,000 ft, so the fixture pins the full
-  // vertical window the seed carried before its elevation coverage was sourced.
+  // The threat flies over the radar at 14,000 ft, so the fixture removes the
+  // elevation limit.
   scenario.library = [
     ...scenario.library.map((m) =>
       m.id === 'lib-giraffe1x' ? { ...m, sensor: { ...m.sensor!, elevationDeg: null } } : m,
@@ -239,7 +238,6 @@ describe('sampleCount and series length', () => {
       ...sensorSeries(scenario, sensorId),
       ...effectorSeries(scenario, effId),
       ...threatSeries(scenario, uasId),
-      ...systemSeries(scenario),
     ]
     expect(all.length).toBeGreaterThan(0)
     for (const s of all) expect(s.values.length).toBe(n)
@@ -251,7 +249,6 @@ describe('sampleCount and series length', () => {
     expect(sensorSeries(scenario, sensorId)).toEqual(sensorSeries(scenario, sensorId))
     expect(effectorSeries(scenario, effId)).toEqual(effectorSeries(scenario, effId))
     expect(threatSeries(scenario, uasId)).toEqual(threatSeries(scenario, uasId))
-    expect(systemSeries(scenario)).toEqual(systemSeries(scenario))
   })
 })
 
@@ -382,22 +379,7 @@ describe('effectorSeries', () => {
   })
 })
 
-describe('systemSeries and trackMarks', () => {
-  it('holds detect-to-shot latency from the first shot and a constant hop latency', () => {
-    const { scenario, effId, uasId } = killScenario()
-    const { assessments, report } = engagementPicture(scenario)
-    const a = assessments.find((x) => x.uasId === uasId)!
-    const att = report.threats.find((x) => x.uasId === uasId)!
-    const byId = new Map(systemSeries(scenario).map((s) => [s.id, s]))
-    const latency = byId.get(`latency.${uasId}`)!
-    const at = Math.round(att.firstShotS! / DT)
-    expect(latency.values[at - 1]).toBeNaN()
-    expect(latency.values[at]).toBeCloseTo(att.firstShotS! - a.firstDetectS!, 9)
-    const hop = byId.get(`hop.${effId}.${uasId}`)!
-    expect(hop.unit).toBe('s')
-    expect(hop.values.every((v) => v === 2)).toBe(true)
-  })
-
+describe('trackMarks', () => {
   it('marks arrival, first shot and the gate', () => {
     const { scenario, uasId } = killScenario()
     const { assessments, report } = engagementPicture(scenario)
@@ -507,8 +489,7 @@ describe('trackLadderRows', () => {
 
   it('keeps the init fill inside the hold intervals when the window spans a gap', () => {
     // Out at scan 1, back at 18: the miss at 1 comes before initiation, so the
-    // first hold ends at 0.5 with no coast (F-15; before the rule it coasted to
-    // 4.5 and dropped at the fifth miss). M-of-N initiates at 21 in the second
+    // first hold ends at 0.5 with no coast. M-of-N initiates at 21 in the second
     // interval, so the gap between 1 and 18 draws nothing.
     const { scenario, sensorId } = coastScenario([
       { x: 0, y: -2950 }, { x: 0, y: -3500 }, { x: 0, y: -2600 },

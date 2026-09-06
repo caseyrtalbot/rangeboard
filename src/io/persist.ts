@@ -115,13 +115,11 @@ export function fillScenario(parsed: Scenario): Scenario {
 }
 
 /**
- * Doctrine fill with one migration. Saves written before launch policies
- * existed carry `enabled: false` only because that was the default of the
- * day, never as a planning decision, so a doctrine record with no
- * launchPolicy adopts the doctrinal sequence (the current default). A save
- * that has a launchPolicy keeps its enabled flag as written.
+ * Doctrine fill with one migration: a record with no launchPolicy predates
+ * the doctrinal sequence and takes the default enabled flag; a record with a
+ * launchPolicy keeps its enabled flag as written.
  */
-export function fillDoctrine(
+function fillDoctrine(
   empty: FireDoctrine,
   saved: Partial<FireDoctrine> | undefined,
 ): FireDoctrine {
@@ -228,23 +226,7 @@ export function exportLibrary(library: SpecModel[]): void {
   downloadJson({ rangeboardLibrary: 1, models: library }, 'rangeboard-library.json')
 }
 
-/** AAR export file shape. */
-export interface AarExport {
-  rangeboardAar: 1
-  scenario: string
-  summary: AarSummary
-}
-
-/** Pure builder for the AAR export payload; exported for tests. */
-export function aarExportObject(scenarioName: string, summary: AarSummary): AarExport {
-  return { rangeboardAar: 1, scenario: scenarioName, summary }
-}
-
-export function exportAar(scenarioName: string, summary: AarSummary): void {
-  downloadJson(aarExportObject(scenarioName, summary), `${safeName(scenarioName)}.aar.json`)
-}
-
-export interface RunRecordMeta {
+interface RunRecordMeta {
   id: string
   label: string
   sequence: number
@@ -255,7 +237,7 @@ export interface RunRecordMeta {
 }
 
 /** Full, reproducible completed-run package rather than summary-only AAR. */
-export interface RunExport {
+interface RunExport {
   rangeboardRun: 1
   /** Existing dataBasis describes only its named groups, not the whole mixed package. */
   packageBasis: {
@@ -385,7 +367,7 @@ export function exportRunRecord(
 }
 
 /** Open a file picker and parse the chosen JSON file. */
-export function pickJsonFile(onLoad: (data: unknown) => void): void {
+function pickJsonFile(onLoad: (data: unknown) => void): void {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'application/json,.json'

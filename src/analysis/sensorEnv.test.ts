@@ -15,7 +15,6 @@ import {
 import {
   ALPHA_DB_PER_KM,
   FT_TO_M,
-  acousticRangeM,
   acousticSolveM,
   effectiveClassifyRangeM,
   effectiveDetectRangeM,
@@ -318,8 +317,8 @@ describe('acoustic source-level scaling', () => {
 
   it('equal levels give the reference range exactly', () => {
     expect(acousticSolveM(500, 0)).toBe(500)
-    expect(acousticRangeM(ACOUSTIC, uas({ group: 1 }), env({}))).toBe(500)
-    expect(acousticRangeM(ACOUSTIC, undefined, env({}))).toBe(500)
+    expect(effectiveDetectRangeM(ACOUSTIC, env({}), uas({ group: 1 }))).toBe(500)
+    expect(effectiveDetectRangeM(ACOUSTIC, env({}), undefined)).toBe(500)
   })
 
   it('+20 dB is about 10x at short range, less at long range where absorption bites', () => {
@@ -341,9 +340,9 @@ describe('acoustic source-level scaling', () => {
 
   it('wind and urban multiply on top of the solved range', () => {
     const loud = uas({ group: 1, acousticDb: 90 })
-    const calm = acousticRangeM(ACOUSTIC, loud, env({}))
+    const calm = effectiveDetectRangeM(ACOUSTIC, env({}), loud)
     expect(calm).toBeGreaterThan(500)
-    expect(acousticRangeM(ACOUSTIC, loud, env({ windSpeedMps: 10 }))).toBeCloseTo(calm * 0.7)
+    expect(effectiveDetectRangeM(ACOUSTIC, env({ windSpeedMps: 10 }), loud)).toBeCloseTo(calm * 0.7)
     expect(effectiveDetectRangeM(ACOUSTIC, env({ emBackground: 'urban' }), loud)).toBeCloseTo(
       calm * SENSOR_ENV_MODEL.urbanEm.acoustic,
     )
@@ -382,7 +381,7 @@ describe('range basis', () => {
     const planEo: SensorSpec = { ...EO, rangeBasis: 'planning', eoBand: 'thermal' }
     expect(eoRangeFactor(planEo, uas({ spanM: 4 }), env({}))).toBe(1)
     const planAc: SensorSpec = { ...ACOUSTIC, rangeBasis: 'planning' }
-    expect(acousticRangeM(planAc, uas({ acousticDb: 105 }), env({}))).toBe(500)
+    expect(effectiveDetectRangeM(planAc, env({}), uas({ acousticDb: 105 }))).toBe(500)
     // Environment still applies to a planning figure.
     expect(effectiveDetectRangeM(planRadar, env({ precipitation: 'rain' }), uas({ rcsM2: 1 }))).toBe(
       7500,
@@ -488,7 +487,7 @@ describe('radar Pd model', () => {
   const clear = env({})
   const rain = env({ precipitation: 'rain' })
   const M_RAIN = SENSOR_ENV_MODEL.rain.radar
-  /** Today's law, before the Pd model: placard x fourth root of the RCS ratio x environment. */
+  /** The fourth-root law: placard x fourth root of the RCS ratio x environment. */
   const fourthRoot = (target: UasSpec | undefined, m: number) =>
     RADAR.detectRangeM * (target ? Math.pow(rcsM2For(target) / RADAR_REF_RCS_M2, 0.25) : 1) * m
   const relClose = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1e-9 * b)
@@ -598,8 +597,8 @@ describe('radar Pd model', () => {
   })
 
   it('a fixed-wing target (Swerling 3) reads 4.8 percent farther than the fourth-root law at Pd 0.5', () => {
-    // Intended model (D11): the placard is quoted for a case 1 target, and a case 3 target needs
-    // 11.954 dB instead of 12.772 dB for Pd 0.5 at Pfa 1e-6, so (18.9316 / 15.6809)^0.25 = 1.04822.
+    // The placard is quoted for a case 1 target, and a case 3 target needs 11.954 dB
+    // instead of 12.772 dB for Pd 0.5 at Pfa 1e-6, so (18.9316 / 15.6809)^0.25 = 1.04822.
     const fw = uas({ group: 3, airframe: 'fixed-wing' })
     const ratio = effectiveDetectRangeM(RADAR, clear, fw) / fourthRoot(fw, 1)
     expect(ratio).toBeCloseTo(1.04822, 5)

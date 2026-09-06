@@ -29,7 +29,7 @@ export interface PlaybackState {
 }
 
 /** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */
-export type McStatus = 'idle' | 'running' | 'done' | 'stale' | 'error'
+type McStatus = 'idle' | 'running' | 'done' | 'stale' | 'error'
 
 /** Lifecycle of the sensitivity run behind the Sensitivity widget. */
 interface SensitivityState {

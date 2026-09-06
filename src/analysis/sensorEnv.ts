@@ -105,9 +105,6 @@ export function targetScaled(spec: SensorSpec): boolean {
   return (spec.rangeBasis ?? 'sourced') !== 'planning'
 }
 
-// ---------------------------------------------------------------------------
-// Radar
-
 /** The RCS, m2, at which a radar's detect range is quoted: spec value, else the Group 1 planning factor. */
 export function refRcsM2For(spec: SensorSpec): number {
   const r = spec.refRcsM2
@@ -193,9 +190,6 @@ export function radarPdAt(
   )
 }
 
-// ---------------------------------------------------------------------------
-// EO/IR
-
 /** The span, m, at which an EO/IR detect range is quoted: spec value, else the Group 1 planning factor. */
 export function refSpanMFor(spec: SensorSpec): number {
   const r = spec.refSpanM
@@ -203,7 +197,7 @@ export function refSpanMFor(spec: SensorSpec): number {
 }
 
 /** True when the thermal channel carries the detection: a thermal sensor, or a dual sensor at night. */
-export function eoThermalCarries(spec: SensorSpec, env: EnvironmentSpec): boolean {
+function eoThermalCarries(spec: SensorSpec, env: EnvironmentSpec): boolean {
   const band = spec.eoBand ?? 'dual'
   if (band === 'thermal') return true
   if (band === 'visible') return false
@@ -249,9 +243,6 @@ function capVisibility(spec: SensorSpec, env: EnvironmentSpec, rangeM: number): 
   return Math.min(rangeM, visibilityMFor(env))
 }
 
-// ---------------------------------------------------------------------------
-// Acoustic
-
 /** The source level, dB at 1 m, an acoustic detect range is quoted against: spec value, else the Group 1 tier. */
 export function refAcousticDbFor(spec: SensorSpec): number {
   const r = spec.refAcousticDb
@@ -296,27 +287,6 @@ function acousticRangeFactor(spec: SensorSpec, quotedM: number, target: UasSpec 
 }
 
 /**
- * Acoustic detect range against one target: the spreading-plus-absorption
- * solution against the reference source level, then the wind, urban and
- * rain multipliers (noise-floor effects) on top. Wind bearing is out of
- * scope: the loss is applied as a scalar.
- */
-export function acousticRangeM(
-  spec: SensorSpec,
-  target: UasSpec | undefined,
-  env: EnvironmentSpec,
-): number {
-  return (
-    spec.detectRangeM *
-    acousticRangeFactor(spec, spec.detectRangeM, target) *
-    sensorEnvFactor('acoustic', env)
-  )
-}
-
-// ---------------------------------------------------------------------------
-// RF
-
-/**
  * True when the UAS emits an RF control or video link a passive RF sensor can
  * hear. Autonomous, inertial, optical, and fiber-guided threats are RF silent
  * (COURAGEOUS: frequency monitors only detect active transmissions).
@@ -359,9 +329,6 @@ function urbanOverride(spec: SensorSpec, env: EnvironmentSpec): boolean {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Cue rule and hold gate
-
 /** Roles that hold only a cued target (narrow field of view). */
 const CUED_EO_ROLES: ReadonlySet<SensorRole> = new Set([
   'classification',
@@ -398,9 +365,6 @@ export function sensorHoldGate(spec: SensorSpec, target: UasSpec | undefined): S
   return 'ok'
 }
 
-// ---------------------------------------------------------------------------
-// Vertical geometry
-
 /** Feet to meters. Altitudes are recorded in feet; the engine works in meters. */
 export const FT_TO_M = 0.3048
 
@@ -411,7 +375,7 @@ function ceilingM(maxAltitudeFt: number | null | undefined): number | null {
     : null
 }
 
-export type GeometryGate = 'ok' | 'below-horizon' | 'elevation' | 'ceiling'
+type GeometryGate = 'ok' | 'below-horizon' | 'elevation' | 'ceiling'
 
 /** Elevation gate tolerance at both edges, degrees. PF. */
 const EL_EPS_DEG = 0.001
@@ -450,9 +414,6 @@ export function effectorGeometryGate(spec: EffectorSpec, targetAltM: number): 'o
   const ceiling = ceilingM(spec.maxAltitudeFt)
   return ceiling != null && targetAltM > ceiling ? 'ceiling' : 'ok'
 }
-
-// ---------------------------------------------------------------------------
-// Effective ranges
 
 /**
  * One quoted range (detect or classify) against one target: the target law

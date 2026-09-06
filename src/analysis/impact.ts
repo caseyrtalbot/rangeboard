@@ -7,35 +7,24 @@ import type { AttritionReport } from '../playback/attritionReport'
 import { resolveEngagements } from '../playback/attrition'
 
 /**
- * Threat WEZ geometry and leaker engagement-potential (I&W) warnings.
+ * Threat WEZ geometry and leaker engagement-potential (I&W) warnings. Pure functions
+ * of ThreatAssessment and AttritionReport; no store imports; nothing is written back.
  *
- * Composes ThreatAssessment (arrival, closest approach) with AttritionReport
- * (survival, jam state) exactly like aar.ts: pure functions of their inputs,
- * no store imports. Everything derives from the scenario; nothing here is
- * ever written back into it.
+ * Arrival and CPA are different questions. arrivalS is the defended-boundary crossing;
+ * cpaS and cpaDistanceM are how near the track got. Every geometry test here is a CPA
+ * test: a standoff shooter holds an asset at risk from a CPA it never arrives at.
  *
- * ARRIVAL AND CPA ARE DIFFERENT QUESTIONS. arrivalS is the crossing of the
- * asset's defended boundary; cpaS and cpaDistanceM are how near the track
- * ever got. Every geometry test here is a CPA test, because a threat holds an
- * asset at risk as soon as the asset is inside its WEZ, which for a standoff
- * shooter happens far outside any boundary it will never cross. arrivalS is
- * carried as reporting data only.
- *
- * Honest fallbacks, never silent zeros:
+ * Fallbacks, never silent zeros:
  * - A model saved before the weapon fields existed falls back through
  *   defaultWeaponProfile / defaultEffectRadiusM (weaponFactors.ts).
- * - warheadKg null: expectedWarheadKg is 0 and severity comes from the ship
- *   count alone (the kg criteria only ever escalate a tier, so skipping them
- *   is conservative in the safe direction). The UI shows "warhead unknown"
- *   instead of "0 kg"; 0 kg with ships arriving always means unknown, since
- *   library warhead masses are positive or null.
- * - effect radius null (unknown): no circle can be drawn, so the threat is
- *   excluded from threatWezList, but assessLeakerImpacts treats the asset as
- *   inside the WEZ (conservative planning assumption) and the UI labels the
- *   radius unknown. Suppressing the warning instead would hide a real threat.
+ * - warheadKg null: expectedWarheadKg is 0 and severity comes from the ship count
+ *   alone; the kg criteria only escalate a tier. Library warhead masses are positive
+ *   or null, so 0 kg with ships arriving means unknown.
+ * - effect radius null: no circle in threatWezList, but assessLeakerImpacts treats the
+ *   asset as inside the WEZ (conservative) and the UI labels the radius unknown.
  */
 
-export type WezKind = 'impact' | 'standoff' | 'none'
+type WezKind = 'impact' | 'standoff' | 'none'
 export type { ImpactSeverity } from '../model/types'
 
 /** WEZ semantics for one threat model. 'none' when the platform has no weapon. */
@@ -94,10 +83,9 @@ export function threatWezList(scenario: Scenario): ThreatWez[] {
       kind === 'impact' && hasPath ? path!.points[path!.points.length - 1] : e.pos
     out.push({ uasId: e.id, kind, radiusM, planCenter, hasPath, count: 1 })
   }
-  // Raids built toward one target end every path at the same point; coincident
-  // impact circles stack fills into an unreadable disc. Merge them (1 m grid)
-  // into one drawable with a ship count. Standoff rings ride live positions
-  // and stay per-entity.
+  // Raids built toward one target end every path at the same point: merge coincident
+  // impact circles (1 m grid) into one drawable with a ship count. Standoff rings
+  // ride live positions and stay per-entity.
   const merged = new Map<string, ThreatWez>()
   const result: ThreatWez[] = []
   for (const wez of out) {
@@ -150,13 +138,13 @@ export interface LeakerImpact {
 }
 
 /** Below this expected ship count nothing warns (severity null). Exclusive: LOW needs ships > floor. */
-export const SEVERITY_SHIP_FLOOR = 0.05
+const SEVERITY_SHIP_FLOOR = 0.05
 /** SEVERE at >= 1.0 expected ships or >= 20 kg expected leaked warhead (inclusive). */
-export const SEVERE_SHIPS = 1.0
-export const SEVERE_KG = 20
+const SEVERE_SHIPS = 1.0
+const SEVERE_KG = 20
 /** MODERATE at >= 0.25 expected ships or >= 5 kg expected leaked warhead (inclusive). */
-export const MODERATE_SHIPS = 0.25
-export const MODERATE_KG = 5
+const MODERATE_SHIPS = 0.25
+const MODERATE_KG = 5
 
 /** Higher = worse; for picking the worst tier per asset. */
 export const SEVERITY_RANK: Record<ImpactSeverity, number> = { low: 1, moderate: 2, severe: 3 }
@@ -220,9 +208,7 @@ export function assessLeakerImpacts(
     const ships = shipCount * leakProb
     const warheadKg = model?.uas?.warheadKg ?? null
     const kg = warheadKg != null ? ships * warheadKg : 0
-    // WEZ containment is a CLOSEST-APPROACH question, never a boundary
-    // question: the threat only has to get within its own effect radius of
-    // the asset, which it can do without ever crossing the defended boundary.
+    // WEZ containment is a closest-approach question, never a boundary question.
     const assetInWez =
       kind !== 'none' &&
       a.cpaAssetId != null &&
@@ -255,12 +241,9 @@ export interface EngagementPicture {
 }
 
 /**
- * One shared assessment + attrition + impact computation per scenario for the
- * canvas layer and the analysis panel, so large raids never pay the 0.5 s
- * sweep twice. Memoized in a module-level WeakMap keyed on the scenario
- * object: every scenario change goes through mutate(), which replaces the
- * object, so identity is a sound cache key and dead scenarios are collected
- * with their entries.
+ * One shared assessment, attrition and impact computation per scenario, memoized in a
+ * WeakMap keyed on the scenario object. Every scenario change goes through mutate(),
+ * which replaces the object, so identity is a sound cache key.
  */
 const pictureCache = new WeakMap<Scenario, EngagementPicture>()
 

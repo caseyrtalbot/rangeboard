@@ -5,7 +5,6 @@ import { stepIndex } from './clock'
 
 /** Draw kinds, one integer per engine draw point. */
 export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5 } as const
-export type DrawKind = keyof typeof DRAW_KIND
 
 /**
  * The engine's five probabilistic outcomes, resolved by one policy per run.

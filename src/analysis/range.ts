@@ -18,14 +18,14 @@ import { bearingDeg, destination, dist } from '../geometry/geo'
  * data is sparse. Wind uses the standard head/tailwind component model; DJI
  * Level 5 wind resistance is ~12 m/s for Group 1 quads.
  */
-export const ENV_MODEL = {
+const ENV_MODEL = {
   temperature: { refC: 15, pctPerDegBelowRef: 1.8, floorFactor: 0.5, hotRefC: 35, hotDeratePct: 0.5 },
   densityAltitude: { refFt: 2000, pctPer1000FtAboveRef: 2.5, floorFactor: 0.6 },
   wind: { maxOperatableWindMps: 12 },
   source: 'researched 2026-08, representative planning values',
 }
 
-export type RangeSource = 'combat' | 'spec' | 'estimated'
+type RangeSource = 'combat' | 'spec' | 'estimated'
 
 export interface RangeBasis {
   /** Calm-air employment radius before environmental derates, meters. */
@@ -36,7 +36,7 @@ export interface RangeBasis {
   batteryPowered: boolean
 }
 
-export function isOneWay(uas: UasSpec): boolean {
+function isOneWay(uas: UasSpec): boolean {
   return uas.oneWay ?? (uas.airframe === 'one-way-attack' || uas.airframe === 'fpv')
 }
 

@@ -1,5 +1,5 @@
 /**
- * Qualify stage (strategist SPEC 1.1): one scrolling column of decision
+ * Qualify stage: one scrolling column of decision
  * groups Q0-Q10. Free navigation between groups; only the stage gate blocks.
  */
 

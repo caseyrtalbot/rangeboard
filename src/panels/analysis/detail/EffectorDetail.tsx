@@ -10,6 +10,7 @@ import { formatTime } from '../../../geometry/geo'
 import type { Entity } from '../../../model/types'
 import { effectiveDoctrine } from '../../../model/types'
 import { modelFor } from '../../../model/scenario'
+import { entityInk } from '../../../ui/ink'
 import { STATE_LABEL, stateTone } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
@@ -33,7 +34,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
   const spec = model?.effector
   const doctrine = effectiveDoctrine(scenario)
   const component = useComponentAt(run, entity.id)
-  const color = entity.color ?? model?.color ?? '#c46a5a'
+  const color = entityInk(entity, model)
 
   const series = useMemo(() => {
     void runId

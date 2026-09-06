@@ -253,7 +253,7 @@ describe('expectedDeadTimes', () => {
 describe('trackQualityAt', () => {
   it('counts a coast inside the hold interval as held', () => {
     // One radar holds [5, 20] with a coast over [10, 14]: continuity reads the
-    // intervals, so the coast leaves no gap (D16).
+    // intervals, so the coast leaves no gap.
     const a = assessment('1', {
       sensorObservations: [
         {

@@ -1,5 +1,5 @@
 /**
- * Design stage (SPEC 1.2): ordered decision groups D1 to D9 in one scrolling
+ * Design stage: ordered decision groups D1 to D9 in one scrolling
  * column. Every control writes the schema field that exists today. Only the
  * stage gate blocks; navigation between groups is free.
  */
@@ -216,7 +216,7 @@ function phaseAtLeast(c: TeCampaign, p: CampaignPhase): boolean {
   return PHASES.indexOf(c.phase) >= PHASES.indexOf(p)
 }
 
-/** Remove button gated by deleteImpacts (SPEC 11, controlled deletion). */
+/** Remove button gated by deleteImpacts (controlled deletion). */
 function RemoveRecord({
   campaign,
   kind,
@@ -254,9 +254,7 @@ function RemoveRecord({
   )
 }
 
-// ---------------------------------------------------------------------------
 // D1 Questions
-// ---------------------------------------------------------------------------
 
 function QuestionsGroup({ campaign }: { campaign: TeCampaign }) {
   const { addQuestion, patchItem, selectRecord } = useTeStore.getState()
@@ -442,9 +440,7 @@ function QuestionsGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // D2 Test object (configs)
-// ---------------------------------------------------------------------------
 
 function ConfigsGroup({ campaign }: { campaign: TeCampaign }) {
   const { addConfig, patchItem, selectRecord, duplicateConfig, bumpRecordVersion } =
@@ -725,9 +721,7 @@ function ConfigsGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // D3 Threats
-// ---------------------------------------------------------------------------
 
 function ThreatsGroup({ campaign }: { campaign: TeCampaign }) {
   const { addThreat, patchItem, selectRecord, bumpRecordVersion } = useTeStore.getState()
@@ -1113,9 +1107,7 @@ function ThreatIdentity({
   )
 }
 
-// ---------------------------------------------------------------------------
 // D4 Conditions
-// ---------------------------------------------------------------------------
 
 function ConditionsGroup({ campaign }: { campaign: TeCampaign }) {
   const { addCondition, patchItem, selectRecord } = useTeStore.getState()
@@ -1274,9 +1266,7 @@ function ConditionsGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // D5 Measures
-// ---------------------------------------------------------------------------
 
 function MeasuresGroup({ campaign }: { campaign: TeCampaign }) {
   const { addMeasure, patchItem, selectRecord } = useTeStore.getState()
@@ -1608,9 +1598,7 @@ function MeasuresGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // D6 Predictions (hypotheses)
-// ---------------------------------------------------------------------------
 
 function PredictionsGroup({ campaign }: { campaign: TeCampaign }) {
   const { addHypothesis, patchItem, removeItem, selectRecord } = useTeStore.getState()
@@ -1818,9 +1806,7 @@ function PredictionsGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // D7 Factors
-// ---------------------------------------------------------------------------
 
 function FactorsGroup({ campaign }: { campaign: TeCampaign }) {
   const { addFactor, patchItem, removeItem, selectRecord } = useTeStore.getState()
@@ -1932,9 +1918,7 @@ function FactorsGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // D8 Matrix
-// ---------------------------------------------------------------------------
 
 function MatrixGroup({ campaign }: { campaign: TeCampaign }) {
   const { patchItem, selectRecord } = useTeStore.getState()
@@ -2089,9 +2073,7 @@ function RemoveMatrixCell({ campaign, id }: { campaign: TeCampaign; id: string }
   )
 }
 
-// ---------------------------------------------------------------------------
 // D9 Gate
-// ---------------------------------------------------------------------------
 
 function GateGroup({ campaign }: { campaign: TeCampaign }) {
   const { approveDesign } = useTeStore.getState()
@@ -2164,9 +2146,7 @@ function GateGroup({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Panel
-// ---------------------------------------------------------------------------
 
 export function DesignPanel({ campaign }: { campaign: TeCampaign }) {
   const warnings = designLint(campaign)

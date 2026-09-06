@@ -3,6 +3,7 @@ import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import { pathExhaustionPoint, rangeBasis, rangeCurvePoints } from '../../analysis/range'
 import { formatDistance } from '../../geometry/geo'
+import { DANGER_INK, entityInk } from '../../ui/ink'
 
 /**
  * Wind-adjusted range rings for drones with showRange on, plus an endurance
@@ -22,7 +23,7 @@ export function RangeLayer() {
         if (e.kind !== 'uas' || !e.showRange) return null
         const uas = modelFor(scenario, e)?.uas
         if (!uas) return null
-        const color = e.color ?? modelFor(scenario, e)?.color ?? '#c46a5a'
+        const color = entityInk(e, modelFor(scenario, e))
         const path = scenario.paths.find((p) => p.entityId === e.id)
         const launch = path?.points[0] ?? e.pos
         const basis = rangeBasis(uas)
@@ -57,16 +58,16 @@ export function RangeLayer() {
             </Group>
             {exhaust && (
               <Group x={exhaust.pos.x} y={exhaust.pos.y} scaleX={1 / k} scaleY={1 / k}>
-                <Circle radius={9} stroke="#c4564a" strokeWidth={2} />
-                <Line points={[-6, -6, 6, 6]} stroke="#c4564a" strokeWidth={2} />
-                <Line points={[-6, 6, 6, -6]} stroke="#c4564a" strokeWidth={2} />
+                <Circle radius={9} stroke={DANGER_INK} strokeWidth={2} />
+                <Line points={[-6, -6, 6, 6]} stroke={DANGER_INK} strokeWidth={2} />
+                <Line points={[-6, 6, 6, -6]} stroke={DANGER_INK} strokeWidth={2} />
                 <Text
                   fontFamily="JetBrains Mono"
                   x={12}
                   y={-5}
                   text={`endurance limit · ${formatDistance(exhaust.distM, units)}`}
                   fontSize={10}
-                  fill="#c4564a"
+                  fill={DANGER_INK}
                 />
               </Group>
             )}

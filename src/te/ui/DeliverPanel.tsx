@@ -1,5 +1,5 @@
 /**
- * Deliver stage as ordered decision groups L1-L6 (SPEC 1.6). One scrolling
+ * Deliver stage as ordered decision groups L1-L6. One scrolling
  * column, free navigation, only the gates block. Evidence generation runs on
  * link change and fills only empty fields; the package generator respects
  * the edited flag; the closeout ends in a generated StageReview.
@@ -79,9 +79,7 @@ function persistGeneratedSections() {
   })
 }
 
-// ---------------------------------------------------------------------------
 // L1: What did we learn?
-// ---------------------------------------------------------------------------
 
 const STRENGTH_OPTIONS = [
   { v: 'conclusive' as const, label: 'Conclusive', def: 'The evidence supports one answer.' },
@@ -431,9 +429,7 @@ function FindingsGroup({ campaign, state }: { campaign: TeCampaign; state: Group
   )
 }
 
-// ---------------------------------------------------------------------------
 // L2: What should the customer do?
-// ---------------------------------------------------------------------------
 
 function DecisionEffectGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { patchItem, selectRecord, createActionFromFinding } = useTeStore.getState()
@@ -479,9 +475,7 @@ function DecisionEffectGroup({ campaign, state }: { campaign: TeCampaign; state:
   )
 }
 
-// ---------------------------------------------------------------------------
 // L3: Who does what by when?
-// ---------------------------------------------------------------------------
 
 function ActionsGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { addItem, patchItem, removeItem } = useTeStore.getState()
@@ -568,9 +562,7 @@ function ActionsGroup({ campaign, state }: { campaign: TeCampaign; state: GroupS
   )
 }
 
-// ---------------------------------------------------------------------------
 // L4: What did the team learn?
-// ---------------------------------------------------------------------------
 
 function DebriefsGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { addDebrief, patchItem, selectRecord } = useTeStore.getState()
@@ -669,9 +661,7 @@ function DebriefsGroup({ campaign, state }: { campaign: TeCampaign; state: Group
   )
 }
 
-// ---------------------------------------------------------------------------
 // L5: Is the evidence package complete?
-// ---------------------------------------------------------------------------
 
 function PackageGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
   const { patchCampaign } = useTeStore.getState()
@@ -758,9 +748,7 @@ function PackageGroup({ campaign, state }: { campaign: TeCampaign; state: GroupS
   )
 }
 
-// ---------------------------------------------------------------------------
 // L6: Can we close?
-// ---------------------------------------------------------------------------
 
 const QUESTION_DISPOSITIONS = [
   { v: 'answered' as const, label: 'Answered' },
@@ -888,9 +876,7 @@ function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: Group
   )
 }
 
-// ---------------------------------------------------------------------------
 // Panel
-// ---------------------------------------------------------------------------
 
 export function DeliverPanel({ campaign }: { campaign: TeCampaign }) {
   const pkg = campaign.evidencePackage

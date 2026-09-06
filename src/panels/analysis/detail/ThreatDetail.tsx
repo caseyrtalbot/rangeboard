@@ -16,6 +16,7 @@ import type { TrackPhase } from '../../../playback/trackState'
 import { buildTrackTimeline, trackStatesAt } from '../../../playback/trackState'
 import { useStore } from '../../../state/store'
 import { modelFor, pathSpeed } from '../../../model/scenario'
+import { entityInk } from '../../../ui/ink'
 import { profileFor } from '../../../model/integration'
 import { SURVIVAL_LABELS } from '../widgets/labels'
 import { bandNote, currentSummary } from '../widgets/mc'
@@ -43,7 +44,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
   const summary = currentSummary(mc, runId)
   const model = modelFor(scenario, entity)
   const uasSpec = model?.uas
-  const color = entity.color ?? model?.color ?? '#c46a5a'
+  const color = entityInk(entity, model)
   const assessment = assessments.find((a) => a.uasId === entity.id)
 
   const timeline = useMemo(() => {

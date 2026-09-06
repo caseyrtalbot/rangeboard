@@ -100,11 +100,9 @@ const EXPENDITURE_CHANNEL: Record<EffectorSpec['effectorType'], ExpenditureChann
 }
 
 /**
- * Expenditure channel of an effector type. This answers what the salvo SPENT,
- * which is a different question from isHardKill's what the salvo DESTROYS.
- * Directed energy is both: a DE or HPM burst is a hard kill that fires no
- * round, so rolling it into the kinetic count misreports rounds expended and
- * reads on the board as interceptors that were never launched.
+ * Expenditure channel of an effector type: what the salvo spent, distinct from
+ * isHardKill (what it destroys). A DE or HPM burst is a hard kill that fires no
+ * round, so it must not join the kinetic count.
  */
 export function expenditureChannel(
   effectorType: EffectorSpec['effectorType'],

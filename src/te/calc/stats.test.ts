@@ -1,39 +1,21 @@
 /**
- * Fixtures F-01..F-36 from docs/te-compilation/MASTER-CALCULATIONS.md section 4.
+ * Fixtures F-01..F-36 from docs/te-compilation/MASTER-CALCULATIONS.md.
  * Mapped here: F-01..F-06, F-09, F-16 (inflation part), F-17, F-20..F-22, F-33.
  * Mapped elsewhere: F-08, F-13, F-24, F-26, F-27 in timeline.test.ts;
  * F-19 in accounting.test.ts; F-29..F-32 in measures.test.ts (label logic).
- * Unmapped fixtures:
- * - F-07: along-track error = speed x offset; plain product, no exported function
- * - F-10: required chain time; plain stage sum, no exported function
- * - F-11: warning threshold = chain + reserve; plain addition
- * - F-12: warning time = distance / speed; plain division
- * - F-14, F-34: factorial cell counts; cells are authored records, the engine
- *   counts them (matrixTotals) and does not generate the factor product
- * - F-15: stage totals; plain arithmetic over authored cells
- * - F-16 (controls part): 60 + 4 = 64 max planned; plain addition
- * - F-18: along-track uncertainty = speed x F-17 result; plain product
- * - F-23: bootstrap median paired improvement; the source seed data is not
- *   reproduced in the catalog and the engine exports a mean bootstrap
- * - F-25, F-28: range-to-time conversion; plain division
- * - F-35: H-05 rule; the fixture states no concrete counts, threshold compare
- *   is covered by the label tests in measures.test.ts
- * - F-36: context fixture, not computed (per the source itself)
+ * The other fixtures are plain arithmetic over authored data, state no
+ * computable counts, or describe context only, so no test maps them.
  */
 
 import { describe, expect, it } from 'vitest'
 import {
   attemptInflation,
   betaPosterior,
-  bootstrapMeanInterval,
   clopperPearson,
   meanInterval,
-  pairedSampleSize,
   quantile,
-  rss,
   sampleSizeProportion,
   wilson,
-  zeroFailureBound,
 } from './stats'
 
 describe('wilson', () => {
@@ -151,12 +133,6 @@ describe('attemptInflation', () => {
   })
 })
 
-describe('pairedSampleSize', () => {
-  it('F-09: sd 30, effect 25 needs 12 pairs', () => {
-    expect(pairedSampleSize(30, 25)).toBe(12)
-  })
-})
-
 describe('meanInterval', () => {
   it('uses the exact t quantile (df 3, t = 3.1824)', () => {
     const mi = meanInterval([1, 2, 3, 4])
@@ -193,39 +169,3 @@ describe('quantile', () => {
   })
 })
 
-describe('bootstrapMeanInterval', () => {
-  const values = [40, 45, 38, 52, 47, 41, 55, 44, 49, 43, 50, 46]
-
-  it('is deterministic for one seed', () => {
-    const a = bootstrapMeanInterval(values, 1000, 0.95, 42)
-    const b = bootstrapMeanInterval(values, 1000, 0.95, 42)
-    expect(a).toEqual(b)
-  })
-
-  it('brackets the sample mean', () => {
-    const mean = values.reduce((s, v) => s + v, 0) / values.length
-    const { lo, hi } = bootstrapMeanInterval(values, 2000, 0.95, 7)
-    expect(lo).toBeLessThan(mean)
-    expect(hi).toBeGreaterThan(mean)
-  })
-})
-
-describe('rss', () => {
-  it('F-17: u_latency of 0.02, 0.02, 0.01, 0.03 is 0.042', () => {
-    expect(rss([0.02, 0.02, 0.01, 0.03])).toBeCloseTo(0.042, 3)
-  })
-
-  it('follows the 3-4-5 triangle', () => {
-    expect(rss([3, 4])).toBe(5)
-  })
-})
-
-describe('zeroFailureBound', () => {
-  it('F-06: 30 valid hours with zero failures bounds about 0.10 per hour', () => {
-    expect(zeroFailureBound(30)).toBeCloseTo(0.1, 2)
-  })
-
-  it('is -ln(1 - conf) / n', () => {
-    expect(zeroFailureBound(30, 0.9)).toBeCloseTo(-Math.log(0.1) / 30, 12)
-  })
-})

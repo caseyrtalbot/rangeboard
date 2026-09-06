@@ -7,7 +7,7 @@ import type { DetectionHit } from '../playback/detection'
 import { killChainRoutes } from '../playback/killChain'
 import { expectedDeadTimes } from './threatAggregation'
 
-export type ComponentTelemetryState =
+type ComponentTelemetryState =
   | 'disabled'
   | 'searching'
   | 'tracking'
@@ -340,10 +340,8 @@ export function systemTelemetryAt(
     let targetsNow = 0
     for (const assessment of assessments) {
       if (assessment.engageGateS == null || assessment.engageGateS > tS) continue
-      // An expected-dead track is not a target. The engine stops assigning to
-      // a ship below SHIP_DEAD_BELOW (attrition.ts), the track picture latches
-      // it to GHOST, and this count has to agree: a completed run must never
-      // read "1 targets" against a threat that has been a ghost for minutes.
+      // An expected-dead track is not a target: the engine stops assigning below
+      // SHIP_DEAD_BELOW (attrition.ts) and the track picture latches it to GHOST.
       const deadS = deadAtS.get(assessment.uasId)
       if (deadS != null && tS >= deadS) continue
       const windows = assessment.effectorWindows.find((window) => window.effectorId === entity.id)

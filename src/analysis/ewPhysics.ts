@@ -30,15 +30,11 @@ export const JAM_EDGE_FACTOR = 0.5
  */
 export const JAM_PARTIAL_BAND_FACTOR = 0.6
 
-/**
- * Range falloff inside the effective range keeps the source model's 30%
- * reduction at max range (see distanceFalloff in attrition.ts), so a
- * full-power jammer behaves exactly as it did before power modeling existed.
- */
+/** Range falloff inside the effective range: 30% at max range, as distanceFalloff in attrition.ts. */
 const RANGE_FALLOFF = 0.3
 
 /** One jam-geometry answer, with the factor breakdown for readouts. */
-export interface JamAssessment {
+interface JamAssessment {
   /** factor > 0: the jam physics close. */
   effective: boolean
   /** Pk multiplier: bandFactor * alignFactor * powerFactor. */
@@ -114,7 +110,7 @@ export function effectiveJamRangeM(spec: EffectorSpec, uas?: UasSpec): number {
 /**
  * Full jam-physics answer for one jammer against one target position.
  * `uas` undefined (entity with a deleted spec) skips the band gate and keeps
- * the geometry factors, matching the legacy jammable() gate in sim.ts.
+ * the geometry factors, the same as the jammable() gate in sim.ts.
  * `dAltM` is the target altitude minus the jammer mount height, meters; the
  * range, min-range and power falloff use the slant range it implies, the
  * same convention as the envelope gate in attrition.ts and the sim window.

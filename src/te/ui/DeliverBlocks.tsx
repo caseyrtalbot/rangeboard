@@ -1,6 +1,6 @@
 import { runEvidenceLabel } from '../validate'
 /**
- * Deliver-stage building blocks (SPEC groups L1-L6). Derived evidence
+ * Deliver-stage building blocks. Derived evidence
  * generation, package section generators, disposition suggestions, and the
  * small local controls the Deliver panel owns. Shared components live in
  * kit.tsx; this file never edits shared modules.
@@ -25,7 +25,7 @@ export function fmtNum(n: number): number {
   return Math.round(n * 1000) / 1000
 }
 
-export function measureSummary(c: MeasureComputation): string {
+function measureSummary(c: MeasureComputation): string {
   const estimate =
     c.estimate === null ? 'no estimate' : `${fmtNum(c.estimate)}${c.unit ? ` ${c.unit}` : ''}`
   const interval = c.interval
@@ -43,9 +43,7 @@ export function findingComputations(campaign: TeCampaign, f: TeFinding): Measure
     .filter((c): c is MeasureComputation => c !== null)
 }
 
-// ---------------------------------------------------------------------------
 // Refuted-claims lint
-// ---------------------------------------------------------------------------
 
 /** Distinctive lowercase phrase per REFUTED_CLAIMS entry. */
 const REFUTED_PHRASES = [
@@ -67,9 +65,7 @@ export function refutedClaimMatches(text: string): string[] {
   })
 }
 
-// ---------------------------------------------------------------------------
 // Derived evidence detail (auto on link change; fills only empty fields)
-// ---------------------------------------------------------------------------
 
 /** Evidence text derived from the finding's links; fills only empty fields. */
 export function generatedEvidence(campaign: TeCampaign, f: TeFinding): Partial<TeFinding> {
@@ -224,14 +220,12 @@ export function derivedRunLinks(
   return { threatIds: [...threatIds], conditionIds: [...conditionIds] }
 }
 
-// ---------------------------------------------------------------------------
 // Suggestions (confirm before write; never authoritative until accepted)
-// ---------------------------------------------------------------------------
 
-export type OutcomeClass = 'meet' | 'miss' | 'mixed' | 'inconclusive'
+type OutcomeClass = 'meet' | 'miss' | 'mixed' | 'inconclusive'
 
 /** Result class across the linked measures' computed labels. */
-export function outcomeClass(comps: MeasureComputation[]): OutcomeClass | null {
+function outcomeClass(comps: MeasureComputation[]): OutcomeClass | null {
   const labels = comps.map((c) => c.label)
   if (labels.length === 0 || labels.every((l) => l === 'unavailable')) return null
   const pass = labels.includes('pass')
@@ -302,9 +296,7 @@ export function suggestedClaimDisposition(
   return null
 }
 
-// ---------------------------------------------------------------------------
 // Package sections
-// ---------------------------------------------------------------------------
 
 /** The five sections without generators; each gets guidance and a template. */
 export const MANUAL_SECTIONS = [11, 14, 16, 17, 18]
@@ -448,9 +440,7 @@ export function generatedSection(c: TeCampaign, s: PackageSection): string {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Small local controls
-// ---------------------------------------------------------------------------
 
 /** Pending suggestion with source; writes only on the accept click. */
 export function SuggestLine({

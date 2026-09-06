@@ -1,5 +1,5 @@
 /**
- * The canonical 19-section test card print artifact (MASTER-FORMS 2.3).
+ * The canonical 19-section test card print artifact (MASTER-FORMS).
  * Control ribbon on top, numbered sections in fixed order, procedure as a
  * step table, event marks as a tick-box table on paper.
  */

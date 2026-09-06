@@ -3,39 +3,26 @@ import type { AttritionReport } from '../playback/attritionReport'
 import { expectedDeadTimes } from './threatAggregation'
 
 /**
- * Live prefix-aggregation over the engagement ledger. buildLiveTimeline sorts
- * the whole-run forecast (events, detections, arrivals) once per scenario;
- * liveKpisAt then answers "what has happened by sim time t" with binary
- * searches, cheap enough for the playback frame rate. Pure TS, no DOM, no
- * store imports.
+ * Live prefix-aggregation over the engagement ledger. buildLiveTimeline sorts the
+ * whole-run forecast once per scenario; liveKpisAt answers "what has happened by t"
+ * with binary searches. Pure TS, no DOM, no store imports.
  *
- * Time semantics match the engine ledger: expenditure (kinetic rounds,
- * directed-energy bursts, EW salvos) counts at assignment time tS; kill mass
- * counts at effect time tEffectS; a threat is detected at its firstDetectS
- * and arrives at its arrivalS. Arrival is the defended-boundary crossing from
- * sim.ts, not the closest approach. All bounds are inclusive: an event at
- * exactly t has happened by t.
+ * Time semantics match the engine ledger: expenditure counts at assignment time tS;
+ * kill mass at effect time tEffectS; a threat is detected at firstDetectS and arrives
+ * at arrivalS (the defended-boundary crossing, not the closest approach). All bounds
+ * are inclusive.
  *
- * ARRIVAL RULE, the same rule attrition.ts applies to the run totals. A
- * defeat that lands after the threat was already over the defended asset did
- * not protect the asset. Only kill mass stamped lateEffect: false may reduce
- * leakerShips, and only that mass is reported as expectedKills. Post-arrival
- * mass is reported apart as lateKills, so the operator still sees the
- * intercept without it un-leaking a threat that already reached the asset.
- * One consequence is a useful property: an arrived threat's leaker mass is
- * frozen at its arrival time, because every non-late effect on it has landed
- * by then. The live leaker count only rises.
+ * Arrival rule, the same as attrition.ts applies to the run totals: only kill mass
+ * stamped lateEffect: false reduces leakerShips and reports as expectedKills.
+ * Post-arrival mass reports apart as lateKills. An arrived threat's leaker mass is
+ * fixed at its arrival, so the live leaker count only rises.
  *
- * Expenditure splits on EngagementEvent.channelClass, which says what the
- * salvo COST. softShot says how the salvo KILLS (the soft/jam channel) and is
- * not an expenditure channel: a DE or HPM burst is a hard kill that fires no
- * round, so it belongs in deSalvos and never in kineticShots.
+ * Expenditure splits on EngagementEvent.channelClass (what the salvo cost), never on
+ * softShot (how it kills): a DE or HPM burst is a hard kill in deSalvos, not kineticShots.
  *
- * An expected-dead track is not a target. A threat whose expected residual
- * has fallen below the engine's SHIP_DEAD_BELOW cutoff leaves the targetable
- * count even while its ROE window is still open, which keeps this surface
- * consistent with trackState's ghost latch, systemTelemetry's targetsNow and
- * threatAggregation's targetableNow.
+ * A threat whose expected residual is below SHIP_DEAD_BELOW leaves the targetable count
+ * while its ROE window is open, consistent with trackState, systemTelemetry and
+ * threatAggregation.
  */
 
 /** One ROE-gated usable window, with the time its threat becomes expected dead. */
@@ -46,7 +33,7 @@ interface LiveTargetWindow {
   deadAtS: number | null
 }
 
-export interface LiveTimeline {
+interface LiveTimeline {
   /** Kinetic salvo assignment times (interceptor, gun, net), ascending. */
   kineticTS: number[]
   /** Directed-energy burst assignment times (DE, HPM), ascending. */
@@ -110,8 +97,7 @@ export function buildLiveTimeline(
   const deTS: number[] = []
   const jamTS: number[] = []
   for (const ev of report.events) {
-    // Expenditure channel, not kill channel: softShot marks the soft-kill
-    // (jam) channel and would file every DE and HPM burst as a round fired.
+    // Expenditure channel, not kill channel (softShot).
     if (ev.channelClass === 'ew') jamTS.push(ev.tS)
     else if (ev.channelClass === 'directed-energy') deTS.push(ev.tS)
     else kineticTS.push(ev.tS)

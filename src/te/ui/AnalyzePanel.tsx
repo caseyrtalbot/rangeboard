@@ -1,5 +1,5 @@
 /**
- * Analyze stage (SPEC 1.5): three decision groups in one column.
+ * Analyze stage: three decision groups in one column.
  * A1 results and outcomes, A2 coverage and chain health (derived views),
  * A3 daily review writing one TeChange. No stage gate here; the gate is
  * adjudication upstream in Execute.

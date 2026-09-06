@@ -177,7 +177,7 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
 }
 
 /** A single keyboard key or gesture token. */
-export function Kbd({ children }: { children: ReactNode }) {
+function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="kbd">{children}</kbd>
 }
 

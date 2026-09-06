@@ -7,17 +7,6 @@
 import type { TePhaseTab } from '../state/teStore'
 import type { TeCampaign } from '../model/types'
 
-/** Every distinct person named in the campaign role table. */
-export function rolePeople(campaign: TeCampaign): string[] {
-  const out = new Set<string>()
-  for (const r of campaign.roles) {
-    for (const name of [r.primary, r.backup]) {
-      if (name.trim() !== '') out.add(name.trim())
-    }
-  }
-  return [...out]
-}
-
 /**
  * Every distinct name typed into a person-bearing string field anywhere in
  * the campaign. Trimmed, deduped, sorted. Feeds PersonField candidate pools.
@@ -156,7 +145,7 @@ export const PHASE_INTRO: Record<TePhaseTab, { title: string; text: string }> = 
  * one-sentence definitions, wording-template examples. Examples marked
  * illustrative carry no real performance figures.
  */
-export interface HintEntry {
+interface HintEntry {
   definition?: string
   example?: string
   why?: string

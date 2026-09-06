@@ -33,7 +33,7 @@ function ComponentRow({ component }: { component: ComponentTelemetry }) {
   // holdSeconds is the clock reading: the elapsed seconds this sensor held at
   // least one track. trackSeconds is INTEGRATED sensor loading and can exceed
   // the run length, so it is labeled track-seconds and never given to a clock
-  // formatter (which printed "10:01 hold" on a run under five minutes).
+  // formatter.
   const detail =
     component.kind === 'sensor'
       ? `${component.tracksNow} now · ${component.tracksSeen} seen · ${component.classifications} classified · ${formatTime(component.holdSeconds)} hold · ${Math.round(component.trackSeconds)} track-s`

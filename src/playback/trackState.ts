@@ -3,6 +3,7 @@ import type { ThreatAssessment, ThreatClassification } from './sim'
 import type { AttritionReport, EngagementEvent } from './attritionReport'
 import { intervalIndexAt } from './intercept'
 import { SHIP_DEAD_BELOW } from './pk'
+import { DANGER_INK } from '../ui/ink'
 import { memberPositions } from './tracks'
 import { posAtTime } from '../geometry/geo'
 import { effectivePathDelayS } from './raid'
@@ -40,7 +41,7 @@ export const BLINK_PERIOD_S = 0.5
 const HOLD_TOLERANCE_S = 0.25
 
 /** 'Continue' jam probability at which a track reads JAMMED between dwells. */
-export const JAMMED_AT = 0.5
+const JAMMED_AT = 0.5
 
 /**
  * The one EW color: the jam beam, the jammed diamond, and the J badge all
@@ -62,16 +63,12 @@ export type TrackPhase =
 /**
  * Canonical phase presentation. One table, so the canvas ring and the
  * telemetry pill can never drift apart. `color` is null for 'undetected',
- * which takes the entity color and draws no ring.
- *
- * The kill-chain rungs used to share one red, so an operator could not read
- * HOSTILE, TARGETED and ENGAGED apart by color. Each rung now has its own
- * value. Contrast is measured against the board background (--bg #16181a in
- * src/index.css); every value clears the 3:1 graphic floor there and on the
- * two darker basemaps as well.
+ * which takes the entity color and draws no ring. Contrast is measured
+ * against the board background (--bg #16181a); every value clears the 3:1
+ * graphic floor there and on the two darker basemaps.
  *   searching  #82887e  dim grey,   4.89:1. Held once, not held now.
  *   tracked    #d9a441  amber,      7.91:1. A sensor holds it.
- *   identified #c4564a  brick red,  4.05:1. The --danger token, so the ring
+ *   identified #c4564a  brick red,  4.05:1. DANGER_INK, so the ring
  *              matches every other hostile mark on the board.
  *   targeted   #bb6499  plum,       4.57:1. The one free hue on this palette,
  *              so a weapon-assigned track reads as neither amber nor red.
@@ -85,7 +82,7 @@ export const PHASE_STYLE = {
   undetected: { label: 'UNDETECTED', color: null },
   searching: { label: 'SEARCHING', color: '#82887e' },
   tracked: { label: 'TRACKED', color: '#d9a441' },
-  identified: { label: 'HOSTILE', color: '#c4564a' },
+  identified: { label: 'HOSTILE', color: DANGER_INK },
   targeted: { label: 'TARGETED', color: '#bb6499' },
   engaged: { label: 'ENGAGED', color: '#f2795e' },
   ghost: { label: 'DEFEATED', color: '#6a7178' },
@@ -109,10 +106,8 @@ export interface TrackFileState {
   incomingSalvos: number
   /**
    * Assignment time of the first salvo against this track, null while none has
-   * been assigned. This is the ENGAGED latch: a zero-flight-time beam is
-   * incoming for only BEAM_DISPLAY_S, so a phase driven by incomingSalvos
-   * dropped back to TARGETED between dwells and flickered for the whole
-   * engagement. Once a weapon has fired at the track, the track is engaged.
+   * been assigned. The ENGAGED latch: a beam is incoming for only
+   * BEAM_DISPLAY_S, so a phase driven by incomingSalvos would flicker.
    */
   firstSalvoAtS: number | null
   /** Salvos assigned at or before t, every expenditure channel summed. */
@@ -181,14 +176,12 @@ export interface ShotInFlight {
  * 'beam' - continuous directed energy or jamming: no discrete round, a pulsing
  *   dashed beam for the dwell, glyph stays FILLED.
  */
-export type EffectorEngagementMode = 'semi-active' | 'active' | 'beam'
+type EffectorEngagementMode = 'semi-active' | 'active' | 'beam'
 
 /**
  * Effector glyph treatment at t. 'idle' draws the outline frame only.
- * 'depleted' means the magazine is spent: the board used to draw a dry
- * interceptor exactly like a ready one while the side panel read EMPTY.
- * A live salvo outranks it, so the guidance treatment still plays out on the
- * last round in flight.
+ * 'depleted' means the magazine is spent; a live salvo outranks it, so the
+ * guidance treatment still plays out on the last round in flight.
  */
 export type EffectorLiveState = 'idle' | 'semi-active' | 'active' | 'beam' | 'depleted'
 
@@ -211,22 +204,14 @@ const TYPE_MODE: Record<EffectorSpec['effectorType'], EffectorEngagementMode> = 
 }
 
 /**
- * Guidance mapping, read from the researched integration profile
- * (`profileFor(specId)?.guidance` in src/model/integration.ts):
- *   fc-uplink -> semi-active, operator -> semi-active,
- *   c2-cue    -> active,      self     -> active.
- * Fallback by effector type when no profile exists:
- *   interceptor -> active, gun -> semi-active, net -> semi-active,
- *   jammer | de | hpm -> beam (these always win, profile or not).
- * An effector with neither a profile nor a spec draws semi-active: the calmest
- * treatment, with no pulse for a weapon whose guidance is unknown.
+ * Draw treatment from the integration profile's guidance (GUIDANCE_MODE), else
+ * by effector type (TYPE_MODE). Beam types always win. With neither a profile
+ * nor a spec: semi-active, the calmest treatment.
  */
 export function effectorEngagementMode(
   specId: string | null,
   effectorType: EffectorSpec['effectorType'] | undefined,
 ): EffectorEngagementMode {
-  // Directed energy and jamming have no discrete round, so the beam treatment
-  // outranks whatever guidance the profile claims.
   if (effectorType && TYPE_MODE[effectorType] === 'beam') return 'beam'
   const guidance = profileFor(specId)?.guidance
   if (guidance) return GUIDANCE_MODE[guidance]
@@ -461,9 +446,8 @@ export function buildTrackTimeline(
       softPrefix.push(softSum)
     }
 
-    // Ghost cutoff: the first effect that drops expected residual below the
-    // engine's own expected-dead threshold. killDelta never goes negative, so
-    // residual only falls and the latch is one-way by construction.
+    // Ghost cutoff: the first effect that drops residual below SHIP_DEAD_BELOW.
+    // killDelta is never negative, so the latch is one-way.
     let eliminatedAtS: number | null = null
     if (shipCount > 0) {
       for (let i = 0; i < byEffect.length; i++) {
@@ -480,12 +464,10 @@ export function buildTrackTimeline(
       eliminatedBySoft = soft > prefixAt(killPrefix, n) - soft
     }
 
-    // Engine rule (attrition JamHold): a 'continue' jam is illumination, not
-    // damage. Per (ship, jammer) the dwells compound inside one in-range
-    // interval of that jammer and the hold drops to zero at that interval's
-    // end; independent jammers combine as 1 - product of misses. No interval
-    // data (a hand-built ledger) means the hold never lapses, exactly like
-    // the engine's intervalIdx -1.
+    // Engine rule (JamHold): per (ship, jammer) the dwells compound inside one
+    // in-range interval and the hold drops to zero at its end; independent
+    // jammers combine as 1 - product of misses. No interval data (a hand-built
+    // ledger) means the hold never lapses, like the engine's intervalIdx -1.
     const nShips = Math.max(1, shipCount)
     const windowsByEffector = new Map(a.effectorWindows.map((w) => [w.effectorId, w.intervals]))
     const jamGroups = new Map<string, EngagementEvent[]>()
@@ -697,11 +679,7 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
       countAtMost(tr.ewLiveStartTS, tS) - countAtMost(tr.ewLiveEndTS, tS) > 0
     const jammedNow = !eliminated && (ewDwellLive || jammedFraction >= JAMMED_AT)
 
-    // The latch, not incomingSalvos: a beam is only ever incoming for
-    // BEAM_DISPLAY_S, so the track would flicker between dwells. assignTS is
-    // ascending, so its first entry is the first shot ever taken at the track.
-    // It stays null until that shot is taken, because no field here may read
-    // ahead of t.
+    // Stays null until the first shot is taken: no field here may read ahead of t.
     const firstSalvoAtS =
       tr.assignTS.length > 0 && tS >= tr.assignTS[0] ? tr.assignTS[0] : null
 

@@ -51,14 +51,14 @@ export const KPI_KEYS: readonly KpiKey[] = [
   'minWarning',
 ]
 
-/** Tiles a kpi-tiles widget shows when nothing else is chosen. */
-export const DEFAULT_KPI_TILES: readonly KpiKey[] = [
-  'detect',
-  'trackNow',
-  'idClass',
-  'engaged',
-  'killEk',
-  'leakEn',
+/** Tiles a kpi-tiles widget shows when nothing else is chosen: the first six keys. */
+export const DEFAULT_KPI_TILES: readonly KpiKey[] = KPI_KEYS.slice(0, 6)
+
+/** Series a time-series widget shows when nothing else is chosen. */
+export const DEFAULT_TIME_SERIES_IDS: readonly string[] = [
+  'kpi.expectedKills',
+  'kpi.leakerShips',
+  'kpi.detected',
 ]
 
 /** Named series set for a time-series widget, resolved by the widget itself. */
@@ -74,7 +74,7 @@ export type SystemStatusKind = 'sensor' | 'effector' | 'all'
  * | type | params | default |
  * | --- | --- | --- |
  * | `kpi-tiles` | `{ tiles: KpiKey[] }` | `{ tiles: [...DEFAULT_KPI_TILES] }` |
- * | `time-series` | `{ seriesIds: string[] }` (ids from `kpiSeries`, `kpi.<LiveKpis key>`) or `{ preset: TimeSeriesPreset }` | `{ seriesIds: ['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected'] }` |
+ * | `time-series` | `{ seriesIds: string[] }` (ids from `kpiSeries`, `kpi.<LiveKpis key>`) or `{ preset: TimeSeriesPreset }` | `{ seriesIds: [...DEFAULT_TIME_SERIES_IDS] }` |
  * | `system-status` | `{ kind: SystemStatusKind }` | `{ kind: 'all' }` |
  * | `threat-picture` | `{ expanded: boolean }` | `{ expanded: false }` |
  * | `requirement-gates` | `{ gates: string[] }`, ids `detect`, `track`, `identify`, `target`, `engage`, `effect`; absent or empty = all | `{}` |
@@ -88,13 +88,13 @@ export interface WidgetInstance {
 }
 
 /** The widget stack on screen and the lens id it came from. */
-export interface AnalysisLayout {
+interface AnalysisLayout {
   presetId: string
   widgets: WidgetInstance[]
 }
 
 /** A named widget stack. Builtin presets ship with the app and are never persisted. */
-export interface LensPreset {
+interface LensPreset {
   id: string
   label: string
   builtin: boolean
@@ -122,12 +122,8 @@ export const BUILTIN_LENSES: LensPreset[] = [
     label: 'Run summary',
     builtin: true,
     widgets: [
-      widget('rs-kpi', 'kpi-tiles', {
-        tiles: ['detect', 'trackNow', 'idClass', 'engaged', 'killEk', 'leakEn'],
-      }),
-      widget('rs-series', 'time-series', {
-        seriesIds: ['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected'],
-      }),
+      widget('rs-kpi', 'kpi-tiles', { tiles: [...DEFAULT_KPI_TILES] }),
+      widget('rs-series', 'time-series', { seriesIds: [...DEFAULT_TIME_SERIES_IDS] }),
       widget('rs-threats', 'threat-picture', { expanded: false }),
       widget('rs-projection', 'projection'),
       widget('rs-validity', 'run-validity'),
@@ -199,7 +195,7 @@ export function defaultWidgetParams(type: WidgetType): Record<string, unknown> {
     case 'kpi-tiles':
       return { tiles: [...DEFAULT_KPI_TILES] }
     case 'time-series':
-      return { seriesIds: ['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected'] }
+      return { seriesIds: [...DEFAULT_TIME_SERIES_IDS] }
     case 'system-status':
       return { kind: 'all' }
     case 'threat-picture':

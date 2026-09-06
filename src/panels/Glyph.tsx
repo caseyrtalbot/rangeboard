@@ -14,7 +14,7 @@ import type { EntityKind } from '../model/types'
  * A function letter sits inside the friend frame, because four blue-force
  * kinds share one affiliation frame and must still be told apart.
  */
-export type FrameKind = 'friend' | 'hostile' | 'neutral'
+type FrameKind = 'friend' | 'hostile' | 'neutral'
 
 /** Affiliation frame each entity kind draws. */
 export const FRAME_FOR: Record<EntityKind, FrameKind> = {

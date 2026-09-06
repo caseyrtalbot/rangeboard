@@ -1,15 +1,9 @@
 /**
- * T&E Operations domain model.
- * Source of truth: docs/te-compilation/MASTER-DATAMODEL.md (record catalog,
- * ID grammar, workflow states) with the v1 scope cuts in docs/te-plan.md.
+ * T&E Operations domain model (docs/te-compilation/MASTER-DATAMODEL.md).
  * Doctrine invariants: records are versioned and append-only; runs are
  * versionless and never renumbered; issued cards are frozen; differences
  * between plan and execution become Deviation records, never card edits.
  */
-
-// ---------------------------------------------------------------------------
-// Shared enums
-// ---------------------------------------------------------------------------
 
 export type TeRecordStatus =
   | 'draft'
@@ -171,15 +165,6 @@ export type ThreatProfileClass = 'mandatory' | 'high-probability' | 'high-conseq
 /** Adjudicated run validity. `pending` runs are not available to analysis. */
 export type TeRunValidity = 'pending' | 'valid' | 'conditionally-valid' | 'invalid'
 
-/** Accounting state; `excluded` is an accounting decision, not an adjudication. */
-export type AccountingState =
-  | 'planned'
-  | 'attempted'
-  | 'valid'
-  | 'conditional'
-  | 'invalid'
-  | 'excluded'
-
 export type GoNoGo = 'go' | 'conditional-go' | 'hold' | 'no-go'
 
 export type GoNoGoScope = 'daily' | 'readiness-review' | 'pre-run-release'
@@ -188,7 +173,7 @@ export type DeviationEffect = 'none' | 'bounded' | 'material' | 'unknown'
 
 export type DeviationDisposition = 'repeat' | 'analyze-with-limits' | 'exclude'
 
-export type AnomalyClass =
+type AnomalyClass =
   | 'system-behavior'
   | 'test-infrastructure'
   | 'threat-deviation'
@@ -196,7 +181,7 @@ export type AnomalyClass =
   | 'data-artifact'
   | 'unknown'
 
-export type RootCauseStatus =
+type RootCauseStatus =
   | 'confirmed'
   | 'supported'
   | 'plausible'
@@ -206,7 +191,7 @@ export type RootCauseStatus =
 export type FindingStrength = 'conclusive' | 'directional' | 'insufficient' | 'not-tested'
 
 /** Findings ladder. Levels never merge in one statement. */
-export type LadderLevel =
+type LadderLevel =
   | 'observation'
   | 'calculation'
   | 'interpretation'
@@ -224,13 +209,13 @@ export type ObservationStatus =
   | 'unknown-outcome'
   | 'no-test'
 
-export type PreliminaryUse = 'usable' | 'limited' | 'repeat' | 'valid-failure'
+type PreliminaryUse = 'usable' | 'limited' | 'repeat' | 'valid-failure'
 
 export type AuthorityStatus = 'pending' | 'active' | 'expired' | 'denied'
 
-export type ChecklistItemType = 'check' | 'value' | 'go-no-go' | 'signature'
+type ChecklistItemType = 'check' | 'value' | 'go-no-go' | 'signature'
 
-export type ChecklistItemState = 'unchecked' | 'checked' | 'na'
+type ChecklistItemState = 'unchecked' | 'checked' | 'na'
 
 export type ChecklistPhase =
   | 'before-deployment'
@@ -257,7 +242,7 @@ export type NextAction =
 
 export type IntervalMethod = 'wilson' | 'exact' | 'bayes'
 
-export type ActionStatus = 'open' | 'closed' | 'transferred'
+type ActionStatus = 'open' | 'closed' | 'transferred'
 
 export type DebriefKind = 'immediate' | 'daily' | 'aar'
 
@@ -320,10 +305,6 @@ export const RUN_ROLES = [
 
 export type RunRole = (typeof RUN_ROLES)[number]
 
-// ---------------------------------------------------------------------------
-// Campaign administration
-// ---------------------------------------------------------------------------
-
 export interface CustomerCommitment {
   item: string
   owner: string
@@ -331,7 +312,7 @@ export interface CustomerCommitment {
   consequenceOfFailure: string
 }
 
-/** Campaign charter, the administrative backbone (MASTER-DATAMODEL 1.1). */
+/** Campaign charter, the administrative backbone. */
 export interface CampaignCharter {
   sponsor: string
   requestingOrganization: string
@@ -458,10 +439,6 @@ export interface FeasibilityItem {
   effectOnConclusions: string
 }
 
-// ---------------------------------------------------------------------------
-// Design records
-// ---------------------------------------------------------------------------
-
 export interface TeQuestion {
   id: string
   wording: string
@@ -507,7 +484,6 @@ export interface TruthSourceSpec {
   /** Truth must not depend on the system under test. */
   independenceFromSut: string
   timeToleranceS: number | null
-  accuracyNote: string
 }
 
 /** A campaign measure instance, frozen before execution. */
@@ -540,7 +516,6 @@ export interface TeMeasure {
   /** True when a larger value is better (e.g. warning time). */
   higherIsBetter: boolean
   requiredRepetitions: number | null
-  borderlineRule: string
   intervalMethod: IntervalMethod
   /** Beta prior for the bayes method. */
   priorAlpha: number
@@ -658,10 +633,6 @@ export interface TeMatrixCell {
   notes: string
 }
 
-// ---------------------------------------------------------------------------
-// Test cards
-// ---------------------------------------------------------------------------
-
 export interface ProcedureStep {
   id: string
   /** One action per step. */
@@ -673,7 +644,7 @@ export interface ProcedureStep {
 }
 
 /**
- * The 19-section unified card (MASTER-FORMS 2.3). Frozen once issued.
+ * The 19-section unified card. Frozen once issued.
  * `id` is unique per version record; `cardCode` is the grammar identifier
  * shared across versions of one card lineage. Revision supersedes the old
  * record and creates a new one with the same cardCode.
@@ -770,10 +741,6 @@ export interface TeCard {
   linkedEntityIds: string[]
   frameIds: string[]
 }
-
-// ---------------------------------------------------------------------------
-// Execution records
-// ---------------------------------------------------------------------------
 
 export interface RunEvent {
   id: string
@@ -908,8 +875,6 @@ export interface TeChange {
   selectedChangeAndReason: string
   variablesChanged: string
   variablesHeld: string
-  supersededIds: string[]
-  newVersionIds: string[]
   comparabilityEffect: string
   approvals: string
   briefed: boolean
@@ -918,7 +883,7 @@ export interface TeChange {
   resultAfter: string
 }
 
-export interface ChecklistTemplateItem {
+interface ChecklistTemplateItem {
   text: string
   type: ChecklistItemType
   /** Pre-run rule: an unknown answer holds the run. */
@@ -970,10 +935,6 @@ export interface TeGoNoGo {
   affectedConclusions: string
   note: string
 }
-
-// ---------------------------------------------------------------------------
-// Analysis and delivery records
-// ---------------------------------------------------------------------------
 
 export interface TeFinding {
   id: string
@@ -1068,10 +1029,6 @@ export interface TeFrame {
   simTimeS: number | null
   note: string
 }
-
-// ---------------------------------------------------------------------------
-// Campaign container
-// ---------------------------------------------------------------------------
 
 export interface TeCampaign {
   id: string

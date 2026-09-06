@@ -27,11 +27,11 @@ export function defaultEnvironment(): EnvironmentSpec {
 }
 
 /** Test-defined gate criteria for a new scenario. Never engine constants. */
-export function defaultRequirements(): RequirementThresholds {
+function defaultRequirements(): RequirementThresholds {
   return { ...DEFAULT_REQUIREMENT_THRESHOLDS }
 }
 
-export function emptyUnderlay(): Underlay {
+function emptyUnderlay(): Underlay {
   return { dataUrl: null, pos: { x: 0, y: 0 }, widthM: 10000, naturalW: 0, naturalH: 0, opacity: 0.85 }
 }
 

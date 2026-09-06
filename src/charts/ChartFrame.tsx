@@ -11,14 +11,14 @@ export function useChartTokens(): ChartTokens {
 }
 
 /** One legend entry: the series label beside its swatch. */
-export interface ChartLegendItem {
+interface ChartLegendItem {
   /** Series id; the React key, because two tracks can share a name. */
   id: string
   label: string
   color: string
 }
 
-export interface ChartFrameProps {
+interface ChartFrameProps {
   /** Explicit plot width in px. Absent = fill the container width. */
   width?: number
   height: number

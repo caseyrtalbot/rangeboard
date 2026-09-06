@@ -1,5 +1,5 @@
 /**
- * Printable day sheet (MASTER-FORMS 3.1). Run accounting, coverage, planned
+ * Printable day sheet (MASTER-FORMS). Run accounting, coverage, planned
  * runs for issued cards, go/no-go log, next priority cells, and hand-fill
  * blanks for the conductor.
  */

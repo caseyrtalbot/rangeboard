@@ -26,10 +26,6 @@ export function angleDiffDeg(a: number, b: number): number {
   return d > 180 ? 360 - d : d
 }
 
-export function pointInCircle(center: Vec2, rangeM: number, p: Vec2): boolean {
-  return dist(center, p) <= rangeM
-}
-
 /** True when p lies inside the azimuth wedge of a sector, range ignored: a ground-plane bearing test. */
 export function pointInWedge(center: Vec2, headingDeg: number, sectorDeg: number, p: Vec2): boolean {
   return pointInSector(center, headingDeg, sectorDeg, Number.POSITIVE_INFINITY, p)
@@ -137,7 +133,7 @@ export function pathLength(points: Vec2[]): number {
   return total
 }
 
-export interface PathSample {
+interface PathSample {
   pos: Vec2
   headingDeg: number
   /** Distance traveled along the path, meters. */
@@ -181,30 +177,11 @@ export function posAtTime(
   return posAlongPath(points, flightT * speedMps)
 }
 
-/** Closest approach of a path (flown at speed) to a fixed point: time and distance. */
-export function closestApproach(
-  points: Vec2[],
-  speedMps: number,
-  startDelayS: number,
-  target: Vec2,
-  durationS: number,
-  dtS = 0.5,
-): { tS: number; distM: number } {
-  let best = { tS: startDelayS, distM: Number.POSITIVE_INFINITY }
-  for (let t = startDelayS; t <= durationS; t += dtS) {
-    const s = posAtTime(points, speedMps, startDelayS, t)
-    const d = dist(s.pos, target)
-    if (d < best.distM) best = { tS: t, distM: d }
-    if (s.done) break
-  }
-  return best
-}
-
 /** Display-only unit convention: aviation (kt, nm, ft) or metric (m/s, km). */
 export type DisplayUnits = 'aviation' | 'metric'
 
 export const NM_M = 1852
-export const MPS_PER_KT = 0.514444
+const MPS_PER_KT = 0.514444
 
 /** Aviation grid steps: nice nm fractions, with metric values at fine zoom. */
 const AVIATION_STEPS_M = [
@@ -236,6 +213,16 @@ export function formatDistance(m: number, units: DisplayUnits = 'metric'): strin
   if (m >= 10000) return `${(m / 1000).toFixed(0)} km`
   if (m >= 1000) return `${(m / 1000).toFixed(1)} km`
   return `${Math.round(m)} m`
+}
+
+/**
+ * One position axis as a hemisphere letter and an unsigned magnitude, the way a
+ * position is read aloud: two decimals of a nautical mile or a kilometer.
+ */
+export function formatAxis(m: number, units: DisplayUnits, plus: string, minus: string): string {
+  const mag = Math.abs(m)
+  const value = units === 'aviation' ? `${(mag / NM_M).toFixed(2)} nm` : `${(mag / 1000).toFixed(2)} km`
+  return `${m < 0 ? minus : plus} ${value}`
 }
 
 export function formatSpeed(mps: number, units: DisplayUnits = 'metric'): string {

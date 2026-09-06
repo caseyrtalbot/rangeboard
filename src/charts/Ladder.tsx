@@ -5,7 +5,7 @@ import { readTokens, resolveColor } from './tokens'
 import type { LadderRow } from './types'
 import { snapScrubS } from './TimeSeries'
 
-export interface LadderProps {
+interface LadderProps {
   rows: LadderRow[]
   durationS: number
   /** Playhead position, seconds. */

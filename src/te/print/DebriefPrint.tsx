@@ -1,5 +1,5 @@
 /**
- * Guided debrief print artifact (MASTER-FORMS 3.7). Questions render as rows;
+ * Guided debrief print artifact (MASTER-FORMS). Questions render as rows;
  * unanswered questions leave a blank line for handwriting.
  */
 

@@ -1,11 +1,11 @@
 /**
- * Reference constants (MASTER-SEEDDATA sections 3.7, 3.8, 5.1, 5.3, 5.4, 5.6).
+ * Reference constants (docs/te-compilation/MASTER-SEEDDATA.md).
  * Authority lead times seed the schedule planner; doctrine thresholds and
  * observed-practice figures seed the reference library; the refuted-claims
  * blocklist surfaces when a user cites one.
  */
 
-/** Regulatory and scheduling lead-time constants (section 5.1). */
+/** Regulatory and scheduling lead-time constants. */
 export const AUTHORITY_LEAD_TIMES: Array<{ authorityType: string; leadTime: string; note: string }> = [
   {
     authorityType: 'FAA Part 107 waiver',
@@ -89,189 +89,8 @@ export const AUTHORITY_LEAD_TIMES: Array<{ authorityType: string; leadTime: stri
   },
 ]
 
-/** Numeric doctrine thresholds (sections 3.8 and 5.3). Default reference values. */
-export const DOCTRINE_THRESHOLDS: Array<{ name: string; value: string; source: string }> = [
-  {
-    name: 'Detect-to-engage design threshold (DOC-D2E-4MIN)',
-    value: '<= 4 minutes',
-    source: 'FAAD C2 construct',
-  },
-  {
-    name: 'Planning detection range (DOC-PLAN-50PCT)',
-    value: 'approximately 50% of a system\'s maximum range',
-    source:
-      'Planning rule; radar max-range figures do not equal detect ranges for Group 1-3 sUAS (size, RCS, radar location determine picture fidelity)',
-  },
-  {
-    name: 'Fixed-site engagement volume (DOC-FIXED-VOL)',
-    value: '~30 km radius / 20,000 ft AGL from bullseye center',
-    source:
-      'Fixed-site doctrine; Base Defense Zone holds the BDOC, which holds Target Engagement Authority on all entering aircraft',
-  },
-]
-
 /**
- * Observed-practice figures (section 3.7, OSINT compendium, verified by
- * 3-vote adversarial verification, confidence high). Label on every use:
- * observed practice, never doctrine. Caveats: RUSI single analytical lineage
- * (6 of 10 findings); Ukrainian government claims unverified; Shahed cost
- * figures sensitive to unit-cost assumption; findings describe 2024-2025
- * conditions and are time-sensitive.
- */
-export const OBSERVED_PRACTICE: Array<{ claim: string; value: string; source: string }> = [
-  {
-    claim:
-      'Ukrainian seven-phase combined-arms framework: survey, isolation, degradation, fixing, suppression, close combat/destroy, consolidation; UAVs in every phase',
-    value: 'Emergent practice, not codified doctrine',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'FPV kill zone: majority of Ukrainian FPV kills fall either side of the forward line of troops',
-    value: 'within ~3 km',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Fiber-optic FPV outliers',
-    value: '10-20 km',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Ukrainian FPVs that fail to reach their targets',
-    value: '60-80%',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Tactical UAVs share of damaged/destroyed Russian systems as of early 2025',
-    value: '60-70%',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'March 2026: share of 35,351 claimed monthly Russian casualties attributed to tactical drones',
-    value: '96%',
-    source: 'observed practice; unverified Ukrainian General Staff claim',
-  },
-  {
-    claim:
-      'Operator video-feed control markedly more effective than AI/pixel-lock terminal guidance, except against regular-outline targets (air-defense systems, enemy UAVs, EW antennas)',
-    value: 'qualitative finding',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Manufacturer claim: AI hit rate vs manual, applies under jamming',
-    value: '~80% AI vs ~40% manual',
-    source: 'observed practice; manufacturer claim',
-  },
-  {
-    claim: 'Battlefield transparency near the line of contact',
-    value: 'near-total within 3 km',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Diminishing surveillance density',
-    value: 'to 15 km',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Taskable reconnaissance',
-    value: 'to ~40 km',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Russian Orlan-10/Zala ISR daily overflights by Aug 2023',
-    value: '1,000-1,300',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Daily orbits by Aug 2024',
-    value: '1,000-1,500 (possible airframe double-counting)',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Ukrainian response: networked radar/EO-cued interceptor UAVs',
-    value: 'Brave1 ELF-P, VB140',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim:
-      'FPVs most efficient against slow low reconnaissance drones; radar-guided interceptors handle higher-flying targets',
-    value: 'qualitative finding',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'GPS jamming as counter-UAS measure against GNSS-dependent systems',
-    value: 'dominant measure',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim:
-      'Adaptations to GPS jamming: fiber-optic tethered drones, machine-vision terminal guidance, CRPA antennas',
-    value: '~15 Ukrainian fiber-optic drone firms by early 2025',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Manually piloted FPVs are defeated by control-link/video jamming instead',
-    value: 'qualitative finding',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Shahed campaign: missiles and drones Sep 2022 - Dec 2024',
-    value: 'over 19,000',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Including Shahed/Geran one-way attack drones',
-    value: '14,700+',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Sep-Dec 2024 launches vs the preceding 23 months combined',
-    value: 'exceeded them',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Shahed production by end-2024',
-    value: '~2,000/month',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Shahed unit cost',
-    value: '$35k-$80k',
-    source: 'observed practice; cost figures sensitive to unit-cost assumption',
-  },
-  {
-    claim: 'Cost per target actually struck',
-    value: '~$350,000',
-    source: 'observed practice; CSIS estimate',
-  },
-  {
-    claim: 'Ukraine industrial base growth in drone manufacturers',
-    value: '7 (2022) to 500+ (2026)',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Annual capacity growth',
-    value: '~5,000 to projected 7 million (government projection, not realized output)',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'NATO C-UAS readiness gap: structured C-UAS capability absent from most NATO land forces',
-    value: 'Oct 2024 assessment',
-    source: 'observed practice; RUSI assessment',
-  },
-  {
-    claim: 'NATO readiness aiming mark',
-    value: '2028',
-    source: 'observed practice; OSINT compendium',
-  },
-  {
-    claim: 'Ukraine component mix targeting drone production in 2024',
-    value: '1M drones',
-    source: 'observed practice; doctrine-page context line',
-  },
-]
-
-/**
- * Refuted claims blocklist (section 3.7; failed 3-vote verification).
+ * Refuted claims blocklist (failed 3-vote verification).
  * DO NOT CITE. The app surfaces this list when a user cites one.
  */
 export const REFUTED_CLAIMS: string[] = [
@@ -285,7 +104,7 @@ export const REFUTED_CLAIMS: string[] = [
   'Interceptor drones (~100k produced 2025, ~2,000/day) down ~70% of Russian Gerans',
 ]
 
-/** Data delivery standard constants (section 5.6). Seed export presets. */
+/** Data delivery standard constants. Seed export presets. */
 export const DATA_STANDARDS: Array<{ name: string; value: string }> = [
   {
     name: 'Telemetry',
@@ -319,18 +138,6 @@ export const DATA_STANDARDS: Array<{ name: string; value: string }> = [
     value:
       'Quick-look report, test report, analysis report, evaluation report. DOT&E Annual Report entry structure: description, mission, adequacy and limits, effectiveness, suitability, survivability, recommendations',
   },
-]
-
-/**
- * Decision-ready-track criteria (section 5.4). Illustrative default,
- * customer-configurable. A C2 track is decision-ready only when ALL hold.
- */
-export const DECISION_READY_TRACK: string[] = [
-  'Correct truth-object association.',
-  'Required position and velocity fields present.',
-  'Track age within 1.0 second.',
-  'Position-quality state within the customer criterion.',
-  'C2 track persistence for at least three consecutive updates.',
 ]
 
 /**
@@ -374,11 +181,8 @@ export const KINETIC_MARKS: string[] = [
   'intercept',
 ]
 
-// ---------------------------------------------------------------------------
-// Promoted and new selection vocabularies (strategist redesign, SPEC section 3).
-// These back chips and selects. Every consumer prepends an unknown stored
-// value to its option list so legacy free text stays valid.
-// ---------------------------------------------------------------------------
+// Selection vocabularies behind chips and selects. Every consumer prepends an
+// unknown stored value to its option list so legacy free text stays valid.
 
 /** Release classes. CUI is the doctrine floor; default on create. */
 export const SECURITY_CLASSES = ['Unclassified', 'CUI', 'Secret']
@@ -452,7 +256,7 @@ export const WORKLOAD_LEVELS = ['low', 'moderate', 'high', 'saturated']
 /** Degraded modes offered on conditions; promoted when the spectrum is contested. */
 export const DEGRADED_MODES = ['GPS denied', 'comms out', 'sensor down']
 
-/** Named environment presets (D4). One pick writes weather, spectrum, and network. */
+/** Named environment presets. One pick writes weather, spectrum, and network. */
 export const ENVIRONMENT_PRESETS: Array<{
   key: string
   label: string
@@ -506,19 +310,16 @@ export const RESET_ACTIONS = [
   'confirm time sync',
 ]
 
-/** Stop classes for the card stop-and-hold table. */
-export const STOP_CLASSES = ['safety', 'data', 'hold']
-
 /** Data-stop taxonomy: instrumentation failures that stop a run. */
 export const STOP_TAXONOMY = ['truth loss', 'recorder failure', 'time-sync loss']
 
-/** First-look data quality after a run (E7). */
+/** First-look data quality after a run. */
 export const INITIAL_DATA_QUALITY = ['complete', 'gaps noted', 'truth dropout']
 
-/** Immediate actions when a deviation appears (E4). */
+/** Immediate actions when a deviation appears. */
 export const IMMEDIATE_ACTIONS = ['continue', 'pause', 'safe state', 'stop', 'resume after fix']
 
-/** Protect-the-data actions when an anomaly appears (E5). */
+/** Protect-the-data actions when an anomaly appears. */
 export const PRESERVATION_ACTIONS = [
   'freeze files',
   'screenshot',
@@ -551,7 +352,7 @@ export const CENSORING_RULES = [
   'exclude censored opportunities',
 ]
 
-/** Known-limit categories (Qualify Q7). Filled chips seed feasibility rows. */
+/** Known-limit categories. Filled chips seed feasibility rows. */
 export const KNOWN_LIMIT_CATEGORIES = [
   'range and site access',
   'airspace',
@@ -562,7 +363,7 @@ export const KNOWN_LIMIT_CATEGORIES = [
 ]
 
 /**
- * Campaign start presets (Qualify Q0). A preset seeds structure and
+ * Campaign start presets. A preset seeds structure and
  * recommended records only. It never fabricates factual test data;
  * text placeholders use [placeholder] so the card gate catches them.
  * `previous-campaign` routes through startFromCampaign, not applyPreset.

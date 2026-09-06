@@ -11,10 +11,10 @@ import { runReplicates } from './mcRun'
 import type { McSummary } from './mcRun'
 
 /**
- * E3 statistical study tests (docs/field-te/model-evidence/uncertainty-crosswalk.md):
- * reproducibility and pairing under entity order, fixed n against optional
- * stopping at one seed, a rare outcome at small n, and an undefined time in the
- * panel sub-line. Every expected number is derived in the comment above it.
+ * Statistical checks: reproducibility and pairing under entity order, fixed n
+ * against optional stopping at one seed, a rare outcome at small n, and an
+ * undefined time in the panel sub-line. Every expected number is derived in
+ * the comment above it.
  */
 
 /** Regression laydown, as mcRun.test.ts: Giraffe 1X, Coyote, FAAD C2, Mohajer-6, Mavic 3. */
@@ -227,8 +227,7 @@ describe('stopping, rare outcomes and undefined times', () => {
     // 0 of 30 the rule-of-three bound, 0 to 3 / 30 = 0.1, in place of the
     // t-interval (1 / 30 - 2.045 * 0.0333 = -0.035, below the support) and the
     // zero-width interval. The p975 at 30 replicates is unavailable
-    // (BAND95_MIN_N 40); the 0.275 interpolation is recorded in the
-    // crosswalk and no longer reported.
+    // (BAND95_MIN_N 40).
     const { scenario, uasId } = build(0.03)
     const p = resolveEngagements(scenario).totals.expectedKills
     expect(Math.abs(p - 0.0291)).toBeLessThan(0.0001)
@@ -364,8 +363,8 @@ describe('bounded counts over more than one ship and the displayed-interval stop
     expect((shorter.hi - shorter.lo) / 2).toBeGreaterThanOrEqual(target)
     // Every ship leaks when the interceptor's 1 m reach never binds: 1 of 1 in
     // every replicate, the rule-of-three mirror 1 - 3 / n to 1, half-width
-    // 1.5 / n: 0.05 at 30 and 0.0375 at 40, so a target of 0.04 stops at 40.
-    // The t half-width of a constant sample is 0, which stopped at 30 before.
+    // 1.5 / n: 0.05 at 30 and 0.0375 at 40, so a target of 0.04 stops at 40
+    // (the t half-width of a constant sample would be 0 at 30).
     const eff = scenario.library.find((m) => m.id === 'tst-int')!
     eff.effector = { ...eff.effector!, maxRangeM: 1 }
     const all = runReplicates({ ...scenario, replicates: 1000, targetHalfWidth: 0.04 })

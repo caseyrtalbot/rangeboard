@@ -229,9 +229,7 @@ describe('buildLiveTimeline / liveKpisAt', () => {
 describe('late effects never un-leak an arrived threat', () => {
   // Captured run: asset 3,000 m out, the threat is over it at T+66.5 s, and
   // all six salvos land from T+90 to T+251.5 s. Every one of the 0.970
-  // credited kill mass landed after the threat was already overhead. The old
-  // rule moved that mass from Leakers to Exp kills and reported a defended
-  // asset; the leaker had already arrived.
+  // credited kill mass landed after the threat was already overhead.
   const ARRIVAL_S = 66.5
   const LATE = [
     { tS: 80, tEffectS: 90, killDelta: 0.6 },
@@ -374,8 +372,7 @@ describe('live values converge to the run-final AttritionTotals', () => {
 
 describe('expenditure splits by channel class, not by kill channel', () => {
   it('files directed-energy bursts apart from kinetic rounds', () => {
-    // Four Leonidas HPM salvos: hard kills (softShot false) that fire no
-    // round. Bucketing on softShot reported all four as kinetic.
+    // Four HPM salvos: hard kills (softShot false) that fire no round.
     const tl = buildLiveTimeline(
       [assessment({})],
       reportOf([
@@ -589,9 +586,8 @@ describe('leakerShips converges to AttritionTotals.expectedLeakers', () => {
 })
 
 /**
- * Legacy instant-release engine (doctrine off). These fixtures assert the
- * pre-doctrine numbers: the ROE gate alone opens the window and every ready
- * effector volleys. New scenarios default to the doctrinal sequence.
+ * Doctrine off: the ROE gate alone opens the window and every ready effector
+ * volleys. New scenarios default to the doctrinal sequence.
  */
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()

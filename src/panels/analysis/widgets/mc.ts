@@ -57,7 +57,7 @@ export const TIME_CI_MIN_N = 30
  * The Monte Carlo first detection is the first single-scan hit, so the
  * detected and warning subs name it.
  */
-export type StatQuantity = 'detected' | 'warning'
+type StatQuantity = 'detected' | 'warning'
 const QUANTITY_WORD: Record<StatQuantity, string> = {
   detected: 'detected',
   warning: 'warning time',

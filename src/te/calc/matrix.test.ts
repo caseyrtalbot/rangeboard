@@ -1,5 +1,5 @@
 /**
- * Matrix coverage tests (MASTER-CALCULATIONS 3.5). The 12-cell / 48-run
+ * Matrix coverage tests (MASTER-CALCULATIONS). The 12-cell / 48-run
  * totals echo fixtures F-14 and F-15 as authored data; the engine counts
  * cells, it does not generate the factor product.
  */
@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import type { TeCampaign, TeRunValidity } from '../model/types'
 import { emptyCampaign, emptyCard, emptyMatrixCell, emptyRun } from '../model/empty'
-import { coverage, matrixTotals } from './matrix'
+import { coverage } from './matrix'
 
 let runSeq = 0
 
@@ -65,13 +65,3 @@ describe('coverage', () => {
   })
 })
 
-describe('matrixTotals', () => {
-  it('totals 12 authored cells with 48 planned runs and no duration model', () => {
-    const c = makeCampaign()
-    for (let i = 0; i < 12; i++) c.matrix.push({ ...emptyMatrixCell(`c${i}`), plannedReps: 4 })
-    const totals = matrixTotals(c)
-    expect(totals.cells).toBe(12)
-    expect(totals.plannedRuns).toBe(48)
-    expect(totals.estimatedHours).toBeNull()
-  })
-})

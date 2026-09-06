@@ -13,8 +13,8 @@ const PF_DATE = '2026-09-04'
 const pf = (spread: Spread): PfSpreadRow => ({ spread, source: PF_SOURCE, date: PF_DATE })
 
 /**
- * PF spread by field name, one provenance-style row each (basis 'pf'). Proposals under O-4;
- * every value is a planning factor. Triangular bounds are fractions of the nominal; the
+ * PF spread by field name, one provenance-style row each (basis 'pf'). Every value is a
+ * planning factor. Triangular bounds are fractions of the nominal; the
  * beta `successes` is informational (17 of 20 is a 0.85 nominal), the sampler rescales it
  * to the field's own nominal and keeps `trials` as the pseudo-count.
  */

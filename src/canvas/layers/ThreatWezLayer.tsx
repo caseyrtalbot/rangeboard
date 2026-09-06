@@ -5,8 +5,8 @@ import type { LiveTrack } from '../../playback/tracks'
 import type { ImpactSeverity, LeakerImpact, ThreatWez } from '../../analysis/impact'
 import { SEVERITY_LABEL, SEVERITY_RANK, threatWezList } from '../../analysis/impact'
 import { formatDistance } from '../../geometry/geo'
+import { DANGER_INK } from '../../ui/ink'
 
-const RED = '#c4564a'
 const MONO = 'JetBrains Mono'
 
 /** Badge copy: `I&W SEVERE · 1.6 ships · 64 kg`. Unknown warheads (kg 0) must
@@ -42,9 +42,9 @@ function Badge({
     <Group x={pos.x} y={pos.y} scaleX={1 / k} scaleY={1 / k} opacity={opacity}>
       <Group x={xOffPx} y={-26}>
         {severity === 'severe' && pulse != null && (
-          <Circle radius={15 + 4 * pulse} stroke={RED} strokeWidth={2} opacity={0.8 - 0.5 * pulse} />
+          <Circle radius={15 + 4 * pulse} stroke={DANGER_INK} strokeWidth={2} opacity={0.8 - 0.5 * pulse} />
         )}
-        <RegularPolygon sides={3} radius={11} fill={RED} />
+        <RegularPolygon sides={3} radius={11} fill={DANGER_INK} />
         <Text
           text="!"
           fontFamily={MONO}
@@ -56,12 +56,12 @@ function Badge({
           width={22}
           align="center"
         />
-        {count > 1 && <Text text={`×${count}`} fontFamily={MONO} fontSize={10} fill={RED} x={13} y={-9} />}
+        {count > 1 && <Text text={`×${count}`} fontFamily={MONO} fontSize={10} fill={DANGER_INK} x={13} y={-9} />}
         <Text
           text={label}
           fontFamily={MONO}
           fontSize={10}
-          fill={RED}
+          fill={DANGER_INK}
           x={-100}
           y={14}
           width={200}
@@ -79,9 +79,8 @@ function Badge({
  *   circles stay fixed at the predicted impact point (path end); standoff
  *   rings ride the live track during playback. A threat with no path draws at
  *   its rest position, dimmed 50%.
- * - Effect radii are PLANNING FACTORS (weaponFactors.ts, threat study 18.1
- *   declines lethality math), so impact labels carry a PF suffix. Standoff
- *   labels show the model's release range as stored.
+ * - Effect radii are PLANNING FACTORS (weaponFactors.ts), so impact labels
+ *   carry a PF suffix. Standoff labels show the model's release range as stored.
  * - Asset badges render independent of the toggle: they mark a derived
  *   outcome, not overlay geometry. Planning view (t = 0) shows one summary
  *   badge per asset at its highest severity, MODERATE and up; playback shows
@@ -173,12 +172,12 @@ export function ThreatWezLayer({
               : wez.planCenter
           return (
             <Group key={wez.uasId} opacity={wez.hasPath ? 1 : 0.5}>
-              <Circle x={center.x} y={center.y} radius={wez.radiusM} fill={RED} opacity={0.07} />
+              <Circle x={center.x} y={center.y} radius={wez.radiusM} fill={DANGER_INK} opacity={0.07} />
               <Circle
                 x={center.x}
                 y={center.y}
                 radius={wez.radiusM}
-                stroke={RED}
+                stroke={DANGER_INK}
                 strokeWidth={1.5}
                 dash={[3, 3]}
                 strokeScaleEnabled={false}
@@ -186,8 +185,8 @@ export function ThreatWezLayer({
               />
               {wez.kind === 'impact' && (
                 <Group x={wez.planCenter.x} y={wez.planCenter.y} scaleX={1 / k} scaleY={1 / k}>
-                  <Line points={[-5, -5, 5, 5]} stroke={RED} strokeWidth={1.5} />
-                  <Line points={[-5, 5, 5, -5]} stroke={RED} strokeWidth={1.5} />
+                  <Line points={[-5, -5, 5, 5]} stroke={DANGER_INK} strokeWidth={1.5} />
+                  <Line points={[-5, 5, 5, -5]} stroke={DANGER_INK} strokeWidth={1.5} />
                 </Group>
               )}
               <Group x={center.x} y={center.y + wez.radiusM} scaleX={1 / k} scaleY={1 / k}>
@@ -195,7 +194,7 @@ export function ThreatWezLayer({
                   text={wezLabel(wez)}
                   fontFamily={MONO}
                   fontSize={10}
-                  fill={RED}
+                  fill={DANGER_INK}
                   x={-110}
                   y={6}
                   width={220}

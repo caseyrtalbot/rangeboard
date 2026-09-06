@@ -1,5 +1,5 @@
 /**
- * Card-panel building blocks (strategist redesign, SPEC groups C1-C10).
+ * Card-panel building blocks.
  * Local to CardsPanel: derived read-through fields with provenance, chip
  * strings, classed stop and validity tables, and the sentence builders.
  * Every block writes existing TeCard string fields. Nothing new is stored.
@@ -10,11 +10,11 @@ import { Field, Provenance, RegisterTable, SegChips, SentenceBuilder, TextField 
 import type { SentenceSlot } from './kit'
 
 /**
- * Provenance wrapper driven by value-vs-derivation comparison (SPEC 4.3).
+ * Provenance wrapper driven by value-vs-derivation comparison.
  * Empty value with a live derivation renders pending; equal renders
  * inherited; different renders edited with revert.
  */
-export function WithProvenance({
+function WithProvenance({
   value,
   derived,
   source,
@@ -214,7 +214,7 @@ export function LineChecklist({
   )
 }
 
-export interface ClassedField {
+interface ClassedField {
   /** Schema field key the class writes back to. */
   key: string
   /** Class label shown in the table's select column. */
@@ -228,9 +228,9 @@ interface ClassedRow {
 }
 
 /**
- * One table over several one-line-per-rule string fields, a class per row
- * (SPEC C8 merges). Rows render back to the same schema strings, one line
- * each; empty rows live only in local state until they carry text.
+ * One table over several one-line-per-rule string fields, a class per row.
+ * Rows render back to the same schema strings, one line each; empty rows
+ * live only in local state until they carry text.
  */
 export function ClassedLinesTable({
   fields,

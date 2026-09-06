@@ -1,5 +1,5 @@
 /**
- * Run record and immediate debrief form (MASTER-FORMS 3.3, 29 fields).
+ * Run record and immediate debrief form (MASTER-FORMS).
  * Identifiers, times, roles, actuals, event log, observations, deviations,
  * anomalies, data quality, validity history, and the six debrief fields.
  */

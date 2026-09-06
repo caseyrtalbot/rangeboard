@@ -1,6 +1,7 @@
 import { Circle, Group, Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { bearingDeg, dist } from '../../geometry/geo'
+import { DANGER_INK } from '../../ui/ink'
 import { blinkOn, EW_JAM_COLOR } from '../../playback/trackState'
 import type { ShotInFlight } from '../../playback/trackState'
 
@@ -14,7 +15,6 @@ interface Props {
   displayTimeS: number
 }
 
-const KILL = '#c4564a'
 const JAM = EW_JAM_COLOR
 
 /** Screen px trimmed off the effector glyph and off the target ring. */
@@ -51,7 +51,7 @@ export function EngagementLayer({ shots, displayTimeS }: Props) {
         const ay = s.from.y + uy * head
         const bx = s.to.x - ux * tail
         const by = s.to.y - uy * tail
-        const color = s.channel === 'jam' ? JAM : KILL
+        const color = s.channel === 'jam' ? JAM : DANGER_INK
         // No array index: liveShots drops expired salvos off the front, so an
         // index key would rebuild every surviving Konva node during a volley.
         const key = `${s.effectorId}-${s.uasId}-${s.shipIdx}-${s.tS}`

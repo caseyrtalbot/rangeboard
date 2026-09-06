@@ -34,16 +34,10 @@ export const FLYOUT_SPEED_FACTOR = 0.7
  * 0 when the effector states no speed. A jammer, DE or HPM effect arrives
  * with the beam: no flyout even if a speed is stored.
  */
-export function averageFlyoutMps(spec: EffectorSpec): number {
+function averageFlyoutMps(spec: EffectorSpec): number {
   const v = spec.flyoutSpeedMps
   if (v == null || !(v > 0) || expenditureChannel(spec.effectorType) !== 'kinetic') return 0
   return v * FLYOUT_SPEED_FACTOR
-}
-
-/** Seconds of flight to a slant range at the average flyout speed; 0 when there is no flyout. */
-export function timeOfFlightS(spec: EffectorSpec, slantM: number): number {
-  const v = averageFlyoutMps(spec)
-  return v > 0 ? slantM / v : 0
 }
 
 /** Formation member positions of a threat at one sim time. */
@@ -150,19 +144,14 @@ function analyticTofS(
 }
 
 /**
- * Predicted intercept for one ship: the target position at tS + engageTimeS + timeOfFlight,
- * with the flight time the exact constant-speed meeting time along the path
- * (analyticTofS). The returned position and slant are sampled at the returned
- * tEffectS. With no stated speed the flight time is 0 and the result is the position at
- * tS + engageTimeS. `membersAt` lets the sweep supply its per-tick geometry cache; the
- * default samples the path. `capS` is the end of the in-range interval that contains tS: a
- * flight past the cap is held at the cap, sampled there, and reported `capped`.
- * Only the flight is capped: a release at or before the cap with a flight past it; a
- * release after the cap is not. `infeasible` is true when the interceptor cannot
- * be at the credited point when the effect is credited: the slant to the sampled point
- * exceeds the reach `v * (tEffectS - release)` by more than one DT of flight, `v * DT`,
- * which after the exact solution happens only at a cap or when no meeting exists; the
- * caller declines an infeasible shot. Never true without a flyout.
+ * Predicted intercept for one ship: position and slant sampled at the returned
+ * tEffectS = tS + engageTimeS + flight time (analyticTofS; 0 with no stated
+ * speed). `membersAt` lets the sweep supply its per-tick geometry cache.
+ * `capS` is the end of the in-range interval containing tS: a flight past it is
+ * held at the cap and reported `capped`; a release already past the cap is not.
+ * `infeasible` is true when the slant exceeds the reach v * (tEffectS - release)
+ * by more than v * DT (only at a cap or with no meeting); the caller declines
+ * the shot. Never true without a flyout.
  */
 export function interceptAt(
   ts: ThreatState,
@@ -180,7 +169,6 @@ export function interceptAt(
   }
   const releaseS = tS + es.engageTimeS
   const v = averageFlyoutMps(es.spec)
-  // Without a stated speed there is no flight, so the flyout-free arithmetic is unchanged.
   // A ship with no path (or no speed) is stationary where the sampler puts it.
   const moving = ts.path != null && ts.path.points.length >= 2 && ts.speedMps > 0
   const tofS =
@@ -194,9 +182,6 @@ export function interceptAt(
     const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
     return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
   }
-  // The geometry is sampled at the returned time. The cap trims the flight
-  // only: a release (tS + engageTimeS) already past the window end is not a
-  // flight to cap.
   const capped = releaseS <= capS && releaseS + tofS > capS
   const tEffectS = capped ? capS : releaseS + tofS
   const at = sampleAt(tEffectS)

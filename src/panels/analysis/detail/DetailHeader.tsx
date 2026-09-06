@@ -7,7 +7,7 @@ import { State } from '../../../ui/kit'
 import type { StateTone } from '../../../ui/kit'
 
 /** The state: the word, its tone, and an inline colour for a track phase. */
-export interface DetailPill {
+interface DetailPill {
   word: string
   tone?: StateTone
   style?: CSSProperties

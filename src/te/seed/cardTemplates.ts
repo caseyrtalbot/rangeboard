@@ -1,5 +1,5 @@
 /**
- * Worked card templates (MASTER-SEEDDATA section 2): five gold-standard worked
+ * Worked card templates (MASTER-SEEDDATA): five gold-standard worked
  * cards plus one complete notional card. Bracketed [placeholders] are intended;
  * the app blocks card issue until every one resolves to a controlled record.
  * Source disclaimer carried on all six: "These cards are illustrative designs,

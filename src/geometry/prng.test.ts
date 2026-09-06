@@ -31,9 +31,9 @@ describe('idHash', () => {
   })
 })
 
-/** idHash('lib-giraffe1x'), pinned at wave 2 (FNV-1a over the 13 code units). */
+/** idHash('lib-giraffe1x'): FNV-1a over the 13 code units. */
 const PINNED_ID_HASH = 2432424072
-/** hashU01(4821, 0, 1, 7, 11, 0, 3), pinned at wave 2 (xor fold, fmix32 per part). */
+/** hashU01(4821, 0, 1, 7, 11, 0, 3): xor fold, fmix32 per part. */
 const PINNED_U01 = 0.9256280576810241
 
 describe('hashU01', () => {

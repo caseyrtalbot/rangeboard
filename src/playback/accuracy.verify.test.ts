@@ -19,7 +19,7 @@ import { assessAllThreats } from './sim'
 import { buildAarSummary } from '../analysis/aar'
 
 /**
- * INDEPENDENT ADVERSARIAL VERIFICATION of the latency/connectivity fixes.
+ * Hand-derived verification of latency and connectivity.
  * Every expected number below is derived by hand in the comment above the
  * assertion; none is copied from engine output. Scenarios pin environment
  * apply = false so spec ranges are exact, and use a group 4 fixed-wing
@@ -265,8 +265,7 @@ describe('CLAIM 1 - assignment latency, closed-form single interceptor', () => {
     expect(aar.expectedKills).toBe(r.totals.expectedKills)
     expect(aar.expectedHardKills).toBe(r.totals.expectedHardKills)
     expect(aar.expectedSoftKills).toBe(r.totals.expectedSoftKills)
-    // AarSummary carries UNDEFEATED ships (leakers plus never-arrived), the
-    // combined figure its pinned shape has always stored.
+    // AarSummary carries undefeated ships (leakers plus never-arrived).
     expect(aar.expectedLeakers).toBeCloseTo(
       r.totals.expectedLeakers + r.totals.expectedNoArrival,
       9,
@@ -682,12 +681,9 @@ describe('documented semantics - interval SET containment allows dead-zone cross
 })
 
 /*
- * ================= FORMATION ENVELOPE GEOMETRY (Defect A fixed) ============
- * In-range intervals are member-union geometry: a threat is in-range of an
- * effector when ANY formation member is inside the envelope (min range, max
- * range, sector). Ship selection re-verifies the same test per ship at
- * tEffect: shots go only to ships physically inside the envelope; when no
- * ship is inside, the effector holds fire (no magazine spend, no cooldown).
+ * Formation envelope geometry. In-range intervals are member-union geometry;
+ * ship selection re-verifies the envelope per ship at tEffect, and with no
+ * ship inside the effector holds fire (no magazine spend, no cooldown).
  */
 
 describe('formation member outside the envelope never draws fire', () => {
@@ -773,10 +769,8 @@ describe('wingman-only envelope crossing draws fire', () => {
       ]),
     ]
 
-    // Tight ROE stays 'not-confirmed': the classification ladder's proximity
-    // promotion reads the lead position (min d = 5000, ratio 5 > 1, never
-    // hostile). That is ROE/track semantics, not envelope geometry, and is
-    // unchanged by the member-union fix.
+    // Tight ROE stays 'not-confirmed': the ladder's proximity promotion reads
+    // the lead position (min d = 5000, ratio 5 > 1, never hostile).
     const aTight = assessAllThreats(scenario)[0]
     expect(aTight.status).toBe('not-confirmed')
 
@@ -863,12 +857,9 @@ describe('member-union intervals split by ship: column formation', () => {
 })
 
 /*
- * ================= USABLE-WINDOW SELECTION (Defect B fixed) ================
- * A gated interval is usable for effector E when its gated length covers E's
- * OWN engage time. Status is engageable when ANY connected effector has a
- * usable interval; windowS carries the longest usable interval. A long
- * window only usable by a slow effector no longer shadows a shorter window
- * a fast effector can use.
+ * Usable-window selection. A gated interval is usable for effector E when
+ * its gated length covers E's own engage time; the status is engageable when
+ * any connected effector has one, and windowS carries the longest.
  */
 
 describe('longest window no longer shadows a usable shorter one', () => {
@@ -944,13 +935,9 @@ describe('longest window no longer shadows a usable shorter one', () => {
 })
 
 /*
- * ================= ROUTE LATENCY IS CHARGED FROM THE GATE =================
- * assessThreat charges engageTimeS + route latency against window USABILITY.
- * resolveEngagements used to charge the same latency as an absolute floor
- * measured from T0, so once the ROE gate landed later than the latency the
- * delay disappeared entirely (a 90 s chain with a gate at T+1333.5 still
- * fired at T+1333.5). The cue has to traverse the chain AFTER the track
- * becomes engageable, so the charge is now relative to the gate.
+ * Route latency is charged from the gate: assessThreat charges engageTimeS +
+ * route latency against window usability, and resolveEngagements charges the
+ * latency relative to the gate, never as an absolute floor from T0.
  */
 
 describe('CLAIM 5 - route latency delays the trigger, not just the window', () => {
@@ -985,8 +972,7 @@ describe('CLAIM 5 - route latency delays the trigger, not just the window', () =
     const t = r.threats[0]
     expect(t.shotsFired).toBe(1)
     expect(t.firstShotS).toBeCloseTo(45.5, 9)
-    // The refutation: an absolute floor from T0 vanishes behind a later gate,
-    // leaving delta 0. The charge must be the full latency.
+    // An absolute floor from T0 would vanish behind a later gate (delta 0).
     expect(t.firstShotS! - a.engageGateS!).toBeCloseTo(20, 9)
     expect(t.expectedKills).toBeCloseTo(0.6 * (1 - 0.3 * (190 / 1000)), 6) // 0.5658
     // Explicitly refute the un-delayed geometry at the gate (d = 990).
@@ -1015,11 +1001,7 @@ describe('CLAIM 5 - route latency delays the trigger, not just the window', () =
   })
 })
 
-/**
- * Legacy instant-release engine (doctrine off). These fixtures assert the
- * pre-doctrine numbers: the ROE gate alone opens the window and every ready
- * effector volleys. New scenarios default to the doctrinal sequence.
- */
+/** Doctrine off: the ROE gate alone opens the window and every ready effector volleys. */
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }

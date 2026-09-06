@@ -19,7 +19,7 @@ const STANDOFF_MAX_STEPS = 200
 const RAID_TRAIL_SPACING_M = 300
 
 /** Everything `commitRaid` adds to the scenario, plus the points the camera fits. */
-export interface RaidBuild {
+interface RaidBuild {
   entities: Entity[]
   paths: FlightPath[]
   /** Waves to append after the scenario's existing waves. */

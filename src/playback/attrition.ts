@@ -39,96 +39,47 @@ import { profileFor } from '../model/integration'
 import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
 
 /**
- * Deterministic expected-value attrition over the raid. No random rolls: each
- * salvo multiplies the target ship's survival probability by (1 - Pk) and the
- * magazine ledger counts the salvo. Pure function of the scenario; no store
- * imports, so it is trivially testable.
+ * Deterministic expected-value attrition over the raid. No random rolls in
+ * the deterministic policy: each salvo multiplies the target ship's survival
+ * by (1 - Pk) and the magazine ledger counts the salvo. Pure function of the
+ * scenario. Per-shot Pk = basePk * distanceFalloff * sizePenalty *
+ * evasionPenalty (PicoGrid drone-swarm engagement calculator).
  *
- * Pk model and baselines follow the PicoGrid drone-swarm engagement
- * calculator (dormant core/ path): per-shot
- * Pk = basePk * distanceFalloff * sizePenalty * evasionPenalty.
+ * Target assignment is global at ship level: at each tick a ready effector
+ * engages, among every gated threat whose window contains t and tEffect, the
+ * ship with the highest effective survival (survival discounted by salvos in
+ * flight at it). Expected-dead ships (below SHIP_DEAD_BELOW) draw no fire.
+ * Ties break by the threat closing soonest, then scenario order, then ship
+ * index.
  *
- * Target assignment is global at ship level. At each tick a ready effector
- * considers every gated threat whose window (its own) contains both t and
- * tEffect, and every ship of those threats inside its envelope at tEffect,
- * then engages the ship with the highest effective survival — survival
- * discounted by the salvos already in flight at that ship — so simultaneous
- * volleys spread across the raid instead of stacking on one airframe.
- * Expected-dead ships (effective survival below SHIP_DEAD_BELOW) draw no
- * fire, and a 'continue' jam track saturated near certainty draws no more
- * jam salvos. Ties break by the threat closing soonest (arrival, else closest
- * approach), then scenario order, then lower ship index.
+ * A threat is a candidate for an effector only from gateS plus that
+ * (effector, threat) route latency. A salvo assigned at t takes effect at
+ * tEffect = t + engageTimeS + flyout (interceptAt); it is fired only when an
+ * in-range interval of the same effector still contains tEffect and the
+ * interceptor can reach the point. Kill math is evaluated at tEffect;
+ * magazine, cooldown, firstShotS and expenditure counts stay at assignment.
+ * Pending effects apply in tEffect order.
  *
- * Route latency: an effector cannot shoot the instant the ROE gate opens. The
- * cue has to traverse the kill chain first, so a threat is a candidate for one
- * effector only from gateS + that (effector, threat) route latency. The charge
- * is relative to the gate, never an absolute floor from T0, so a late gate
- * still pays the full delay.
+ * Hard kills (interceptor, gun, net, DE, HPM) destroy the airframe. Soft
+ * kills (jammer) apply the threat's JamBehavior: 'drift' and 'return-home'
+ * end the approach as a soft mission kill; 'continue' leaves the threat
+ * inbound with a degraded track. A 'continue' jam is illumination: its hold
+ * lapses when the target leaves the jammer's in-range interval (JamHold).
  *
- * Assignment-to-effect latency: a salvo assigned (fired) at t takes effect at
- * tEffect = t + engageTimeS + timeOfFlightS, the flight time from a stated
- * flyoutSpeedMps to the predicted intercept point (interceptAt; 0 with no
- * stated speed). The shot is only valid when some in-range
- * interval of the same effector still contains tEffect — a target that exits
- * the envelope before the effect arrives cannot be engaged by that
- * assignment, so the salvo is never fired; nor is a salvo whose interceptor
- * cannot reach the predicted point by tEffect (interceptAt `infeasible`).
- * Kill math (target position,
- * distance falloff, jam-state coupling) is evaluated at tEffect; magazine
- * decrement, cooldown, firstShotS, and the expenditure counts stay at
- * assignment time. Nonzero-latency effects are buffered and applied in
- * tEffect order (see the ordering note in attrition.test.ts); zero-latency
- * effects apply inline.
+ * Arrival rule: a salvo whose tEffectS is strictly after the threat's
+ * arrivalS is lateEffect. Survival still decrements; only the credit splits.
+ * expectedKills carries pre-arrival mass (the defeat number);
+ * expectedLateKills the rest, a sub-measure of the leaker mass.
  *
- * Outcomes split into two channels. Hard kills (interceptor, gun, net, DE,
- * HPM) destroy the airframe. Soft kills (jammer) apply the threat's
- * JamBehavior: 'drift' and 'return-home' end the approach — a mission kill
- * flagged soft — while 'continue' leaves the threat inbound with a degraded
- * track, so it still leaks. A 'continue' jam is ILLUMINATION, not damage:
- * the hold is bound to the jammer's in-range interval that produced it
- * (JamHold), lapses the moment the target flies out of the beam, and a
- * later re-entry starts from zero.
+ * Raid partition: expectedKills + expectedLeakers + expectedNoArrival ===
+ * raidSize. Leakers count only for threats that crossed a boundary; the rest
+ * of the undefeated mass is no-arrival. With no asset on the board
+ * expectedLeakers is 0 for arithmetic reasons, so totals.reportedLeakers is
+ * null there and callers display that, never the partition term.
  *
- * ARRIVAL RULE. A defeat that lands after the threat was already over the
- * defended asset did not protect the asset. Every salvo is stamped
- * lateEffect: true when its tEffectS is strictly after that threat's
- * ThreatAssessment.arrivalS (the protected-boundary crossing in sim.ts).
- * The physics is untouched: alive still decrements at effect time exactly as
- * before, so a late kill still removes the airframe. Only the CREDIT splits.
- * expectedKills, expectedHardKills, and expectedSoftKills carry PRE-ARRIVAL
- * mass and are the defeat number; expectedLateKills carries the rest, as a
- * sub-measure of the leaker mass rather than a deduction from it.
- * leakProbability is per-ship survival AT ARRIVAL, derived from the
- * pre-arrival mass.
- *
- * RAID PARTITION. Every ship of the raid lands in exactly one of three
- * buckets, and the three sum to raidSize:
- *   expectedKills      defeated at or before arrival.
- *   expectedLeakers    reached a defended asset undefeated. Counted only for
- *                      threats that actually crossed a boundary.
- *   expectedNoArrival  neither defeated nor arrived. A fly-by that turned
- *                      away short, or any run with no asset placed at all.
- * Charging every undefeated ship as a leaker (the old raidSize minus kills)
- * conflated the second and third buckets, so an asset-free run reported the
- * whole raid as leakers.
- *
- * MEASURABILITY. With no asset entity on the board there is nothing to leak
- * past, so expectedLeakers is 0 for arithmetic reasons, not because the
- * defence worked. Printing that 0 reads as a perfect defence. totals
- * therefore also carries reportedLeakers: the same figure when an asset
- * exists, and null when none does. Callers display reportedLeakers and render
- * a dash for null; expectedLeakers is the partition term, not a display
- * value.
- *
- * Expenditure splits three ways by effector class, independently of the kill
- * channel: shotsFired counts KINETIC salvos (interceptor, gun, net),
- * deSalvos counts DIRECTED-ENERGY bursts (DE, HPM), and jamSalvos counts EW
- * salvos (jammer) of every behavior. DE and HPM stay hard kills; what changes
- * is only what their salvo is reported to have cost. The events ledger
- * records every salvo — assignment time, effect time, target ship, kill
- * channel, expenditure channel, effector type, late flag, Pk, and the
- * expected-kill mass the effect removed — so shots-so-far, kills-so-far, and
- * per-threat state at any sim time can be prefix-aggregated from it.
+ * Expenditure splits by effector class independently of the kill channel:
+ * shotsFired (kinetic), deSalvos (DE, HPM), jamSalvos (jammer). The events
+ * ledger records every salvo for prefix aggregation at any sim time.
  */
 
 function specFor(scenario: Scenario, entity: Entity): SpecModel | undefined {
@@ -181,18 +132,11 @@ function retirePending(set: Set<PendingEffect>, discount: number, fx: PendingEff
 }
 
 /**
- * Resolve every engagement window into expected kills, leakers, and magazine
- * use. Sweeps the timeline at DT = 0.5 s; each ready effector fires one salvo
- * per salvoCooldownS at the eligible ship with the highest effective
- * survival across the whole raid (eligible = threat gate met AND the route
- * latency to this effector elapsed since that gate, this effector's window
- * contains t and tEffect = t + engageTimeS + flyout, ship inside this effector's
- * envelope at tEffect, ship above the SHIP_DEAD_BELOW cutoffs; no eligible
- * ship = hold fire: no magazine spend, no cooldown), until the windows close
- * or the magazine is empty. The salvo's effect (kill or jam) lands at tEffect
- * with kill math evaluated there; effects still pending when the sweep ends
- * are flushed in tEffect order. Kill mass landing after the threat's arrival
- * is banked separately (see the ARRIVAL RULE at the top of this file).
+ * Resolve every engagement window into expected kills, leakers and magazine
+ * use. Sweeps at DT; each ready effector fires one salvo per salvoCooldownS
+ * at the eligible ship with the highest effective survival (see the header),
+ * or holds fire with no magazine spend and no cooldown. Effects still pending
+ * when the sweep ends are flushed in tEffect order.
  */
 export function resolveEngagements(
   scenario: Scenario,
@@ -220,15 +164,12 @@ export function resolveEngagements(
       for (const w of a.effectorWindows) {
         const route = routes.get(w.effectorId)
         if (!route) continue
-        // Same fc-uplink gate as assessThreat: a fully typed route without a
-        // fire-control source cannot fire.
+        // Same fc-uplink gate as assessThreat.
         if (route.typed && route.fcSourceIds.length === 0) {
           const eff = scenario.entities.find((e) => e.id === w.effectorId)
           if (profileFor(eff?.specId ?? null)?.guidance === 'fc-uplink') continue
         }
         windows.set(w.effectorId, w.intervals)
-        // killChainRoutes already reduced every path to the minimum summed
-        // edge latency, so this is the per-(effector, threat) minimum.
         routeLatencyS.set(w.effectorId, route.latencyS)
       }
     }
@@ -280,8 +221,7 @@ export function resolveEngagements(
       cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], DT),
       engageTimeS: spec.engageTimeS ?? 0,
       rounds: spec.magazineSize ?? null,
-      // Route latency is charged per threat from that threat's gate, not as
-      // an absolute floor from T0, so the battery itself starts ready.
+      // Route latency is charged per threat from its gate, so the battery starts ready.
       nextReadyS: 0,
       shotsFired: 0,
       deSalvos: 0,
@@ -289,7 +229,6 @@ export function resolveEngagements(
     })
   }
 
-  // The sweep only needs to cover the engagement windows.
   let tEnd = 0
   for (const ts of threats) {
     for (const intervals of ts.windows.values()) {
@@ -301,16 +240,13 @@ export function resolveEngagements(
   // Salvos per (effector, threat, ship), every channel: the kill draw key.
   const salvoCounts = new Map<string, number>()
 
-  // Salvos in flight. Applied in tEffect order so a jam that takes hold
-  // before a kill shot arrives degrades that kill (see attrition.test.ts).
+  // Salvos in flight, applied in tEffect order so an earlier jam degrades a later kill.
   const pending: PendingEffect[] = []
 
   const applyEffect = (fx: PendingEffect) => {
     const ship = fx.target.ships[fx.shipIdx]
     if (fx.continueJam) {
-      // Jam holds but the threat presses on: no kill, the track degrades.
-      // The hold is bound to the illumination interval the dwell landed in;
-      // a dwell in a NEW interval starts a fresh hold, because the link
+      // A dwell in a new in-range interval starts a fresh hold: the link
       // recovered while the target was outside the beam.
       const idx = intervalIndexAt(fx.target.windows.get(fx.effectorId), fx.tEffectS)
       const hold = ship.jamBy.get(fx.effectorId)
@@ -321,17 +257,13 @@ export function resolveEngagements(
         fx.target.lastJamEffectS = fx.tEffectS
       }
     } else {
-      // Kill shot; a track jam-degraded AT THE EFFECT TIME worsens the
-      // firing solution. A target that already flew out of the jam cone has
-      // its link back, so it takes no degrade.
+      // A track jam-degraded at the effect time worsens the firing solution.
       const pEff = fx.pk * (1 - CONTINUE_TRACK_DEGRADE * jammedAt(fx.target, ship, fx.tEffectS))
       const kill =
         ship.alive *
         draw.kill(pEff, fx.effectorId, fx.target.a.uasId, fx.shipIdx, fx.salvoIdx, fx.tEffectS)
       ship.alive -= kill
-      // Survival math is unchanged. Only the credit splits: mass removed
-      // after the threat was already over the asset destroyed an airframe
-      // but defended nothing, so it never counts toward the defeat rate.
+      // Only the credit splits: late mass defended nothing.
       if (fx.event.lateEffect) {
         if (fx.softShot) ship.lateSoft += kill
         else ship.lateHard += kill
@@ -353,7 +285,6 @@ export function resolveEngagements(
     pending.sort((a, b) => a.tEffectS - b.tEffectS)
     while (pending.length > 0 && pending[0].tEffectS <= upToS + EPS) {
       const fx = pending.shift()!
-      // The salvo is no longer in flight: retire its aiming discount.
       const ship = fx.target.ships[fx.shipIdx]
       if (fx.continueJam) ship.jamDiscount = retirePending(ship.pendingJam, ship.jamDiscount, fx)
       else ship.killDiscount = retirePending(ship.pendingKill, ship.killDiscount, fx)
@@ -361,10 +292,8 @@ export function resolveEngagements(
     }
   }
 
-  // Per-tick cache of interpolated threat geometry keyed by (threat, tEffect):
-  // effectors sharing an engageTimeS all land at the same tEffect, so the
-  // path sample and formation member positions compute once, not per effector.
-  // A flyout pass lands on a ship-specific tEffect, which simply misses.
+  // Per-tick geometry cache keyed by (threat, tEffect): effectors sharing an
+  // engageTimeS land at the same tEffect.
   let tickGeom = new Map<ThreatState, Map<number, Vec2[]>>()
   const membersAt = (ts: ThreatState, tEffect: number): Vec2[] => {
     let byT = tickGeom.get(ts)
@@ -380,11 +309,8 @@ export function resolveEngagements(
     return g
   }
 
-  // One salvo, committed: the event, the in-flight (or inline) effect, the
-  // expenditure channel counts, the magazine decrement, and the cooldown.
-  // Shared by the legacy volley loop and the doctrine assignment pass, so the
-  // bookkeeping cannot diverge between them. `tEffect` is the interceptAt
-  // effect time of the chosen ship; `capped` is its flight-time cap flag.
+  // One salvo, committed. Shared by the volley loop and the doctrine
+  // assignment pass so the bookkeeping cannot diverge.
   const commitSalvo = (
     es: EffectorState,
     target: ThreatState,
@@ -396,8 +322,7 @@ export function resolveEngagements(
     capped: boolean,
   ) => {
     const softShot = !isHardKill(es.spec.effectorType)
-    // The kill draw key: this effector's salvos at this ship so far, so an
-    // added threat never shifts the key of a shot at another one.
+    // Kill draw key: an added threat never shifts the key of a shot at another one.
     const salvoKey = `${es.entity.id}:${target.a.uasId}:${shipIdx}`
     const salvoIdx = salvoCounts.get(salvoKey) ?? 0
     salvoCounts.set(salvoKey, salvoIdx + 1)
@@ -430,9 +355,8 @@ export function resolveEngagements(
       continueJam,
       event,
     }
-    // Zero-latency effects land inside the same step (preserves the
-    // pre-latency same-tick jam-then-kill coupling); the rest wait in
-    // flight and discount later aiming at the same ship.
+    // Zero-latency effects land in the same step; the rest wait in flight and
+    // discount later aiming at the same ship.
     if (tEffect <= t + EPS) {
       applyEffect(fx)
     } else {
@@ -447,8 +371,6 @@ export function resolveEngagements(
       pending.push(fx)
     }
 
-    // Expenditure follows the effector class, not the kill channel: a DE or
-    // HPM burst is a hard kill that spends no round.
     if (event.channelClass === 'ew') {
       target.jamSalvos += 1
       es.jamSalvos += 1
@@ -466,26 +388,20 @@ export function resolveEngagements(
   }
 
   for (let t = 0; t <= tEnd + EPS; t += DT) {
-    // Effects due by now land before this step's assignments.
     applyDueEffects(t)
     tickGeom = new Map()
 
     for (const es of effectors.values()) {
-      // Under doctrine, kinetic and DE fire moves to the assignment pass
-      // below. Jammers stay here: a jam dwell is illumination, not a round,
-      // so shoot-look-shoot and magazine preservation do not apply to it.
+      // Under doctrine only jammers fire here: shoot-look-shoot does not apply to a dwell.
       if (doctrine.enabled && es.spec.effectorType !== 'jammer') continue
       if (t + EPS < es.nextReadyS) continue
       if (es.rounds != null && es.rounds <= 0) continue
       const softShot = !isHardKill(es.spec.effectorType)
 
       const isJammer = es.spec.effectorType === 'jammer'
-      // The in-range intervals are member-union geometry, so ship
-      // eligibility re-verifies the same min/max/sector test per ship, on
-      // slant range from the launcher, under the effector ceiling. A
-      // jammer's reach is its power-scaled effective range against this
-      // target (jamResistDb included), the same figure the sim window and
-      // the drawn cone use; its cone test takes slant range and no ceiling.
+      // Per-ship envelope test on slant range from the launcher. A jammer's
+      // reach is its effective range against this target (as the sim window
+      // and the drawn cone use); its cone test takes no ceiling.
       const inEnvelope = (p: Vec2, ts: ThreatState) => {
         if (!isJammer && effectorGeometryGate(es.spec, ts.altM) !== 'ok') return false
         const slant = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
@@ -495,24 +411,13 @@ export function resolveEngagements(
           pointInWedge(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, p)
         )
       }
-      // Jam physics (band coverage, alignment, power out) decide whether a
-      // jammer can affect this ship at all; a ship the physics cannot reach
-      // is never a jam candidate, so the dwell is not wasted on it. The
-      // physics take the same slant range as inEnvelope.
+      // A ship the jam physics cannot reach is never a jam candidate.
       const jamFactor = (ts: ThreatState, p: Vec2): number =>
         assessJam(es.spec, es.entity.pos, es.entity.headingDeg, ts.uasSpec, p, ts.altM - es.mountM)
           .factor
 
-      // Global ship-level assignment. Among every gated threat whose window
-      // (this effector's) contains t and tEffect, and every ship inside the
-      // envelope at tEffect and above the survival cutoffs, engage the ship
-      // with the highest effective survival: alive discounted by the kill
-      // salvos already in flight at it, times — for 'continue' jams — the
-      // analogous discounted un-jammed probability. In-flight discounting
-      // spreads simultaneous volleys across ships; the cutoff moves fire off
-      // expected-dead targets. Ties break by earlier threat arrival, then
-      // scenario order, then lower ship index (the scan order makes the
-      // first candidate win exact ties).
+      // Global ship-level assignment (see the header). The scan order makes
+      // the first candidate win exact ties.
       let target: ThreatState | null = null
       let shipIdx = -1
       let hit: ReturnType<typeof interceptAt> | null = null
@@ -522,11 +427,7 @@ export function resolveEngagements(
         if (ts.gateS == null || !ts.path) continue
         const intervals = ts.windows.get(es.entity.id)
         if (!intervals) continue
-        // The cue reaches this shooter routeLatencyS after the track became
-        // engageable. Charging it from the gate (not from T0) keeps the delay
-        // real when the ROE gate is later than the latency. Under doctrine
-        // the effector's release-ready time already carries the latency and
-        // its target dwell.
+        // Under doctrine the release-ready time already carries the route latency.
         const readyS = doctrine.enabled
           ? ts.effectorReadyS.get(es.entity.id)
           : ts.gateS == null
@@ -537,15 +438,11 @@ export function resolveEngagements(
         const within = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
         if (!within) continue
         const continueJam = softShot && ts.jamBehavior === 'continue'
-        // Prefer the threat closing soonest. Arrival when it has one, else
-        // closest approach, which is all the geometry a fly-by offers.
+        // Closing soonest: arrival, else closest approach for a fly-by.
         const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
 
         for (let i = 0; i < ts.ships.length; i++) {
-          // Geometry is evaluated where the effect lands, not where it is
-          // fired: the predicted intercept of this ship.
           const ic = interceptAt(ts, es, t, i, membersAt, within[1])
-          // An intercept the interceptor cannot reach is no shot.
           if (ic.infeasible) continue
           if (!contains(ic.tEffectS)) continue
           if (!inEnvelope(ic.pos, ts)) continue
@@ -556,9 +453,7 @@ export function resolveEngagements(
           let weight = alive
           if (continueJam) {
             // Un-jammed probability where the dwell would land, discounted by
-            // the jam salvos already in flight. Illumination-bound: a hold on
-            // a target that left the beam has lapsed, so the track is open to
-            // fresh jamming again.
+            // the jam salvos already in flight.
             const unjammed = (1 - jammedAt(ts, s, ic.tEffectS)) * s.jamDiscount
             if (unjammed < SHIP_DEAD_BELOW) continue // track saturated: hold
             weight = alive * unjammed
@@ -576,14 +471,10 @@ export function resolveEngagements(
           }
         }
       }
-      // No eligible ship anywhere on the raid: hold fire — no magazine
-      // spend, no cooldown.
       if (target == null || shipIdx < 0 || hit == null) continue
       const continueJam = softShot && target.jamBehavior === 'continue'
 
-      // Jam Pk is link physics (band, alignment, power/range), not aiming:
-      // airframe size and jinking do not protect a link, so a jammer takes
-      // none of the kinetic penalties and all of the EW ones.
+      // Jam Pk is link physics, not aiming: no kinetic penalties apply.
       const pk = isJammer
         ? Math.min(1, Math.max(0, es.pk * jamFactor(target, hit.pos)))
         : kineticPk(es.pk, es.spec.maxRangeM, target.uasSpec, hit.slantM)
@@ -591,24 +482,13 @@ export function resolveEngagements(
       commitSalvo(es, target, shipIdx, pk, t, hit.tEffectS, continueJam, hit.capped)
     }
 
-    // DOCTRINE ASSIGNMENT PASS (kinetic and DE only). Doctrinal sequence:
-    // sim.ts already required a stable fire-control track, hostile ID, the
-    // declaration dwell, the route latency and the shooter's target dwell
-    // (effectorReadyS). Here the fire distribution is shoot-look-shoot: a
-    // ship with a kill salvo in flight, or inside its post-effect BDA dwell
-    // (ShipState.holdUntilS), draws no fire from anyone. Among the shooters
-    // that CAN engage a ship this tick, the best predicted per-shot Pk takes
-    // the shot (ties prefer unlimited magazines, then fuller magazines, then
-    // the threat closing soonest). WHERE in the envelope the shot is released
-    // is the launch policy (FireDoctrine.launchPolicy): max-range releases at
-    // the first opportunity, range-fraction once the intercept point is
-    // inside launchRangeFraction x max range, pk-commit once the Pk at effect
-    // time reaches the effector's commit Pk (the target is closing, so
-    // waiting buys accuracy), latest never volunteers. Every policy fires at
-    // the deadline regardless: the last launch that still preserves
-    // `opportunities` full engagement cycles before the threat's arrival
-    // (CPA for a fly-by, window end when no asset exists), capped by the
-    // closing in-range window.
+    // Doctrine assignment pass (kinetic and DE). Shoot-look-shoot: a ship with
+    // a kill salvo in flight or inside its BDA dwell (holdUntilS) draws no
+    // fire. The best predicted per-shot Pk takes the shot. The launch policy
+    // (launchPolicyReleases) decides where in the envelope a shooter
+    // volunteers; every policy fires at the deadline, the last launch that
+    // preserves `opportunities` engagement cycles before arrival (CPA for a
+    // fly-by), capped by the closing in-range window.
     if (doctrine.enabled) {
       interface Candidate {
         es: EffectorState
@@ -625,11 +505,8 @@ export function resolveEngagements(
         if (es.spec.effectorType === 'jammer') continue
         if (t + EPS < es.nextReadyS) continue
         if (es.rounds != null && es.rounds <= 0) continue
-        // Per-system factors: spec override, else the type table, else the
-        // scenario uniform value (doctrineFactors.ts).
         const esBdaS = bdaSFor(es.spec, doctrine)
         const esCommitPk = commitPkFor(es.spec, doctrine)
-        // Slant range from the launcher, under the effector ceiling.
         const inEnvelope = (p: Vec2, ts: ThreatState) => {
           if (effectorGeometryGate(es.spec, ts.altM) !== 'ok') return false
           const slant = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
@@ -641,7 +518,7 @@ export function resolveEngagements(
         }
         for (const ts of threats) {
           if (!ts.path) continue
-          // This effector's own route-aware release-ready time; none, no shot.
+          // No release-ready time for this effector: no shot.
           const readyS = ts.effectorReadyS.get(es.entity.id)
           if (readyS == null) continue
           const intervals = ts.windows.get(es.entity.id)
@@ -651,12 +528,8 @@ export function resolveEngagements(
           const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
           for (let i = 0; i < ts.ships.length; i++) {
             const ship = ts.ships[i]
-            // Shoot-look-shoot: in-flight salvo or BDA dwell locks the ship.
             if (t + EPS < ship.holdUntilS) continue
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
-            // Predicted intercept of this ship: its effect time carries the
-            // flyout, capped at the end of the window that contains t, so
-            // the window test and the deadline read it per ship.
             const at = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
             if (!at) continue
             const ic = interceptAt(ts, es, t, i, membersAt, at[1])
@@ -667,13 +540,10 @@ export function resolveEngagements(
                 t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
             )
             if (!within) continue
-            // Assignment-to-effect time: engage time plus the flyout. Exact 0
-            // flyout with no stated speed, so the legacy arithmetic is kept.
+            // Assignment-to-effect time: engage time plus the flyout.
             const flightS = es.engageTimeS + (tEffect - (t + es.engageTimeS))
-            // Latest commit that still leaves the planned re-engagement depth,
-            // capped by the last launch whose effect still lands inside this
-            // in-range window: a closing window is its own deadline, so a high
-            // pkCommit can never hold fire past the final physical shot.
+            // A closing window is its own deadline: a high pkCommit can never
+            // hold fire past the final physical shot.
             const windowDeadlineS = within[1] - flightS
             const deadlineS =
               refS != null
@@ -682,8 +552,7 @@ export function resolveEngagements(
             if (!inEnvelope(ic.pos, ts)) continue
             const pk = kineticPk(es.pk, es.spec.maxRangeM, ts.uasSpec, ic.slantM)
             if (pk <= 0) continue
-            // Launch policy: does this shooter volunteer the shot here? The
-            // deadline overrides a "no" from every policy.
+            // The deadline overrides a "no" from every launch policy.
             if (!launchPolicyReleases(doctrine, pk, esCommitPk, ic.slantM, es.spec.maxRangeM)) {
               if (t + EPS < deadlineS) continue
             }
@@ -699,9 +568,8 @@ export function resolveEngagements(
           }
         }
       }
-      // Best shot first. Near-ties (within 0.02 Pk) preserve salvo: an
-      // unlimited magazine outranks a counted one, a fuller magazine a
-      // lower one; then the threat closing soonest.
+      // Best Pk first; near-ties (within 0.02) prefer unlimited, then fuller
+      // magazines, then the threat closing soonest.
       candidates.sort((a, b) => {
         if (Math.abs(b.pk - a.pk) > 0.02) return b.pk - a.pk
         const aInf = a.es.rounds == null ? 1 : 0
@@ -716,7 +584,6 @@ export function resolveEngagements(
       for (const c of candidates) {
         if (firedThisTick.has(c.es)) continue
         const ship = c.ts.ships[c.shipIdx]
-        // A better candidate may already have taken this ship this tick.
         if (t + EPS < ship.holdUntilS) continue
         if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
         commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, c.tEffectS, false, c.capped)
@@ -726,7 +593,6 @@ export function resolveEngagements(
     }
   }
 
-  // Salvos assigned late in a window take effect after the last window ends.
   applyDueEffects(Number.POSITIVE_INFINITY)
 
   const threatRows: ThreatAttrition[] = threats.map((ts) => {
@@ -734,18 +600,11 @@ export function resolveEngagements(
     const softKills = ts.ships.reduce((s, v) => s + v.soft, 0)
     const lateHardKills = ts.ships.reduce((s, v) => s + v.lateHard, 0)
     const lateSoftKills = ts.ships.reduce((s, v) => s + v.lateSoft, 0)
-    // Survival AT ARRIVAL: every ship starts alive, so what remains inbound
-    // at the boundary is one minus the mass removed before it got there. Per
-    // ship the removed mass never exceeds 1, so this stays non-negative and
-    // the partition below is exact without a clamp.
+    // Survival at arrival. Per-ship removed mass never exceeds 1, so the
+    // partition is exact without a clamp.
     const survival = ts.ships.length - (hardKills + softKills)
-    // Undefeated ships only count as LEAKERS when the threat actually
-    // crossed a defended boundary. A fly-by, or any threat in a run with no
-    // asset placed, banks its survivors as never-arrived instead.
     const arrived = ts.a.arrivalS != null
-    // Jam degrade is read where it matters: at arrival when the threat
-    // arrives, at closest approach for a fly-by, else at the last dwell. An
-    // illumination-bound hold that lapsed before that instant counts 0.
+    // Jam degrade is read at arrival, else at CPA, else at the last dwell.
     const jamRefS = ts.a.arrivalS ?? ts.a.cpaS ?? ts.lastJamEffectS
     const jammed =
       jamRefS == null ? 0 : ts.ships.reduce((s, v) => s + jammedAt(ts, v, jamRefS), 0)
@@ -794,9 +653,7 @@ export function resolveEngagements(
   const expectedSoftKills = threatRows.reduce((s, t) => s + t.expectedSoftKills, 0)
   const expectedKills = expectedHardKills + expectedSoftKills
   const expectedLeakers = threatRows.reduce((s, t) => s + t.expectedLeakers, 0)
-  // Measurability is a property of the LAYDOWN, not of the flight paths: one
-  // asset entity anywhere makes the leaker count meaningful, even if this
-  // particular raid all turned away.
+  // Measurability is a property of the laydown, not of the flight paths.
   const hasAsset = scenario.entities.some((e) => e.kind === 'asset')
   return {
     threats: threatRows,
@@ -807,13 +664,8 @@ export function resolveEngagements(
       expectedHardKills,
       expectedSoftKills,
       expectedLateKills: threatRows.reduce((s, t) => s + t.expectedLateKills, 0),
-      // The raid partition, summed from the rows. Each row already splits its
-      // own shipCount three ways, so the totals sum to raidSize exactly. Late
-      // kill mass never shrinks the leaker term.
       expectedLeakers,
       expectedNoArrival: threatRows.reduce((s, t) => s + t.expectedNoArrival, 0),
-      // Honesty gate: with no asset on the board leakers are not measurable,
-      // and reporting 0 would read as a perfect defence.
       reportedLeakers: hasAsset ? expectedLeakers : null,
       shotsFired: threatRows.reduce((s, t) => s + t.shotsFired, 0),
       deSalvos: threatRows.reduce((s, t) => s + t.deSalvos, 0),

@@ -18,7 +18,7 @@ import { timeTicks } from './timeAxis'
 import { resolveColor, type ChartTokens } from './tokens'
 import type { ChartMark, Series } from './types'
 
-export interface TimeSeriesProps {
+interface TimeSeriesProps {
   series: Series[]
   /** Playhead position, seconds, quantized to DT by the caller. */
   tS: number
@@ -197,28 +197,25 @@ interface PlotProps {
   height: number
   marks?: ChartMark[]
   yDomain?: [number, number]
-  /** False = axes, grid and tooltip off (the sparkline). */
-  chrome: boolean
 }
 
-/** The Recharts plot without the frame. `Sparkline` reuses it with `chrome` off. */
+/** The Recharts plot without the frame. */
 export function TimeSeriesPlot({
-  series, tS, onScrub, width, height, marks, yDomain, chrome,
+  series, tS, onScrub, width, height, marks, yDomain,
 }: PlotProps) {
   const tokens = useChartTokens()
   const rows = useMemo(() => seriesRows(series), [series])
   const durationS = seriesDurationS(series)
   const [lo, hi] = useMemo(() => seriesRange(series, yDomain), [series, yDomain])
-  const plotW = (width ?? 312) - MARGIN.left - MARGIN.right - (chrome ? Y_AXIS_W : 0)
+  const plotW = (width ?? 312) - MARGIN.left - MARGIN.right - Y_AXIS_W
   const xTicks = useMemo(() => timeTicks(durationS, plotW), [durationS, plotW])
   const scrub = useScrub(
     durationS,
-    chrome ? { left: MARGIN.left + Y_AXIS_W, right: MARGIN.right } : { left: 2, right: 2 },
+    { left: MARGIN.left + Y_AXIS_W, right: MARGIN.right },
     onScrub,
   )
   const accent = tokens.color('accent')
   const ticks = tickStyle(tokens)
-  const margin = chrome ? MARGIN : { top: 2, right: 2, bottom: 2, left: 2 }
   const playheadLabel = tS != null ? `T+${formatTime(tS)}` : ''
 
   return (
@@ -226,12 +223,12 @@ export function TimeSeriesPlot({
       data={rows}
       width={width}
       height={height}
-      margin={margin}
+      margin={MARGIN}
       onMouseDown={scrub.onMouseDown}
       onMouseMove={scrub.onMouseMove}
       className={onScrub ? 'chart-scrub' : undefined}
     >
-      {chrome ? <CartesianGrid stroke={tokens.grid} vertical={false} /> : null}
+      <CartesianGrid stroke={tokens.grid} vertical={false} />
       <XAxis
         dataKey="t"
         type="number"
@@ -243,7 +240,6 @@ export function TimeSeriesPlot({
         tickLine={false}
         tickMargin={3}
         height={X_AXIS_H}
-        hide={!chrome}
       />
       <YAxis
         domain={[lo, hi]}
@@ -254,7 +250,6 @@ export function TimeSeriesPlot({
         tickLine={false}
         tickMargin={3}
         width={Y_AXIS_W}
-        hide={!chrome}
       />
       {series.map((s) =>
         (['95', '80'] as const).map((k) =>
@@ -305,8 +300,7 @@ export function TimeSeriesPlot({
           />
         )
       })}
-      {chrome
-        ? marks?.map((m) => {
+      {marks?.map((m) => {
             const color = resolveColor(m.color, tokens)
             return (
               <ReferenceLine
@@ -317,28 +311,23 @@ export function TimeSeriesPlot({
                 label={{ value: m.label, position: 'top', ...ticks, fill: color }}
               />
             )
-          })
-        : null}
+          })}
       {tS != null ? (
         <ReferenceLine
           x={tS}
           stroke={accent}
           strokeWidth={1}
           data-role="playhead"
-          label={
-            chrome ? { value: playheadLabel, position: 'top', ...ticks, fill: accent } : undefined
-          }
+          label={{ value: playheadLabel, position: 'top', ...ticks, fill: accent }}
         />
       ) : null}
-      {chrome ? (
-        <Tooltip
+              <Tooltip
           cursor={false}
           isAnimationActive={false}
           content={(p: TooltipContentProps) => (
             <SeriesTip series={series} tokens={tokens} label={p.label} active={p.active} />
           )}
         />
-      ) : null}
     </ComposedChart>
   )
 }
@@ -375,7 +364,6 @@ export function TimeSeries({
         height={height}
         marks={marks}
         yDomain={yDomain}
-        chrome
       />
     </ChartFrame>
   )

@@ -24,14 +24,40 @@ export interface SavedView {
   theme?: Theme
 }
 
-function readRaw(): Record<string, unknown> {
-  if (typeof localStorage === 'undefined') return {}
+/**
+ * One guarded path for every settings key. Browser storage can be absent,
+ * blocked or full. A setting is a convenience with a default, so a failed read
+ * answers null and a failed write is dropped.
+ */
+export function readSetting(key: string): string | null {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(VIEW_KEY) ?? '{}')
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+/** Write one setting. A blocked or full store drops the write; the default stands. */
+export function writeSetting(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Dropped on purpose; see readSetting.
+  }
+}
+
+/** Parse a stored JSON record; anything that is not an object reads as empty. */
+function recordOf(raw: string | null): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(raw ?? '{}')
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
   } catch {
     return {}
   }
+}
+
+function readRaw(): Record<string, unknown> {
+  return recordOf(readSetting(VIEW_KEY))
 }
 
 function validCamera(c: unknown): Camera | undefined {
@@ -71,22 +97,11 @@ export function savedView(): SavedView {
 
 /** Merge a partial view state into the stored record. */
 export function writeView(patch: SavedView): void {
-  if (typeof localStorage === 'undefined') return
-  try {
-    localStorage.setItem(VIEW_KEY, JSON.stringify({ ...readRaw(), ...patch }))
-  } catch {
-    // View state is a convenience; a full store loses nothing the scenario holds.
-  }
+  writeSetting(VIEW_KEY, JSON.stringify({ ...readRaw(), ...patch }))
 }
 
 function readRingsRaw(): Record<string, unknown> {
-  if (typeof localStorage === 'undefined') return {}
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(RINGS_KEY) ?? '{}')
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
-  } catch {
-    return {}
-  }
+  return recordOf(readSetting(RINGS_KEY))
 }
 
 /**
@@ -110,12 +125,7 @@ export function savedRingOverrides(): RingOverrides {
 
 /** Replace the stored ring overrides with the whole current map. */
 export function writeRingOverrides(overrides: RingOverrides): void {
-  if (typeof localStorage === 'undefined') return
-  try {
-    localStorage.setItem(RINGS_KEY, JSON.stringify(overrides))
-  } catch {
-    // Ring overrides are a convenience; the layer flags still answer for every entity.
-  }
+  writeSetting(RINGS_KEY, JSON.stringify(overrides))
 }
 
 /**
@@ -123,10 +133,9 @@ export function writeRingOverrides(overrides: RingOverrides): void {
  * lenses are never stored: they come from `BUILTIN_LENSES` on every read.
  */
 export function savedAnalysis(): AnalysisViewState {
-  if (typeof localStorage === 'undefined') return defaultAnalysisView()
+  const raw = readSetting(ANALYSIS_KEY)
+  if (raw == null) return defaultAnalysisView()
   try {
-    const raw = localStorage.getItem(ANALYSIS_KEY)
-    if (raw == null) return defaultAnalysisView()
     return sanitizeAnalysisView(JSON.parse(raw))
   } catch {
     return defaultAnalysisView()
@@ -135,13 +144,8 @@ export function savedAnalysis(): AnalysisViewState {
 
 /** Replace the stored analysis view with the whole current layout and preset list. */
 export function writeAnalysis(state: AnalysisViewState): void {
-  if (typeof localStorage === 'undefined') return
-  try {
-    const { layout, userPresets } = state
-    localStorage.setItem(ANALYSIS_KEY, JSON.stringify({ layout, userPresets }))
-  } catch {
-    // The lens layout is a convenience; every widget still reads the live scenario.
-  }
+  const { layout, userPresets } = state
+  writeSetting(ANALYSIS_KEY, JSON.stringify({ layout, userPresets }))
 }
 
 /** Trailing debounce for the camera, which changes on every drag and zoom event. */
@@ -170,7 +174,6 @@ function hookFlush(): void {
 
 /** Queue a camera write; only the last camera inside the delay reaches storage. */
 export function writeViewCamera(camera: Camera): void {
-  if (typeof localStorage === 'undefined') return
   hookFlush()
   pendingCamera = camera
   clearTimeout(cameraTimer)
@@ -185,42 +188,34 @@ export function writeViewCamera(camera: Camera): void {
  * reissued after a reload).
  */
 export function savedRunSeq(): number {
-  if (typeof localStorage === 'undefined') return 1
-  const n = Number(localStorage.getItem(RUNSEQ_KEY))
+  const n = Number(readSetting(RUNSEQ_KEY))
   return Number.isInteger(n) && n >= 1 ? n : 1
 }
 
 /** Store the run sequence the next startup issues. */
 export function writeRunSeq(seq: number): void {
-  if (typeof localStorage === 'undefined') return
-  try {
-    localStorage.setItem(RUNSEQ_KEY, String(seq))
-  } catch {
-    // A lost sequence write costs a reused label, never data.
-  }
+  writeSetting(RUNSEQ_KEY, String(seq))
 }
 
 /** Display units from localStorage; anything other than the exact metric value is aviation. */
 export function savedUnits(): DisplayUnits {
-  if (typeof localStorage === 'undefined') return 'aviation'
-  return localStorage.getItem(UNITS_KEY) === 'metric' ? 'metric' : 'aviation'
+  return readSetting(UNITS_KEY) === 'metric' ? 'metric' : 'aviation'
 }
 
 /** Store the display units. */
 export function writeUnits(v: DisplayUnits): void {
-  if (typeof localStorage !== 'undefined') localStorage.setItem(UNITS_KEY, v)
+  writeSetting(UNITS_KEY, v)
 }
 
 /**
  * Layer visibility from localStorage, spread over DEFAULT_LAYERS so a layer key
- * added after the save still gets a value. A save from before the ring split
- * carries `sensorFootprints` and `effectorEnvelopes`: they seed the placard and
- * the max-range ring, then both old keys go.
+ * added after the save still gets a value. An older save carries
+ * `sensorFootprints` and `effectorEnvelopes`: they seed the placard and the
+ * max-range ring, then both old keys go.
  */
 export function savedLayers(): LayerVisibility {
   const defaults = { ...DEFAULT_LAYERS }
-  if (typeof localStorage === 'undefined') return defaults
-  const raw = localStorage.getItem(LAYERS_KEY)
+  const raw = readSetting(LAYERS_KEY)
   if (raw == null) return defaults
   try {
     const saved = JSON.parse(raw) as Partial<LayerVisibility> & {
@@ -243,6 +238,5 @@ export function savedLayers(): LayerVisibility {
 
 /** Store the layer visibility. */
 export function writeLayers(layers: LayerVisibility): void {
-  if (typeof localStorage === 'undefined') return
-  localStorage.setItem(LAYERS_KEY, JSON.stringify(layers))
+  writeSetting(LAYERS_KEY, JSON.stringify(layers))
 }

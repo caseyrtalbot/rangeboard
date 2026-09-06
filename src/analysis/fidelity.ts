@@ -22,10 +22,10 @@ export type ModelId =
   | 'draw-policy' | 'parameter-spread'
 
 /** How a model is built: a planning factor table, or a physical law. */
-export type FidelityTier = 'planning' | 'physics'
+type FidelityTier = 'planning' | 'physics'
 
 /** How far a model is checked: not at all, against math, against a datasheet, or in trial. */
-export type ValidationStatus = 'none' | 'analytic' | 'datasheet' | 'trial'
+type ValidationStatus = 'none' | 'analytic' | 'datasheet' | 'trial'
 
 /** One model and its status. */
 export interface ModelTag {

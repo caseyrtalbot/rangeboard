@@ -1,6 +1,5 @@
 /**
- * Execute-stage decision blocks (SPEC groups E1 to E7). Owned by the
- * Execute panel. Every builder and picker writes the existing schema
+ * Execute-stage decision blocks, local to the Execute panel. Every builder and picker writes the existing schema
  * field; derived drafts only move record content already on the campaign.
  */
 
@@ -45,9 +44,7 @@ import {
   fmtDate,
 } from './kit'
 
-// ---------------------------------------------------------------------------
 // Shared vocab labels (enum values unchanged; labels plain per copy rules)
-// ---------------------------------------------------------------------------
 
 export const GO_NO_GO_OPTIONS: Array<{ v: GoNoGo; label: string }> = [
   { v: 'go', label: 'Go' },
@@ -92,7 +89,7 @@ const OBS_STATUS_HELP =
   'Censored: the run ended before the outcome resolved. Unknown outcome: the event ran but could not be scored.'
 
 /** Yes/no question over a stored string; a legacy value renders as a prepended option. */
-export function YesNoSeg({
+function YesNoSeg({
   label,
   value,
   onChange,
@@ -114,15 +111,13 @@ export function YesNoSeg({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Data-files checklist (E7 + E6 merge): per-file received state renders into
+// Data-files checklist: per-file received state renders into
 // the run.dataFilesNote string. Legacy prose survives as the note line.
-// ---------------------------------------------------------------------------
 
 const FILE_LINE = /^(received|missing): (.*)$/
 
 /** Card requiredFiles is prose separated by ; or newlines. */
-export function splitFiles(s: string): string[] {
+function splitFiles(s: string): string[] {
   return [
     ...new Set(
       s
@@ -133,7 +128,7 @@ export function splitFiles(s: string): string[] {
   ]
 }
 
-export function parseDataFiles(note: string): {
+function parseDataFiles(note: string): {
   status: Map<string, 'received' | 'missing'>
   rest: string
 } {
@@ -157,7 +152,7 @@ function renderDataFiles(
 }
 
 /** All files received -> yes; any missing -> no; else no suggestion. */
-export function sourcesRecordedSuggestion(card: TeCard | undefined, run: TeRun): string | null {
+function sourcesRecordedSuggestion(card: TeCard | undefined, run: TeRun): string | null {
   const files = card ? splitFiles(card.requiredFiles) : []
   if (files.length === 0) return null
   const { status } = parseDataFiles(run.dataFilesNote)
@@ -166,13 +161,13 @@ export function sourcesRecordedSuggestion(card: TeCard | undefined, run: TeRun):
   return null
 }
 
-export function filesReceived(card: TeCard | undefined, run: TeRun): { got: number; total: number } {
+function filesReceived(card: TeCard | undefined, run: TeRun): { got: number; total: number } {
   const files = card ? splitFiles(card.requiredFiles) : []
   const { status } = parseDataFiles(run.dataFilesNote)
   return { got: files.filter((f) => status.get(f) === 'received').length, total: files.length }
 }
 
-export function DataFilesChecklist({ card, run }: { card: TeCard | undefined; run: TeRun }) {
+function DataFilesChecklist({ card, run }: { card: TeCard | undefined; run: TeRun }) {
   const { patchItem } = useTeStore.getState()
   const files = card ? splitFiles(card.requiredFiles) : []
   const { status, rest } = parseDataFiles(run.dataFilesNote)
@@ -219,9 +214,7 @@ export function DataFilesChecklist({ card, run }: { card: TeCard | undefined; ru
   )
 }
 
-// ---------------------------------------------------------------------------
 // E1: go/no-go record form
-// ---------------------------------------------------------------------------
 
 export function GoNoGoForm({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenChecklists: () => void }) {
   const { recordGoNoGo, startChecklist } = useTeStore.getState()
@@ -284,12 +277,10 @@ export function GoNoGoForm({ campaign, onOpenChecklists }: { campaign: TeCampaig
   )
 }
 
-// ---------------------------------------------------------------------------
 // E2: start a run
-// ---------------------------------------------------------------------------
 
 /** Issued card that serves the thinnest highest-priority matrix cell. */
-export function nextCardDefault(campaign: TeCampaign): { cardId: string; cellId: string } | null {
+function nextCardDefault(campaign: TeCampaign): { cardId: string; cellId: string } | null {
   const thin = coverage(campaign)
     .filter((c) => c.valid < c.minValid)
     .map((c) => ({ c, cell: campaign.matrix.find((m) => m.id === c.cellId) }))
@@ -343,9 +334,7 @@ export function StartRunBlock({ campaign }: { campaign: TeCampaign }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // E3: during the run
-// ---------------------------------------------------------------------------
 
 function ObservationRow({ campaign, run, measureId }: { campaign: TeCampaign; run: TeRun; measureId: string }) {
   const { patchItem, amendRunObservations } = useTeStore.getState()
@@ -610,14 +599,12 @@ export function ActiveRunBlock({
   )
 }
 
-// ---------------------------------------------------------------------------
 // E4: deviation record with the merged validity decision.
 // One decision writes effect, easierOrHarder, validityEffect, disposition,
 // and generalizationLimit; every field stays individually editable.
-// ---------------------------------------------------------------------------
 
 /** Compose the validity line from the picked enum values only. */
-export function deviationValidityLine(d: TeDeviation): string {
+function deviationValidityLine(d: TeDeviation): string {
   if (d.disposition == null) return ''
   const effect =
     d.effect === 'none'
@@ -768,9 +755,7 @@ export function DeviationCard({ campaign, card, dev }: { campaign: TeCampaign; c
   )
 }
 
-// ---------------------------------------------------------------------------
 // E5: anomaly record. Raw observation first, then the closure fields.
-// ---------------------------------------------------------------------------
 
 export function AnomalyCard({ campaign, card, anomaly }: { campaign: TeCampaign; card: TeCard | undefined; anomaly: TeAnomaly }) {
   const { patchItem, createDiagnosticCard, selectRecord } = useTeStore.getState()
@@ -899,12 +884,10 @@ export function AnomalyCard({ campaign, card, anomaly }: { campaign: TeCampaign;
   )
 }
 
-// ---------------------------------------------------------------------------
 // E6: debrief with derived drafts. Drafts only assemble record content
 // (procedure, events, deviations); they write on explicit use only.
-// ---------------------------------------------------------------------------
 
-export function debriefStoryDraft(card: TeCard | undefined, run: TeRun): string {
+function debriefStoryDraft(card: TeCard | undefined, run: TeRun): string {
   const planned = (card?.procedure ?? [])
     .map((s, i) => `${i + 1}. ${s.action}`)
     .filter((s) => s.trim() !== '')
@@ -917,7 +900,7 @@ export function debriefStoryDraft(card: TeCard | undefined, run: TeRun): string 
   return parts.join('\n')
 }
 
-export function debriefDifferencesDraft(campaign: TeCampaign, run: TeRun): string {
+function debriefDifferencesDraft(campaign: TeCampaign, run: TeRun): string {
   return campaign.deviations
     .filter((d) => d.runId === run.id)
     .map((d) => {
@@ -1092,11 +1075,9 @@ export function DebriefBlock({
   )
 }
 
-// ---------------------------------------------------------------------------
 // E7: adjudication. Differed-from-plan toggle, data-files checklist,
 // initial data quality, one adjudication action gated on the validity pick,
 // StageReview above the Record button.
-// ---------------------------------------------------------------------------
 
 export function AdjudicationBlock({ campaign, run }: { campaign: TeCampaign; run: TeRun }) {
   const { adjudicateRun, patchItem, selectRecord, setRunExcluded } = useTeStore.getState()

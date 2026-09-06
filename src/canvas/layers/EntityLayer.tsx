@@ -9,6 +9,7 @@ import { memberPositions } from '../../playback/tracks'
 import type { LiveTrack } from '../../playback/tracks'
 import type { DetectionHit } from '../../playback/detection'
 import { blinkOn, EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
+import { DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
 import type { EffectorLiveState, TrackFileState, TrackPhase } from '../../playback/trackState'
 import {
   FRAME_EDGE,
@@ -38,23 +39,13 @@ interface Props {
   displayTimeS: number
 }
 
-const FALLBACK: Record<Entity['kind'], string> = {
-  sensor: '#7da7c4',
-  effector: '#c9975a',
-  c2: '#d6d9d2',
-  uas: '#c46a5a',
-  asset: '#8fae7a',
-  marker: '#b7bdb2',
-}
-
 /** Subtle darker edge that reads over any fill color. Shared with the palette. */
 const EDGE = FRAME_EDGE
 
 const GHOST = PHASE_STYLE.ghost.color
-const EW = '#7da7c4'
 const JAM_CYAN = EW_JAM_COLOR
 /** Out of rounds. Matches the 'bad' treatment the system panel gives EMPTY. */
-const DEPLETED = '#c4564a'
+const DEPLETED = DANGER_INK
 /**
  * Destroyed-overlay ink. Bright enough to carry over the dimmed ghost group,
  * and not a phase color, so it never reads as another kill-chain rung.
@@ -297,7 +288,7 @@ function EntityNode({
   const headingDeg = track?.headingDeg ?? entity.headingDeg
   const heading = track ? { ...entity, headingDeg: track.headingDeg } : entity
   const off = !entityActive(entity)
-  const color = entity.color ?? modelFor(scenario, entity)?.color ?? FALLBACK[entity.kind]
+  const color = entityInk(entity, modelFor(scenario, entity))
   const hits = detections.get(entity.id) ?? []
   const detected = hits.length > 0
   const classified = hits.some((h) => h.classified)
@@ -336,9 +327,8 @@ function EntityNode({
         : undefined
   const directional = sectorDeg != null && sectorDeg < 360
   const members = entity.kind === 'uas' ? memberPositions(entity, pos, headingDeg) : [pos]
-  // Konva hit-tests a stroke-only Circle over its whole disc, so the old
-  // listening selection (r16) and card-link (r19) rings enlarged the grab
-  // area. Those rings are cues now, so the hit disc carries the same radii.
+  // Konva hit-tests a stroke-only Circle over its whole disc. The selection
+  // (r16) and card-link (r19) rings are cues, so the hit disc carries their radii.
   const hitR = cardLinked ? 19 : selected ? 16 : 13
   const labelDrawn = showLabels && !spokeIds.has(entity.id)
   // Board labels carry the short designator. Entity.name is untouched, so the
@@ -423,7 +413,7 @@ function EntityNode({
           <Circle radius={SELECT_R} stroke="#ffffff" strokeWidth={1.3} dash={[4, 3]} listening={false} />
         )}
         {cardLinked && (
-          <Circle radius={32} stroke={EW} strokeWidth={1.5} dash={[2, 3]} listening={false} />
+          <Circle radius={32} stroke={EW_INK} strokeWidth={1.5} dash={[2, 3]} listening={false} />
         )}
         {connectFromId === entity.id && <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} />}
         {bracketed &&
@@ -431,7 +421,7 @@ function EntityNode({
             <Line
               key={i}
               points={points}
-              stroke={ringColor ?? '#c4564a'}
+              stroke={ringColor ?? DANGER_INK}
               strokeWidth={1.6}
               opacity={pulse}
               listening={false}
@@ -441,7 +431,7 @@ function EntityNode({
           <Circle radius={RING_R} stroke={ringColor} strokeWidth={1.6} opacity={pulse} listening={false} />
         )}
         <Glyph entity={heading} color={color} ghost={ghost} filled={effectorFilled} />
-        {off && <Line points={[-11, 11, 11, -11]} stroke="#c4564a" strokeWidth={2} />}
+        {off && <Line points={[-11, 11, 11, -11]} stroke={DANGER_INK} strokeWidth={2} />}
         {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
           <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
         )}

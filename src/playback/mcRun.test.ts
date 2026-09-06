@@ -594,9 +594,8 @@ describe('runReplicates', () => {
     // Coyote than the Mavic (a higher Pk), and slow enough that the kill
     // chain closes on it. The Coyote engages it before any shared threat.
     // The kill key counts salvos per (effector, threat, ship), so the shared
-    // shots keep salvoIdx 0, 1, ... and read the same uniforms; under the
-    // wave 2 per-effector count the extra threat's earlier salvos would have
-    // shifted every shared salvoIdx by at least one. The busy Coyote can
+    // shots keep salvoIdx 0, 1, ... and read the same uniforms (a per-effector
+    // count would shift every shared salvoIdx by at least one). The busy Coyote can
     // delay a shared shot, which moves its Pk and so its result under the
     // same uniform, so the assertion is on the key, not the result.
     type KillRecord = [string, string, number, number]

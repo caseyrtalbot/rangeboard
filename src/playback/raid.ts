@@ -24,12 +24,8 @@ export function effectivePathDelayS(scenario: Scenario, path: FlightPath): numbe
   return path.startDelayS + waveDelayS(scenario.raid, path.entityId)
 }
 
-/**
- * Wave timing for a raid build. THREAT_TACTICS (playback/tactics.ts, the
- * successor of the retired RAID_BUILDERS patterns) carries these numbers; the
- * tactic builder in the store turns them into a RaidPlan through buildRaidPlan.
- */
-export interface RaidTiming {
+/** Wave timing for a raid build; THREAT_TACTICS (tactics.ts) carries these numbers. */
+interface RaidTiming {
   /** UAS entities per wave; extra entities open follow-on waves. */
   shipsPerWave: number
   /** Seconds between consecutive wave launches. */

@@ -1,5 +1,5 @@
 /**
- * The JIATF-401 canonical seed campaign (MASTER-SEEDDATA section 1).
+ * The JIATF-401 canonical seed campaign (docs/te-compilation/MASTER-SEEDDATA.md).
  * Labeling: facts marked (real) come from the JIATF-401 page or interview
  * transcript. Everything else is the notional case study: all configurations,
  * thresholds, quantities, schedules, calculations, and results are
@@ -77,9 +77,7 @@ export function buildJiatf401(): TeCampaign {
     return a.id
   }
 
-  // -------------------------------------------------------------------------
   // Charter (real org facts marked (real); case-study fields (illustrative))
-  // -------------------------------------------------------------------------
   c.charter = {
     ...c.charter,
     sponsor:
@@ -133,9 +131,7 @@ export function buildJiatf401(): TeCampaign {
     },
   }
 
-  // -------------------------------------------------------------------------
-  // Decision charter (the two customer decisions and decision rules, sec 1.7)
-  // -------------------------------------------------------------------------
+  // Decision charter (the two customer decisions and decision rules)
   c.decision = {
     ...c.decision,
     decisionDate: '15 working days after field execution (illustrative)',
@@ -173,9 +169,7 @@ export function buildJiatf401(): TeCampaign {
       'Add approved augmentation runs by preapproved rule or defer the decision.',
   }
 
-  // -------------------------------------------------------------------------
   // Roles (real people where attested)
-  // -------------------------------------------------------------------------
   c.roles = [
     {
       id: id('ROLE'),
@@ -198,9 +192,7 @@ export function buildJiatf401(): TeCampaign {
     },
   ]
 
-  // -------------------------------------------------------------------------
-  // Questions Q-01..Q-05 (sec 1.6, as the source words them)
-  // -------------------------------------------------------------------------
+  // Questions Q-01..Q-05 (as the source words them)
   const q1 = emptyQuestion(id('Q'))
   q1.wording =
     'Does Configuration B provide at least 25 seconds more usable warning time than Configuration A under matched threat and condition cells?'
@@ -270,10 +262,8 @@ export function buildJiatf401(): TeCampaign {
 
   c.questions = [q1, q2, q3, q4, q5]
 
-  // -------------------------------------------------------------------------
   // Hypotheses H-01, H-02, H-03, H-05 (no H-04 exists in the source; the
   // fourth HYP sequence number is burned so H-05 keeps its number)
-  // -------------------------------------------------------------------------
   const h1 = emptyHypothesis(id('HYP'), q1.id)
   h1.underConditions = 'Under the tested threat and conditions'
   h1.producesBehavior =
@@ -335,10 +325,8 @@ export function buildJiatf401(): TeCampaign {
 
   c.hypotheses = [h1, h2, h3, h5]
 
-  // -------------------------------------------------------------------------
-  // Measures M-01..M-10 instantiated from the dictionary (sec 1.10), then
+  // Measures M-01..M-10 instantiated from the dictionary, then
   // overridden with campaign-frozen values and customer thresholds
-  // -------------------------------------------------------------------------
   const m01 = measureFromDict(dictEntry('CUAS-MSN-UWT-010'), id('M'), q1.id)
   m01.name = 'Usable warning time (primary)'
   m01.hypothesisIds = [h1.id, h5.id]
@@ -348,8 +336,6 @@ export function buildJiatf401(): TeCampaign {
   m01.threshold = 90
   m01.thresholdSource = 'mission-arithmetic'
   m01.thresholdApproved = true
-  m01.borderlineRule =
-    'Median warning time at least 90 seconds in the core condition (required chain time 80 s plus 10 s reserve).'
   m01.frozen = true
 
   const m02 = measureFromDict(dictEntry('M-02'), id('M'), q1.id)
@@ -357,8 +343,6 @@ export function buildJiatf401(): TeCampaign {
   m02.threshold = 25
   m02.thresholdSource = 'customer-decision-rule'
   m02.thresholdApproved = true
-  m02.borderlineRule =
-    'The uncertainty interval must not indicate a material negative effect.'
   m02.frozen = true
 
   const m03 = measureFromDict(dictEntry('CUAS-SEN-PD-001'), id('M'), q1.id)
@@ -378,8 +362,6 @@ export function buildJiatf401(): TeCampaign {
     'Eligible time with a valid associated track over total valid eligible tracking time.'
   m05.thresholdSource = 'customer-decision-rule'
   m05.thresholdApproved = true
-  m05.borderlineRule =
-    'Customer rule: Configuration B must not reduce median track continuity by more than 0.03 relative to Configuration A.'
   m05.frozen = true
 
   const m06 = measureFromDict(dictEntry('CUAS-TRK-ERR-005'), id('M'), q3.id)
@@ -407,8 +389,6 @@ export function buildJiatf401(): TeCampaign {
   m08.threshold = 1.0
   m08.thresholdSource = 'customer-decision-rule'
   m08.thresholdApproved = true
-  m08.borderlineRule =
-    'The threshold applies to the added 90th-percentile source-to-C2 latency relative to Configuration A.'
   m08.frozen = true
 
   const m09 = measureFromDict(dictEntry('CUAS-SUR-FTR-007'), id('M'), q3.id)
@@ -425,13 +405,11 @@ export function buildJiatf401(): TeCampaign {
   m10.threshold = 0
   m10.thresholdSource = 'mission-arithmetic'
   m10.thresholdApproved = true
-  m10.borderlineRule =
-    'Positive margin required in at least 80 percent of valid end-to-end confirmation opportunities under the tested core condition.'
   m10.frozen = true
 
   c.measures = [m01, m02, m03, m04, m05, m06, m07, m08, m09, m10]
 
-  // Shared independent truth source (sec 1.14 instrumentation manifest)
+  // Shared independent truth source
   for (const m of c.measures) {
     m.truth = {
       primarySource:
@@ -440,13 +418,10 @@ export function buildJiatf401(): TeCampaign {
       independenceFromSut:
         'Truth pod is carried by the threat and hidden from blue operators and systems; no dependency on any system under test.',
       timeToleranceS: 0.1,
-      accuracyNote: 'Truth error small relative to the 25 s minimum meaningful warning-time difference.',
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Threat profile (sec 1.4)
-  // -------------------------------------------------------------------------
+  // Threat profile
   const threat = emptyThreat(id('THR'))
   threat.version = 'v1.2'
   threat.name = 'THR-G2-FW-01 Generic Group 2 fixed-wing surrogate'
@@ -474,9 +449,7 @@ export function buildJiatf401(): TeCampaign {
     'Source identifier THR-G2-FW-01-v1.2 (illustrative). Speed levels 20 and 30 m/s; altitude levels 60 and 120 m AGL (stored above as 197 and 394 ft). Approach geometry enum: centerline; sensor-sector boundary; off-axis. End state enum: boundary crossing; recovery turn; approved test stop. Protected-boundary vignette: fixed protected point; protected boundary radius 1,000 m; threat begins scored approach outside the largest expected detection region; engagement node uses an approved time-to-effect representation during screening.'
   c.threats = [threat]
 
-  // -------------------------------------------------------------------------
-  // Condition (sec 1.4)
-  // -------------------------------------------------------------------------
+  // Condition
   const cond = emptyCondition(id('COND'))
   cond.name = 'COND-DAY-CLEAR-NET-NOM-v1 (day, clear weather, nominal network)'
   cond.weatherAndIllumination = 'Day, clear weather.'
@@ -489,9 +462,7 @@ export function buildJiatf401(): TeCampaign {
     'Night, adverse weather, contested spectrum, degraded network, and elevated workload are untested.'
   c.conditions = [cond]
 
-  // -------------------------------------------------------------------------
-  // Frozen configuration baseline (sec 1.3 systems)
-  // -------------------------------------------------------------------------
+  // Frozen configuration baseline
   const cfg = emptyConfig(id('CFG'))
   cfg.version = 'v1.0'
   cfg.name = 'J401 paired architecture baseline (Configurations A and B)'
@@ -516,9 +487,7 @@ export function buildJiatf401(): TeCampaign {
   cfg.frozen = true
   c.configs = [cfg]
 
-  // -------------------------------------------------------------------------
-  // Factors: variable classification (sec 1.5)
-  // -------------------------------------------------------------------------
+  // Factors: variable classification
   const addFactor = (
     name: string,
     classification: FactorClass,
@@ -580,9 +549,7 @@ export function buildJiatf401(): TeCampaign {
   ]
   for (const [name, mit] of nuisance) addFactor(name, 'unobserved-nuisance', '', mit)
 
-  // -------------------------------------------------------------------------
-  // Test matrix: 3 azimuths x 2 altitudes x 2 speeds = 12 cells (sec 1.11)
-  // -------------------------------------------------------------------------
+  // Test matrix: 3 azimuths x 2 altitudes x 2 speeds = 12 cells
   const azTokens = ['AZ-CL', 'AZ-BND', 'AZ-OFF']
   const altTokens = ['ALT-60', 'ALT-120']
   const spdTokens = ['SPD-20', 'SPD-30']
@@ -616,9 +583,7 @@ export function buildJiatf401(): TeCampaign {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Issued card TC-J401-EW-COMP-01 v1.0 (sec 1.12)
-  // -------------------------------------------------------------------------
+  // Issued card TC-J401-EW-COMP-01 v1.0
   const card = emptyCard(id('TC'), 'TC-J401-EW-COMP-01')
   card.version = 'v1.0'
   card.status = 'issued'
@@ -739,9 +704,7 @@ export function buildJiatf401(): TeCampaign {
   card.dryRunAt = '2026-04-29T10:00:00.000Z'
   c.cards = [card]
 
-  // -------------------------------------------------------------------------
-  // T-30 preparation schedule (sec 1.15)
-  // -------------------------------------------------------------------------
+  // T-30 preparation schedule
   const scheduleWindows: Array<[number, string, string[]]> = [
     [
       30,
@@ -805,9 +768,7 @@ export function buildJiatf401(): TeCampaign {
     }
   }
 
-  // -------------------------------------------------------------------------
   // Registers: key claims and unknowns
-  // -------------------------------------------------------------------------
   c.registers = [
     {
       id: id('UNK'),
@@ -873,12 +834,10 @@ export function buildJiatf401(): TeCampaign {
     },
   ]
 
-  // -------------------------------------------------------------------------
-  // Illustrative runs against the issued card (sec 1.17, sector-boundary
+  // Illustrative runs against the issued card (sector-boundary
   // cell: 6 matched pairs, median paired improvement 28 s, 2 of 6 Config B
   // opportunities below 90 s, plus one invalid run and one conditionally
   // valid run). Every number is notional fixture data.
-  // -------------------------------------------------------------------------
   interface RunSpec {
     start: string
     config: 'A' | 'B'
@@ -1117,9 +1076,7 @@ export function buildJiatf401(): TeCampaign {
     c.runs.push(run)
   }
 
-  // -------------------------------------------------------------------------
-  // Finding and action (sec 1.18)
-  // -------------------------------------------------------------------------
+  // Finding and action
   const finding = emptyFinding(id('FIND'))
   finding.statement =
     'Under the tested fixed-site configuration, Group 2 fixed-wing surrogate, operator procedure, clear-day conditions, and nominal network state, adding the EW-1 early-warning layer increased median paired decision-ready warning time by 46 seconds. Configuration B produced a +33-second median mission margin compared with -14 seconds for the baseline. Track continuity and position error remained inside the customer limits. The added layer increased nuisance-track burden and exposed a sector-boundary correlation weakness. The evidence supports continued integration and focused regression. It does not establish performance against other threat classes, adaptive profiles, contested spectrum, saturation, or another engagement chain.'
@@ -1182,70 +1139,3 @@ export function buildJiatf401(): TeCampaign {
   return c
 }
 
-/** Real versus illustrative facts for the About panel. */
-export const JIATF_FACTS: Array<{ fact: string; kind: 'real' | 'illustrative' }> = [
-  {
-    fact: 'Joint Interagency Task Force 401 was established 2025-08-28 and replaced the Joint Counter-small Unmanned Aircraft Systems Office (JCO).',
-    kind: 'real',
-  },
-  {
-    fact: 'JIATF-401 is Army-led and reports to the Deputy Secretary of Defense; commander Brig. Gen. Ross (first name not established).',
-    kind: 'real',
-  },
-  {
-    fact: 'Approval authority up to $50 million per initiative; a 36-month review can end or change the organization.',
-    kind: 'real',
-  },
-  {
-    fact: 'Site: Deep Element Test Site, Amman, Jordan (formal name, ownership, and authorities not established).',
-    kind: 'real',
-  },
-  {
-    fact: 'JIATF-401 adopted the Standard Guidelines for T&E of C-UAS Technologies on 2026-03-11: common core data, terms, and schemas; not a military standard; no measures, surrogate fidelity, or evaluation criteria defined.',
-    kind: 'real',
-  },
-  {
-    fact: 'Demonstrations at Yuma run twice yearly with RCCTO. Demo 5 (June 2024): nine systems versus more than 40 counter-swarm targets. Demo 6 (April 2025): contested electromagnetic environment, Group 3 defeat, dismounted systems.',
-    kind: 'real',
-  },
-  {
-    fact: 'Mission problem: a large evaluation backlog of C-UAS systems. Kill-chain node classes evaluated: early-warning radars, tracking radars, command and control, interceptors, effectors.',
-    kind: 'real',
-  },
-  {
-    fact: 'Valkryn team: Hugh (deployment strategist) and Andrew (forward-deployed engineer who connected systems under test, structured system data, red-air telemetry, and TestOS).',
-    kind: 'real',
-  },
-  {
-    fact: 'Red air: manually flown quadcopters and small fixed-wing UAS representing Shahed-type threats; Mugin-3 (MUGEN-3) named. Red air supplied live telemetry as the ground-truth basis.',
-    kind: 'real',
-  },
-  {
-    fact: 'Defining discovery: the customer had no test card. Valkryn built the test card from the decision backward.',
-    kind: 'real',
-  },
-  {
-    fact: 'Timeline: the government expected roughly six months; Valkryn responded "we\'ll do it the next two weeks"; execution took a couple of days in Jordan.',
-    kind: 'real',
-  },
-  {
-    fact: 'Real measures named: early-warning buffer; track-to-ground-truth correlation; probability of detection at range, across range, elevation, azimuth, speed. Recorded open question: "How is Pd (probability of detection) properly defined?"',
-    kind: 'real',
-  },
-  {
-    fact: 'Campaign J401-EW-01 and everything in it: configurations, thresholds, quantities, schedules, calculations, and results are illustrative. They are not actual JIATF-401 or Valkryn test results.',
-    kind: 'illustrative',
-  },
-  {
-    fact: 'The 12-cell test matrix, the issued card TC-J401-EW-COMP-01-v1.0, and all run records are notional fixture data.',
-    kind: 'illustrative',
-  },
-  {
-    fact: 'The 46-second median paired warning-time improvement, the +33-second mission margin, and every other result value are notional.',
-    kind: 'illustrative',
-  },
-  {
-    fact: 'Threat profile THR-G2-FW-01-v1.2 and condition COND-DAY-CLEAR-NET-NOM-v1 are notional case-study records.',
-    kind: 'illustrative',
-  },
-]

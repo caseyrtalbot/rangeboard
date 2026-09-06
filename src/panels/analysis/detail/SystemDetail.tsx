@@ -5,6 +5,7 @@ import type { Entity, Scenario } from '../../../model/types'
 import { entityActive } from '../../../model/types'
 import { killChainRoutes } from '../../../playback/killChain'
 import { modelFor } from '../../../model/scenario'
+import { entityInk } from '../../../ui/ink'
 import { STATE_LABEL, stateTone } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
@@ -22,7 +23,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
   const { scenario, runId, assessments, report } = run
   const model = modelFor(scenario, entity)
   const component = useComponentAt(run, entity.id)
-  const color = entity.color ?? model?.color ?? '#c46a5a'
+  const color = entityInk(entity, model)
   const threats = useMemo(() => assessments.filter((a) => a.status !== 'no-path'), [assessments])
 
   const hopRows = useMemo<ReactNode[][]>(() => {

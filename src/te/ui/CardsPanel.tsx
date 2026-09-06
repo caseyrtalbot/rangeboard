@@ -1,5 +1,5 @@
 /**
- * Cards stage: decision groups C1-C10 (strategist redesign SPEC 1.3).
+ * Cards stage: decision groups C1-C10.
  * Inherited values render read-through with provenance; the stage gate is
  * a generated StageReview above Issue. Issued cards stay frozen; every
  * write goes through the store.
@@ -103,7 +103,7 @@ function deriveStoragePath(campaign: TeCampaign, card: TeCard): string {
   return `data/${campaign.code}/${card.cardCode}/`
 }
 
-/** Creation paths: matrix cell (default), template, blank (SPEC C1). */
+/** Creation paths: matrix cell (default), template, blank. */
 function CardStartRow({ campaign }: { campaign: TeCampaign }) {
   const { addCard, createCardFromMatrixCell, selectRecord } = useTeStore.getState()
   // Board-matched templates rank first and carry a flag. Ranking only.
@@ -232,7 +232,7 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
   }
 
   // Linked records and live derivations. The stored string stays the truth;
-  // derivations recompute for display and provenance state (SPEC 4.3).
+  // derivations recompute for display and provenance state.
   const config = campaign.configs.find((x) => x.id === card.configId)
   const threat = campaign.threats.find((x) => x.id === card.threatId)
   const condition = campaign.conditions.find((x) => x.id === card.conditionId)

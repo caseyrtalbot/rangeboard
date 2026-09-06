@@ -1,5 +1,5 @@
 /**
- * Panel-local blocks for AnalyzePanel (SPEC groups A1 to A3).
+ * Panel-local blocks for AnalyzePanel.
  * Owns the outcome suggestion, the trigger and gap picks fed by chain
  * health and coverage, the change builder, the factor grid, the
  * comparability segment, and the ephemeral priority calculator.
@@ -42,7 +42,7 @@ export const NEXT_ACTION_OPTIONS: Array<{ v: NextAction; label: string; def: str
   { v: 'end-for-futility', label: 'End: no path', def: 'End the campaign. More runs cannot answer the question.' },
 ]
 
-export const OUTCOME_OPTIONS: Array<{ v: HypothesisOutcome; label: string }> = [
+const OUTCOME_OPTIONS: Array<{ v: HypothesisOutcome; label: string }> = [
   { v: 'supported', label: 'Supported' },
   { v: 'directionally-supported', label: 'Directionally supported' },
   { v: 'contradicted', label: 'Contradicted' },
@@ -56,9 +56,9 @@ const outcomeLabel = (v: HypothesisOutcome): string =>
 /**
  * Derived outcome suggestion from the computed result label vs the
  * prediction. Only a threshold verdict maps; descriptive results suggest
- * nothing. Confirm before write (SPEC 4.1).
+ * nothing. Confirm before write.
  */
-export function suggestOutcome(label: ResultLabel, estimate: number | null): HypothesisOutcome | null {
+function suggestOutcome(label: ResultLabel, estimate: number | null): HypothesisOutcome | null {
   if (estimate === null) return null
   if (label === 'pass') return 'supported'
   if (label === 'miss') return 'contradicted'
@@ -118,7 +118,7 @@ export function OutcomeRow({
   )
 }
 
-export interface PickOption {
+interface PickOption {
   id: string
   label: string
   sub?: string

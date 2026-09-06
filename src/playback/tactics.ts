@@ -24,11 +24,6 @@
  * - decoy: interleave the named decoy platform as every Nth ship. Precise
  *   decoy-to-strike ratios are a study data gap (section 25, gap #7), so
  *   everyNth is a stated representative value, not study-derived.
- *
- * This library supersedes the six retired RAID_BUILDERS patterns (raid.ts):
- * stream -> RUS-LR-01, multi-axis -> RUS-LR-02, decoy mix -> RUS-LR-04,
- * FPV wave -> RUS-TAC-02 / UKR-TAC-01, FPV multi-axis -> UKR-TAC-05,
- * recon-cued pair -> UKR-TAC-04.
  */
 import type { FormationSpec, SpecModel } from '../model/types'
 
@@ -65,7 +60,6 @@ const MUGIN = 'Red air: Mugin-5 converted strike (G3)'
 const TB2 = 'Red air: Bayraktar TB2 UCAV (G4)'
 
 export const THREAT_TACTICS: ThreatTactic[] = [
-  // ---- Russia, long-range strike campaign (study 5.3) ----
   {
     id: 'RUS-LR-01',
     name: 'Multi-wave OWA attack',
@@ -133,7 +127,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     formation: { count: 10, shape: 'column', spacingM: 2000 },
     decoy: { designator: GERBERA, everyNth: 3 },
   },
-  // ---- Russia, tactical reconnaissance-strike and FPV (study 5.4) ----
   {
     id: 'RUS-TAC-01',
     name: 'Persistent ISR orbit + strike handoff',
@@ -182,7 +175,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 15000,
     formation: { count: 5, shape: 'cluster', spacingM: 300 },
   },
-  // ---- Ukraine, tactical systems (study 6.3) ----
   {
     id: 'UKR-TAC-01',
     name: 'RF FPV wave',
@@ -252,7 +244,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 8000,
     formation: { count: 5, shape: 'cluster', spacingM: 300 },
   },
-  // ---- Houthi, maritime (study 8.2) ----
   {
     id: 'HOU-TAC-01',
     name: 'Complex maritime mixed salvo',
@@ -269,7 +260,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 60000,
     formation: { count: 18, shape: 'echelon', spacingM: 3000 },
   },
-  // ---- Iran (study 7.3) ----
   {
     id: 'IRN-TAC-01',
     name: 'National-scale mixed salvo (Operation True Promise)',
@@ -286,7 +276,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 80000,
     formation: { count: 20, shape: 'echelon', spacingM: 3000 },
   },
-  // ---- Israel, close-in launch (study 12) ----
   {
     id: 'ISR-TAC-01',
     name: 'Close-in / internal launch against air defenses',
@@ -303,7 +292,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 2000,
     formation: { count: 4, shape: 'cluster', spacingM: 500 },
   },
-  // ---- Hamas / PIJ (study 10) ----
   {
     id: 'HAM-TAC-01',
     name: 'COTS drop attack on sensors and C2',
@@ -320,7 +308,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 3000,
     formation: { count: 6, shape: 'line', spacingM: 300 },
   },
-  // ---- Syria 2018 (study 15A) ----
   {
     id: 'SYR-TAC-01',
     name: 'Improvised preprogrammed multi-UAS base attack',
@@ -337,7 +324,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 50000,
     formation: { count: 13, shape: 'echelon', spacingM: 2000 },
   },
-  // ---- Saudi Arabia 2019 (study 15C) ----
   {
     id: 'SAU-TAC-01',
     name: 'Low-altitude mixed UAV and cruise-missile raid',
@@ -354,7 +340,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 60000,
     formation: { count: 18, shape: 'echelon', spacingM: 3000 },
   },
-  // ---- Turkiye 2020 (study 15B) ----
   {
     id: 'TUR-TAC-01',
     name: 'UCAV + EW + fires SEAD package',
@@ -371,7 +356,6 @@ export const THREAT_TACTICS: ThreatTactic[] = [
     standoffM: 30000,
     formation: { count: 2, shape: 'column', spacingM: 3000 },
   },
-  // ---- Generic geometry constructs (study 3.4 taxonomy) ----
   {
     id: 'GEN-SINGLETON',
     name: 'Singleton',
@@ -478,10 +462,8 @@ function resolveDesignator(designator: string, library: SpecModel[]): SpecModel 
   const d = designator.trim().toLowerCase()
   if (!d) return null
   const uasModels = library.filter((m) => m.kind === 'uas')
-  // Seed id or exact name first.
   const exact = uasModels.find((m) => m.id.toLowerCase() === d || m.name.toLowerCase() === d)
   if (exact) return exact
-  // Substring / family match in either direction.
   return uasModels.find((m) => {
     const n = m.name.toLowerCase()
     return n.includes(d) || d.includes(n)

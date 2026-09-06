@@ -1,18 +1,8 @@
-import type { AarEffectorShots, AarSummary, EnvironmentSpec } from '../model/types'
-import type { StateTone } from '../ui/kit'
-import type { ImpactSeverity } from '../analysis/impact'
-import type { ThreatAssessment } from '../playback/sim'
+import type { AarSummary, EnvironmentSpec } from '../model/types'
 import type { ExpenditureChannel } from '../playback/pk'
-import type { AttritionTotals, ThreatAttrition } from '../playback/attritionReport'
-import { formatSpeed, formatTime } from '../geometry/geo'
+import type { AttritionTotals } from '../playback/attritionReport'
+import { formatSpeed } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
-
-/** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
-export const TIER_TONE: Record<ImpactSeverity, StateTone> = {
-  severe: 'critical',
-  moderate: 'warning',
-  low: 'inactive',
-}
 
 /**
  * THE EXPENDITURE VOCABULARY. Every surface that prints what a salvo cost
@@ -39,12 +29,12 @@ export const CHANNEL_LABEL: Record<ExpenditureChannel, string> = {
 }
 
 /** The three counts any expenditure surface reads, whatever carries them. */
-export interface ExpenditureCounts {
+interface ExpenditureCounts {
   /** Kinetic salvos (interceptor, gun, net). */
   shotsFired: number
-  /** Directed-energy bursts (DE, HPM). Absent on pins made before the split. */
+  /** Directed-energy bursts (DE, HPM). Absent on older pins. */
   deSalvos?: number
-  /** EW salvos (jammer). Absent on pins made before the split. */
+  /** EW salvos (jammer). Absent on older pins. */
   jamSalvos?: number
 }
 
@@ -126,67 +116,9 @@ export function environmentHeadline(env: EnvironmentSpec, units: DisplayUnits = 
 }
 
 /**
- * Magazine headline: "12 kin · 3 of 20 remaining". Expenditure uses the
- * three-channel vocabulary, so a directed-energy burst reads as "4 DE" and
- * never as a round fired; a channel that spent nothing is left out, and a run
- * with no salvo at all reads "no salvos". Finite magazines sum across
- * effectors; when every effector is unlimited (jammers, DE, HPM) the tail
- * reads "unlimited". A tracked remainder without a known magazine size drops
- * the "of N" part rather than inventing one.
- */
-export function magazinesHeadline(
-  aar: Pick<AarSummary, 'shotsFired' | 'deSalvos' | 'jamSalvos' | 'effectors'>,
-  mode: 'actual' | 'projected' = 'actual',
-): string {
-  const parts = expenditureParts(aar)
-  const spent = parts.length > 0 ? parts.join(' · ') : 'no salvos'
-  const finite = aar.effectors.filter((e) => e.expectedRoundsRemaining != null)
-  const left = finite.reduce((s, e) => s + (e.expectedRoundsRemaining ?? 0), 0)
-  const sized = finite.every((e) => e.magazineSize != null)
-  const size = finite.reduce((s, e) => s + (e.magazineSize ?? 0), 0)
-  if (mode === 'projected') {
-    const shots = `projected ${spent}`
-    if (finite.length === 0) return `${shots} · unlimited capacity`
-    return sized ? `${shots} · ${left} of ${size} after run` : `${shots} · ${left} after run`
-  }
-  if (finite.length === 0) return `${spent} · unlimited`
-  return sized ? `${spent} · ${left} of ${size} remaining` : `${spent} · ${left} remaining`
-}
-
-/**
- * One effector's expenditure phrase, branching on effector TYPE, not on
- * whether salvos happened: a jammer's expenditure is EW salvos even when idle
- * ("0 EW salvos", never "0 fired"), a DE or HPM emitter spends bursts and
- * fires no round, and every kinetic type reads "N fired". When the type is
- * unknown (legacy pins), fall back to whichever count the row carries.
- */
-export function effectorExpenditureLine(
-  e: Pick<AarEffectorShots, 'shotsFired' | 'deSalvos' | 'jamSalvos'> & {
-    effectorType?: AarEffectorShots['effectorType']
-  },
-  mode: 'actual' | 'projected' = 'actual',
-): string {
-  const de = e.deSalvos ?? 0
-  const jam = e.jamSalvos ?? 0
-  const tense = mode === 'projected' ? 'projected ' : ''
-  const ewText = `${jam} ${tense}EW salvo${jam === 1 ? '' : 's'}`
-  const deText = `${de} ${tense}DE burst${de === 1 ? '' : 's'}`
-  const kineticText =
-    mode === 'projected'
-      ? `${e.shotsFired} projected shot${e.shotsFired === 1 ? '' : 's'}`
-      : `${e.shotsFired} fired`
-  if (e.effectorType === 'jammer') return ewText
-  if (e.effectorType === 'de' || e.effectorType === 'hpm') return deText
-  if (e.effectorType != null) return kineticText
-  if (jam > 0) return ewText
-  if (de > 0) return deText
-  return kineticText
-}
-
-/**
  * AAR headline: "3.2 defeated · 0.8 undefeated". AarSummary.expectedLeakers
  * carries UNDEFEATED ships (the leaker bucket plus the never-arrived bucket),
- * so calling it "leakers" claimed an arrival the run may never have had.
+ * so the word is never "leakers": that would claim an arrival.
  */
 export function aarHeadline(
   aar: Pick<AarSummary, 'expectedKills' | 'expectedLeakers'>,
@@ -194,49 +126,3 @@ export function aarHeadline(
   return `${aar.expectedKills.toFixed(1)} defeated · ${aar.expectedLeakers.toFixed(1)} undefeated`
 }
 
-/**
- * Compact threat-row expenditure and outcome string: "2 kin · 4 DE · 1 EW ·
- * kill 90% · leak 10%". Single ships read as probabilities; formations read
- * as expected ship counts. The leak percent is 100 minus the rounded kill
- * percent so the pair always sums to 100. "no shots" when the threat drew no
- * salvo of any channel; a dash when no attrition row exists.
- */
-export function threatShotLine(
-  att:
-    | Pick<
-        ThreatAttrition,
-        | 'shipCount'
-        | 'shotsFired'
-        | 'deSalvos'
-        | 'jamSalvos'
-        | 'expectedKills'
-        | 'leakProbability'
-      >
-    | undefined,
-): string {
-  if (!att) return '—'
-  const shots = expenditureParts(att)
-  if (shots.length === 0) return 'no shots'
-  const killPct = Math.round(att.expectedKills * 100)
-  const outcome =
-    att.shipCount > 1
-      ? `kill ${att.expectedKills.toFixed(1)} · leak ${(att.shipCount * att.leakProbability).toFixed(1)}`
-      : `kill ${killPct}% · leak ${100 - killPct}%`
-  return [...shots, outcome].join(' · ')
-}
-
-/**
- * Compact threat-row stat strings: warning time (m:ss), engagement window
- * length (whole seconds), leak probability (percent). Honest dashes when a
- * value never computes.
- */
-export function threatCompactStats(
-  a: Pick<ThreatAssessment, 'warningS' | 'windowS'>,
-  att: Pick<ThreatAttrition, 'leakProbability'> | undefined,
-): { warning: string; window: string; leak: string } {
-  return {
-    warning: a.warningS != null ? formatTime(a.warningS) : '—',
-    window: a.windowS ? `${Math.round(a.windowS[1] - a.windowS[0])} s` : '—',
-    leak: att ? `${Math.round(att.leakProbability * 100)}%` : '—',
-  }
-}

@@ -37,8 +37,7 @@ describe('elevationDeg', () => {
 
 describe('radioHorizonM', () => {
   it('adds the horizon of each end', () => {
-    // 4.12 * (sqrt(4) + sqrt(91.44)) km. An earlier note quoted 35.4 km for this
-    // pair, which no standard form of the formula gives; the formula rules.
+    // 4.12 * (sqrt(4) + sqrt(91.44)) km.
     expect(radioHorizonM(4, 91.44)).toBeCloseTo(47637, 0)
     expect(radioHorizonM(4, 0)).toBeCloseTo(8240, 0)
   })

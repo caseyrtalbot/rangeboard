@@ -655,7 +655,7 @@ export function LibraryEditor() {
                   step={1}
                   min={0}
                   onChange={(n) => {
-                    // M of N: N follows M up so the pair in use stays valid (F-16).
+                    // M of N: N follows M up so the pair in use stays valid.
                     const trackInitM = n > 0 ? n : undefined
                     const trackInitN =
                       trackInitM != null && (sensor.trackInitN ?? TRACK_INIT_N) < trackInitM
@@ -670,7 +670,7 @@ export function LibraryEditor() {
                   step={1}
                   min={0}
                   onChange={(n) => {
-                    // M follows N down so the pair in use stays valid (F-16).
+                    // M follows N down so the pair in use stays valid.
                     const trackInitN = n > 0 ? n : undefined
                     const trackInitM =
                       trackInitN != null && (sensor.trackInitM ?? TRACK_INIT_M) > trackInitN

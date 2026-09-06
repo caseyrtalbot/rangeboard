@@ -1,12 +1,12 @@
 /**
- * Controlled-record identifier grammar (MASTER-DATAMODEL section 2).
+ * Controlled-record identifier grammar (MASTER-DATAMODEL).
  * Canonical pattern: VLK-<campaign code>-<type code>-<sequence>.
  * The version lives on the record ('v1.0' style), not inside the id, so links
  * stay stable across versions. Runs are versionless by doctrine.
  * Sequences are per campaign and per type, monotonic, and never reused.
  */
 
-export const TYPE_CODES = [
+const TYPE_CODES = [
   'DEC',
   'Q',
   'CLM',
@@ -44,7 +44,7 @@ function pad(n: number, code: TypeCode): string {
   return String(n).padStart(code === 'RUN' ? 4 : 3, '0')
 }
 
-export interface IdAllocation {
+interface IdAllocation {
   id: string
   seq: Record<string, number>
 }
@@ -67,7 +67,7 @@ export function nextId(
 }
 
 /** Version strings are 'v<major>.<minor>'. */
-export function parseVersion(v: string): { major: number; minor: number } {
+function parseVersion(v: string): { major: number; minor: number } {
   const m = /^v(\d+)\.(\d+)$/.exec(v)
   if (!m) return { major: 1, minor: 0 }
   return { major: Number(m[1]), minor: Number(m[2]) }

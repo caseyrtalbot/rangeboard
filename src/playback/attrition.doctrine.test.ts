@@ -330,8 +330,8 @@ describe('doctrine fire control (attrition.ts)', () => {
   })
 
   it('doctrine spends fewer rounds than the legacy volley for a similar defeat', () => {
-    // Slow crosser (10 m/s) through one shooter's ring: legacy opens fire the
-    // moment the window and gate allow, at max-range falloff, and volleys on
+    // Slow crosser (10 m/s) through one shooter's ring: doctrine off opens fire
+    // the moment the window and gate allow, at max-range falloff, and volleys on
     // cooldown; doctrine holds each shot for pkCommit and inserts the BDA
     // dwell, so every round it does spend carries a better Pk.
     const make = (enabled: boolean) => {

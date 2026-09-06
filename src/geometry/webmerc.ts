@@ -7,7 +7,7 @@
 
 export const R = 6378137
 
-export interface GeoPoint {
+interface GeoPoint {
   lat: number
   lon: number
 }

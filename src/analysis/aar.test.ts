@@ -385,8 +385,6 @@ describe('AAR directed-energy engagement', () => {
   })
 
   it('does not report a directed-energy engagement as never engaged', () => {
-    // aarOutcome tested only shotsFired and jamSalvos, so a DE or HPM
-    // engagement that defeated the threat reported 'not-engaged'.
     const row = aar.threats.find((t) => t.uasId === aId)!
     expect(row.deSalvos).toBeGreaterThan(0)
     expect(row.shotsFired).toBe(0)
@@ -503,9 +501,8 @@ describe('buildAarSummary edge cases', () => {
 })
 
 /**
- * Legacy instant-release engine (doctrine off). These fixtures assert the
- * pre-doctrine numbers: the ROE gate alone opens the window and every ready
- * effector volleys. New scenarios default to the doctrinal sequence.
+ * Doctrine off: the ROE gate alone opens the window and every ready effector
+ * volleys. New scenarios default to the doctrinal sequence.
  */
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()

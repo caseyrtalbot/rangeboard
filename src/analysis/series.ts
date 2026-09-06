@@ -29,7 +29,6 @@ import type { SensorObservation, ThreatAssessment } from '../playback/sim'
 import type { BandSeries, McSummary } from '../playback/mcRun'
 import { DT } from '../playback/clock'
 import { entityPosAt, threatAltitudeFt } from '../playback/tracks'
-import { killChainRoutes } from '../playback/killChain'
 import { buildTrackTimeline, PHASE_STYLE, trackStatesAt } from '../playback/trackState'
 import type { TrackPhase } from '../playback/trackState'
 import { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
@@ -409,55 +408,8 @@ export function threatSeries(scenario: Scenario, uasId: string): Series[] {
   return out
 }
 
-/**
- * System timing: `latency.<uasId>` per track (`step`, seconds: first shot
- * minus first detection, held from the first shot on; NaN for a track never
- * shot at) and `hop.<effectorId>.<uasId>` per routed (effector, threat) pair
- * (`line`, seconds: the kill-chain route latency, constant over the grid, accent).
- */
-export function systemSeries(scenario: Scenario): Series[] {
-  const { assessments, report } = engagementPicture(scenario)
-  const slots = trackSlots(scenario)
-  const n = sampleCount(scenario)
-  const out: Series[] = []
-
-  for (const a of assessments) {
-    const att = report.threats.find((x) => x.uasId === a.uasId)
-    const values = grid(n)
-    if (a.firstDetectS != null && att?.firstShotS != null) {
-      holdFrom(values, att.firstShotS, att.firstShotS - a.firstDetectS)
-    }
-    out.push({
-      id: `latency.${a.uasId}`,
-      label: `Detect to shot ${nameOf(scenario, a.uasId)}`,
-      unit: 's',
-      values,
-      color: slots.get(a.uasId) ?? OTHER_TOKEN,
-      kind: 'step',
-    })
-  }
-
-  // The engine charges each threat its own route from the sensors that
-  // detected it, so the hop series is per (effector, threat).
-  for (const a of assessments) {
-    if (a.detectingSensorIds.length === 0) continue
-    const routes = killChainRoutes(scenario, new Set(a.detectingSensorIds))
-    for (const route of routes.values()) {
-      out.push({
-        id: `hop.${route.effectorId}.${a.uasId}`,
-        label: `Route latency ${nameOf(scenario, route.effectorId)} to ${nameOf(scenario, a.uasId)}`,
-        unit: 's',
-        values: new Array<number>(n).fill(route.latencyS),
-        color: 'accent',
-        kind: 'line',
-      })
-    }
-  }
-  return out
-}
-
 /** One legend entry of the sensor track ladder. */
-export interface LadderStyle {
+interface LadderStyle {
   label: string
   color: string
 }

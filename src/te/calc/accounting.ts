@@ -1,7 +1,7 @@
 /**
- * Campaign-level run accounting (MASTER-CALCULATIONS 3.6, 3.8).
+ * Campaign-level run accounting (MASTER-CALCULATIONS).
  * Valid-run rate shows test-process quality, not system performance; the
- * denominator is attempted runs (conflict register item 4).
+ * denominator is attempted runs.
  */
 
 import type { TeCampaign } from '../model/types'

@@ -6,17 +6,10 @@ import { resolveEngagements } from './attrition'
 import raw from './__fixtures__/layered-acoustic-merops.json'
 
 /**
- * Captured real scenario (live-app autosave, 2026-08-22): a 9-ship layered
- * raid (3 FPV waves + 6 mixed-nav Mavic quads) against an acoustic + MEROPS
- * IADS with three interceptor types and a Modi II jammer. Locks the
- * engagement doctrine at full-scenario scale.
- *
- * Pre-doctrine engine on this laydown: 168 kinetic shots + 90 jam salvos for
- * 4.00 expected kills; one Mavic absorbed 66 shots while two others were
- * never engaged, and the jammer salvoed a saturated 'continue' track for its
- * whole window. Every bound below is derived from the doctrine, not copied
- * from output, so it holds as tuning shifts but fails on any regression to
- * concentration-without-cutoff fire distribution.
+ * Captured real scenario (live-app autosave): a 9-ship layered raid (3 FPV
+ * waves + 6 mixed-nav Mavic quads) against an acoustic + MEROPS IADS with
+ * three interceptor types and a Modi II jammer. Every bound below is derived
+ * from the doctrine, not copied from output, so it holds as tuning shifts.
  */
 
 const scenario = fillScenario(raw as unknown as Scenario)
@@ -30,8 +23,7 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     // >= 0.7, group 1 size 0.7, FPV evasion 0.7 -> Pk >= 0.274, so a ship's
     // effective survival crosses SHIP_DEAD_BELOW = 0.05 within 10 salvos
     // (0.726^10 < 0.05). Jam-degraded Mavic kills apply at >= 0.7 of that
-    // Pk -> within 15 salvos. Cap: 3 FPV * 10 + 6 Mavic * 15 = 120, well
-    // under the pre-doctrine 168.
+    // Pk -> within 15 salvos. Cap: 3 FPV * 10 + 6 Mavic * 15 = 120.
     expect(report.totals.shotsFired).toBeLessThanOrEqual(120)
   })
 
@@ -56,8 +48,7 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     // 'Continue' jam salvos stop once a track's un-jammed probability falls
     // below SHIP_DEAD_BELOW. Worst-case jam Pk here: base 0.6, falloff
     // >= 0.7, size 0.7 -> Pk >= 0.294, so saturation within 9 salvos per
-    // track (0.706^9 < 0.05). 6 mixed-nav Mavic tracks * 9 = 54, well under
-    // the pre-doctrine 90.
+    // track (0.706^9 < 0.05). 6 mixed-nav Mavic tracks * 9 = 54.
     expect(report.totals.jamSalvos).toBeLessThanOrEqual(54)
     expect(report.totals.jamSalvos).toBeGreaterThan(0)
   })
@@ -77,9 +68,7 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     expect(de).toBe(report.totals.deSalvos)
     expect(de).toBe(0)
     expect(jam).toBe(report.totals.jamSalvos)
-    // Kill mass reconciles only against BOTH credit buckets. The old
-    // assertion compared it to expectedKills alone, which is exactly the
-    // defect: it counted post-arrival kills as defeats.
+    // Kill mass reconciles only against both credit buckets.
     const killMass = report.events.reduce((s, e) => s + e.killDelta, 0)
     expect(killMass).toBeCloseTo(
       report.totals.expectedKills + report.totals.expectedLateKills,
@@ -112,10 +101,9 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
   })
 
   it('partitions the raid into defeated, leaked, and never-arrived ships', () => {
-    // The laydown places one asset and every threat crosses its boundary, so
-    // this fixture is the AGREEMENT case: never-arrived mass is genuinely 0
-    // and the new partition reproduces the old raidSize-minus-kills figure.
-    // The buckets must still be filled independently, not by subtraction.
+    // One asset and every threat crosses its boundary, so never-arrived mass
+    // is 0 and leakers equal raidSize minus kills. The buckets must still be
+    // filled independently, not by subtraction.
     const { totals } = report
     expect(report.threats.every((t) => t.arrived)).toBe(true)
     expect(totals.reportedLeakers).toBe(totals.expectedLeakers)

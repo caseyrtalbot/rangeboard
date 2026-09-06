@@ -1,6 +1,6 @@
 /**
  * Run-accounting tests, including fixture F-19 (valid-run rate 48/58,
- * denominator attempted per conflict register item 4).
+ * denominator attempted).
  */
 
 import { describe, expect, it } from 'vitest'
