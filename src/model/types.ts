@@ -967,7 +967,7 @@ export interface Scenario {
   observedPresetId?: string | null
   /** Run mode. Absent on old saves = deterministic. */
   runMode?: RunMode
-  /** Monte Carlo base seed; replicate i uses seed + i. Absent on old saves = DEFAULT_SEED. */
+  /** Monte Carlo seed, a part of every draw key (hashU01). Absent on old saves = DEFAULT_SEED. */
   seed?: number
   /** Replicate count. Absent on old saves = DEFAULT_REPLICATES. */
   replicates?: number

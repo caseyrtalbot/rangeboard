@@ -45,7 +45,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
   }, [scenario, runId, entity.id])
   const releaseRows = useMemo(() => {
     void runId
-    // The gutter is 64 px: the board designator, as the canvas labels draw it.
+    // The gutter is 84 px (Ladder GUTTER_W): the board designator, as the canvas labels draw it.
     return releaseLadderRows(scenario, entity.id).map((row) => ({
       ...row,
       label: boardDesignator(row.label),

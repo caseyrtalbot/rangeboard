@@ -523,6 +523,4 @@ Design system (`src/index.css`):
   then `calc/stats.ts` gained the engine exports. C3 now also hardens persistence and
   imports through `io/validateTe.ts`, including embedded Board snapshots and campaign-local
   references. C4 adds internal transition and evidence-history checks. Do not touch
-  `src/te/` unless the task names it. One known stale string:
-  `src/te/ui/DesignPanel.tsx` says "Recorded, not modeled. The board is plan view.", false
-  since the Board gained altitude and slant range (`outstanding.md` D-2, open).
+  `src/te/` unless the task names it.

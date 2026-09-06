@@ -1105,7 +1105,7 @@ function ThreatIdentity({
           min={t.altBandFt[0]}
           max={t.altBandFt[1]}
           unit="ft"
-          help="Recorded, not modeled. The board is plan view."
+          help="Recorded in the campaign. The board flies the threat at its altitude and measures slant range."
           onChange={(min, max) => set({ altBandFt: [min ?? t.altBandFt[0], max ?? t.altBandFt[1]] })}
         />
       </div>

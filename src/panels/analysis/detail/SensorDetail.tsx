@@ -68,7 +68,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   }, [scenario, runId, entity.id])
   const ladderRows = useMemo(() => {
     void runId
-    // The gutter is 64 px: the board designator, as the canvas labels draw it.
+    // The gutter is 84 px (Ladder GUTTER_W): the board designator, as the canvas labels draw it.
     return trackLadderRows(scenario, entity.id).map((row) => ({
       ...row,
       label: boardDesignator(row.label),

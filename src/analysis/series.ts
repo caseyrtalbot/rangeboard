@@ -412,8 +412,8 @@ export function threatSeries(scenario: Scenario, uasId: string): Series[] {
 /**
  * System timing: `latency.<uasId>` per track (`step`, seconds: first shot
  * minus first detection, held from the first shot on; NaN for a track never
- * shot at) and `hop.<effectorId>` per routed effector (`line`, seconds: the
- * kill-chain route latency, constant over the grid, accent).
+ * shot at) and `hop.<effectorId>.<uasId>` per routed (effector, threat) pair
+ * (`line`, seconds: the kill-chain route latency, constant over the grid, accent).
  */
 export function systemSeries(scenario: Scenario): Series[] {
   const { assessments, report } = engagementPicture(scenario)
