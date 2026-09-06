@@ -1,0 +1,28 @@
+hasStore false
+{"label":"prod","loadMs":379,"domContentLoaded":135,"loadEvent":135,"resources":5,"scriptResources":1,"transferKB":2324,"domNodes":1546,"heapMB":14.5}
+{"phase":"idle 3s","wallMs":3003,"ms":3041,"frames":362,"fps":119.1,"over33":0,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":5,"layoutMs":0,"styleMs":0,"taskMs":80,"layouts":0,"styleRecalcs":10,"domNodes":2690,"heapMB":13.2}
+  profile total 3037 ms; special: (idle)=2974 (program)=62 requestAnimationFrame=0 tick=0
+  files: 
+  fns:
+    
+{"phase":"playback x1 5s (Space key)","wallMs":5178,"ms":5202,"frames":610,"fps":117.3,"over33":1,"over100":1,"maxFrame":117,"longTasks":1,"longMs":97,"longMax":97,"sets":0,"scenarioChanges":0,"scriptMs":1285,"layoutMs":4,"styleMs":0,"taskMs":2038,"layouts":52,"styleRecalcs":10,"domNodes":2700,"heapMB":44.2}
+  profile total 5198 ms; special: (idle)=3175 (program)=703 (garbage collector)=72 save=30 transform=24 fillText=20
+  files: 1075ms /assets/index-BwJvNPTM.js
+  fns:
+{"phase":"zoom wheel x30","wallMs":1758,"ms":1809,"frames":214,"fps":118.3,"over33":1,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":197,"layoutMs":2,"styleMs":1,"taskMs":349,"layouts":30,"styleRecalcs":30,"domNodes":2700,"heapMB":61.5}
+  profile total 1803 ms; special: (idle)=1462 (program)=141 (garbage collector)=7 save=7 fillText=4 fill=2
+  files: 167ms /assets/index-BwJvNPTM.js
+  fns:
+{"phase":"pan drag 40 moves","wallMs":1022,"ms":1098,"frames":125,"fps":113.8,"over33":1,"over100":0,"maxFrame":67,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":78,"layoutMs":0,"styleMs":0,"taskMs":275,"layouts":2,"styleRecalcs":0,"domNodes":2699,"heapMB":37.4}
+  profile total 1099 ms; special: (idle)=824 (program)=187 (garbage collector)=4 fillText=4 fill=3 (anonymous)=3
+  files: 58ms /assets/index-BwJvNPTM.js
+  fns:
+{"phase":"lifecycle phases x3 cycles","wallMs":2353,"ms":2400,"frames":267,"fps":111.3,"over33":4,"over100":0,"maxFrame":50,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":287,"layoutMs":14,"styleMs":17,"taskMs":490,"layouts":1092,"styleRecalcs":1257,"domNodes":8189,"heapMB":52.4}
+  profile total 2397 ms; special: (idle)=1924 (program)=152 (garbage collector)=19 getBoundingClientRect=16 query=5 tick=2
+  files: 261ms /assets/index-BwJvNPTM.js
+  fns:
+{"phase":"library drawer open/close x3","wallMs":1548,"ms":1607,"frames":188,"fps":117,"over33":1,"over100":0,"maxFrame":50,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":16,"layoutMs":3,"styleMs":2,"taskMs":128,"layouts":9,"styleRecalcs":11,"domNodes":8190,"heapMB":55.3}
+  profile total 1609 ms; special: (idle)=1493 (program)=99 focus=3 tick=2 removeChild=1 fill=0
+  files: 10ms /assets/index-BwJvNPTM.js
+  fns:
+page errors/warnings: []

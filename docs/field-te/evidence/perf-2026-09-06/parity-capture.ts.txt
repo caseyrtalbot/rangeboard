@@ -1,0 +1,27 @@
+import { expect, it } from 'vitest'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { assessAllThreats } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates, runSensitivity } from './mcRun'
+import { parseScenarioData } from '../io/persist'
+import firing from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import outside from './__fixtures__/detection-outside-rings.json'
+const dir = 'docs/field-te/evidence/perf-2026-09-06'
+const tag = process.env.PARITY_TAG ?? 'scratch'
+function capture(raw: unknown) {
+  const scenario = { ...parseScenarioData(raw), replicates: 4 }
+  const assessments = assessAllThreats(scenario)
+  return {
+    assessments,
+    report: resolveEngagements(scenario, assessments),
+    aleatory: runReplicates({ ...scenario, uncertainty: 'aleatory' }),
+    total: runReplicates({ ...scenario, uncertainty: 'total' }),
+    sensitivity: runSensitivity(scenario),
+  }
+}
+it('parity: firing fixture and detection-outside-rings fixture', () => {
+  const value = JSON.stringify({ firing: capture(firing), outside: capture(outside) })
+  const file = `${dir}/parity-${tag}.json`
+  if (process.env.PARITY_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+}, 300000)

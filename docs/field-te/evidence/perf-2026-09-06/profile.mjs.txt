@@ -1,0 +1,141 @@
+import { chromium } from '/Users/caseytalbot/Projects/rangeboard/node_modules/playwright/index.mjs'
+import fs from 'node:fs'
+
+import http from 'node:http'
+import path from 'node:path'
+let server = null
+if (process.env.SERVE_DIR) {
+  const root = process.env.SERVE_DIR
+  const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.map': 'application/json', '.json': 'application/json' }
+  server = http.createServer((req, res) => {
+    let file = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname))
+    if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, 'index.html')
+    res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' })
+    fs.createReadStream(file).pipe(res)
+  })
+  await new Promise((r) => server.listen(Number(process.env.SERVE_PORT || 5378), '127.0.0.1', r))
+}
+
+const [,, scenarioPath, url = 'http://localhost:5377', label = 'dev'] = process.argv
+const SCEN = fs.readFileSync(scenarioPath, 'utf8')
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+await ctx.addInitScript(([s]) => {
+  localStorage.setItem('rangeboard.scenario.v1', s)
+  localStorage.setItem('rangeboard.rightpanel.width', '320')
+}, [SCEN])
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text().slice(0, 200)}`) })
+
+const t0 = Date.now()
+await page.goto(url, { waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas'), null, { timeout: 60000 })
+const hasStore = await page.evaluate(() => !!window.__store)
+console.log('hasStore', hasStore)
+const loadMs = Date.now() - t0
+const loadInfo = await page.evaluate(() => {
+  const nav = performance.getEntriesByType('navigation')[0]
+  const res = performance.getEntriesByType('resource')
+  const js = res.filter((r) => /\.(tsx?|jsx?|mjs)(\?|$)/.test(r.name) || r.initiatorType === 'script')
+  const st = window.__store ? window.__store.getState() : null
+  return {
+    domContentLoaded: Math.round(nav.domContentLoadedEventEnd),
+    loadEvent: Math.round(nav.loadEventEnd),
+    resources: res.length, scriptResources: js.length,
+    transferKB: Math.round(res.reduce((a, r) => a + (r.transferSize || 0), 0) / 1024),
+    entities: st?.scenario.entities.length, paths: st?.scenario.paths.length, connections: st?.scenario.connections.length,
+    domNodes: document.getElementsByTagName('*').length,
+    heapMB: performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null,
+  }
+})
+console.log(JSON.stringify({ label, loadMs, ...loadInfo }))
+
+const cdp = await ctx.newCDPSession(page)
+await cdp.send('Performance.enable')
+await cdp.send('Profiler.enable')
+await cdp.send('Profiler.setSamplingInterval', { interval: 250 })
+
+async function metrics() {
+  const { metrics } = await cdp.send('Performance.getMetrics')
+  const m = Object.fromEntries(metrics.map((x) => [x.name, x.value]))
+  return m
+}
+
+function aggregate(profile) {
+  const byId = new Map(profile.nodes.map((n) => [n.id, n]))
+  const self = new Map()
+  const { samples, timeDeltas } = profile
+  let total = 0
+  for (let i = 0; i < samples.length; i++) {
+    const dt = (timeDeltas[i] || 0) / 1000
+    total += dt
+    self.set(samples[i], (self.get(samples[i]) || 0) + dt)
+  }
+  const fn = new Map(), file = new Map(), special = new Map()
+  for (const [id, ms] of self) {
+    const n = byId.get(id)
+    const cf = n.callFrame
+    const short = cf.url ? cf.url.replace(/^https?:\/\/[^/]+/, '').replace(/\?.*$/, '') : ''
+    if (!cf.url) { special.set(cf.functionName || '(anonymous)', (special.get(cf.functionName || '(anonymous)') || 0) + ms); continue }
+    const fk = `${cf.functionName || '(anonymous)'} ${short}:${cf.lineNumber + 1}`
+    fn.set(fk, (fn.get(fk) || 0) + ms)
+    const fileKey = short.includes('node_modules') ? short.replace(/.*node_modules\/(\.vite\/deps\/)?/, 'npm:').replace(/\.js.*$/, '') : short
+    file.set(fileKey, (file.get(fileKey) || 0) + ms)
+  }
+  const top = (m, n) => [...m].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => [k, Math.round(v)])
+  return { totalMs: Math.round(total), special: top(special, 6), files: top(file, 18), fns: top(fn, 25) }
+}
+
+async function phase(name, fn) {
+  await page.evaluate(() => {
+    const s = { long: [], frames: [], sets: 0, scen: 0 }
+    const po = new PerformanceObserver((l) => { for (const e of l.getEntries()) s.long.push(Math.round(e.duration)) })
+    po.observe({ type: 'longtask' })
+    let last = performance.now(); let raf = requestAnimationFrame(function tick(t) { s.frames.push(t - last); last = t; raf = requestAnimationFrame(tick) })
+    const unsub = window.__store ? window.__store.subscribe((a, b) => { s.sets++; if (a.scenario !== b.scenario) s.scen++ }) : () => {}
+    window.__sampler = { stop() { po.disconnect(); cancelAnimationFrame(raf); unsub(); const f = s.frames.slice(1); const sum = (x) => x.reduce((p, c) => p + c, 0)
+      return { ms: Math.round(sum(f)), frames: f.length, fps: f.length ? +(f.length / (sum(f) / 1000)).toFixed(1) : null, over33: f.filter((x) => x > 33).length, over100: f.filter((x) => x > 100).length, maxFrame: f.length ? Math.round(Math.max(...f)) : null, longTasks: s.long.length, longMs: sum(s.long), longMax: s.long.length ? Math.max(...s.long) : 0, sets: s.sets, scenarioChanges: s.scen } } }
+  })
+  const m0 = await metrics()
+  await cdp.send('Profiler.start')
+  const t = Date.now()
+  await fn()
+  const wall = Date.now() - t
+  const { profile } = await cdp.send('Profiler.stop')
+  const m1 = await metrics()
+  const inPage = await page.evaluate(() => window.__sampler.stop())
+  const d = (k) => +(m1[k] - m0[k]).toFixed(3)
+  const out = { phase: name, wallMs: wall, ...inPage,
+    scriptMs: Math.round(d('ScriptDuration') * 1000), layoutMs: Math.round(d('LayoutDuration') * 1000), styleMs: Math.round(d('RecalcStyleDuration') * 1000), taskMs: Math.round(d('TaskDuration') * 1000),
+    layouts: d('LayoutCount'), styleRecalcs: d('RecalcStyleCount'), domNodes: m1.Nodes, heapMB: +(m1.JSHeapUsedSize / 1048576).toFixed(1) }
+  console.log(JSON.stringify(out))
+  const agg = aggregate(profile)
+  console.log(`  profile total ${agg.totalMs} ms; special: ${agg.special.map(([k, v]) => `${k}=${v}`).join(' ')}`)
+  console.log('  files: ' + agg.files.map(([k, v]) => `${v}ms ${k}`).join(' | '))
+  console.log('  fns:\n    ' + agg.fns.map(([k, v]) => `${v}ms ${k}`).join('\n    '))
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const canvas = await page.locator('.konvajs-content').boundingBox()
+const cx = canvas.x + canvas.width / 2, cy = canvas.y + canvas.height / 2
+
+await phase('idle 3s', () => sleep(3000))
+if (hasStore) await phase('playback x1 5s', async () => { await page.evaluate(() => { const s = window.__store.getState(); s.setSpeedMult(1); s.startRun() }); await sleep(5000); await page.evaluate(() => window.__store.getState().pauseRun()) })
+else await phase('playback x1 5s (Space key)', async () => { await page.click('.canvas-host'); await page.keyboard.press(' '); await sleep(5000); await page.keyboard.press(' ') })
+if (hasStore) console.log('  simTimeS after x1:', await page.evaluate(() => window.__store.getState().playback.simTimeS))
+if (hasStore) await phase('playback x8 5s', async () => { await page.evaluate(() => { const s = window.__store.getState(); s.setSpeedMult(8); s.startRun() }); await sleep(5000); await page.evaluate(() => window.__store.getState().pauseRun()) })
+if (hasStore) console.log('  simTimeS after x8:', await page.evaluate(() => window.__store.getState().playback.simTimeS), 'phase', await page.evaluate(() => window.__store.getState().playback.phase))
+await phase('zoom wheel x30', async () => { await page.mouse.move(cx, cy); for (let i = 0; i < 30; i++) { await page.mouse.wheel(0, i < 15 ? -120 : 120); await sleep(40) } })
+await phase('pan drag 40 moves', async () => { await page.mouse.move(cx - 200, cy); await page.mouse.down(); for (let i = 0; i < 40; i++) { await page.mouse.move(cx - 200 + i * 10, cy + Math.sin(i / 4) * 40); await sleep(16) } await page.mouse.up() })
+if (hasStore) await phase('moveEntity x20', async () => { for (let i = 0; i < 20; i++) { await page.evaluate((i) => { const s = window.__store.getState(); const e = s.scenario.entities.find((e) => e.kind === 'sensor'); s.moveEntity(e.id, { x: e.pos.x + (i % 2 ? 5 : -5), y: e.pos.y }) }, i); await sleep(100) } })
+if (hasStore) await phase('select/clear x10', async () => { for (let i = 0; i < 10; i++) { await page.evaluate(() => { const s = window.__store.getState(); const e = s.scenario.entities.find((e) => e.kind === 'sensor'); s.select({ entityIds: [e.id] }) }); await sleep(120); await page.evaluate(() => window.__store.getState().clearSelection()); await sleep(120) } })
+if (hasStore) await phase('right tabs x3 cycles', async () => { for (let c = 0; c < 3; c++) for (const t of ['inspect', 'cards', 'library', 'analysis']) { await page.evaluate((t) => window.__store.getState().setRightTab(t), t); await sleep(150) } })
+await phase('lifecycle phases x3 cycles', async () => { for (let c = 0; c < 3; c++) for (const p of ['execute', 'analyze', 'prepare']) { await page.click(`#board-phase-${p}`); await sleep(200) } })
+await phase('library drawer open/close x3', async () => { for (let c = 0; c < 3; c++) { await page.keyboard.press('l'); await sleep(250); await page.keyboard.press('l'); await sleep(250) } })
+if (hasStore) await phase('undo/redo x5', async () => { for (let c = 0; c < 5; c++) { await page.evaluate(() => window.__store.getState().undo()); await sleep(120); await page.evaluate(() => window.__store.getState().redo()); await sleep(120) } })
+
+console.log('page errors/warnings:', JSON.stringify(errors.slice(0, 10)))
+await browser.close()
+if (server) server.close()

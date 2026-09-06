@@ -72,6 +72,7 @@ Proposals preserve design decisions for review; implementation requires separate
 - [F-16 browser check, 2026-09-05](field-te/evidence/track-c2-slice-2026-09-05/browser-check.md)
 - [Track, C2 and doctrine slice: before-and-after capture, 2026-09-05](field-te/evidence/track-c2-slice-2026-09-05/diff.md)
 - [Native import browser check](field-te/evidence/wave-c2-c3-e1-2026-09-05/native-import-recipe.md)
+- [Performance baseline at 955ad6b, 2026-09-06](field-te/evidence/perf-2026-09-06/README.md)
 
 Other evidence formats, including fixtures, screenshots, raw sources and numerical JSON,
 live under [field-te/evidence](field-te/evidence/).

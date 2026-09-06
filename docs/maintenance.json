@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "82faad31f8fa949f2483eb398b102ed576505de4a6485d0160085a70e49ce33f",
+      "sha256": "741c47040df2b0055e5af71b892833ad8dba05639524410d86d1425df83c389a",
       "reviewedAt": "2026-09-06",
-      "note": "Indexed docs/HANDOFF.md as a current reference; checked that every other index row still resolves."
+      "note": "Added the perf-2026-09-06 performance baseline README under Captured checks; every other index row is unchanged and still resolves."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
