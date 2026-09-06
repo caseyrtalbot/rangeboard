@@ -1,7 +1,7 @@
 # RangeBoard engineering reference
 
-Technical reference for the application as built. [CLAUDE.md](../CLAUDE.md) is the
-codebase guide and the contract; this file holds the details. Source and tests decide
+Technical reference for the application as built. [AGENTS.md](../AGENTS.md) is the
+concise agent entry point; this file holds the details. Source and tests decide
 behavior. Paths in code spans are relative to the repository root. Section numbers start
 at 3 because other documents link to them by number.
 
@@ -34,12 +34,13 @@ Breaking one of these breaks the app.
   restore through `set`, so a rule added to `mutate` must be added to both. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
   and redo carry the current stamp over a restored snapshot.
-- **Schema:** `Scenario.schemaVersion = 1`. No commit has bumped it. `fillScenario`
+- **Schema:** `Scenario.schemaVersion = 1`. `fillScenario`
   (`src/io/persist.ts`) spreads a save over `emptyScenario()` and deep-fills one level into
   `environment`, `requirements`, `doctrine`, `mcdaWeights`, `underlay`, `raid`. A new
   top-level field, or a field inside one of those, needs only a default in
-  `emptyScenario()`; a new nested object needs its own `fillScenario` line. Every new field
-  is optional with a default. Bump the version only for a breaking shape change, and only
+  `emptyScenario()`; a new nested object needs its own `fillScenario` line. New fields
+  added to schema 1 must remain compatible with legacy saves, using optional fields and
+  defaults where needed. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
   `rangeboard.scenario.recovered.<ms>` before anything writes; the copy is read back and
   checked. Read denial or a failed recovery pauses autosave so the only raw copy survives,
@@ -109,7 +110,7 @@ Breaking one of these breaks the app.
 
 ## 4. Architecture map
 
-```
+```text
 src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basisFor),
                seed.ts (emptyScenario, DEFAULT_SEED), seedLibrary.ts (builtin specs with
                provenance rows), integrationData.ts (researched pairings and profiles),
@@ -446,11 +447,16 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (interceptor cannot reach the credited point) is declined and leaves no event. `expectedKills` is
   pre-arrival mass; `expectedLateKills` is a sub-measure of the leaker mass. Arrival and
   closest approach are different quantities. `reportedLeakers` is the display value.
-- **Words.** UI copy follows the code style in CLAUDE.md: short active sentences in the
+- **Words.** UI copy follows the code style in AGENTS.md: short active sentences in the
   domain's terms, no em-dashes. Use one word for one thing ("phase center", "event").
   Measure labels in T&E Ops suppress pass or fail unless `thresholdApproved`.
 
 ## 7. UI and rendering invariants
+
+Code follows the existing two-space, single-quote, no-semicolon style. Prefer named
+exports and interfaces for object shapes, JSDoc on exported symbols, short rationale
+comments and lines near 100 characters. There is no source formatter. Do not add unused
+exports or TODO markers.
 
 Konva conventions:
 
@@ -492,8 +498,10 @@ Design system (`src/index.css`):
   applies to controls; containers are square. The sheet has no `box-shadow`,
   `backdrop-filter` or `rgba(` tint. The full rule set, token table and component list are
   in the [design system](design/DESIGN_SYSTEM.md).
-- **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render and keeps
-  `TOKEN_FALLBACK` equal to the sheet (a test proves it) for node and static markup.
+- **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render.
+  `tokens.test.ts` checks the five chart slot hues against the sheet. Other
+  `TOKEN_FALLBACK` values used in Node/static markup retain earlier palette values;
+  the test does not establish full fallback parity with the current CSS.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,
   `EmptyState`, `Kbd`, `ShortcutList`, `Actions`, `PfTag`. A read-only property is a
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a

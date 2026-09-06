@@ -69,7 +69,7 @@ EvidenceBaseline and regression scoping, ReuseAsset harvest, SuccessMetrics dash
 
 ### Module layout
 
-```
+```text
 src/te/model/types.ts     all T&E record types + enums
 src/te/model/ids.ts       ID grammar, sequence allocation
 src/te/model/empty.ts     empty campaign factory + defaults

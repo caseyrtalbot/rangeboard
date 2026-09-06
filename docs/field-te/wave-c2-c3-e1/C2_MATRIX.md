@@ -58,7 +58,7 @@ All line/step builders use the DT grid. Each listed family includes every ID emi
 | threatSeries pd.* | per-sensor Pd fraction | grid E | No modeled radar observation = unavailable; E label. |
 | threatSeries residual / ThreatDetail survival | surviving ships (includes late destruction) | grid E or M perThreat.residual | Matching mean/quantile bands; no matching threat/bad grid -> unavailable. Header reflects actual bands. |
 | threatSeries phase / phaseLadderRow | phase category/state number, seconds | grid E | No observation produces no span; E label. |
-| systemSeries latency.* / hop.* | detect-to-first-shot seconds; configured selected-route latency seconds | grid E | Missing detection/shot/route undefined; SystemDetail E label. |
+| systemSeries latency.*/ hop.* | detect-to-first-shot seconds; configured selected-route latency seconds | grid E | Missing detection/shot/route undefined; SystemDetail E label. |
 | trackMarks / survival markers / EngagementStrip | ARR, CPA, shot, ROE gate, positive effect, classification/window times | run E | Arrival and CPA remain separate; MC survival labels markers E. |
 | SensorDetail Load/hold/gates | tracks per scan, scan seconds, union hold seconds, integrated track-seconds, range m/km, elevation degrees; hold/slant/horizon booleans | cursor E + model inputs | No MC statistics; input provenance untouched. |
 | EffectorDetail doctrine/capacity | readiness/window/release time, round capacity/expenditure; engage seconds, flyout m/s, BDA seconds | cursor/run E + model inputs | No MC statistics displayed; input provenance untouched. |

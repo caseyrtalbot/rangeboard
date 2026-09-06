@@ -1,11 +1,49 @@
 # RangeBoard verification guide
 
-Browser, import and recovery procedures. Test conventions and the tool environment notes
-are in [CLAUDE.md](../CLAUDE.md); this guide does not restate them. Run results belong in
-a dated record under `field-te/` and its evidence directory, not here.
+Commands and checks for current development. Run results belong in dated evidence or a
+session handoff; historical test counts are not the current baseline.
 
-One note beyond CLAUDE.md: when you touch a statistical test, sweep the entity ids. A
-test once passed only by the ids it happened to get.
+## Commands
+
+Use Node.js 22.12 or later and the committed npm lockfile. Node 22 is the verified local
+major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; no global test or browser package is required.
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev -- --port <port> --strictPort` | Start Vite on an available explicit port |
+| `npm run typecheck` | Check application and colocated TypeScript tests |
+| `npm test` | Run all Vitest tests |
+| `npx vitest run src/playback/pk.test.ts` | Run one file; `-t 'fragment'` selects test names |
+| `npm run lint` | Run oxlint; do not add to existing fast-refresh warnings |
+| `npm run build` | TypeScript project build and Vite production bundle |
+| `npm run schema:generate` | Regenerate runtime descriptors after domain type changes |
+| `npm run schema:check` | Reject descriptors that differ from current types |
+| `npm run docs:check` | Lint Markdown, validate local links, placement and source review |
+| `npm run test:docs` | Exercise documentation maintenance failure paths |
+| `npm run check` | Complete documentation, type, schema, test, lint and build gate |
+
+Run the complete gate for source changes and after integrating lanes. Documentation-only
+changes need `docs:check`; maintenance-script changes also need `test:docs`. Update a
+source-review fingerprint only after reading the affected document and changed inputs,
+following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
+
+## Test conventions
+
+- Tests colocate as `*.test.ts` or `*.test.tsx`; Vitest uses Node, without jsdom or
+  testing-library. Keep engine, geometry and store logic testable without a DOM.
+- Component checks use `renderToStaticMarkup`. Recharts sizes charts in an effect, so
+  static markup only proves a wrapper exists. Inspect charts and UI changes in a browser.
+- For a zustand store reader, synchronize its server-render snapshot before each render:
+  `Object.assign(useStore.getInitialState(), useStore.getState())`.
+- Statistical checks name an analytic expectation and assert within three standard errors.
+  Sweep entity IDs when touching such a check; draw identity can hide a lucky fixture.
+- Before an engine/store/playback refactor, capture the current baseline using fixed IDs,
+  seed and settings: deterministic, aleatory MC, total MC and sensitivity. Compare after
+  the change with the same harness. Select applicable preserved fixtures under
+  [evidence](field-te/evidence/); old numerical captures describe their original commits.
+- Scratch checks that import TypeScript run as Vitest files under `src/`; remove them
+  when finished. Node imports in those files follow the existing `@ts-expect-error`
+  convention because the app tsconfig omits Node types. `vite-node` is not installed.
 
 ## Browser checks
 
@@ -22,8 +60,8 @@ test once passed only by the ids it happened to get.
   so a laydown Giraffe 1X to FAAD C2 to Coyote reaches the status `no-fc-uplink` and fires
   nothing. Add a KuRFS to a Coyote demo laydown.
 - The [detection fixture](../src/playback/__fixtures__/detection-outside-rings.json) is
-  that laydown with the Mavic 3 spawned 18 km north, outside every ring: detection at
-  250.5 s, four firing events, MC kills mean 0.9 at seed 4821. Load it through
+  that laydown with the Mavic 3 spawned 18 km north, outside every ring. The linked
+  probe records its historical numerical results; recapture before a parity comparison. Load it through
   `parseAutosave` and `loadScenario`. The
   [probe](field-te/evidence/rf20-detection-2026-09-05/rf20-fixture-probe.mjs.txt) confirms
   it through store actions. Use it for detection and warning-time evidence.

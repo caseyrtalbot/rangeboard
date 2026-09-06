@@ -1,0 +1,116 @@
+{
+  "references": [
+    {
+      "document": "AGENTS.md",
+      "inputs": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "sha256": "4461bb0f3cc33612718c09cd464c2df511602fb10bb1677acbd32da7b04e29cf",
+      "reviewedAt": "2026-09-06",
+      "note": "Condensed the original CLAUDE guidance; checked commands, core evidence and persistence boundaries, and handoff links against the prepared tree. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+    },
+    {
+      "document": "CLAUDE.md",
+      "inputs": [
+        "AGENTS.md"
+      ],
+      "sha256": "bf464ff360b3a2778295a60caa6899332a93bca85350575b15c4d0e4bd00527f",
+      "reviewedAt": "2026-09-06",
+      "note": "Verified this is only the shared AGENTS.md entry-point redirect; removed host-specific Claude tool assumptions."
+    },
+    {
+      "document": "README.md",
+      "inputs": [
+        "package.json",
+        "src/App.tsx",
+        "src/main.tsx",
+        "package-lock.json"
+      ],
+      "sha256": "c9cc27fffc9bc84398fa43b098d2034088e0cde2595bfc7b5b541a3f326b836d",
+      "reviewedAt": "2026-09-06",
+      "note": "Checked project description, Node requirement, setup and complete gate against package scripts and application startup. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+    },
+    {
+      "document": "docs/README.md",
+      "inputs": [],
+      "sha256": "e9233ad304c58c90f2d048c70d22243d69daaafda04410eeb5510040fb31761d",
+      "reviewedAt": "2026-09-06",
+      "note": "Classified and directly indexed all 62 Markdown documents; preserved dated evidence and source-material paths; no active task queue."
+    },
+    {
+      "document": "docs/PROJECT_GUIDE.md",
+      "inputs": [
+        "src/"
+      ],
+      "sha256": "aba5052a7850bc1204916fdcb43e9280815cc77d9f2f113d6c2b823130424e19",
+      "reviewedAt": "2026-09-06",
+      "note": "Traced Board and T&E features to their source entry points, store actions, workers, validation, prints and exports; corrected campaign reuse ownership and network/origin boundaries."
+    },
+    {
+      "document": "docs/ENGINEERING_REFERENCE.md",
+      "inputs": [
+        "src/"
+      ],
+      "sha256": "1750b6b8136e2fa01494d19a7f486dcf23f5c1b194006b6baff6f15cec3d97f4",
+      "reviewedAt": "2026-09-06",
+      "note": "Reviewed engine, state, persistence and UI contracts against source and passing tests; corrected chart fallback coverage and schema guidance; retained numerical boundaries."
+    },
+    {
+      "document": "docs/VERIFICATION.md",
+      "inputs": [
+        "package.json",
+        "vite.config.ts",
+        "tsconfig.app.json",
+        "src/io/",
+        "src/te/io/",
+        "src/playback/__fixtures__/",
+        "scripts/",
+        ".github/workflows/quality.yml",
+        ".nvmrc",
+        "package-lock.json"
+      ],
+      "sha256": "5b3e82f61fdcb826f963a6be59e10c486142be715bb0b3644d0c35d13f6df661",
+      "reviewedAt": "2026-09-06",
+      "note": "Consolidated commands and test conventions; exercised locked installation, full baseline checks, browser workspaces and real-worker freshness; replaced historical fixture values with recapture instructions. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+    },
+    {
+      "document": "docs/WORKFLOW.md",
+      "inputs": [
+        "package.json",
+        "scripts/",
+        ".markdownlint-cli2.mjs",
+        "docs/source-markdown.json",
+        ".markdownlint.json",
+        "docs/te-compilation/.markdownlint.json",
+        "docs/inventory/.markdownlint.json",
+        "docs/threat/.markdownlint.json",
+        ".github/workflows/quality.yml",
+        ".nvmrc",
+        "package-lock.json"
+      ],
+      "sha256": "c91f988ba3fe99a9504f5369190f46e4365a785f9436d2f1d8eca2bd35f2a84d",
+      "reviewedAt": "2026-09-06",
+      "note": "Checked local and CI command wiring, scoped lint configuration, documented hash review limits, placement rules, bounded ownership and handoff protocol. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+    },
+    {
+      "document": "docs/design/DESIGN_SYSTEM.md",
+      "inputs": [
+        "src/index.css",
+        "src/ui/",
+        "src/charts/",
+        "src/canvas/layers/footprintStyle.ts"
+      ],
+      "sha256": "2649cadb7882de0bd17420d3f969c421b6a816c6b5d7c37e449d76ef3edcdf54",
+      "reviewedAt": "2026-09-06",
+      "note": "Reviewed CSS and shared primitives, checked chart hue tests and visually inspected Board analysis and T&E Products; design rules remain accurate for implemented surfaces."
+    }
+  ],
+  "historical": [
+    "docs/field-te/",
+    "docs/te-compilation/",
+    "docs/inventory/",
+    "docs/threat/",
+    "docs/te-plan.md"
+  ]
+}

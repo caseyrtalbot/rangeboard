@@ -11,7 +11,7 @@ Type notation used below: `text`, `longtext`, `bool`, `number(<unit>)`, `int`, `
 Every controlled record type below embeds this header. Source: [01§1.3], [07 passim].
 
 | Field | Type | Req | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id | text (identifier per §2 grammar) | R | immutable once assigned |
 | title | text | R | |
 | version | `v<major>.<minor>` | R | RUN records carry no version [01§4.2] |
@@ -36,7 +36,7 @@ Purpose: the top-level engagement container; one customer decision effort from r
 Fields (superset — 07's charter is the backbone; 01 intake fields and 12 seed fields merged in):
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | campaignId + title | id + text | R | 07§4.1 |
 | version + status | header | R | 07§4.1 |
 | sponsor | text/person | R | 07§4.1 |
@@ -54,10 +54,10 @@ Fields (superset — 07's charter is the backbone; 01 intake fields and 12 seed 
 | valkrynTasking | enum(recommend, characterize, validate, compare, support-an-authority) | R | 01§1.9 — never "certify"/"authorize" without that authority |
 | missionAndProtectedOutcome | longtext | R | 07§4.1 |
 | evaluatedSystemBoundary | link(SystemBoundary) | R | 07§4.1 |
-| includedSystemsAndConfigurations | link[](CFG) | R | 07§4.1 |
+| includedSystemsAndConfigurations | `link[](CFG)` | R | 07§4.1 |
 | includedThreatsAndConditions | link[](THR, COND) | R | 07§4.1 |
-| primaryQuestions | link[](Q) | R | 07§4.1 |
-| primaryMeasuresAndThresholds | link[](M) | R | 07§4.1 |
+| primaryQuestions | `link[](Q)` | R | 07§4.1 |
+| primaryMeasuresAndThresholds | `link[](M)` | R | 07§4.1 |
 | requiredEvidenceStrength | text | R | 07§4.1 |
 | plannedSitesAndDates | text + date range | R | 07§4.1 |
 | contractAndFundingOwner | text | R | 07§4.1 |
@@ -94,7 +94,7 @@ Campaign roles (fixed 12-value enum) [01§1.1]: customer-decision-owner, evidenc
 Per-run roles (11-value enum) [04§1.6]: test-conductor, safety-authority, range-control-contact, system-operator, system-technical-lead, red-threat-lead, data-monitor, ground-truth-operator, run-logger, deployment-strategist, customer/evidence-authority-witness.
 
 | Field | Type | Req |
-|---|---|---|
+| --- | --- | --- |
 | role | enum (above) | R |
 | scope | enum(campaign, run) + link(RUN) when run | R |
 | primary | person | R |
@@ -109,7 +109,7 @@ Purpose: one row per decision type stating who is accountable, who performs, who
 [CONFLICT: 01§1.2 enumerates 17 decision types; 07§4.2 enumerates 22 (finer-grained: splits "run initiation, pause, abort, and restart" into run start / pause / stop / restart, splits range/airspace/spectrum/safety/security, adds degraded operation). Use 07's 22 as the seed superset: scope, method, thresholds, configuration, safety, range, airspace, spectrum, security, daily go/no-go, run start, pause, stop, restart, degraded operation, run validity, card change, run-list change, evidence sufficiency, findings, acceptance, customer action.]
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | decisionType | enum (22 values above) + custom | R | 07§4.2 |
 | trigger | text | R | 07§4.2 (01 combines trigger+responseTime) |
 | accountableAuthority | person/role | R — exactly one per decision (hard validation) | 01§1.2 |
@@ -129,7 +129,7 @@ Constraint: no decision may have two accountable authorities; resolve overlap be
 Purpose: tracks each external approval/authorization (range, airspace, spectrum, safety...) to active status. Sources: [03§1.9], [13§1.23 lead times].
 
 | Field | Type | Req |
-|---|---|---|
+| --- | --- | --- |
 | authorityType | enum(range-access, airspace-notam, spectrum-assignment, flight-system-release, safety-approval-residual-risk, security-classification, cybersecurity-network, weapons-effectors-hazmat-transport, environmental-local-permits, photography-recording, foreign-national-export, data-collection-storage-transfer-release) | R |
 | owner | person | R |
 | dueDate | date | R |
@@ -147,7 +147,7 @@ Rule: expired or missing mandatory authorities block the readiness gate [03§8.7
 Purpose: a runnable copy of a named checklist, with per-item completion state, tied to the gate it controls. Sources: [07§3 — six checklists], [04§3 — execution procedures], [13§3.1 — four Field Guide gates], [03§3.4 TRR evidence].
 
 | Field | Type | Req |
-|---|---|---|
+| --- | --- | --- |
 | checklistType | enum(test-readiness-review(24), day-start(22), pre-run-release(17..19), daily-evidence-review(14), decision-evidence-package(18), closeout-regression(18), pre-campaign-gate(14), post-run-gate(10), daily-closeout-gate(9), run-initiation(10), run-completion(9), data-validation(11), end-of-day(13), anomaly-response(9), safety-stop(6), data-equipment-stop(7), custom) | R |
 | gate | link to the gate/phase it blocks | R |
 | items | struct[] {itemText (verbatim from source), state: enum(unchecked, checked, na), completer: person, completedAt: datetime, result: text, naReason?: text} | R |
@@ -163,7 +163,7 @@ Conditional logic hooks: pre-run "if any answer is unknown, hold the run" [04§3
 Purpose: one record per gated readiness event with objective evidence and a go/no-go outcome. Sources: [03§6.2, §3.4, §3.5], [13§3.10].
 
 | Field | Type | Req |
-|---|---|---|
+| --- | --- | --- |
 | reviewType | enum(design-readiness, integration-readiness, range-readiness, test-readiness, daily-readiness) | R [03§6.2] |
 | evidenceItems | struct[] {item, baselineOrApprovalReference, status, deficiency, owner, dueDate, waiverAuthority, supportingEvidence} | R [13§3.10 per-control fields; TRR 16-item evidence list 03§3.4] |
 | outcome | enum(go, conditional-go, hold, no-go) | R [03§6.3 — definitions: go=all mandatory controls pass; conditional-go=named authority accepts defined deficiencies, limits written into cards and conclusion plan; hold=correction expected within window; no-go=cannot support useful execution] |
@@ -214,7 +214,7 @@ Fields: name (text, R), owner (person, R), backup (person, R), people (text, R),
 Purpose: the bounded customer decision the campaign exists to support; anchor of all traceability. Sources: [01§1.8, §4.3], [10§1.1 decision math], [13§3.5].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | decisionDate (deadline) | date | R | 01§1.8 |
 | authorizedDecisionOwner | person | R | 01§1.8 |
 | boundedChoice | text | R | 01§1.8 |
@@ -242,7 +242,7 @@ Relationships: 1 Campaign → 1..n DEC (typically 1 primary). DEC → Q (1..n). 
 Purpose: a ranked, decision-linked operational or technical question. Sources: [02§1.1 — 9 fields], [04§1.2 pattern enum], [06 Part A disposition], [13§1.1 OQ register].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id + exactWording | id + longtext verbatim | R | 02§1.1 |
 | decisionLinkage | link(DEC) | R | 02§1.1 |
 | decisionOwner | person | R | 02§1.1 |
@@ -264,7 +264,7 @@ Lifecycle: draft → ranked → frozen (Step 1 freeze locks the ranked set [02§
 Purpose: a decision-relevant claim (vendor, contractual, operational) to be dispositioned by evidence. Sources: [01§1.15], [13§1.5], [06 Part A + Part L evidence history tree].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | id + exactWording | id + longtext | R | 01§1.15 |
 | sourceAndDate | text (enum-ish source: contractual, operational, government, vendor, promotional) + date | R | 01§1.15, 13§1.5 |
 | claimedConditions | longtext | R | 01§1.15 |
@@ -294,7 +294,7 @@ Purpose: a falsifiable prediction tied to a question, measure, and threshold. So
 Statement template (verbatim, 4 slots) [02§1.2]: "Under [configuration, threat, and condition], the system produces [observable behavior or mission effect], measured by [measure], relative to [threshold or comparison]." (04§1.4 variant adds the test object slot: "Under [configuration and conditions], [test object] will produce [observable result]...")
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | statement (4-5 slot template) | struct | R | 02§1.2, 04§1.4 |
 | nullHypothesis | text | R | both |
 | alternativeHypothesis | text | O | 04§1.4 only |
@@ -309,7 +309,7 @@ Statement template (verbatim, 4 slots) [02§1.2]: "Under [configuration, threat,
 | confidenceRequired | text | R | 04§1.4 |
 | dispositionOwner | person | R | 02§1.2 |
 | evaluationOutcome | enum(supported, directionally-supported, contradicted, inconclusive, not-tested) | R after analysis | 04§1.10 |
-| evaluationContext | struct {supportingRuns: link[](RUN), contradictingRuns: link[](RUN), effectSize, variability, confidence, applicableConditions, confounders, alternativeExplanations, additionalEvidenceNeeded} | R after analysis | 04§1.10 |
+| evaluationContext | struct {supportingRuns: `link[](RUN)`, contradictingRuns: `link[](RUN)`, effectSize, variability, confidence, applicableConditions, confounders, alternativeExplanations, additionalEvidenceNeeded} | R after analysis | 04§1.10 |
 
 Rules: prediction is stated BEFORE the test; app compares prediction with result after [04§1.4]. Use directional language only when the design supports it; no causal hypothesis when the campaign can only show association [02§1.2].
 
@@ -320,9 +320,9 @@ Purpose: MeasureDefinition = a reusable dictionary entry defining exactly how a 
 MeasureDefinition fields (superset; 07§4.4's 31-field list is the largest single source — order preserved from it, extras appended):
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | measureId + name | id + text | R | all |
-| decisionAndHypothesisLinkage | link(DEC), link(Q), link[](HYP) | R | 07§4.4, 02§1.3 |
+| decisionAndHypothesisLinkage | link(DEC), link(Q), `link[](HYP)` | R | 07§4.4, 02§1.3 |
 | purpose | text | R | 07§4.4 |
 | exactDefinition | longtext | R | all — reproducibility rule: two qualified analysts on the same valid data obtain the same result [02§1.3] |
 | unit | text | R | all |
@@ -357,7 +357,7 @@ MeasureDefinition fields (superset; 07§4.4's 31-field list is the largest singl
 | expectedValueOrRange | range | O | 04§1.3 |
 | minimumAcceptableValue | number | O | 04§1.3 (alias of threshold) |
 
-MeasureInstance additional fields (frozen before execution) [09§1.1]: configuration (link(CFG), R), threat (link(THR), R), conditions (link[](COND), R), thresholdWithSource (number + source enum, R), eventGates (struct — spatial/temporal/identity/persistence association gates, R), uncertaintyLimits (time and coordinate tolerances; max event-time uncertainty, R), eventRule (rule text, frozen, R), denominatorRule (what counts as a valid opportunity, frozen, R), truthRule (R), missingDataRule (frozen, R), validityRule (frozen, R), uncertaintyRule (frozen, R), links (DEC, Q, HYP, missionTask, matrixCell — ALL required, R). Plus per-measure-family parameter blocks: detection rule (1 report vs K consecutive vs dwell) [09§1.2], stable-track rule [09§1.3], handoff success criteria [09§1.4], decision-ready-track definition [09§1.5], latency definition (start/stop/time source/window/censoring/clustering) [09§1.25].
+MeasureInstance additional fields (frozen before execution) [09§1.1]: configuration (link(CFG), R), threat (link(THR), R), conditions (`link[](COND)`, R), thresholdWithSource (number + source enum, R), eventGates (struct — spatial/temporal/identity/persistence association gates, R), uncertaintyLimits (time and coordinate tolerances; max event-time uncertainty, R), eventRule (rule text, frozen, R), denominatorRule (what counts as a valid opportunity, frozen, R), truthRule (R), missingDataRule (frozen, R), validityRule (frozen, R), uncertaintyRule (frozen, R), links (DEC, Q, HYP, missionTask, matrixCell — ALL required, R). Plus per-measure-family parameter blocks: detection rule (1 report vs K consecutive vs dwell) [09§1.2], stable-track rule [09§1.3], handoff success criteria [09§1.4], decision-ready-track definition [09§1.5], latency definition (start/stop/time source/window/censoring/clustering) [09§1.25].
 
 Outcome taxonomies carried per measure family [09§1.6-1.13]: defeatOutcome(physical-destruction, functional-mission-kill, diversion-forced-landing, lost-guidance-navigation, temporary-suppression, unknown); ewEffect(navigation-deviation, control-link-loss, mission-abort, forced-recovery, loss-of-terminal-function, temporary-suppression); interceptOutcome(no-assignment, no-launch, launch-failure, guidance-failure, miss, intercept-unknown-effect, intercept); defeatMeasureOutcome(confirmed-defeat, probable-defeat-if-allowed, no-defeat, unknown, no-test); handoffFailure(no-transmission, rejected-message, schema-failure, identity-error, stale-data, duplicate-merge-error, unusable-quality, timeout); falseTrackCategory(false, duplicate, split, uncorrelated-real, nuisance-real); downtimeCategory(system-fault, scheduled-maintenance, test-infrastructure, operator, external-constraint, unknown); operatorIntervention(required-decision, correction, override, recovery, false-alarm-handling, unplanned-troubleshooting).
 
@@ -420,7 +420,7 @@ Purpose: classification of every variable that can affect a result. Sources: [02
 [CONFLICT: three taxonomies. 02/04 use 4 classes (independent, controlled/held, recorded covariate, unobserved nuisance). Field Guide [13§1.8] uses 5 (independent, controls, covariates, responses, confounders). Page 08 red-variable classification uses 6 (independent, held control, bounded red choice, recorded covariate, prohibited variable, unobserved nuisance). Unified superset:]
 
 | Field | Type | Req |
-|---|---|---|
+| --- | --- | --- |
 | name | text | R — seed lists: [04§1.5] 15 example factors; [09§1.22] C-UAS design factors; [08§1.6] 14 red variables |
 | classification | enum(independent-variable, held-control, recorded-covariate, unobserved-nuisance, bounded-red-choice, prohibited-variable, response) | R — exactly one per factor |
 | confounderFlag | bool | O — 13's "confounder" is an analysis property, not a fifth class |
@@ -435,7 +435,7 @@ Mandatory covariates [02§1.8]: learning, fatigue, order, equipment heating, bat
 
 Purpose: one design point = configuration × threat × condition × method × repetition. Sources: [02§1.9], [04§2.1], [08§1.8], [05§4 coverage map].
 
-Fields [02§1.9]: questionAndHypothesis (link(Q, HYP), R), configuration (link(CFG), R), threatAndCondition (link(THR, COND), R), independentVariable (link(Factor), R), measures (link[](M), R), plannedRepetitions (int, R), requiredOrderOrBlock (text, R), costAndTime (text, R), safetyAndAuthorityNeeds (text, R), minimumValidEvidence (int, R), priorityAndDropOrder (int+int, R). Coverage-state (computed): validRunCount vs minimum; flags empty/thin/redundant [05§4].
+Fields [02§1.9]: questionAndHypothesis (link(Q, HYP), R), configuration (link(CFG), R), threatAndCondition (link(THR, COND), R), independentVariable (link(Factor), R), measures (`link[](M)`, R), plannedRepetitions (int, R), requiredOrderOrBlock (text, R), costAndTime (text, R), safetyAndAuthorityNeeds (text, R), minimumValidEvidence (int, R), priorityAndDropOrder (int+int, R). Coverage-state (computed): validRunCount vs minimum; flags empty/thin/redundant [05§4].
 
 Required coverage rows [02§1.9]: baseline condition; positive control when available; negative control; comparison system/prior configuration when relevant; decision-critical threat+environment combos; expected operating center; high-risk boundary conditions; degraded modes; diagnostic isolation events. Cell-selection criteria [08§1.8]. Matrix formula [04§2.1]: Configuration × Threat × Condition × Method × Repetition = planned runs; generator also shows total runs, estimated duration, coverage by question/condition, required assets, missing controls, planned repetitions, minimum valid evidence, drop order.
 
@@ -449,14 +449,14 @@ Fields: cardId (link(TC), R), purpose (one sentence, R), matrixCell (link(TestMa
 
 Purpose: the statistical design pre-record frozen before method selection and execution. Sources: [09§1.15, 1.18, 1.19, 1.23, 1.24, 1.30], [10§1.9-1.13], [02§2.3].
 
-Fields: decisionAndQuestion (link, R), primaryResponseMeasure (link(M), R), experimentalUnit (enum seed [09§1.16]: independently-reset-threat-presentation, complete-handoff-opportunity, engagement-opportunity, complete-raid, operating-hour-block, system-article-over-mission-period; R), configurationsCompared (link[](CFG), R), factorSpace (link[](Factor), R), minimumMeaningfulEffect (number, R), thresholdOrComparison (text, R), requiredUncertaintyOrRisk (text, R), expectedVariability (number, R), independenceStructure (text, R — dependence checklist [09§1.17]), maxFeasibleValidSample (int, R), sequentialPlan (struct [09§1.24]: initialSampleOrBudgetShare, interimReviewSchedule, statisticsReviewed, sufficiencyBoundary, futilityBoundary, maxSample, allowedFactorSpaceAugmentation, confirmatorySampleHeldBack, repeatedLooksTreatment; all frozen pre-execution), fallbackConclusions (text, R), thresholdDesign (struct: p0, p1, falseAcceptRisk, falseRejectRisk, exactDecisionRule, maxSample, sequentialStoppingPermitted [09§1.18]), comparisonDesign (struct [09§1.19]), regressionModelRecord (struct [09§1.23]), bayesianPrior (struct: Beta(a,b), justification, sensitivity [09§1.30]), randomizationAndBlocking (candidates [09§1.20-1.21]), sampleRationale (longtext, R — documented by analysis lead BEFORE design approval [02§2.3]).
+Fields: decisionAndQuestion (link, R), primaryResponseMeasure (link(M), R), experimentalUnit (enum seed [09§1.16]: independently-reset-threat-presentation, complete-handoff-opportunity, engagement-opportunity, complete-raid, operating-hour-block, system-article-over-mission-period; R), configurationsCompared (`link[](CFG)`, R), factorSpace (`link[](Factor)`, R), minimumMeaningfulEffect (number, R), thresholdOrComparison (text, R), requiredUncertaintyOrRisk (text, R), expectedVariability (number, R), independenceStructure (text, R — dependence checklist [09§1.17]), maxFeasibleValidSample (int, R), sequentialPlan (struct [09§1.24]: initialSampleOrBudgetShare, interimReviewSchedule, statisticsReviewed, sufficiencyBoundary, futilityBoundary, maxSample, allowedFactorSpaceAugmentation, confirmatorySampleHeldBack, repeatedLooksTreatment; all frozen pre-execution), fallbackConclusions (text, R), thresholdDesign (struct: p0, p1, falseAcceptRisk, falseRejectRisk, exactDecisionRule, maxSample, sequentialStoppingPermitted [09§1.18]), comparisonDesign (struct [09§1.19]), regressionModelRecord (struct [09§1.23]), bayesianPrior (struct: Beta(a,b), justification, sensitivity [09§1.30]), randomizationAndBlocking (candidates [09§1.20-1.21]), sampleRationale (longtext, R — documented by analysis lead BEFORE design approval [02§2.3]).
 
 ### 1.31 ThreatProfile (THR)
 
 Purpose: one version-controlled, operationally distinct threat presentation. Sources: [08§1.2 — the superset], [02§1.6], [07§4.6 fields 1-18], [13§1.7], [12§1.4].
 
 | Field group | Fields | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | identity | threatId + version; platformOrPhenomenon | R | 02§1.6, 07§4.6 |
 | mission | threatMission enum(reconnaissance-target-development, persistent-observation, route-site-reconnaissance, one-way-attack, fpv-attack, munition-delivery, decoy-stimulation, electronic-attack-relay, saturation-magazine-depletion, combined-recon-attack, post-strike-assessment, other-stated) — one or more; rule: never infer payload effect from airframe alone | R | 08§1.2 |
 | physical/kinematic | airframeClassAndUasGroup (Groups 1-3 minimum [08§1.18]); dimensionsAndWeight; payloadState; speedBands; altitudeBands; climbDescentAccelTurn; enduranceRequired; routeAndApproachAxis; launchOrEntryPoint; standoffReleaseTerminalGeometry; terrainMaskingLosBehavior; hoverLoiterOrbitDivePopupCrossing; recoveryImpactTimeoutLostLink; formationSpacingAndTiming | R as relevant | 08§1.2 (07§4.6 compresses to: size/payload, speed/altitude, route/geometry/maneuver) |
@@ -466,7 +466,7 @@ Purpose: one version-controlled, operationally distinct threat presentation. Sou
 | adaptation | triggerResponsePairs struct[] {observableTrigger, allowedResponse}; rule: never "act realistically" undefined | R when adaptive | 08§1.2 |
 | red operator | experienceWithAircraft; experienceWithScript; rangeFamiliarity; informationAvailable; abilityToObserveBlue; permittedCoaching; permittedRetries; workloadAircraftCount; fatigueOrderEffects; commsDelay; manualInterventionCount | R when human-controlled | 08§1.2 |
 | representation | representationClass enum(actual-threat, validated-surrogate, generic-representation, model-simulation-constructive, hybrid) | R | 08§1.3 [CONFLICT: 02§1.6/07§4.6/13§1.7 use a 3-value enum (actual, validated-surrogate/surrogate, generic); 08§1.3 adds model/constructive and hybrid — use the 5-value superset] |
-| fidelity | link[](FidelityAssessment) | R | 08§1.4 |
+| fidelity | `link[](FidelityAssessment)` | R | 08§1.4 |
 | control bounds | redControlledVariables; fixedVariables; blindedInformation; safetyAndRealismBounds | R | 02§1.6, 07§4.6 |
 | validation | validationSourceAndAuthority | R | 02§1.6, 07§4.6 |
 | profileClass | enum(mandatory, high-probability, high-consequence) | R | 13§1.7 |
@@ -478,7 +478,7 @@ Versioning rule: any change that can alter blue-system performance creates a new
 
 Purpose: per-feature comparison of intended threat vs represented state. Source: [08§1.4]; feature list also [02§1.6], [13§1.7].
 
-Fields per feature row: feature (enum of 19 minimum [08§1.4]: mission-behavior, airframe-size-shape, payload-state, speed-altitude, maneuver-terminal, route-geometry, radar-signature, rf-emissions, eo-ir-appearance, acoustic-signature, control-method, navigation-method, autonomy, lost-link-behavior, countermeasure-resistance, coordination-raid, operator-behavior, environmental-interaction, instrumentation-created-observables), intendedThreatState (text, R), representedState (text, R), fidelity (enum(faithful, approximated, omitted, unknown), R) [minor conflict: 13§1.7 QtM lists only faithful/approximated/omitted — keep 4-value superset from 02§1.6 + 08§1.4], verificationSourceOrMeasurement (text, R), toleranceRelevantToMeasure (text, R), likelyEffectOfDifference (text, R), measuresAffected (link[](M), R), permittedGeneralization (text, R), prohibitedGeneralization (text, R), followOnEvidenceNeeded (text, R). Required treatment per fidelity state per [08§1.4] table. Rule: never compute one overall fidelity score that hides a critical omission.
+Fields per feature row: feature (enum of 19 minimum [08§1.4]: mission-behavior, airframe-size-shape, payload-state, speed-altitude, maneuver-terminal, route-geometry, radar-signature, rf-emissions, eo-ir-appearance, acoustic-signature, control-method, navigation-method, autonomy, lost-link-behavior, countermeasure-resistance, coordination-raid, operator-behavior, environmental-interaction, instrumentation-created-observables), intendedThreatState (text, R), representedState (text, R), fidelity (enum(faithful, approximated, omitted, unknown), R) [minor conflict: 13§1.7 QtM lists only faithful/approximated/omitted — keep 4-value superset from 02§1.6 + 08§1.4], verificationSourceOrMeasurement (text, R), toleranceRelevantToMeasure (text, R), likelyEffectOfDifference (text, R), measuresAffected (`link[](M)`, R), permittedGeneralization (text, R), prohibitedGeneralization (text, R), followOnEvidenceNeeded (text, R). Required treatment per fidelity state per [08§1.4] table. Rule: never compute one overall fidelity score that hides a critical omission.
 
 ### 1.33 OpforExecutionMode
 
@@ -492,7 +492,7 @@ Purpose: campaign-level blinding and learning ledger. Source: [08§1.7]. Fields 
 
 ### 1.35 RealismConstraint
 
-Purpose: one record per feature that cannot be fully reproduced. Source: [08§1.11]. Fields (7, all R): threatFeatureAffected, reasonNotReproducible, substituteUsed, biasDirection, measureAffected (link[](M)), conclusionNarrowed, evidenceNeededToClose.
+Purpose: one record per feature that cannot be fully reproduced. Source: [08§1.11]. Fields (7, all R): threatFeatureAffected, reasonNotReproducible, substituteUsed, biasDirection, measureAffected (`link[](M)`), conclusionNarrowed, evidenceNeededToClose.
 
 ### 1.36 Condition (COND)
 
@@ -507,7 +507,7 @@ Fields: conditionId (R); terrainAndClutter (R); weatherAndIllumination (R); elec
 Purpose: the complete frozen identity of the system under test; precondition for every comparison. Sources: [07§4.5 — 28 fields], [01§1.4, §1.14], [13§1.4], [11§1.2 configuration truth].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | configurationId + version | id | R | 07§4.5 |
 | systemBoundary | link(SystemBoundary) | R | 07§4.5 |
 | hardwareModelsAndSerials | struct[] | R | 07§4.5, 01§1.4 |
@@ -531,7 +531,7 @@ Purpose: the complete frozen identity of the system under test; precondition for
 | functionalCheckResult | text | R | 07§4.5 |
 | systemOwnerRelease | person+datetime | R | 07§4.5 — vendor releases the exact configuration; does not control test design [01§1.1] |
 | freezeTime | datetime | R | 07§4.5, 13§1.4 |
-| runsUsingBaseline | link[](RUN) | computed | 07§4.5 |
+| runsUsingBaseline | `link[](RUN)` | computed | 07§4.5 |
 | supersededBaseline + changeSummary | link + text | R on reissue | 07§4.5 |
 | perItemStatus | enum(confirmed-available, expected-not-verified, planned-change-before-test, customer-furnished, vendor-controlled, unavailable-unresolved) | R at initial baseline | 01§1.14 |
 | changeApprovalOwner | person | R | 13§1.4 |
@@ -576,7 +576,7 @@ Relationships: one issued card controls one run type; 1 TC → 0..n RUN. Lifecyc
 Purpose: one execution attempt with an immutable identity; the atomic unit of evidence. Sources: [07§4.8 — 29-field run record], [04§1.7-1.8], [05§1], [13§1.14, §1.1], [06 Part B run accounting].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | runId | id — immutable, never renumbered, never reused, versionless | R | 01§4.2, 13§1.1 |
 | cardIdAndVersion | link(TC@version) | R | 07§4.8 |
 | plannedPurpose | text | R | 07§4.8 |
@@ -587,17 +587,17 @@ Purpose: one execution attempt with an immutable identity; the atomic unit of ev
 | actualThreatProfile | link(THR) + actuals | R | 07§4.8 |
 | actualConditions | link(COND) + actuals (weather, route/geometry, operators, procedure, data-source status) | R | 07§4.8, 04§1.7 |
 | actualProcedureSummary | text | R | 07§4.8 |
-| timeOrderedEventLog | link[](RunEvent) | R | 07§4.8 |
+| timeOrderedEventLog | `link[](RunEvent)` | R | 07§4.8 |
 | sourceAndGroundTruthStatus | text | R | 07§4.8 |
 | clockAndCalibrationStatus | text | R | 07§4.8 |
-| deviations | link[](DEV) | R | 07§4.8 |
-| anomalies | link[](ANOM) | R | 07§4.8 |
+| deviations | `link[](DEV)` | R | 07§4.8 |
+| anomalies | `link[](ANOM)` | R | 07§4.8 |
 | safetyOrRegulatoryEvents | text | R | 07§4.8 |
 | directOperatorObservations | longtext — observation only, opinion labeled, no causal interpretation [04§3.10] | R | 07§4.8 |
 | dataFilesAndStoragePath | text | R | 07§4.8 |
 | initialDataQualityResult | text | R | 07§4.8 — produced by data lead, feeds adjudication [01§5] |
 | finalStatus | enum(valid, conditionally-valid, invalid, pending) | R | see status note below |
-| allowedMeasuresAndComparisons | link[](M) + text | R when conditionally-valid | 07§4.8, 04§1.8 |
+| allowedMeasuresAndComparisons | `link[](M)` + text | R when conditionally-valid | 07§4.8, 04§1.8 |
 | prohibitedUses | text | R when conditionally-valid | 07§4.8 |
 | repeatRecommendation | text + urgency | R | 07§4.8, 13§1.14 |
 | adjudicatorsAndTime | person[] + datetime | R | 07§4.8 |
@@ -622,14 +622,14 @@ Fields [11§1.8]: eventId (R), runId (link(RUN), R), eventType (R — UI event-c
 
 Purpose: the versioned run-validity board decision for one run. Sources: [05 Part B], [13§1.14].
 
-Review-input assessments (8, each assessable per run) [05]: plannedVsActualState, configurationIdentity, threatAndConditionFidelity, procedureCompliance, groundTruthAndSourceHealth, dataCompletenessAndTimeQuality, deviationsAndAnomalies, independenceAndComparisonIntegrity. Recorded outputs: finalStatus (run enum), measuresAllowed (link[](M)), comparisonsAllowed (text), limits (text), repeatDecision (text), dissent (text — never removed), approverAndTime, adjudicationVersion (int), priorVersionLink + reasonForChange (R on any status change — the prior decision is preserved [05§6]). Participants: deployment strategist, test conductor, data lead, analysis lead, system/range specialist as needed, safety authority when safety evidence involved. Cadence: end of each day and whenever new data changes a prior decision. Separation rule [13§6.9]: run validity is decided by the adjudication body; failure responsibility is decided by a separate scoring conference against pre-approved criteria (incident classes: system-fault, no-test-event, crew-error, other).
+Review-input assessments (8, each assessable per run) [05]: plannedVsActualState, configurationIdentity, threatAndConditionFidelity, procedureCompliance, groundTruthAndSourceHealth, dataCompletenessAndTimeQuality, deviationsAndAnomalies, independenceAndComparisonIntegrity. Recorded outputs: finalStatus (run enum), measuresAllowed (`link[](M)`), comparisonsAllowed (text), limits (text), repeatDecision (text), dissent (text — never removed), approverAndTime, adjudicationVersion (int), priorVersionLink + reasonForChange (R on any status change — the prior decision is preserved [05§6]). Participants: deployment strategist, test conductor, data lead, analysis lead, system/range specialist as needed, safety authority when safety evidence involved. Cadence: end of each day and whenever new data changes a prior decision. Separation rule [13§6.9]: run validity is decided by the adjudication body; failure responsibility is decided by a separate scoring conference against pre-approved criteria (incident classes: system-fault, no-test-event, crew-error, other).
 
 ### 1.42 Deviation (DEV)
 
 Purpose: any material difference between the approved plan/card and what occurred. Sources: [01§1.5], [07§4.9 — 13 fields], [08§1.10 red deviations].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | deviationId | id | R | 07§4.9 |
 | runAndCard | link(RUN), link(TC) | R | 07§4.9 — a deviation stays attached to the original card and run [13§1.1] |
 | time (+ duration) | datetime | R | 07§4.9 (duration from 08§1.10) |
@@ -665,7 +665,7 @@ Purpose: an approved revision to future work (card, run list, configuration, pla
 [Note: 05 calls this the "adaptation record", 07 the "change record", 13 carries both shapes. Same record type: one CHG with the merged superset. A CHG issues new versions of the records it touches.]
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | changeId | id | R | 07§4.11, 13§1.15 |
 | triggeringEvidenceDefectOrConstraint | text | R | all |
 | gapToResolve | text | R | 05 |
@@ -709,17 +709,17 @@ Fields: observationDefinition {time, configuration, condition, source} (R), cand
 Purpose: a bounded, traceable evidentiary conclusion. Sources merged: [07§4.12 — 26 fields], [05 Part G — 18 fields], [04§1.11 — 14 fields], [13§1.16].
 
 | Field | Type | Req | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | findingId + version | id | R | 07§4.12 |
 | findingStatement (plain language) | text | R | 07, 04 |
 | quantifiedResult | text | R | 04§1.11 |
 | linkage: decision, question, claim, hypothesis | link(DEC, Q, CLM, HYP) | R | 07, 05 — pocket rule: no traceability, no finding |
-| supportingRuns / contradictingRuns | link[](RUN) ×2 | R | all |
+| supportingRuns / contradictingRuns | `link[](RUN)` ×2 | R | all |
 | configuration | link(CFG) exact | R | all |
 | threatsAndConditions | link[](THR, COND) | R | all |
 | operatorsAndProcedures | text | R | 07, 05 |
 | methodAndAnalyticalVersion | text | R | 07, 05 |
-| measuresAndResults | link[](MeasureResult) | R | all |
+| measuresAndResults | `link[](MeasureResult)` | R | all |
 | thresholdComparison | text | R | all |
 | sampleAndIndependence | text | R | 07, 05 |
 | variabilityAndUncertainty (+confidence, measurement error) | text | R | all |
@@ -751,7 +751,7 @@ Fields: actionId (R), decisionOwner (person, R), executionOwner (person, R), sup
 
 Purpose: one record per truth variable defining the independent truth source. Sources: [11§1.1-1.2], [03§1.4].
 
-Fields [11§1.1]: truthVariable (R), measuresSupported (link[](M), R), primarySource (R), backupSource (R), independenceFromSUT (justification, R — truth must not depend on the system under test [03§1.4]), deviceSourceId (R), coordinateFrameAndUnits (R), timeSource (R), updateRate (R), accuracyAndUncertainty (R — truth error must be small relative to the smallest decision-relevant effect [13§2.1]), coverage (R), calibrationOrValidation (R), failureIndicator (R), conflictRule (R — when two truth sources disagree, preserve both [03§1.4]), missingnessRule (R), fallback (R), measuresLostIfUnavailable (link[](M), R). Truth domains (7) [03§1.4]: position-trajectory, identity-threat-state, event-time, configuration-state, operator-action, effect-outcome, environmental-state. Category-specific field blocks in [11§1.2] (position truth processingMode enum(real-time, post-processed, fused); identity provenance enum(measured, commanded, inferred, manually-adjudicated); effect truth: criterion defined before execution, "unknown outcome" preserved). Pocket rules: no independent truth, no performance verdict; no common time, no latency claim.
+Fields [11§1.1]: truthVariable (R), measuresSupported (`link[](M)`, R), primarySource (R), backupSource (R), independenceFromSUT (justification, R — truth must not depend on the system under test [03§1.4]), deviceSourceId (R), coordinateFrameAndUnits (R), timeSource (R), updateRate (R), accuracyAndUncertainty (R — truth error must be small relative to the smallest decision-relevant effect [13§2.1]), coverage (R), calibrationOrValidation (R), failureIndicator (R), conflictRule (R — when two truth sources disagree, preserve both [03§1.4]), missingnessRule (R), fallback (R), measuresLostIfUnavailable (`link[](M)`, R). Truth domains (7) [03§1.4]: position-trajectory, identity-threat-state, event-time, configuration-state, operator-action, effect-outcome, environmental-state. Category-specific field blocks in [11§1.2] (position truth processingMode enum(real-time, post-processed, fused); identity provenance enum(measured, commanded, inferred, manually-adjudicated); effect truth: criterion defined before execution, "unknown outcome" preserved). Pocket rules: no independent truth, no performance verdict; no common time, no latency claim.
 
 ### 1.51 TimeSyncRecord
 
@@ -765,7 +765,7 @@ Purpose: coordinate declarations for every positional source. Sources: [11§1.4]
 
 ### 1.53 CalibrationRecord
 
-Purpose: one calibration check on one instrument. Sources: [11§1.6], [10§1.17]. Fields: instrumentDeviceId, measuredQuantity, calibrationStandardOrReference, procedure, datetime, operator, asFoundResult, adjustment, asLeftResult, uncertainty, validRangeAndConditions, expirationOrNextCheck, measuresSupported (link[](M)) — all R. Cadence brackets the campaign [11§6.2]: pre-campaign → installation → day-start → pre-run → continuous → post-run-on-event → day-end → post-campaign.
+Purpose: one calibration check on one instrument. Sources: [11§1.6], [10§1.17]. Fields: instrumentDeviceId, measuredQuantity, calibrationStandardOrReference, procedure, datetime, operator, asFoundResult, adjustment, asLeftResult, uncertainty, validRangeAndConditions, expirationOrNextCheck, measuresSupported (`link[](M)`) — all R. Cadence brackets the campaign [11§6.2]: pre-campaign → installation → day-start → pre-run → continuous → post-run-on-event → day-end → post-campaign.
 
 ### 1.54 AssociationGate
 
@@ -775,7 +775,7 @@ Purpose: the truth-to-source match rule per measure family. Sources: [11§1.5], 
 
 Purpose: per-critical-source monitored channels and thresholds. Sources: [11§1.9 — 17 fields], [03§1.6], [10§1.18].
 
-Fields [11§1.9]: source (R), measuresSupported (link[](M), R), mandatoryOrDiagnostic (enum, R), expectedUpdateRate (R), minimumAcceptableUpdateRate (R), maxAllowedGap (R), maxPacketRecordLoss (R), maxTimestampOffset (R), maxDrift (R), coverageRequirement (R), calibrationRequirement (R), identifierRequirement (R), storageBufferMargin (R), backup (R), warningThreshold (R), stopThreshold (R), recoveryCriterion (R). Gap/loss sub-spec [11§1.10]: maxTotalLoss, maxConsecutiveGap, maxCriticalPhaseLoss, interpolationPermitted (bool), maxInterpolationDuration, effectPerMeasure. Monitored channels seed (10) [03§1.6]. sourceState enum [CONFLICT: 03§1.6 defines 3 states (green, warning, stop); 10§1.18/11 define 5 (green, warning, stop, degraded, unknown) — use the 5-value superset; state-driven flow: green proceed; warning valid under written rule; stop hold (mandatory measure unrecoverable); degraded continue for named measures under approved fallback; unknown = stop for affected mandatory measures; every transition logged with time and source [11§6.3]]. One named person watches monitors during each run [03§1.6]. A campaign-wide average cannot replace a measure-specific limit [10§1.18].
+Fields [11§1.9]: source (R), measuresSupported (`link[](M)`, R), mandatoryOrDiagnostic (enum, R), expectedUpdateRate (R), minimumAcceptableUpdateRate (R), maxAllowedGap (R), maxPacketRecordLoss (R), maxTimestampOffset (R), maxDrift (R), coverageRequirement (R), calibrationRequirement (R), identifierRequirement (R), storageBufferMargin (R), backup (R), warningThreshold (R), stopThreshold (R), recoveryCriterion (R). Gap/loss sub-spec [11§1.10]: maxTotalLoss, maxConsecutiveGap, maxCriticalPhaseLoss, interpolationPermitted (bool), maxInterpolationDuration, effectPerMeasure. Monitored channels seed (10) [03§1.6]. sourceState enum [CONFLICT: 03§1.6 defines 3 states (green, warning, stop); 10§1.18/11 define 5 (green, warning, stop, degraded, unknown) — use the 5-value superset; state-driven flow: green proceed; warning valid under written rule; stop hold (mandatory measure unrecoverable); degraded continue for named measures under approved fallback; unknown = stop for affected mandatory measures; every transition logged with time and source [11§6.3]]. One named person watches monitors during each run [03§1.6]. A campaign-wide average cannot replace a measure-specific limit [10§1.18].
 
 ### 1.56 DataLineageRecord
 
@@ -783,7 +783,7 @@ Purpose: provenance for every transformation/derived product. Sources: [03§1.5]
 
 ### 1.57 FallbackPath
 
-Purpose: tested degraded-mode path per critical interface/source. Sources: [03§1.7], [11§1.12]. Fields: failureIndicator, localBufferOrAlternatePath, backupInstrumentOrSource, manualExportProcedure, recoveryTime, dataLostDuringTransition, measuresPreserved (link[](M)), measuresLost (link[](M)), degradedModeAuthority, validityLimit, fallbackTestProcedure, testedStatus (bool — "a written but untested fallback is not ready"; untested blocks the readiness gate).
+Purpose: tested degraded-mode path per critical interface/source. Sources: [03§1.7], [11§1.12]. Fields: failureIndicator, localBufferOrAlternatePath, backupInstrumentOrSource, manualExportProcedure, recoveryTime, dataLostDuringTransition, measuresPreserved (`link[](M)`), measuresLost (`link[](M)`), degradedModeAuthority, validityLimit, fallbackTestProcedure, testedStatus (bool — "a written but untested fallback is not ready"; untested blocks the readiness gate).
 
 ### 1.58 EventIdentityModel (campaign identifier registry)
 
@@ -795,7 +795,7 @@ Minimum identifier set (15) [11§1.7]: campaignId, cardIdAndVersion, runId, conf
 
 Purpose: the versioned, freezable list of evidence admitted to analysis plus full reproducibility state. Sources: [05 Part A], [09§1.29].
 
-Fields: includedRunManifest (link[](RUN), R), measureDefinitionVersions (R), inputFileHashesOrCustodyIds (R), transformationAndAdapterVersions (R), codeAndPackageVersions (R), parametersAndRandomSeeds (R), exclusionAndCensoringRules (R), modelFormula (R), outputTablesAndFigures (R), independentReviewResult (R), sensitivityAnalyses (R), analyticalEnvironment (R). Versioned; frozen at campaign completion before final findings [05 Part K]. Gate: only runs with a recorded validity status enter the pipeline.
+Fields: includedRunManifest (`link[](RUN)`, R), measureDefinitionVersions (R), inputFileHashesOrCustodyIds (R), transformationAndAdapterVersions (R), codeAndPackageVersions (R), parametersAndRandomSeeds (R), exclusionAndCensoringRules (R), modelFormula (R), outputTablesAndFigures (R), independentReviewResult (R), sensitivityAnalyses (R), analyticalEnvironment (R). Versioned; frozen at campaign completion before final findings [05 Part K]. Gate: only runs with a recorded validity status enter the pipeline.
 
 ### 1.60 ReliabilityIncident
 
@@ -835,7 +835,7 @@ assetType enum (12) [06]: decision-discovery-prompts, question-hypothesis-patter
 
 Purpose: the exact frozen scope of accepted evidence; anchor for all later regression. Sources: [06 Part K], [13§1.19].
 
-Fields: hardwareSoftwareFirmwareAlgorithmsModelsMissionData (R), interfacesAndSupportingSystems (R), threatClassesAndProfiles (link[](THR), R), environmentsAndRanges (R), operatorsTrainingProcedures (R), measuresThresholdsMethodsAnalyticalVersions (R), assumptionsAndLimitations (R), validityPeriod (date range, R — evidence can expire; the campaign defines it [13§6.10]), evidenceAcceptanceStatus (R), findingsAndActionsSupported (link[](FIND, ACT), R). Pocket rule: "No evidence baseline, no controlled regression."
+Fields: hardwareSoftwareFirmwareAlgorithmsModelsMissionData (R), interfacesAndSupportingSystems (R), threatClassesAndProfiles (`link[](THR)`, R), environmentsAndRanges (R), operatorsTrainingProcedures (R), measuresThresholdsMethodsAnalyticalVersions (R), assumptionsAndLimitations (R), validityPeriod (date range, R — evidence can expire; the campaign defines it [13§6.10]), evidenceAcceptanceStatus (R), findingsAndActionsSupported (link[](FIND, ACT), R). Pocket rule: "No evidence baseline, no controlled regression."
 
 ### 1.67 ChangeImpactAssessment + MinimumRegressionScope (REG)
 
@@ -872,9 +872,11 @@ Purpose: labels the epistemic basis of any input to a mission-thread design. Sou
 [CONFLICT — two grammars in the corpus:]
 
 **Grammar A — unified manual pattern [01§4.2]:**
-```
+
+```text
 VLK-<campaign>-<record type>-<sequence>-v<major>.<minor>
 ```
+
 Examples (verbatim): `VLK-ALPHA-TC-014-v1.2`, `VLK-ALPHA-RUN-037` (no version), `VLK-ALPHA-CFG-003-v2.0`, `VLK-ALPHA-FIND-008-v1.0`.
 
 **Grammar B — semantic Field Guide patterns [13§1.1]:**
@@ -914,7 +916,7 @@ From the brief and sources: CAMP, DEC, Q (alias OQ), CLM, UNK, ASM, HYP, M, CFG,
 
 ### 3.1 Canonical chain (mandatory, verbatim [02§6.1])
 
-```
+```text
 Decision (DEC)
 → Question (Q)
 → Claim or Unknown (CLM/UNK)
@@ -927,12 +929,13 @@ Decision (DEC)
 → Finding (FIND)
 → Decision implication (→ Action ACT)
 ```
+
 Rule: "An activity without this chain is out of scope." Variants that agree in substance: [04§6.1] adds test object, method, prediction, and practical action; [13§4.3] evidence-chain template adds comparison method and decision threshold; [12§6.2] decision-backward planning. The 07§4.3 traceability record (17 fields) is the join table: decisionIdAndStatement, questionIdAndWording, priority, claimOrUnknownId, hypothesisId, primaryMeasureIds, diagnosticMeasureIds, requiredDataAndGroundTruth, threatAndConditionIds, plannedCardIds, actualValidRunIds, findingIds, claimDisposition, decisionImplication, remainingGap, owner, status.
 
 ### 3.2 Required links per record (enforced)
 
 | Record | Must link to | Rule/source |
-|---|---|---|
+| --- | --- | --- |
 | Q | DEC | 02§1.1 |
 | CLM/UNK/ASM | Q or DEC | 01§1.15-1.16 |
 | HYP | Q (+ CLM when disposing a claim) | 02§1.2 |
@@ -957,18 +960,19 @@ The nine-question Deployment Strategist Standard [13§3.2] and the ten continuou
 
 ### 4.1 Controlled-record states (all controlled records)
 
-```
+```text
 draft → in-review → approved → issued → (superseded | withdrawn)
                                    ↓
                                  closed  (when all required actions complete)
 ```
+
 Definitions [01§1.3]: draft = may change without approval; in-review = named reviewers checking; approved = accountable authority accepts; issued = released for use; superseded = newer issued version replaces; withdrawn = owner removed from use; closed = all required actions complete.
 
 ### 4.2 Campaign phase machine and gates
 
 Phases (manual 00-06 = QtM lifecycle FRAME → DESIGN → EXECUTE & LEARN → DECIDE → INSTITUTIONALIZE):
 
-```
+```text
 intake → 00 control → 01 qualification → 02 evidence design → 03 integration/readiness
        → 04 execution (day loop) → 05 analysis/adaptation (interleaved with 04)
        → 06 decision evidence → closeout → (follow-on / regression program)
@@ -977,7 +981,7 @@ intake → 00 control → 01 qualification → 02 evidence design → 03 integra
 Gate sequence (13§6.2, blocking transitions):
 
 | Gate | Blocks entry to | Pass condition (source) |
-|---|---|---|
+| --- | --- | --- |
 | Control gate | phase 01+ | every decision type has one accountable authority; every record has an owner; configuration process can reconstruct each run; stop/restart/change/escalation paths known [01§3.6] |
 | Qualification gate | evidence design | gate statement completable: decision, date, accepting org+conditions, reducible uncertainty, feasibility [01§3.7, 13§3.5] |
 | Definition gate | evidence design detail | mission thread explicit; boundary and baseline reconstructable; claims map to testable hypotheses; failure modes visible; conditions defined [13§3.6] |
@@ -993,7 +997,7 @@ Gate sequence (13§6.2, blocking transitions):
 
 ### 4.3 Card lifecycle
 
-```
+```text
 draft (from approved design)
 → reviews: test conductor → engineering/system owner → red lead → data+analysis leads
            → safety authority → range/airspace/spectrum/security/legal
@@ -1002,6 +1006,7 @@ draft (from approved design)
 → approvals obtained → ISSUED (execution version, frozen until the run ends)
 → superseded (only via end-of-day CHG issuance) | withdrawn
 ```
+
 [04§4.3 — 13 steps.] A card failing cold-reader or dry-run is not ready. One issued card controls one run type. Editing an issued card is blocked; changes route through CHG at end-of-day [04§6.4].
 
 ### 4.4 Run states
@@ -1013,7 +1018,7 @@ Two orthogonal axes (do not merge):
 
 ### 4.5 Day-of-test rhythm (execution-day loop)
 
-```
+```text
 DAY START [04§3.1: site+authority → people → systems/config → instrumentation/data
            → go/no-go (4-state, recorded with time+approvers)]
   └─ per run:
@@ -1042,6 +1047,7 @@ END OF DAY [04§3.12: reconcile runs → statuses → calibration/clock checks �
             re-rank next-day run list → issue approved card/plan changes (CHG) →
             brief next-day first-run conditions → secure site]
 ```
+
 Daily evidence review step 5 selects exactly one next action from 9 options [05§6]: execute next issued card; repeat for validity/stability; isolate one variable; repair evidence chain; revise threat/condition within policy; introduce diagnostic card; stop low-value line; end for sufficiency; end for futility. A plan-changing selection generates a CHG.
 
 Battle rhythm anchors [01§6.5]: weekly campaign control review (pre-deployment); daily planning brief; formal day-start go/no-go; pre-run brief; immediate post-run debrief; end-of-day validity and evidence board; final method/finding/acceptance reviews.
@@ -1061,7 +1067,7 @@ The 11 pocket rules [07§6] as hard validations: no decision owner → no campai
 Source: `/Users/caseytalbot/Projects/rangeboard/src/model/types.ts` (328 lines, read 2026-08-19).
 
 | Unified record | Mapping | Detail |
-|---|---|---|
+| --- | --- | --- |
 | Campaign (CAMP) | **NEW** | No campaign concept exists. `Scenario` is a map/library document, not a campaign; a Campaign should reference one or more Scenarios. |
 | RoleAssignment | **NEW** | No people/role model exists. |
 | AuthorityMatrixEntry / AuthorityApproval | **NEW** | — |
@@ -1074,20 +1080,20 @@ Source: `/Users/caseytalbot/Projects/rangeboard/src/model/types.ts` (328 lines, 
 | Condition (COND) | **EXTENDS `EnvironmentSpec`** | Existing {wind, temperature, fieldElevationFt, precipitation(clear/rain/fog), light(day/night), emBackground(rural/urban), apply} covers weather/illumination/EM background. COND adds: id+version, terrain/clutter, network state, background traffic, workload, operator state, supporting systems, degraded modes, contested-spectrum sub-record, C2-degradation states, generalization bounds. |
 | ConfigurationBaseline (CFG) | **NEW**, snapshots existing state | A CFG should capture a frozen snapshot of `Scenario` layout (entities+specs+connections+`SystemPreset` placements+environment) plus the 28 record fields (serials, versions, release, freeze). `SystemPreset`/`SystemComponent` are the composable architecture pieces a CFG references — ALREADY COVERED as building blocks. |
 | MissionThread / ThreadTransition | **EXTENDS `Connection`** | `Connection` {fromId, toId, label} is the kill-chain edge on canvas. ThreadTransition adds the 8 evidence fields per edge; MissionThread is a NEW ordered wrapper (12-node template) that can bind to existing entity connections. |
-| SystemBoundary | **NEW**; `Boundary` (geometric range/restricted/asset/corridor polygons) is a different concept — geometric boundaries feed RangeFitAssessment, not SystemBoundary. |
+| SystemBoundary | **NEW**; `Boundary` (geometric range/restricted/asset/corridor polygons) is a different concept — geometric boundaries feed RangeFitAssessment, not SystemBoundary. | [Not supplied in source] |
 | FailureMode, FeasibilityItem, Factor, QuantDesignRecord | **NEW** | `TestCard.independentVars/controlledVars/covariates` strings become Factor links. |
 | TestMatrixCell / RunListEntry | **NEW** | — |
 | TestCard (TC) | **EXTENDS `TestCard`** | Existing 19 fields map to unified sections: cardId/version→S1; campaign/questionIds→S2 (typed); customerQuestion→S2/Q link; purpose→S3; hypothesis→S2 HYP link; configuration→S5 CFG link; threatProfile→S6 THR link; independentVars/controlledVars/covariates→S8; measures→S9; procedure: string[]→ProcedureStep[] (S12); thresholds→S9; abortCriteria→S14; expectedResults→S13; linkedEntityIds→keep (canvas link); runs→RUN records. ADD: status/lifecycle, owner/approvers, matrix cell, repetition, preconditions (S11), data+truth (S10), validity/repeat (S15), outputs (S16), deviation area (S17), blinding, site-approved calls, recording margins. |
-| Run (RUN) | **EXTENDS `RunLogEntry`** | Existing {id, runId, validity: RunValidity('valid'|'valid-limited'|'invalid'|'pending'), result, deviations: string}. `RunValidity` maps 1:1 to the unified enum (`valid-limited` = `conditionally-valid`) — rename or alias; ADD the other ~24 run fields; `deviations: string` becomes `link[](DEV)`; add accountingState (with `excluded`), allowed/prohibited uses, adjudication links, immediate debrief struct. |
+| Run (RUN) | **EXTENDS `RunLogEntry`** | Existing {id, runId, validity: RunValidity('valid' \| 'valid-limited' \| 'invalid' \| 'pending'), result, deviations: string}. `RunValidity` maps 1:1 to the unified enum (`valid-limited` = `conditionally-valid`) — rename or alias; ADD the other ~24 run fields; `deviations: string` becomes `link[](DEV)`; add accountingState (with `excluded`), allowed/prohibited uses, adjudication links, immediate debrief struct. |
 | RunEvent | **EXTENDS `FrameSnap`/playback concepts loosely — treat as NEW** | Timeline playback (`simTimeS`) exists for simulation; run events are real-world timestamped records. NEW. |
 | RunAdjudication, Deviation, Anomaly, Change (CHG), CorrectionRecord, MeasureResult, CausalDiagnosis, ReliabilityIncident | **NEW** | — |
 | Finding (FIND), Action (ACT) | **NEW** | — |
 | ChecklistInstance, ReadinessReview, GoNoGoDecision, DeficiencyWaiver, HazardRecord, ContingencyRecord, SecurityDataRights, ScheduleWorkstream | **NEW** | — |
-| RangeFitAssessment | **NEW**, consumes existing `Boundary`, `EnvironmentSpec`, and sensor/effector coverage analysis as evidence inputs. |
+| RangeFitAssessment | **NEW**, consumes existing `Boundary`, `EnvironmentSpec`, and sensor/effector coverage analysis as evidence inputs. | [Not supplied in source] |
 | ReviewRecord, DecisionOption, BoundedRecommendation, DecisionEvidencePackage, AfterActionImprovement, ReuseAsset, EvidenceBaseline, ChangeImpactAssessment, MinimumRegressionScope, SuccessMetrics | **NEW** | Reuse library naturally extends the existing `builtin` flag pattern on `SpecModel`/`SystemPreset` (library vs campaign instances). |
 | OpforExecutionMode, InfoLearningControls, RealismConstraint, FidelityAssessment, TestDecisionRecord, ThreatCoverageMatrix | **NEW** | ThreatCoverageMatrix rows can seed from existing `SpecModel.uas` library entries (UasGroup 1-5 already modeled; sources require Groups 1-3 minimum). |
-| Scenario | **ALREADY COVERED**, gains `campaignId?` back-link; a CFG snapshot references a Scenario state. |
-| EnvironmentSpec, EngagePolicy, SensorSpec/EffectorSpec, FlightPath, Entity | **ALREADY COVERED** for the map/planning plane; they become evidence inputs (e.g., FlightPath → planned threat route on the card; engagement analysis → mission-arithmetic timeline seeds [02§2.1]). |
+| Scenario | **ALREADY COVERED**, gains `campaignId?` back-link; a CFG snapshot references a Scenario state. | [Not supplied in source] |
+| EnvironmentSpec, EngagePolicy, SensorSpec/EffectorSpec, FlightPath, Entity | **ALREADY COVERED** for the map/planning plane; they become evidence inputs (e.g., FlightPath → planned threat route on the card; engagement analysis → mission-arithmetic timeline seeds [02§2.1]). | [Not supplied in source] |
 
 Schema note: `Scenario.schemaVersion: 1` must bump when campaign records join the persisted model; the T&E plane should persist as its own store keyed by campaign, referencing scenarios, not embedded inside `Scenario`.
 
@@ -1114,4 +1120,3 @@ Schema note: `Scenario.schemaVersion: 1` must bump when campaign records join th
 17. [AMBIGUOUS] Valid-run-rate denominator (attempted assumed) and "valid evidence unit" definition [06§2].
 18. [AMBIGUOUS] AuthorityApproval status value set — mechanism given, values inferred [03§1.9].
 19. Intentional overlap: QtM lifecycle pages vs manual sections carry the same records as question sets vs procedures — merged here, not duplication error [13 endnote].
-

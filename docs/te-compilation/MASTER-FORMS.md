@@ -20,7 +20,7 @@ Legend for item types: **C** = check (yes/done), **V** = value entry, **G** = go
 ### Catalog index
 
 | # | Canonical checklist | Phase | Who runs it | Items | Gate it feeds | Sources (canonical + variants) |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | 1 | Control gate | before-deployment | deployment strategist | 4 | unlock phase 01 (qualification) | 01 §3.6 |
 | 2 | Qualification gate | before-deployment | deployment strategist | 4 | unlock evidence planning (phase 02) | 01 §3.7; 13 §3.5 gate statement |
 | 3 | Structured discovery order | before-deployment | strategist + stakeholders | 10 steps | discovery complete | 01 §3.4 |
@@ -111,7 +111,9 @@ Count: 82 canonical checklists/rule-lists after merging variants (roughly 95 raw
 ### 1.1 Before-deployment checklists
 
 #### 1.1.1 Control gate checklist (01 §3.6) — end of phase 00; deployment strategist. Gate: unlock qualification phase.
+
 Proceed only when:
+
 - Every decision type has one accountable authority.
 - Every controlled record has an owner.
 - The configuration process can reconstruct each run.
@@ -120,7 +122,9 @@ Proceed only when:
 Item types: all C. Gate outcome: proceed / do not proceed (G).
 
 #### 1.1.2 Qualification gate checklist (01 §3.7) — end of phase 01; deployment strategist. Gate: unlock evidence planning.
+
 Proceed only when the team can state (fill-in statement, 01 §4.4):
+
 - The specific decision and its date. (V)
 - The organization that will accept evidence, and its conditions. (V)
 - The uncertainty the campaign can reduce. (V)
@@ -129,6 +133,7 @@ Proceed only when the team can state (fill-in statement, 01 §4.4):
 Rendered as the fill-in gate statement: "The customer must make **this decision** by **this date**. **This organization** will accept evidence that meets **these conditions**. The campaign can reduce **this uncertainty**. The mission, evaluated boundary, customer commitment, authority path, and execution conditions are sufficiently feasible to begin detailed evidence planning." Variant wording in 13 §3.5 ("this bounded decision ... these acceptance conditions ... decision-critical uncertainty ... required customer commitment and execution conditions are feasible").
 
 #### 1.1.3 Structured discovery order (01 §3.4) — deployment strategist with decision owner, mission owner, operators, system owner, analysts, and evidence authority present when possible. Ordered steps:
+
 1. Restate the decision.
 2. Define the mission outcome.
 3. Walk the mission thread.
@@ -141,6 +146,7 @@ Rendered as the fill-in gate statement: "The customer must make **this decision*
 10. Read back the result and correct it in the room.
 
 #### 1.1.4 Discovery question list (01 §3.5) — verbatim; feeds question/claim/unknown/assumption registers:
+
 - Who performs what task, for what protected asset or mission effect?
 - Against which threats and behaviors?
 - Where and under which weather, terrain, clutter, electromagnetic, communications, workload, and degraded conditions?
@@ -158,6 +164,7 @@ Rendered as the fill-in gate statement: "The customer must make **this decision*
 Rule (01 §1.5 via 13): convert each customer statement into one of four categories — Claim, Known fact, Unknown, Assumption — then ask "What evidence would resolve this unknown?" The much larger phase-2 RFI question bank (mission/system/claims/threat/conditions/known problems/assumptions/priorities) is in 13 §3.4 and should seed the discovery workspace prompt library.
 
 #### 1.1.5 Pre-Campaign Gate (13 §3.1) — Field Guide; strategist. Gate: campaign start.
+
 - [ ] Customer decision defined.
 - [ ] Operational questions identified.
 - [ ] System boundary defined.
@@ -176,6 +183,7 @@ Rule (01 §1.5 via 13): convert each customer statement into one of four categor
 Overlap note: this condensed gate spans what the Control gate, Qualification gate, and Design gate cover in the manual proper. Treat it as the Field Guide quick-reference view of those three gates, not a fourth independent gate.
 
 #### 1.1.6 Configuration control procedure (01 §3.1) — deployment strategist with system owner. Feeds: baseline freeze; per-run baseline verification.
+
 1. Define the configuration item list.
 2. Record hardware model, serial number, firmware, software, model, mission data, feature flags, thresholds, calibration, interfaces, network settings, security settings, operator procedure, and training state. (V)
 3. Export machine-readable settings where the system supports it.
@@ -193,7 +201,9 @@ Overlap note: this condensed gate spans what the Control gate, Qualification gat
 Conditional rule: a configuration change requires a new baseline when it can affect behavior, data, safety, comparability, or applicability.
 
 #### 1.1.7 Design gate checklist (02 §3.2) — final gate of evidence planning. Gate: unlock integration/card phases.
+
 Proceed only when ALL of:
+
 - Every P1 question has a defensible evidence path.
 - Measures are reproducible.
 - Thresholds have accepted rationale.
@@ -206,6 +216,7 @@ Runner: [AMBIGUOUS in source: evidence authority and analysis lead named as appr
 #### 1.1.8 Stop / hold / repeat / adapt rule lists (02 §3.1) — configured before execution; fired during execution. Four conditional lists, verbatim.
 
 **Stop immediately** (any item triggers immediate stop):
+
 - Safety or regulatory trigger.
 - Loss of required authority.
 - System state outside the safe envelope.
@@ -216,6 +227,7 @@ Runner: [AMBIGUOUS in source: evidence authority and analysis lead named as appr
 - Security or classification violation.
 
 **Hold before the next run** (any item blocks the next run):
+
 - Unresolved data-quality failure.
 - Unknown configuration state.
 - Procedure deviation affecting a comparison.
@@ -224,6 +236,7 @@ Runner: [AMBIGUOUS in source: evidence authority and analysis lead named as appr
 - Weather, spectrum, or range state near a limit.
 
 **Repeat** (any item makes the run invalid and requires a repeat):
+
 - A written validity rule failed.
 - A required source is missing or outside tolerance.
 - The actual condition did not match the card.
@@ -231,6 +244,7 @@ Runner: [AMBIGUOUS in source: evidence authority and analysis lead named as appr
 - A material anomaly has been corrected and confirmation is required.
 
 **Adapt** (any item permits controlled replanning):
+
 - Evidence already answers a question.
 - A new P1 unknown appears.
 - A planned run no longer changes the decision.
@@ -241,6 +255,7 @@ Runner: [AMBIGUOUS in source: evidence authority and analysis lead named as appr
 Governance rule: "For every adaptation class, name the approver and maximum change allowed without a new design review." (two V fields per adaptation class). Related stop taxonomy by authority (13 §3.7): safety/regulatory stop (campaign safety plan), data-quality stop, equipment stop, evidence-sufficiency stop, futility stop, resource stop.
 
 #### 1.1.9 Design checks — design lint (04 §3.13) — app warnings before card generation:
+
 - A question has no measure.
 - A measure has no usable source.
 - A measure has no independent truth source.
@@ -255,6 +270,7 @@ Governance rule: "For every adaptation class, name the approver and maximum chan
 - The proposed test cannot answer the customer's question.
 
 #### 1.1.10 Design review questions (10 §3.5) — strategist, before approving a design:
+
 1. What is one independent unit?
 2. What exact event counts?
 3. What is the denominator?
@@ -271,6 +287,7 @@ Governance rule: "For every adaptation class, name the approver and maximum chan
 14. Which conclusions are prohibited?
 
 #### 1.1.11 Measure dictionary use rules (09 §3.1) — run when instantiating a measure:
+
 1. Copy a dictionary entry into the campaign measure registry.
 2. Replace every bracketed parameter with an approved value or record.
 3. Freeze event, denominator, truth, missing-data, validity, and uncertainty rules before execution.
@@ -281,6 +298,7 @@ Governance rule: "For every adaptation class, name the approver and maximum chan
 8. A measure is available only when its required truth, timing, configuration, and data-quality conditions pass.
 
 #### 1.1.12 Dictionary completion gate (09 §3.2) — a measure is ready only when all pass:
+
 - Its event and opportunity definitions are executable.
 - Its numerator and denominator cannot be interpreted two different ways.
 - Its experimental unit is explicit.
@@ -292,7 +310,9 @@ Governance rule: "For every adaptation class, name the approver and maximum chan
 - A cold reader can reproduce the result from retained data.
 
 #### 1.1.13 Threat-representation gate (08 §3.1) — go/no-go, run before execution:
+
 Proceed only when:
+
 - The operational behavior is stated.
 - Performance-driving threat features are identified.
 - The representation class is correct.
@@ -306,7 +326,9 @@ Proceed only when:
 - The card can be executed without informal interpretation.
 
 #### 1.1.14 Doctrine-to-test gate (08 §3.2) — go/no-go:
+
 Proceed only when:
+
 - The mission and protected outcome are explicit.
 - Doctrine and observed practice remain distinguishable.
 - The threat behavior is executable.
@@ -322,16 +344,19 @@ Proceed only when:
 #### 1.1.15 Randomization rules (09 §3.6), blocking rules (09 §3.7), multiple-comparison controls (10 §3.8)
 
 Randomization:
+
 - Randomize when practical: configuration order, threat approach direction, factor combinations, operator assignment, time within a block.
 - Do not randomize across unsafe, infeasible, or destructive transitions merely for statistical appearance. Record restrictions and use an appropriate blocked or split-plot design.
 - Preserve the randomization schedule and actual order. A field-driven departure becomes a recorded deviation or approved adaptation.
 
 Blocking:
+
 - Block on nuisance factors that cannot be eliminated but can be grouped.
 - Within a block, compare configurations under conditions that are as similar as practical.
 - Do not confuse blocking with aggregation. Preserve block identity in analysis.
 
 Multiple-comparison controls (before execution):
+
 - Name the primary comparisons.
 - Label exploratory comparisons.
 - Limit the number of formal claims.
@@ -340,6 +365,7 @@ Multiple-comparison controls (before execution):
 Rule: Do not search many cells until one favorable result appears and then present it as the planned result.
 
 #### 1.1.16 Card review-and-issue lifecycle (04 §4.3) — gate: card issue. Ordered steps:
+
 1. Draft from the approved design.
 2. Review with the test conductor.
 3. Review technical steps with engineering and the system owner.
@@ -357,6 +383,7 @@ Rule: Do not search many cells until one favorable result appears and then prese
 Gate rule: a card that fails the cold-reader or dry-run test is not ready.
 
 #### 1.1.17 Card completion gate (11 §3.10) — card ready for issue only when all pass:
+
 - Every bracketed placeholder resolves to a controlled record.
 - Measures use the current dictionary versions.
 - Planned repetitions and stopping rules trace to the quantitative design.
@@ -367,6 +394,7 @@ Gate rule: a card that fails the cold-reader or dry-run test is not ready.
 - Allowed and prohibited conclusions are explicit.
 
 #### 1.1.18 Shared card rules (11 §3.11) — invariants the app enforces on every card:
+
 - One issued card controls one run type.
 - One run receives one immutable run ID.
 - Actual differences become deviations; never edit the card to match the run.
@@ -377,6 +405,7 @@ Gate rule: a card that fails the cold-reader or dry-run test is not ready.
 - Invalid evidence is preserved and excluded only under the approved measure rule.
 
 #### 1.1.19 System and interface integration sequence (03 §3.2) — ordered; rule: "Do not use live mission runs to find basic component or interface faults."
+
 1. Inventory all hardware, software, cables, networks, credentials, licenses, power, cooling, mounts, and support equipment.
 2. Verify component function against a known input.
 3. Verify every interface against the current interface definition.
@@ -389,6 +418,7 @@ Gate rule: a card that fails the cold-reader or dry-run test is not ready.
 10. Record defects, owners, correction dates, and retest evidence. (V)
 
 #### 1.1.20 Clock-control / time-synchronization procedure — canonical: 11 §3.1 (data monitor / instrumentation lead):
+
 1. Synchronize before integration rehearsal.
 2. Record source, method, offset, and device. (V)
 3. Check at day start.
@@ -403,6 +433,7 @@ Gate rule: a card that fails the cold-reader or dry-run test is not ready.
 Variant (03 §3.1, data lead, 8 steps): adds "Select the authoritative time source", "Define the maximum offset and drift for each measure" (per-measure tolerance, V), and "Preserve original source timestamps". Merge both into one procedure: selection + tolerance definition happen once at campaign level (03), the check cadence follows 11. Gating rule (03 §2): "If time uncertainty exceeds the tolerance for a measure, the run cannot support that measure."
 
 #### 1.1.21 Spatial registration procedure (11 §3.2):
+
 1. Survey or establish instrument locations and reference points.
 2. Verify coordinate declarations.
 3. Apply lever-arm and boresight corrections.
@@ -413,6 +444,7 @@ Variant (03 §3.1, data lead, 8 steps): adds "Select the authoritative time sour
 8. Preserve raw coordinates and derived registered coordinates.
 
 #### 1.1.22 Calibration schedule (11 §3.3) — per instrument; brackets the campaign:
+
 - Pre-campaign calibration.
 - Installation/registration check.
 - Day-start functional check.
@@ -423,6 +455,7 @@ Variant (03 §3.1, data lead, 8 steps): adds "Select the authoritative time sour
 - Post-campaign calibration.
 
 #### 1.1.23 End-to-end rehearsal (11 §3.7) — before live P1 execution; prerequisite of the instrumentation gate:
+
 1. Generate a representative truth object and source event.
 2. Exercise every required source.
 3. Verify identifiers.
@@ -437,6 +470,7 @@ Variant (03 §3.1, data lead, 8 steps): adds "Select the authoritative time sour
 12. Record the rehearsal acceptance result and deficiencies. (V)
 
 Variant (13 §3.8, QtM 04 rehearsal acceptance — before range execution, demonstrate that):
+
 - Every required source reaches the analysis environment.
 - Every trial and configuration is uniquely tagged.
 - Time synchronization and ground-truth correlation meet tolerance.
@@ -448,6 +482,7 @@ Variant (13 §3.8, QtM 04 rehearsal acceptance — before range execution, demon
 Gate (13 §3.8): proceed only when the complete evidence chain has passed rehearsal, or every deficiency has a named owner, approved disposition, and explicit effect on achievable conclusions.
 
 #### 1.1.24 Instrumentation readiness gate (11 §3.8) — all must pass before live P1 execution:
+
 - Independent truth covers every P1 measure.
 - Common time and registration meet measure-specific tolerances.
 - Calibration is current and traceable.
@@ -459,6 +494,7 @@ Gate (13 §3.8): proceed only when the complete evidence chain has passed rehear
 - The team can state exactly which conclusions disappear when any critical source fails.
 
 #### 1.1.25 Independence rules (11 §3.9) — go/no-go review items for truth sourcing:
+
 - Do not use the radar under test as truth for its own detection probability.
 - Do not use the receiving C2's track as the only truth for handoff correctness.
 - Do not use the EW system's "effect achieved" flag as the only proof of mission effect.
@@ -467,6 +503,7 @@ Gate (13 §3.8): proceed only when the complete evidence chain has passed rehear
 - A source can support both system operation and truth only when its independence and intended use are explicitly justified.
 
 #### 1.1.26 Safety rehearsal checklist (03 §3.3) — pre-execution. Rehearse:
+
 stop words, safe states, evacuation, medical response, fire response, lost-link response, flight termination, restart authority.
 
 ---
@@ -474,6 +511,7 @@ stop words, safe states, evacuation, medical response, fire response, lost-link 
 ### 1.2 Readiness checklists
 
 #### 1.2.1 Test readiness review (TRR) — CANONICAL: 07 §3.1, 24 items. Gate: outcome enum `go | conditional go | hold | no-go`.
+
 - [ ] Decision charter is approved.
 - [ ] Evidence-acceptance conditions are approved.
 - [ ] Mission, system boundary, and configuration are controlled.
@@ -506,6 +544,7 @@ Variant B (13 §3.10 — QtM 06): readiness grouped into Technical (6), Operatio
 Readiness review series (03 §6.2): five gated review events, in order — Design readiness review; Integration readiness review; Range readiness review; Test readiness review; Daily readiness review (recurring). Each carries the outcome enum: Go / Conditional go (named authority accepts defined deficiencies; limits written into the cards and conclusion plan) / Hold / No-go. Note (13 §6.9): DoD practice distinguishes the systems-engineering TRR from certification of readiness for dedicated OT — different purposes and owners.
 
 #### 1.2.2 Readiness gate conditions (03 §3.5) — final gate before live runs. Start live runs only when all true:
+
 - The complete mission and evidence chain has passed rehearsal.
 - Mandatory authorities are active.
 - Current cards and configurations are issued.
@@ -514,7 +553,9 @@ Readiness review series (03 §6.2): five gated review events, in order — Desig
 - Every open deficiency has an approved disposition with an explicit effect on achievable conclusions.
 
 #### 1.2.3 Baseline ideal standard (12 §3.7) — campaign-completeness reference checklist:
+
 A baseline ideal campaign is complete when:
+
 - The customer question is measurable.
 - The test object and exact change are explicit.
 - The hypothesis can be supported or contradicted.
@@ -537,6 +578,7 @@ A baseline ideal campaign is complete when:
 #### 1.3.1 Day-start checklist — CANONICAL: 04 §3.1 (grouped procedure, complete before the first live run; record each item and responsible person). Gate: daily go/no-go.
 
 **Site and authority**
+
 1. Confirm the current range window.
 2. Confirm airspace and spectrum status.
 3. Confirm weather and forecast against limits.
@@ -546,6 +588,7 @@ A baseline ideal campaign is complete when:
 7. Confirm the named stop and restart authorities are present or reachable.
 
 **People**
+
 1. Muster all required roles.
 2. Confirm qualifications and duty limits.
 3. Review fatigue, heat, cold, hydration, and shift risks.
@@ -554,6 +597,7 @@ A baseline ideal campaign is complete when:
 6. Rehearse start, pause, stop, and emergency calls.
 
 **Systems and configuration**
+
 1. Inspect each system and support item.
 2. Load the released configuration.
 3. Verify hardware, software, firmware, mission data, settings, network, interfaces, and operator procedure.
@@ -562,6 +606,7 @@ A baseline ideal campaign is complete when:
 6. Confirm red configuration and profile assets.
 
 **Instrumentation and data**
+
 1. Inspect and calibrate required instruments.
 2. Verify ground-truth sources against a known reference.
 3. Synchronize all recorders to the common time source.
@@ -575,6 +620,7 @@ A baseline ideal campaign is complete when:
 11. Record the evidence-chain acceptance result. (V)
 
 **Go/no-go**
+
 1. Review open defects and waivers.
 2. State each affected measure and conclusion. (V)
 3. Obtain the daily safety decision. (S)
@@ -588,6 +634,7 @@ Variant A (07 §3.2 — condensed 22-item print form, same gate; item list verba
 Variant B (13 §3.15, Corpus 05 go/no-go check — 4 items): weather and range clearance; instrumentation and ground-truth recording; active spectrum authority; test configuration against the frozen baseline. Rule: stop the test if one required item is not ready. Corpus 05 also prepends a pretest briefing: review each test card; practice the knock-it-off and terminate calls.
 
 #### 1.3.2 Daily quantitative workflow — before the first run (10 §3.1):
+
 - Compute every P1 measure from rehearsal data. (V)
 - Verify units, schemas, time, registration, and identity.
 - Test code against a known case.
@@ -599,7 +646,9 @@ Variant B (13 §3.15, Corpus 05 go/no-go check — 4 items): weather and range c
 ### 1.4 Pre-run checklists
 
 #### 1.4.1 Pre-run release check — CANONICAL: 04 §3.2 (test conductor, challenge-and-response, immediately before each run). Gate: run release. Conditional rule: **if any answer is unknown, hold the run.**
+
 Confirm:
+
 - Correct card and version.
 - Unique run identifier.
 - Run purpose and matrix cell.
@@ -631,6 +680,7 @@ Variant C (12 §3.1–3.2 — card-embedded): "Required state" checklist (5 item
 Also related: Field Guide 6 execution-prep sequence (13 §6.6): confirm card/version; confirm customer question; freeze intended configuration; verify participant responsibilities; verify range/safety constraints; verify data-path readiness — then configuration check, calibration, time sync, dry run ("Do not quietly convert a dry run into scored evidence"), then live run.
 
 #### 1.4.2 Run initiation sequence (04 §3.3) — use the site-approved words; ordered:
+
 1. The test conductor states card ID, version, run ID, purpose, and expected duration. (V)
 2. Each role reports ready or not ready. (G per role)
 3. The run logger records the ready state and time. (V)
@@ -661,6 +711,7 @@ Rule: do not start recorders at the same instant as the active event; use the pr
 Authority rules (04 §1.6): only the test conductor controls the run sequence; any authorized person may call the approved safety stop; the data monitor may call a data hold or stop under the card; the deployment strategist controls evidence release and the next-run decision.
 
 #### 1.5.2 Safety or regulatory stop (04 §3.5) — ordered:
+
 1. Any authorized participant uses the approved stop word.
 2. All roles enter the defined safe state.
 3. The test conductor acknowledges the stop.
@@ -669,6 +720,7 @@ Authority rules (04 §1.6): only the test conductor controls the run sequence; a
 6. Do not restart until the named authority clears the cause and the card restart criteria pass. (G)
 
 #### 1.5.3 Data-quality or equipment stop (04 §3.6) — ordered:
+
 1. The data monitor or technical lead reports the condition.
 2. The test conductor pauses or stops under the card.
 3. Preserve all data and state.
@@ -678,6 +730,7 @@ Authority rules (04 §1.6): only the test conductor controls the run sequence; a
 7. Obtain degraded-operation approval when required. (S, conditional)
 
 #### 1.5.4 Procedure deviation response (04 §3.7) — if the procedure differs from the card:
+
 1. Do not edit the card.
 2. Complete or stop according to the existing rules.
 3. Record the exact difference and time. (V)
@@ -685,6 +738,7 @@ Authority rules (04 §1.6): only the test conductor controls the run sequence; a
 5. Adjudicate after the run.
 
 #### 1.5.5 Anomaly response (04 §3.8) — use this order:
+
 1. Make the activity safe.
 2. Preserve raw data, logs, configuration, physical state, and operator recollection.
 3. Record the observation before discussing causes. (V)
@@ -702,6 +756,7 @@ Rule: do not let a vendor explanation close the anomaly without evidence.
 ### 1.6 Post-run checklists
 
 #### 1.6.1 Run completion (04 §3.9) — ordered:
+
 1. The test conductor makes the approved stop or completion call.
 2. Red and blue enter the defined safe or recovery state.
 3. Continue recording for the post-event margin.
@@ -715,7 +770,9 @@ Rule: do not let a vendor explanation close the anomaly without evidence.
 #### 1.6.2 Immediate factual debrief — see §3.7 (debrief guide) for the full merged structure. Prompts here for catalog completeness (04 §3.10, page 04 version — state only): what was planned; what occurred in time order; what differed; what sources recorded; what warnings or failures occurred; what each operator directly observed. Rules: label opinion as opinion; save causal interpretation for analysis.
 
 #### 1.6.3 Post-run data validation (04 §3.11) — before a dependent next run. Gate: run status assignment.
+
 Check:
+
 - All required files present.
 - File names and identifiers correct.
 - Files readable and not corrupt.
@@ -728,9 +785,10 @@ Check:
 - Deviations recorded.
 - Backup complete.
 
-Then assign one run status (G): **Valid** (actual configuration, threat, conditions, procedure, instrumentation, data, and ground truth satisfy all validity rules for the stated measures) / **Conditionally valid** (a known difference limits specific measures, comparisons, or conditions; list allowed and prohibited uses — V) / **Invalid** (a failure prevents the run from supporting its intended measure or hypothesis; preserve the run and reason). Rule: no status means the run is not available for analysis. [CONFLICT: status enums vary — 04 §1.8 gives 3 states; 07 §4.8 run record gives `valid | conditionally valid | invalid | pending`; 13 §1.14 Field Guide gives `valid; valid with limitation; invalid; pending adjudication`; 12 §4.2 card-level preliminary-use enum gives `usable | limited | repeat | valid failure`. Adopt the 4-state `valid | conditionally valid | invalid | pending` for the run record, with 12's 4-state enum as the card-level *preliminary* use rule before board adjudication, and note "valid with limitation" = "conditionally valid".]
+Then assign one run status (G): **Valid** (actual configuration, threat, conditions, procedure, instrumentation, data, and ground truth satisfy all validity rules for the stated measures) / **Conditionally valid** (a known difference limits specific measures, comparisons, or conditions; list allowed and prohibited uses — V) / **Invalid** (a failure prevents the run from supporting its intended measure or hypothesis; preserve the run and reason). Rule: no status means the run is not available for analysis. [CONFLICT: status enums vary — 04 §1.8 gives 3 states; 07 §4.8 run record gives `valid | conditionally valid | invalid | pending`; 13 §1.14 Field Guide gives `valid; valid with limitation; invalid; pending adjudication`; 12 §4.2 card-level preliminary-use enum gives `usable \| limited \| repeat \| valid failure`. Adopt the 4-state `valid | conditionally valid | invalid | pending` for the run record, with 12's 4-state enum as the card-level *preliminary* use rule before board adjudication, and note "valid with limitation" = "conditionally valid".]
 
 #### 1.6.4 After-each-run quantitative workflow (10 §3.2) — ordered, 9 steps:
+
 1. Check required files.
 2. Check truth and source health.
 3. Check time and registration.
@@ -742,6 +800,7 @@ Then assign one run status (G): **Valid** (actual configuration, threat, conditi
 9. Preserve deviations and anomalies.
 
 #### 1.6.5 Post-Run Gate (13 §3.1) — Field Guide:
+
 - [ ] Intended configuration executed.
 - [ ] Threat remained within profile.
 - [ ] Required data captured.
@@ -754,6 +813,7 @@ Then assign one run status (G): **Valid** (actual configuration, threat, conditi
 - [ ] Next test priority assessed.
 
 #### 1.6.6 Deviation process (01 §3.2) — run at time of deviation:
+
 1. Make the activity safe.
 2. Record the time and observed difference. (V)
 3. Preserve the system and data state.
@@ -763,6 +823,7 @@ Then assign one run status (G): **Valid** (actual configuration, threat, conditi
 7. Decide whether to repeat, analyze with limits, or exclude. (G)
 
 #### 1.6.7 Out-of-tolerance handling (11 §3.4) — if a post-test calibration check fails:
+
 1. Preserve the as-found state.
 2. Identify the last known valid check.
 3. Bound the affected interval. (V)
@@ -774,6 +835,7 @@ Rule: do not retroactively declare the instrument valid because the result appea
 Variant (10 §3.10, 5 steps): find last known good check → bound affected time → identify affected runs and measures → estimate possible effect → re-adjudicate the evidence. (Subset; same procedure.)
 
 #### 1.6.8 Truth-conflict procedure (11 §3.5) — when truth sources disagree:
+
 1. Preserve both observations.
 2. Verify time, frame, calibration, and identity first.
 3. Apply the approved precedence or reconciliation rule.
@@ -782,6 +844,7 @@ Variant (10 §3.10, 5 steps): find last known good check → bound affected time
 6. Mark the measure unavailable if the disagreement cannot be bounded adequately. (conditional)
 
 #### 1.6.9 Missing-truth procedure (11 §3.6):
+
 - Do not substitute the system under test without approved justification.
 - Determine which measures remain possible. (V)
 - Mark affected observations missing, censored, ambiguous, or invalid under their definitions. (enum V)
@@ -789,6 +852,7 @@ Variant (10 §3.10, 5 steps): find last known good check → bound affected time
 - Trigger the written fallback or repeat rule.
 
 #### 1.6.10 Per-run data-validity rules, by measure (12 §3.5) — automated + data monitor. A run can support usable warning time only if ALL hold:
+
 - Truth covers the complete opportunity.
 - Threat speed, altitude, and route remain inside tolerance.
 - Configuration IDs are known.
@@ -804,6 +868,7 @@ Key rule: validity is assigned BY MEASURE, not only by run — a run may remain 
 ### 1.7 Day-end checklists
 
 #### 1.7.1 End-of-day procedure (04 §3.12) — ordered:
+
 1. Reconcile every planned and actual run.
 2. Confirm a status and reason for every run. (G per run)
 3. Complete end-of-day calibration and clock checks.
@@ -819,6 +884,7 @@ Key rule: validity is assigned BY MEASURE, not only by run — a run may remain 
 13. Secure the site and equipment.
 
 #### 1.7.2 Daily evidence review — CANONICAL: 07 §3.4 (ordered agenda, run in this sequence at end of each test day). Gate: next-day plan, approvals, and briefing.
+
 1. Run accounting: attempted, valid, conditional, invalid, and pending. (V counts)
 2. Data state: complete, missing, conflicting, or quarantined. (enum V)
 3. P1 measure state. (V)
@@ -847,7 +913,9 @@ Variant E (13 §3.15, Corpus 05 daily replanning): add authenticated runs to the
 Merge intent: the 07 14-item agenda is the canonical screen; wire item 1 to the run-accounting rollup, item 6 to the coverage map, items 10–11 to the adaptive priority score (Field Guide: decision importance × uncertainty reduction × likelihood of valid evidence ÷ time/cost/burden, H/M/L), and item 11's selection to the 9-option action list from Variant A. Item 11 generates an Adaptation record when it changes the plan.
 
 #### 1.7.3 Run-validity board review (05 §3) — held end of each day and whenever new data changes a prior decision. Participants: deployment strategist; test conductor; data lead; analysis lead; system or range specialist as needed; safety authority when safety evidence is involved.
+
 Review items (assessed per run):
+
 - Planned versus actual state.
 - Configuration identity.
 - Threat and condition fidelity.
@@ -860,6 +928,7 @@ Review items (assessed per run):
 Recorded outputs (V/G/S): final status; measures allowed; comparisons allowed; limits; repeat decision; dissent; approver and time. Versioning: a changed status creates a new adjudication version; preserve the prior decision and reason. Corpus 05 rules (13 §3.15): classify every run on the same day; do not delete invalid data — flag it and preserve raw data; the authenticated data set is a flagged view of the raw data; a standing decision group (vendor, test conductor, government representative, analyst) adjudicates; keep failure responsibility separate from data validity (separate scoring conference; incident classes: system fault, no-test event, crew error, other).
 
 #### 1.7.4 Evidence intake checklist (05 §3) — per run; data/analysis staff. Gate: only runs with a recorded validity status may enter the analytical pipeline.
+
 1. Verify the run evidence package.
 2. Confirm card, run, configuration, threat, condition, operator, and method identifiers.
 3. Confirm included measures and prohibited uses.
@@ -870,6 +939,7 @@ Recorded outputs (V/G/S): final status; measures allowed; comparisons allowed; l
 Rule: do not let quick-look files become the authoritative analytical source.
 
 #### 1.7.5 Analytical quality-control checklist (05 §3) — before metric production:
+
 - Verify schemas and units.
 - Verify coordinate transformations.
 - Verify time alignment.
@@ -882,6 +952,7 @@ Rule: do not let quick-look files become the authoritative analytical source.
 - Record software, package, and parameter versions. (V)
 
 #### 1.7.6 Correction checklist (05 §3) — for every correction:
+
 - Preserve the source value.
 - Record the corrected value. (V)
 - State the rule and reason. (V)
@@ -889,6 +960,7 @@ Rule: do not let quick-look files become the authoritative analytical source.
 - Assess effect on results. (V)
 
 #### 1.7.7 Preapproved adaptation rules (12 §3.4) — day-of conditional logic (seed example set; each campaign defines its own):
+
 - IF required truth, configuration, or timing fails THEN repeat the run.
 - IF a handoff failure appears twice in the same geometry THEN add one diagnostic pair.
 - IF the observed warning margin is within ±10 seconds of zero THEN add one boundary cell.
@@ -898,6 +970,7 @@ Rule: do not let quick-look files become the authoritative analytical source.
 Rule: keep each adaptation inside an approved rule and preserve the original and revised run lists.
 
 #### 1.7.8 Run-ordering rules (12 §3.3) — schedule generator constraints (seed example set):
+
 - Pair A and B within the same day and weather block.
 - Reverse pair order across blocks.
 - Do not change altitude and azimuth at the same moment when the result would be difficult to diagnose.
@@ -911,6 +984,7 @@ Rule: keep each adaptation inside an approved rule and preserve the original and
 ### 1.8 Analysis and adaptive checklists (cross-day; run at day-end or campaign level)
 
 #### 1.8.1 Causal diagnosis checklist (05 §3) — for every consequential failure or anomaly:
+
 1. Define the observation with time, configuration, condition, and source. (V)
 2. List candidate causes across component, interface, configuration, operator, environment, threat, instrumentation, data, and method. (9-domain enum)
 3. Identify evidence expected under each cause. (V)
@@ -925,6 +999,7 @@ Rule: "A vendor statement may be evidence about mechanism. It is not proof of ro
 Variant (13 §3.11, QtM 07 — 7 steps, same loop; root-cause classes `confirmed | supported | plausible | unknown`). [CONFLICT: 05 adds a fifth class `contradicted` to the root-cause enum; 13 omits it. Adopt the 5-class enum.] Rule (13): do not present a hypothesized root cause as a confirmed finding.
 
 #### 1.8.2 Sufficiency stop checklist (05 §3) — stop a line when ALL apply:
+
 - The approved minimum evidence exists.
 - Remaining uncertainty is within the accepted limit.
 - Additional runs are unlikely to change the decision.
@@ -932,6 +1007,7 @@ Variant (13 §3.11, QtM 07 — 7 steps, same loop; root-cause classes `confirmed
 - The evidence authority accepts the level of confidence. (S)
 
 #### 1.8.3 Futility stop checklist (05 §3) — stop a line when ANY applies:
+
 - Required systems, truth, conditions, or authorities cannot be restored.
 - Remaining events cannot support the intended conclusion.
 - The likely information gain does not justify safety, time, or cost.
@@ -939,12 +1015,14 @@ Variant (13 §3.11, QtM 07 — 7 steps, same loop; root-cause classes `confirmed
 Rule: record the decision and the evidence gap left open. (V)
 
 #### 1.8.4 Missingness bias questions (10 §3.9):
+
 - Did data fail more often during difficult conditions?
 - Were invalid runs concentrated in one configuration?
 - Did unknown outcomes occur more often after failures?
 - Would a different treatment of missing data change the decision?
 
 #### 1.8.5 Common quantitative errors — reject these 21 patterns (10 §3.7); implement as analysis/report lint:
+
 - A percentage without counts.
 - A probability with the wrong denominator.
 - Messages treated as independent runs.
@@ -968,6 +1046,7 @@ Rule: record the decision and the evidence gap left open. (V)
 - Extrapolation beyond the tested factor space.
 
 #### 1.8.6 Finding review questions (10 §3.6) — strategist, before approving a finding:
+
 1. Can another analyst reproduce it?
 2. Are all counts visible?
 3. Are valid failures retained?
@@ -980,6 +1059,7 @@ Rule: record the decision and the evidence gap left open. (V)
 10. Is the finding bounded to the tested scope?
 
 #### 1.8.7 Quantitative analysis gate (09 §3.3) — a quantitative finding is ready only when all pass:
+
 - The experimental unit and dependence structure are correct.
 - Planned, valid, invalid, missing, and censored evidence is accounted for.
 - The interval answers the stated question.
@@ -990,6 +1070,7 @@ Rule: record the decision and the evidence gap left open. (V)
 - Prohibited extrapolations are stated.
 
 #### 1.8.8 Invalid-run preservation checklist (09 §3.8) — keep invalid runs for:
+
 - Test-process learning.
 - Safety evidence.
 - Anomaly diagnosis.
@@ -998,7 +1079,9 @@ Rule: record the decision and the evidence gap left open. (V)
 Rule: do not include them in a performance denominator unless the approved method explicitly defines that use.
 
 #### 1.8.9 Evidence "do not treat" guard (08 §3.3) — interpretation lint on conclusions:
+
 Do not treat:
+
 - A reported field adaptation as universal doctrine.
 - A doctrinal sequence as proof that a fielded system performs it.
 - A vendor architecture as the required operational architecture.
@@ -1013,6 +1096,7 @@ Do not treat:
 ### 1.9 Closeout checklists
 
 #### 1.9.1 Completed-campaign synthesis (05 §3) — before final findings:
+
 1. Freeze the included-run manifest.
 2. Freeze analytical code and parameters.
 3. Reproduce every P1 result from retained data.
@@ -1026,6 +1110,7 @@ Do not treat:
 Variant (10 §3.4 — 8-item campaign-completion workflow; same content minus items 9–10's phrasing: freeze manifest; freeze code and parameters; reproduce every P1 result; conduct independent review; assess missingness and exclusion bias; reconcile conflicting sources; compare configuration, threat, condition, operator, and procedure effects; state performance boundaries and trade-offs.)
 
 #### 1.9.2 Analysis-complete gate (05 §3) — verbatim conditions. Analysis is complete only when:
+
 - every decision-relevant result is reproducible,
 - every finding is traceable to adjudicated evidence,
 - uncertainty and alternatives are explicit,
@@ -1033,6 +1118,7 @@ Variant (10 §3.4 — 8-item campaign-completion workflow; same content minus it
 - every remaining gap has a stated effect on the customer decision.
 
 #### 1.9.3 Decision evidence package checklist (07 §3.5) — evidence delivery gate; every item confirms package content (maps to the 20-section template in §3.8 of this document):
+
 - [ ] Decision, owner, alternatives, deadline, and uncertainty.
 - [ ] Bounded recommendation.
 - [ ] Mission, system boundary, and configuration.
@@ -1053,6 +1139,7 @@ Variant (10 §3.4 — 8-item campaign-completion workflow; same content minus it
 - [ ] Evidence acceptance recorded. (S)
 
 #### 1.9.4 Independent-reviewer test (06 §3) — package review before acceptance; run by an independent reviewer, who must be able to answer:
+
 - What happened?
 - How was it measured?
 - Which runs support it?
@@ -1063,6 +1150,7 @@ Variant (10 §3.4 — 8-item campaign-completion workflow; same content minus it
 Variant (13 §3.12, QtM 08 — 6 questions): What was observed? How was it established? Under which exact conditions is it true? With what confidence and limitation? What must not be inferred? What decision implication follows?
 
 #### 1.9.5 Architecture and mission assessment checklist (06 §3) — feeds package section 11. Assess:
+
 - Best-performing configuration by threat and condition.
 - Warning, decision, assignment, effect, and assessment time budgets.
 - Coverage gaps.
@@ -1076,6 +1164,7 @@ Variant (13 §3.12, QtM 08 — 6 questions): What was observed? How was it estab
 Rule: separate observed architecture behavior from assumed behavior outside the evaluated boundary.
 
 #### 1.9.6 Delivery and custody checklist (06 §3) — before delivery; campaign lead / data custodian:
+
 1. Confirm the recipient list and need to know.
 2. Mark each file correctly.
 3. Confirm permitted vendor and comparative-result content.
@@ -1087,6 +1176,7 @@ Rule: separate observed architecture behavior from assumed behavior outside the 
 9. Archive the accepted version.
 
 #### 1.9.7 Closeout and regression checklist — CANONICAL: 07 §3.6 (18 items). Gate: campaign status → Closed.
+
 - [ ] Contractual deliverables accepted.
 - [ ] Actions transferred to named owners.
 - [ ] Raw and processed data archived.
@@ -1111,6 +1201,7 @@ Variant A (06 §3 — campaign closeout checklist in 4 groups): Deliverables (de
 Variant B (13 §3.13, QtM 09 closure checklist): same three non-commercial groups phrased as deliverables-and-acceptance / data-and-knowledge / operations-and-property, plus vendor feedback and comparative-result control.
 
 #### 1.9.8 Closeout gate (06 §3) — the campaign is closed only when:
+
 - The customer has the accepted evidence and limits.
 - Every action has an owner.
 - All data and records have the correct custody.
@@ -1119,6 +1210,7 @@ Variant B (13 §3.13, QtM 09 closure checklist): same three non-commercial group
 - Future changes map to a defensible regression decision.
 
 #### 1.9.9 Reuse-harvest steps (06 §3) — per asset:
+
 1. Remove campaign-specific identifiers.
 2. Preserve validity limits.
 3. Add purpose and use instructions. (V)
@@ -1130,6 +1222,7 @@ Variant B (13 §3.13, QtM 09 closure checklist): same three non-commercial group
 Asset types (06 §1): decision and discovery prompts; question and hypothesis patterns; measure definitions and calculation code; threshold rationales; threat and condition profiles; test cards; data schemas and adapters; data-quality rules; range and authority patterns; checklists; analysis modules and report sections; failure modes and corrective actions. Reusable asset metadata block (13 §1.21, 14 fields): Asset ID; Version; Originating campaign; Mission context; Applicable configurations; Threat scope; Required inputs; Method; Assumptions; Validity limits; Known failure modes; Dependencies; Owner; Last validated date/configuration.
 
 #### 1.9.10 Change-impact and regression process (06 §3) — post-baseline, on any relevant change:
+
 1. Identify the changed configuration item or assumption.
 2. Link it to affected interfaces, measures, findings, and decisions.
 3. Classify the change mechanism. (V)
@@ -1141,6 +1234,7 @@ Asset types (06 §1): decision and discovery prompts; question and hypothesis pa
 Change-impact outcome enum (exactly one): No effect on accepted findings / Applicability narrows / Analysis-only review required / Simulation or bench evidence required / Limited live regression required / Full reevaluation required.
 
 #### 1.9.11 C-UAS regression assessment checklist (06 §3, worked example) — if the prior baseline established detection, stable tracking, C2 handoff, interceptor assignment, and engagement timing, assess the changed system against:
+
 1. Detection range.
 2. False-alarm rate.
 3. Track continuity.
@@ -1155,6 +1249,7 @@ Rule: a component-level pass does not establish that the end-to-end mission thre
 ### 1.10 Continuous standards and hard gates
 
 #### 1.10.1 The Deployment Strategist's Standard (13 §3.2) — nine questions answerable at any point; render as a live traceability health dashboard:
+
 1. What customer decision are we supporting?
 2. What operational question are we answering now?
 3. What exact configuration is under test?
@@ -1167,6 +1262,7 @@ Rule: a component-level pass does not establish that the end-to-end mission thre
 If any answer is unclear, the campaign has lost test traceability.
 
 #### 1.10.2 Ten continuous control questions (13 §3.3):
+
 1. What exact customer decision are we supporting?
 2. Who has authority to make it?
 3. Who must accept the evidence for it to matter?
@@ -1179,6 +1275,7 @@ If any answer is unclear, the campaign has lost test traceability.
 10. How will this campaign make the next comparable effort faster, cheaper, and less bespoke?
 
 #### 1.10.3 Pocket rules (07 §6) — 11 hard validation gates, verbatim; each blocks the second clause absent the first:
+
 - No decision owner, no campaign.
 - No accepted method, no evaluation claim.
 - No configuration record, no comparison.
@@ -1200,7 +1297,7 @@ If any answer is unclear, the campaign has lost test traceability.
 ### 2.1 The five source templates
 
 | Source | Structure | Count |
-|---|---|---|
+| --- | --- | --- |
 | 04 §4.1 (manual page 04, Part A) | Flat ordered field list | **20 fields** |
 | 07 §4.7 (templates page) | Numbered titled sections | **17 sections** |
 | 13 §4.1 (Field Guide 5, Standard Test Card) | Flat labeled fill-in template with embedded Change Record block | ~24 labels in 15 groups |
@@ -1226,7 +1323,7 @@ Supplementary content requirements folded in: 08 §4.1 (19 threat-content items 
 One card entity, 19 sections. Spine = 07's 17 sections in 07's order (which preserves 04's field order); +2 sections adopted from 11 (Allowed/Prohibited conclusions) and 2 sub-blocks adopted from 12 (Event marks inside section 10; Preliminary use rule inside section 17). Status enum: `draft | approved | issued` (11 §4.1) within the record-header lifecycle (01 §1.3).
 
 | # | Section | Fields (verbatim origin) | Auto-fill source | 04-field map |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | **Control** | Card ID, title, version, status, owner, approvers, effective time (07 §4.7-1). Print as a control ribbon: Card / Run (generated at release) / Matrix cell / Configuration / Threat / Condition IDs (12 §4.2) | Controlled-record header (01 §1.3); Run ID minted at release | 1 |
 | 2 | **Traceability** | Decision, question, claim, hypothesis, measure, and matrix-cell IDs (07 §4.7-2) | DEC, Q/OQ, CLM, HYP, M records; matrix cell from test matrix | 2, 4 (cell) |
 | 3 | **Purpose / Intent** | One sentence that states why the run exists (07 §4.7-3); plus from 13 §1.13: why this run is the highest-value next event; result that could change the customer decision or campaign plan; plus Prediction and Changed factor (12 §4.2 Intent block: question, prediction, changed factor, primary result, secondary results) | Q + HYP + prediction records; priority score from adaptive queue | 3 |
@@ -1243,7 +1340,7 @@ One card entity, 19 sections. Spine = 07's 17 sections in 07's order (which pres
 | 14 | **Stop and restart** | Safety, regulatory, equipment, data, and security triggers; safe state; restart authority (07 §4.7-14); plus run-specific hold conditions (12 §3.2). General safety/range stops stay in the active field plan, referenced not repeated (12 governance hook) | Stop/hold/repeat/adapt rule set (02 §3.1); hazard worksheet abort triggers (03 §1.10) | 15, 16 |
 | 15 | **Validity and repeat** | Required conditions, invalidating failures, conditional uses, and reset needs (07 §4.7-15); per-measure validity rules (12 §3.5 pattern) | Measure invalid-when rules (09 §4.1); data-health spec (11 §1.9) | 17 |
 | 16 | **Outputs** | Files, run log, observations, quick-look product, status decision, and storage path (07 §4.7-16) | Data-field manifest; storage config | 18 |
-| 17 | **Deviation record + Preliminary use rule** | Deviation area: time, actual difference, affected control, validity effect, disposition, and linked change (07 §4.7-17); DEV-### identifiers associated with run, affected measure, and resulting validity decision (13 §4.2); Preliminary use rule enum `usable | limited | repeat | valid failure` (12 §4.2) | DEV records; adjudication board | 20 |
+| 17 | **Deviation record + Preliminary use rule** | Deviation area: time, actual difference, affected control, validity effect, disposition, and linked change (07 §4.7-17); DEV-### identifiers associated with run, affected measure, and resulting validity decision (13 §4.2); Preliminary use rule enum `usable \| limited \| repeat \| valid failure` (12 §4.2) | DEV records; adjudication board | 20 |
 | 18 | **Allowed conclusion** | What the run's evidence may support, bounded to tested configuration/threat/geometry/conditions (11 §4.1) | Derived from design + threat fidelity grid | — |
 | 19 | **Prohibited conclusion** | What must not be inferred (11 §4.1; 08 fidelity-derived generalization limits) | Auto-derived permitted/prohibited generalization statements (08) | — |
 
@@ -1272,6 +1369,7 @@ Draft → per-discipline reviews → cold-reader pass → dry-run pass → appro
 ### 3.1 Day dashboard (run sheet)
 
 Merged from 04 §4.7 (canonical) and 12 §4.3. Tablet screen + printable day sheet. Shows:
+
 - Day objective (04) / Today's question and target evidence (12).
 - Questions being addressed (04).
 - Test coverage completed (04) / Valid evidence by matrix cell (12).
@@ -1288,6 +1386,7 @@ Merged from 04 §4.7 (canonical) and 12 §4.3. Tablet screen + printable day she
 ### 3.2 Current-run screen
 
 Merged from 04 §4.7 (canonical) and 12 §4.4. Shows ONLY:
+
 - Card and run identifiers.
 - Purpose.
 - Hypothesis and prediction (04) / Purpose and prediction (12).
@@ -1379,6 +1478,7 @@ First-response classification card (13 §4.6) — do not immediately call an une
 ### 3.6 Change / adaptation record
 
 Canonical: 07 §4.11 Change record (14 fields):
+
 - Change ID:
 - Triggering evidence, defect, or constraint:
 - Options considered:
@@ -1401,6 +1501,7 @@ Variants: 05 Adaptation record (11 fields — adds "Gap to resolve", "Expected d
 Three debrief structures at three time scales; all become guided forms.
 
 **A. Immediate factual debrief** (post-run, within minutes; perishable-observation window ten minutes or less). Canonical merged prompt list:
+
 1. What was planned. (04, 15)
 2. What occurred in time order. (04) / What occurred. (15)
 3. What differed. (04, 15)
@@ -1414,7 +1515,8 @@ Rules: label opinion as opinion; save causal interpretation for analysis; keep o
 Field Guide variant (13 §4.7 — six yes/no questions within minutes): Was the intended configuration executed? / Did the threat execute as planned? / Did required data exist? / Were there deviations? / Is the run valid? / Was anything unexpected observed?
 
 **B. Daily debrief** = daily evidence review (§1.7.2) + daily evidence board (13 §4.4), one row per question:
-```
+
+```text
 Question
 Evidence collected
 Current finding
@@ -1422,9 +1524,11 @@ Confidence / uncertainty
 Remaining gap
 Next action
 ```
+
 Campaign closeout status per operational question: Resolved / Partially resolved / Unresolved, with the reason stated.
 
 **C. Nine-question after-action debrief** (06 Part I — the standardized campaign debrief; conduct within five working days while details remain current; whole team, facilitated):
+
 1. What created decision value?
 2. What produced invalid runs or delay?
 3. Which assumptions failed?
@@ -1437,6 +1541,7 @@ Campaign closeout status per operational question: Resolved / Partially resolved
 Closure rule: assign each improvement an owner, due date, and destination in standard work or product backlog (improvement record: owner, due date, destination enum). Variant question set (13 §3.13, QtM 09 after-action review): What worked, failed, or surprised the team? Which assumptions were wrong? Where did the campaign lose time, quality, or decision value? What required founder or exceptional intervention? Which risks or failure modes were not anticipated? What should be standardized, automated, trained, redesigned, or never repeated? What must change before the next comparable campaign?
 
 **Evidence-language discipline** (13 §4.5) — applies to every debrief and report field; every conclusion receives exactly one category:
+
 - Observed fact (e.g., "The tracking radar dropped the target for 6.2 seconds during Run 47.")
 - Analysis (e.g., "The loss coincided with sector transition in three of five valid opportunities.")
 - Inference (e.g., "Sector-transition behavior is a plausible contributor to the track loss.")
@@ -1446,6 +1551,7 @@ Do not collapse these into "The radar has a sector-boundary defect." Matching fi
 ### 3.8 Decision evidence package (06 §4 — canonical, 20 ordered sections; the customer-facing result document)
 
 Use this order:
+
 1. Decision, owner, alternatives, and deadline.
 2. Decision-critical uncertainty.
 3. Executive answer and bounded recommendation.
@@ -1483,6 +1589,7 @@ Rules: dissent entries are append-only ("Do not remove a valid dissent to make t
 Two distinct artifacts. [CONFLICT: "quick look" names both a per-run auto-report (minutes; 12 §4.5, 04 §2.2) and a 24-to-72-hour daily report (13 §4.13, Corpus). Keep both, named Post-run quick look and Quick-look report.]
 
 **A. Post-run quick look** (12 §4.5 — auto-report within minutes; canonical field list):
+
 - Threat profile compliance.
 - Required files present.
 - Configuration match.
@@ -1497,6 +1604,7 @@ Two distinct artifacts. [CONFLICT: "quick look" names both a per-run auto-report
 Rule: quick look supports the next-run decision; it does not replace final analysis; quick-look files must never become the authoritative analytical source (05). Generic computed content (04 §2.2): available measures such as detection range, response latency, track duration, track continuity, classification result, intercept result, data completeness, difference from the prediction, difference from the threshold, difference from the comparison baseline. Ends in the 6-option next-run recommendation (04 §5.3, user decides): accept the run for later review / repeat the run / continue to the next condition / hold for missing data / add a diagnostic run / stop because sufficient coverage exists.
 
 **B. Quick-look report** (13 §4.13 — publish within 24 to 72 hours):
+
 - Use only authenticated runs.
 - Mark results preliminary and not final scored results.
 - Show test-matrix completion.
@@ -1511,6 +1619,7 @@ Screen/print artifact for checklist §1.7.2: the 14-item agenda as an ordered me
 ### 3.12 Finding record and result report blocks
 
 **Finding record (FIND)** — canonical: 07 §4.12 (26 fields):
+
 - Finding ID and version:
 - Finding statement:
 - Decision, question, claim, and hypothesis linkage:
@@ -1544,12 +1653,14 @@ Variants: 05 (18 fields, adds ACT link and review/approval state — same conten
 > Under **[configuration, threat, condition, operator, and procedure]**, **[x]** of **[n]** valid independent opportunities met **[event rule]**. The estimate was **[value]** with **[interval or uncertainty]**. The result **[met, missed, or did not resolve]** the approved threshold. The finding applies only to **[tested scope]** and does not establish **[prohibited conclusion]**.
 
 **Printable result report blocks** (09 §4.2–4.4 — render into exported reports and debriefs):
+
 - Binomial result block: planned, attempted, eligible, valid, and successful counts; `x/n`, not percentage alone; confidence or credible interval; configuration, threat, and condition cell; invalid, missing, unknown, and censored outcomes; dependence or clustering limitations.
 - Continuous result block: individual valid results; center and spread; worst valid case when operationally important; condition breakdown; measurement uncertainty; confidence interval; outlier and exclusion sensitivity.
 - Required accounting block (every measure/analysis): planned / attempted / eligible / valid / conditionally valid / invalid / missing / censored / unknown / included in each analysis.
 Findings-report structure (13 §4.13): background, method, limits, results, evaluation, recommendations; state limits near the start; pair each limit with a mitigation; separate test adequacy from test outcome; report results by condition with uncertainty; never one overall average.
 
 ### 3.13 Run evidence package (04 §5.2) — stored together per run at completion/validation:
+
 - Issued card and version.
 - Run log.
 - Configuration export.
@@ -1582,7 +1693,7 @@ Deduplicated named outputs, grouped by campaign phase. Format tags: **[print]** 
 ### 4.1 Framing and qualification (phases 00–01)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Decision statement / decision charter | Fill-in charter statement (by [date], [owner] must decide [bounded choice] among [alternatives]...) | doc | 01 §4.3; 13 §5.1 |
 | Responsibility matrix | Function × primary owner × strategist role | print/screen | 13 §4.8 |
 | Stakeholder map / authority matrix | 22 decision types × 12 authority fields | screen/print | 07 §4.2; 01 §4.1 |
@@ -1596,7 +1707,7 @@ Deduplicated named outputs, grouped by campaign phase. Format tags: **[print]** 
 ### 4.2 Evidence planning and test design (phases 02–04 design)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Frozen ranked question set | Question records, P1/P2/P3 | screen/sheet | 02 §5 |
 | Hypothesis and prediction sheet | Hypothesis records incl. null, competing explanations, inconclusive criteria, predictions before test | print/sheet | 02 §5; 04 §5.1 |
 | Measure dictionary / registry | 31-field measure records + threshold records; seeded from the 18 CUAS dictionary entries | sheet/json | 02 §5; 09 §4.1; 04 §5.1 |
@@ -1619,7 +1730,7 @@ Deduplicated named outputs, grouped by campaign phase. Format tags: **[print]** 
 ### 4.3 Integration and readiness (phase 03)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Signed measure-to-data map | Per-measure source mapping; data lead + analysis lead signatures; strategist verification | doc (S) | 03 §5 |
 | Integration defect log | Defects, owners, correction dates, retest evidence | sheet | 03 §5 |
 | Range-fit assessment | 14 dimensions × 5-value classification, per-gap validity impact | sheet/print | 03 §5 |
@@ -1634,7 +1745,7 @@ Deduplicated named outputs, grouped by campaign phase. Format tags: **[print]** 
 ### 4.4 Execution (per run and per day)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Run evidence package | 14 components (§3.13) | archive + print cover | 04 §5.2 |
 | Run log / event log | Time-tagged events (run logger + event controls) | json/sheet | 04; 11 §5 |
 | Configuration snapshot / export | Baseline verification per run | json | 13 §5.1 |
@@ -1651,7 +1762,7 @@ Deduplicated named outputs, grouped by campaign phase. Format tags: **[print]** 
 ### 4.5 Analysis and findings (phase 05)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Versioned analysis input manifest | Admitted runs; code, configuration, environment; frozen at campaign end | json/doc | 05 §5 |
 | Run-level measure results | Value, uncertainty, threshold comparison, result label, intermediates, links | sheet/json | 05 §5 |
 | Aggregate results report | Counts by category, central tendency, spread, worst valid case, intervals, breakdowns, sensitivity, missingness | print/sheet | 05 §5 |
@@ -1666,7 +1777,7 @@ Deduplicated named outputs, grouped by campaign phase. Format tags: **[print]** 
 ### 4.6 Decision and delivery (phase 06)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Decision evidence package** | 20 ordered sections (§3.8); must pass independent-reviewer test | doc/print/PDF, versioned + marked | 06 §4–5 |
 | Bounded recommendation | 8 fields, embedded at sections 3 and 15 | doc | 06 §1 |
 | Claims disposition board | Every CLM in one of 6 states; every Q in one of 3 states; 4-level evidence classification | screen/print | 06 §1; 13 §1.17 |
@@ -1680,7 +1791,7 @@ Data delivery standards for government-integrated events (13 §5.3 hooks): telem
 ### 4.7 Closeout, reuse, and follow-on (phase 06 close / 09–10)
 
 | Deliverable | Contents | Format | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Closeout record | Contractual acceptance, reservations, open items, archives, property returns, invoice confirmation, customer outcome | doc | 06 §5 |
 | After-action review output | Answers to the nine questions + improvement records (owner, due date, destination) | doc | 06 §5 |
 | Reuse library additions + next-campaign start pack | Sanitized versioned assets of the 12 harvest types with 14-field metadata | json/library | 06 §5; 13 §1.21 |

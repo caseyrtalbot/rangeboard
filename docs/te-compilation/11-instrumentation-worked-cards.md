@@ -14,7 +14,7 @@ Both pages contain only `<mention-page>` cross-references to other manual sectio
 Fields, verbatim from source:
 
 | Field | Notes |
-|---|---|
+| --- | --- |
 | Truth variable | Name of the state needing independent truth |
 | Measures supported | List of measure IDs |
 | Primary source | |
@@ -36,6 +36,7 @@ Fields, verbatim from source:
 ### 1.2 Ground-truth categories (each is a record type with required fields)
 
 **Position and trajectory truth** — required for: detection range, stable-track range, track error, warning time, engagement geometry, intercept assessment, boundary crossing, raid membership and leaker determination. Record fields:
+
 - Source and device ID
 - Coordinate frame, datum, origin, axes, and units
 - Update rate and latency
@@ -48,6 +49,7 @@ Fields, verbatim from source:
 **Identity and threat-state truth** — required for: correct object association, classification accuracy, threat-profile fidelity, guidance/navigation state, emissions or communications state, payload/state changes, EW effect and recovery, raid membership. Record for each state its provenance: enum {measured, commanded, inferred, manually adjudicated}.
 
 **Configuration truth** — required for every comparison. Record fields:
+
 - Hardware/article IDs
 - Software and firmware versions
 - Model and mission-data versions
@@ -61,7 +63,8 @@ Fields, verbatim from source:
 Rule: a planned configuration is not configuration truth. Capture the actual state before and after the run and monitor material changes during execution.
 
 **Event truth** — required for: detection and track events, message send/receive, decision and assignment, launch, intercept, effect, and assessment, operator actions, start, pause, abort, restart, and completion. Every event-truth entry must identify:
-```
+
+```text
 event type
 object or track
 source
@@ -74,6 +77,7 @@ source or derivation record
 **Effect and outcome truth** — required for: EW effect, intercept, defeat, mission success, defended-asset outcome, recovery. Rule: define the physical or functional criterion before execution. "Unknown outcome" and uncertainty are valid adjudication states and must be preserved.
 
 **Environment and operator truth** — record when relevant:
+
 - Weather and illumination
 - Terrain/clutter state
 - RF and network state
@@ -122,7 +126,7 @@ Rule: do not force a match when two truth objects satisfy the gate. Mark the ass
 
 ### 1.6 Calibration record (form)
 
-```
+```text
 Instrument/device ID:
 Measured quantity:
 Calibration standard or known reference:
@@ -140,7 +144,7 @@ Measures supported:
 
 ### 1.7 Identifier model (minimum required identifiers)
 
-```
+```text
 Campaign ID
 Card ID and version
 Run ID
@@ -160,7 +164,7 @@ Transformation/analysis version
 
 ### 1.8 Event record (form)
 
-```
+```text
 Event ID:
 Run ID:
 Event type:
@@ -182,7 +186,7 @@ Notes:
 
 ### 1.9 Data-health specification (one per critical source)
 
-```
+```text
 Source:
 Measures supported:
 Mandatory or diagnostic:
@@ -261,7 +265,7 @@ Rule: never discard the source track identity when creating a master track.
 
 ### 2.1 Latency time-uncertainty budget
 
-```
+```text
 u_latency = sqrt(
   u_start_timestamp²
   + u_stop_timestamp²
@@ -271,6 +275,7 @@ u_latency = sqrt(
 ```
 
 Variables:
+
 - `u_latency` — combined uncertainty of a measured latency (time units).
 - `u_start_timestamp` — uncertainty of the start-event timestamp.
 - `u_stop_timestamp` — uncertainty of the stop-event timestamp.
@@ -281,7 +286,7 @@ Computed during instrumentation planning, before execution, per latency measure.
 
 ### 2.2 Along-track spatial error from time offset
 
-```
+```text
 approximate along-track error from timing = object speed × time offset
 ```
 
@@ -290,12 +295,14 @@ Inputs: object speed (distance/time), time offset between clocks (time). Output:
 ### 2.3 Health-state logic (per-source classification, evaluated live)
 
 Time-health states per time source:
+
 - **Green:** offset and drift support every assigned measure.
 - **Warning:** assigned P1 measures remain valid, but margin is reduced or recheck is required.
 - **Stop:** at least one mandatory measure cannot meet its time-uncertainty limit.
 - **Unknown:** health cannot be determined; treat as stop for affected mandatory measures.
 
 Data-health states per data source:
+
 - **Green:** all mandatory limits pass.
 - **Warning:** a limit approaches failure; evidence remains valid under the written rule.
 - **Stop:** a mandatory limit fails and the affected measure cannot be recovered.
@@ -448,11 +455,13 @@ The five worked cards below are the manual's illustrative gold-standard card des
 ### Card 1 — Detection and track characterization
 
 **1. Control**
+
 - Card ID: `TC-CUAS-SEN-CHAR-001`
 - Title: Detection and stable-track characterization by geometry
 - Version/status: `[version] / draft, approved, or issued`
 
 **2. Traceability**
+
 - Decision: `[decision ID]`
 - Question: Under the defined threat and conditions, where does the sensor detect and establish a stable track?
 - Hypothesis: Detection and stable-track performance vary with `[range, altitude, azimuth/aspect, speed, or selected factors]`.
@@ -463,6 +472,7 @@ The five worked cards below are the manual's illustrative gold-standard card des
 Characterize the sensor's valid detection and track boundary under one controlled configuration and approved factor cell.
 
 **4. Planned repetition**
+
 - Valid opportunities required: `[from quantitative design]`
 - Current repetition/block: `[number and block]`
 - Order: `[randomized or restricted schedule]`
@@ -470,6 +480,7 @@ Characterize the sensor's valid detection and track boundary under one controlle
 - Invalid-run allowance: `[planning value only]`
 
 **5. System state**
+
 - Sensor/configuration: `[configuration ID]`
 - Placement/boresight: `[registration record]`
 - Network/C2 state: `[included or isolated]`
@@ -477,6 +488,7 @@ Characterize the sensor's valid detection and track boundary under one controlle
 - Training state: `[record]`
 
 **6. Threat state**
+
 - Threat profile: `[threat-profile ID]`
 - Truth-object ID assigned before run.
 - Geometry: `[route, altitude, speed, approach azimuth/aspect]`
@@ -485,16 +497,19 @@ Characterize the sensor's valid detection and track boundary under one controlle
 - Fidelity limitations: `[threat record]`
 
 **7. Condition**
+
 - Condition ID: `[weather, clutter, illumination, RF/network state]`
 - Eligibility volume/range band: `[controlled definition]`
 - Limits: `[from condition record]`
 
 **8. Variables**
+
 - Independent variables: `[selected geometry or configuration factors]`
 - Held controls: sensor settings, placement, threat profile elements, operator procedure, and other design controls.
 - Covariates: actual speed/altitude/aspect, weather, RF state, temperature, battery/power state, and time of day as applicable.
 
 **9. Data and truth**
+
 - Independent trajectory/identity truth: `[source ID]`
 - Sensor plots/tracks/status: `[source fields]`
 - Registration record: `[ID]`
@@ -503,6 +518,7 @@ Characterize the sensor's valid detection and track boundary under one controlle
 - Health stop: loss of mandatory truth, unknown configuration, time/registration outside tolerance, or source gap exceeding the measure rule.
 
 **10. Preconditions**
+
 - Correct card/run/configuration/threat/condition IDs active.
 - Sensor available and approved settings loaded.
 - Truth and sensor recording active.
@@ -512,6 +528,7 @@ Characterize the sensor's valid detection and track boundary under one controlle
 - Active campaign constraints and stop conditions confirmed.
 
 **11. Procedure**
+
 1. Test conductor states card, version, run ID, purpose, and matrix cell.
 2. Data monitor confirms sensor, truth, environment, and run-log recording.
 3. Ground-truth operator confirms truth-object identity and health.
@@ -530,6 +547,7 @@ The system may transition through no report, detection, tentative track, stable 
 
 **13. Validity and repeat**
 Valid for a measure only if:
+
 - Truth establishes the full opportunity.
 - Configuration and profile remain within bounds.
 - Association, time, and registration meet tolerance.
@@ -539,6 +557,7 @@ Valid for a measure only if:
 Repeat when a written validity rule fails. Preserve valid failures as results.
 
 **14. Required outputs**
+
 - Opportunity-level detection outcome.
 - First-detection and first-stable-track observation or censoring record.
 - Track continuity and error.
@@ -557,11 +576,13 @@ Universal detection range, all-aspect coverage, or operational effectiveness out
 ### Card 2 — Fusion and C2 handoff
 
 **1. Control**
+
 - Card ID: `TC-CUAS-C2-HANDOFF-001`
 - Title: Source-track fusion and C2 handoff performance
 - Version/status: `[version/status]`
 
 **2. Traceability**
+
 - Question: When the source sensor produces a qualifying track, does the receiving C2 create the correct usable track within the mission timeline?
 - Hypothesis: `[configuration B or interface state]` changes handoff success or latency relative to `[baseline]`.
 - Measures: `CUAS-C2-HS-008`, `CUAS-C2-LAT-009`, `CUAS-MSN-UWT-010`
@@ -571,12 +592,14 @@ Universal detection range, all-aspect coverage, or operational effectiveness out
 Measure source-to-C2 success, identity correctness, latency, and usable warning time while isolating interface behavior.
 
 **4. Planned repetition**
+
 - Qualifying offers required per cell: `[design]`
 - Configuration order: `[randomized/blocked]`
 - Network blocks: `[nominal/degraded as approved]`
 - Pairing: `[whether the same controlled input supports paired comparisons]`
 
 **5. Controlled state**
+
 - Source configuration: `[ID]`
 - C2 configuration: `[ID]`
 - Adapter/schema/version: `[ID]`
@@ -586,12 +609,14 @@ Measure source-to-C2 success, identity correctness, latency, and usable warning 
 
 **6. Threat/input state**
 Use either:
+
 - A live truth threat producing a qualifying source track; or
 - A verified recorded/synthetic input approved for the interface question.
 
 Rule: do not use synthetic input to claim live sensor performance.
 
 **7. Events**
+
 - Start: source track first meets the approved qualifying-offer criterion.
 - Send: source/adapter records the outbound object/message.
 - Receive: C2 records receipt.
@@ -599,6 +624,7 @@ Rule: do not use synthetic input to claim live sensor performance.
 - Failure window: `[approved maximum observation interval]`.
 
 **8. Data and truth**
+
 - Source-track fields and event logs.
 - Adapter/network transmission logs.
 - Receiving-system object/event logs.
@@ -607,6 +633,7 @@ Rule: do not use synthetic input to claim live sensor performance.
 - Identifier map preserving source, master, and receiver IDs.
 
 **9. Procedure**
+
 1. Confirm configurations, schema, identifiers, and time.
 2. Start all source, adapter, network, C2, truth, and run-log recorders.
 3. Generate the approved qualifying source track.
@@ -620,6 +647,7 @@ Rule: do not use synthetic input to claim live sensor performance.
 
 **10. Stop and validity**
 Stop/hold for:
+
 - Clock offset beyond latency tolerance.
 - Ambiguous object identity.
 - Unapproved schema/configuration change.
@@ -630,6 +658,7 @@ Stop/hold for:
 Rule: a valid failed handoff remains in the denominator.
 
 **11. Required outputs**
+
 - Successful handoffs / valid qualifying opportunities.
 - Source-to-receive and source-to-usable latency with censoring.
 - Correct, duplicate, split, merged, stale, or misassociated outcomes.
@@ -648,11 +677,13 @@ End-to-end mission effectiveness when sensing, decision, engagement, or effect w
 ### Card 3 — EW soft-kill characterization
 
 **1. Control**
+
 - Card ID: `TC-CUAS-EW-SOFTKILL-001`
 - Title: Mission-relevant EW effect and recovery
 - Version/status: `[version/status]`
 
 **2. Traceability**
+
 - Question: Under the approved threat, geometry, and represented EW condition, does the threat enter the defined mission-relevant effect state, and for how long?
 - Hypothesis: The treatment changes the probability or time of the defined effect relative to the approved baseline/control.
 - Measures: `CUAS-EW-EFF-011`, `CUAS-EW-REC-012`, `CUAS-MSN-E2E-015` when a complete mission vignette is represented.
@@ -662,6 +693,7 @@ End-to-end mission effectiveness when sensing, decision, engagement, or effect w
 Characterize a bounded functional or mission effect without equating temporary disruption with physical defeat.
 
 **4. Planned repetition and order**
+
 - Valid opportunities per treatment/control cell: `[design]`
 - Treatment order: `[randomized or blocked]`
 - Washout/reset: `[approved state and duration]`
@@ -669,6 +701,7 @@ Characterize a bounded functional or mission effect without equating temporary d
 - Sequential rule: `[if used]`
 
 **5. Threat state**
+
 - Threat profile/configuration: `[ID]`
 - Guidance/navigation/communications state: `[ID]`
 - Mission task: `[defined route or objective]`
@@ -677,6 +710,7 @@ Characterize a bounded functional or mission effect without equating temporary d
 
 **6. Treatment state**
 Reference the approved campaign representation:
+
 - Treatment condition ID.
 - Commanded/applied state.
 - Monitored exposure fields.
@@ -687,6 +721,7 @@ Reference the approved campaign representation:
 
 **7. Effect definition**
 Freeze one or more states:
+
 - Navigation deviation beyond `[criterion]`.
 - Loss of control or guidance for `[criterion]`.
 - Mission-route abandonment.
@@ -698,6 +733,7 @@ Freeze one or more states:
 Rule: do not change the effect definition after viewing results.
 
 **8. Data and truth**
+
 - Independent threat trajectory and state.
 - Treatment exposure/event record.
 - Threat onboard telemetry when allowed.
@@ -707,6 +743,7 @@ Rule: do not change the effect definition after viewing results.
 - Effect-state adjudication record.
 
 **9. Procedure**
+
 1. Confirm active card, profile, treatment/control condition, and run ID.
 2. Verify threat reset and nominal function.
 3. Start truth, treatment, environment, telemetry, and run-log recording.
@@ -722,6 +759,7 @@ Rule: do not change the effect definition after viewing results.
 **10. Stop and validity**
 Stop under existing campaign controls for any safety, regulatory, system, data, or security trigger.
 Measure invalid when:
+
 - Qualifying exposure cannot be established.
 - Threat state or mission task differs materially.
 - Independent effect truth is unavailable.
@@ -729,6 +767,7 @@ Measure invalid when:
 - Reset/carryover cannot be excluded.
 
 **11. Required outputs**
+
 - Effect successes / valid opportunities.
 - Time to effect and recovery with censored cases.
 - Effect mode and duration.
@@ -748,11 +787,13 @@ Universal susceptibility, legal operational employment, physical destruction, or
 ### Card 4 — Interceptor defeat
 
 **1. Control**
+
 - Card ID: `TC-CUAS-DEF-INTERCEPT-001`
 - Title: Interceptor assignment, intercept, and confirmed defeat
 - Version/status: `[version/status]`
 
 **2. Traceability**
+
 - Question: Does the tested kill-chain configuration create and execute a valid engagement that defeats the defined threat before the mission boundary?
 - Hypothesis: The tested architecture achieves a higher probability of confirmed defeat or greater engagement margin than `[baseline/comparison]`.
 - Measures: `CUAS-C2-LAT-009`, `CUAS-MSN-UWT-010`, `CUAS-DEF-PINT-013`, `CUAS-DEF-PDEF-014`, `CUAS-MSN-E2E-015`
@@ -762,6 +803,7 @@ Universal susceptibility, legal operational employment, physical destruction, or
 Separate failures in detection, decision, assignment, launch, guidance, intercept, effect, and mission outcome.
 
 **4. Planned repetition**
+
 - Valid engagement opportunities: `[design]`
 - Threat/effector article blocks: `[design]`
 - Configuration order: `[design]`
@@ -769,6 +811,7 @@ Separate failures in detection, decision, assignment, launch, guidance, intercep
 - Reset/maintenance criteria: `[record]`
 
 **5. System and threat state**
+
 - Blue architecture/configuration: `[ID]`
 - Interceptor/effector article and state: `[ID]`
 - Threat profile/article: `[ID]`
@@ -777,7 +820,8 @@ Separate failures in detection, decision, assignment, launch, guidance, intercep
 - Inventory and readiness state: `[record]`
 
 **6. Event chain**
-```
+
+```text
 qualifying track
 → decision-ready track
 → assignment
@@ -789,9 +833,11 @@ qualifying track
 → defeat assessment
 → boundary or mission outcome
 ```
+
 Rule: freeze the exact event criterion for each stage.
 
 **7. Data and truth**
+
 - Threat and interceptor trajectories.
 - Sensor/C2 track and decision logs.
 - Assignment and launch/release events.
@@ -801,6 +847,7 @@ Rule: freeze the exact event criterion for each stage.
 - Common time and spatial registration inside approved uncertainty.
 
 **8. Procedure**
+
 1. Confirm complete blue/red configurations and truth coverage.
 2. Start all recorders before threat entry.
 3. Execute the approved threat vignette.
@@ -815,6 +862,7 @@ Rule: freeze the exact event criterion for each stage.
 
 **9. Validity and failure classification**
 A valid failure remains evidence. Classify the first mission-relevant failure stage (enum):
+
 - Detection
 - Track
 - Classification/identification
@@ -832,6 +880,7 @@ A valid failure remains evidence. Classify the first mission-relevant failure st
 Unknown effect outcomes follow the approved primary and sensitivity rules.
 
 **10. Required outputs**
+
 - Engagement timeline and margin.
 - Valid opportunity, intercept, and defeat counts.
 - Probability intervals.
@@ -852,11 +901,13 @@ Operational suitability, broader threat coverage, or effectiveness outside the t
 ### Card 5 — Saturation and multi-threat load
 
 **1. Control**
+
 - Card ID: `TC-CUAS-SAT-RAID-001`
 - Title: Multi-threat tracking, assignment, engagement, and leaker characterization
 - Version/status: `[version/status]`
 
 **2. Traceability**
+
 - Question: Under the defined raid size, arrival process, geometry, and threat mix, where does the architecture lose mission capacity?
 - Hypothesis: Mission success, track continuity, or engagement completion changes as concurrent load increases.
 - Measures: `CUAS-TRK-CONT-004`, `CUAS-C2-HS-008`, `CUAS-C2-LAT-009`, `CUAS-SAT-LEAK-016`, `CUAS-HMI-INT-018`, `CUAS-MSN-E2E-015`
@@ -866,6 +917,7 @@ Operational suitability, broader threat coverage, or effectiveness outside the t
 Identify system, interface, operator, or resource bottlenecks under controlled multi-threat load.
 
 **4. Design**
+
 - Raid sizes/levels: `[approved levels]`
 - Arrival spacing or process: `[definition]`
 - Threat mix: `[profiles and proportions]`
@@ -878,12 +930,14 @@ Identify system, interface, operator, or resource bottlenecks under controlled m
 Rule: do not escalate load merely because the prior run looked favorable unless the approved sequence permits it.
 
 **5. Experimental units**
+
 - Primary mission unit: one complete valid raid.
 - Nested object unit: one truth threat within the raid.
 - Preserve raid identity in all object-level analysis.
 - Do not treat threats from one raid as independent raids.
 
 **6. Controlled state**
+
 - Blue configuration and resource inventory: `[ID]`
 - Operator/crew procedure and staffing: `[ID]`
 - Threat profiles and coordination behavior: `[IDs]`
@@ -891,6 +945,7 @@ Rule: do not escalate load merely because the prior run looked favorable unless 
 - Reset state, queues, tracks, and inventory cleared before run.
 
 **7. Data and truth**
+
 - Identity-preserving truth for every threat.
 - Raid membership and planned/actual arrival times.
 - Blue source tracks and master-track associations.
@@ -901,6 +956,7 @@ Rule: do not escalate load merely because the prior run looked favorable unless 
 - System health, processor/network load, and resource state where available.
 
 **8. Procedure**
+
 1. Confirm raid, threat-object, run, configuration, and condition IDs.
 2. Verify blue and red reset state.
 3. Start truth, blue, environment, operator, resource, and run-log recording.
@@ -916,6 +972,7 @@ Rule: do not escalate load merely because the prior run looked favorable unless 
 
 **9. Stop and validity**
 Stop or hold for:
+
 - Loss of identity-preserving truth.
 - Threat spacing or raid membership outside tolerance.
 - Unapproved load or behavior.
@@ -926,6 +983,7 @@ Stop or hold for:
 Rule: a raid may be conditionally valid for early-stage sensing measures but invalid for defeat if an effector or outcome source fails. Record measure-specific use.
 
 **10. Required outputs**
+
 - Threat-object and raid counts.
 - Detection/track/handoff/engagement outcome by object.
 - Leaker fraction and raid-failure probability.
@@ -966,7 +1024,7 @@ Version/status enum: {draft, approved, issued}.
 
 ### 6.1 Evidence chain (canonical pipeline; order is mandatory)
 
-```
+```text
 Physical event
 → truth and source observations
 → common identifiers and time

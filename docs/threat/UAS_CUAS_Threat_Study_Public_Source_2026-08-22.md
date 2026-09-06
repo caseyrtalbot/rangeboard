@@ -88,7 +88,7 @@ This study covers UAS/UCAS tactics and counter-tactics that have direct relevanc
 Every major claim should be read with one of these status labels:
 
 | Label | Meaning |
-|---|---|
+| --- | --- |
 | **OBSERVED** | Public evidence documents actual operational employment. |
 | **TECH-EXPLOITED** | A government/intelligence organization or other credible technical exploitation source examined recovered hardware/components. |
 | **DECLARED** | A government, military, or manufacturer publicly states the characteristic. This is not necessarily independently verified. |
@@ -146,7 +146,7 @@ Conversions are rounded for threat-model use:
 NATO materials adapted from STANAG 4670 / ATP-3.3.8.1 divide UAS broadly into three classes by maximum takeoff mass and operational characteristics. Public NATO tables use the following structure. [N01]
 
 | NATO class | Category | Normal mass | Normal altitude / reach in public NATO table | Representative operational level |
-|---|---:|---:|---|---|
+| --- | ---: | ---: | --- | --- |
 | **Class I** | Micro | <2 kg and low-energy criterion | up to ~200 ft AGL; ~2.7 NM LOS | tactical unit / individual |
 | **Class I** | Mini | <15 kg | up to ~3,000 ft AGL; ~13.5 NM LOS | tactical unit |
 | **Class I** | Small | >15 kg and <150 kg | up to ~5,000 ft AGL; ~27 NM LOS | tactical formation |
@@ -161,7 +161,7 @@ NATO materials adapted from STANAG 4670 / ATP-3.3.8.1 divide UAS broadly into th
 The DoD Counter-Small UAS Strategy public annex provides the standard Group 1–5 framework. [N02]
 
 | DoD Group | Maximum gross takeoff weight | Normal operating altitude | Airspeed |
-|---|---:|---:|---:|
+| --- | ---: | ---: | ---: |
 | **Group 1** | 0–20 lb | <1,200 ft AGL | <100 kt |
 | **Group 2** | 21–55 lb | <3,500 ft AGL | <250 kt |
 | **Group 3** | <1,320 lb | <18,000 ft MSL | <250 kt |
@@ -173,7 +173,7 @@ U.S. Army ATP 3-01.81, *Counter-Unmanned Aircraft System Techniques*, is the cur
 ## 2.3 Terms used in this study
 
 | Term | Working definition for this study |
-|---|---|
+| --- | --- |
 | **UAS** | The aircraft plus control, communications, launch/recovery, payload, and support elements required for operation. |
 | **UA / UAV** | The unmanned aircraft itself. "UAV" remains common in source material. |
 | **UCAS / UCAV** | Unmanned combat aircraft system / unmanned combat aerial vehicle capable of strike or other combat functions. |
@@ -237,7 +237,7 @@ A test threat card should contain the following dimensions. If evidence does not
 Public reporting often uses "formation" loosely. For C-UAS T&E, the following geometry terms are more precise than forcing drone raids into manned-aircraft formations such as wedge or fingertip when evidence does not support that description.
 
 | Geometry / temporal pattern | Description | Public examples |
-|---|---|---|
+| --- | --- | --- |
 | **Singleton** | One UAS, independent attack or reconnaissance mission. | Tactical FPV; Hezbollah penetrations; ISR UAS. |
 | **Pair / hunter-killer team** | One UAS locates/maintains observation while another performs the strike. | Ukrainian ISR-to-strike employment; Russian ZALA/Orlan-to-Lancet/FPV ecosystem. |
 | **Small serial group** | Two or more UAS attack the same defended area/target set sequentially. | FPV direct-action swarming; repeated reattack. |
@@ -257,7 +257,7 @@ Public reporting often uses "formation" loosely. For C-UAS T&E, the following ge
 # 4. Master C-UAS threat-archetype matrix
 
 | Threat archetype | Typical class/group | Kinematic / flight character | Guidance / control | Observed employment | Primary C-UAS test stressor |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | COTS quadcopter ISR/dropper | NATO I; DoD G1 | Very low altitude, slow, hover, abrupt lateral/vertical maneuver | RF teleoperation; GNSS-assisted autopilot common | ISR, targeting, munition drop, local infrastructure attack | clutter, hover/slow Doppler, short warning, dense urban/terrain masking |
 | RF FPV OWA | NATO I; DoD G1 | ~tens of kt to >60 kt; high maneuverability; terminal dive/turns | live video + RF command | direct attack, reattack, anti-logistics, anti-UAS | short reaction time, low RCS, maneuver, RF environment |
 | Fiber FPV | NATO I; DoD G1 | similar airframe kinematics to RF FPV | operator-in-loop via fiber | direct attack in heavy EW environments | no useful RF command/video dependency; small optical/kinematic signature |
@@ -300,7 +300,7 @@ CSIS later described Russian salvo evolution toward larger raid sizes, **overlap
 ### 5.2.1 Long-range strike, decoy, and jet UAS
 
 | System | Role / status | NATO / DoD class | Public physical data | Speed | Range / endurance | Altitude | Payload / warhead | Guidance / C2 evidence | Evidence |
-|---|---|---|---|---:|---:|---:|---:|---|---|
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
 | **Shahed-136 / Geran-2** | OWA strike; combat observed at scale | NATO II; DoD G3 (approx. 200 kg / 441 lb airframe) | ~200 kg commonly reported | ~150–185 km/h = **81–100 kt** | ~1,000–2,500 km = **540–1,350 NM** depending configuration/source | Public technical sources vary; observed profiles include low flight and >2,000 m (~6,560 ft) in later campaigns; datum usually not stated | ~40 kg in UN technical report; other Russian configurations vary | hardened GNSS-INS; anti-jam GNSS variants; preprogrammed fixed-target attack documented; later Russian series add connected components | TECH-EXPLOITED / OBSERVED [R15][R16][R01] |
 | **Gerbera** | false target / barrage / reconnaissance | NATO I Small; DoD G2 | 18 kg / 39.7 lb MTOW; 2.5 m span | max 160 km/h = **86 kt** | 600 km = **324 NM** | useful altitude up to 3,000 m = **9,843 ft**, datum not stated | variants include unarmed/limited payload; role officially listed as false target/barrage/recon | catapult launch; recovered systems include GNSS/IMU and communications components | TECH-EXPLOITED [R02] |
 | **Geran-3** | turbojet OWA; combat use documented by Ukraine | Exact public MTOW not consistently released in current GUR page | airframe/component exploitation public | high-speed relative to Geran-2; public secondary estimates vary and are not used as a fixed baseline here | public range figures vary | public figures vary | variant-dependent | Telefly JT80 turbojet; Kometa interference-resistant satellite nav; inertial navigation and flight-control components documented | TECH-EXPLOITED [R05] |
@@ -312,7 +312,7 @@ CSIS later described Russian salvo evolution toward larger raid sizes, **overlap
 ### 5.2.2 Tactical ISR, loitering munition, FPV, and strike UAS
 
 | System | Role | NATO / DoD class | Speed | Endurance / range | Altitude | Payload / warhead | Guidance / control | Defensive relevance | Evidence |
-|---|---|---|---:|---:|---:|---:|---|---|---|
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
 | **Orlan-10** | ISR / targeting / relay family | NATO I Small; DoD G2 (18 kg / 39.7 lb) | 90–150 km/h = **49–81 kt** | up to 16 h; 600 km airframe range; 120 km = **64.8 NM** comm distance | max 5,000 m = **16,404 ft**, datum not stated | up to 5.5 kg target load | GNSS/autopilot; RF comm; multiple payload configurations | persistent orbit, target handoff, BDA, communications support | TECH-EXPLOITED [R11] |
 | **Orlan-30** | ISR / targeting | NATO I Small or II depending actual MTOW; public GUR page does not state MTOW | max 170 km/h = **92 kt** | 8 h; 600 km airframe; 120 km comm | max 6,000 m = **19,685 ft** | up to 12 kg target load | RF/autopilot family | operational-depth observation and fires support | TECH-EXPLOITED [R12] |
 | **ZALA Z-16 (421-16E)** | ISR | NATO I Mini; DoD G1 | 65–110 km/h = **35–59 kt** | >4 h; >75 km = **>40.5 NM** comm | useful 200–5,000 m = **656–16,404 ft** | >1.8 kg | RF + autopilot | persistent ISR / Lancet ecosystem | TECH-EXPLOITED [R09] |
@@ -460,7 +460,7 @@ RUSI reporting adds that tactical FPV and bomber operations are commonly cued by
 In April 2026, the President of Ukraine publicly identified a number of fielded Ukrainian systems and performance figures. These are **official Ukrainian declarations**, useful for defensive threat modeling but not independent technical validation. [U01]
 
 | System | Type / role | Declared range | Declared warhead/payload | Speed / altitude | Guidance/control public evidence | Classification note |
-|---|---|---:|---:|---|---|---|
+| --- | --- | ---: | ---: | --- | --- | --- |
 | **Liutyi** | long-range strike kamikaze UAS | up to 2,000 km = **1,080 NM** | 50–75 kg = **110–165 lb** | official 2026 source did not state speed/altitude | long-range autonomous route flight; public research reports evolving terminal/navigation options | not assigned; cited official source does not provide MTOW/normal operating altitude |
 | **FP-1** | long-range strike kamikaze UAS | up to 1,600 km = **864 NM** | up to 120 kg = **265 lb** | not stated in cited official source | not fully disclosed | classification depends MTOW; not assigned here |
 | **Sichen** | long-range strike kamikaze UAS | up to 1,400 km = **756 NM** | up to 40 kg = **88 lb** | not stated | not fully disclosed | not assigned |
@@ -878,12 +878,12 @@ RAND, citing the Russian Ministry of Defence, reports that Russian forces claime
 
 During **Operation Spring Shield** in Syria in 2020, Türkiye employed **Bayraktar TB2** and **ANKA-S** UCAVs at scale and integrated them with artillery/fires and electronic warfare. Türkiye's Ministry of National Defence states that 10 air-defense systems were neutralized during the operation; it does not publicly attribute every system loss to a specific UAS or EW effect. RUSI describes integration of KORAL electronic warfare, ANKA-S/TB2 UACVs and precision munitions as a SEAD-enabling operational construct and reports similar integration in Libya. [TUR01][TUR03]
 
-### Bayraktar TB2 current manufacturer benchmark
+## Bayraktar TB2 current manufacturer benchmark
 
 > **Configuration note:** The following is Baykar's 2026 public specification and should not be assumed to match every 2020 combat configuration. [TUR02]
 
 | Parameter | Public manufacturer value |
-|---|---:|
+| --- | ---: |
 | MTOW | **700 kg / 1,543 lb** |
 | Payload capacity | **150 kg / 331 lb** |
 | Cruise speed | **90 KTAS** |
@@ -951,7 +951,7 @@ The following taxonomy consolidates the public evidence into C-UAS-relevant thre
 ## 16.1 Detection / track-denial behaviors
 
 | Behavior | Evidence actors | Defensive effect |
-|---|---|---|
+| --- | --- | --- |
 | Very-low-altitude flight | Hezbollah; tactical FPV; some Geran profiles | terrain/structure masking, short radar horizon, clutter |
 | Higher-altitude OWA transit | Russia Geran campaigns | moves threat outside some local gun/interceptor envelopes; changes sensor/engagement geometry |
 | Hover / very-low radial velocity | multirotor ISR/bombers | can challenge filters optimized for conventional air targets |
@@ -966,7 +966,7 @@ The following taxonomy consolidates the public evidence into C-UAS-relevant thre
 ## 16.2 C2 / guidance resilience behaviors
 
 | Behavior | Evidence | C-UAS consequence |
-|---|---|---|
+| --- | --- | --- |
 | Preprogrammed GNSS/INS route | Shahed-136 | command-link jamming alone may not stop flight |
 | Anti-jam GNSS / CRPA | Geran series | raises required EW sophistication; navigation may remain usable in interference |
 | INS continuation | Russian/Ukrainian deep-strike systems | temporary GNSS denial may not immediately terminate mission |
@@ -980,7 +980,7 @@ The following taxonomy consolidates the public evidence into C-UAS-relevant thre
 ## 16.3 Saturation / resource-exhaustion behaviors
 
 | Behavior | Evidence | C-UAS consequence |
-|---|---|---|
+| --- | --- | --- |
 | High-count OWA raids | Russia; Iran | track/engagement capacity and magazine depth become limiting variables |
 | Repeated waves | Russia; Iran | sustained crew/system performance and reload/rearm matter |
 | Staggered timing | Russian campaign analysis | prevents simple simultaneous-salvo assumptions and extends alert period |
@@ -993,7 +993,7 @@ The following taxonomy consolidates the public evidence into C-UAS-relevant thre
 ## 16.4 Sensor-to-shooter / kill-chain behaviors
 
 | Behavior | Evidence actors | Function |
-|---|---|---|
+| --- | --- | --- |
 | ISR UAS + FPV shooter | Russia, Ukraine | target discovery and terminal attack separated between aircraft |
 | ISR UAS + loitering munition | Russia ZALA/Lancet; Azerbaijan | persistent target acquisition plus precision strike |
 | ISR + artillery/other fires | Russia, Ukraine, Azerbaijan | UAS enables non-UAS weapon effects |
@@ -1003,7 +1003,7 @@ The following taxonomy consolidates the public evidence into C-UAS-relevant thre
 ## 16.5 Terminal / maneuver behaviors
 
 | Behavior | Evidence | C-UAS consequence |
-|---|---|---|
+| --- | --- | --- |
 | High-angle/terminal dive | loitering munitions / FPV families | rapid LOS/closure change late in engagement |
 | Hover then attack/drop | multirotor bomber/dropper | non-ballistic path; can pause/reposition |
 | High lateral maneuver | FPV | stresses track filters and pointing loops |
@@ -1063,7 +1063,7 @@ This study does **not** calculate lethal blast radius, fragmentation fan, armor-
 ## 18.2 Representative public envelopes
 
 | Threat | Strike / flight reach | Control / comm reach | Speed | Altitude | Payload/warhead | Targeting character |
-|---|---:|---:|---:|---:|---:|---|
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
 | Shahed-136 / Geran-2 | 540–1,350 NM public range band | originally preprogrammed; connected variants differ | ~81–100 kt typical public prop values | low to >6,500 ft observed; broader ceiling reports vary | ~88 lb UN baseline; variants differ | fixed coordinates; maritime moving-target development evidenced |
 | Gerbera | 324 NM | variant dependent | max 86 kt | ≤9,843 ft useful altitude, datum unstated | usually false-target/recon role; some armed variants reported | deception/recon/limited strike by variant |
 | Geran-4 | 416 NM | mesh/network components present | 173 kt cruise; 189 kt max | ≤13,123 ft, datum unstated | 110 lb | deep strike; connected navigation/C2 architecture |
@@ -1086,7 +1086,7 @@ This study does **not** calculate lethal blast radius, fragmentation fan, armor-
 # 19. Guidance and autonomy matrix
 
 | Autonomy / control level | Description | Systems / actors with public evidence | Threat-model note |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Manual RF teleoperation** | Operator continuously controls flight from live video | COTS quadcopters, many FPVs | include link latency, video loss, operator maneuver; do not assume GNSS dependence |
 | **Assisted/manual** | Stabilized autopilot with operator steering/targeting | many military multirotors / FPVs | most common small-UAS mode |
 | **Preprogrammed autonomous navigation** | route/waypoints to target without continuous control | Shahed/Geran baseline, deep-strike UAS | command-link denial may have no effect |
@@ -1148,7 +1148,7 @@ Observed adaptations include:
 This section converts the observed evidence into a **minimum threat-library structure**. The labels are analytic bins, not claims that adversaries use these names.
 
 | Threat card | Evidence basis | Required variables | Do not assume |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **T01 COTS-MR-ISR** | ISIS, Ukraine, Hamas, Hezbollah | very low altitude, hover, EO sensor, RF control, small mass | that unarmed = irrelevant |
 | **T02 COTS-MR-DROPPER** | ISIS, Ukraine, Hamas | hover, short-range RF, munition release, return/reuse | that threat terminates at first pass |
 | **T03 FPV-RF-OWA** | Russia/Ukraine | small mass, high maneuver, live video, RF command, terminal dive | straight-line constant-speed target |
@@ -1278,7 +1278,7 @@ Preprogrammed autonomous navigation and terminal automatic guidance can allow co
 # 24. Country / actor comparative matrix
 
 | Actor | Dominant public UAS threat types | Observed raid / formation behavior | Guidance/control sophistication | C-UAS-relevant adaptation |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **Russia** | FPV, fiber FPV, heavy bombers, Orlan/ZALA ISR, Lancet, Geran-2/3/4/5, Gerbera | singleton to mass multi-wave raids; multi-azimuth; staggered/overlapping tracks; decoy mixing; sensor-shooter teams | RF, fiber, GNSS/INS, CRPA, EO terminal, mesh/cellular, emerging BLOS | altitude shifts, jet speed, false targets, link diversity, terminal auto guidance, passive-radar-homing variant |
 | **Ukraine** | COTS ISR/dropper, RF/fiber FPV, heavy bombers, long-range prop OWA, jet missile-drones, interceptor UAS | hunter-killer teams; direct-action multi-UAS attacks; deep-strike raids; serial reattack | RF, fiber, INS/GNSS, visual/terrain nav, terminal auto guidance | GNSS-denied nav, >30 km fiber, long-range OWA diversification |
 | **Iran** | Shahed OWA, Mohajer ISR/strike, Ababil family | mass national-scale mixed salvo | preprogrammed GNSS/INS, anti-jam; maritime BLOS/moving-target evidence | scale, mixed missile/UAS attack, moving-target development |

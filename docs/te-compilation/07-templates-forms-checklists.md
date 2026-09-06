@@ -16,7 +16,7 @@
 Every input field on this page belongs to a named template, form, card, or record. The complete field lists, verbatim and in source order, are reproduced in Section 4 (templates, forms, cards) and Section 3 (checklists). Field inventory index:
 
 | # | Record / form | Phase color | Field or item count |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | Campaign charter | blue | 29 fields |
 | 2 | Authority and decision-rights record | blue | 12 fields, repeated across 22 decision types |
 | 3 | Decision–question–evidence traceability record | blue | 17 fields |

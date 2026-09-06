@@ -30,7 +30,6 @@ substituted for one another here.
   performance and must never be cited as such.
 - **L3** left to the user: the field is `null` and the app draws nothing.
 
-
 ## Command, control and fusion
 
 ### `lib-ibcs` IBCS battle command (Northrop Grumman)
@@ -74,6 +73,7 @@ substituted for one another here.
 **Not established by the public record:** Which service sponsored ADSI in the 2020 JCO C2 selection. One reproduction of the Army release attributes ADSI to the Air Force and MEDUSA to the Marine Corps; Breaking Defense reports the reverse. Not resolved. Whether ADSI is still carried on the JIATF-401 C-UAS C2 list after the JCO was disestablished in 2025. Whether ADSI performs multi-source track fusion or only correlation and forwarding. The datasheet says 'forwarding and control' and lists correlation under digital air control; it never claims fusion.
 
 **Unresolved source conflict:**
+
 - sponsoring service in the 2020 C-sUAS C2 selection: AOFS reproduction of army.mil release, 5 Jul 2020 gives ADSI = Air Force; MEDUSA = Marine Corps; Breaking Defense, 26 Jun 2020 gives ADSI = Marines; MEDUSA = Air Force. Secondary outlets reordered the parenthetical service attributions from the original release. MEDUSA = Air Force is independently corroborated by its Al Dhafra AB deployment with the 380th Expeditionary Security Forces Squadron. Resolution: UNRESOLVED.
 
 ### `lib-tak` TAK / CoT node (Team Awareness Kit)
@@ -114,6 +114,7 @@ substituted for one another here.
 **Not established by the public record:** Whether DroneSentry-C2 has any FAAD C2 or Lattice interface. Neither is claimed by DroneShield and neither is claimed by Northrop or Anduril. Whether the SAPIENT support is sensor-side only or a full SAPIENT C2 role. The Oct 2025 sensor release and the Oct 2025 C2E release describe it differently. Which named US DoD units field DroneSentry-C2. DroneShield reports contract values and regions, not units.
 
 **Unresolved source conflict:**
+
 - scope of SAPIENT support: DroneShield 4Q25 release, 8 Oct 2025 gives SAPIENT added to DroneSentry-X Mk2 and RfPatrol Mk2 (sensors/effectors); DroneSentry-C2 Enterprise launch, 15 Oct 2025 gives the core DroneSentry-C2 offering updated with SAPIENT protocol compatibility. Two releases a week apart covering different parts of the same product family; both may be true. Resolution: UNRESOLVED.
 
 ### `lib-dedronetracker` DedroneTracker.AI C2 (Dedrone by Axon)
@@ -181,6 +182,7 @@ substituted for one another here.
 **Not established by the public record:** Effective engagement range against any target class. Dwell time to effect. Firing arcs / sectorDeg. Engagement ceiling. Sustained-fire limit imposed by DDG power and chilled-water capacity. Reporting flags this as the binding constraint but publishes no figure. Whether the designation AN/SEQ-4 applies. Sources found use Mk 5 Mod 0 only; AN/SEQ-4 was not confirmed and is NOT asserted here. Whether the dazzler mode has a separate, longer effective range than the hard-kill mode. Almost certainly yes physically, but no figure is public.
 
 **Unresolved source conflict:**
+
 - growth power class: CRS / Navy budget material gives growth potential to 120 kW; Lockheed Martin commentary via TWZ gives potential upgrade to 150 kW. Different vintages: 120 kW is the program-of-record growth objective, 150 kW an OEM aspiration. Resolution: UNRESOLVED.
 
 ### `lib-ironbeam` Iron Beam 100 kW laser (Rafael)
@@ -207,6 +209,7 @@ substituted for one another here.
 **Not established by the public record:** The condition attached to the ~10 km figure. No source states target class, target size, atmospheric visibility or Pk at that range. Degraded range in fog, rain or dust. Only qualitative statements exist. Engagement ceiling. Dwell time by target class. 'Seconds' is all that is public. Sector coverage of one emplacement. Number of systems delivered beyond the first. Whether the system has been used operationally since handover. Reporting through mid-2026 says integration is still in progress.
 
 **Unresolved source conflict:**
+
 - effective engagement range: Breaking Defense (Sep 2025, Dec 2025) gives about 10 km; Lower-tier aggregation citing 'destroy within five seconds at a range of up to 7 km' gives up to 7 km. 10 km is likely the maximum reach claim; 7 km may be the range at which a stated 5 s dwell holds. Different conditions, not different facts. Do not average. Resolution: UNRESOLVED.
 
 ## EO/IR and acoustic
@@ -234,6 +237,7 @@ substituted for one another here.
 **Not established by the public record:** IR sub-band (MWIR vs LWIR vs SWIR) is not published. What drives the 3-10 mile spread (target size, weather, mounting height) is not stated. Frame rate, revisit rate and simultaneous track capacity for WISP specifically are not published. Elevation datum for the 125 deg vertical FOV. No published DRI (detection / recognition / identification) breakdown; only a single 'detection' figure exists. Slew rate is not applicable (staring sensor) but no dwell or revisit figure is published either.
 
 **Unresolved source conflict:**
+
 - sensor modalities inside WISP: Military & Aerospace Electronics, 2024-01-24 (and Anduril's own expansion of the acronym: Wide-Area Infrared Sensing with Persistence) gives passive infrared imaging only; Army Recognition, Aug 2026 gives 'WISP combines electro-optical imaging, passive radio frequency sensing and advanced software analytics'. The 2026 article likely folds the co-fielded Pulsar passive RF sensor into its WISP description; the same article separately names Pulsar as the RF sensor. Resolution: UNRESOLVED. Modeled as sensorType 'eo-ir' on the strength of the product name and the 2024 technical description..
 
 ### `lib-mxgcs` WESCAM MX-GCS EO/IR sight (L3Harris)
@@ -281,6 +285,7 @@ substituted for one another here.
 **Not established by the public record:** Any UAS-specific detection, recognition or identification range from HGH. Identification range for any target class: HGH publishes D and R only, never I. US or NATO operator, program or contract. A Camp Roberts demonstration against Class I and II UAVs of 2-55 lb is referenced by a third-party survey but I could not reach a primary account of it, so it is NOT counted as evidence here. Any documented integration with a C2 or effector in the RangeBoard library. Rain, fog and thermal-crossover derates. The leaflet claims all-weather without qualification.
 
 **Unresolved source conflict:**
+
 - Spynel-X coverage diameter: HGH web copy (search snippet) gives 18 km diameter for early human intrusion detection; HGH web copy (search snippet, other page) gives 16 km diameter. Different Spynel-X variants (X 8000 vs X 6000) quoted without naming the variant. The leaflet's X 8000 human detection of 9 km implies an 18 km diameter; X 8000 is the top model. Resolution: UNRESOLVED. Neither figure is used; the model ships the Spynel-S 6000 leaflet values instead..
 
 ### `lib-zvook` Zvook acoustic station (Ukraine)
@@ -308,6 +313,7 @@ substituted for one another here.
 **Not established by the public record:** Bearing accuracy per station. No figure is published, so localization error across a picket cannot be estimated. Node spacing for the long-range stations (the 400-600 m figure belongs to the NW0 tactical sensor, not to these). Elevation coverage and altitude ceiling. Wind, terrain and ambient-noise derates specific to Zvook. Only a generic acoustic figure exists (severe degradation above 5 m/s wind). Detection range against quiet electric multirotors. The 5 km figure is a piston-engine OWA figure only. Any machine interface to a Western C2. Delta is not in the RangeBoard library.
 
 **Unresolved source conflict:**
+
 - network size: Counter-UAS 101 survey table, Jan 2026 gives Zvook about 10,000 sensors; United24 Media, Jul 2025 (describing the combined Ukrainian acoustic effort) gives 14,000 sensors. The 14,000 figure is Sky Fortress's separate network, not Zvook's. Sources routinely merge the two Ukrainian acoustic networks. Resolution: UNRESOLVED. Not a spec field, recorded for context only..
 
 ### `lib-zvooknw0` Zvook NW0 tactical FPV sensor
@@ -387,6 +393,7 @@ substituted for one another here.
 **Not established by the public record:** Defeat range. This is the single largest gap and the reason for the REPRESENTATIVE label. Azimuth sector for the defeat function specifically. Simultaneous target capacity. Time from cue to effect. Whether NINJA is netted into MEDUSA or FAAD C2 in practice. Which airframes and link types are in the supported set, and therefore what fraction of a raid it can actually affect.
 
 **Unresolved source conflict:**
+
 - fielding count: CRS R48477 (2025-03-31) gives 99 Air Force locations had installed NINJA (as of 2023); Black River Systems Counter-UAS page (retrieved 2026-08-24) gives over 565 systems at 190 unique locations worldwide. Different dates (2023 vs 2026), different units (locations vs systems), and different scopes (Air Force locations vs worldwide including non-USAF). Resolution: UNRESOLVED.
 
 ### `lib-pulsar` Pulsar EW node (Anduril)
@@ -440,6 +447,7 @@ substituted for one another here.
 **Not established by the public record:** Radiated power / EIRP. The meaning of the datasheet's 'Jamming Ratio: Up to 80%'. Whether the 1 km range applies to the control link, the video link and GNSS equally. Assignment-to-effect time. Simultaneous target capacity. US Army fielding status past the operational evaluation announced in 2025.
 
 **Unresolved source conflict:**
+
 - jamming range: MyDefence Pitbull 100/101 datasheet, Jan 2025 gives no range figure printed at all; MyDefence Pitbull product page and ESD Mar 2026 gives up to 1000 m. The controlled datasheet omits range, likely because it is condition-dependent; the marketing page and trade coverage carry the headline figure. Resolution: UNRESOLVED. Recorded as 'up to 1000 m, manufacturer product page, absent from the datasheet'..
 
 ## System components (gap fill)
@@ -488,6 +496,7 @@ substituted for one another here.
 **Not established by the public record:** Whether 'beyond 7 Km' is a detection, track or fire-control-quality range, and against which of Groups 1, 2 and 3 it was measured. Target RCS, track capacity, update rate, range resolution and minimum range. None are published. Elevation coverage in degrees. 'Full upper hemisphere' is stated but no numeric band is given, so elevationDeg stays null. Whether the fielded M-LIDS Increment 2 radar is still KuMRFS-M in 2026, given that CRS records XBAEU on the Increment 2.1 single-Stryker build.
 
 **Unresolved source conflict:**
+
 - M-LIDS radar identity: SRC LIDS brochure, two-vehicle M-LIDS system description gives KuMRFS-M on the kinetic-defeat vehicle mast; CRS R48477 gives XBAEU on the Increment 2.1 single-Stryker build. Different increments: the brochure documents the two-vehicle Increment 2, CRS documents the later single-vehicle Increment 2.1. Resolution: Both kept. lib-kumrfs-m models the two-vehicle build, lib-xbaeu the single-Stryker build..
 
 ### `lib-xbaeu` XBAEU Ku720-2 mobile sensing radar (Raytheon)
@@ -535,6 +544,7 @@ substituted for one another here.
 **Not established by the public record:** Detection range, direction-finding range, and bearing accuracy. None are published, against any link type or emitter power. Frequency coverage. Deliberately not sought: non-public frequency plans are out of scope under the brief. Whether the DF and the jammer share one aperture set or use separate ones, which is what would decide whether an M-LIDS EW vehicle should place one entity or two. Elevation coverage and altitude ceiling. Whether the mobile emplacement's DF range is reduced like the defeat range. The brochure says the EW vehicle 'incorporates Fixed Site LIDS (slight decrease in effective detection and defeat range)' but quantifies neither.
 
 **Unresolved source conflict:**
+
 - Product naming: SRC LIDS brochure section title gives 'CUAEWS DF' names the whole EW element, of which direction finding is one of three capabilities alongside electronic negation and NAVWAR; RangeBoard id split gives lib-cuaews (effector, jammer half) and lib-cuaews-df (sensor, find-and-fix half). One product, two RangeBoard kinds: a SpecModel carries either an EffectorSpec or a SensorSpec, never both. Resolution: Split kept, but see existing_entry_findings: the EW-domain agent's lib-cuaews is currently NAMED 'CUAEWS DF (SRC, LIDS EW)', which collides with this record. Rename the effector..
 
 ### `lib-cm262` CM262 EO/IR/SWIR gimbal (CACI)
@@ -605,6 +615,7 @@ substituted for one another here.
 **Not established by the public record:** Which radar the Long Range Sentry carries. It is NOT established that it is Anduril's Spyglass: lib-spyglass carries a 3.5 km manufacturer figure, and 15 km against Group 1-3 is a different claim. Do not merge the two records. Band. The Sentry family feature list names an X-band MTI radar, but it is not stated that the LR variant's 'ultra high powered' radar is that unit. Mast height for the Long Range variant. Anduril publishes 80 ft for the Extended Range tower and 5.5 m for Maritime, and gives no figure for Long Range. What the 'with Fire Control' line item adds over the baseline Long Range Sentry, and whether it is a hardware module or a Lattice software licence. Elevation coverage, track capacity, update rate, resolution, minimum range. None published. Towers per site, tower spacing, and whether US installation sites carry kinetic effectors at all.
 
 **Unresolved source conflict:**
+
 - Variant name: Anduril product page gives 'Long Range Sentry', no fire-control suffix; June 2026 US arms-sale component list gives 'Long Range Sentry Tower with Fire Control'. The arms-sale line item names a configuration or option package that the public product page does not break out. Resolution: UNRESOLVED. The record uses the arms-sale name because that is the name the preset asked for, and records the vendor name as an alias..
 
 ## Kinetic effectors
@@ -635,6 +646,7 @@ substituted for one another here.
 **Not established by the public record:** Effective C-UAS engagement range against a Group 1 electric quadcopter (low IR signature). No public figure. Single-shot Pk against any UAS class. No public figure. Minimum engagement range specific to the FIM-92J/K proximity-fuze modes. Turret reload time for the four-round pod. Whether FIM-92K datalink cueing measurably extends the usable C-UAS envelope.
 
 **Unresolved source conflict:**
+
 - maximum range: designation-systems.net FIM-92 (2024-12-15) gives 4,800 m (FIM-92C standard); 8,000 m attributed to RMP Block II; The Defense Post FIM-92 guide (2025-11-13) gives roughly 4-5 km. RMP Block II was cancelled and never fielded, so its 8 km figure does not describe a fielded round. Fielded FIM-92C/E/J/K sit at 4.8 km. Resolution: RESOLVED — use 4,800 m; explicitly reject the 8,000 m figure.
 - altitude ceiling: designation-systems.net FIM-92 gives 3,800 m printed as 26,200 ft (internally inconsistent; 3,800 m = 12,467 ft); The Defense Post FIM-92 guide gives 3,800 m / 12,500 ft. typographic error in the first source's unit conversion Resolution: RESOLVED — 3,800 m = 12,500 ft.
 
@@ -663,6 +675,7 @@ substituted for one another here.
 **Not established by the public record:** Published engagement range for the ground-launched APKWS in the EAGLS configuration. The 5 km value is a planning figure carried over from the air-to-air envelope. Minimum engagement range. Altitude ceiling of the engagement envelope. Single-shot Pk against any UAS class. Whether fielded EAGLS rockets carry the FALCO proximity fuze or a contact-fuzed warhead. Reload time for a spent four-round pod. Which specific C2 the CENTCOM EAGLS sites route through.
 
 **Unresolved source conflict:**
+
 - engagement envelope: Militarnyi, 2026 (US deploys EAGLS in the Middle East) gives engagement envelope 'can reach about 10 km, broadly matching the radar's detection range'; Army Recognition, 22 Jan 2026 gives effective engagement envelope 'measured in several kilometres'. The 10 km figure is the RPS-40 DETECTION range being restated as a weapon envelope. Detection range and effective engagement range are different quantities and a 70 mm rocket's terminal energy and laser designation geometry both fall off well inside the radar horizon. Resolution: UNRESOLVED — recorded both. Board value set at 5,000 m and labelled REPRESENTATIVE. Do not promote the 10 km detection figure into a weapon range..
 
 ### `lib-skyranger30` Skyranger 30 (Rheinmetall)
@@ -691,6 +704,7 @@ substituted for one another here.
 **Not established by the public record:** Ready-round count is single-sourced (300). No Rheinmetall figure found. Altitude ceiling of the engagement envelope. Single-shot or single-burst Pk against any UAS class. Minimum engagement range. Which national C2 each customer routes Skyranger through, and whether any is interoperable with the C2 models already in the library. Whether the German fit uses the AMMR or the Spexer radar.
 
 **Unresolved source conflict:**
+
 - rate of fire: Skyranger 30 (Wikipedia) gives 1,200 rd/min nominal; The Defense Post, Aug 2026 gives up to 1,250 rd/min. nominal versus maximum cyclic rate for the same KCE revolver cannon Resolution: UNRESOLVED — both recorded; neither affects a board field.
 
 ### `lib-dronehunter` DroneHunter F700 net interceptor
@@ -738,11 +752,12 @@ substituted for one another here.
 | `architecture` | X-band digital AESA, GaN high-power amplifiers, sub-array digital beamforming, rotating with stop-and-stare | Product card key radar features; LM web page adds '360 degree and stop-and-stare capability, from the ground to zenith, with no cone of silence' | MANUFACTURER_CLAIM | L1 | [Sentinel A4 product card; Lockheed Martin Sentinel A4 product page](https://www.lockheedmartin.com/en-us/products/sentinel-a4.html), 2024 / accessed 2026-08-24 |
 | `track_capacity` | hundreds of simultaneous tracks; hundreds of simultaneous fire-control tracks; tens of simultaneous engagements | Not conditioned on target class | MANUFACTURER_CLAIM | L1 | [Sentinel A4 product card](https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf), 2024 |
 | `mission_set` | detection, classification, identification and reporting against RAM, with capability against CM, UAS, FW and RW | DOT&E FY2023 system description. Direct PDF fetch returned HTTP 403; text read via search-engine extract of the same DOT&E PDF. | VERIFIED | L1 | [DOT&E FY2023 Annual Report: Army — Sentinel A4](https://www.dote.osd.mil/Portals/97/pub/reports/FY2023/army/2023sentinel-a4.pdf), 2024-01 (FY2023 report) |
-| `program_status` | Milestone C 2023; LRIP 2 (19 systems) contracted 2023; first LRIP 2 radar delivered 2026-02-02; first phase of IOT&E complete; FRP of 200+ radars planned |  | CORROBORATED | L1 | [Lockheed Martin Delivers First Sentinel A4 from LRIP 2; Sentinel A4 product card timeline](https://news.lockheedmartin.com/2026-02-02-Lockheed-Martin-Delivers-First-Sentinel-A4-from-LRIP-2-Advances-Toward-Full-Rate-Production), 2026-02-02 |
+| `program_status` | Milestone C 2023; LRIP 2 (19 systems) contracted 2023; first LRIP 2 radar delivered 2026-02-02; first phase of IOT&E complete; FRP of 200+ radars planned | | CORROBORATED | L1 | [Lockheed Martin Delivers First Sentinel A4 from LRIP 2; Sentinel A4 product card timeline](https://news.lockheedmartin.com/2026-02-02-Lockheed-Martin-Delivers-First-Sentinel-A4-from-LRIP-2-Advances-Toward-Full-Rate-Production), 2026-02-02 |
 
 **Not established by the public record:** Detection or track range against any UAS group. No absolute range figure of any type is public for A4. Instrumented range for A4 (the 75 km figure in secondary sources belongs to the legacy AN/MPQ-64 Sentinel, not A4). Rotation rate, range resolution, and minimum range. Whether the '360 degree' figure is a mechanical rotation or an electronic aggregate; LM describes both rotating coverage and stop-and-stare.
 
 **Unresolved source conflict:**
+
 - range improvement over Sentinel A3: Lockheed Martin Sentinel A4 product page (accessed 2026-08-24) gives greater than a 75% increase in range over the legacy system; Lockheed Martin Sentinel A4 product card (2024) gives Extends range by 175% and increases Sensitivity by 225% over Sentinel A3. One figure may be a percentage increase and the other a percentage of the A3 baseline (175% of A3 = +75%). Both are relative to an A3 baseline that is itself not published for UAS targets. Resolution: UNRESOLVED.
 - legacy AN/MPQ-64 Sentinel range: GlobalSecurity / Wikipedia secondary reporting gives 40 km range; upgraded version 75 km; Missile Defense Advocacy Alliance gives 75 km instrumented range. Detection range and instrumented range being reported as if interchangeable, across A1/A3 variants. Resolution: UNRESOLVED — not used for any A4 field.
 
@@ -767,6 +782,7 @@ substituted for one another here.
 **Not established by the public record:** Detection or track range against any UAS group, and instrumented range. Northrop publishes none. Rotation rate, elevation coverage limits, track capacity, range resolution. Whether G/ATOR has any documented FAAD C2 interface (USMC uses CAC2S).
 
 **Unresolved source conflict:**
+
 - aerial detection range: thedefensewatch.com aggregator page gives over 100 miles for aerial targets; Northrop Grumman product page gives no range figure published. Aggregator restating an unsourced figure, possibly an instrumented range for a large-RCS target. Resolution: UNRESOLVED — figure rejected, not used.
 
 ### `lib-giraffe1x` Giraffe 1X 3D radar (Saab)
@@ -785,11 +801,12 @@ substituted for one another here.
 | `sensor.sectorDeg` | 360 deg (360 deg) | azimuth coverage — 'covers the entire search volume every second' — 360 deg, 1 s update | MANUFACTURER_CLAIM | L1 | [Saab Giraffe 1X product page](https://www.saab.com/products/giraffe-1x), accessed 2026-08-24 |
 | `update_rate` | 1 s full-volume update s (1 s) | Full 360 deg search volume | CORROBORATED | L1 | [Saab Giraffe 1X page; Saab EU/NATO layered-defence page](https://www.saab.com/markets/eu-nato-affairs/layered-defence-against-the-drone-threat), accessed 2026-08-24 |
 | `cuas_procurement` | US Army order approx USD 46 M announced 2025-10-28 to provide Giraffe 1X 'in support of security co-operation partners' for C-UAS; USD 23.88 M modification for 10 radars to Estonia, Latvia and Lithuania, total approx USD 70 M, deliveries through Feb 2027 | OEM release plus trade reporting of the contract modification | CORROBORATED | L1 | [Saab press release, US Army order for Giraffe 1X; Army Recognition, 10 Giraffe 1X to the Baltics](https://www.saab.com/newsroom/press-releases/2025/saab-receives-order-for-giraffe-1x-radars-from-u.s.-army), 2025-10-28 (Saab); 2026 (Army Recognition) |
-| `mission_set` | simultaneous air surveillance, GBAD target acquisition and RAM sense-and-warn; optional sea-surface surveillance; V-SHORAD main sensor or gap filler |  | MANUFACTURER_CLAIM | L1 | [Saab Giraffe 1X product page](https://www.saab.com/products/giraffe-1x), accessed 2026-08-24 |
+| `mission_set` | simultaneous air surveillance, GBAD target acquisition and RAM sense-and-warn; optional sea-surface surveillance; V-SHORAD main sensor or gap filler | | MANUFACTURER_CLAIM | L1 | [Saab Giraffe 1X product page](https://www.saab.com/products/giraffe-1x), accessed 2026-08-24 |
 
 **Not established by the public record:** Frequency band. X-band (NATO I) is reported by trade press but not stated on Saab's own pages I could reach. Elevation coverage, altitude ceiling, track capacity, range resolution. Whether the 4 km figure is a detection range or a track range, and at what RCS. Which C2 system the US Army Baltic deliveries connect to.
 
 **Unresolved source conflict:**
+
 - range against very small RCS targets: Saab EU/NATO layered-defence page (accessed 2026-08-24) gives detects targets with radar cross-sections below 0.01 square metres at tactically relevant ranges up to 75 km; Saab Giraffe 1X product page (accessed 2026-08-24) gives can detect a UAV lighter than a milk carton as far as 4 km from the radar. The 75 km phrasing appears to fold the radar's overall instrumented range together with a separate low-RCS sensitivity claim. It is not a 0.01 m2 detection range. Resolution: UNRESOLVED — the 4 km product-page figure is used because it is the only one explicitly conditioned on a small UAS.
 
 ### `lib-spexer2000` SPEXER 2000 3D radar (HENSOLDT)
@@ -808,13 +825,14 @@ substituted for one another here.
 | `detection_range_uav` | 9000 m (9 km) | maximum detection range — 'UAV 9 km' datasheet line; trade reporting attaches 0.2 m2 RCS to this line | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet; Army Recognition SPEXER 2000 3D MkIII data page](https://www.armyrecognition.com/military-products/army/radars/ground-radars/spexer-2000-3d-mkiii-very-short-range-air-defence-vshorad-c-uas-radar-hensold-data), 2020-08-25 / accessed 2026-08-24 |
 | `sensor.sectorDeg` | 120 deg (up to 360 (single antenna 120) deg) | azimuth coverage — MkIII: 'up to 360 deg (single antenna 120 deg)'. MkII is fixed 120 deg. The model represents one antenna face. | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet technical specification table](https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf), 2020-08-25 |
 | `sensor.elevationDeg` | 0,90 deg (up to 90 (MkIII); 15 (MkII) deg) | elevation coverage — MkIII 'up to 90 deg'; MkII is 15 deg. Datasheet gives a span, not signed limits; [0,90] is the reading for a ground-based VSHORAD antenna. | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet](https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf), 2020-08-25 |
-| `architecture` | Full coherent pulse-Doppler, X-band, AESA multi-panel, spectral micro-Doppler target classification, ECCM, MIL-STD-810/461 qualified |  | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet](https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf), 2020-08-25 |
-| `track_capacity` | more than 300 track-while-scan targets (MkIII: per 120 deg) |  | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet](https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf), 2020-08-25 |
+| `architecture` | Full coherent pulse-Doppler, X-band, AESA multi-panel, spectral micro-Doppler target classification, ECCM, MIL-STD-810/461 qualified | | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet](https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf), 2020-08-25 |
+| `track_capacity` | more than 300 track-while-scan targets (MkIII: per 120 deg) | | MANUFACTURER_CLAIM | L1 | [HENSOLDT SPEXER 2000 3D datasheet](https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf), 2020-08-25 |
 | `update_rate` | approximately 0.3 s with 16 beams, up to approximately 7.5 s in slow-scan s | 1 to 16 pencil beams per antenna | REPORTED | L1 | [EDR Magazine / Army Recognition SPEXER 2000 3D MkIII reporting](https://www.armyrecognition.com/military-products/army/radars/ground-radars/spexer-2000-3d-mkiii-very-short-range-air-defence-vshorad-c-uas-radar-hensold-data), accessed 2026-08-24 |
 
 **Not established by the public record:** Which 8 nations operate it, and whether any US unit does. RCS condition on the 6 km micro-UAV line. Classification range, range resolution, minimum range, instrumented range. Whether the MkIII datasheet figures differ from the 2020 MkII/MkIII table.
 
 **Unresolved source conflict:**
+
 - detection range against a UAV: HENSOLDT datasheet 2020 gives UAV 9 km / Micro UAV 6 km, no RCS stated; Army Recognition MkIII data page gives UAV (0.2 m2 RCS) at 9 km; pedestrian (0.5 m2) 18-20 km. Trade page adds RCS conditions the OEM datasheet does not print; the pedestrian figure also differs (18-20 km vs the datasheet's 20 km). Resolution: UNRESOLVED — datasheet values used, RCS treated as unconfirmed.
 
 ### `lib-echoguard` EchoGuard 4D radar (Echodyne)
@@ -834,11 +852,12 @@ substituted for one another here.
 | `sensor.sectorDeg` | 120 deg (120 deg) | azimuth field of view — 'Field of View: 120 deg Azimuth x 80 deg Elevation' | MANUFACTURER_CLAIM | L1 | [Echodyne EchoGuard technical specification sheet](https://www.echodyne.com/radar-systems/echoguard), 2026 |
 | `sensor.elevationDeg` | -40,40 deg (80 deg) | elevation field of view — Datasheet gives an 80 deg elevation SPAN only. Splitting it symmetrically about boresight is INFERRED, matching how lib-echoshield already models a 90 deg span as [-45,45]. | INFERRED | L1 | [Echodyne EchoGuard technical specification sheet](https://www.echodyne.com/radar-systems/echoguard), 2026 |
 | `frequency_band` | K-band 24.45-24.65 GHz (USA); 24.05-24.25 GHz (international) GHz | Officially disclosed on the OEM specification sheet | MANUFACTURER_CLAIM | L1 | [Echodyne EchoGuard technical specification sheet](https://www.echodyne.com/radar-systems/echoguard), 2026 |
-| `track_capacity_and_update` | up to 20 simultaneous tracks at a 10 Hz track update rate |  | MANUFACTURER_CLAIM | L1 | [Echodyne EchoGuard technical specification sheet](https://www.echodyne.com/radar-systems/echoguard), 2026 |
+| `track_capacity_and_update` | up to 20 simultaneous tracks at a 10 Hz track update rate | | MANUFACTURER_CLAIM | L1 | [Echodyne EchoGuard technical specification sheet](https://www.echodyne.com/radar-systems/echoguard), 2026 |
 
 **Not established by the public record:** Which DoD programs field EchoGuard, and in what quantity. Classification range; the datasheet gives AI classes (human, vehicle, drone) but no range at which classification holds. Range resolution as a two-target separation figure. The datasheet gives range ACCURACY (<3.25 m), which is not resolution. Whether the 80 deg elevation field of view is centred on boresight.
 
 **Unresolved source conflict:**
+
 - field of view: Echodyne EchoGuard technical specification sheet (2026) gives 120 deg azimuth x 80 deg elevation; Echodyne 'Medium-Range Tactical Radar' page for EchoShield (accessed 2026-08-24) gives EchoShield stated as 120 deg az x 80 deg el on that page, versus 130 x 90 on the EchoShield datasheet. Web copy appears to reuse the EchoGuard field of view for EchoShield. Datasheets are the better source for both. Resolution: UNRESOLVED — datasheet values used for both radars.
 
 ### `lib-spyglass` Spyglass short-range radar (Anduril / Numerica)
@@ -857,7 +876,7 @@ substituted for one another here.
 | `sensor.sectorDeg` | 90 deg | azimuth coverage — UNKNOWN. No azimuth field of view is published by Numerica or Anduril. 90 deg is a planning figure for a fixed short-range phased-array face, chosen to match the per-panel convention already used for lib-rps42. It is INFERRED and must not be promoted. | INFERRED | REPRESENTATIVE | [No published figure; planning value](https://www.anduril.com/spyglass), accessed 2026-08-24 |
 | `frequency_band` | Ku-band phased array with simultaneous transmit and receive | Officially disclosed by the manufacturer | CORROBORATED | L1 | [Military Embedded Systems, Feb 2021; PR Newswire, Oct 2022](https://www.prnewswire.com/news-releases/spyglass-short-range-surveillance-radar-a-product-of-numerica-corporation-demonstrated-as-part-of-jco-recommended-counter-uas-as-a-service-solution-301658672.html), 2022-10-25 |
 | `jco_demonstration` | Demonstrated in SAIC's Counter-small UAS as a Service at Yuma Proving Ground, Sep 2022; the JCO recommended the offering as one of three solutions. Integrated alongside two Liteye SHIELD C-sUAS platforms, Liteye directional RF defeat and an Aeroguard capture system. | Vendor release describing a government event | REPORTED | L1 | [PR Newswire — Spyglass demonstrated as part of JCO-recommended C-UAS as a Service solution](https://www.prnewswire.com/news-releases/spyglass-short-range-surveillance-radar-a-product-of-numerica-corporation-demonstrated-as-part-of-jco-recommended-counter-uas-as-a-service-solution-301658672.html), 2022-10-25 |
-| `ownership` | Anduril acquired Numerica's radar and C2 businesses (Jan 2025) and states Spyglass and Spark radars and Mimir software are being integrated into Lattice; production moves to Arsenal-1 |  | CORROBORATED | L1 | [Military Embedded Systems; Janes; Inside Defense — Anduril acquires Numerica radar and C2 businesses](https://militaryembedded.com/radar-ew/sensors/anduril-acquires-radar-and-commmand-and-control-business-numerica), 2025-01 |
+| `ownership` | Anduril acquired Numerica's radar and C2 businesses (Jan 2025) and states Spyglass and Spark radars and Mimir software are being integrated into Lattice; production moves to Arsenal-1 | | CORROBORATED | L1 | [Military Embedded Systems; Janes; Inside Defense — Anduril acquires Numerica radar and C2 businesses](https://militaryembedded.com/radar-ew/sensors/anduril-acquires-radar-and-commmand-and-control-business-numerica), 2025-01 |
 
 **Not established by the public record:** Azimuth and elevation field of view. Not published by Numerica or Anduril. Track capacity, update rate, range resolution, minimum range, instrumented range. Whether the 3.5 km figure is detection or track, and against what RCS. Whether Spyglass has been procured by any US programme of record, as opposed to demonstrated.
 
@@ -878,11 +897,12 @@ substituted for one another here.
 | `sensor.elevationDeg` | 0,30 deg (20-30 deg elevation beamwidth (W20S antennas); 10-15 deg (M10S) deg) | elevation coverage — The published figure is an antenna elevation BEAMWIDTH, not a signed coverage sector. [0,30] is the ground-based reading of 'wide vertical elevation coverage up to 30 deg'. | REPORTED | L1 | [ATRI A400 series page; Joint Forces A422 report](https://www.joint-forces.com/defence-equipment-news/52885-new-blighter-a422-radar-in-rapidly-deployable-configuration), 2022-04-13 / accessed 2026-08-24 |
 | `instrumented_range` | 20000 m (20 km) | instrumented range (maximum), minimum range less than 10 m — Blighter's own page states 'detecting and reporting airborne as well as ground targets at up to 20 km'. This is NOT a small-UAS detection range. | MANUFACTURER_CLAIM | L1 | [Blighter — Counter-UAS Radars for Ukraine](https://blighter.com/ukraine-counter-uas-radar-system-supplied-by-blighter/), 2022-06-07 |
 | `frequency_band` | Ku-band 15.7-17.2 GHz, E-scan FMCW Doppler GHz | Distributor reproduction of the OEM datasheet; not repeated on Blighter's own public pages I could reach | MANUFACTURER_CLAIM | L1 | [ATRI A400 series air security radars](https://www.atri.lt/products-solutions/surveilance-radars/a400-series-air-security-radars/), accessed 2026-08-24 |
-| `scan_rate` | 1.0 s per 90 deg; 0.25 s in Drone Spotlighting Mode s |  | MANUFACTURER_CLAIM | L1 | [ATRI A400 series air security radars](https://www.atri.lt/products-solutions/surveilance-radars/a400-series-air-security-radars/), accessed 2026-08-24 |
+| `scan_rate` | 1.0 s per 90 deg; 0.25 s in Drone Spotlighting Mode s | | MANUFACTURER_CLAIM | L1 | [ATRI A400 series air security radars](https://www.atri.lt/products-solutions/surveilance-radars/a400-series-air-security-radars/), accessed 2026-08-24 |
 
 **Not established by the public record:** Track capacity and update rate in track mode. Classification range for the machine-learning classifier. Whether any US or NATO unit other than Ukraine operates the A422 in a C-UAS role. Quantity supplied to Ukraine and the funding authority.
 
 **Unresolved source conflict:**
+
 - detection range: Blighter own pages and UK trade reporting, 2022 gives up to 20 km, airborne and ground targets, no RCS condition; ATRI distributor page reproducing the A400 datasheet gives 2.73 km at 0.01 m2 RCS, free space. The 20 km figure is the instrumented maximum against large-RCS targets; the RCS table is the conditioned performance. They are different quantities, not a disagreement. Resolution: UNRESOLVED as a single figure — both recorded, the 0.01 m2 line used for the ring.
 
 ### `lib-gm200mmc` Ground Master 200 MM/C radar (Thales)
@@ -928,6 +948,7 @@ substituted for one another here.
 **Not established by the public record:** Detection range, DF range and geolocation range: none published, in any conditions Frequency coverage Number of nodes in a standard array and the minimum for a TDOA fix Simultaneous detection/track capacity Geolocation accuracy (CEP) for airframe and for controller Whether the JCO-selected 2020 configuration equals the 2026 CORIAN v3 configuration Named C2 interface (FAAD C2, SAPIENT, CoT/TAK) — CACI says only 'existing command and control or security systems'
 
 **Unresolved source conflict:**
+
 - range attributed to the CACI RF family: DefenseScoop, 31 Jul 2026 — SkyValor can 'target small and large drones using automated sense and shoot algorithms at more than 40 miles away in some cases' (>64 km) gives more than 40 miles, in some cases; CACI CORIAN datasheet, Feb 2025 — no range figure at all gives null. The 40-mile figure belongs to the trailer-based SkyValor, not to the fixed-site CORIAN, is heavily conditioned ('in some cases'), and mixes sensing with engagement. It is not a CORIAN detection range and must not be used as one. Resolution: UNRESOLVED — excluded from the CORIAN record.
 
 ### `lib-wingman` Wingman 103 wearable RF detector (MyDefence)
@@ -951,6 +972,7 @@ substituted for one another here.
 **Not established by the public record:** Urban vs rural detection range split — MyDefence publishes one figure and a footnote, not two numbers Simultaneous detection capacity Elevation coverage as a min/max pair Whether the 6 km figure is against a controller uplink, a video downlink, or the best of both Which specific units of the US Army hold the 485 kits
 
 **Unresolved source conflict:**
+
 - frequency coverage: MyDefence Wingman 103/105 datasheet, Aug 2025 gives 2.4, 5.2, 5.8 GHz base; 350-1300 MHz + 2.4 GHz + 5 GHz with the wideband antenna; MyDefence product page / trade press summaries, 2025-2026 gives 200 MHz to 6 GHz. The 200 MHz - 6 GHz figure is the receiver's tunable span or a newer Spectrum Warrior software build; the datasheet lists the bands actually scanned with each antenna. The two are not the same claim. Resolution: UNRESOLVED — the datasheet band list is used; no frequency value is written into the RangeBoard spec (the schema has no field for it).
 
 ### `lib-rfpatrol` RfPatrol Mk2 body-worn RF detector (DroneShield)
@@ -973,6 +995,7 @@ substituted for one another here.
 **Not established by the public record:** Frequency coverage as a numeric span Whether the Apr 2020 1 km urban / 4 km rural figures still hold after the Aug 2024 directional-antenna and AI-scanning upgrade — DroneShield has since removed range figures from its product pages Simultaneous detection capacity Named national operators and quantities
 
 **Unresolved source conflict:**
+
 - publication of a detection range at all: Defence Connect / Army Recognition, Apr 2020 gives 1 km urban, 4 km rural; DroneShield product pages, 2026 gives no range published. DroneShield withdrew range claims from public pages, probably because performance is now library- and environment-dependent after the 2024 AI-scanning release. The 2020 numbers remain the only public figures. Resolution: UNRESOLVED — 2020 figures used, dated as such.
 
 ### `lib-ardronis` ARDRONIS Locate RF DF system (Rohde & Schwarz)
@@ -995,6 +1018,7 @@ substituted for one another here.
 **Not established by the public record:** DF accuracy in degrees (the DDF 550 is named, its ARDRONIS-configured accuracy is not published) Minimum number of DF stations for a geolocation fix, and the baseline separation Detection range for the Locate Advanced configuration (only Locate Compact carries the >5 km figure) Simultaneous emitter handling capacity Whether the >5 km figure is rural or complex-EM
 
 **Unresolved source conflict:**
+
 - frequency coverage: JED counter-UAS survey table, May 2019 (R&S entry) gives RF receiver, reliable signal classification, 20 MHz - 6 GHz; R&S ARDRONIS Locate Compact page, accessed Aug 2026 gives monitors the 400 MHz to 6 GHz frequency range. Not a contradiction but a configuration difference: the receiver spans 20 MHz - 6 GHz, and the compact ADD207 antenna limits the fielded Locate Compact to 400 MHz - 6 GHz. The ADD557SR antenna restores 20 MHz - 6 GHz from a single antenna. Resolution: RESOLVED_AS_CONFIGURATION_DIFFERENCE — both recorded, neither averaged.
 
 ### `lib-titan` Titan C-UAS RF sensor (BlueHalo / AeroVironment)
@@ -1018,4 +1042,5 @@ substituted for one another here.
 **Not established by the public record:** Azimuth sector per unit (the 360 encoding is INFERRED) Direction-finding accuracy in degrees Simultaneous detection/track capacity as a number Whether the Aug 2023 BlueHalo specification still describes the post-AeroVironment 2026 product — the BlueHalo product URLs now redirect to avinc.com and the brochure is only reachable from a reseller mirror Any named C2 protocol (FAAD C2, SAPIENT, CoT/TAK)
 
 **Unresolved source conflict:**
+
 - frequency coverage: BlueHalo Titan brochure (Aug 2023) — datasheet table gives SF unit 2.4 / 5.8 GHz; EF unit 433 / 868 / 915 MHz, 1.2 GHz (five discrete bands); BlueHalo/reseller marketing copy gives 400 MHz to 6 GHz continuous. The marketing span is the envelope the discrete bands sit inside, not continuous coverage. A continuous-span reading would wrongly credit Titan with detecting links between the bands. Resolution: UNRESOLVED — datasheet band list used; no frequency value enters the RangeBoard spec.

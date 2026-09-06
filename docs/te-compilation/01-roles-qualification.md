@@ -54,7 +54,7 @@ May NOT: override a safety, range, airspace, spectrum, security, or legal stop; 
 For every decision type, record:
 
 | Field | Notes |
-|---|---|
+| --- | --- |
 | Decision name | text |
 | Accountable authority | person/role; exactly one per decision (hard rule) |
 | Person who performs the work | person/role |
@@ -92,7 +92,7 @@ Constraint: no decision may have two accountable authorities; resolve overlap be
 Every controlled record must show:
 
 | Field | Type |
-|---|---|
+| --- | --- |
 | Identifier | per identifier pattern (section 4.2) |
 | Title | text |
 | Version | v\<major\>.\<minor\> |
@@ -443,13 +443,13 @@ A table: one row per decision type (17 minimum rows, section 1.2), columns = the
 
 ### 4.2 Identifier pattern (page 00)
 
-```
+```text
 VLK-<campaign>-<record type>-<sequence>-v<major>.<minor>
 ```
 
 Examples (verbatim):
 
-```
+```text
 VLK-ALPHA-TC-014-v1.2
 VLK-ALPHA-RUN-037
 VLK-ALPHA-CFG-003-v2.0
@@ -476,7 +476,7 @@ Versioning rules:
 
 ### 4.5 C-UAS mission-thread template (page 01, Step 7) — verbatim sequence
 
-```
+```text
 Threat presentation
 → Detection
 → Track initiation
@@ -580,7 +580,7 @@ Every "unresolved" item needs owner, due date, fallback, and effect on conclusio
 
 Identifier examples (verbatim, page 00):
 
-```
+```text
 VLK-ALPHA-TC-014-v1.2
 VLK-ALPHA-RUN-037
 VLK-ALPHA-CFG-003-v2.0

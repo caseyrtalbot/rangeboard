@@ -10,7 +10,9 @@ Purpose (source, verbatim): "Convert adjudicated runs into reproducible measures
 ## 1. Input variables & fields
 
 ### Run evidence intake (Part A) — identifiers to confirm per run
+
 Each run that enters the analytical pipeline must carry these confirmed identifiers:
+
 - Card identifier (TC)
 - Run identifier (RUN)
 - Configuration identifier (CFG)
@@ -26,12 +28,15 @@ Data-quality registration fields per run: missing data, corrected data, duplicat
 Analysis provenance fields per run/manifest: analytical code version, configuration, environment.
 
 ### Run validity status (enum)
+
 `valid | conditional | invalid | pending` (from Part H reconcile step: "Which runs are valid, conditional, invalid, or pending?")
 
 Run count categories (Part E): `planned | attempted | valid | conditional | invalid`.
 
 ### Run-validity board adjudication record (Part B) — fields
+
 Review inputs (each is an assessable field per run):
+
 - Planned versus actual state
 - Configuration identity
 - Threat and condition fidelity
@@ -42,6 +47,7 @@ Review inputs (each is an assessable field per run):
 - Independence and comparison integrity
 
 Recorded outputs:
+
 - Final status
 - Measures allowed
 - Comparisons allowed
@@ -53,6 +59,7 @@ Recorded outputs:
 Versioning field: adjudication version. A changed status creates a new adjudication version; the prior decision and the reason for change are preserved.
 
 ### Correction record (Part C) — fields
+
 - Source value (preserved)
 - Corrected value
 - Rule and reason
@@ -60,6 +67,7 @@ Versioning field: adjudication version. A changed status creates a new adjudicat
 - Effect on results assessment
 
 ### Run-level measure result record (Part D) — fields
+
 - Measure definition reference (approved definition)
 - Start event and stop event (approved)
 - Truth and alignment method (approved)
@@ -72,6 +80,7 @@ Versioning field: adjudication version. A changed status creates a new adjudicat
 - Result label (enum): `pass | miss | borderline | descriptive | unavailable` — assign only when the approved logic defines that label
 
 ### Causal diagnosis record (Part F) — fields
+
 - Observation definition: time, configuration, condition, source
 - Candidate causes across nine categories (enum of cause domains): `component | interface | configuration | operator | environment | threat | instrumentation | data | method`
 - Evidence expected under each cause
@@ -80,6 +89,7 @@ Versioning field: adjudication version. A changed status creates a new adjudicat
 - Corrective action and verification test
 
 ### Finding record (FIND) (Part G) — fields (complete list)
+
 - Finding identifier and concise statement
 - Decision, question, claim, and hypothesis linkage (DEC, Q, CLM, HYP)
 - Supporting and contradicting runs (RUN)
@@ -100,6 +110,7 @@ Versioning field: adjudication version. A changed status creates a new adjudicat
 - Review and approval state
 
 ### Adaptation record (Part I) — fields (complete list)
+
 - Triggering evidence or constraint
 - Gap to resolve
 - Options considered
@@ -113,6 +124,7 @@ Versioning field: adjudication version. A changed status creates a new adjudicat
 - Result after execution
 
 ### Analysis input manifest (Part A)
+
 Versioned manifest listing the runs and evidence admitted to analysis, plus analytical code, configuration, and environment. Frozen at campaign completion (Part K).
 
 ## 2. Calculations & formulas
@@ -120,7 +132,9 @@ Versioned manifest listing the runs and evidence admitted to analysis, plus anal
 No closed-form formulas appear on this page. It defines computation procedures, required statistics, and labeling logic. Exact math for measures lives in other sections (10, 11, 14 per the page map).
 
 ### Run-level measure computation procedure (Part D, verbatim sequence)
+
 For each allowed measure:
+
 1. Apply the approved definition.
 2. Use the approved start and stop events.
 3. Apply the approved truth and alignment method.
@@ -135,6 +149,7 @@ For each allowed measure:
 Outlier rule: "Review outliers. Do not remove an outlier only because it is inconvenient. Use the preapproved rule or report the result with and without it."
 
 ### Aggregate statistics to report (Part E, as applicable)
+
 - Individual valid results
 - Count of planned, attempted, valid, conditional, and invalid runs
 - Central tendency
@@ -148,7 +163,9 @@ Outlier rule: "Review outliers. Do not remove an outlier only because it is inco
 Precondition: "Define the correct experimental unit before aggregation."
 
 ### Aggregation prohibitions (Part E, verbatim — these are validation rules)
+
 Do not combine:
+
 - Different configuration baselines without a stated model.
 - Different threat profiles as if they are the same condition.
 - Independent runs and repeated samples as equal units.
@@ -156,10 +173,12 @@ Do not combine:
 - Pre-change and post-change conditions without an explicit comparison.
 
 ### Analytical QC cross-check (Part C)
+
 - Test code against a known case.
 - Compare independent calculations for P1 measures (dual-computation requirement for priority-1 measures).
 
 ### Next-event value assessment criteria (Part I) — scoring dimensions per candidate event
+
 - Decision effect if answered
 - Current uncertainty
 - Ability to distinguish competing causes
@@ -176,6 +195,7 @@ Selection rule: "Select the event with the best decision value that remains safe
 ## 3. Checklists
 
 ### Evidence intake checklist (Part A) — per run; run by data/analysis staff
+
 1. Verify the run evidence package.
 2. Confirm card, run, configuration, threat, condition, operator, and method identifiers.
 3. Confirm included measures and prohibited uses.
@@ -188,6 +208,7 @@ Gate rule: Only runs with a recorded validity status may enter the analytical pi
 Rule: Do not let quick-look files become the authoritative analytical source.
 
 ### Run-validity board review checklist (Part B) — held end of each day and when new data changes a prior decision
+
 - Planned versus actual state.
 - Configuration identity.
 - Threat and condition fidelity.
@@ -198,6 +219,7 @@ Rule: Do not let quick-look files become the authoritative analytical source.
 - Independence and comparison integrity.
 
 Participants (attendance list):
+
 - Deployment strategist.
 - Test conductor.
 - Data lead.
@@ -206,6 +228,7 @@ Participants (attendance list):
 - Safety authority when safety evidence is involved.
 
 ### Analytical quality-control checklist (Part C) — before metric production
+
 - Verify schemas and units.
 - Verify coordinate transformations.
 - Verify time alignment.
@@ -218,6 +241,7 @@ Participants (attendance list):
 - Record software, package, and parameter versions.
 
 ### Correction checklist (Part C) — for every correction
+
 - Preserve the source value.
 - Record the corrected value.
 - State the rule and reason.
@@ -225,6 +249,7 @@ Participants (attendance list):
 - Assess effect on results.
 
 ### Causal diagnosis checklist (Part F) — for every consequential failure or anomaly
+
 1. Define the observation with time, configuration, condition, and source.
 2. List candidate causes across component, interface, configuration, operator, environment, threat, instrumentation, data, and method.
 3. Identify evidence expected under each cause.
@@ -239,6 +264,7 @@ Participants (attendance list):
 Rule: "A vendor statement may be evidence about mechanism. It is not proof of root cause."
 
 ### Daily evidence review checklist (Part H) — fixed 5-step sequence
+
 1. Reconcile evidence:
    - Which runs are valid, conditional, invalid, or pending?
    - Which P1 measures are available?
@@ -259,6 +285,7 @@ Rule: "A vendor statement may be evidence about mechanism. It is not proof of ro
 5. Select the next action (choose one — see Section 6 for the option list).
 
 ### Sufficiency stop checklist (Part J) — stop a line when all apply
+
 - The approved minimum evidence exists.
 - Remaining uncertainty is within the accepted limit.
 - Additional runs are unlikely to change the decision.
@@ -266,6 +293,7 @@ Rule: "A vendor statement may be evidence about mechanism. It is not proof of ro
 - The evidence authority accepts the level of confidence.
 
 ### Futility stop checklist (Part J) — stop a line when any applies
+
 - Required systems, truth, conditions, or authorities cannot be restored.
 - Remaining events cannot support the intended conclusion.
 - The likely information gain does not justify safety, time, or cost.
@@ -274,6 +302,7 @@ Rule: "A vendor statement may be evidence about mechanism. It is not proof of ro
 Rule: Record the decision and the evidence gap left open.
 
 ### Completed-campaign synthesis checklist (Part K) — before final findings
+
 1. Freeze the included-run manifest.
 2. Freeze analytical code and parameters.
 3. Reproduce every P1 result from retained data.
@@ -286,7 +315,9 @@ Rule: Record the decision and the evidence gap left open.
 10. Define evidence life and staleness triggers.
 
 ### Analysis-complete gate (verbatim conditions)
+
 Analysis is complete only when:
+
 - every decision-relevant result is reproducible,
 - every finding is traceable to adjudicated evidence,
 - uncertainty and alternatives are explicit,
@@ -321,9 +352,11 @@ The page defines record structures rather than visual layouts. Each maps to a fo
 ## 6. Workflow & sequencing logic
 
 ### Pipeline order (Parts A → K)
+
 Evidence intake → run-validity adjudication → analytical QC → run-level measures → aggregation → causal diagnosis (as triggered) → finding records → daily evidence review → adaptive replanning → sufficiency/futility decision → completed-campaign synthesis → analysis-complete gate.
 
 ### Gates and ordering rules
+
 - No run enters analysis without a recorded validity status (gate before Part A pipeline entry).
 - Analytical QC (Part C) precedes metric production (Part D).
 - Define the experimental unit before aggregation (Part E precondition).
@@ -332,10 +365,12 @@ Evidence intake → run-validity adjudication → analytical QC → run-level me
 - Analysis-complete gate closes the section (conditions in Section 3).
 
 ### Cadence
+
 - Run-validity board: end of each day, and whenever new data changes a prior decision.
 - Daily evidence review: the fixed 5-step sequence (Part H).
 
 ### Versioning and traceability rules
+
 - A changed validity status creates a new adjudication version; preserve the prior decision and reason.
 - Never overwrite the original run list; issue a superseding version.
 - Every correction preserves the source value.
@@ -343,6 +378,7 @@ Evidence intake → run-validity adjudication → analytical QC → run-level me
 - Quick-look files must never become the authoritative analytical source.
 
 ### Next-action options (Part H step 5 — choose exactly one)
+
 1. Execute the next issued card.
 2. Repeat for validity or stability.
 3. Isolate one variable.
@@ -354,6 +390,7 @@ Evidence intake → run-validity adjudication → analytical QC → run-level me
 9. End testing for futility or resource limit.
 
 ### Findings ladder (Part G — five levels; never merge levels)
+
 1. **Observation:** What a valid source recorded.
 2. **Calculation:** What the approved method produced.
 3. **Interpretation:** What the result means under tested conditions.
@@ -361,6 +398,7 @@ Evidence intake → run-validity adjudication → analytical QC → run-level me
 5. **Decision:** What the authorized customer chooses.
 
 ### Operational hooks from governance content (one line each)
+
 - Safety authority attends the run-validity board when safety evidence is involved.
 - Adaptation records carry a required-approval field.
 - Finding records carry a review-and-approval state field.

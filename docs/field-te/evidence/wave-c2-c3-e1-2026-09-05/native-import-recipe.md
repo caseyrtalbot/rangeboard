@@ -1,7 +1,7 @@
 # Native import browser check
 
 Verified on the final source using the isolated rangeboard-imports Chromium session at
-http://localhost:5207. The earlier wave-imports-aborted.js.txt harness was interrupted by
+<http://localhost:5207>. The earlier wave-imports-aborted.js.txt harness was interrupted by
 Vite during a source fix and is retained as troubleshooting history, not passing evidence.
 
 The stable native flow used Playwright CLI eval to call importScenarioFile, then upload

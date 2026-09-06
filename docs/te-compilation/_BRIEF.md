@@ -35,7 +35,7 @@ Governance, safety philosophy, legal authority discussion, and role advocacy pro
 
 Write one markdown file (path given in your task). Use this structure:
 
-```
+```text
 # <Scope title>
 ## Sources fetched
 (list every Notion page URL you fetched, with title)

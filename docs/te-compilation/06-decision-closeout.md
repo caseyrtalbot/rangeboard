@@ -8,7 +8,9 @@
 ## 1. Input variables & fields
 
 ### Claim disposition record (Part A)
+
 One record per registered claim (CLM). Field: **Claim state** (enum, exactly one):
+
 - Supported
 - Contradicted
 - Directionally supported
@@ -17,19 +19,24 @@ One record per registered claim (CLM). Field: **Claim state** (enum, exactly one
 - Outside scope
 
 ### Question disposition record (Part A)
+
 One record per registered question (Q). Field: **Question state** (enum, exactly one):
+
 - Answered at the accepted evidence strength
 - Partially answered with a named gap (requires: named gap, text)
 - Not answered with a reason and path (requires: reason, text; path, text)
 
 Each disposition must also classify the **evidence level** the finding applies to (enum):
+
 - Component behavior
 - Interface behavior
 - Performance under tested mission conditions
 - End-to-end mission effect
 
 ### Decision-analysis option record (Part D)
+
 One record per viable option. Fields (all text unless noted):
+
 - Supporting evidence
 - Contradicting evidence
 - Assumptions
@@ -41,6 +48,7 @@ One record per viable option. Fields (all text unless noted):
 - Additional evidence required
 
 **Option type** (enum, from the manual's option list):
+
 - Procure or select
 - Field with restrictions
 - Reconfigure
@@ -53,7 +61,9 @@ One record per viable option. Fields (all text unless noted):
 - Reject
 
 ### Bounded recommendation record (Part D)
+
 Fields:
+
 - Recommended action
 - Evidence strength
 - Exact conditions and configuration
@@ -66,7 +76,9 @@ Fields:
 Rule attached to this record: "Valkryn recommends from evidence. The authorized organization decides."
 
 ### Review record (Part E)
+
 Fields recorded for the review process:
+
 - Reviewers
 - Comments
 - Corrections
@@ -80,7 +92,9 @@ Fields recorded for the review process:
 Rule: "Do not remove a valid dissent to make the package appear unanimous."
 
 ### Action record (Part F)
+
 One record per resulting action (ACT). Fields:
+
 - Action identifier
 - Decision owner
 - Execution owner
@@ -95,13 +109,17 @@ One record per resulting action (ACT). Fields:
 Rule: track actions until closed or formally transferred.
 
 ### After-action improvement record (Part I)
+
 One record per improvement. Fields:
+
 - Owner
 - Due date (date)
 - Destination (enum-like: standard work or product backlog)
 
 ### Reuse asset record (Part J)
+
 One record per harvested asset. Asset **type** (enum, from the harvest list):
+
 - Decision and discovery prompts
 - Question and hypothesis patterns
 - Measure definitions and calculation code
@@ -118,7 +136,9 @@ One record per harvested asset. Asset **type** (enum, from the harvest list):
 Per-asset fields (implied by the harvest steps): purpose and use instructions; known edge cases; validity limits; owner; review date; version.
 
 ### Evidence baseline record (Part K)
+
 Fields defining the exact scope of accepted evidence:
+
 - Hardware, software, firmware, algorithms, models, and mission data
 - Interfaces and supporting systems
 - Threat classes and profiles
@@ -131,7 +151,9 @@ Fields defining the exact scope of accepted evidence:
 - Findings and actions supported
 
 ### Change-impact assessment record (Part L)
+
 Fields:
+
 - Changed configuration item or assumption (link to CFG or assumption)
 - Affected interfaces, measures, findings, and decisions (links)
 - Change mechanism classification
@@ -146,6 +168,7 @@ Fields:
 - Evidence-authority agreement (approval field)
 
 **Change triggers to assess at minimum** (checklist-style enum of change categories):
+
 - Software, firmware, model, or mission-data update
 - Hardware or sensor replacement
 - New C2, network, interface, interceptor, or effector
@@ -156,7 +179,9 @@ Fields:
 - New requirement or threshold
 
 ### Minimum regression scope record (Part L)
+
 Fields:
+
 - Findings and dependencies affected
 - Failure mechanism introduced by the change
 - Evidence needed to detect that mechanism
@@ -167,9 +192,11 @@ Fields:
 - Required turnaround time
 
 ### Follow-on success metrics (Part M)
+
 Three metric groups, each a set of tracked fields:
 
 Decision impact:
+
 - Decisions supported (count)
 - Accepted evidence delivered before deadline (count or rate)
 - Reduction in decision uncertainty
@@ -177,6 +204,7 @@ Decision impact:
 - Time from final valid run to decision-ready package (duration)
 
 Evidence quality:
+
 - Safety and regulatory deviations (count)
 - Valid-run rate (ratio)
 - Data completeness
@@ -185,6 +213,7 @@ Evidence quality:
 - Acceptance reservations (count)
 
 Operating leverage:
+
 - Time to first valid run (duration)
 - Setup and integration hours (hours)
 - Custom code and manual data work
@@ -206,7 +235,9 @@ No explicit formulas appear in this section. The following derived quantities ar
 ## 3. Checklists
 
 ### Independent-reviewer test (Part B)
+
 An independent reviewer must be able to answer, for the decision evidence package:
+
 - What happened?
 - How was it measured?
 - Which runs support it?
@@ -217,7 +248,9 @@ An independent reviewer must be able to answer, for the decision evidence packag
 Phase: package review, before acceptance. Run by: independent reviewer.
 
 ### Architecture and mission assessment checklist (Part C)
+
 Assess:
+
 - Best-performing configuration by threat and condition.
 - Warning, decision, assignment, effect, and assessment time budgets.
 - Coverage gaps.
@@ -232,7 +265,9 @@ Rule: separate observed architecture behavior from assumed behavior outside the 
 Phase: post-experiment analysis. Run by: analyst / evidence team.
 
 ### Delivery and custody checklist (Part G)
+
 Before delivery:
+
 1. Confirm the recipient list and need to know.
 2. Mark each file correctly.
 3. Confirm permitted vendor and comparative-result content.
@@ -245,12 +280,15 @@ Before delivery:
 Phase: delivery. Run by: campaign lead / data custodian. Conditional logic: item 4 applies "when required."
 
 ### Campaign closeout checklist (Part H)
+
 Deliverables:
+
 - Deliver all contractual products.
 - Record acceptance, reservations, and open items.
 - Transfer actions to named owners.
 
 Data and knowledge:
+
 - Archive raw and processed data.
 - Archive code, schemas, configurations, methods, cards, logs, findings, and approvals.
 - Verify that analysis can be reproduced.
@@ -259,20 +297,24 @@ Data and knowledge:
 - Review permissions.
 
 Operations and property:
+
 - Restore sites and networks.
 - Return systems, instruments, media, tools, and credentials.
 - Close damage, maintenance, safety, security, and property records.
 - Transfer unresolved items.
 
 Commercial and customer:
+
 - Confirm final invoice and contract actions.
 - Record customer outcome and next decision.
 - Record approved vendor feedback.
 Phase: campaign closeout. Run by: campaign lead.
 
 ### After-action review question set (Part I) — the standardized debrief
+
 Timing rule: conduct within five working days while details remain current.
 Ask:
+
 - What created decision value?
 - What produced invalid runs or delay?
 - Which assumptions failed?
@@ -286,7 +328,9 @@ Closure rule: assign each improvement an owner, due date, and destination in sta
 Phase: post-campaign. Run by: whole team, facilitated.
 
 ### Reuse-harvest steps per asset (Part J)
+
 For each asset:
+
 1. Remove campaign-specific identifiers.
 2. Preserve validity limits.
 3. Add purpose and use instructions.
@@ -298,7 +342,9 @@ For each asset:
 Phase: post-campaign. Run by: asset owner / campaign lead.
 
 ### Change-impact and regression process (Part L)
+
 When any relevant item changes:
+
 1. Identify the changed configuration item or assumption.
 2. Link it to affected interfaces, measures, findings, and decisions.
 3. Classify the change mechanism.
@@ -310,7 +356,9 @@ When any relevant item changes:
 Phase: any time after baseline, triggered by change. Run by: evidence authority + analyst.
 
 ### C-UAS regression assessment checklist (Part L example)
+
 If the prior baseline established detection, stable tracking, C2 handoff, interceptor assignment, and engagement timing, assess the changed system against:
+
 1. Detection range.
 2. False-alarm rate.
 3. Track continuity.
@@ -321,7 +369,9 @@ If the prior baseline established detection, stable tracking, C2 handoff, interc
 Rule: a component-level pass does not establish that the end-to-end mission thread remains supported. The assessment must cover the affected interfaces and mission thread, not only the changed component.
 
 ### Closeout gate (final)
+
 The campaign is closed only when:
+
 - The customer has the accepted evidence and limits.
 - Every action has an owner.
 - All data and records have the correct custody.
@@ -332,7 +382,9 @@ The campaign is closed only when:
 ## 4. Templates, forms & cards
 
 ### Decision evidence package template (Part B) — 20 ordered sections
+
 Use this order:
+
 1. Decision, owner, alternatives, and deadline.
 2. Decision-critical uncertainty.
 3. Executive answer and bounded recommendation.
@@ -357,7 +409,9 @@ Use this order:
 Layout intent: fixed section order; the executive answer sits at position 3, before the detailed evidence; provenance and custody sections close the document. This is the customer-facing result package.
 
 ### Four-review form set (Part E)
+
 Four separate review forms, each with its own reviewer role and scope:
+
 1. **Configuration-fact review** — vendors and system owners confirm factual configuration, version, and interface details. They do not control conclusions.
 2. **Method review** — the evidence authority confirms that the executed method and deviations remain acceptable.
 3. **Analytical review** — qualified reviewers check run inclusion, calculations, uncertainty, and finding logic.
@@ -365,6 +419,7 @@ Four separate review forms, each with its own reviewer role and scope:
 Shared record fields: see Review record in section 1.
 
 ### Evidence history tree (Part L)
+
 Retained per claim, exactly:
 
 ```plain text
@@ -393,6 +448,7 @@ Claim
 ## 6. Workflow & sequencing logic
 
 Ordered end-of-campaign flow implied by parts A–M:
+
 1. Dispose every claim and question (A) — no claim or question may be left without a state.
 2. Build the decision evidence package in the fixed 20-section order (B); run accounting must precede findings.
 3. Complete architecture and mission assessment (C) — feeds package section 11.
@@ -407,6 +463,7 @@ Ordered end-of-campaign flow implied by parts A–M:
 12. On any later change, run the eight-step change-impact process (L) before relying on prior evidence.
 
 Gates and rules:
+
 - **Inference gate:** do not use component success to imply mission success without evidence through the complete chain (A). Distinguish the four evidence levels.
 - **Dissent gate:** valid dissent stays in the record (E).
 - **Acceptance gate:** package needs method acceptance status, evidence acceptance status, and final approving authority and date (E).
@@ -417,6 +474,7 @@ Gates and rules:
 - **Follow-on rule:** a follow-on must support a new or recurring decision; do not create work only to maintain activity (M).
 
 Regression vocabulary (distinct states in the workflow):
+
 - **Retesting** checks whether a specific fix worked.
 - **Regression testing** checks whether the fix or change damaged another capability.
 - **Recharacterization** maps a new performance boundary after a major change.

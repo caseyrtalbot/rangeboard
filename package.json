@@ -8,7 +8,16 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "schema:generate": "node src/io/generateRuntimeSchema.mjs",
+    "schema:check": "node src/io/generateRuntimeSchema.mjs --check",
+    "docs:lint": "markdownlint-cli2",
+    "docs:fix": "markdownlint-cli2 --fix",
+    "docs:check": "npm run docs:lint && node scripts/check-docs.mjs",
+    "docs:review": "node scripts/check-docs.mjs --review",
+    "test:docs": "node --test scripts/test-docs.mjs",
+    "check": "npm run docs:check && npm run test:docs && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",
@@ -23,10 +32,15 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "markdownlint-cli2": "0.23.2",
+    "markdownlint-rule-relative-links": "5.1.2",
     "oxlint": "^1.75.0",
     "playwright": "^1.62.1",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }

@@ -5,6 +5,7 @@ Synthesis target: the pure TypeScript calculation engine for the RangeBoard T&E 
 Source files (all under `docs/te-compilation/`): `09-measures-quantdesign.md` (09), `10-quant-guide.md` (10), `12-jiatf401.md` (12), `02-evidence-measures-design.md` (02), `04-test-cards-execution.md` (04), `05-validation-analysis.md` (05), `06-decision-closeout.md` (06), `08-threat-doctrine.md` (08), `11-instrumentation-worked-cards.md` (11), `13-field-guide-questions.md` (13). Files 01, 03, 07 contain no formulas (confirmed by grep; each states "no numeric formulas").
 
 Conventions in this catalog:
+
 - One canonical entry per calculation. Duplicates across sources are merged; every source is cited by file number and section.
 - Math is reproduced exactly, never paraphrased. Bracketed notes are catalog annotations, not source text.
 - All source numeric examples are labeled illustrative in the sources ("not Valkryn results"). They are still binding as unit-test fixtures.
@@ -18,7 +19,7 @@ Conventions in this catalog:
 
 **Universal denominator pipeline** (09 §2.0.1, 10 §6.3):
 
-```
+```text
 Planned → Attempted → Eligible → Valid for this measure → Event observed or not observed → Included in the stated analysis
 ```
 
@@ -38,9 +39,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-SEN-PD-001 (09 §2.1, 10 §2.2) = JIATF **M-03** (12 §2.1) = Field Guide "Detection Probability" (13 §2.1.2) = "Probability of detection by range band" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   p-hat = valid opportunities with a detection event / total valid detection opportunities
   ```
+
 - **Variables:** numerator = count of valid opportunities in which at least one valid detection event occurred within the eligible interval (dimensionless count); denominator = count of valid detection opportunities in the same defined cell (count). Result: fraction [0, 1].
 - **Numerator event:** a sensor-originated report produced during an eligible opportunity, associated with the correct truth object under the approved spatial/temporal/identity/persistence gate, meeting the approved confidence/quality/declaration state, not a duplicate or excluded artifact (09 §2.0). The campaign must define whether detection needs one report, `K` consecutive updates, or a minimum dwell; one uncorrelated plot is not automatically a detection (09 §1.2).
 - **Denominator rule:** opportunity begins when truth shows the threat enters the approved surveillance volume/range band/time window; ends at exit, vignette end, or approved censoring. Eligible only if sensor in approved configuration and declared available; truth covers the full interval; threat inside profile and condition bounds; instrumentation and time alignment within tolerance (09 §2.0, §3.5).
@@ -54,9 +57,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-SEN-FD-002 (09 §2.1, 10 §2.2) = "First-detection range" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   First-detection time = first valid detection time − eligibility-start time
   ```
+
   Range form: truth-derived slant range, ground range, or distance to the defended boundary at the first valid detection event (m).
 - **Variables:** eligibility-start time = truth time the threat enters the approved eligibility region or vignette start (s); first valid detection time = timestamp of first detection event (s).
 - **Unit / censoring:** one valid detection opportunity. Censored when no detection occurs before a valid opportunity ends; missing when there is no detection and no complete eligible interval.
@@ -69,9 +74,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-TRK-FST-003 (09 §2.1, 10 §2.2) = JIATF **M-04** (12 §2.1: truth-derived distance from threat to protected boundary when all stable-track rules first pass) = "First-stable-track range" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   First-stable-track time = first time all stable-track rules pass − eligibility-start time
   ```
+
   Range form: truth-derived range at that event (m).
 - **Stable-track rule parameters** (define per measure record, 09 §1.3): minimum consecutive updates; maximum allowed update gap; required position/velocity quality; required identity confidence; minimum dwell time.
 - **Validity rule:** the complete persistence window must remain observable; a late track cannot be counted if required post-event updates are missing (09), "do not count a late tentative track when the required later updates are missing" (10).
@@ -82,9 +89,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-TRK-CONT-004 (09 §2.1, 10 §2.2) = JIATF **M-05** (12 §2.1) = Field Guide "Track Continuity" (13 §2.1.4).
 - **Formula:**
-  ```
+
+  ```text
   Continuity = eligible time with valid associated track / total valid eligible tracking time
   ```
+
 - **Variables:** numerator = duration (s) in which the correct associated track satisfies the approved quality state; denominator = total valid eligible tracking duration (s), excluding only preapproved no-test intervals. Result: fraction [0, 1].
 - **Gap rule:** define the maximum update gap before continuity is considered lost (09).
 - **Unit:** one truth object during one card-defined interval.
@@ -97,11 +106,13 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-TRK-ERR-005 (09 §2.1, 10 §2.2) = JIATF **M-06** (12 §2.1) = Field Guide "Track Position Error" (13 §2.1.3).
 - **Formulas:**
-  ```
+
+  ```text
   Error vector(t) = transformed blue-track position(t) − transformed truth position(t)
   Radial error   = sqrt(x-error² + y-error² + z-error²)
   RMSE           = sqrt( sum(error_i²) / m )
   ```
+
 - **Variables:** blue-track position(t), truth position(t) in a common coordinate frame after the recorded transformation version (m); error components x/y/z (m); `m` = number of matched (time-correlated) samples; `error_i` = per-sample error magnitude (m).
 - **Metrics allowed:** radial, along-track, cross-track, vertical error, percentile, RMS, or threshold exceedance as approved.
 - **Unit rule:** opportunity-level summary, not every update, unless the correlation structure is modeled. Matched updates within one run support ONE opportunity-level summary; they do NOT count as independent tests (12 §2.1 M-06, 09 §2.1).
@@ -114,9 +125,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-CLS-ACC-006 (09 §2.1, 10 §2.2) = "Classification accuracy" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   Accuracy = correctly classified valid objects / valid objects requiring classification
   ```
+
 - **Numerator:** final or card-defined classification state equals truth class. **Denominator:** valid classification opportunities (one independently identified truth object per defined classification opportunity).
 - **Truth source:** independent identity/class label with documented source and adjudication record.
 - **Validity rule:** freeze class taxonomy, decision time, and treatment of "unknown" before execution.
@@ -127,9 +140,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-SUR-FTR-007 (09 §2.1, 10 §2.2) = JIATF **M-09** (12 §2.1) = Field Guide "Nuisance/False Track Rate" (13 §2.1.6) = "False tracks per hour" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   Rate = adjudicated false or nuisance tracks / valid surveillance exposure time
   ```
+
 - **Variables:** numerator = count of tracks satisfying the operational-track criterion with no truth association under the approved reconciliation rule; denominator = valid surveillance hours (hr), optionally stratified by volume and condition. Result: tracks/hr.
 - **Truth source:** complete-enough truth inventory for real objects in the observed volume.
 - **Validity rule:** invalid when truth coverage is inadequate to decide whether an object existed.
@@ -141,9 +156,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-C2-HS-008 (09 §2.2, 10 §2.2) = JIATF **M-07** (12 §2.1).
 - **Formula:**
-  ```
+
+  ```text
   p-hat = successful usable handoffs / valid qualifying handoff opportunities
   ```
+
 - **Numerator event:** receiving system creates or updates the correct object into the card-defined usable state within the allowed interval. Handoff success criteria (09 §1.4): correct identity or approved correlation; required fields present; usable quality and freshness; traceable receiving-system event time. Packet receipt alone is not success unless packet receipt is the approved question.
 - **Denominator rule:** valid source tracks that met every prerequisite (the offer criterion). Do not count opportunities in which the source never met the approved offer criterion (10: "a source track must meet the offer rule before it enters the denominator").
 - **Truth source:** source-to-master-to-receiver object correlation, message/event logs, common time.
@@ -155,9 +172,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-C2-LAT-009 (09 §2.2, 10 §2.2) = JIATF **M-08** (12 §2.1) = Field Guide "C2 Handoff Latency" (13 §2.1.5) = "Sensor-to-command latency" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   Latency = receiving-system usable-track event time − source qualifying-track event time
   ```
+
 - **Variables:** start event = source track first satisfies the offer criterion (s); stop event = receiving system first satisfies the usable-track criterion (s). Result: s.
 - **Per-latency definition fields (freeze before execution, 09 §1.25):** start event; stop event; common time source; maximum event-time uncertainty; observation window; censoring; repeated opportunities and clustering.
 - **Censoring:** no successful handoff before the approved window closes. A failed handoff is censored or failed under the approved rule; it is NEVER assigned the timeout as a completed latency (09, 10, 12 — unanimous prohibition).
@@ -170,9 +189,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-MSN-UWT-010 (09 §2.2, 10 §2.2) = JIATF **M-01, primary** (12 §2.1) = Field Guide "Usable Warning Time" (13 §2.1.1) = real JIATF measure "early-warning buffer" (12 §7.1).
 - **Formula:**
-  ```
+
+  ```text
   Usable warning time = truth time at defended-asset boundary − decision-ready-track event time
   ```
+
   Distance/speed form for prediction and cross-check (12 §2.2): `Usable warning time = remaining path distance to boundary (m) / ground speed (m/s)`.
 - [CONFLICT: Field Guide 5 (13 §2.1.1) states the subtraction reversed — "time usable track enters C2 − time threat reaches defended-asset boundary" — which yields negative values for useful warning. Files 09, 10, and 12 all state boundary time minus decision-ready time. Canonical: `boundary crossing time − decision-ready track time`. Treat the FG form as a source transposition.]
 - **Variables:** truth boundary time = independent-truth time the threat crosses the approved defended-asset or latest-action boundary (s); decision-ready-track time = receiving-system event time when the track first satisfies the customer-approved decision-ready definition (s).
@@ -188,9 +209,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** JIATF **M-02** (12 §2.1). General form = "Difference" family (10 §2.1).
 - **Formula:**
-  ```
+
+  ```text
   Paired improvement = warning time for Configuration B − warning time for Configuration A
   ```
+
 - **Variables:** the two M-01 values (s) from one matched pair. Result: s; positive favors B only because the preferred direction is declared (10 §2.1: "a positive difference is not automatically good; define the preferred direction").
 - **Pairing constraint:** pairs must use the same threat profile and factor cell within the same test block (12).
 - **Uncertainty:** bootstrap interval on the paired median (§2.9); paired sample size per §2.8.
@@ -200,9 +223,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-EW-EFF-011 (09 §2.3, 10 §2.2).
 - **Formula:**
-  ```
+
+  ```text
   p-hat = valid EW opportunities reaching the defined effect state / total valid EW effect opportunities
   ```
+
 - **Numerator event:** independent truth shows the card-defined effect state. Effect states (enum, define per campaign, 09 §1.7): navigation deviation (route deviation), control-link loss, mission abort, forced recovery, loss of terminal function, temporary suppression.
 - **Denominator rule:** valid presentations in which the EW system was available, authorized, correctly configured, and applied inside the approved geometry. Unit: one independently reset threat presentation.
 - **Truth source:** independent trajectory/state telemetry plus effect-state evidence not solely generated by the EW system under test. The EW system's own "effect achieved" flag is never sole truth.
@@ -214,10 +239,12 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-EW-REC-012 (09 §2.3, 10 §2.2).
 - **Formulas:**
-  ```
+
+  ```text
   Time to effect = effect-entry event time − qualifying-exposure event time
   Recovery time  = effect-exit event time − effect-entry event time
   ```
+
 - **Variables:** qualifying-exposure event = time-aligned emission/exposure record shows valid exposure began (s); effect-entry/effect-exit = independent threat-state record transitions (s). Results: s.
 - **Unit:** one valid EW opportunity.
 - **Censoring:** effect not observed before exposure/vignette ends; recovery not observed before observation ends.
@@ -228,9 +255,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-DEF-PINT-013 (09 §2.4, 10 §2.2) = "Probability of intercept" (04 §7.2, 08 §2.6).
 - **Formula:**
-  ```
+
+  ```text
   p-hat = valid engagement opportunities with confirmed intercept / total valid intercept opportunities
   ```
+
 - **Numerator event:** independent evidence confirms the interceptor meets the card-defined intercept criterion.
 - **Denominator rule:** valid engagement opportunities in which the system created a qualifying engagement and the interceptor was available and correctly released, with approved engagement prerequisites. **Never count detection-only opportunities in the intercept denominator** (09 §6.11).
 - **Truth source:** independent geometry, interceptor and threat trajectories, intercept-event evidence.
@@ -241,9 +270,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-DEF-PDEF-014 (09 §2.4, 10 §2.2) = "Probability of defeat" (04 §7.2) = "Probability of mission defeat" (08 §2.6).
 - **Formula:**
-  ```
+
+  ```text
   p-hat = valid opportunities with confirmed defeat / total valid defeat opportunities
   ```
+
 - **Defeat event:** truth establishes the threat can no longer complete the card-defined mission during the remaining vignette (09 §2.0). Defeat outcome taxonomy (09 §1.6): physical destruction, functional mission kill, diversion or forced landing, lost guidance or navigation, temporary suppression, unknown outcome.
 - **Denominator rule:** valid defeat opportunities with complete kill-chain prerequisites specified by the card. Unit: one valid engagement against one truth threat object or one defined raid.
 - **Truth source:** independent threat outcome, trajectory, state, mission-completion assessment.
@@ -254,9 +285,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-MSN-E2E-015 (09 §2.4, 10 §2.2) = "End-to-end mission success" (04 §7.2, 08 §2.3).
 - **Formula:**
-  ```
+
+  ```text
   p-hat = valid vignettes achieving the mission-success state / total valid mission vignettes
   ```
+
 - **Unit:** one complete vignette or raid as defined. Numerator: mission-level Measure of Success achieved.
 - **Truth source:** complete mission-event chain, defended-asset state, threat outcome, required operator/system states.
 - **Required decomposition:** detection, track, classification, decision, assignment, engagement, effect, assessment, mission outcome.
@@ -267,10 +300,12 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-SAT-LEAK-016 (09 §2.5, 10 §2.2) = "raid leakage" (08 §2.3).
 - **Formulas (two, report both):**
-  ```
+
+  ```text
   Leaker fraction = truth threats reaching the boundary without prior confirmed defeat / valid truth threats in the raid
   Raid failure probability = raids with at least one leaker / total valid raids
   ```
+
 - **Experimental units:** threat object (nested) for leaker fraction; raid (primary) for raid-failure probability. Threats within one raid are related — never independent raids/campaigns (unanimous 09/10/11).
 - **Truth source:** identity-preserving multi-object trajectories, boundary crossing, engagement history, defeat outcome.
 - **Validity rule:** preserve raid membership.
@@ -281,9 +316,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-SUIT-AVAIL-017 (09 §2.5, 10 §2.2) = "Availability" (04 §7.2) = "availability during the mission window" (08 §2.3).
 - **Formula:**
-  ```
+
+  ```text
   Availability = mission-capable time / required operating time
   ```
+
 - **Variables:** mission-capable time = time (s or hr) the system is in the approved mission-capable state; required operating time = total required time (same units), including only the downtime categories specified before execution. Result: fraction [0, 1].
 - **Validity rule (freeze before execution):** the mission-capable definition and whether scheduled maintenance, test-infrastructure downtime, external range holds, and operator unavailability enter the denominator (09 §1.12).
 - **Downtime categories (enum):** system fault, scheduled maintenance, test infrastructure, operator, external constraint, unknown.
@@ -294,9 +331,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** CUAS-HMI-INT-018 (09 §2.5, 10 §2.2) = "Operator intervention rate" (04 §7.2).
 - **Formula:**
-  ```
+
+  ```text
   Rate = qualifying operator interventions / valid operating hours or valid mission vignettes
   ```
+
 - **Numerator event:** a time-tagged action meeting the approved intervention definition. Intervention types (enum, 09 §1.13): required decision, correction, override, recovery, false-alarm handling, unplanned troubleshooting.
 - **Denominator:** valid exposure hours (hr) or vignettes (count). Result: interventions/hr or interventions/vignette.
 - **Truth source:** operator-interface logs, voice/event log, observer record.
@@ -307,9 +346,11 @@ Planned → Attempted → Eligible → Valid for this measure → Event observed
 
 - **IDs:** JIATF **M-10** (12 §2.1) = "Remaining mission margin" (10 §2.1) = "end-to-end warning margin" (08 §2.3). Full arithmetic in §3.2 (operational calculations); catalog it once as a measure here.
 - **Formula (measure form, 12):**
-  ```
+
+  ```text
   Mission margin = usable warning time − required action-chain time − uncertainty reserve
   ```
+
   General form (10 §2.1): `Available time = boundary-crossing time − decision-ready time; Required action time = decision + authority + assignment + effect + assessment; Mission margin = available time − required action time`.
 - **Variables:** usable warning time = M-01/CUAS-MSN-UWT-010 result (s); required action-chain time = sum of chain stage times (s, see §3.2); uncertainty reserve = approved safety-and-uncertainty margin (s).
 - **Interpretation:** positive margin means time remains under the defined assumptions; negative margin means the chain is late. A positive margin supports only the tested timeline — not a faster threat, another route, another effector, or another C2 procedure (12 §2.2).
@@ -327,20 +368,22 @@ All methods below are exact source math. Every interval must carry its type labe
 
 ### 2.1 Proportion estimate
 
-```
+```text
 p-hat = x / n
 x = number of valid successes
 n = number of valid opportunities
 ```
+
 Report the counts and the percentage; never a percentage alone (10 §2.1). Sources: 09 §2.6, 10 §2.1.
 
 ### 2.2 Wilson interval (default binomial interval)
 
-```
+```text
 center     = (p-hat + z²/(2n)) / (1 + z²/n)
 half-width = [ z / (1 + z²/n) ] × sqrt( p-hat(1 − p-hat)/n + z²/(4n²) )
 interval   = center ± half-width
 ```
+
 `z` = standard-normal quantile for the confidence level; `z = 1.96` at 95%. The manual's normal default for a binomial proportion. Never use the uncorrected normal approximation near zero or one. Sources: 10 §2.6, 09 §2.6.
 
 ### 2.3 Exact (Clopper-Pearson) interval
@@ -349,25 +392,28 @@ Use an exact binomial interval when the sample is very small, the event is rare,
 
 ### 2.4 Bayesian beta-binomial posterior
 
-```
+```text
 Prior:     Beta(a, b)
 Observed:  x successes in n valid opportunities
 Posterior: Beta(a + x, b + n − x)
 ```
+
 The prior must be approved and justified before execution; report sensitivity to another defensible prior when the prior can change the decision (09 §1.30, §2.6; 10 §2.6). Credible interval = posterior probability interval.
 
 ### 2.5 Sample size — precision-driven, one proportion
 
-```
+```text
 n ≈ z² × p × (1 − p) / h²
 ```
+
 `n` = required independent valid opportunities; `z` = confidence quantile (1.96 at 95%); `p` = planning proportion (use 0.5 for the largest approximate sample when no defensible value exists); `h` = desired two-sided interval half-width. **Round up.** Planning approximation only: inflate for invalid runs, clustering, blocked cells, condition-specific reporting. Sources: 09 §2.7, 10 §2.7.
 
 ### 2.6 Attempt inflation for invalid evidence
 
-```
+```text
 Required attempts = required valid opportunities / expected valid-run fraction
 ```
+
 A planning allowance, never permission to weaken validity rules. Sources: 09 §2.9, 10 §2.7, 12 §2.4.
 
 ### 2.7 Threshold / pass-fail (fixed or sequential) design
@@ -377,9 +423,11 @@ Inputs to freeze before execution (09 §1.18, 10 §1.10): unacceptable probabili
 ### 2.8 Paired / two-proportion comparison
 
 Paired continuous sample-size approximation (12 §2.3):
-```
+
+```text
 Approximate paired sample = [ (z_alpha + z_power) × sd / min_effect ]²
 ```
+
 `z_alpha` = confidence quantile (1.96 two-sided 95%); `z_power` = power quantile (0.84 for 80% power); `sd` = expected standard deviation of paired differences (units of the measure); `min_effect` = minimum operationally meaningful paired difference (same units). Round up. Planning approximation; the analysis lead completes the final power or simulation check.
 
 Two-proportion design inputs (09 §1.19, 10 §1.11): baseline probability; minimum meaningful difference or risk ratio; allocation; one-/two-sided; confidence and power; pairing; blocking; order and carryover effects. Use exact calculation or simulation for the final sample. Paired comparisons are more efficient when the same controlled condition is presented to both configurations, but order and carryover must be controlled.
@@ -388,9 +436,10 @@ DOE rules (13 §2.4): calculate power for the complete design, not per design po
 
 ### 2.9 Continuous outcomes: mean interval, quantiles, bootstrap
 
-```
+```text
 mean ± t × standard deviation / sqrt(n)
 ```
+
 Only when experimental units and assumptions support it (10 §2.7). Latency, warning-time, and recovery distributions are often skewed — prefer median, percentiles, bootstrap intervals, or time-to-event methods (09 §2.10, 10 §2.7). JIATF usage: 95% bootstrap interval on the median paired improvement (12 §2.7). Interval-type selection (09 §2.10, 10 §1.8): confidence (parameter), credible (Bayesian posterior), prediction (future observation), tolerance (population fraction with stated confidence). Never use a mean's confidence interval to claim coverage of individual future missions.
 
 ### 2.10 Censoring and time-to-event
@@ -399,24 +448,27 @@ Censored record fields (09 §1.26): `Observed time = time from start to observat
 
 ### 2.11 Reliability
 
-```
+```text
 Reliability probability = successful periods / valid periods          (binomial interval)
 Failure rate            = relevant failures / total valid time at risk
 Zero-failure bound      ≈ 3 / total time at risk                      (one-sided 95% upper, constant-rate exponential)
 Availability            = mission-capable time / required operating time
 ```
+
 State the failure definition (frozen before execution) and the assumed failure process. The zero-failure bound is model-dependent; inappropriate when failures cluster, wear changes, or mission conditions differ; it never proves zero risk. Sources: 09 §2.12, 10 §2.8.
 
 ### 2.12 Combined uncertainty (root-sum-square)
 
-```
+```text
 u_combined = sqrt(u_1² + u_2² + ... + u_k²)
 ```
+
 For independent measurement uncertainties; add covariance terms when errors are correlated. Keep measurement uncertainty attached to each run-level result — sampling intervals across runs do not replace it. Sources: 09 §2.13, 10 §2.5. Latency instantiation in §3.4.
 
 ### 2.13 Sequential and adaptive rules
 
 Pattern: `Screen → Augment → Validate` (09 §6, 10 §6.5). Predefine before any outcome review (09 §1.24, 10 §1.13): initial sample/budget share; interim-review schedule; statistics or posterior quantities reviewed; efficacy/sufficiency boundary; futility boundary; maximum sample; allowed factor-space augmentation; confirmatory sample held back; treatment of repeated looks.
+
 - **Frequentist:** approved group-sequential or alpha-spending method when formal false-positive control matters. Repeatedly computing ordinary 95% intervals and stopping when favorable inflates error (prohibited).
 - **Bayesian:** rules may use posterior probability that performance exceeds the threshold; posterior probability that improvement exceeds delta; posterior predictive probability that the final decision will succeed. Probability cutoffs must be approved before execution — never invented during it.
 - Budget guardrail (13 §2.4): limit the first design to 25–40% of the test budget; Bayesian updating supports early stopping when posterior uncertainty is sufficiently small.
@@ -429,12 +481,14 @@ Identify primary comparisons in advance; label exploratory ones; limit formal cl
 ### 2.15 Sensitivity analysis for unknown binary outcomes
 
 Report all four cases when unknowns could change the decision (09 §2.14, 10 §2.13):
-```
+
+```text
 Case 1: all unknowns treated as failures
 Case 2: all unknowns treated as successes
 Case 3: approved model-based treatment
 Case 4: primary analysis with adjudicated outcomes only
 ```
+
 Never silently choose the favorable case. Outlier rule (10 §2.14, 05 Part D): use the preapproved rule; otherwise report with and without the outlier.
 
 ### 2.16 Factorial / response-surface design math
@@ -447,7 +501,7 @@ Never silently choose the favorable case. Outlier rule (10 §2.14, 05 Part D): u
 
 ### 2.17 Method-selection tree (10 §2.11)
 
-```
+```text
 Binary result?                    → Binomial interval or binary (logistic/probit) regression
 Continuous result?                → Mean/median/percentile with interval
 Count over exposure?              → Rate model (Poisson; negative-binomial when overdispersed)
@@ -455,6 +509,7 @@ Time until event with censoring?  → Time-to-event analysis (Kaplan-Meier / sur
 Repeated or clustered data?       → Mixed-effects or hierarchical model
 Several controlled factors?       → Regression, factorial, or response-surface model
 ```
+
 Use the simplest method that answers the approved question and respects the data structure. Model-to-response mapping (09 §1.23): continuous → linear/nonlinear regression; binary → logistic/probit; count/rate → Poisson/negative-binomial; repeated/clustered → mixed-effects/hierarchical; time-to-event → survival; nonlinear spatial → justified spline/Gaussian process with validation.
 
 ### 2.18 Hard prohibitions for the engine (09 §6.11, 10 §3.7)
@@ -467,7 +522,7 @@ Never: collapse materially different conditions into one average; treat correlat
 
 ### 3.1 Basic families (10 §2.1)
 
-```
+```text
 Rate            = number of qualifying events / valid exposure            (exposure: time, distance, missions, raids)
 Elapsed time    = stop-event time − start-event time
 Duration fraction = time in the required state / total valid eligible time
@@ -479,7 +534,7 @@ Relative change = (new − baseline) / baseline                             (rep
 
 **Timeline decomposition** (02 §2.1 — components; 10 §2.1/§2.4 — equations). Work backward from the mission effect. Components: threat speed, release range, processing time, operator decision time, authority time, effector assignment, time of flight or time to effect, assessment, margin.
 
-```
+```text
 Total chain time = stage 1 time + stage 2 time + ... + stage k time
 Total detect-to-effect time = detection time + track time + handoff time + decision time + assignment time + effect time
 Required chain time = processing + operator decision + authority + assignment + launch or effect preparation + flight or time to effect + assessment + required margin
@@ -487,14 +542,17 @@ Time to boundary = remaining path distance / ground speed        (constant-speed
 Available time = boundary-crossing time − decision-ready time
 Mission margin = available time − required action time            (see measure 1.20)
 ```
+
 Use observed event differences when possible; never add overlapping stage times twice.
 
 **Timing decision rule** (10 §2.4):
-```
+
+```text
 If available time > required chain time:                     timing condition is met
 If available time = required chain time within uncertainty:  result is borderline
 If available time < required chain time:                     timing condition is missed
 ```
+
 The approved uncertainty band controls the borderline rule.
 
 **Warning-threshold derivation (mission arithmetic)** (12 §2.2): `Required warning threshold = required chain time + uncertainty reserve`. JIATF seed: 8 + 4 + 8 + 55 + 5 = 80 s chain; 80 + 10 = 90 s threshold.
@@ -504,40 +562,45 @@ The approved uncertainty band controls the borderline rule.
 ### 3.3 Warning-time math
 
 Primary event form and no-warning rule: measure 1.10. Distance/speed prediction and cross-check forms (12 §2.2, §2.7):
-```
+
+```text
 Usable warning time = distance to boundary at decision-ready (m) / ground speed (m/s)
 Range gain → time gain: Δrange (m) / speed (m/s) = Δwarning (s)     (cross-check of warning gain against stable-track range gain)
 ```
 
 ### 3.4 Latency budgets (11 §2.1–2.2, 10 §2.5, 12 §2.6)
 
-```
+```text
 u_latency = sqrt( u_start_timestamp² + u_stop_timestamp² + u_synchronization² + u_event_definition² )
 approximate along-track error from timing = object speed × time offset
 ```
+
 Variables: `u_start_timestamp` / `u_stop_timestamp` = uncertainty of each event timestamp (s); `u_synchronization` = clock-sync uncertainty between recording devices (s); `u_event_definition` = ambiguity in when the event is defined to occur (s); object speed (m/s); time offset (s); result (m). Acceptance rule: u_latency must be smaller than the minimum decision-relevant latency difference; derive each tolerance from its measure — no universal timing tolerance. A clock tolerance fine for slow ground activity may invalidate a high-speed intercept measure.
 
 Clock health math (10 §2.3):
-```
+
+```text
 Clock offset      = device time − authoritative time
 Clock drift rate  = (offset at end − offset at start) / elapsed check time
 ```
+
 Keep original time; corrections only in a versioned derived field.
 
 ### 3.5 Run-count / matrix math
 
-```
+```text
 Configuration × Threat × Condition × Method × Repetition = Planned runs        (04 §2.1)
 Condition cells = product of factor levels                                      (12 §2.5: 3 × 2 × 2 = 12)
 Stage totals: Stage 1 cells × configurations + Stage 2 cells × configurations + Stage 3 opportunities = target valid
 Required scored attempts = target valid / expected valid-run fraction           (§2.6)
 Maximum planned activity = required attempts + control/rehearsal opportunities
 ```
+
 The matrix generator must also show: total runs, estimated duration, coverage by question, coverage by condition, required assets, missing controls, planned repetitions, minimum valid evidence, and drop order if time is lost (04 §2.1).
 
 ### 3.6 Data-quality and capacity calculations (10 §2.3)
 
-```
+```text
 Valid-run rate        = valid runs / attempted runs
 Data completeness     = required records present and usable / total required records
 Observed update rate  = usable records / valid observation time      (also report maximum consecutive gap)
@@ -546,17 +609,19 @@ Queue delay           = service-start time − queue-entry time
 Concurrent load       = maximum number of active objects in the defined state
 Throughput            = completed qualifying actions / valid time
 ```
+
 - Valid-run rate shows test-process quality, not system performance. [Denominator note: 06 §2 marks the denominator ambiguous; 10 §2.3 and the JIATF fixture 48/58 attempts both use attempted runs — resolved: attempted.]
 - Loss limits are phase-specific: 1% loss clustered around the handoff event can outweigh larger loss outside the active phase (11 §2.3).
 - Record the first observed load where mission performance crosses the approved boundary; never claim capacity above the highest tested load.
 
 ### 3.7 Resource expenditure (10 §2.3)
 
-```
+```text
 Effects per defeat                     = effects used / confirmed defeats
 Cost per defended effect               = approved resource cost / confirmed defended effects
 Personnel days per valid evidence unit = total personnel days / valid evidence units
 ```
+
 Freeze the cost and resource basis before comparison.
 
 ### 3.8 Evidence accounting chain
@@ -570,14 +635,18 @@ Per measure, always preserve and report all counts (10 §1.20, 09 §4.4): planne
 Three source formulations — implement both computable forms, always advisory:
 
 1. **Field Guide ratio (13 §2.2), canonical quick form:**
-   ```
+
+   ```text
    Priority = decision importance × uncertainty reduction × likelihood of obtaining valid evidence / (time / cost / operational burden)
    ```
+
    "A qualitative High / Medium / Low scoring system is usually sufficient."
 2. **Weighted additive score (10 §2.9):**
-   ```
+
+   ```text
    Event value = sum( weight_j × score_j )
    ```
+
    over the 10 criteria (10 §1.14): decision effect; current uncertainty; ability to distinguish causes; expected information gain; acceptance value; comparability; range time; safety and technical risk; asset scarcity; schedule effect.
 3. **Unweighted criteria comparison (02 §2.4, 05 Part I):** score and rank without a hard-coded formula; "select the event with the best decision value that remains safe, authorized, and methodologically defensible."
 
@@ -595,7 +664,7 @@ Time sources: Green (offset and drift support every assigned measure) / Warning 
 
 ### 3.12 Campaign self-measurement (10 §2.10, 13 §2.6–2.7, 06 §2)
 
-```
+```text
 Valid-run rate              = valid runs / attempted runs
 Reproduction success rate   = independently reproduced P1 results / P1 results reviewed
 Data completeness           = usable required data products / required data products
@@ -603,6 +672,7 @@ Time from final valid run to decision-ready package = package-acceptance timesta
 Time to first valid run     = first-valid-run timestamp − campaign start     [start point undefined in 06; define per campaign]
 Personnel days per valid evidence unit = personnel days / valid evidence units
 ```
+
 Decision-uncertainty reduction needs an approved scale or decision model — never invent a percentage (10 §2.10). Define each denominator before using it for comparison.
 
 ### 3.13 Run-level computation procedure (per measure, ordered; 05 Part D)
@@ -616,7 +686,7 @@ Decision-uncertainty reduction needs an approved scale or decision model — nev
 All are labeled illustrative in the sources; exact values are binding for unit tests. Wilson expected values below reproduce under the §2.2 formula within ±0.01 (source figures are rounded).
 
 | # | Calculation | Input | Expected output | Source |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | F-01 | Proportion | x=16, n=20 | p-hat = 0.80 (report "16/20 = 0.80 = 80%") | 09 §7.1, 10 §7.1 |
 | F-02 | Wilson 95% | x=16, n=20, z=1.96 | ≈ 0.58 to 0.92 | 09 §7.1, 10 §7.2 |
 | F-03 | Beta-binomial posterior | Beta(1,1) + 16/20 | Beta(17, 5) | 09 §7.2, 10 §7.3 |

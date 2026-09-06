@@ -30,7 +30,6 @@ Chart covered series use matching mean and replicate quantiles. Missing/mismatch
 - Coverage includes changed residual threshold; blocked fc route; no detections/no asset/no arrival; late effects; zero/single replicate definedness; four-ship proportion denominator; stale/running/error fallbacks; supported/missing/mismatched chart statistics. Existing requirement tests cover warning and residual threshold edits and arrival/late-effect rules.
 - No independent trial validation claimed. Parent still must inspect actual browser rendering, integrate exports, run full gates and reconcile matrix findings before closing R-F-25.
 
-
 Handover update: all C2 source/tests and approved expansions relinquished to parent for integration and independent review. Latest focused run: 88/88 tests across 7 files, 2026-09-05 09:47 local. Earlier C2 tsc passed; the final repeat reported only an unused @ts-expect-error in concurrent src/charts/tokens.test.ts:1 (outside lane ownership), which parent must resolve before the integrated gate. An intermediate lint run exposed only two extra warnings in parent browser scratch JS; parent renamed those artifacts and will record final lint count. `git diff --check` reported only the preserved user-owned CLAUDE.md trailing whitespace. No C2 commit/push or persistence edits occurred.
 
 ## Parent integration closure

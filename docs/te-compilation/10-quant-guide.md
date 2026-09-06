@@ -294,7 +294,7 @@ Association is not causation unless the design supports causal attribution.
 
 **Probability or proportion** (each valid unit has one binary outcome):
 
-```
+```text
 p-hat = x / n
 
 x = valid successes
@@ -305,7 +305,7 @@ Report the count and the percentage. Example: `16 successes / 20 valid opportuni
 
 **Rate** (events during exposure):
 
-```
+```text
 Rate = number of qualifying events / valid exposure
 ```
 
@@ -313,7 +313,7 @@ Exposure can be time, distance, missions, raids, or another approved basis. Exam
 
 **Elapsed time**:
 
-```
+```text
 Elapsed time = stop-event time − start-event time
 ```
 
@@ -321,13 +321,13 @@ The event definitions and common time matter more than the subtraction.
 
 **Duration fraction** (continuity, availability, mission-capable time):
 
-```
+```text
 Fraction = time in the required state / total valid eligible time
 ```
 
 **Difference**:
 
-```
+```text
 Difference = result for treatment B − result for treatment A
 ```
 
@@ -335,7 +335,7 @@ A positive difference is not automatically good. Define the preferred direction.
 
 **Relative change**:
 
-```
+```text
 Relative change = (new − baseline) / baseline
 ```
 
@@ -343,13 +343,13 @@ Use care when the baseline is near zero. Always report the absolute change with 
 
 **Sum of mission-stage times**:
 
-```
+```text
 Total chain time = stage 1 time + stage 2 time + ... + stage k time
 ```
 
 Example:
 
-```
+```text
 Total detect-to-effect time
 = detection time
 + track time
@@ -363,7 +363,7 @@ Use observed event differences when possible. Do not add overlapping stage times
 
 **Remaining mission margin**:
 
-```
+```text
 Available time = boundary-crossing time − decision-ready time
 
 Required action time = decision + authority + assignment + effect + assessment
@@ -379,7 +379,7 @@ Sensing and track:
 
 **CUAS-SEN-PD-001 (Probability of detection)**
 
-```
+```text
 Probability of detection
 = valid opportunities with a detection
   ------------------------------------
@@ -390,7 +390,7 @@ Usual experimental unit: one threat presentation. Report by configuration, threa
 
 **CUAS-SEN-FD-002 (First-detection range or time)**
 
-```
+```text
 First-detection time
 = first valid detection time − eligibility-start time
 ```
@@ -399,7 +399,7 @@ Range is the truth-derived range at the first valid detection event. A no-detect
 
 **CUAS-TRK-FST-003 (First-stable-track range or time)**
 
-```
+```text
 First-stable-track time
 = first time all stable-track rules pass − eligibility-start time
 ```
@@ -408,7 +408,7 @@ The persistence window must be complete. Do not count a late tentative track whe
 
 **CUAS-TRK-CONT-004 (Track continuity)**
 
-```
+```text
 Track continuity
 = eligible time with a valid associated track
   -------------------------------------------
@@ -419,21 +419,21 @@ Also report: number of losses; duration of each loss; reacquisition time; worst 
 
 **CUAS-TRK-ERR-005 (Track position error)**
 
-```
+```text
 Error vector at time t
 = blue-track position at t − truth position at t
 ```
 
 Three dimensions:
 
-```
+```text
 Radial error
 = sqrt(x-error² + y-error² + z-error²)
 ```
 
 Summary over matched samples:
 
-```
+```text
 RMSE = sqrt(sum(error_i²) / m)
 
 m = number of matched samples
@@ -443,7 +443,7 @@ Do not treat all matched samples from one run as independent trials. Also consid
 
 **CUAS-CLS-ACC-006 (Classification accuracy)**
 
-```
+```text
 Classification accuracy
 = correctly classified valid objects
   ----------------------------------
@@ -454,7 +454,7 @@ Also report: the confusion matrix; unknown or unclassified rate; false-hostile r
 
 **CUAS-SUR-FTR-007 (False or nuisance track rate)**
 
-```
+```text
 False-track rate
 = adjudicated false or nuisance tracks
   ------------------------------------
@@ -467,7 +467,7 @@ Fusion, command, and decision time:
 
 **CUAS-C2-HS-008 (Handoff success probability)**
 
-```
+```text
 Handoff success probability
 = successful usable handoffs
   --------------------------
@@ -478,7 +478,7 @@ A source track must meet the offer rule before it enters the denominator. Classi
 
 **CUAS-C2-LAT-009 (Sensor-to-C2 or handoff latency)**
 
-```
+```text
 Handoff latency
 = receiving-system usable-track time
   − source qualifying-track time
@@ -488,7 +488,7 @@ Report the distribution, successful fraction, censored fraction, and condition b
 
 **CUAS-MSN-UWT-010 (Usable warning time)**
 
-```
+```text
 Usable warning time
 = truth time at the defended boundary
   − decision-ready-track time
@@ -500,7 +500,7 @@ EW effect and recovery:
 
 **CUAS-EW-EFF-011 (Probability of mission-relevant EW effect)**
 
-```
+```text
 EW effect probability
 = valid EW opportunities reaching the defined effect state
   --------------------------------------------------------
@@ -511,7 +511,7 @@ The effect state must be mission-relevant and independently observed. Example ef
 
 **CUAS-EW-REC-012 (Time to effect and recovery)**
 
-```
+```text
 Time to effect
 = effect-entry time − qualifying-exposure time
 
@@ -525,7 +525,7 @@ Intercept, defeat, and mission result:
 
 **CUAS-DEF-PINT-013 (Probability of intercept)**
 
-```
+```text
 Probability of intercept
 = valid engagement opportunities with confirmed intercept
   -------------------------------------------------------
@@ -536,7 +536,7 @@ The opportunity must include the approved engagement prerequisites. Report separ
 
 **CUAS-DEF-PDEF-014 (Probability of defeat)**
 
-```
+```text
 Probability of defeat
 = valid opportunities with confirmed defeat
   -----------------------------------------
@@ -547,7 +547,7 @@ Defeat means the threat can no longer complete the defined mission during the re
 
 **CUAS-MSN-E2E-015 (End-to-end mission success)**
 
-```
+```text
 End-to-end mission success
 = valid vignettes achieving the mission-success state
   ---------------------------------------------------
@@ -560,14 +560,14 @@ Saturation and suitability:
 
 **CUAS-SAT-LEAK-016 (Leaker fraction and raid failure)**
 
-```
+```text
 Leaker fraction
 = threats reaching the boundary without prior confirmed defeat
   -----------------------------------------------------------
   valid truth threats in the raid
 ```
 
-```
+```text
 Raid failure probability
 = valid raids with at least one leaker
   ------------------------------------
@@ -578,7 +578,7 @@ Threats within one raid are related; they are not independent raids. Also report
 
 **CUAS-SUIT-AVAIL-017 (Operational availability)**
 
-```
+```text
 Availability
 = mission-capable time
   --------------------
@@ -589,7 +589,7 @@ Freeze the definition of mission-capable time. Define how scheduled maintenance,
 
 **CUAS-HMI-INT-018 (Operator intervention rate)**
 
-```
+```text
 Intervention rate
 = qualifying operator interventions
   ---------------------------------
@@ -602,7 +602,7 @@ Separate normal required actions from correction, override, recovery, false-alar
 
 **Run-validity rate**:
 
-```
+```text
 Valid-run rate = valid runs / attempted runs
 ```
 
@@ -610,7 +610,7 @@ Also report conditional and invalid counts. A high valid-run rate shows test-pro
 
 **Data completeness**:
 
-```
+```text
 Data completeness
 = required records present and usable
   -----------------------------------
@@ -621,7 +621,7 @@ Do not use one campaign-wide value when a missing critical event makes one measu
 
 **Update rate**:
 
-```
+```text
 Observed update rate = usable records / valid observation time
 ```
 
@@ -629,7 +629,7 @@ Also measure the maximum consecutive gap. An average rate can hide a critical ga
 
 **Packet or record loss**:
 
-```
+```text
 Loss fraction
 = expected records − received usable records
   ------------------------------------------
@@ -640,11 +640,11 @@ Record when the loss occurs. One percent loss at the handoff event can matter mo
 
 **Clock offset and drift**:
 
-```
+```text
 Clock offset = device time − authoritative time
 ```
 
-```
+```text
 Clock drift rate
 = offset at end − offset at start
   -------------------------------
@@ -655,14 +655,14 @@ Keep original time. Correct time only in a versioned derived field.
 
 **Timing error converted to position error**:
 
-```
+```text
 Approximate along-track error
 = object speed × time offset
 ```
 
 Illustrative example:
 
-```
+```text
 Speed = 30 m/s
 Time offset = 0.10 s
 Approximate position error = 3 m
@@ -672,7 +672,7 @@ This error can invalidate a high-speed geometry measure.
 
 **Queue and capacity measures** (saturation tests):
 
-```
+```text
 Queue delay = service-start time − queue-entry time
 
 Concurrent load = maximum number of active objects in the defined state
@@ -684,7 +684,7 @@ Record the first observed load where mission performance crosses the approved bo
 
 **Resource expenditure**:
 
-```
+```text
 Effects per defeat = effects used / confirmed defeats
 
 Cost per defended effect = approved resource cost / confirmed defended effects
@@ -701,7 +701,7 @@ Timeline measures must work backward from the mission effect.
 
 **Threat time to boundary** (constant-speed approximation):
 
-```
+```text
 Time to boundary = remaining path distance / ground speed
 ```
 
@@ -709,7 +709,7 @@ Use the measured trajectory when speed, path, or altitude changes materially.
 
 **Required chain time**:
 
-```
+```text
 Required chain time
 = processing
 + operator decision
@@ -723,7 +723,7 @@ Required chain time
 
 **Timing decision rule**:
 
-```
+```text
 If available time > required chain time:
     timing condition is met
 
@@ -740,7 +740,7 @@ The approved uncertainty band controls the borderline rule.
 
 **Combine independent measurement uncertainties**:
 
-```
+```text
 Combined uncertainty
 = sqrt(u1² + u2² + ... + uk²)
 ```
@@ -749,7 +749,7 @@ Use covariance terms when the errors are related.
 
 **Latency uncertainty**:
 
-```
+```text
 u_latency
 = sqrt(
     u_start_timestamp²
@@ -767,7 +767,7 @@ Use a binomial method for detected/not detected, success/failure, intercept/no i
 
 **Wilson interval** (the manual's normal default for a binomial proportion). Use software for the calculation. Do not use the simple normal approximation near zero or one. For review:
 
-```
+```text
 center
 = (p-hat + z²/(2n)) / (1 + z²/n)
 
@@ -782,7 +782,7 @@ At 95% confidence, use `z = 1.96`.
 
 **Bayesian beta-binomial update**:
 
-```
+```text
 Prior = Beta(a, b)
 Observed = x successes in n opportunities
 Posterior = Beta(a + x, b + n − x)
@@ -796,7 +796,7 @@ Sample size must follow the decision need, not the runs that fit the schedule.
 
 **Precision for one probability** (approximate two-sided interval half-width `h`):
 
-```
+```text
 n ≈ z² × p × (1 − p) / h²
 ```
 
@@ -804,7 +804,7 @@ If no defensible planning value exists, use `p = 0.5` (largest approximate sampl
 
 **Inflate for invalid evidence**:
 
-```
+```text
 Required attempts
 = required valid opportunities / expected valid-run fraction
 ```
@@ -813,7 +813,7 @@ This allowance does not weaken validity rules.
 
 **Continuous mean interval** (only when experimental units and assumptions support it):
 
-```
+```text
 mean ± t × standard deviation / sqrt(n)
 ```
 
@@ -823,7 +823,7 @@ Latency and recovery often have skewed distributions; median, percentiles, boots
 
 **Reliability probability** (one success/failure per valid mission period):
 
-```
+```text
 Reliability probability = successful periods / valid periods
 ```
 
@@ -831,7 +831,7 @@ Use a binomial interval.
 
 **Failure rate**:
 
-```
+```text
 Failure rate = relevant failures / total valid time at risk
 ```
 
@@ -839,7 +839,7 @@ State the failure definition and the assumed failure process.
 
 **Zero-failure bound** (constant-rate exponential model, approximate one-sided 95% upper bound after zero failures):
 
-```
+```text
 Upper failure rate ≈ 3 / total time at risk
 ```
 
@@ -847,7 +847,7 @@ This does not prove zero risk. It is model-dependent.
 
 **Availability**:
 
-```
+```text
 Availability = mission-capable time / required operating time
 ```
 
@@ -855,7 +855,7 @@ State every downtime category and whether it enters the denominator.
 
 ### 2.9 Adaptive next-run weighted score
 
-```
+```text
 Event value = sum(weight_j × score_j)
 ```
 
@@ -867,7 +867,7 @@ Decision impact (track): decisions supported; accepted evidence delivered by the
 
 Evidence quality:
 
-```
+```text
 Valid-run rate = valid runs / attempted runs
 
 Reproduction success rate
@@ -885,7 +885,7 @@ Operating leverage (track): time to first valid run; setup and integration hours
 
 Use the simplest method that answers the approved question and respects the data structure.
 
-```
+```text
 Binary result?
 → Binomial interval or binary regression
 
@@ -924,7 +924,7 @@ Method notes:
 
 When unknown outcomes can change the decision, report all four cases:
 
-```
+```text
 Case 1: all unknowns treated as failures
 Case 2: all unknowns treated as successes
 Case 3: approved model-based treatment
@@ -1096,7 +1096,7 @@ A qualified analyst should lead: exact power calculations; formal comparison of 
 
 ### 4.1 Required quantitative record set (4 controlled records per campaign)
 
-```
+```text
 Question record
 ├── Hypothesis
 ├── Primary response
@@ -1245,7 +1245,7 @@ Decision impact, evidence quality, and operating leverage metrics per section 2.
 
 ### 6.1 Five linked forms of quantitative work (ordered chain)
 
-```
+```text
 Decision math
 → Measure definition
 → Experiment design
@@ -1255,7 +1255,7 @@ Decision math
 
 ### 6.2 Analysis separation chain (the strategist must keep these distinct)
 
-```
+```text
 Observation
 → Calculation
 → Interpretation
@@ -1265,7 +1265,7 @@ Observation
 
 ### 6.3 Evidence accounting flow (one flow for every measure, before calculation)
 
-```
+```text
 Planned
 → Attempted
 → Eligible
@@ -1276,7 +1276,7 @@ Planned
 
 ### 6.4 Recommended experiment sequence
 
-```
+```text
 Scripted baseline
 → bounded exploration
 → diagnostic isolation
@@ -1291,7 +1291,7 @@ Keep exploratory and confirmatory evidence separate.
 
 Simple pattern:
 
-```
+```text
 Screen
 → Augment
 → Validate

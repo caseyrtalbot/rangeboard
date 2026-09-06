@@ -18,7 +18,7 @@ Scope note from source: the dictionary entries are measure definitions, not Valk
 Every campaign copies a dictionary entry into the campaign measure registry and replaces every bracketed parameter with an approved value or record. Fields the user must supply per measure instance:
 
 | Field | Meaning | Type |
-|---|---|---|
+| --- | --- | --- |
 | Configuration | Approved system configuration (CFG record) | record link |
 | Threat | Approved threat / threat profile (THR record) | record link |
 | Conditions | Environmental and operating condition bounds (COND records) | record link(s) |
@@ -190,6 +190,7 @@ Range, altitude, azimuth/aspect, speed, threat class, raid size, emissions or gu
 - Interpolation region and prohibited extrapolation.
 
 Model-to-response mapping:
+
 - Continuous response: linear or nonlinear regression.
 - Binary response: logistic or probit regression.
 - Count/rate response: Poisson or negative-binomial regression.
@@ -223,7 +224,7 @@ Rule: association is not causation unless the design supports causal attribution
 
 ### 1.26 Censored observation record fields
 
-```
+```text
 Observed time = time from start to observation-window end
 Status = right censored
 Reason = approved code
@@ -300,7 +301,7 @@ Prior distribution `Beta(a, b)`; justification record; sensitivity result agains
 
 ### 2.0.1 Denominator discipline (universal accounting pipeline)
 
-```
+```text
 Planned
 → attempted
 → eligible
@@ -331,7 +332,7 @@ Do not compress these into an unsupported "high confidence" label.
 
 **Question:** During valid opportunities under the defined condition, how often does the sensor produce a valid detection of the truth object?
 
-```
+```text
 Estimate = number of valid opportunities with a detection event
            ---------------------------------------------------
            total valid detection opportunities
@@ -377,7 +378,7 @@ Estimate = number of valid opportunities with a detection event
 
 **Question:** For what fraction of the required mission interval is a valid associated track available?
 
-```
+```text
 Continuity = eligible time with valid associated track
              -----------------------------------------
              total valid eligible tracking time
@@ -396,7 +397,7 @@ Continuity = eligible time with valid associated track
 
 **Question:** How far does the reported track position differ from independent truth?
 
-```
+```text
 Error vector(t) = transformed blue-track position(t)
                   − transformed truth position(t)
 ```
@@ -413,7 +414,7 @@ Error vector(t) = transformed blue-track position(t)
 
 **Question:** How often does the system assign the correct approved class?
 
-```
+```text
 Accuracy = correctly classified valid objects
            ----------------------------------
            valid objects requiring classification
@@ -431,7 +432,7 @@ Accuracy = correctly classified valid objects
 
 **Question:** How frequently does the system create an operationally relevant track without a corresponding truth object?
 
-```
+```text
 Rate = number of adjudicated false or nuisance tracks
        ----------------------------------------------
        valid surveillance exposure time
@@ -451,7 +452,7 @@ Rate = number of adjudicated false or nuisance tracks
 
 **Question:** How often does a qualifying source track become a usable receiving-system track?
 
-```
+```text
 Estimate = successful usable handoffs
            --------------------------
            valid qualifying handoff opportunities
@@ -469,7 +470,7 @@ Estimate = successful usable handoffs
 
 **Question:** How long does the defined information transition take?
 
-```
+```text
 Latency = receiving-system usable-track event time
           − source qualifying-track event time
 ```
@@ -487,7 +488,7 @@ Latency = receiving-system usable-track event time
 
 **Question:** How much decision-and-engagement time remains when the architecture first produces a usable track?
 
-```
+```text
 Usable warning time = truth time at defended-asset boundary
                       − decision-ready-track event time
 ```
@@ -506,7 +507,7 @@ Usable warning time = truth time at defended-asset boundary
 
 **Question:** How often does the approved EW condition produce the defined mission-relevant effect?
 
-```
+```text
 Estimate = valid EW opportunities reaching the effect state
            -----------------------------------------------
            total valid EW effect opportunities
@@ -525,7 +526,7 @@ Estimate = valid EW opportunities reaching the effect state
 
 **Question:** How long after valid exposure does the threat enter and, if applicable, leave the defined effect state?
 
-```
+```text
 Time to effect = effect-entry event − qualifying-exposure event
 Recovery time  = effect-exit event − effect-entry event
 ```
@@ -554,7 +555,7 @@ Recovery time  = effect-exit event − effect-entry event
 
 **Question:** How often does a valid defeat opportunity prevent the threat from completing its card-defined mission?
 
-```
+```text
 Estimate = valid opportunities with confirmed defeat
            -----------------------------------------
            total valid defeat opportunities
@@ -572,7 +573,7 @@ Estimate = valid opportunities with confirmed defeat
 
 **Question:** Does the complete mission thread achieve the defined Measure of Success?
 
-```
+```text
 Estimate = valid vignettes achieving the mission-success state
            ---------------------------------------------------
            total valid mission vignettes
@@ -592,7 +593,7 @@ Estimate = valid vignettes achieving the mission-success state
 
 **Question:** Under the defined raid size and arrival process, what fraction of threats reach the protected boundary without confirmed defeat?
 
-```
+```text
 Leaker fraction = truth threats reaching the boundary without prior confirmed defeat
                   ---------------------------------------------------------------
                   valid truth threats in the raid
@@ -600,7 +601,7 @@ Leaker fraction = truth threats reaching the boundary without prior confirmed de
 
 Also report:
 
-```
+```text
 Raid failure probability = raids with at least one leaker
                            ------------------------------
                            total valid raids
@@ -616,7 +617,7 @@ Raid failure probability = raids with at least one leaker
 
 **Question:** What fraction of required mission time is the system capable of performing the defined function?
 
-```
+```text
 Availability = mission-capable time
                --------------------
                required operating time
@@ -634,7 +635,7 @@ Availability = mission-capable time
 
 **Question:** How often does the architecture require an operator action beyond the approved nominal workflow?
 
-```
+```text
 Rate = qualifying operator interventions
        ---------------------------------
        valid operating hours or valid mission vignettes
@@ -652,7 +653,7 @@ Rate = qualifying operator interventions
 
 Use binomial methods when each valid experimental unit has one defined binary outcome (detected/not detected; successful/failed handoff; defeated/not defeated; mission success/failure).
 
-```
+```text
 p-hat = x / n
 
 x = number of valid successes
@@ -663,7 +664,7 @@ n = number of valid opportunities
 
 **Bayesian interval (beta-binomial conjugate update):**
 
-```
+```text
 Prior: Beta(a, b)
 Observed: x successes in n valid opportunities
 Posterior: Beta(a + x, b + n − x)
@@ -675,7 +676,7 @@ Record and justify the prior. Report sensitivity to another defensible prior whe
 
 For an approximate two-sided interval half-width `h`:
 
-```
+```text
 n ≈ z² × p × (1 − p) / h²
 ```
 
@@ -687,7 +688,7 @@ Define `p0` (unacceptable probability), `p1` (operationally acceptable probabili
 
 ### 2.9 Sample size — inflation for invalid evidence
 
-```
+```text
 Required attempts = required valid opportunities
                     --------------------------------
                     expected valid-run fraction
@@ -722,7 +723,7 @@ Competing events: if a vignette can end through different mechanisms (defeat, bo
 - **Reliability probability:** For `x` successful mission periods among `n` valid periods, use binomial methods when each period has one binary reliability outcome.
 - **Failure rate:**
 
-```
+```text
 Failure rate = relevant failures / total valid time at risk
 ```
 
@@ -730,7 +731,7 @@ Report time at risk and failure count. State the assumed failure process before 
 
 - **Zero-failure bound (illustrative):** Under a constant-rate exponential model, an approximate one-sided 95% upper bound after zero failures is:
 
-```
+```text
 upper failure rate ≈ 3 / total time at risk
 ```
 
@@ -738,7 +739,7 @@ This does not prove zero risk. It is model-dependent and may be inappropriate wh
 
 - **Availability:**
 
-```
+```text
 Availability = mission-capable time / required operating time
 ```
 
@@ -748,7 +749,7 @@ Define whether scheduled maintenance, test-infrastructure downtime, external ran
 
 For a difference derived from independent measurements, a common approximation is:
 
-```
+```text
 u_combined = sqrt(u_1² + u_2² + ...)
 ```
 
@@ -865,7 +866,7 @@ Do not include them in a performance denominator unless the approved method expl
 ### 4.1 Measure dictionary entry template (structure of every entry; becomes the measure registry form)
 
 | Field | Content |
-|---|---|
+| --- | --- |
 | Measure ID | `CUAS-<DOMAIN>-<ABBR>-<NNN>` (e.g., CUAS-SEN-PD-001) |
 | Name | Short name |
 | Question | The operational question the measure answers |
@@ -906,7 +907,7 @@ Do not include them in a performance denominator unless the approved method expl
 
 ### 4.4 Required accounting block (report for every measure/analysis)
 
-```
+```text
 planned
 attempted
 eligible
@@ -981,7 +982,7 @@ All examples are labeled in the source as illustrative, not Valkryn results.
 
 ### 7.1 Wilson interval example
 
-```
+```text
 Valid detections: 16
 Valid opportunities: 20
 p-hat = 16 / 20 = 0.80
@@ -992,7 +993,7 @@ Interpretation from source: the point estimate is 0.80, but the interval shows t
 
 ### 7.2 Bayesian posterior example
 
-```
+```text
 Prior: Beta(1, 1)
 Observed: 16 successes in 20 opportunities
 Posterior: Beta(17, 5)
@@ -1000,7 +1001,7 @@ Posterior: Beta(17, 5)
 
 ### 7.3 Precision-driven sample size example
 
-```
+```text
 Desired 95% interval half-width: 0.10
 Planning p: 0.50
 z: 1.96
@@ -1013,7 +1014,7 @@ Round up: approximately 97 independent valid opportunities
 
 ### 7.4 Invalid-evidence inflation example
 
-```
+```text
 Required valid opportunities: 40
 Expected valid-run fraction: 0.80
 Required attempts: 40 / 0.80 = 50
@@ -1021,7 +1022,7 @@ Required attempts: 40 / 0.80 = 50
 
 ### 7.5 Zero-failure reliability bound example
 
-```
+```text
 Zero failures in 30 valid hours
 Approximate upper 95% rate bound ≈ 3 / 30 = 0.10 failures per hour
 ```
@@ -1030,7 +1031,7 @@ Caveats from source: model-dependent (constant-rate exponential); may be inappro
 
 ### 7.6 Illustrative Bayesian sequential rule (explicitly "not a default")
 
-```
+```text
 Review after each planned block.
 Stop for sufficiency if the approved posterior criterion is met.
 Stop for futility if the approved predictive criterion is met.

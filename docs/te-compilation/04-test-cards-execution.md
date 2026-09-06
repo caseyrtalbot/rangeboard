@@ -267,7 +267,7 @@ Practical action catalog (selectable action types):
 
 ### 2.1 Test matrix run-count formula (page 15)
 
-```
+```text
 Configuration
 × Threat
 × Condition
@@ -694,27 +694,35 @@ Page 15 states the manual's 20-field card structure (section 4.1) is the base st
 Each method is triggered by a question form and prescribes design elements:
 
 **Threshold verification** — "Does performance meet a defined requirement?"
+
 - Requirement threshold. Borderline rule. Repetition. Measurement uncertainty. Pass, miss, and inconclusive logic.
 
 **Characterization** — "How does performance change across conditions?"
+
 - Parameter sweep. Range of each factor. Center and boundary conditions. Response curve. Performance envelope.
 
 **Comparison** — "Which system or configuration performs better?"
+
 - Common conditions. Paired or blocked trials. Randomized order. Defined comparison measure. Minimum meaningful difference.
 
 **Controlled experiment** — "Does this variable cause a change in the result?"
+
 - Independent variable. Dependent measure. Held controls. Covariates. Randomization. Competing explanations.
 
 **Boundary or stress test** — "Where does performance begin to fail?"
+
 - Increasing challenge level. Stop boundary. Recovery procedure. Boundary confirmation runs. Failure-mode capture.
 
 **Diagnostic test** — "What caused the observed failure?"
+
 - Candidate causes. Evidence expected for each cause. One discriminating change at a time. Confirmation test.
 
 **Reliability test** — "How consistently does the system perform?"
+
 - Repeated independent trials. Failure definition. Exposure time or opportunity count. Reliability or failure-rate measure. Recovery and maintenance effects.
 
 **Regression test** — "Did a system change affect an established result?"
+
 - Changed item. Possible failure mechanism. Prior evidence baseline. Affected measures. Minimum repeat conditions. Comparison with prior results.
 
 ### 4.7 Day-of screens (page 15, "Execute")
@@ -830,7 +838,7 @@ After quick-look calculations the application recommends one of (user makes the 
 
 Result chain each finding must complete:
 
-```
+```text
 Measured result
 → Performance meaning
 → Mission or customer effect
@@ -847,7 +855,7 @@ Finding record fields: see section 1.11. Final exports named in the first-versio
 
 ### 6.1 End-to-end chain (page 15)
 
-```
+```text
 Customer need
 → Test object
 → Test question

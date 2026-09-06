@@ -5,18 +5,22 @@ Agent 8 extraction. Assigned pages: 08 and 09 of the Valkryn Deployment Strategi
 ## Sources fetched
 
 Assigned pages:
+
 - "08 — OPFOR & Threat Representation for C-UAS T&E" - https://app.notion.com/p/3c16f36564f7814c8d38d75a1530770f
 - "09 — C-UAS Doctrine-to-Test Application" - https://app.notion.com/p/3c16f36564f781ff83b3d1fedf410a94
 
 Referenced pages fetched (in scope, not assigned to other agents):
+
 - "Doctrine" - https://app.notion.com/p/3bf6f36564f780338765dd687cca2600 (operational-concepts basis for page 09)
 - "Unmanned Warfare in the Russo-Ukraine War — OSINT Research Compendium" - https://app.notion.com/p/3be6f36564f781d797d3dc816d742890 (the "observed or emergent practice" source for pages 08/09)
 
 Referenced pages fetched for ownership check; extracted only for the threat-parameter content pages 08/09 explicitly invoke [AMBIGUOUS: both sit under "Questions to Master" corpus, page map assigns that to agent 13]:
+
 - "03 · DESIGN I — Measures, Threat, and Experimental Design" - https://app.notion.com/p/3be6f36564f781bca64acbc1459db94c
 - "08 · Frontier — AI, Autonomy, and Counter-UAS T&E" - https://app.notion.com/p/3be6f36564f781e998f0d9ab03ee2e68
 
 Fetched for ownership check only, NOT extracted (assigned to agent 12):
+
 - "JIATF-401" - https://app.notion.com/p/3c06f36564f780c99604de623790660c (the "Jordan case" cited by pages 08/09)
 
 Links inside assigned pages skipped as other agents' scope: evidence-planning method page (agent 2), execution-controls page (agent 4), records page (agent 1).
@@ -26,6 +30,7 @@ Links inside assigned pages skipped as other agents' scope: evidence-planning me
 ### 1.1 Test-decision record (page 08, sec 1)
 
 Begin with the uncertainty the test must resolve, not with an available red aircraft. Record:
+
 - Decision-relevant question.
 - System boundary.
 - Mission thread being evaluated.
@@ -42,6 +47,7 @@ Begin with the uncertainty the test must resolve, not with an available red airc
 One version-controlled profile per operationally distinct threat presentation. A change that can alter blue-system performance creates a new profile or a recorded profile variant.
 
 Threat mission / intended effect (enum, one or more):
+
 - Reconnaissance or target development
 - Persistent observation
 - Route or site reconnaissance
@@ -58,6 +64,7 @@ Threat mission / intended effect (enum, one or more):
 Rule: do not infer payload effect from airframe type alone.
 
 Physical and kinematic profile fields:
+
 - Airframe class and relevant UAS group
 - Dimensions and weight when relevant
 - Payload state
@@ -76,6 +83,7 @@ Physical and kinematic profile fields:
 Rule: use ranges when natural variation is part of the threat; use exact values when repeatability is necessary to isolate a blue-system factor.
 
 Control, navigation, and autonomy profile fields (record separately):
+
 - Manual control
 - Waypoint or preplanned navigation
 - GNSS dependence
@@ -91,6 +99,7 @@ Control, navigation, and autonomy profile fields (record separately):
 Rule: do not label an aircraft "autonomous" from a product description; record the behavior executed in the test.
 
 Emissions and observable-signature fields:
+
 - Command-link behavior
 - Video-link behavior
 - Frequency or band
@@ -109,6 +118,7 @@ Emissions and observable-signature fields:
 Rule: a safety beacon, tracker, transponder, or telemetry radio can change the representation. Record it as an augmentation and assess whether it can affect blue detection or identification.
 
 Coordination and raid behavior fields (multi-aircraft):
+
 - Number of aircraft
 - Same-type or mixed-type composition
 - Simultaneous or sequential entry
@@ -126,6 +136,7 @@ Coordination and raid behavior fields (multi-aircraft):
 Rule: "Swarm" is not a sufficient profile. State the coordination behavior actually represented.
 
 Threat adaptation fields: define the observable trigger and the allowed response. Example trigger/response pairs:
+
 - Change altitude after detection of a stated blue emission
 - Change route after a stated engagement cue
 - Shift control method after a stated degradation condition
@@ -135,6 +146,7 @@ Threat adaptation fields: define the observable trigger and the allowed response
 Rule: never allow an undefined instruction to "act realistically." Undefined adaptation prevents repeatability and obscures which blue-system factor caused the outcome.
 
 Threat-operator state fields (red operator is part of the representation when human action affects the aircraft):
+
 - Experience with the specific aircraft
 - Experience with the script or mission
 - Familiarity with the range
@@ -164,13 +176,14 @@ Rule: the label alone does not establish adequacy; complete the fidelity assessm
 Fidelity state enum with required treatment:
 
 | Fidelity state | Meaning | Required treatment |
-|---|---|---|
+| --- | --- | --- |
 | Faithful | Feature represented within the tolerance required by the measure | Record the verification method and observed tolerance |
 | Approximated | Feature represented imperfectly but useful for a bounded purpose | State the difference, expected direction of effect, and allowed conclusion |
 | Omitted | Feature absent | State which measures and conclusions cannot use the run |
 | Unknown | Available evidence cannot establish the relationship | Treat generalization as unresolved; do not assume equivalence |
 
 Minimum feature list to assess (one row each):
+
 - Mission behavior
 - Airframe size and shape
 - Payload state
@@ -192,6 +205,7 @@ Minimum feature list to assess (one row each):
 - Blue-system observables created by instrumentation or safety equipment
 
 Per-feature record fields:
+
 - Intended threat state
 - Represented state
 - Fidelity classification
@@ -208,6 +222,7 @@ Rule: do not calculate one overall fidelity score that hides a critical omission
 ### 1.5 OPFOR execution mode (enum + per-mode required fields, page 08 sec 5)
 
 Scripted mode (use for controlled comparison or confirmatory evidence). Define:
+
 - Exact initial state
 - Route or maneuver sequence
 - Timing and speed tolerances
@@ -221,6 +236,7 @@ Scripted mode (use for controlled comparison or confirmatory evidence). Define:
 Best uses: baseline characterization; direct configuration comparison; sensor performance across geometry or range; latency comparison; confirmatory repetitions; regression testing. Limitation: may not expose weaknesses that depend on adversary adaptation.
 
 Bounded-adaptive mode (use when threat response is a test factor but uncontrolled free play would prevent interpretation). Define:
+
 - Red objective
 - Observable triggers
 - Menu of permitted responses
@@ -234,6 +250,7 @@ Bounded-adaptive mode (use when threat response is a test factor but uncontrolle
 Best uses: blue response to route or altitude changes; EW-reactive behavior; alternate approach selection; decision-chain resilience; controlled exploration of defensive boundaries. Limitation: adaptive choices are endogenous and can confound a simple treatment comparison. Preserve the complete choice history; avoid claiming classical independent repetitions unless the analysis supports that claim.
 
 Free-play mode (use to discover failure modes, generate hypotheses, or challenge a complete mission thread). Define:
+
 - Red objective
 - Starting resources and state
 - Prohibited actions
@@ -251,7 +268,7 @@ Best uses: failure discovery; human-machine interaction; defensive coordination;
 Classify every threat variable before issuing a test card:
 
 | Class | Meaning | Execution treatment |
-|---|---|---|
+| --- | --- | --- |
 | Independent variable | Changed deliberately to answer the question | Set the planned levels, order, and comparison |
 | Held control | Must remain within tolerance | Verify before and during the run |
 | Bounded red choice | Red may select within a stated envelope | Record the choice, trigger, time, and rationale |
@@ -260,6 +277,7 @@ Classify every threat variable before issuing a test card:
 | Unobserved nuisance | Can affect the result but is neither controlled nor measured | Remove it, instrument it, or state the validity risk |
 
 Minimum variables to classify:
+
 - Airframe and payload
 - Software and control configuration
 - Route and approach axis
@@ -278,6 +296,7 @@ Minimum variables to classify:
 ### 1.7 Information and learning controls (page 08, sec 7)
 
 Record:
+
 - What red knows about blue placement, settings, coverage, and procedures
 - What blue knows about threat timing, route, type, and behavior
 - What both sides learn after each run
@@ -294,6 +313,7 @@ Rule: if red learns a defensive weakness and exploits it in later runs, later re
 Rows = operationally distinct threat profiles. Columns = performance-driving conditions. Each cell is a candidate design point.
 
 Candidate threat rows:
+
 - Single manually controlled quadcopter
 - Single waypoint-controlled aircraft
 - RF-silent or reduced-emission segment
@@ -308,6 +328,7 @@ Candidate threat rows:
 - Adaptive response to blue action
 
 Candidate condition columns:
+
 - Fixed site or moving force
 - Open terrain, complex terrain, or urban clutter
 - Day, night, and transition light
@@ -320,6 +341,7 @@ Candidate condition columns:
 - Normal and elevated operator workload
 
 Cell-selection criteria (do not attempt every combination; select cells that):
+
 - Resolve a P1 uncertainty
 - Represent the expected operating center
 - Probe a likely failure boundary
@@ -330,6 +352,7 @@ Cell-selection criteria (do not attempt every combination; select cells that):
 ### 1.9 Red truth / threat instrumentation record (page 08, sec 9)
 
 Capture as applicable:
+
 - Unique aircraft and mission identifier
 - Launch, entry, phase-transition, effect, and recovery times
 - Position, altitude, velocity, and heading
@@ -344,6 +367,7 @@ Capture as applicable:
 - Ground-truth accuracy, update rate, time source, and gaps
 
 Define:
+
 - Which source establishes red position
 - Which source establishes red emissions
 - Which source establishes red behavior or operator action
@@ -356,6 +380,7 @@ Rule: no independent threat truth means no defensible claim about detection rang
 ### 1.10 Red deviation record (page 08, sec 11)
 
 A red deviation is any material difference between the issued profile and observed execution. Record:
+
 - Planned state
 - Actual state
 - Time and duration
@@ -370,6 +395,7 @@ A red deviation is any material difference between the issued profile and observ
 - Generalization limit
 
 Example deviation types (seed enum):
+
 - Altitude outside tolerance
 - Route or approach-axis change
 - Late launch
@@ -388,6 +414,7 @@ Rule: do not discard an invalid run. It may retain diagnostic value; label its a
 ### 1.11 Realism-constraint record (page 08, sec 12)
 
 For every realism constraint, identify:
+
 - Threat feature affected
 - Reason it cannot be fully reproduced
 - Substitute used
@@ -399,11 +426,13 @@ For every realism constraint, identify:
 ### 1.12 Evidence-boundary label (enum; both pages)
 
 Page 08 (three kinds, keep separate):
+
 1. Doctrine or approved operational basis
 2. Observed or emergent practice (may inform test factors but is not doctrine)
 3. Test-specific assumption (label the assumption and limit the conclusion)
 
 Page 09 (six labels for every input to a mission-thread design):
+
 - Doctrine: formal operational concept, task, process, or principle
 - Observed practice: reported behavior from current operations or exercises
 - Test assumption: necessary scenario choice not established by doctrine or observation
@@ -414,6 +443,7 @@ Page 09 (six labels for every input to a mission-thread design):
 ### 1.13 Mission-thread package fields (page 09, sec 2)
 
 Mission and protected outcome:
+
 - Force or activity being protected
 - Mission that must continue
 - Asset, function, formation, route, or population at risk
@@ -423,6 +453,7 @@ Mission and protected outcome:
 - Mission condition that ends the scenario
 
 Friendly posture:
+
 - Fixed, moving, displacing, halted, or transitioning
 - Sensor placement and coverage
 - C2 and network path
@@ -437,6 +468,7 @@ Friendly posture:
 Rule: record command relationships as test conditions; do not infer broader organizational authority from the scenario.
 
 Adversary action:
+
 - Threat mission
 - Airframe and payload class
 - Control, navigation, emissions, and autonomy
@@ -447,6 +479,7 @@ Adversary action:
 - Expected interaction with passive and active defenses
 
 Test boundary (enum; state which the event evaluates):
+
 - One component
 - One interface
 - One transition
@@ -485,6 +518,7 @@ Rule: the finding must state the exercised arrangement, operator state, procedur
 ### 1.15 Contested-spectrum condition definition (page 09, sec 16)
 
 Record:
+
 - Baseline spectrum state
 - Applied emissions or interference
 - Time and location
@@ -561,7 +595,7 @@ For every measure define: exact start and stop events, denominator, experimental
 ### 2.2 Transition measures by chain stage (page 09, sec 3 table)
 
 | Transition | Test question | Candidate measures | Required truth |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Detect | Did the defensive system first distinguish the threat from the background early enough to support later action? | Probability of detection by range or condition; first-detection range; warning time; false alerts; missed opportunities | Threat presence, location, time, signature state, sensor state, background activity |
 | Track | Did the system create and maintain a usable estimate of threat state? | First-stable-track range; initiation time; continuity; position and velocity error; track purity; drops; swaps; update rate | Time-correlated threat trajectory and identity |
 | Identify | Did the process assign the required status or class with sufficient accuracy and timeliness? | Classification accuracy; identification accuracy; time to classification; unknown rate; false-hostile and false-friendly decisions | True threat class, friendly or neutral state, observable features, decision time |
@@ -649,6 +683,7 @@ Rule: loss of a command link is not automatically defeat. The threat may continu
 ### 2.8 Fidelity decision rule (page 08, sec 4)
 
 A surrogate is adequate only when:
+
 1. The features that drive the evaluated measure are identified.
 2. Those features are faithful or their approximation is analytically bounded.
 3. Omitted and unknown features are explicitly excluded from the conclusion.
@@ -668,6 +703,7 @@ Corollary: a representative flight path does not establish representative RF beh
 ### 3.1 Threat-representation gate (page 08; go/no-go, run before execution)
 
 Proceed only when:
+
 - The operational behavior is stated.
 - Performance-driving threat features are identified.
 - The representation class is correct.
@@ -683,6 +719,7 @@ Proceed only when:
 ### 3.2 Doctrine-to-test gate (page 09; go/no-go)
 
 Proceed only when:
+
 - The mission and protected outcome are explicit.
 - Doctrine and observed practice remain distinguishable.
 - The threat behavior is executable.
@@ -698,6 +735,7 @@ Proceed only when:
 ### 3.3 Evidence "do not treat" checklist (page 09; interpretation guard)
 
 Do not treat:
+
 - A reported field adaptation as universal doctrine.
 - A doctrinal sequence as proof that a fielded system performs it.
 - A vendor architecture as the required operational architecture.
@@ -766,7 +804,8 @@ Rule: the issued card remains frozen during the run. Record what occurred; do no
 - Permitted and prohibited uses
 
 Integrated-run minimum time-tag chain:
-```
+
+```text
 Threat launch or scenario entry
 -> first detection
 -> first usable track
@@ -808,7 +847,7 @@ Threat launch or scenario entry
 ### 4.4 Doctrine-to-test traceability matrix template (page 09, sec 18)
 
 | Input | Required translation | Test output |
-|---|---|---|
+| --- | --- | --- |
 | Mission and protected outcome | Observable success and failure states | Mission-level measure |
 | Doctrinal action | Observable transition or behavior | Event definition and measure |
 | Threat TTP | Controlled or bounded presentation | Threat profile and red card content |
@@ -822,6 +861,7 @@ Threat launch or scenario entry
 ### 4.5 Vignette library (page 09, secs 9-17; reproduce as seed templates)
 
 #### Fixed-site defense vignette
+
 - Decision focus: whether the configured architecture provides sufficient warning, identification, engagement opportunity, defeat, and assessment to protect a defined fixed asset under the tested threat and background conditions.
 - Threat presentations: single reconnaissance aircraft; single attack aircraft; reconnaissance followed by attack; decoy followed by attack; mixed low- and higher-altitude approaches; multi-axis raid; repeated waves; reduced-emission or RF-silent segment; threat adaptation after blue emission or engagement.
 - Test factors: sensor placement; active and passive sensing mix; early-warning sensor included or excluded; C2 and network path; friendly-air and background-track density; day, night, weather, and clutter; effector type and assignment sequence; passive-defense state; operator workload; one component degraded or unavailable; magazine, duty-cycle, or recovery state.
@@ -830,6 +870,7 @@ Threat launch or scenario entry
 - Limits: do not generalize fixed placement, stable power, centralized infrastructure, or persistent connectivity to maneuver operations.
 
 #### Maneuver formation vignette
+
 - Decision focus: whether the formation retains usable warning and defensive action while moving, halting, displacing, changing geometry, and operating with variable connectivity.
 - Threat presentations: route reconnaissance; flank or rear approach; pop-up from terrain masking; FPV or one-way attack during movement; attack during halt or transition; repeated contact after displacement; threat cued by blue emissions; mixed reconnaissance and attack.
 - Test factors: movement speed and formation spacing; sensor and effector on-the-move state; setup and teardown time; displacement interval; terrain and masking; network handoff; local versus shared track; loss of one node; communications delay or disconnection; operator task loading; friendly UAS activity; passive-signature state.
@@ -837,6 +878,7 @@ Threat launch or scenario entry
 - Limits: a static emplacement demonstration does not support a maneuver conclusion. A mobile platform must be tested through transition states, not only while halted.
 
 #### Convoy and logistics-node vignette
+
 - Decision focus: whether the defensive approach protects a moving convoy, temporary halt, transfer point, or logistics node without unacceptable disruption to the supported mission.
 - Threat presentations: route reconnaissance; single-axis FPV attack; multi-axis attack; attack during halt or congestion; decoy before attack; repeated attacks intended to exhaust attention or effectors; attack after the convoy disperses; threat using terrain, structures, or background traffic.
 - Test factors: convoy length and spacing; sensor placement within the convoy; lead, middle, and trail coverage; speed, halt, and restart; route clutter; friendly emissions; network coverage; local alerting; effector field of fire; civil or friendly-air background; operator workload and competing duties; protected-asset substitution or decoy.
@@ -844,6 +886,7 @@ Threat launch or scenario entry
 - Limits: one instrumented vehicle does not establish convoy-wide coverage. The test must represent the geometry and dissemination path of the supported formation.
 
 #### Airfield or port defense vignette
+
 - Decision focus: whether the defensive system protects a large, complex site containing friendly aircraft, vehicles, infrastructure, electromagnetic activity, and multiple critical functions.
 - Threat presentations: low-altitude perimeter approach; approach mixed with friendly-air activity; reconnaissance of critical nodes; decoy or nuisance traffic; one-way attack against a stated function; multi-axis raid; repeated waves; reduced-emission or autonomous segment; post-strike assessment aircraft.
 - Test factors: large-area coverage; buildings, ships, cranes, aircraft, and ground clutter; friendly transponders and identification data; air-operations tempo; spectrum congestion; multiple defended assets; centralized and local alerting; effector sectors and restricted directions; shift turnover; component loss; passive protection of critical functions.
@@ -851,6 +894,7 @@ Threat launch or scenario entry
 - Limits: a result for one sector or one protected function does not establish whole-site defense.
 
 #### Urban defense vignette
+
 - Decision focus: whether the defensive chain can distinguish, track, and respond to a threat in cluttered terrain with occlusion, multipath, constrained engagement geometry, and dense neutral activity.
 - Threat presentations: low-altitude street or rooftop approach; short exposure after occlusion; hover or loiter near structures; route changes around buildings; threat mixed with neutral UAS; multi-axis approach; reduced-emission aircraft; attack from short range.
 - Test factors: building density and height; sensor placement; occlusion and multipath; EO/IR and acoustic background; neutral UAS; civil communications; constrained effector sectors; alternate sensor cueing; local observer reporting; network delay; day, night, and illumination transition.
@@ -858,6 +902,7 @@ Threat launch or scenario entry
 - Limits: urban results are geometry-specific. Record the structures, sight lines, RF environment, background activity, and engagement constraints needed to reproduce the condition.
 
 #### Coalition vignette
+
 - Decision focus: whether a combined defensive chain can exchange usable warning and track information, interpret it consistently, and complete the tested mission thread across heterogeneous systems and procedures.
 - Threat presentations: use the same threat profiles employed in a national baseline when possible so the effect of coalition integration can be isolated.
 - Test factors: data format and interface; track identifiers; coordinate and time reference; classification markings or releasability constraints represented in the event; voice versus digital exchange; translation and terminology; shared versus separate pictures; sensor-to-partner handoff; partner-to-effector handoff; different procedures; network delay, loss, and fallback; friendly-air identification.
@@ -865,18 +910,21 @@ Threat launch or scenario entry
 - Limits: record the exact systems, interfaces, procedures, data made available, and exercised relationships. Do not infer interoperability outside the tested configuration.
 
 #### Degraded or disconnected C2 vignette
+
 - Decision focus: which portions of the defensive mission thread remain effective after loss, delay, corruption, or partition of the normal information path.
 - Degradation states and factors: see section 1.16 of this file.
 - Priority measures: time to detect the degradation; data age; track continuity; local warning and action time; handoff loss; expired opportunities; correct local response; mission success during partition; time to restore; duplicate, stale, or conflicting actions after restoration.
 - Limits: do not introduce an unrecorded network failure and treat it only as realism. The degradation must be measurable and tied to the affected transitions and conclusions.
 
 #### Contested-spectrum vignette
+
 - Decision focus: how the complete mission thread changes when sensing, communications, navigation, or effects operate in a defined congested or contested electromagnetic environment.
 - Required condition definition: see section 1.15 of this file.
 - Priority measures: detection and track degradation; communications loss or delay; navigation error; threat behavior change; blue-system behavior change; friendly-system effect; soft-kill effect; recovery time; handoff success; end-to-end mission success.
 - Limits: measure the environment and state what was actually applied.
 
 #### Mass, saturation, decoy, and mixed-threat vignette
+
 - Decision focus: where the defensive architecture loses track quality, decision capacity, engagement capacity, magazine depth, or mission protection as simultaneous demand increases.
 - Threat presentations: increasing raid size; increasing arrival rate; multiple approach axes; mixed airframes; decoys mixed with attack aircraft; reconnaissance preceding attack; repeated waves; threats with different emissions or control modes; bounded adaptation after the first defensive effect.
 - Test factors: number of simultaneous objects; track density; arrival spacing; classification mix; operator-to-track ratio; sensor and C2 processing load; effector inventory; reload, reset, thermal, or duty-cycle limits; assignment policy exercised; network load; background traffic.
@@ -885,12 +933,13 @@ Threat launch or scenario entry
 
 ### 4.6 Passive/active factorial template (page 09, sec 5)
 
-```
+```text
 Passive defense absent / active defense nominal
 Passive defense present / active defense nominal
 Passive defense absent / active defense degraded
 Passive defense present / active defense degraded
 ```
+
 Interactions to watch: active sensor emissions revealing the defended position; deception increasing false tracks or consuming effectors; displacement changing network or sensor coverage; emissions control reducing blue coordination; hardening preserving the mission after incomplete defeat; alternate paths increasing latency while improving resilience. Rule: do not report only the main effect when the interaction changes the operational conclusion.
 
 ### 4.7 EW/kinetic integration record templates (page 09, sec 6)
@@ -959,7 +1008,7 @@ Questions: Did the passive measure delay or prevent threat acquisition? Did it c
 
 ### 6.1 Threat-design chain (page 08, sec 1)
 
-```
+```text
 Decision uncertainty
 -> operational threat behavior
 -> performance-driving threat features
@@ -970,11 +1019,12 @@ Decision uncertainty
 -> observed red state
 -> bounded finding
 ```
+
 Rule: if the available representation cannot reproduce a performance-driving feature, redesign the question or narrow the conclusion.
 
 ### 6.2 Doctrine-to-evidence chain (page 09, sec 1)
 
-```
+```text
 Mission
 -> protected outcome
 -> friendly posture and conditions
@@ -992,11 +1042,12 @@ Mission
 -> test cards
 -> bounded finding
 ```
+
 Note: the doctrinal source uses Detect, Identify, Decide, Defeat. Page 09 inserts Track and Assess as explicit analytical transitions because test evidence must distinguish first awareness from a usable track, and an engagement event from verified effect. This is a T&E decomposition, not a doctrine replacement. Dissemination, handoff, command-and-control, and operator action cross the entire chain. (The Doctrine page's own chain is Detect -> identify -> decide -> disseminate -> defeat.)
 
 ### 6.3 Hybrid campaign sequence (page 08, sec 5)
 
-```
+```text
 Scripted baseline
 -> bounded-adaptive exploration
 -> diagnostic isolation
@@ -1004,6 +1055,7 @@ Scripted baseline
 -> free-play mission thread
 -> targeted regression
 ```
+
 Rule: do not merge exploratory and confirmatory runs into one undifferentiated result.
 
 ### 6.4 Minimum OPFOR campaign sequence (page 08, sec 13; ordered gate sequence)
@@ -1027,13 +1079,14 @@ Issue card -> card frozen during run -> record actual profile -> adjudicate devi
 
 ### 6.6 Representative doctrinal engagement chain (Doctrine page, system-of-systems)
 
-```
+```text
 Active or passive sensor detects the threat
 -> identification is checked against the friendly air picture
 -> the decision and warning are disseminated
 -> a squad-level defender or Stinger operator acts under engagement criteria
 -> platoon, company, or battalion layers continue the engagement until defeat
 ```
+
 The Stinger example: the weapon can operate outside FAAD C2, but its operational value depends on warning reaching the operator in time.
 
 ## 7. Worked examples & real data
@@ -1045,6 +1098,7 @@ The Jordan case shows manually flown quadcopters, small fixed-wing UAS, and airc
 ### 7.2 Observed practice numbers (OSINT compendium; label = observed practice, never doctrine; preserve caveats)
 
 Verified findings (3-vote adversarial verification, confidence high):
+
 - Ukrainian seven-phase combined-arms framework: survey, isolation, degradation, fixing, suppression, close combat/destroy, consolidation; UAVs in every phase. Emergent practice, not codified doctrine.
 - FPV kill zone: majority of Ukrainian FPV kills within ~3 km either side of the forward line of troops; fiber-optic outliers 10-20 km.
 - 60-80% of Ukrainian FPVs fail to reach their targets; tactical UAVs accounted for 60-70% of damaged/destroyed Russian systems as of early 2025; March 2026: 96% of 35,351 claimed monthly Russian casualties attributed to tactical drones (unverified Ukrainian General Staff claim).
@@ -1057,6 +1111,7 @@ Verified findings (3-vote adversarial verification, confidence high):
 - NATO C-UAS readiness gap: structured C-UAS capability absent from most NATO land forces (Oct 2024 RUSI assessment) against a 2028 readiness aiming mark.
 
 Refuted claims, DO NOT CITE (failed 3-vote verification):
+
 - Ukrainian drones account for >65% of destroyed Russian tanks (0-3)
 - Low-cost drones have "democratized air power," replacing traditional air forces (0-3)
 - Drone effectiveness depends less on technology than organizational integration, as stated (0-3)

@@ -5,10 +5,12 @@ Scope: the Valkryn Deployment Strategist Field Guide (condensed working referenc
 ## Sources fetched
 
 Assigned pages:
+
 - Field Guide: https://app.notion.com/p/Field-Guide-3c06f36564f780f8b838f01b8f2fad8b
 - Questions to Master: https://app.notion.com/p/Questions-to-Master-3be6f36564f7803eb931e541d33557d8
 
 Sub-pages of Questions to Master (lifecycle question sets):
+
 - 01 — Engagement Qualification & Stakeholder Authority: https://app.notion.com/p/6678ddd3f2934ad0a0d598b9f9686af9
 - 02 — Mission, System & Hypotheses: https://app.notion.com/p/4529ba8c0a104da79815583052d77232
 - 03 — Measures, Threat & Experimental Design: https://app.notion.com/p/a9faf8d4f6244d8e942dfc5157a71e9b
@@ -21,6 +23,7 @@ Sub-pages of Questions to Master (lifecycle question sets):
 - 10 — Follow-On Program, Success Metrics & Control Questions: https://app.notion.com/p/3a27aba42d794fcba5b7dcc913d79765
 
 DoD T&E Mastery Corpus (sub-page of Questions to Master) and its sub-pages:
+
 - DoD T&E Mastery Corpus: Policy, Guidance, and Literature by Lifecycle Phase: https://app.notion.com/p/3be6f36564f78136a248d2e67ac1c3b1
 - 01 · Foundations — Statute, Policy, and the T&E Ecosystem: https://app.notion.com/p/3be6f36564f78152b031d76214eecdd8
 - 02 · FRAME — Decision and Mission Framing: https://app.notion.com/p/3be6f36564f781a3b484dea9748c7ee2
@@ -40,7 +43,7 @@ Not fetched: pages in the brief's page map owned by other agents; the "Strategic
 ### 1.1 Identifier and naming scheme (Field Guide, "Naming and traceability")
 
 | Record | Format example |
-|---|---|
+| --- | --- |
 | Campaign | `CAMP-CUAS-2026-04` |
 | Question | `OQ-CUAS-017` |
 | Test Card | `TC-CUAS-TRK-004-v1.2` |
@@ -56,6 +59,7 @@ Rules: Never overwrite a run. Never reuse a run number. Test-card versions chang
 ### 1.2 Persistent control registers (Questions to Master root)
 
 Maintain these records across the lifecycle:
+
 - Decision and authority charter
 - Stakeholder and RACI register
 - Claim–hypothesis–measure traceability matrix
@@ -86,6 +90,7 @@ Maintain these records across the lifecycle:
 ### 1.4 Configuration baseline contents (QtM 02)
 
 Record a unique baseline identifier covering:
+
 - Hardware, software, firmware, algorithms, models, and mission-data files
 - Sensors, networks, C2 elements, interceptors, and effectors
 - Interface versions, serial numbers, security settings, thresholds, calibrations, and feature flags
@@ -99,6 +104,7 @@ Configuration check record at execution (Field Guide 6): hardware; software; fir
 ### 1.5 Claim–hypothesis register fields (QtM 02)
 
 For every decision-relevant claim:
+
 - Claim and source: contractual, operational, government, vendor, or promotional
 - Conditions under which the claim should hold
 - Decision relevance and priority
@@ -116,6 +122,7 @@ Discovery categorization rule (Field Guide 2): convert each customer statement i
 ### 1.6 Measure registry fields (QtM 03)
 
 For every measure:
+
 - Decision and hypothesis linkage
 - Mission outcome or system behavior represented
 - Exact definition, unit, numerator, and denominator
@@ -131,6 +138,7 @@ For every measure:
 Candidate C-UAS measures (QtM 03): detection probability and range; track-initiation range and track continuity; track and classification accuracy; false-alarm rate; early-warning buffer; sensor-to-C2, handoff, and engagement-decision latency; interceptor assignment time; probability of intercept and defeat; end-to-end mission success; operator workload; availability, recovery time, and mission resilience.
 
 Measure levels (Field Guide 3):
+
 - Component: detection probability; track error; track continuity; false/nuisance alarm rate; latency; reliability.
 - Interface: message success; translation error; handoff latency; correlation quality; data age; network availability.
 - Mission: warning time; engagement timeline; probability mission thread completes; number of simultaneous threats handled; defended-asset protection outcome; operator workload.
@@ -140,6 +148,7 @@ Measure classes (QtM 03): primary, secondary, leading, lagging, descriptive; plu
 ### 1.7 Threat model and coverage matrix fields (QtM 03)
 
 For each relevant threat class or variant:
+
 - Speed, altitude, route, maneuver, emissions, communications, navigation, autonomy, payload, and swarm behavior
 - Characteristics that drive blue-system performance
 - Representation: actual threat, validated surrogate, or generic representation
@@ -173,6 +182,7 @@ Field Guide variable classes (4.B): Independent factors (deliberately changed); 
 ### 1.9 Evidence-source plan fields (QtM 04)
 
 For each measure and diagnostic need:
+
 - Authoritative source and backup source
 - Independence from the system under test
 - Required position, timing, identity, state, effect, environmental, operator, and system-health data
@@ -185,6 +195,7 @@ For each measure and diagnostic need:
 ### 1.10 Measure-to-data map fields (QtM 04)
 
 For every registered measure:
+
 - Source system and field
 - Status: raw, processed, inferred, or manually annotated
 - Units, coordinate frame, schema, and semantics
@@ -197,6 +208,7 @@ For every registered measure:
 ### 1.11 Interface control and fallback matrix fields (QtM 04)
 
 For each mission-thread or evidence interface:
+
 - Source, destination, owner, and criticality
 - Protocol, API, interface-control document, authentication, and schema
 - Available and missing fields
@@ -209,6 +221,7 @@ For each mission-thread or evidence interface:
 ### 1.12 Authority and control matrix fields (QtM 05)
 
 For safety, range operations, airspace, spectrum, security, and residual risk:
+
 - Governing authority
 - Required approval or authorization
 - Approval owner and due date
@@ -229,6 +242,7 @@ Authorization and validity block: run initiator and sequence controller; safety,
 ### 1.14 Run adjudication record fields (QtM 06)
 
 Complete immediately after every run:
+
 - Planned versus actual sequence
 - Actual configuration, threat profile, operators, and conditions
 - Ground-truth and instrumentation validity
@@ -251,6 +265,7 @@ Field Guide 8 version: Change ID; triggering evidence; original plan; revised pl
 ### 1.16 Finding record fields (QtM 07)
 
 For every primary or consequential finding:
+
 - Claim, hypothesis, and decision linkage
 - Observed result and supporting runs
 - Exact configuration, threat, environment, operator, procedure, and method
@@ -300,7 +315,8 @@ For every follow-on or recurring program: next decision and deadline; controlled
 ### 1.21 Reusable asset metadata (Field Guide 9)
 
 Every reusable asset should carry:
-```
+
+```text
 Asset ID
 Version
 Originating campaign
@@ -339,9 +355,11 @@ At every transition of the C-UAS chain, record: information passed, source, dest
 ### 2.1 Measure formulas (Field Guide 5, notional C-UAS test card)
 
 1. Usable Warning Time:
-```
-time usable track enters C2 − time threat reaches defended-asset boundary
-```
+
+   ```text
+   time usable track enters C2 − time threat reaches defended-asset boundary
+   ```
+
 2. Detection Probability: `Valid detections / valid detection opportunities under the defined condition.`
 3. Track Position Error: blue track position versus independent ground truth.
 4. Track Continuity: fraction of required mission interval containing a valid track.
@@ -353,17 +371,20 @@ Ground-truth accuracy rule: "Ground-truth measurement error must be small enough
 ### 2.2 Adaptive-test priority score (Field Guide 8)
 
 Rank candidate tests using:
-```
+
+```text
 Decision importance
 × uncertainty reduction
 × likelihood of obtaining valid evidence
 ÷ time / cost / operational burden
 ```
+
 "A qualitative High / Medium / Low scoring system is usually sufficient."
 
 ### 2.3 Threshold origin rule (Field Guide 3)
 
 A threshold must originate from one of exactly six sources:
+
 1. mission need;
 2. requirement;
 3. safety constraint;
@@ -409,6 +430,7 @@ Mission → critical operational issues (COIs) → measures of effectiveness (MO
 ### 3.1 Field Guide operating gates (verbatim item lists)
 
 Pre-Campaign Gate:
+
 - [ ] Customer decision defined.
 - [ ] Operational questions identified.
 - [ ] System boundary defined.
@@ -425,6 +447,7 @@ Pre-Campaign Gate:
 - [ ] Customer understands intended outputs.
 
 Pre-Run Gate:
+
 - [ ] Correct Test Card/version.
 - [ ] Correct run ID.
 - [ ] Correct configuration.
@@ -440,6 +463,7 @@ Pre-Run Gate:
 - [ ] Expected evidence stated.
 
 Post-Run Gate:
+
 - [ ] Intended configuration executed.
 - [ ] Threat remained within profile.
 - [ ] Required data captured.
@@ -452,6 +476,7 @@ Post-Run Gate:
 - [ ] Next test priority assessed.
 
 Daily Closeout Gate:
+
 - [ ] Each operational question updated.
 - [ ] Invalid runs excluded appropriately.
 - [ ] Unexpected results adjudicated.
@@ -465,6 +490,7 @@ Daily Closeout Gate:
 ### 3.2 The Deployment Strategist's Standard (Field Guide, nine questions)
 
 At any point during a campaign, the Deployment Strategist should be able to answer:
+
 1. What customer decision are we supporting?
 2. What operational question are we answering now?
 3. What exact configuration is under test?
@@ -480,6 +506,7 @@ If any answer is unclear, the campaign has lost test traceability. Discipline: "
 ### 3.3 Ten continuous control questions (Questions to Master root)
 
 At every stage, the campaign lead should be able to answer:
+
 1. What exact customer decision are we supporting?
 2. Who has authority to make it?
 3. Who must accept the evidence for it to matter?
@@ -498,6 +525,7 @@ Operating principle: define each control once, approve it at the owning phase, v
 ### 3.4 Field Guide high-value question sets per phase
 
 Phase 1 (Role):
+
 - What decision must this testing enable?
 - What will the customer do differently if the answer is A versus B?
 - Which decision cannot currently be made because evidence is missing?
@@ -510,6 +538,7 @@ Phase 1 (Role):
 - Who must believe the result for it to be useful?
 
 Phase 2 (Discovery, RFI process), by category:
+
 - Mission and decision: What mission function must succeed? What are you protecting, detecting, tracking, deciding, or defeating? (Blue/Red Force Disposition; Protected Entity.) What decision will these results support? When must that decision be made? What constitutes mission failure? (Simple, Measurable, Approachable; tied to mission objectives.)
 - System: What exact hardware, software, firmware, model, mission-data, payload, and network configuration will be tested? Which components are optional? Which interfaces are mission-critical? Which component is expected to be the limiting node?
 - Claims: What does the vendor claim? Under what conditions was that claim established? Is the claim component-level or end-to-end? What claim matters operationally?
@@ -520,6 +549,7 @@ Phase 2 (Discovery, RFI process), by category:
 - Conflicting priorities: Are we optimizing maximum capability, reliability, cost, operator burden, interoperability, setup time, or deployment speed? Which trade is acceptable? Which trade is not?
 
 Phase 3 (Evidence planning):
+
 - What observation would support the claim? What observation would contradict it?
 - What is the dependent measure? What factor is being changed? What must remain controlled?
 - What independent ground truth exists? What uncertainty is tolerable? What comparison provides the answer?
@@ -527,27 +557,32 @@ Phase 3 (Evidence planning):
 - What performance level is operationally meaningful?
 
 Phase 4 (Test design):
+
 - Which factor is actually expected to cause the outcome? Which factors can be controlled? Which factors must be measured as covariates?
 - What is the baseline? How will configuration A be compared with configuration B?
 - How many valid opportunities are required? Which boundary conditions matter?
 - What failure should trigger a deeper diagnostic test?
 
 Phase 6 (Execution, before every run):
+
 - What exactly are we testing? Which factor is changing? What must stay constant?
 - Is the configuration known? Is ground truth valid? Are mandatory feeds healthy?
 - What would invalidate the run? What would cause an abort? What result would change the next test?
 
 Phase 7 (Debrief):
+
 - Was the run valid? What did we directly observe? What does analysis establish? What remains uncertain?
 - Can the result be reproduced? Did a test artifact affect the outcome? What condition was not represented?
 - What conclusion would be unsafe to make? What question should be tested next?
 
 Phase 8 (Adaptive):
+
 - Which uncertainty now dominates the decision? Which test has the highest probability of resolving it?
 - Did today's evidence make a planned test unnecessary? Did today's result expose a more important boundary?
 - Does changing the plan compromise comparability? Are we exploiting an interesting anomaly or pursuing a decision-relevant question?
 
 Phase 9 (Reuse):
+
 - What did we create that another campaign will need? What required expert judgment? Can that judgment be encoded?
 - What manual action should software automate? Which failure mode should become a regression test?
 - Which measure definition should become canonical? Which threat profile is reusable? Under what conditions is it valid?
@@ -556,6 +591,7 @@ Phase 9 (Reuse):
 ### 3.5 QtM 01: Engagement Qualification & Stakeholder Authority (complete question set)
 
 Decision charter:
+
 - What exact decision must be made, by when, and by which authorized organization?
 - Which alternatives are under consideration, including delay or no action?
 - What are the operational, contractual, budgetary, regulatory, or political consequences of acting, delaying, or choosing incorrectly?
@@ -564,18 +600,21 @@ Decision charter:
 - What bounded decision would remain supportable if results are unfavorable, mixed, or inconclusive?
 
 Engagement type and authority boundary:
+
 - Is the work a demonstration, experiment, characterization, comparison, or defensible evaluation?
 - Is Valkryn being asked to recommend, characterize, validate, certify, or authorize?
 - Which functions can Valkryn perform, and which decisions remain with government, range, safety, acquisition, certification, airworthiness, or other authorized organizations?
 - Has the customer already selected an answer and merely requested validation?
 
 Decision clock:
+
 - What event creates the decision deadline?
 - By what date must accepted evidence be available to affect the decision?
 - How much time is allocated to planning, contracting, integration, rehearsal, execution, analysis, review, acceptance, and contingency?
 - What is the latest viable date for each critical-path activity?
 
 Customer commitment:
+
 - Who is the sponsor, economic buyer, operating champion, and contracting authority?
 - Who can commit customer personnel, systems, data, vendor support, range access, and review time?
 - What budget and contracting vehicle are available?
@@ -583,6 +622,7 @@ Customer commitment:
 - Will the customer accept unfavorable, mixed, or inconclusive evidence?
 
 Feasibility screen:
+
 - Can representative blue systems, operators, supporting systems, threats or validated surrogates, and operating conditions be made available?
 - Can required conditions be created safely, legally, and within the decision window?
 - Can independent ground truth and sufficient instrumentation be established?
@@ -593,6 +633,7 @@ Feasibility screen:
 - What unresolved condition requires delay, rescoping, partnership, or decline?
 
 Stakeholder and authority register (for each role: named person or organization, authority, required participation, decision rights, escalation path):
+
 - Customer and mission roles: sponsor and economic buyer; mission owner and system owner; operating champion and operators; contract and budget authority; final decision-maker; results consumers; potential blockers.
 - Evidence authority: Which organization must rely on or accept the evidence? Who represents it during planning and review? What authority does it hold? Must it preapprove the method, measures, thresholds, repetitions, witnessing, documentation, or data format? What would cause it to reject the evidence? Who formally acknowledges method acceptance and final evidence acceptance?
 - Test and operational authority: Who owns range, airspace, spectrum, safety, security, and residual-risk decisions? Who may stop the test, authorize restart, approve plan changes, or accept deficiencies?
@@ -600,6 +641,7 @@ Stakeholder and authority register (for each role: named person or organization,
 - Valkryn ownership: Who owns campaign leadership, TestOS configuration, technical integration, data engineering, analysis, range operations, red activity, safety coordination, and customer communication? Who may make on-site scope, schedule, cost, and risk decisions?
 
 Evidence acceptance contract (align decision-maker and evidence authority before design begins):
+
 - Decision and deadline
 - Decision-critical uncertainty
 - Required evidence and acceptable uncertainty
@@ -612,6 +654,7 @@ Qualification gate statement: "The customer must make **this bounded decision** 
 ### 3.6 QtM 02: Mission, System & Hypotheses (complete question set)
 
 Mission definition:
+
 - Who must perform what mission, to protect which asset, force, population, or activity?
 - Against which threat classes and variants?
 - In what theater, terrain, weather, electromagnetic, communications, workload, and degraded or denied conditions?
@@ -620,6 +663,7 @@ Mission definition:
 - Which assumptions must remain true?
 
 CONOPS and mission thread:
+
 - What is the intended concept of operations?
 - Where does the system enter the mission thread, and what occurs immediately before and after its function?
 - Which operators, organizations, and supporting systems participate?
@@ -627,12 +671,14 @@ CONOPS and mission thread:
 - Which doctrine, tactics, techniques, and procedures govern employment?
 
 System boundary:
+
 - Is the object of evaluation a component, subsystem, platform, architecture, or end-to-end mission capability?
 - What is inside and outside the test boundary?
 - Which external services, supporting systems, operators, tactics, and procedures are part of the evaluated configuration?
 - Which dependencies will be controlled, observed, or treated as assumptions?
 
 Evaluation readiness boundary:
+
 - Has the system passed functional checkout and vendor acceptance?
 - Are known failures, limitations, and waivers documented?
 - Are operators trained sufficiently for the intended evaluation?
@@ -640,6 +686,7 @@ Evaluation readiness boundary:
 - What debugging is permitted before a run ceases to represent the frozen baseline?
 
 Failure-mode model:
+
 - What known failure modes exist at component, interface, configuration, operator, environment, threat, instrumentation, and method levels?
 - Which unknown failure boundaries must be sought?
 - What observations would distinguish competing causes?
@@ -651,12 +698,14 @@ Definition gate (proceed to evidence design only when): the mission and mission 
 ### 3.7 QtM 03: Measures, Threat & Experimental Design (complete question set)
 
 Claim–measure traceability:
+
 - Does every test activity address a registered hypothesis or decision-critical uncertainty?
 - Does every primary measure connect to a customer decision?
 - Are diagnostic measures sufficient to explain failures and distinguish competing causes?
 - Which measures are primary, secondary, leading, lagging, or descriptive?
 
 Decision and threshold logic:
+
 - Is each threshold a requirement, objective, contract value, operational need, or analyst judgment?
 - Is performance evaluated as binary, continuous, or conditional?
 - What trade-offs are permitted among measures?
@@ -666,6 +715,7 @@ Decision and threshold logic:
 - What result remains insufficient for any decision?
 
 Acceptance alignment (confirm with the evidence authority; freeze pass/fail and acceptance criteria before execution unless an approved change is recorded):
+
 - Measures and definitions
 - Thresholds and uncertainty limits
 - Analytical method
@@ -675,6 +725,7 @@ Acceptance alignment (confirm with the evidence authority; freeze pass/fail and 
 - Output and data-delivery format
 
 Red control and adversarial search:
+
 - Is red activity reproducing an operational profile, probing a boundary, or optimizing against a defined objective?
 - Which variables may red control, and within what safety and realism envelope?
 - What remains blinded from blue participants?
@@ -682,6 +733,7 @@ Red control and adversarial search:
 - Can every red profile and adaptive decision be reconstructed?
 
 Approved adaptation policy (define before execution):
+
 - Fixed and adaptable test-card elements
 - Conditions triggering repeat, expansion, variable isolation, or termination
 - Maximum permitted change without renewed design approval
@@ -690,6 +742,7 @@ Approved adaptation policy (define before execution):
 - Rule for selecting the next event based on information gain, decision value, cost, time, and risk
 
 Stop rules, separated by authority:
+
 - Safety or regulatory stop: governed by the campaign safety plan
 - Data-quality stop: required evidence cannot be recovered
 - Equipment stop: configuration or capability is no longer representative
@@ -702,18 +755,21 @@ Design approval gate (do not proceed to implementation until): claims, hypothese
 ### 3.8 QtM 04: Instrumentation, Data & Technical Integration (complete question set)
 
 Independent ground truth:
+
 - What source establishes authoritative position, timing, identity, state, and effect?
 - How will conflicting or missing ground truth be detected and reconciled?
 - Can ground truth be correlated with blue, red, range, operator, and environmental records?
 - Can timing provenance and clock drift be reconstructed later?
 
 Data model and event identity:
+
 - Can every campaign, test card, trial, configuration, threat profile, track, event, and result be uniquely identified?
 - Are identifiers consistent across systems?
 - Can objects and events be reconciled when systems use different identifiers, units, coordinate frames, or semantics?
 - Are manual annotations distinguished from measured or inferred data?
 
 Data lineage, integrity, and reproducibility (establish controls for):
+
 - Packet loss, missing records, duplicates, corruption, and conflicts
 - Invalid-data flags and exclusion reasons
 - Raw-data immutability
@@ -726,12 +782,14 @@ Data lineage, integrity, and reproducibility (establish controls for):
 - Independent audit of the complete evidence chain
 
 Calibration and synchronization:
+
 - What pre-test, daily, and post-test calibration checks are required?
 - How will instrument drift and clock drift be detected?
 - What happens when calibration or synchronization falls outside tolerance?
 - Can the campaign continue with degraded instrumentation, and what conclusions become unavailable?
 
 Data rights, protection, storage, and delivery:
+
 - Who owns and may access raw data, comparative results, and proprietary information?
 - What may Valkryn retain, reuse, aggregate, or disclose?
 - What is government-furnished, export-controlled, classified, CUI, or contractually restricted?
@@ -740,6 +798,7 @@ Data rights, protection, storage, and delivery:
 - In what schema, media, classification, and delivery format will the customer receive data?
 
 End-to-end rehearsal acceptance (before range execution, demonstrate that):
+
 - Every required source reaches the analysis environment.
 - Every trial and configuration is uniquely tagged.
 - Time synchronization and ground-truth correlation meet tolerance.
@@ -753,6 +812,7 @@ Technical integration gate: proceed only when the complete evidence chain has pa
 ### 3.9 QtM 05: Range, Safety, Security & Campaign Planning (complete question set)
 
 Range-fit assessment (compare every mission-required condition with range capability):
+
 - Airspace, ground footprint, terrain, clutter, horizon, and line of sight
 - Weather and environmental conditions
 - Spectrum and electromagnetic conditions
@@ -765,12 +825,14 @@ Range-fit assessment (compare every mission-required condition with range capabi
 Classify each condition: Representative; Acceptably approximated; Unsupported; Requiring mitigation or another site. Record how each gap limits external validity or campaign scope.
 
 Site and range selection:
+
 - What can Merced support, and what requires a government or partner range?
 - Which site best balances representation, authority, availability, cost, integration burden, and risk?
 - Can all required systems, threats, operators, and support personnel access the site?
 - What range-specific procedures or limitations alter the approved design?
 
 Safety and emergency control:
+
 - What hazards exist, with what probability, severity, and mission consequence?
 - What engineering, administrative, procedural, and emergency mitigations apply?
 - Who accepts residual risk?
@@ -778,6 +840,7 @@ Safety and emergency control:
 - Are safety-critical controls observable and testable before execution?
 
 Airspace and spectrum:
+
 - What airspace authorization, NOTAM, FAA coordination, weather minimum, and manned/unmanned deconfliction are required?
 - How will nonparticipating aircraft be detected and protected?
 - Which frequencies, power levels, periods, and propagation boundaries apply?
@@ -785,6 +848,7 @@ Airspace and spectrum:
 - How will unintended interference be detected, contained, and shut down?
 
 Security, legal, and contractual controls:
+
 - What are the classification, CUI, OPSEC, cybersecurity, photography, recording, clearances, secure-space, and need-to-know requirements?
 - Can foreign nationals participate, and under what restrictions?
 - What DD-254, accredited-system, export-control, incident-reporting, or public-release requirements apply?
@@ -792,6 +856,7 @@ Security, legal, and contractual controls:
 - What liability, warranty, intellectual-property, data-rights, weapons, hazardous-material, and comparative-result terms apply?
 
 Campaign scope baseline (define included and excluded; every exclusion must state its effect on the conclusions):
+
 - Decisions and hypotheses
 - Systems and configurations
 - Threats and profiles
@@ -803,6 +868,7 @@ Campaign scope baseline (define included and excluded; every exclusion must stat
 Resource-loaded schedule, plan milestones for: contracting, approvals, and site access; system and threat delivery; integration and data-chain rehearsal; operator and safety rehearsal; execution and reserve days; daily analysis and adaptive planning; final analysis, customer review, and evidence acceptance. Identify: critical path and latest viable dates; required personnel, competencies, shifts, equipment, spares, consumables, vendor support, travel, shipping, customs, lodging, power, networking, maintenance, storage, fuel, and batteries; owner and backup for each workstream; schedule, cost, and capability reserve.
 
 Command, communications, and battle rhythm:
+
 - What command structure, RACI, communication channels, terminology, and event identifiers apply?
 - What is the daily brief, run authorization, hotwash, analysis, and next-day planning rhythm?
 - Who receives live, preliminary, and final results?
@@ -818,6 +884,7 @@ Campaign plan gate (do not enter readiness review until): the selected environme
 Readiness review record fields per control: baseline or approval reference, status, deficiency, owner, due date, waiver authority, and supporting evidence.
 
 Technical readiness:
+
 - Approved blue and red configurations are installed, identified, and functional.
 - Required interfaces, adapters, feeds, buffering, and fallback paths work.
 - Ground truth, instrumentation, calibration, and time synchronization meet tolerance.
@@ -826,30 +893,35 @@ Technical readiness:
 - The end-to-end evidence chain has passed rehearsal.
 
 Operational readiness:
+
 - Operators are trained for the evaluated CONOPS and frozen procedures.
 - Red and blue roles, communications, launch, recovery, reset, and event timelines are rehearsed.
 - Range, vendor, customer, analysis, and technical-support personnel are on station or on call.
 - Decision, approval, stop, restart, and change authorities are available.
 
 Safety, regulatory, and security readiness:
+
 - Required range, airspace, spectrum, safety, security, and legal approvals are active.
 - Hazards, operating limits, stop conditions, and emergency procedures are briefed.
 - Flight termination, lost-link, geofencing, shutdown, monitoring, medical, fire, and recovery controls are tested.
 - Classification, CUI, access, recording, and incident-response controls are active.
 
 Data readiness:
+
 - Campaign, test-card, run, configuration, threat, track, and event identifiers are active.
 - Storage, backup, retention, classification, and access controls work.
 - Data-quality monitoring and analyst workflows are ready.
 - Ground truth, telemetry, operator actions, environmental conditions, and configuration can be correlated.
 
 Go/no-go gate questions:
+
 - Which controls must be green?
 - Which deficiencies may be accepted, by which authority, and with what effect on conclusions?
 - Which deficiencies require delay, redesign, rescoping, or cancellation?
 - Who makes and records the final go/no-go decision?
 
 Run control:
+
 - Confirm identifiers, configuration, profile, conditions, feeds, synchronization, and safety status before initiation.
 - Time-tag start, phase transitions, operator actions, deviations, anomalies, pauses, and completion.
 - Preserve the approved sequence and blinding unless an authorized change is recorded.
@@ -861,12 +933,14 @@ Execution gate: a run enters campaign analysis only when its adjudication record
 ### 3.11 QtM 07: Adaptive Replanning & Campaign Analysis (complete question set)
 
 Daily evidence review, four steps:
+
 1. Adjudicate available evidence: Which runs are valid, conditionally valid, or invalid according to their run records? What data are complete, incomplete, conflicting, or questionable? Which measures and hypotheses can each run support?
 2. Update hypotheses and uncertainty: Which hypotheses gained or lost support? What expected behavior failed to occur? What new uncertainty or failure boundary emerged? Is the observed effect repeatable and operationally significant?
 3. Identify decision-critical gaps: Which measures, hypotheses, or test-matrix cells remain unsupported? Which missing evidence has the greatest effect on the customer decision? Is another run likely to resolve the uncertainty? What is its expected decision value relative to time, cost, safety, and risk?
 4. Select the next event (apply the approved adaptation policy): repeat the run; change one variable; change the configuration; add or repair instrumentation; modify the threat profile; isolate a component or interface; stop a low-value line; expand into a newly identified failure boundary; end testing for sufficiency or futility. Select the event that maximizes information gain and decision value while preserving necessary comparability.
 
 Causal diagnosis loop (for each consequential anomaly or failure):
+
 1. Define the observation precisely.
 2. Identify candidate component, interface, configuration, operator, environment, threat, instrumentation, and method causes.
 3. Identify evidence that distinguishes competing explanations.
@@ -877,6 +951,7 @@ Causal diagnosis loop (for each consequential anomaly or failure):
 Rule: do not present a hypothesized root cause as a confirmed finding.
 
 Completed-campaign evidence validity:
+
 - Which runs are included or excluded, and why?
 - Could missingness or exclusion bias the result?
 - Are unresolved data conflicts material?
@@ -885,6 +960,7 @@ Completed-campaign evidence validity:
 - Can every result be traced to configuration, threat, conditions, operators, and method?
 
 Performance synthesis:
+
 - Where did performance meet, exceed, degrade below, or fail the agreed threshold?
 - Which variables and interactions drove the result?
 - What trade-offs exist among configurations, threats, measures, and mission outcomes?
@@ -898,6 +974,7 @@ Analysis-complete gate: analysis is complete only when every decision-relevant f
 Independent-reviewer test (the evidence package must allow answering): What was observed? How was it established? Under which exact conditions is it true? With what confidence and limitation? What must not be inferred? What decision implication follows?
 
 Architecture and mission assessment:
+
 - Which configuration performed best, against which threat, and under which conditions?
 - What trade-offs exist among configurations, measures, cost, complexity, resilience, and mission outcomes?
 - Where are coverage, timing, interface, authority, or engagement gaps?
@@ -916,11 +993,13 @@ Decision-ready gate (the authorized decision-maker can answer): What do we know?
 ### 3.13 QtM 09: Closeout, Productization & Regression (complete checklist set)
 
 Campaign closure checklist:
+
 - Deliverables and acceptance: contractual deliverables complete and delivered; customer received the agreed evidence package, data, limitations, exclusions, and open issues; evidence-review and acceptance status documented; actions, owners, funding needs, and completion dates recorded.
 - Data and knowledge: raw data, processed data, code, schemas, configurations, methods, and findings archived under the agreed retention policy; access permissions, classification, CUI, proprietary, export, and comparative-result controls reviewed; prohibited or temporary data deleted as required; the analysis can be reproduced and the tested configuration reconstructed.
 - Operations and property: equipment, sites, ranges, networks, and work areas restored; safety incidents, near misses, maintenance discrepancies, damage, and lost items closed or transferred to named owners; vendors and partners receive authorized feedback; sensitive and comparative results remain controlled.
 
 After-action review questions:
+
 - What worked, failed, or surprised the team?
 - Which assumptions were wrong?
 - Where did the campaign lose time, quality, or decision value?
@@ -930,12 +1009,14 @@ After-action review questions:
 - What must change before the next comparable campaign?
 
 Capability productization review questions:
+
 - Reusable method assets: Which decision decompositions, claim structures, hypotheses, measures, thresholds, test cards, threat profiles, acceptance structures, ground-truth methods, analytical methods, and report modules should become standard? Which assets transfer only within this mission class, and which transfer across domains?
 - Reusable technical assets: Which adapters, interfaces, schemas, transformations, data-quality checks, dashboards, calculations, and reports should become supported assets? Which temporary integration should be hardened? Which technical debt must be resolved before reuse?
 - Standard work and training: Which failure modes, integration risks, range constraints, vendor behaviors, safety patterns, and planning lessons must be encoded? What knowledge exists only in Casey's or a founder's head? What should become TestOS logic, templates, checklists, training, or reference material?
 - Product backlog: What should TestOS automate or preserve next? What should RangeOS monitor or control? What should Red Thread be able to vary, replay, or optimize? What must remain human-led? Which product change would most reduce the next campaign's cost, cycle time, staffing, or evidence risk?
 
 Minimum regression scope questions:
+
 - Which dependencies and findings are affected by the change?
 - What is the minimum sufficient evidence to restore confidence?
 - Which conditions do not require repetition, and why?
@@ -949,6 +1030,7 @@ Closeout gate: the campaign is closed only when obligations and records are comp
 ### 3.14 QtM 10: Follow-On Program, Success Metrics & Control Questions (complete question set)
 
 Next decision and evidence gap:
+
 - What is the customer's next consequential decision and deadline?
 - Which accepted findings support it?
 - What evidence remains missing or stale?
@@ -957,6 +1039,7 @@ Next decision and evidence gap:
 - What bounded follow-on evidence would change the next decision?
 
 Evidence-refresh program:
+
 - What recurring software, hardware, configuration, interface, mission-data, procedure, environment, or threat-update cadence exists?
 - Can Valkryn maintain the controlled evidence baseline established at closeout?
 - Can change classes map to predefined analysis, simulation, limited live regression, or full reevaluation packages?
@@ -966,6 +1049,7 @@ Evidence-refresh program:
 - What service level is required from change notice to refreshed evidence?
 
 Account and mission expansion:
+
 - Can the method transfer to another mission, location, program, command, or system architecture?
 - Which ontology, claims, measures, adapters, test cards, evidence relationships, and acceptance structures transfer?
 - What new integration, authority, threat, or range work is required?
@@ -974,6 +1058,7 @@ Account and mission expansion:
 - Does the opportunity reinforce Valkryn's strategy or create distracting bespoke work?
 
 Success scorecard questions:
+
 - Decision impact: Did the customer make a better or faster decision? Did accepted evidence arrive before the decision deadline? Did it materially reduce decision-critical uncertainty? Did an authorized organization accept, rely on, or act on it? Did it cause an acquisition, configuration, deployment, fielding, remediation, restriction, or rejection action? Did the customer understand the evidence's limitations and remaining risk?
 - Evidence quality: Was the campaign safe, legal, and within Valkryn's authority? Were configuration, threat, method, and conditions controlled? Were ground truth and instrumentation credible? Were data complete, traceable, and reproducible? Were conclusions appropriately bounded and independently reviewable? Were important failure boundaries and decision-relevant unknowns resolved?
 - Operating leverage: Did the campaign create reusable methods, data assets, technical assets, and product capability? Did it strengthen TestOS, RangeOS, Red Force, or Red Thread? Did it reduce founder dependency and bespoke integration? Will the next comparable campaign require fewer people, days, and custom changes? Did repeat economics and evaluator trust improve?
@@ -996,7 +1081,7 @@ Daily replanning steps (Corpus 05): 1. Add authenticated runs to the status disp
 
 ### 4.1 Standard Test Card (Field Guide 5, verbatim)
 
-```
+```text
 TEST CARD ID:
 VERSION:
 CAMPAIGN:
@@ -1095,7 +1180,8 @@ Source caveat, verbatim: "This is a recommended example, not a reconstruction of
 ### 4.3 Evidence chain template (Field Guide 3)
 
 For every important question create:
-```
+
+```text
 Question ID
 ↓
 Hypothesis
@@ -1114,11 +1200,12 @@ Decision threshold
 ↓
 Resulting customer action
 ```
+
 Rule: every run must map to at least one Question ID. No orphan runs.
 
 ### 4.4 Daily evidence board (Field Guide 7)
 
-```
+```text
 Question
 Evidence collected
 Current finding
@@ -1132,6 +1219,7 @@ Campaign closeout status per operational question: Resolved / Partially resolved
 ### 4.5 Evidence language discipline (Field Guide 7)
 
 Every conclusion receives exactly one category, with source examples:
+
 - Observed fact: "The tracking radar dropped the target for 6.2 seconds during Run 47."
 - Analysis: "The loss coincided with sector transition in three of five valid opportunities."
 - Inference: "Sector-transition behavior is a plausible contributor to the track loss."
@@ -1145,7 +1233,8 @@ Finding completeness rule: every finding identifies configuration + condition + 
 ### 4.6 Anomaly classification card (Field Guide 6)
 
 Do not immediately call an unexpected result a system failure. Classify:
-```
+
+```text
 System behavior?
 Test infrastructure?
 Threat deviation?
@@ -1166,7 +1255,7 @@ Unknown?
 ### 4.8 Responsibility matrix (Field Guide 1, "May not own" table)
 
 | Function | Primary owner | Deployment Strategist role |
-|---|---|---|
+| --- | --- | --- |
 | Customer decision | Customer | Supply bounded evidence |
 | Software/data integration | FDE | Define what must be integrated and why |
 | Adapter/code development | FDE / product engineering | Define requirement and acceptance need |
@@ -1180,6 +1269,7 @@ Unknown?
 ### 4.9 Decision evidence package contents (QtM 08)
 
 Assemble:
+
 - Decision, alternatives, deadline, and decision-critical uncertainty
 - Tested system boundary and configuration baseline
 - Mission, threat, environment, operators, procedures, and range representation
@@ -1257,7 +1347,7 @@ Loop: field friction → product requirement → engineering change → product 
 
 ### 6.1 Master continuity chain (Field Guide mission)
 
-```
+```text
 Customer need
 → operational question
 → claims and unknowns
@@ -1280,7 +1370,7 @@ Gate sequence extracted across pages: Qualification gate (01) → Definition gat
 
 ### 6.3 C-UAS mission thread (QtM 02) and kill chain (Field Guide 4)
 
-```
+```text
 Threat appears
 → Detection
 → Track initiation
@@ -1301,7 +1391,8 @@ Field Guide system-of-systems thread: `Threat → detect → track → identify 
 Test levels: Component test (one subsystem, bounded question; examples: radar detection, track accuracy, interceptor seeker acquisition); Interface test (two or more components, handoff behavior; examples: radar → C2, C2 → effector, track ID → engagement authorization); System-of-systems test (complete mission thread).
 
 Stress progression:
-```
+
+```text
 baseline
 → one-factor characterization
 → interfaces
@@ -1309,6 +1400,7 @@ baseline
 → stressing conditions
 → edge/failure boundary
 ```
+
 Establish baseline first: run the simplest representative configuration before stressing it.
 
 Edge-case library (Field Guide 4.E): minimum/maximum range; altitude/azimuth boundaries; terrain masking; clutter; track crossing; multiple simultaneous targets; rapid target-state change; low observable or RF-silent behavior; degraded network; delayed C2 messages; sensor dropout; operator saturation; software restart; loss/recovery of subsystem; environmental extremes achievable at the site.
@@ -1328,7 +1420,7 @@ Live run protocol: Before: the Deployment Strategist states card ID, run ID, con
 
 ### 6.7 Adaptive testing cycle (Field Guide 8)
 
-```
+```text
 Run tests
 → validate data
 → assess evidence
@@ -1336,6 +1428,7 @@ Run tests
 → revise the plan
 → run the next highest-value test
 ```
+
 Every adaptation must be traceable to a validated observation or evidence gap and still support the campaign's stated decision. Adaptation policy is defined before execution (fixed versus adaptable card elements, triggers, maximum unapproved change, approval authority per change class; QtM 03).
 
 ### 6.8 Day-of-test rhythm

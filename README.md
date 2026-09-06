@@ -11,11 +11,12 @@ unsourced number is a planning factor and is labeled as one.
 
 ## Where to read
 
-1. [CLAUDE.md](CLAUDE.md): codebase guide, commands, architecture, invariants, code style.
-2. [Document index](docs/README.md): current reference, dated records, source material.
-3. [Engineering reference](docs/ENGINEERING_REFERENCE.md): equations, one-source facts,
+1. [AGENTS.md](AGENTS.md): concise agent instructions and working rules.
+2. [Project guide](docs/PROJECT_GUIDE.md): features, data flow and refactor boundaries.
+3. [Document index](docs/README.md): current reference, dated records, source material.
+4. [Engineering reference](docs/ENGINEERING_REFERENCE.md): equations, one-source facts,
    UI rules, the T&E module, the standards table.
-4. [Verification guide](docs/VERIFICATION.md): browser, import and recovery procedures.
+5. [Verification guide](docs/VERIFICATION.md): browser, import and recovery procedures.
 
 Source and tests decide what is built.
 
@@ -26,5 +27,6 @@ npm ci
 npm run dev -- --port <port> --strictPort
 ```
 
-The type check, tests, lint and build commands are in [CLAUDE.md](CLAUDE.md#commands).
-Run them before a commit that touches source.
+Use Node.js 22.12 or later. Run `npm run check` for the complete local gate. Commands and
+browser/parity procedures are in the [verification guide](docs/VERIFICATION.md).
+Documentation maintenance and handoffs follow the [workflow](docs/WORKFLOW.md).

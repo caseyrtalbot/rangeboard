@@ -14,7 +14,7 @@ Page purpose (verbatim): "Convert decision-critical questions into approved hypo
 Each question must include these fields:
 
 | Field | Notes |
-|---|---|
+| --- | --- |
 | Stable identifier | Record identifier (Q per brief ID scheme) |
 | Exact wording | Free text, verbatim question |
 | Customer decision linkage | Link to a Decision record (DEC) |
@@ -26,6 +26,7 @@ Each question must include these fields:
 | Evidence authority | Person/role |
 
 Priority enum (verbatim definitions):
+
 - **P1:** The decision cannot be supported without an answer.
 - **P2:** The answer changes risk, configuration, or conditions of use.
 - **P3:** The answer improves understanding but does not control the current decision.
@@ -39,6 +40,7 @@ Hypothesis statement template (verbatim):
 > Under **[configuration, threat, and condition]**, the system produces **[observable behavior or mission effect]**, measured by **[measure]**, relative to **[threshold or comparison]**.
 
 Additional fields to record on each hypothesis:
+
 - Null hypothesis.
 - Competing explanations.
 - Evidence that supports the primary hypothesis.
@@ -49,6 +51,7 @@ Additional fields to record on each hypothesis:
 - Final disposition owner.
 
 Rules:
+
 - "Use directional language only when the design can support it."
 - "Do not write a causal hypothesis when the campaign can only show association."
 
@@ -57,6 +60,7 @@ Rules:
 Measure categories: mission, performance, suitability, safety, and diagnostic measures ("as needed").
 
 For each measure, record (exact ordered list):
+
 1. Measure identifier and name.
 2. Decision question and hypothesis.
 3. Exact definition.
@@ -81,6 +85,7 @@ For each measure, record (exact ordered list):
 Reproducibility rule (verbatim): "Two qualified analysts must be able to apply the definition to the same valid data and obtain the same result."
 
 Counter-UAS measure examples (verbatim list — seed content for a measure library):
+
 - Probability of detection by range band.
 - First-detection range.
 - First-stable-track range.
@@ -100,6 +105,7 @@ Counter-UAS measure examples (verbatim list — seed content for a measure libra
 ### 1.4 Threshold record (Step 4)
 
 For every threshold, record:
+
 - Minimum acceptable value.
 - Objective value.
 - Failure boundary.
@@ -113,6 +119,7 @@ Result-state enum implied: meet | miss | mixed | inconclusive — each must have
 ### 1.5 Evidence-source record (Step 5)
 
 For each measure, specify:
+
 - Primary source.
 - Backup source.
 - Independence from the system under test.
@@ -129,6 +136,7 @@ Rule: "If one source can silently fail, define an independent health indicator."
 ### 1.6 Threat record (Step 6) — one per operationally distinct profile (THR)
 
 Record:
+
 - Platform or phenomenon.
 - Size, speed, altitude, route, maneuver, emissions, communications, navigation, autonomy, payload, and coordination behavior.
 - Features that drive system performance.
@@ -143,6 +151,7 @@ Record:
 ### 1.7 Condition record (Step 6) — one per test state (COND)
 
 Include:
+
 - Terrain
 - Clutter
 - Weather
@@ -158,6 +167,7 @@ Include:
 ### 1.8 Factor classification (Step 7)
 
 Every factor is classified with one of four types (verbatim definitions):
+
 - **Independent variable:** Changed on purpose to answer the question.
 - **Controlled factor:** Held fixed and verified.
 - **Recorded covariate:** Not controlled but measured for analysis.
@@ -168,6 +178,7 @@ Specific effects that must be recorded as covariates: learning, fatigue, order, 
 ### 1.9 Test-matrix cell (Step 8)
 
 For each matrix cell, state:
+
 - Question and hypothesis.
 - Configuration.
 - Threat and condition.
@@ -181,6 +192,7 @@ For each matrix cell, state:
 - Priority and drop order.
 
 Required matrix coverage rows (matrix must include):
+
 - Baseline condition.
 - Positive control when available.
 - Negative control.
@@ -194,6 +206,7 @@ Required matrix coverage rows (matrix must include):
 ### 1.10 Run-list entry (Step 12)
 
 Each run-list entry states:
+
 - Card identifier. (TC per brief ID scheme)
 - One-sentence purpose.
 - Matrix cell.
@@ -211,6 +224,7 @@ No closed-form equations appear in this page. It defines calculation *procedures
 ### 2.1 Mission-arithmetic timeline decomposition (Step 4)
 
 For timeline-driven measures, "work backward from the mission effect." The threshold is derived by summing/decomposing these timeline components (verbatim list of terms):
+
 - Threat speed
 - Release range
 - Processing time
@@ -228,6 +242,7 @@ Computed at: threshold-setting time (pre-execution, Step 4).
 ### 2.2 Threshold source precedence (Step 4)
 
 Ordered precedence for where a threshold value comes from (use the first applicable):
+
 1. Law, regulation, or approved safety limit.
 2. Contract or validated operational requirement.
 3. Mission arithmetic.
@@ -238,6 +253,7 @@ Ordered precedence for where a threshold value comes from (use the first applica
 ### 2.3 Repetition / sample-size determinants (Step 9)
 
 Repetition is determined from (inputs to the sample-rationale, no formula given):
+
 - Expected variability.
 - Minimum meaningful effect.
 - Desired confidence or uncertainty width.
@@ -247,6 +263,7 @@ Repetition is determined from (inputs to the sample-rationale, no formula given)
 - Acceptance-authority requirement.
 
 Independence and validity rules (verbatim):
+
 - Do not treat repeated samples within one run as independent runs.
 - Do not treat several tracks from one common failure state as fully independent.
 - Use at least enough repetition to see stability for each P1 condition.
@@ -258,6 +275,7 @@ Gate: "The analysis lead documents the sample rationale before design approval."
 ### 2.4 Run-priority scoring (Step 12)
 
 Score each candidate event by:
+
 - Decision impact.
 - Uncertainty reduction.
 - Ability to distinguish competing explanations.
@@ -275,6 +293,7 @@ Rule: "Use the score to inform judgment. Do not let a formula override mission o
 ### 3.1 Stop / hold / repeat / adapt rules (Step 11) — four conditional lists, verbatim
 
 **Stop immediately** (any item triggers immediate stop):
+
 - Safety or regulatory trigger.
 - Loss of required authority.
 - System state outside the safe envelope.
@@ -285,6 +304,7 @@ Rule: "Use the score to inform judgment. Do not let a formula override mission o
 - Security or classification violation.
 
 **Hold before the next run** (any item blocks the next run):
+
 - Unresolved data-quality failure.
 - Unknown configuration state.
 - Procedure deviation affecting a comparison.
@@ -293,6 +313,7 @@ Rule: "Use the score to inform judgment. Do not let a formula override mission o
 - Weather, spectrum, or range state near a limit.
 
 **Repeat** (any item makes the run invalid and requires a repeat):
+
 - A written validity rule failed.
 - A required source is missing or outside tolerance.
 - The actual condition did not match the card.
@@ -300,6 +321,7 @@ Rule: "Use the score to inform judgment. Do not let a formula override mission o
 - A material anomaly has been corrected and confirmation is required.
 
 **Adapt** (any item permits controlled replanning):
+
 - Evidence already answers a question.
 - A new P1 unknown appears.
 - A planned run no longer changes the decision.
@@ -312,6 +334,7 @@ Conditional governance rule: "For every adaptation class, name the approver and 
 ### 3.2 Design gate checklist (final gate)
 
 Proceed only when ALL of:
+
 - Every P1 question has a defensible evidence path.
 - Measures are reproducible.
 - Thresholds have accepted rationale.
@@ -349,7 +372,7 @@ The question record (1.1), hypothesis record (1.2), measure registry record (1.3
 ## 5. Outputs & deliverables
 
 | Deliverable | Contents | When produced |
-|---|---|---|
+| --- | --- | --- |
 | Frozen ranked question set | Question records with P1/P2/P3 priority | Step 1, before design work |
 | Hypothesis set | Hypothesis records incl. null, competing explanations, inconclusive criteria | Step 2 |
 | Measure registry | 20-field measure records + threshold records | Steps 3–4 |
@@ -367,7 +390,7 @@ The question record (1.1), hypothesis record (1.2), measure registry record (1.3
 
 ### 6.1 Evidence-planning chain (mandatory traceability chain, verbatim)
 
-```
+```text
 Decision
 → Question
 → Claim or unknown

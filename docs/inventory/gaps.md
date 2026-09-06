@@ -4,7 +4,6 @@ What the public record does not establish, and how the app treats it. A gap is
 a deliberate output: an entry recorded here is one the inventory declines to
 guess at.
 
-
 ## Command, control and fusion
 
 ### Northrop Grumman AiON
@@ -96,7 +95,6 @@ guess at.
 **Why:** The 2024 DoD Strategy for Countering Unmanned Systems is classified with only an unclassified fact sheet, which media.defense.gov refuses to serve to automated fetch.
 
 **App treatment:** Do not encode a human-in-the-loop constraint as a system property on any C2 model. It is a posture setting, and RangeBoard already models posture with Roe ('hold' / 'tight' / 'free'), which is the right home for it.
-
 
 ## Directed energy
 
@@ -190,7 +188,6 @@ guess at.
 
 **App treatment:** The app's EnvironmentSpec carries precipitation ('clear' | 'rain' | 'fog') and derates radar, EO/IR and acoustic sensors. It does NOT derate effectors. A HEL in fog is the most weather-sensitive object on a C-UAS board and the engine currently ignores that. This is an ENGINE gap, not a data gap, and is worth raising separately: no defensible derate factor exists in the public record, so any implementation would need to be an explicitly labelled planning factor.
 
-
 ## EO/IR and acoustic
 
 ### Sky Fortress (Ukraine) acoustic node
@@ -262,7 +259,6 @@ guess at.
 **Why:** New and thinly reported.
 
 **App treatment:** Not modeled. RangeBoard has no per-threat acoustic signature field, so a quiet threat cannot be expressed. Flagged as a structural limit: every acoustic range in the library implicitly assumes a conventionally noisy target.
-
 
 ## Electronic attack
 
@@ -351,7 +347,6 @@ guess at.
 **Why:** Retrieval failure, not absence of the source.
 
 **App treatment:** The JamBehavior and deconfliction findings in this submission rest on OEM effect descriptions plus the NATO ACT statement, NOT on US doctrine. A follow-on pass should confirm them against ATP 3-01.81 before any of it is presented as doctrinal.
-
 
 ## System components (gap fill)
 
@@ -455,7 +450,6 @@ guess at.
 
 **App treatment:** Every CRS-sourced claim in this file carries the relay note in its condition field. A reviewer with congress.gov access should spot-check three sentences: the L-MADIS component list, the Increment 2.1 XBAEU sentence, and the MRIC component list.
 
-
 ## Kinetic effectors
 
 ### Coyote Block 3 / 3NK
@@ -558,7 +552,6 @@ guess at.
 
 **App treatment:** Decide before merging. Interceptor entries are unaffected (one round = one engagement). Gun entries are affected: Skyranger 30 is delivered as 300 ready rounds per the brief, which is roughly 12-15 bursts. If the engine meaning is bursts, use 12 for Skyranger 30 and leave the existing gun entries alone.
 
-
 ## Radar
 
 ### Raytheon XBAEU (eXpeditionary Battlefield AESA External Unit)
@@ -624,7 +617,6 @@ guess at.
 **Unknown:** None of the four has any published detection range conditioned on a UAS class. The public figures are instrumented ranges or counterfire ranges against completely different targets.
 
 **App treatment:** All four ship with role-default REPRESENTATIVE rings and an explicit 'no public small-UAS range' line in the description. Never promote an instrumented range into a detect ring.
-
 
 ## Passive RF / electronic support
 
@@ -707,7 +699,6 @@ guess at.
 **Why:** Physics, not secrecy.
 
 **App treatment:** No model. This is the limitation to carry on EVERY RF entry. RangeBoard already enforces it correctly in src/analysis/sensorEnv.ts rfDetectable(): only navMode 'rf-manual' and 'mixed' are held. A planner who fills the board with RF rings and runs lib-fpv-fiber against them should see near-total leakage, and that is the correct answer, not a bug.
-
 
 ## Systems researched and excluded
 

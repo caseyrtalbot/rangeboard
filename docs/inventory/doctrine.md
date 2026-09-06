@@ -39,7 +39,6 @@ The four-verb chain matches the DoD C-sUAS Strategy. Two things the app does not
 
 > At home and abroad, U.S. forces will increasingly encounter sUAS and must be able to detect, track, identify, and, if necessary, deter, deny, or defeat them.
 
-
 ### D / TRK / ID / TGT / ENG / FX stage ladder
 
 - **App:** `src/panels/analysis/ThreatPicture.tsx lines 107-112; referenced in CLAUDE.md design-system section`
@@ -50,7 +49,6 @@ Against F2T2EA: D substitutes for FIND (defensible, detect is the DoD C-sUAS Str
 
 > Targeting in phase 5 consists of five steps: find, fix, track, target, and engage. ... Dynamic targeting has often been called F2T2EA (find, fix, track, target, engange, and assess) or the kill chain and has also been used for specifically engaging TSTs.
 
-
 ### SensorRole: early-warning
 
 - **App:** `src/model/types.ts`
@@ -58,7 +56,6 @@ Against F2T2EA: D substitutes for FIND (defensible, detect is the DoD C-sUAS Str
 - **Verdict:** MATCHES
 
 > Adequate early warning of air and missile attacks provides the reaction time necessary for friendly forces to seek shelter or take appropriate action. Early warning of hostile air and missile attacks to support cueing and early engagement is vital for a layered defense.
-
 
 ### SensorRole: surveillance
 
@@ -68,7 +65,6 @@ Against F2T2EA: D substitutes for FIND (defensible, detect is the DoD C-sUAS Str
 
 > Determine Surveillance Coverage Areas. Defended airspace and its approaches must be under continuous surveillance to provide early warning and support engagements.
 
-
 ### SensorRole: target-acquisition
 
 - **App:** `src/model/types.ts`
@@ -76,7 +72,6 @@ Against F2T2EA: D substitutes for FIND (defensible, detect is the DoD C-sUAS Str
 - **Verdict:** MATCHES
 
 > ADA further contributes to targeting by defending field artillery target acquisition radars that are required to detect targets and deliver ordnance. Target acquisition radars are generally considered a high priority asset by maneuver commanders.
-
 
 ### SensorRole: tracking
 
@@ -86,7 +81,6 @@ Against F2T2EA: D substitutes for FIND (defensible, detect is the DoD C-sUAS Str
 
 > Sensor and weapon placements are selected based on reconnaissance to maximize surveillance, tracking, and engagements.
 
-
 ### SensorRole: fire-control
 
 - **App:** `src/model/types.ts`
@@ -94,7 +88,6 @@ Against F2T2EA: D substitutes for FIND (defensible, detect is the DoD C-sUAS Str
 - **Verdict:** MATCHES
 
 > In addition to positioning sensors for wide-area surveillance purposes, planners must balance the need to achieve fire control quality track data to support engagements by weapon systems.
-
 
 ### SensorRole: classification
 
@@ -106,7 +99,6 @@ The app names the output where it means the function. In doctrine a sensor perfo
 
 > ID is the process of determining the friendly or hostile character of an unknown detected contact and the product (classification) of that process. Assigning ID requires ID authority and criteria.
 
-
 ### Roe = hold | tight | free, labelled ROE in the UI
 
 - **App:** `src/model/types.ts Roe type; src/panels/Toolbar.tsx ROE_PILLS; src/panels/AnalysisPanel.tsx roe-label`
@@ -116,7 +108,6 @@ The app names the output where it means the function. In doctrine a sensor perfo
 These three values are weapons control statuses, not rules of engagement. Weapons control status is ONE of the six AMD ROE categories. Calling the control ROE is a category error. Beyond the naming, two of the three mappings are substantively wrong: (1) app free = engage on first detection, but doctrinal WEAPONS FREE is a NOT-POSITIVELY-IDENTIFIED-AS-FRIENDLY test, not a detection test - the app removes the friendly-PID discriminator that is the entire content of the status; (2) app hold = zero engagement windows, but doctrinal WEAPONS HOLD preserves the inherent right of self-defense. Only tight maps correctly.
 
 > The WCSs are free, tight, and hold. 1. Weapons Free-The least restrictive status; when any target not positively identified as friendly in accordance with current ROE may be engaged. ... 2. Weapons Tight-The normal status. Units may only fire on targets identified as hostile in accordance with current ROE. ... 3. Weapons Hold-The most restrictive status. Units may only fire in self-defense or when ordered by proper higher authority.
-
 
 ### ThreatClassification = pending | unknown | suspected | hostile
 
@@ -128,7 +119,6 @@ The app's ladder derives from a vendor source, not doctrine. Divergences, exactl
 
 > Pending - A track for which identification is to be determined. (STANAG 1241) ... Unknown - An evaluated track which has not been identified. (STANAG 1241) ... Assumed friend - A track which is assumed to be a friend because of its characteristics, behavior, or origin. (STANAG 1241) ... Friend - A track belonging to a declared friendly nation. (STANAG 1241) ... Neutral - A track whose characteristics, behavior, origin or nationality indicate that it is neither supporting nor opposing friendly forces. (STANAG 1241) ... Suspect - A track which is potentially hostile because of its characteristics, behavior, origin or nationality. (STANAG 1241) ... Hostile - A track which is eligible to be engaged. (STANAG 1241)
 
-
 ### UasGroup = 1 | 2 | 3 | 4 | 5
 
 - **App:** `src/model/types.ts; UasSpec.group across the seed threats`
@@ -136,7 +126,6 @@ The app's ladder derives from a vendor source, not doctrine. Divergences, exactl
 - **Verdict:** MATCHES
 
 The enum is the official partition. Defining parameters are maximum gross takeoff weight, normal operating altitude, and speed in KIAS. Two doctrinal details the app should carry: the altitude reference changes from AGL (Groups 1-2) to MSL (Groups 3-5), and the app's UasSpec.altBandFt has no AGL/MSL flag; and small UAS is a C-UAS term of art meaning Groups 1-3, not a group.
-
 
 ### engagement authority
 
@@ -148,7 +137,6 @@ Doctrine separates three authorities the app models as none. ID authority assign
 
 > Engagement authority is an authority vested with a JFC that may be delegated to a subordinate commander that permits an engagement decision. The AMD authority with engagement authority is permitted to authorize engagement of an air or missile threat. For AMD engagements within the theater, the authority is normally delegated to the AADC who may further delegate the engagement authority to tactical levels (e.g., RADC/SADC). The degree of delegation must be consistent with the ROE, the DAL, and the inherent right of self-defense.
 
-
 ### sensor-to-shooter
 
 - **App:** `not used in app source; commonly used in C-UAS trade vernacular and in the research brief`
@@ -158,7 +146,6 @@ Doctrine separates three authorities the app models as none. ID authority assign
 Full-text search for sensor-to-shooter and sensor to shooter returned ZERO hits across JP 3-01 (2017), JP 3-30 (2019), JP 3-60 (2007), FM 3-01 (2025), ATP 3-01.81 (2017), the DoD C-sUAS Strategy (2021) and CRS R48477 (2025). Doctrine uses sensors, shooters and C2 descriptively but never as a compound term. Recommend not using it as a UI label.
 
 > The development of sensor networking and advanced engagement capabilities (e.g., launch on remote and engage on remote) have added complexity to the development of a sensor employment plan.
-
 
 ### kill chain (app definition: the Connection list; sim.killChainConnected accepts sensor to C2 to effector, or direct sensor to effector)
 
@@ -170,7 +157,6 @@ Doctrine uses kill chain in two senses: a sequence of ACTIONS (F2T2EA, JP 3-60) 
 
 > Control of AMD engagements is executed through various personnel and agencies that collectively constitute the engagement authorities in the kill chain. ... The kill chain is the successive linkage of commanders who can authorize engagements of air and missile threats. The kill chain emanates from the joint force commander, who normally designates the AADC as the engagement authority. In joint operations, the kill chain is, in essence, a joint engagement authorization chain. In divisional and below operations, the kill chain consists of designated ADA commanders who control and direct SHORAD units in accordance with the promulgated ROE.
 
-
 ### kill web
 
 - **App:** `not used in app source`
@@ -178,4 +164,3 @@ Doctrine uses kill chain in two senses: a sequence of ACTIONS (F2T2EA, JP 3-60) 
 - **Verdict:** NOT_DOCTRINAL
 
 Full-text search returned ZERO hits for kill web across JP 3-01 (2017), JP 3-30 (2019), JP 3-60 (2007), FM 3-01 (2025), ATP 3-01.81 (2017), the DoD C-sUAS Strategy (2021) and CRS R48477 (2025). It is JADC2 and service concept vocabulary, not an approved joint or Army doctrinal term in the publications retrieved. Recommend the app does not adopt it; if it must appear, label it explicitly as non-doctrinal concept vocabulary.
-

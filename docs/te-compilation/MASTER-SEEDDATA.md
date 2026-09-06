@@ -4,6 +4,7 @@ Synthesis lane: SEED DATA. The real-world content the app ships with.
 Compiled from extraction files in this directory. Primary sources: 12-jiatf401.md, 11-instrumentation-worked-cards.md, 08-threat-doctrine.md, 13-field-guide-questions.md, 01-roles-qualification.md, 09-measures-quantdesign.md, 10-quant-guide.md.
 
 Labeling convention used on every JIATF number:
+
 - `[REAL]` = fact from the JIATF-401 page or interview transcript. Real-world, may be sparse or unverified.
 - `[ILLUSTRATIVE]` = value from the notional case study. Source states: "All configurations, thresholds, quantities, schedules, calculations, and results are illustrative. They are not actual JIATF-401 or Valkryn test results." Ship as demo/fixture data with an illustrative watermark.
 - `[INFERRED]` = synthesis-added structure not attested verbatim in source. Verify before shipping as canon.
@@ -16,7 +17,7 @@ Formulas are NOT duplicated here. Full math lives in MASTER-CALCULATIONS.md. Thi
 
 ### 1.1 Organization facts `[REAL]` (source: file 12 sec 7.1; file 13 sec 7; file 08 sec 7.3)
 
-```
+```text
 organization: {
   id: "JIATF-401",
   name: "Joint Interagency Task Force 401",
@@ -38,12 +39,14 @@ organization: {
 Mission problem `[REAL]`: large evaluation backlog of C-UAS systems. Kill-chain node classes evaluated: early-warning radars, tracking radars, command and control, interceptors, effectors.
 
 Two customer decisions `[REAL]`:
+
 1. Which systems performed as vendors claimed (which to buy).
 2. Which combination formed the best C-UAS kill chain for a specific threat, place, and set of operating conditions ("HARDEN THE KILL CHAIN"). A component can work and still fail to add sufficient value to the complete kill chain.
 
 Defining discovery `[REAL]`: Valkryn asked for the test card. Answer: "We don't have one." Customer knew objectives and desired decisions, not required data, measures, or analytical method. Valkryn built the test card from the decision backward.
 
 Engagement facts `[REAL]`:
+
 - Team: Hugh (deployment strategist); Andrew (forward-deployed engineer; connected systems under test, structured system data, red-air telemetry, TestOS).
 - Timeline: government expected roughly six months; Valkryn responded "we'll do it the next two weeks"; execution "a couple days out there in Jordan."
 - Red air: manually flown quadcopters and small fixed-wing UAS representing Shahed-type threats; Mugin-3/MUGEN-3 named. Red air supplied live telemetry (ground-truth basis). Exact profiles, payloads, speeds, altitudes not established.
@@ -56,7 +59,7 @@ Not established for the real event `[REAL, explicit gap list]`: number of each s
 ### 1.2 Campaign record `[ILLUSTRATIVE]` (file 12 sec 1.1)
 
 | Field | Value |
-|---|---|
+| --- | --- |
 | Campaign ID | `J401-EW-01` |
 | Title | Early-Warning Layer Operational Value Evaluation |
 | Engagement type | Paired comparison with characterization and end-to-end confirmation |
@@ -69,6 +72,7 @@ Customer request (verbatim seed text) `[ILLUSTRATIVE]`:
 > "Compare the current C-UAS architecture with an architecture that includes an early-warning radar. Determine whether the added sensor produces enough operational warning to justify integration and follow-on testing against the selected threat."
 
 Workbench clarification questions (app behavior, verbatim; question bank `QB-CLAR-10`, see section 6.2):
+
 1. What decision will the result support?
 2. What is the baseline architecture?
 3. What exact change defines the treatment architecture?
@@ -84,7 +88,7 @@ Workbench clarification questions (app behavior, verbatim; question bank `QB-CLA
 
 #### 1.3.1 Real systems inventory `[REAL]` (file 12 sec 1.12; specs sparse; mark unverified in the library)
 
-```
+```text
 systems: [
   { id: "SYS-PICOGRID", name: "Picogrid C2", alias: "Legion", role: "command-and-control", specs: null },
   { id: "SYS-RPS42",    name: "RADA RPS-42", role: "tracking-radar",
@@ -109,20 +113,22 @@ capabilityTags: ["Computer Vision", "RF Sensing", "Jam-Resistant Comms", "Autono
 ```
 
 Functional architecture sketch `[REAL, verbatim node order]`:
-```
+
+```text
 Early-warning radar -> Acquisition Radar -> Tracking radar -> Fire Control Radar / Command and control -> Interceptor -> Red-air target
 ```
+
 [AMBIGUOUS: source diagram mixes an acquisition radar and fire-control radar into the chain with irregular formatting; C2 sits beside fire control.]
 
 #### 1.3.2 Case-study configuration nodes `[ILLUSTRATIVE]` (file 12 sec 1.3)
 
-```
+```text
 Configuration A (Baseline):  TRK-1 -> C2-1 -> ENG-1
 Configuration B (Treatment): EW-1 -> FA-1 -> TRK-1 -> C2-1 -> ENG-1
 ```
 
 | Node ID | Role |
-|---|---|
+| --- | --- |
 | `EW-1` | Early-warning radar |
 | `FA-1` | Fusion adapter |
 | `TRK-1` | Tracking radar |
@@ -137,7 +143,7 @@ Excluded from primary comparison: broad suitability and sustainment; performance
 ### 1.4 Threat profile `[ILLUSTRATIVE]` (file 12 sec 1.4)
 
 | Field | Value |
-|---|---|
+| --- | --- |
 | Threat ID | `THR-G2-FW-01-v1.2` |
 | Representation | Generic Group 2 fixed-wing surrogate |
 | Threat mission | One-way approach to the protected boundary |
@@ -154,6 +160,7 @@ Excluded from primary comparison: broad suitability and sustainment; performance
 Fidelity caveat (carry on every output): the surrogate supports radar and timeline characterization only. Fidelity must be assessed feature by feature. It does not establish performance vs an actual Shahed-type system, other guidance, other signature, or an adaptive threat.
 
 Protected-boundary vignette `[ILLUSTRATIVE]`:
+
 - Fixed protected point. Protected boundary radius: 1,000 m.
 - Threat begins scored approach outside the largest expected detection region.
 - One approved approach line per paired block.
@@ -165,7 +172,7 @@ Condition record: `COND-DAY-CLEAR-NET-NOM-v1` (day, clear weather, nominal netwo
 ### 1.5 Variable classification `[ILLUSTRATIVE]` (file 12 sec 1.6)
 
 | Class | Members |
-|---|---|
+| --- | --- |
 | Independent variable | Architecture A or B |
 | Screened factors | Approach azimuth; altitude; speed |
 | Held controls | Threat article within block; flight profile within pair; tracking-radar settings; C2 build and settings; operator crew and procedure; sensor emplacement; protected boundary; engagement timeline assumptions |
@@ -176,7 +183,7 @@ Each nuisance risk receives an assigned mitigation: blocking, reset, randomizati
 
 ### 1.6 Operational questions, hypotheses, predictions `[ILLUSTRATIVE]` (file 12 sec 1.7)
 
-```
+```text
 questions: [
   { id: "Q-01", primary: true,
     text: "Does Configuration B provide at least 25 seconds more usable warning time than Configuration A under matched threat and condition cells?",
@@ -211,6 +218,7 @@ questions: [
 ### 1.7 Customer decision rules `[ILLUSTRATIVE]` (file 12 sec 1.8)
 
 Configuration B advances to the next phase if ALL:
+
 1. Estimated paired warning-time increase is at least 25 seconds.
 2. The uncertainty interval does not indicate a material negative effect.
 3. Median warning time is at least 90 seconds in the core condition.
@@ -223,7 +231,7 @@ Partial-miss rule: a threshold miss in one geometry can result in a restricted r
 
 ### 1.8 Action-chain time inputs `[ILLUSTRATIVE]` (file 12 sec 1.9; seconds)
 
-```
+```text
 actionChain: {
   operatorDecision: 8,
   assignment: 4,
@@ -237,7 +245,7 @@ actionChain: {
 
 ### 1.9 Sample-planning inputs `[ILLUSTRATIVE]` (file 12 sec 1.10)
 
-```
+```text
 samplePlan: {
   minMeaningfulPairedImprovement_s: 25,
   expectedSdPairedDifferences_s: 30,
@@ -253,7 +261,7 @@ samplePlan: {
 ### 1.10 Measure instances M-01..M-10 `[ILLUSTRATIVE]` (file 12 sec 2.1; full definitions and formulas in MASTER-CALCULATIONS.md)
 
 | ID | Name | One-line definition | Dictionary counterpart `[INFERRED]` |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | M-01 | Usable warning time (primary) | Truth boundary-crossing time minus decision-ready C2 track time; unit = one independently reset threat presentation | CUAS-MSN-UWT-010 |
 | M-02 | Paired warning-time improvement | Config B warning time minus Config A warning time; pairs share threat profile, factor cell, and block | derived (none) |
 | M-03 | Probability of detection | Valid opportunities with a valid detection over total valid detection opportunities; report by range band, altitude, azimuth, speed, configuration | CUAS-SEN-PD-001 |
@@ -266,6 +274,7 @@ samplePlan: {
 | M-10 | Mission margin | Usable warning time minus required action-chain time minus uncertainty reserve | derived (none) |
 
 Decision-ready track criterion (M-01; also a reference constant, section 5.4): requires ALL of:
+
 1. Correct truth-object association.
 2. Required position and velocity fields present.
 3. Track age within 1.0 second.
@@ -277,7 +286,7 @@ Decision-ready track criterion (M-01; also a reference constant, section 5.4): r
 Factor space: 3 azimuths x 2 altitudes x 2 speeds = 12 condition cells.
 
 | Factor | Levels | Cell-ID token |
-|---|---|---|
+| --- | --- | --- |
 | Approach azimuth | centerline; sensor-sector boundary; off-axis | `AZ-CL` `[INFERRED]`, `AZ-BND` (attested), `AZ-OFF` `[INFERRED]` |
 | Altitude (m AGL) | 60; 120 | `ALT-60` (attested), `ALT-120` `[INFERRED]` |
 | Speed (m/s) | 20; 30 | `SPD-20` `[INFERRED]`, `SPD-30` (attested) |
@@ -287,7 +296,7 @@ Attested cell-ID grammar: `AZ-BND / ALT-60 / SPD-30`.
 Stage structure:
 
 | Stage | Content | Valid opportunities |
-|---|---|---|
+| --- | --- | --- |
 | Stage 0 | Method controls: positive control (known favorable detection); negative or background-only surveillance interval; full data-chain rehearsal; configuration-switch and reset rehearsal | 4 (non-comparison) |
 | Stage 1 | Screening comparison: 12 cells x one matched A/B pair each; A/B order randomized within each block and balanced for which configuration runs first | 24 |
 | Stage 2 | Focused augmentation: 8 cells by preapproved rule (4 highest-uncertainty cells; 2 smallest-margin cells; 2 cells needed to distinguish a geometry effect from an interface effect); one more matched A/B pair each | 16 |
@@ -298,6 +307,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 ### 1.12 Issued card `TC-J401-EW-COMP-01-v1.0` `[ILLUSTRATIVE]` (file 12 sec 4.2)
 
 **Control ribbon**
+
 - Card: `TC-J401-EW-COMP-01-v1.0`
 - Run: generated at release
 - Matrix cell: `AZ-BND / ALT-60 / SPD-30`
@@ -306,6 +316,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 - Condition: `COND-DAY-CLEAR-NET-NOM-v1`
 
 **Intent**
+
 - Question: Does Configuration B add at least 25 seconds of usable warning time in the sector-boundary geometry?
 - Prediction: Configuration A will provide 60-80 seconds. Configuration B will provide 95-125 seconds.
 - Changed factor: early-warning layer absent or present.
@@ -313,6 +324,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 - Secondary results: handoff success; C2 latency; continuity; position RMSE; false-track rate.
 
 **Required state** (pre-run checklist, run crew):
+
 - Tracking radar, C2, operator procedure, threat profile, and engagement timing are unchanged within the pair.
 - Stale tracks and queues are cleared.
 - Configuration manifest matches the selected A or B state.
@@ -320,6 +332,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 - Clock offset is within the measure limit.
 
 **Procedure** (15 numbered steps, roles embedded):
+
 1. Test conductor states card, run ID, matrix cell, and selected configuration.
 2. Data monitor confirms required sources and common-time health.
 3. Operator confirms the selected configuration without changing approved settings.
@@ -337,6 +350,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 15. Run the automated data and validity check before the paired run.
 
 **Event marks** (ordered vocabulary; render as large tap buttons; timestamps feed M-01, M-04, M-08):
+
 1. Threat enters eligibility region.
 2. First valid detection.
 3. First stable track.
@@ -349,6 +363,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 10. Run complete.
 
 **Run-specific hold conditions** (test conductor; hold before the run if ANY is true):
+
 - Configuration state is unknown.
 - Truth or common time is not healthy.
 - Queues or tracks from the prior run remain.
@@ -358,6 +373,7 @@ Totals: 24 + 16 + 8 = 48 valid scored opportunities. Required scored attempts at
 Governance hook: general safety and range stops remain in the active field plan; the card does not repeat them in full.
 
 **Preliminary use rule** (4-state enum, post-run adjudication):
+
 - `Usable`: all primary events and states pass.
 - `Limited`: the run supports named sensing measures but not warning or latency.
 - `Repeat`: a required validity condition fails.
@@ -370,6 +386,7 @@ Lean-card policy (what stays on the card vs moves to linked records): keep only 
 ### 1.13 Campaign execution rules `[ILLUSTRATIVE]` (file 12 secs 3.3, 3.4, 3.5)
 
 Run-ordering rules (schedule generator):
+
 - Pair A and B within the same day and weather block.
 - Reverse pair order across blocks.
 - Do not change altitude and azimuth at the same moment when the result would be difficult to diagnose.
@@ -379,6 +396,7 @@ Run-ordering rules (schedule generator):
 - Separate exploratory augmentation from confirmatory evidence.
 
 Preapproved adaptation rules (day-of conditional logic):
+
 - IF required truth, configuration, or timing fails THEN repeat the run.
 - IF a handoff failure appears twice in the same geometry THEN add one diagnostic pair.
 - IF the observed warning margin is within +/-10 seconds of zero THEN add one boundary cell.
@@ -388,6 +406,7 @@ Preapproved adaptation rules (day-of conditional logic):
 - Keep each adaptation inside an approved rule; preserve the original and revised run lists.
 
 Data-validity rules (per run; validity is assigned BY MEASURE, not only by run). A run supports usable warning time only if ALL hold:
+
 - Truth covers the complete opportunity.
 - Threat speed, altitude, and route remain inside tolerance.
 - Configuration IDs are known.
@@ -400,7 +419,7 @@ A run may remain valid for detection probability and invalid for latency.
 ### 1.14 Instrumentation data-field manifest `[ILLUSTRATIVE]` (file 12 sec 1.11)
 
 | Source | Required fields |
-|---|---|
+| --- | --- |
 | Threat truth | Independent GNSS/INS position; truth update rate at least 10 Hz; position uncertainty target 1.5 m or better in the scored region; threat-object ID; actual route, altitude, speed, heading, boundary crossing; telemetry state and gaps |
 | EW-1 | Plots; tracks; detection state; quality/confidence; sensor status; configuration snapshot |
 | TRK-1 | Plots and tracks; track quality; position and velocity; track initiation, drop, reacquisition; configuration snapshot |
@@ -414,7 +433,7 @@ Timing uncertainty budget inputs `[ILLUSTRATIVE]` (file 12 sec 2.6; math in MAST
 ### 1.15 T-30 preparation schedule `[ILLUSTRATIVE]` (file 12 sec 6.5; working-day countdown)
 
 | Window | Activities |
-|---|---|
+| --- | --- |
 | T-30 to T-21 | Conduct customer discovery; freeze the primary decision and questions; identify the exact system builds; select threat profiles; load prior evidence; build the first measure set; identify required source fields |
 | T-20 to T-14 | Connect source feeds; verify identifiers and clocks; register sensors and truth sources; validate threat flight profiles; run Configuration A and B bench checks; test queue and state reset |
 | T-13 to T-8 | Freeze factor space; run sample-size review; generate the matrix; generate cards; compute every primary measure from rehearsal data; correct data and interface defects |
@@ -423,7 +442,7 @@ Timing uncertainty budget inputs `[ILLUSTRATIVE]` (file 12 sec 2.6; math in MAST
 ### 1.16 Six-day field rhythm `[ILLUSTRATIVE]` (file 12 sec 6.6)
 
 | Day | Plan |
-|---|---|
+| --- | --- |
 | 1 | Execute controls; run the first four A/B pairs; validate the warning-time and handoff calculations |
 | 2 | Continue screening pairs; cover remaining core geometries; review variation and invalid-run causes |
 | 3 | Complete the 12 screening pairs; select focused augmentation cells |
@@ -432,20 +451,25 @@ Timing uncertainty budget inputs `[ILLUSTRATIVE]` (file 12 sec 2.6; math in MAST
 | 6 | Execute end-to-end confirmation; use reserve time for validity repeats only |
 
 Adaptive daily cycle (case-study controlled sequence) `[ILLUSTRATIVE]`:
-```
+
+```text
 Run -> validate -> calculate -> compare with prediction -> update evidence gap -> select the next approved cell
 ```
+
 Real-world JIATF-401 cycle `[REAL]`:
-```
+
+```text
 Run the planned tests -> review the collected evidence -> identify open data gaps
 -> determine which gaps matter to the decisions -> create the next day's plan -> collect the missing evidence
 ```
+
 Contrast stated in source: this replaces "blindly following a static card"; each day's results change the priority of the next day's work.
 
 Canonical phase flow (navigation model): DEFINE -> DESIGN -> QUANTIFY -> CALCULATE -> PREPARE -> ISSUED CARD -> EXECUTE -> ASSESS -> DEBRIEF -> ACT.
 
 Decision-backward planning logic `[REAL]`:
-```
+
+```text
 Government decision -> questions that must be answered -> measures that answer those questions
 -> data needed to calculate the measures -> test conditions needed to produce the data
 -> runs and flight profiles -> findings and remaining gaps
@@ -454,7 +478,8 @@ Government decision -> questions that must be answered -> measures that answer t
 ### 1.17 Illustrative results set `[ILLUSTRATIVE - fixture data; every number below is notional]` (file 12 secs 2.7, 2.8, 7.2)
 
 Evidence accounting:
-```
+
+```text
 resultsAccounting: {
   controlRehearsal: 4,
   scoredAttempts: 58,
@@ -471,7 +496,7 @@ resultsAccounting: {
 Primary results:
 
 | Measure | Config A | Config B | Delta / note |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Usable warning time, median (matched pairs) | 76 s | 123 s | Median paired improvement 46 s; 95% bootstrap interval 35 to 57 s; exceeds 25 s minimum meaningful effect |
 | Mission margin, median | -14 s (76-80-10) | +33 s (123-80-10) | Baseline late at median |
 | 90 s threshold achievement | 3 of 20 = 0.15 | Matched: 18 of 20 = 0.90, Wilson 95% approx 0.70-0.97. Matched + confirmatory: 25 of 28 = 0.893, Wilson 95% approx 0.73-0.96 | Interval too wide for a universal 90% claim; supports the screening and next-phase decision |
@@ -485,6 +510,7 @@ Primary results:
 Geometry effect (sector-boundary cell): median paired improvement 28 s; 2 of 6 Config B opportunities below the 90 s threshold; 2 of 3 handoff anomalies. Main residual performance risk.
 
 Worked example values (fixtures; math in MASTER-CALCULATIONS.md):
+
 - Example warning calc: threat 3,600 m from boundary at decision-ready, ground speed 30 m/s: warning = 120 s; margin = 120 - 80 - 10 = 30 s.
 - Sensitivity, faster threat: distance 3,690 m, speed 30 -> 35 m/s: warning 105.4 s; margin 15.4 s.
 - Sensitivity, longer engagement: represented time to effect +20 s: revised chain 100 s; revised requirement 110 s; Config B median margin 123 - 110 = +13 s; Config A median margin 76 - 110 = -34 s.
@@ -493,7 +519,7 @@ Worked example values (fixtures; math in MASTER-CALCULATIONS.md):
 Hypothesis evaluation results:
 
 | Hypothesis | Result |
-|---|---|
+| --- | --- |
 | H-01 | Supported for the tested factor space (46 s; interval 35-57; min effect 25) |
 | H-02 | Directionally supported with a geometry limitation (0.6 s added latency; 25/28; anomalies cluster at sector boundary) |
 | H-03 | Supported under tested conditions (-0.02 vs -0.03 allowed; 34 m vs 50 m limit) |
@@ -507,6 +533,7 @@ Customer finding (verbatim seed text):
 Recommended customer action (with restrictions): proceed with Configuration B for the next controlled phase; use the tested sensor placement and software baseline; do not claim coverage outside tested approach geometries; treat the sector-boundary region as a known limitation; keep the current operator procedure until the nuisance-track workflow is tested; do not generalize to another threat signature or guidance method.
 
 Required corrective work (numbered):
+
 1. Correct stale-object handling in FA-1/C2-1.
 2. Add correlation diagnostics to the Workbench data view.
 3. Repeat the sector-boundary condition after the correction.
@@ -536,12 +563,14 @@ Campaign-local `[ILLUSTRATIVE]`: `J401-EW-01`; `Q-01`..`Q-05`; `H-01`..`H-05` (n
 Field Guide ID grammar examples (seed the ID generator): `CAMP-CUAS-2026-04`; `OQ-CUAS-017`; `TC-CUAS-TRK-004-v1.2`; `CFG-BLUE-20260818-03`; `THR-G2-FW-LOW-02-v2`; `RUN-0047`; `DEV-###`. Register series: `OQ-001...`, `CLM-001...`, `UNK-001...`, `ASM-001...`.
 
 ---
+
 ## 2. Worked card templates (seed card library)
 
 Six seed cards ship with the app: five gold-standard worked cards (file 11 sec 4) plus one complete notional card (file 13 sec 4.2). Every value in brackets `[...]` is a placeholder that must resolve to a controlled record before issue. Source disclaimer (carry on all six): "These cards are illustrative designs, not reconstructions of a Valkryn campaign and not Valkryn performance results."
 
 Card section schema (union of the five worked cards; the app's card template; file 11 sec 4.1):
-```
+
+```text
 Control (Card ID, Title, Version/status)
 -> Traceability (Decision, Question, Hypothesis, Measures, Matrix cell)
 -> Purpose
@@ -559,6 +588,7 @@ Control (Card ID, Title, Version/status)
 -> Allowed conclusion
 -> Prohibited conclusion
 ```
+
 Version/status enum: `{draft, approved, issued}`.
 
 ### 2.1 Card `TC-CUAS-SEN-CHAR-001` - Detection and stable-track characterization by geometry
@@ -653,10 +683,12 @@ Version/status enum: `{draft, approved, issued}`.
 4. Planned repetition: Valid engagement opportunities `[design]`; Threat/effector article blocks `[design]`; Configuration order `[design]`; Rare severe failures `[handling rule]`; Reset/maintenance criteria `[record]`.
 5. System and threat state: Blue architecture/configuration `[ID]`; Interceptor/effector article and state `[ID]`; Threat profile/article `[ID]`; Engagement and defended-asset boundaries `[geometry record]`; Operator procedure `[ID]`; Inventory and readiness state `[record]`.
 6. Event chain (freeze the exact event criterion for each stage):
-```
-qualifying track -> decision-ready track -> assignment -> authorization if represented
--> launch/release -> guidance -> intercept -> effect -> defeat assessment -> boundary or mission outcome
-```
+
+   ```text
+   qualifying track -> decision-ready track -> assignment -> authorization if represented
+   -> launch/release -> guidance -> intercept -> effect -> defeat assessment -> boundary or mission outcome
+   ```
+
 7. Data and truth: threat and interceptor trajectories; sensor/C2 track and decision logs; assignment and launch/release events; effector health/guidance state; independent intercept/effect evidence; boundary crossing and threat mission outcome; common time and spatial registration inside approved uncertainty.
 8. Procedure:
     1. Confirm complete blue/red configurations and truth coverage.
@@ -751,21 +783,25 @@ Source caveat, verbatim (carry on the card): "This is a recommended example, not
 - Allowed and prohibited conclusions are explicit.
 
 ---
+
 ## 3. Threat / OPFOR seed content (file 08)
 
 ### 3.1 Threat-profile parameter sets (file 08 sec 1.2; one version-controlled profile per operationally distinct presentation; any performance-affecting change forks a new profile or recorded variant)
 
 Threat mission / intended effect (enum, one or more):
-```
+
+```text
 ["Reconnaissance or target development", "Persistent observation", "Route or site reconnaissance",
  "One-way attack", "FPV attack", "Munition delivery", "Decoy or defensive-system stimulation",
  "Electronic attack or relay", "Saturation or magazine depletion", "Combined reconnaissance and attack",
  "Post-strike assessment", "Other stated mission behavior"]
 ```
+
 Rule: do not infer payload effect from airframe type alone.
 
 Physical and kinematic profile fields:
-```
+
+```text
 ["Airframe class and relevant UAS group", "Dimensions and weight when relevant", "Payload state",
  "Speed bands", "Altitude bands", "Climb, descent, acceleration, and turn behavior",
  "Endurance required for the test", "Route and approach axis", "Launch point or entry point",
@@ -774,20 +810,24 @@ Physical and kinematic profile fields:
  "Recovery, impact, timeout, or lost-link behavior",
  "Formation spacing and timing for multi-aircraft events"]
 ```
+
 Rule: use ranges when natural variation is part of the threat; use exact values when repeatability must isolate a blue-system factor.
 
 Control, navigation, and autonomy fields (record separately):
-```
+
+```text
 ["Manual control", "Waypoint or preplanned navigation", "GNSS dependence",
  "Inertial or alternate navigation", "EO or other terminal guidance",
  "Automated target recognition or tracking", "Lost-link behavior",
  "Behavior after navigation degradation", "Behavior after control-link degradation",
  "Human intervention points", "Degree of autonomy actually exercised during the run"]
 ```
+
 Rule: do not label an aircraft "autonomous" from a product description; record the behavior executed in the test.
 
 Emissions and observable-signature fields:
-```
+
+```text
 ["Command-link behavior", "Video-link behavior", "Frequency or band",
  "Channel, waveform, duty cycle, and power when available and relevant", "Frequency agility",
  "Emission timing", "RF-silent portions of flight", "Navigation emissions or dependencies",
@@ -795,18 +835,22 @@ Emissions and observable-signature fields:
  "Transponder, identification, or cooperative-track state",
  "Any signature augmentation used for range safety or truth collection"]
 ```
+
 Rule: a safety beacon, tracker, transponder, or telemetry radio can change the representation. Record it as an augmentation and assess whether it can affect blue detection or identification.
 
 Coordination and raid behavior fields (multi-aircraft):
-```
+
+```text
 ["Number of aircraft", "Same-type or mixed-type composition", "Simultaneous or sequential entry",
  "Approach axes", "Spacing in time and distance", "Altitude deconfliction", "Decoy-to-attack ratio",
  "Reconnaissance-to-attack relationship", "Cooperative or independent behavior", "Re-tasking logic",
  "Response to blue emissions or effects", "Repeated-wave timing", "End condition for the raid"]
 ```
+
 Rule: "Swarm" is not a sufficient profile. State the coordination behavior actually represented.
 
 Threat adaptation fields: define the observable trigger and the allowed response. Seed trigger/response examples:
+
 - Change altitude after detection of a stated blue emission.
 - Change route after a stated engagement cue.
 - Shift control method after a stated degradation condition.
@@ -815,13 +859,15 @@ Threat adaptation fields: define the observable trigger and the allowed response
 Rule: never allow an undefined instruction to "act realistically."
 
 Threat-operator state fields:
-```
+
+```text
 ["Experience with the specific aircraft", "Experience with the script or mission",
  "Familiarity with the range", "Information available before and during the run",
  "Ability to observe blue-system behavior", "Permitted coaching", "Permitted retries or corrections",
  "Workload and number of aircraft controlled", "Fatigue and run-order effects",
  "Communication delay", "Manual intervention count"]
 ```
+
 Rule: operator identity is not a proficiency description. If red-operator variation can change the result: hold it, block on it, randomize it, or record it as a covariate.
 
 Representation class (enum, file 08 sec 1.3): `actual threat` | `validated surrogate` | `generic representation` | `model/simulation/constructive` | `hybrid`. The label alone does not establish adequacy; complete the fidelity assessment.
@@ -831,14 +877,15 @@ Representation class (enum, file 08 sec 1.3): `actual threat` | `validated surro
 Fidelity state enum:
 
 | State | Meaning | Required treatment |
-|---|---|---|
+| --- | --- | --- |
 | Faithful | Feature represented within the tolerance required by the measure | Record the verification method and observed tolerance |
 | Approximated | Feature represented imperfectly but useful for a bounded purpose | State the difference, expected direction of effect, and allowed conclusion |
 | Omitted | Feature absent | State which measures and conclusions cannot use the run |
 | Unknown | Available evidence cannot establish the relationship | Treat generalization as unresolved; do not assume equivalence |
 
 Minimum feature list (19 rows, one per feature):
-```
+
+```text
 ["Mission behavior", "Airframe size and shape", "Payload state", "Speed and altitude",
  "Maneuver and terminal behavior", "Route and geometry", "Radar signature", "RF emissions",
  "EO/IR appearance", "Acoustic signature", "Control method", "Navigation method", "Autonomy",
@@ -854,7 +901,7 @@ Rules: never calculate one overall fidelity score that hides a critical omission
 ### 3.3 OPFOR execution modes (file 08 sec 1.5)
 
 | Mode | Define (required fields) | Best uses | Limitation |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Scripted | Exact initial state; route or maneuver sequence; timing and speed tolerances; trigger points; allowed corrections; abort behavior; reset state; information available to red; invalidating deviations | Baseline characterization; direct configuration comparison; sensor performance across geometry or range; latency comparison; confirmatory repetitions; regression testing | May not expose weaknesses that depend on adversary adaptation |
 | Bounded-adaptive | Red objective; observable triggers; menu of permitted responses; bounds for altitude, route, emissions, timing, maneuver; information red may use; information withheld from red; maximum number or sequence of adaptations; required logging of trigger and response; measures designated exploratory or confirmatory | Blue response to route or altitude changes; EW-reactive behavior; alternate approach selection; decision-chain resilience; controlled exploration of defensive boundaries | Adaptive choices are endogenous and can confound a simple treatment comparison. Preserve the complete choice history; avoid claiming classical independent repetitions unless the analysis supports it |
 | Free-play | Red objective; starting resources and state; prohibited actions; safety and range bounds; time limit; information available; required event and decision log; instrumentation minimum; conditions that end the event | Failure discovery; human-machine interaction; defensive coordination; novel adversary behavior; end-to-end operational stress | Shows an outcome occurred under one observed interaction; does not estimate probability of success across the operating envelope |
@@ -864,7 +911,7 @@ Hybrid campaign sequence: `Scripted baseline -> bounded-adaptive exploration -> 
 Red variable classification (6 classes; classify every threat variable before card issue):
 
 | Class | Meaning | Execution treatment |
-|---|---|---|
+| --- | --- | --- |
 | Independent variable | Changed deliberately to answer the question | Set the planned levels, order, and comparison |
 | Held control | Must remain within tolerance | Verify before and during the run |
 | Bounded red choice | Red may select within a stated envelope | Record the choice, trigger, time, and rationale |
@@ -879,15 +926,18 @@ Red deviation types (seed enum, 12; file 08 sec 1.10): altitude outside toleranc
 ### 3.4 Threat-coverage matrix seed (file 08 sec 1.8)
 
 Candidate threat rows (12):
-```
+
+```text
 ["Single manually controlled quadcopter", "Single waypoint-controlled aircraft",
  "RF-silent or reduced-emission segment", "FPV attack profile", "Reconnaissance orbit",
  "One-way attack profile", "Decoy followed by attack", "Mixed reconnaissance and attack",
  "Repeated waves", "Multi-axis raid", "Saturation or capacity stress",
  "Adaptive response to blue action"]
 ```
+
 Candidate condition columns (10):
-```
+
+```text
 ["Fixed site or moving force", "Open terrain, complex terrain, or urban clutter",
  "Day, night, and transition light", "Clear, adverse, and changing weather",
  "Permissive, congested, contested, and degraded spectrum",
@@ -895,6 +945,7 @@ Candidate condition columns (10):
  "Nominal and degraded sensor states", "Nominal and depleted effector states",
  "Normal and elevated operator workload"]
 ```
+
 Cell-selection criteria (6; do not attempt every combination): resolves a P1 uncertainty; represents the expected operating center; probes a likely failure boundary; distinguishes competing explanations; tests a degraded state that could change the decision; confirms a previously observed weakness.
 
 VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are threat presentations traced to the VOLT (Validated Online Lifecycle Threat, DIA-validated under DIAI 5000.002; forecasts adversary capability at IOC and IOC+10 years). Row features: UAS group and airframe class; guidance and RF profile; speed and altitude; raid size; resistance to countermeasures. Columns: electromagnetic environment including contested spectrum; clutter; day and night; rules-of-engagement constraints. Guidance-mode enum: `remote control | waypoint | electro-optical terminal | RF-silent | fiber guidance`. Raid size: one aircraft to a swarm. Flight profile: e.g., loiter or one-way attack. Include UAS Groups 1 through 3. Response layers: Sensing; Command and control; Defeat; Suitability. Government reference scenario set: JIATF-401 and JCO Yuma demonstration series.
@@ -902,6 +953,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 ### 3.5 Nine seeded vignettes (file 08 sec 4.5; each instantiates the 22-item mission-thread package)
 
 #### V-01 Fixed-site defense
+
 - Decision focus: whether the configured architecture provides sufficient warning, identification, engagement opportunity, defeat, and assessment to protect a defined fixed asset under the tested threat and background conditions.
 - Threat presentations: single reconnaissance aircraft; single attack aircraft; reconnaissance followed by attack; decoy followed by attack; mixed low- and higher-altitude approaches; multi-axis raid; repeated waves; reduced-emission or RF-silent segment; threat adaptation after blue emission or engagement.
 - Test factors: sensor placement; active and passive sensing mix; early-warning sensor included or excluded; C2 and network path; friendly-air and background-track density; day, night, weather, and clutter; effector type and assignment sequence; passive-defense state; operator workload; one component degraded or unavailable; magazine, duty-cycle, or recovery state.
@@ -910,6 +962,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: do not generalize fixed placement, stable power, centralized infrastructure, or persistent connectivity to maneuver operations.
 
 #### V-02 Maneuver formation
+
 - Decision focus: whether the formation retains usable warning and defensive action while moving, halting, displacing, changing geometry, and operating with variable connectivity.
 - Threat presentations: route reconnaissance; flank or rear approach; pop-up from terrain masking; FPV or one-way attack during movement; attack during halt or transition; repeated contact after displacement; threat cued by blue emissions; mixed reconnaissance and attack.
 - Test factors: movement speed and formation spacing; sensor and effector on-the-move state; setup and teardown time; displacement interval; terrain and masking; network handoff; local versus shared track; loss of one node; communications delay or disconnection; operator task loading; friendly UAS activity; passive-signature state.
@@ -917,6 +970,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: a static emplacement demonstration does not support a maneuver conclusion. Test a mobile platform through transition states, not only while halted.
 
 #### V-03 Convoy and logistics node
+
 - Decision focus: whether the defensive approach protects a moving convoy, temporary halt, transfer point, or logistics node without unacceptable disruption to the supported mission.
 - Threat presentations: route reconnaissance; single-axis FPV attack; multi-axis attack; attack during halt or congestion; decoy before attack; repeated attacks intended to exhaust attention or effectors; attack after the convoy disperses; threat using terrain, structures, or background traffic.
 - Test factors: convoy length and spacing; sensor placement within the convoy; lead, middle, and trail coverage; speed, halt, and restart; route clutter; friendly emissions; network coverage; local alerting; effector field of fire; civil or friendly-air background; operator workload and competing duties; protected-asset substitution or decoy.
@@ -924,6 +978,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: one instrumented vehicle does not establish convoy-wide coverage. Represent the geometry and dissemination path of the supported formation.
 
 #### V-04 Airfield or port defense
+
 - Decision focus: whether the defensive system protects a large, complex site containing friendly aircraft, vehicles, infrastructure, electromagnetic activity, and multiple critical functions.
 - Threat presentations: low-altitude perimeter approach; approach mixed with friendly-air activity; reconnaissance of critical nodes; decoy or nuisance traffic; one-way attack against a stated function; multi-axis raid; repeated waves; reduced-emission or autonomous segment; post-strike assessment aircraft.
 - Test factors: large-area coverage; buildings, ships, cranes, aircraft, and ground clutter; friendly transponders and identification data; air-operations tempo; spectrum congestion; multiple defended assets; centralized and local alerting; effector sectors and restricted directions; shift turnover; component loss; passive protection of critical functions.
@@ -931,6 +986,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: a result for one sector or one protected function does not establish whole-site defense.
 
 #### V-05 Urban defense
+
 - Decision focus: whether the defensive chain can distinguish, track, and respond to a threat in cluttered terrain with occlusion, multipath, constrained engagement geometry, and dense neutral activity.
 - Threat presentations: low-altitude street or rooftop approach; short exposure after occlusion; hover or loiter near structures; route changes around buildings; threat mixed with neutral UAS; multi-axis approach; reduced-emission aircraft; attack from short range.
 - Test factors: building density and height; sensor placement; occlusion and multipath; EO/IR and acoustic background; neutral UAS; civil communications; constrained effector sectors; alternate sensor cueing; local observer reporting; network delay; day, night, and illumination transition.
@@ -938,6 +994,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: urban results are geometry-specific. Record the structures, sight lines, RF environment, background activity, and engagement constraints needed to reproduce the condition.
 
 #### V-06 Coalition
+
 - Decision focus: whether a combined defensive chain can exchange usable warning and track information, interpret it consistently, and complete the tested mission thread across heterogeneous systems and procedures.
 - Threat presentations: use the same threat profiles employed in a national baseline when possible so the effect of coalition integration can be isolated.
 - Test factors: data format and interface; track identifiers; coordinate and time reference; classification markings or releasability constraints represented in the event; voice versus digital exchange; translation and terminology; shared versus separate pictures; sensor-to-partner handoff; partner-to-effector handoff; different procedures; network delay, loss, and fallback; friendly-air identification.
@@ -945,6 +1002,7 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: record the exact systems, interfaces, procedures, data made available, and exercised relationships. Do not infer interoperability outside the tested configuration.
 
 #### V-07 Degraded or disconnected C2
+
 - Decision focus: which portions of the defensive mission thread remain effective after loss, delay, corruption, or partition of the normal information path.
 - Degradation states (enum, 12): increased latency; packet loss; intermittent link; loss of central picture; loss of one sensor feed; loss of one effector connection; local-only operation; stale track data; conflicting tracks; clock misalignment; manual voice fallback; complete partition followed by restoration.
 - Degradation test factors: time and phase at which degradation begins; duration; nodes affected; information retained locally; fallback procedure; local decision state; operator awareness of degradation; recovery sequence; track and message reconciliation after restoration.
@@ -952,12 +1010,14 @@ VOLT-based matrix construction (file 08 sec 1.18; file 13 sec 1.7): rows are thr
 - Limits: do not introduce an unrecorded network failure and treat it only as realism. The degradation must be measurable and tied to the affected transitions and conclusions.
 
 #### V-08 Contested spectrum
+
 - Decision focus: how the complete mission thread changes when sensing, communications, navigation, or effects operate in a defined congested or contested electromagnetic environment.
 - Required condition definition (file 08 sec 1.15): baseline spectrum state; applied emissions or interference; time and location; band, power, waveform, and duty cycle when available and relevant; systems intended to be affected; systems that must remain unaffected; threat control and navigation dependencies; friendly-system dependencies; monitoring source; stop limits; actual measured environment. Rule: "EW on" is not a reproducible test condition. Measure the environment and state what was actually applied.
 - Priority measures: detection and track degradation; communications loss or delay; navigation error; threat behavior change; blue-system behavior change; friendly-system effect; soft-kill effect; recovery time; handoff success; end-to-end mission success.
 - Limits: measure the environment and state what was actually applied.
 
 #### V-09 Mass, saturation, decoy, and mixed threat
+
 - Decision focus: where the defensive architecture loses track quality, decision capacity, engagement capacity, magazine depth, or mission protection as simultaneous demand increases.
 - Threat presentations: increasing raid size; increasing arrival rate; multiple approach axes; mixed airframes; decoys mixed with attack aircraft; reconnaissance preceding attack; repeated waves; threats with different emissions or control modes; bounded adaptation after the first defensive effect.
 - Test factors: number of simultaneous objects; track density; arrival spacing; classification mix; operator-to-track ratio; sensor and C2 processing load; effector inventory; reload, reset, thermal, or duty-cycle limits; assignment policy exercised; network load; background traffic.
@@ -977,7 +1037,7 @@ Label on every use: `observed practice`, never doctrine. Source-base caveats to 
 Verified findings (3-vote adversarial verification, confidence high):
 
 | # | Figure / finding |
-|---|---|
+| --- | --- |
 | 1 | Ukrainian seven-phase combined-arms framework: survey, isolation, degradation, fixing, suppression, close combat/destroy, consolidation; UAVs in every phase. Emergent practice, not codified doctrine |
 | 2 | FPV kill zone: majority of Ukrainian FPV kills within ~3 km either side of the forward line of troops |
 | 3 | Fiber-optic FPV outliers: 10-20 km |
@@ -1011,7 +1071,7 @@ Verified findings (3-vote adversarial verification, confidence high):
 Refuted claims blocklist (failed 3-vote verification; DO NOT CITE; app surfaces this list when a user cites one):
 
 | # | Refuted claim | Vote |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Ukrainian drones account for >65% of destroyed Russian tanks | 0-3 |
 | 2 | Low-cost drones have "democratized air power," replacing traditional air forces | 0-3 |
 | 3 | Drone effectiveness depends less on technology than organizational integration, as stated | 0-3 |
@@ -1026,12 +1086,13 @@ Refuted claims blocklist (failed 3-vote verification; DO NOT CITE; app surfaces 
 Numeric doctrine thresholds (default reference values in the app):
 
 | Constant | Value | Source context |
-|---|---|---|
+| --- | --- | --- |
 | Detect-to-engage design threshold | <= 4 minutes | FAAD C2 construct |
 | Planning detection range | approximately 50% of a system's maximum range | Planning rule; radar max-range figures do not equal detect ranges for Group 1-3 sUAS (size, RCS, radar location determine picture fidelity) |
 | Fixed-site engagement volume | ~30 km radius / 20,000 ft AGL from bullseye center | Fixed-site doctrine; Base Defense Zone holds the BDOC, which holds Target Engagement Authority on all entering aircraft |
 
 Doctrine terms (seed dictionary entries):
+
 - sUAS = small UAS; OWUAS = one-way UAS.
 - Passive defense: actions to decrease likelihood of detection. Active defense: able to detect, ID, decide, act within AO.
 - 6 AMD principles (brigade-level C-UAS): 1. Mass (concentration of fire power). 2. Mix (layered defense, kinetic and non-kinetic fires). 3. Mobility (rapid shifting and ops tempo, setup times). 4. Integration (combined integrated air defense efforts, C2, handoff). 5. Flexibility (apply new and legacy gear, rapid TTP iteration). 6. Agility (swift reaction to changing aerial threats, acute or systemic).
@@ -1055,6 +1116,7 @@ JIATF-401 C4 (Field Guide, file 13 sec 7) `[REAL]`: public Common Criteria for C
 Method-gap facts (file 08 sec 7.3) `[REAL]`: no accredited surrogate catalog exists for UAS Groups 1 through 3; no standard defines surrogate fidelity; no DoD method covers adaptive-threat experimental design; Joint Counter-small UAS University at Fort Sill uses a standard Detect, Identify, Track, and Defeat program.
 
 ---
+
 ## 4. Measure dictionary seeds (file 09 sec 2; file 11 sec 7)
 
 Ship the 18 controlled dictionary entries as seed registry rows. IDs and one-line definitions only. Full math, event rules, denominators, uncertainty methods, and validity rules live in MASTER-CALCULATIONS.md. Do not copy formulas onto cards; cards reference these IDs.
@@ -1062,7 +1124,7 @@ Ship the 18 controlled dictionary entries as seed registry rows. IDs and one-lin
 Measure ID grammar: `CUAS-<DOMAIN>-<ABBR>-<NNN>` (e.g., CUAS-SEN-PD-001).
 
 | ID | Name | One-line definition |
-|---|---|---|
+| --- | --- | --- |
 | `CUAS-SEN-PD-001` | Probability of detection | During valid opportunities under the defined condition, how often the sensor produces a valid detection of the truth object |
 | `CUAS-SEN-FD-002` | First-detection range or time | Where or when the first valid detection occurs (truth-derived range or elapsed time; censoring supported) |
 | `CUAS-TRK-FST-003` | First-stable-track range or time | Where or when the system first produces a track satisfying the complete stable-track rule |
@@ -1085,6 +1147,7 @@ Measure ID grammar: `CUAS-<DOMAIN>-<ABBR>-<NNN>` (e.g., CUAS-SEN-PD-001).
 Worked-card usage note: `CUAS-CLS-ACC-006` and `CUAS-SUIT-AVAIL-017` are not referenced by the five worked cards; all other 16 are (file 11 sec 7).
 
 Field Guide measure levels (grouping metadata for the registry; file 13 sec 1.6):
+
 - Component: detection probability; track error; track continuity; false/nuisance alarm rate; latency; reliability.
 - Interface: message success; translation error; handoff latency; correlation quality; data age; network availability.
 - Mission: warning time; engagement timeline; probability mission thread completes; number of simultaneous threats handled; defended-asset protection outcome; operator workload.
@@ -1097,7 +1160,7 @@ Measure classes: primary, secondary, leading, lagging, descriptive; plus diagnos
 ### 5.1 Regulatory and scheduling lead-time constants (file 13 secs 1.23, 7; seed the schedule planner so authority items appear on the critical path)
 
 | Constant ID | Item | Lead time / value |
-|---|---|---|
+| --- | --- | --- |
 | `REG-FAA-107` | FAA Part 107 waiver | 1 to 3 months |
 | `REG-44807-COA` | 49 U.S.C. section 44807 exemption plus Blanket COA (UAS over 55 lb) | 4 to 9 months |
 | `REG-PUB-COA` | Public-aircraft COA | 60 to 90 days |
@@ -1118,7 +1181,7 @@ Measure classes: primary, secondary, leading, lagging, descriptive; plus diagnos
 ### 5.2 DOT&E and statistical planning figures (file 13 secs 2.4, 7)
 
 | Constant ID | Item | Value |
-|---|---|---|
+| --- | --- | --- |
 | `STAT-Z-95` | Two-sided 95% planning z | 1.96 |
 | `STAT-Z-P80` | Approximate 80% power z | 0.84 |
 | `STAT-CONF-RANGE` | Typical confidence targets | 80 to 95 percent |
@@ -1139,6 +1202,7 @@ Measure classes: primary, secondary, leading, lagging, descriptive; plus diagnos
 ### 5.4 Decision-ready-track criteria `[ILLUSTRATIVE default; customer-configurable]` (file 12 sec 2.1, M-01)
 
 A C2 track is decision-ready only when ALL hold:
+
 1. Correct truth-object association.
 2. Required position and velocity fields present.
 3. Track age within 1.0 second.
@@ -1169,6 +1233,7 @@ Truth update rate: at least 10 Hz. Truth position uncertainty target: 1.5 m or b
 If no threshold exists: characterize performance and uncertainty; do not create a pass/fail conclusion. A customer operational pass/fail threshold is an execution blocker until customer-approved.
 
 ---
+
 ## 6. Question banks (guided intake and debrief prompts)
 
 Structure: each bank has an ID, a lifecycle anchor (phase or gate), an audience, and its questions verbatim. Sources: file 01 secs 3.4-3.5; file 12 sec 1.2; file 13 secs 3.2-3.14, 4.7.
@@ -1176,9 +1241,11 @@ Structure: each bank has an ID, a lifecycle anchor (phase or gate), an audience,
 ### 6.1 `QB-DISC-13` - Discovery question list (file 01 sec 3.5; phase: discovery intake; run by deployment strategist with decision owner, mission owner, operators, system owner, analysts, and evidence authority present when possible)
 
 Structured discovery order (the intake flow wraps the questions):
+
 1. Restate the decision. 2. Define the mission outcome. 3. Walk the mission thread. 4. Identify systems, interfaces, and authorities. 5. Collect claims and prior evidence. 6. Surface failures, edge cases, and unknowns. 7. Define operating conditions and threats. 8. Confirm constraints and acceptance needs. 9. Rank the questions. 10. Read back the result and correct it in the room.
 
 The 13 discovery questions (verbatim):
+
 1. Who performs what task, for what protected asset or mission effect?
 2. Against which threats and behaviors?
 3. Where and under which weather, terrain, clutter, electromagnetic, communications, workload, and degraded conditions?
@@ -1231,6 +1298,7 @@ Usage rules (verbatim): 1. Begin with the decision and authority, not the availa
 Phase 1 (Role): What decision must this testing enable? What will the customer do differently if the answer is A versus B? Which decision cannot currently be made because evidence is missing? Which system configuration is actually under consideration? What evidence already exists? Which evidence is trusted? Which evidence is stale? What must be learned live? What can be learned from existing data or M&S? Who must believe the result for it to be useful?
 
 Phase 2 (Discovery, RFI process), by category:
+
 - Mission and decision: What mission function must succeed? What are you protecting, detecting, tracking, deciding, or defeating? (Blue/Red Force Disposition; Protected Entity.) What decision will these results support? When must that decision be made? What constitutes mission failure? (Simple, Measurable, Approachable; tied to mission objectives.)
 - System: What exact hardware, software, firmware, model, mission-data, payload, and network configuration will be tested? Which components are optional? Which interfaces are mission-critical? Which component is expected to be the limiting node?
 - Claims: What does the vendor claim? Under what conditions was that claim established? Is the claim component-level or end-to-end? What claim matters operationally?
@@ -1265,6 +1333,7 @@ Customer commitment: Who is the sponsor, economic buyer, operating champion, and
 Feasibility screen: Can representative blue systems, operators, supporting systems, threats or validated surrogates, and operating conditions be made available? Can required conditions be created safely, legally, and within the decision window? Can independent ground truth and sufficient instrumentation be established? Can required data be accessed, retained, protected, analyzed, and delivered? Are classification, security, range, spectrum, airspace, integration, and schedule constraints resolvable? Is the evidence likely to be accepted by the relying organization? Is the scope within Valkryn's current capability and institutional boundary? What unresolved condition requires delay, rescoping, partnership, or decline?
 
 Stakeholder and authority register (for each role: named person or organization, authority, required participation, decision rights, escalation path):
+
 - Customer and mission roles: sponsor and economic buyer; mission owner and system owner; operating champion and operators; contract and budget authority; final decision-maker; results consumers; potential blockers.
 - Evidence authority: Which organization must rely on or accept the evidence? Who represents it during planning and review? What authority does it hold? Must it preapprove the method, measures, thresholds, repetitions, witnessing, documentation, or data format? What would cause it to reject the evidence? Who formally acknowledges method acceptance and final evidence acceptance?
 - Test and operational authority: Who owns range, airspace, spectrum, safety, security, and residual-risk decisions? Who may stop the test, authorize restart, approve plan changes, or accept deficiencies?
@@ -1364,6 +1433,7 @@ Execution gate: a run enters campaign analysis only when its adjudication record
 ### 6.12 `QB-QTM-07` - Adaptive Replanning & Campaign Analysis (file 13 sec 3.11; gate: Analysis complete)
 
 Daily evidence review, four steps:
+
 1. Adjudicate available evidence: Which runs are valid, conditionally valid, or invalid according to their run records? What data are complete, incomplete, conflicting, or questionable? Which measures and hypotheses can each run support?
 2. Update hypotheses and uncertainty: Which hypotheses gained or lost support? What expected behavior failed to occur? What new uncertainty or failure boundary emerged? Is the observed effect repeatable and operationally significant?
 3. Identify decision-critical gaps: Which measures, hypotheses, or test-matrix cells remain unsupported? Which missing evidence has the greatest effect on the customer decision? Is another run likely to resolve the uncertainty? What is its expected decision value relative to time, cost, safety, and risk?
@@ -1396,6 +1466,7 @@ Claims disposition enum (close every registered claim): `Supported` | `Contradic
 ### 6.14 `QB-QTM-09` - Closeout, Productization & Regression (file 13 sec 3.13; gate: Closeout)
 
 Campaign closure checklist:
+
 - Deliverables and acceptance: contractual deliverables complete and delivered; customer received the agreed evidence package, data, limitations, exclusions, and open issues; evidence-review and acceptance status documented; actions, owners, funding needs, and completion dates recorded.
 - Data and knowledge: raw data, processed data, code, schemas, configurations, methods, and findings archived under the agreed retention policy; access permissions, classification, CUI, proprietary, export, and comparative-result controls reviewed; prohibited or temporary data deleted as required; the analysis can be reproduced and the tested configuration reconstructed.
 - Operations and property: equipment, sites, ranges, networks, and work areas restored; safety incidents, near misses, maintenance discrepancies, damage, and lost items closed or transferred to named owners; vendors and partners receive authorized feedback; sensitive and comparative results remain controlled.
@@ -1403,6 +1474,7 @@ Campaign closure checklist:
 After-action review questions: What worked, failed, or surprised the team? Which assumptions were wrong? Where did the campaign lose time, quality, or decision value? What required founder or exceptional intervention? Which risks or failure modes were not anticipated? What should be standardized, automated, trained, redesigned, or never repeated? What must change before the next comparable campaign?
 
 Capability productization review questions:
+
 - Reusable method assets: Which decision decompositions, claim structures, hypotheses, measures, thresholds, test cards, threat profiles, acceptance structures, ground-truth methods, analytical methods, and report modules should become standard? Which assets transfer only within this mission class, and which transfer across domains?
 - Reusable technical assets: Which adapters, interfaces, schemas, transformations, data-quality checks, dashboards, calculations, and reports should become supported assets? Which temporary integration should be hardened? Which technical debt must be resolved before reuse?
 - Standard work and training: Which failure modes, integration risks, range constraints, vendor behaviors, safety patterns, and planning lessons must be encoded? What knowledge exists only in Casey's or a founder's head? What should become TestOS logic, templates, checklists, training, or reference material?
@@ -1421,6 +1493,7 @@ Evidence-refresh program: What recurring software, hardware, configuration, inte
 Account and mission expansion: Can the method transfer to another mission, location, program, command, or system architecture? Which ontology, claims, measures, adapters, test cards, evidence relationships, and acceptance structures transfer? What new integration, authority, threat, or range work is required? Will expansion improve product leverage and evaluator trust? What customer pull and demonstrated value support the scope? Does the opportunity reinforce Valkryn's strategy or create distracting bespoke work?
 
 Success scorecard questions:
+
 - Decision impact: Did the customer make a better or faster decision? Did accepted evidence arrive before the decision deadline? Did it materially reduce decision-critical uncertainty? Did an authorized organization accept, rely on, or act on it? Did it cause an acquisition, configuration, deployment, fielding, remediation, restriction, or rejection action? Did the customer understand the evidence's limitations and remaining risk?
 - Evidence quality: Was the campaign safe, legal, and within Valkryn's authority? Were configuration, threat, method, and conditions controlled? Were ground truth and instrumentation credible? Were data complete, traceable, and reproducible? Were conclusions appropriately bounded and independently reviewable? Were important failure boundaries and decision-relevant unknowns resolved?
 - Operating leverage: Did the campaign create reusable methods, data assets, technical assets, and product capability? Did it strengthen TestOS, RangeOS, Red Force, or Red Thread? Did it reduce founder dependency and bespoke integration? Will the next comparable campaign require fewer people, days, and custom changes? Did repeat economics and evaluator trust improve?
@@ -1439,6 +1512,7 @@ Follow-on gate: proceed only when the next scope supports a real decision, uses 
 Anomaly classification prompt (file 13 sec 4.6; do not immediately call an unexpected result a system failure): `System behavior?` | `Test infrastructure?` | `Threat deviation?` | `Operator action?` | `Data artifact?` | `Unknown?`
 
 Evidence-language discipline for debrief outputs (file 13 sec 4.5; every conclusion gets exactly one category):
+
 - Observed fact (example: "The tracking radar dropped the target for 6.2 seconds during Run 47.")
 - Analysis (example: "The loss coincided with sector transition in three of five valid opportunities.")
 - Inference (example: "Sector-transition behavior is a plausible contributor to the track loss.")
