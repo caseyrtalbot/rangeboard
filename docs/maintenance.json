@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "e9233ad304c58c90f2d048c70d22243d69daaafda04410eeb5510040fb31761d",
+      "sha256": "985f0a6b0bfeb73c5700559fab578897813db92f2ad77f241afbf401ac619a76",
       "reviewedAt": "2026-09-06",
-      "note": "Classified and directly indexed all 62 Markdown documents; preserved dated evidence and source-material paths; no active task queue."
+      "note": "Indexed the dated Board workspace design plan and interactive HTML prototype; preserved its review-only status and explicit boundary before production implementation."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",

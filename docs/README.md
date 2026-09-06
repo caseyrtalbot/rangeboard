@@ -29,6 +29,12 @@ and hash manifests at their existing paths. Hashes in an old manifest identify b
 capture: later Markdown formatting does not update or revalidate that capture. Retrieve
 the original bytes from the capture commit when checking an old manifest.
 
+### Design proposals
+
+Proposals preserve design decisions for review; implementation requires separate approval.
+
+- [Board workspace design plan and interactive prototype, 2026-09-06](field-te/evidence/board-workspace-design-2026-09-06/board-workspace-prototype.html)
+
 ### Completion and integration records
 
 - [Agent workspace preparation, 2026-09-06](field-te/WORKSPACE_PREPARATION_2026-09-06.md)
