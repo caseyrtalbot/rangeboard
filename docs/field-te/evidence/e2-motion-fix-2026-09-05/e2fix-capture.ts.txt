@@ -1,0 +1,32 @@
+import { expect, it } from 'vitest'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { assessAllThreats } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates, runSensitivity } from './mcRun'
+import { fillScenario } from '../io/persist'
+import type { Scenario } from '../model/types'
+import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import layered from './__fixtures__/layered-acoustic-merops.json'
+const dir = 'docs/field-te/evidence/e2-motion-fix-2026-09-05'
+const tag = process.env.E2FIX_TAG ?? 'scratch'
+it('firing fixture: deterministic, aleatory, total, sensitivity', () => {
+  const scenario = { ...probe, replicates: 4 } as Scenario
+  const assessments = assessAllThreats(scenario)
+  const value = JSON.stringify({ assessments, report: resolveEngagements(scenario, assessments),
+    aleatory: runReplicates({ ...scenario, uncertainty: 'aleatory' }),
+    total: runReplicates({ ...scenario, uncertainty: 'total' }),
+    sensitivity: runSensitivity(scenario) })
+  const file = `${dir}/numerical-${tag}.json`
+  if (process.env.E2FIX_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+}, 120000)
+it('layered fixture: deterministic report and 30 aleatory replicates', () => {
+  const layer = fillScenario(layered as unknown as Scenario)
+  const value = JSON.stringify({
+    report: resolveEngagements(layer),
+    aleatory: runReplicates({ ...layer, seed: 7, replicates: 30, uncertainty: 'aleatory' }),
+  })
+  const file = `${dir}/layered-${tag}.json`
+  if (process.env.E2FIX_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+}, 120000)

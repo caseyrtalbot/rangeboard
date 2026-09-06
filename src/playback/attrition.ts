@@ -71,7 +71,9 @@ import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
  * stated speed). The shot is only valid when some in-range
  * interval of the same effector still contains tEffect — a target that exits
  * the envelope before the effect arrives cannot be engaged by that
- * assignment, so the salvo is never fired. Kill math (target position,
+ * assignment, so the salvo is never fired; nor is a salvo whose interceptor
+ * cannot reach the predicted point by tEffect (interceptAt `infeasible`,
+ * R-D-44). Kill math (target position,
  * distance falloff, jam-state coupling) is evaluated at tEffect; magazine
  * decrement, cooldown, firstShotS, and the expenditure counts stay at
  * assignment time. Nonzero-latency effects are buffered and applied in
@@ -543,6 +545,8 @@ export function resolveEngagements(
           // Geometry is evaluated where the effect lands, not where it is
           // fired: the predicted intercept of this ship.
           const ic = interceptAt(ts, es, t, i, membersAt, within[1])
+          // An intercept the interceptor cannot reach is no shot (R-D-44).
+          if (ic.infeasible) continue
           if (!contains(ic.tEffectS)) continue
           if (!inEnvelope(ic.pos, ts)) continue
           if (isJammer && jamFactor(ts, ic.pos) <= 0) continue
@@ -656,6 +660,7 @@ export function resolveEngagements(
             const at = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
             if (!at) continue
             const ic = interceptAt(ts, es, t, i, membersAt, at[1])
+            if (ic.infeasible) continue
             const tEffect = ic.tEffectS
             const within = intervals.find(
               ([s0, s1]) =>

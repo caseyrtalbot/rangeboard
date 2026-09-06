@@ -223,7 +223,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `SIZE_PENALTY`) because a stated speed is a maximum. `interceptAt` is the one predicted
   intercept, solved by three fixed-point passes, and it caps the flight at the end of the
   envelope interval that holds the release: a flight past that end lands at the end and the
-  event carries `flightCapped`. `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
+  event carries `flightCapped`. It also reports `infeasible` (R-D-44): the slant to the
+  credited point exceeds the reach `v * (tEffectS - release)` by more than one DT of flight,
+  which happens when the passes do not converge (target speed near or above the
+  interceptor's); both selection passes decline such a shot (no event, no round, no
+  cooldown). `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
   kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
   commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy
@@ -436,7 +440,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
 - **Engagement vocabulary.** A salvo record is an *event* (`report.events`), never a
   ledger. `tS` is the release (launch) time; `tEffectS` is the effect time, release plus
   `engageTimeS` plus flyout; `readyS` is the first possible release under the doctrine
-  gate; `flightCapped` marks a flight cut at the envelope end. `expectedKills` is
+  gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
+  (interceptor cannot reach the credited point) is declined and leaves no event. `expectedKills` is
   pre-arrival mass; `expectedLateKills` is a sub-measure of the leaker mass. Arrival and
   closest approach are different quantities. `reportedLeakers` is the display value.
 - **Words.** User-facing copy is ASD-STE100 Simplified Technical English: short sentences,

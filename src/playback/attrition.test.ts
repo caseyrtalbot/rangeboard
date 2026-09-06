@@ -1148,20 +1148,19 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     expect(r.threats[0].expectedKills).toBeCloseTo(ev.pk, 9)
   })
 
-  it('caps the flight at the window end for a receding target faster than the interceptor', () => {
+  it('declines a shot the interceptor cannot reach: a receding target faster than the interceptor', () => {
     // Launcher at the origin, 4000 m envelope, engage time 0, 78 m/s stated
     // (Merops-like), so 78 * 0.7 = 54.6 m/s average. Threat flies away east
     // from x = 1100 at 97 m/s: x(tau) = 1100 + 97 tau, slant = x. Window from
     // t = 0 (ROE free, detection at 0) until x > 4000 at tau = 2900/97 =
     // 29.90, so the last in-range grid sample is s1 = 29.5 (x = 3961.5).
-    // Legacy pass, one shot at t = 0. The passes never close:
-    //   pass 0: tEffect 0,     x 1100,    flight 1100/54.6 = 20.15
-    //   pass 1: tEffect 20.15, x 3054.21, flight 55.94
-    //   pass 2: tEffect 55.94, x 6525.98, flight 119.52
-    // 0 + 0 + 119.52 > 29.5, so the effect lands at the cap, 29.5, sampled
-    // there: x 3961.5, Pk = 0.5 * (1 - 0.3 * 3961.5/4000) = 0.35144375, and
-    // the event carries flightCapped. Under doctrine the shot fires once the
-    // track is firm, still inside the window, and the same cap applies.
+    // The passes never close (pass 2 flight 119.52 s), so the flight is held
+    // at the cap, 29.5, and sampled there: x 3961.5. The interceptor has flown
+    // 54.6 * 29.5 = 1610.7 m by then, 2350.8 m short of the credited point,
+    // far past the one-DT tolerance 54.6 * 0.5 = 27.3 m (R-D-44). Before the
+    // feasibility test this event was credited at Pk 0.35144375 with
+    // flightCapped; now no shot is taken in either pass: no event, no round
+    // spent, the ship undefeated and never arriving (no asset).
     const eff = interceptor({
       pk: 0.5,
       maxRangeM: 4000,
@@ -1173,35 +1172,67 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
       { x: 1100, y: 0 },
       { x: 8000, y: 0 },
     ]
-    const build = (doctrineOn: boolean) => {
+    const build = (doctrineOn: boolean, spec = eff, points = away, speed = 97) => {
       const scenario = legacyScenario()
       scenario.roe = 'free'
       scenario.doctrine = { ...scenario.doctrine!, enabled: doctrineOn }
-      scenario.library = [...scenario.library, SENSOR, TARGET, eff]
+      scenario.library = [...scenario.library, SENSOR, TARGET, spec]
       const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
-      const launcher = ent('effector', eff.id, { x: 0, y: 0 })
-      const uas = ent('uas', TARGET.id, away[0])
+      const launcher = ent('effector', spec.id, { x: 0, y: 0 })
+      const uas = ent('uas', TARGET.id, points[0])
       scenario.entities = [sensor, launcher, uas]
       scenario.connections = [link(sensor.id, launcher.id)]
-      scenario.paths = [flight(uas.id, away, 97)]
+      scenario.paths = [flight(uas.id, points, speed)]
       return scenario
     }
-    const legacy = resolveEngagements(build(false))
-    expect(legacy.events).toHaveLength(1)
-    const ev = legacy.events[0]
-    expect(ev.tS).toBe(0)
-    expect(ev.tEffectS).toBe(29.5)
-    expect(ev.flightCapped).toBe(true)
-    expect(posAtTime(away, 97, 0, 29.5).pos.x).toBeCloseTo(3961.5, 6)
-    expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (3961.5 / 4000)), 9)
-    expect(ev.pk).toBeCloseTo(0.35144375, 9)
+    for (const doctrineOn of [false, true]) {
+      const r = resolveEngagements(build(doctrineOn))
+      expect(r.events).toHaveLength(0)
+      expect(r.effectors[0].shotsFired).toBe(0)
+      expect(r.threats[0].expectedKills).toBe(0)
+      expect(r.threats[0].expectedNoArrival).toBe(1)
+    }
 
-    const doctrine = resolveEngagements(build(true))
-    expect(doctrine.events).toHaveLength(1)
-    expect(doctrine.events[0].tS).toBeGreaterThan(0)
-    expect(doctrine.events[0].tS).toBeLessThanOrEqual(29.5)
-    expect(doctrine.events[0].tEffectS).toBe(29.5)
-    expect(doctrine.events[0].flightCapped).toBe(true)
+    // Near-equal speeds, receding, no cap: 100 m/s stated (70 average),
+    // engage time 10 s, 10 km envelope; the threat recedes from x = 500 at
+    // 65 m/s, so r at release is 1150 m and the true intercept is at
+    // 1150 / (70 - 65) = 230 s after release, x = 16.1 km, outside the
+    // envelope. The third pass lands at 45.85 s inside the 146 s window, so
+    // the cap does not fire; the E2 study (motion-effect-timing.md) found
+    // this credit at Pk 0.438 with reach 3209 m against need 4130 m. It is
+    // now declined in both passes.
+    const near = interceptor({
+      pk: 0.5,
+      maxRangeM: 10000,
+      engageTimeS: 10,
+      flyoutSpeedMps: 100,
+      magazineSize: 1,
+      salvoCooldownS: 1000,
+    })
+    const far = [
+      { x: 500, y: 0 },
+      { x: 20000, y: 0 },
+    ]
+    for (const doctrineOn of [false, true]) {
+      const r = resolveEngagements(build(doctrineOn, near, far, 65))
+      expect(r.events).toHaveLength(0)
+      expect(r.effectors[0].shotsFired).toBe(0)
+    }
+
+    // Receding but slower than the interceptor: 70 against 20 m/s from
+    // x = 1000, r at release 1200 m, true flight 1200 / 50 = 24.0 s. The
+    // passes climb to 23.44 s and credit the effect 0.56 s early, 28 m
+    // beyond the reach 70 * 23.44 = 1640.8 m; that is inside the one-DT
+    // tolerance 70 * 0.5 = 35 m, so the shot is taken: a solver residual is
+    // not an infeasible intercept.
+    const slow = [
+      { x: 1000, y: 0 },
+      { x: 8000, y: 0 },
+    ]
+    const slower = resolveEngagements(build(false, { ...near, effector: { ...near.effector!, maxRangeM: 5000 } }, slow, 20))
+    expect(slower.events).toHaveLength(1)
+    expect(slower.events[0].flightCapped).toBeUndefined()
+    expect(slower.events[0].tEffectS).toBeCloseTo(10 + 23.44, 1)
 
     // A closing target at the same speeds lands its effect in flight: no flag.
     const closing = build(false)

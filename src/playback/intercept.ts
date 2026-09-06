@@ -4,6 +4,7 @@ import { slantRangeM } from '../geometry/slant'
 import { memberPositions } from './tracks'
 import { expenditureChannel } from './pk'
 import type { EffectorState, ThreatState } from './sweepState'
+import { DT } from './clock'
 
 /** Time tolerance for interval and release comparisons, seconds. */
 export const EPS = 1e-9
@@ -29,14 +30,20 @@ export function intervalIndexAt(
 export const FLYOUT_SPEED_FACTOR = 0.7
 
 /**
- * Seconds of flight to a slant range at the average flyout speed (the stated
- * speed times FLYOUT_SPEED_FACTOR); 0 when the effector states no speed.
+ * Average flyout speed in m/s (the stated speed times FLYOUT_SPEED_FACTOR);
+ * 0 when the effector states no speed. A jammer, DE or HPM effect arrives
+ * with the beam: no flyout even if a speed is stored.
  */
-export function timeOfFlightS(spec: EffectorSpec, slantM: number): number {
+export function averageFlyoutMps(spec: EffectorSpec): number {
   const v = spec.flyoutSpeedMps
-  // A jammer, DE or HPM effect arrives with the beam: no flyout even if a speed is stored.
   if (v == null || !(v > 0) || expenditureChannel(spec.effectorType) !== 'kinetic') return 0
-  return slantM / (v * FLYOUT_SPEED_FACTOR)
+  return v * FLYOUT_SPEED_FACTOR
+}
+
+/** Seconds of flight to a slant range at the average flyout speed; 0 when there is no flyout. */
+export function timeOfFlightS(spec: EffectorSpec, slantM: number): number {
+  const v = averageFlyoutMps(spec)
+  return v > 0 ? slantM / v : 0
 }
 
 /** Formation member positions of a threat at one sim time. */
@@ -55,6 +62,12 @@ export function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
  * interceptor recedes and the passes never close, so a flight past the cap is held at
  * the cap, sampled there, and reported `capped` (R-F-7). Only the flight is capped: a
  * release at or before the cap with a flight past it; a release after the cap is not.
+ * `infeasible` (R-D-44) is true when the interceptor cannot be at the credited point when
+ * the effect is credited under the same constant-speed model: the slant to the sampled
+ * point exceeds the reach `v * (tEffectS - release)` by more than one DT of flight,
+ * `v * DT`. The passes are a fixed-point iteration that does not converge when the
+ * target's speed approaches or exceeds the interceptor's, and the cap only moves where
+ * such a credit lands; the caller declines an infeasible shot. Never true without a flyout.
  */
 export function interceptAt(
   ts: ThreatState,
@@ -63,7 +76,7 @@ export function interceptAt(
   memberIdx: number,
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
   capS = Number.POSITIVE_INFINITY,
-): { pos: Vec2; slantM: number; tEffectS: number; capped: boolean } {
+): { pos: Vec2; slantM: number; tEffectS: number; capped: boolean; infeasible: boolean } {
   const dAltM = ts.altM - es.mountM
   const sampleAt = (tEffectS: number) => {
     const members = membersAt(ts, tEffectS)
@@ -83,7 +96,10 @@ export function interceptAt(
   const releaseS = tS + es.engageTimeS
   const capped = releaseS <= capS && releaseS + tofS > capS
   const tEffectS = capped ? capS : releaseS + tofS
-  return { ...sampleAt(tEffectS), tEffectS, capped }
+  const at = sampleAt(tEffectS)
+  const v = averageFlyoutMps(es.spec)
+  const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * DT
+  return { ...at, tEffectS, capped, infeasible }
 }
 
 /**
