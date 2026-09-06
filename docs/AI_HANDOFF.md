@@ -40,14 +40,14 @@ with the evidence and one recommendation; never park a choice in the register or
 
 ## Next
 
-1. Wave 3, E2: R-D-44 is done. Next family poll from [PLAN section 5](field-te/PLAN.md):
-   Track, C2 and doctrine; Radar; Geometry and time (dossiers in `field-te/model-evidence/`).
-   R-F-43 (closed-form intercept solver, moves the firing fixture by under 0.1 DT) is open
-   and can be taken as a bounded E2 item with capture on Casey's word.
-2. Wave 3, E3: R-F-35 to R-F-37 and R-F-40 are evidence gaps to raise only if the chosen
-   family touches them.
-3. Wave 4: design steps 6, 7, 9, 10, 13; then 8 (R-F-33, paper chart colours), 11, 12
-   (paper canvas colours); then 14 with R-F-34. Wave 5: T1 static bundle, then A1.
+1. Wave 3, E2, Track, C2 and doctrine (approved 2026-09-05): one bounded slice with capture.
+   F-16: reject or clamp `trackInitM` above `trackInitN` at input. F-15: gate coast on
+   `trackInitAtS != null`. R-F-20's per-threat blocked-route reason stays with design step 7.
+2. Poll R-F-35 (Stinger 2 of 2 and Leonidas 61 of 61 spreads) and R-F-43 (closed-form
+   intercept solver) as the two open numerical items; each is a capture item on Casey's word.
+   F-62 (SPEXER 2000 reference RCS) is a seed decision.
+3. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
+   then A1.
 
 ## Inputs Casey holds
 
@@ -62,4 +62,4 @@ points. Assumption in D-20: `[10, 4]` is the distinct classify dash; no other da
 
 ## Open findings
 
-R-F-20 (step 7). R-F-33. R-F-34. R-F-35 to R-F-37, R-F-40 to R-F-42 (E3).
+R-F-20 (step 7). F-15, F-16 (Track, C2 and doctrine slice). F-62 (seed). R-F-35 (E3). R-F-43 (E2).

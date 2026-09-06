@@ -27,7 +27,7 @@ These facts are about the Claude Code tool environment, not about the project.
 - `npx vite-node` is not installed. A scratch check that imports TypeScript runs as a
   vitest file under `src/` and is deleted after; report it.
 - `WebFetch` returns binary for a PDF: save it and run `pdftotext`. Several manufacturer
-  domains return 403 or a bot challenge through the proxy (`outstanding.md` F-66, R-F-6).
+  domains return 403 or a bot challenge through the proxy.
 - Writes under `~/.claude/` are blocked from Bash; use the Edit or Write tool there.
 - Do not use the Workflow tool unless the user says "use a workflow".
 - Delegated agents are chosen by effort class: a reasoning model at medium effort by
