@@ -52,8 +52,8 @@ export const DISABLED_RING_COLOR = '#565b58'
 
 /** Placard ring behind the Pd contours: dotted. */
 export const PLACARD_DASH = [2, 5]
-/** Classify ring: dashed, distinct from the cued detect dash. */
-export const CLASSIFY_DASH = [4, 6]
+/** Classify ring: long dash, distinct from the cued detect dash and the Pd 0.9 dash (D-20). */
+export const CLASSIFY_DASH = [10, 4]
 /** Placard ring dash per non-held kind. */
 export const DETECT_DASH: Record<Exclude<SensorRingKind, 'held'>, number[]> = {
   cued: [7, 4],

@@ -308,7 +308,7 @@ describe('RING_STYLE', () => {
   })
 
   it('names the dashes the mockup draws', () => {
-    expect(RING_STYLE.classifyRings.dash).toEqual([4, 6])
+    expect(RING_STYLE.classifyRings.dash).toEqual([10, 4])
     expect(PD_HIGH_DASH).toEqual([4, 6])
     expect(RING_STYLE.effectorMinRange.dash).toEqual(EFFECTOR_MIN_DASH)
     expect(RING_STYLE.effectorDoctrinal.dash).toEqual(RELEASE_DASH)

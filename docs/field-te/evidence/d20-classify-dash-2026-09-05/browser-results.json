@@ -1,0 +1,48 @@
+{
+  "baseUrl": "http://localhost:5361/",
+  "result": {
+    "rps": "ent-mtp6e80r-22",
+    "layers": {
+      "grid": true,
+      "boundaries": true,
+      "sensorPlacard": true,
+      "sensorEnvelope": true,
+      "sensorPdContours": true,
+      "classifyRings": true,
+      "effectorMaxRange": true,
+      "effectorMinRange": true,
+      "effectorDoctrinal": true,
+      "defendedAreas": true,
+      "threatWez": false,
+      "flightPaths": true,
+      "connections": true,
+      "rangeRings": true,
+      "engagements": true,
+      "labels": true,
+      "trackTelemetry": true
+    },
+    "classifyDash": [
+      10,
+      4
+    ],
+    "pdHighDash": [
+      4,
+      6
+    ],
+    "constant": [
+      10,
+      4
+    ]
+  },
+  "nodes": {
+    "dashedShapes": 11,
+    "byDash": {
+      "[2,5]": 4,
+      "[4,6]": 3,
+      "[10,4]": 2,
+      "[8,5]": 1,
+      "[4,3]": 1
+    }
+  },
+  "errors": []
+}
