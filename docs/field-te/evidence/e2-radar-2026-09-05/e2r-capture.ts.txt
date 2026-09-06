@@ -1,0 +1,35 @@
+import { expect, it } from 'vitest'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { assessAllThreats } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates, runSensitivity } from './mcRun'
+import { fillScenario } from '../io/persist'
+import type { Scenario } from '../model/types'
+import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import detection from './__fixtures__/detection-outside-rings.json'
+import layered from './__fixtures__/layered-acoustic-merops.json'
+const dir = 'docs/field-te/evidence/e2-radar-2026-09-05'
+const tag = process.env.E2R_TAG ?? 'scratch'
+const check = (name: string, value: string) => {
+  const file = `${dir}/${name}-${tag}.json`
+  if (process.env.E2R_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+}
+it('firing fixture: deterministic, aleatory, total, sensitivity', () => {
+  const scenario = { ...probe, replicates: 4 } as Scenario
+  const assessments = assessAllThreats(scenario)
+  check('numerical', JSON.stringify({ assessments, report: resolveEngagements(scenario, assessments),
+    aleatory: runReplicates({ ...scenario, uncertainty: 'aleatory' }),
+    total: runReplicates({ ...scenario, uncertainty: 'total' }),
+    sensitivity: runSensitivity(scenario) }))
+}, 120000)
+it('detection fixture: assessments and 30 total replicates', () => {
+  const s = fillScenario(detection as unknown as Scenario)
+  check('detection', JSON.stringify({ assessments: assessAllThreats(s),
+    total: runReplicates({ ...s, seed: 4821, replicates: 30, uncertainty: 'total' }) }))
+}, 120000)
+it('layered fixture: assessments, deterministic report and 30 aleatory replicates', () => {
+  const s = fillScenario(layered as unknown as Scenario)
+  check('layered', JSON.stringify({ assessments: assessAllThreats(s), report: resolveEngagements(s),
+    aleatory: runReplicates({ ...s, seed: 7, replicates: 30, uncertainty: 'aleatory' }) }))
+}, 120000)

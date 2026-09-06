@@ -42,12 +42,23 @@ describe('pdFromSnr / snrForPd', () => {
     }
   })
 
-  // Albersheim N = 1: A = ln(0.62 / Pfa), B = ln(Pd / (1 - Pd)),
-  // SNR_dB = (6.2 + 4.54 / sqrt(1.44)) log10(A + 0.12 A B + 1.7 B) = 13.115 dB.
-  // The exact Marcum Q value is 13.18 dB, inside Albersheim's 0.2 dB band.
-  it('Swerling 0 follows Albersheim: Pd 0.9 at Pfa 1e-6 is 13.1 dB', () => {
-    expect(db(snrForPd(0.9, 1e-6, 0))).toBeCloseTo(13.115, 2)
-    expect(db(snrForPd(0.5, 1e-6, 0))).toBeCloseTo(11.232, 2)
+  // Nonfluctuating single pulse: the Marcum Q. Reference values from the
+  // E2 radar study's 20 000-point quadrature of the Rician density
+  // (evidence/e2-radar-2026-09-05): Pd 0.9 at Pfa 1e-6 needs 13.183 dB,
+  // Pd 0.5 11.243 dB, Pd 0.1 8.729 dB; at 6 dB Pd is 0.0106, at 0 dB 1.22e-4.
+  // Albersheim's inverse (replaced 2026-09-05) gave 13.115, 11.232 and
+  // 7.830 dB, and floored at 0.0173 for every SNR under about 3 dB.
+  it('Swerling 0 is the Marcum Q: 13.18 dB at Pd 0.9, and the tail falls to Pfa', () => {
+    expect(db(snrForPd(0.9, 1e-6, 0))).toBeCloseTo(13.183, 2)
+    expect(db(snrForPd(0.5, 1e-6, 0))).toBeCloseTo(11.243, 2)
+    expect(db(snrForPd(0.1, 1e-6, 0))).toBeCloseTo(8.729, 2)
+    expect(pdFromSnr(Math.pow(10, 0.6), 1e-6, 0)).toBeCloseTo(0.0106, 4)
+    expect(pdFromSnr(1, 1e-6, 0)).toBeCloseTo(1.2214e-4, 7)
+    expect(pdFromSnr(0, 1e-6, 0)).toBeCloseTo(1e-6, 12)
+    expect(pdFromSnr(0.1, 1e-6, 0)).toBeLessThan(1e-5)
+    expect(pdFromSnr(1, 1e-4, 0)).toBeCloseTo(0.0037, 4)
+    // A finite range now exists at Pd 0.01 for a nonfluctuating target.
+    expect(Number.isFinite(rangeForPd(CAL, CAL.rcs0M2, 0.01, 1, 0))).toBe(true)
   })
 
   it('snrForPd inverts pdFromSnr to 1e-6 for every case', () => {

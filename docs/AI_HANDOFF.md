@@ -52,12 +52,18 @@ live in this file under Next.
   SPEXER 2000 `refRcsM2` 0.04 recorded as a PF provenance row; R-F-20 `Engage` row in the
   Threat detail names the missing fire-control source (browser-checked, `browser-check.md`).
   The engine rule for a typed route without a fire-control source is unchanged.
+- Done 2026-09-06: E2 radar study (`7f2bea6`, `field-te/model-evidence/radar.md` section "E2
+  study, 2026-09-05") and its correction (this commit): Swerling 0 is the exact Marcum Q, not the
+  Albersheim inverse whose tail floored at 0.017; fixtures byte-identical (no seed target is
+  Swerling 0). Placard Pd stays 0.5 by Casey's word; its sensitivity (firm track at 0.79 to
+  1.29 of the quoted range for Pd 0.5 to 0.9) is in the dossier.
 
 ## Next
 
-1. Wave 3, E2: poll Casey on the next family: Radar; Geometry and time; EO/IR, acoustic and
-   RF; Environment (dossiers in `field-te/model-evidence/`). No open finding remains in any
-   of them; each study starts from its dossier's unsupported-conditions section.
+1. Wave 3, E2: poll Casey on the next family: Geometry and time; EO/IR, acoustic and RF;
+   Environment (dossiers in `field-te/model-evidence/`). Radar is done. No open finding
+   remains in any of them; each study starts from its dossier's unsupported-conditions
+   section.
 2. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
    then A1.
 

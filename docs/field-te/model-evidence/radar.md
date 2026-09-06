@@ -94,7 +94,12 @@ the firing window opens on geometry and doctrine gates later than either firm-tr
 
 ### Decision at the end of the study
 
-Bounded correction proposed: replace the Albersheim inverse for Swerling 0 with the exact
-single-pulse Marcum Q (quadrature, inverse by bisection as Swerling 3 already does). No seed
-target reaches it, so no fixture moves; the tail becomes physical for any spec that states
-Swerling 0. The placard Pd stays 0.5 as the PF with the sensitivity above recorded.
+Decided 2026-09-05, Casey: replace the Albersheim inverse for Swerling 0 with the exact
+single-pulse Marcum Q; keep the placard Pd planning factor at 0.5 with the sensitivity above
+recorded. Done 2026-09-06: `pdFromSnr` computes Q1(a, b) as the noncentral chi-square tail
+(Poisson weights over central chi-square tails, window mean +- 12 sqrt(mean) + 40, `a - b > 12`
+returns 1), and `snrForPd` bisects it as it already did for Swerling 3. `radarPd.test.ts` pins
+13.183, 11.243 and 8.729 dB at Pd 0.9, 0.5 and 0.1 (Pfa 1e-6), 0.0106 at 6 dB, 1.22e-4 at 0 dB
+and Pfa at zero SNR. Capture (`evidence/e2-radar-2026-09-05/*-after.json`): the firing,
+detection and layered fixtures are byte-identical to the `e2-solver-spreads-2026-09-05`
+after capture, because no seed target is Swerling 0.

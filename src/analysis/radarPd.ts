@@ -12,9 +12,12 @@
  *
  * Sources: Mahafza, Radar Systems Analysis and Design Using MATLAB, 3rd ed.,
  * CRC Press 2013, section 13.5 (Swerling I Eq. 13.45, Swerling III
- * Eq. 13.51); Albersheim, "A closed-form approximation to Robertson's
- * detection characteristics", Proc. IEEE 69(7), 1981, as restated in
- * Richards, Fundamentals of Radar Signal Processing, chapter 6.
+ * Eq. 13.51); the nonfluctuating case is the Marcum Q function Q1(a, b)
+ * written as the noncentral chi-square tail (Shnidman's series: Poisson
+ * weights over central chi-square tails), Richards, Fundamentals of Radar
+ * Signal Processing, chapter 6. Albersheim's approximation was replaced on
+ * 2026-09-05 (E2 radar study): its logistic inverse floored at about 0.017
+ * below Pd 0.1 where the exact tail is Pfa.
  */
 import type { SwerlingCase } from '../model/types'
 
@@ -32,8 +35,58 @@ export interface RadarCalibration {
   swerling0: SwerlingCase
 }
 
-/** Albersheim's SNR coefficient at N = 1: 6.2 + 4.54 / sqrt(N + 0.44). */
-const ALBERSHEIM_N1 = 6.2 + 4.54 / Math.sqrt(1.44)
+/**
+ * Marcum Q1(a, b) = P(chi'^2 with 2 dof and noncentrality a^2 exceeds b^2)
+ *   = sum_j Poisson(j; a^2 / 2) * P(chi^2 with 2 + 2j dof exceeds b^2),
+ * with P(chi^2_{2m} > 2y) = exp(-y) * sum_{i < m} y^i / i!. The Poisson
+ * weights are summed over the window mean +- (12 sqrt(mean) + 40), which
+ * holds every weight above 1e-15; the chi-square tail is carried by its
+ * recurrence. a - b above 12 returns 1 (the deficit is under 1e-30). At a = 0
+ * the sum is exp(-y) = Pfa exactly. Under 1e-12 absolute error against a
+ * 20 000-point quadrature of the Rician density (E2 radar study 2026-09-05).
+ */
+function marcumQ1(a: number, b: number): number {
+  if (!(b > 0)) return 1
+  if (a - b > 12) return 1
+  const lambda = (a * a) / 2
+  const y = (b * b) / 2
+  if (lambda === 0) return Math.exp(-y)
+  const half = 12 * Math.sqrt(lambda) + 40
+  const j0 = Math.max(0, Math.floor(lambda - half))
+  const j1 = Math.ceil(lambda + half)
+  // log Poisson(j0; lambda) and log of the chi-square term exp(-y) y^j0 / j0!.
+  let logPois = -lambda + j0 * Math.log(lambda) - lgamma(j0 + 1)
+  let logTerm = -y + j0 * Math.log(y) - lgamma(j0 + 1)
+  // Tail P(chi^2_{2(j0+1)} > 2y) = exp(-y) sum_{i <= j0} y^i / i!.
+  let tail = 0
+  for (let i = 0; i <= j0; i++) tail += Math.exp(-y + i * Math.log(y) - lgamma(i + 1))
+  tail = Math.min(1, tail)
+  let q = 0
+  for (let j = j0; j <= j1; j++) {
+    q += Math.exp(logPois) * tail
+    // Advance to j + 1.
+    logPois += Math.log(lambda) - Math.log(j + 1)
+    logTerm += Math.log(y) - Math.log(j + 1)
+    tail = Math.min(1, tail + Math.exp(logTerm))
+  }
+  return Math.min(1, Math.max(0, q))
+}
+
+/** log Gamma by Lanczos (g = 7, n = 9); relative error under 1e-15 for x > 0. */
+function lgamma(x: number): number {
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x)
+  const g = 7
+  const c = [
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
+    1.5056327351493116e-7,
+  ]
+  const z = x - 1
+  let a = c[0]
+  const t = z + g + 0.5
+  for (let i = 1; i < 9; i++) a += c[i] / (z + i)
+  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(a)
+}
 
 /** Pfa clamped strictly inside (0, 1) so every log and power below stays finite. */
 function pfaSafe(pfa: number): number {
@@ -51,11 +104,8 @@ function pfaSafe(pfa: number): number {
  *   with no division by zero. Checked against numeric integration of the
  *   Marcum Q over the 4-dof chi-square target: under 0.001 dB apart at
  *   Pd 0.5, 0.8 and 0.9 for Pfa 1e-6, so the closed form is kept.
- * Swerling 0: the algebraic inverse of Albersheim's approximation (N = 1),
- *   valid Pd 0.1 to 0.9 and Pfa 1e-3 to 1e-7 within about 0.2 dB. Outside
- *   that band the same formula extrapolates through the logistic, so the
- *   result stays inside (0, 1) but is not a checked value. At SNR 0 it
- *   returns the formula's own floor, about 0.017 at Pfa 1e-6, not Pfa.
+ * Swerling 0 (nonfluctuating): the exact single-pulse Marcum Q,
+ *   Pd = Q1(sqrt(2 SNR), sqrt(-2 ln Pfa)); at SNR 0 it is Pfa.
  *
  * A negative or non-finite SNR reads as 0; an infinite SNR returns 1.
  */
@@ -69,50 +119,38 @@ export function pdFromSnr(snr: number, pfa: number, swerling: SwerlingCase): num
     const d = 1 + s / 2
     return Math.exp(-vt / d) * (s * (1 + vt / d) + 2) / (s + 2)
   }
-  // Albersheim solved for B = ln(Pd / (1 - Pd)); s^(10 / C) is 10^(SNR_dB / C).
-  const a = Math.log(0.62 / q)
-  const x = Math.pow(s, 10 / ALBERSHEIM_N1)
-  const b = (x - a) / (0.12 * a + 1.7)
-  return 1 / (1 + Math.exp(-b))
+  return marcumQ1(Math.sqrt(2 * s), Math.sqrt(-2 * Math.log(q)))
 }
 
 /**
  * SNR (linear) that yields `pd` at `pfa` for the case. Monotone inverse of
- * pdFromSnr: Swerling 1 and 0 invert their closed forms, Swerling 3 bisects
+ * pdFromSnr: Swerling 1 inverts its closed form, Swerling 0 and 3 bisect
  * pdFromSnr, which is monotone in SNR.
  *
  * pd >= 1 returns Infinity (no finite SNR reaches certainty). pd <= 0, or a
- * pd at or below the case's zero-SNR floor (Pfa for Swerling 1 and 3, the
- * Albersheim floor for Swerling 0), returns 0.
+ * pd at or below the case's zero-SNR floor (Pfa for every case), returns 0.
  */
 export function snrForPd(pd: number, pfa: number, swerling: SwerlingCase): number {
   if (!(pd > 0)) return 0
   if (pd >= 1) return Infinity
   const q = pfaSafe(pfa)
   if (swerling === 1) return Math.max(0, Math.log(q) / Math.log(pd) - 1)
-  if (swerling === 3) {
-    if (pd <= q) return 0
-    let lo = 0
-    let hi = 1
-    while (pdFromSnr(hi, q, 3) < pd) {
-      lo = hi
-      hi *= 2
-      if (hi === Infinity) return Infinity
-    }
-    // 200 halvings take the bracket below double precision at any scale.
-    for (let i = 0; i < 200 && lo < hi; i++) {
-      const mid = (lo + hi) / 2
-      if (mid <= lo || mid >= hi) break
-      if (pdFromSnr(mid, q, 3) < pd) lo = mid
-      else hi = mid
-    }
-    return hi
+  if (pd <= q) return 0
+  let lo = 0
+  let hi = 1
+  while (pdFromSnr(hi, q, swerling) < pd) {
+    lo = hi
+    hi *= 2
+    if (hi === Infinity) return Infinity
   }
-  const a = Math.log(0.62 / q)
-  const b = Math.log(pd / (1 - pd))
-  const x = a + 0.12 * a * b + 1.7 * b
-  if (!(x > 0)) return 0
-  return Math.pow(x, ALBERSHEIM_N1 / 10)
+  // 200 halvings take the bracket below double precision at any scale.
+  for (let i = 0; i < 200 && lo < hi; i++) {
+    const mid = (lo + hi) / 2
+    if (mid <= lo || mid >= hi) break
+    if (pdFromSnr(mid, q, swerling) < pd) lo = mid
+    else hi = mid
+  }
+  return hi
 }
 
 /** SNR the reference target returns at the placard range. */
