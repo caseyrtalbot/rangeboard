@@ -3,15 +3,17 @@ import type { ModelTag } from '../../../analysis/fidelity'
 import type { Entity } from '../../../model/types'
 import { Glyph } from '../../Glyph'
 import { useStore } from '../../../state/store'
+import { State } from '../../../ui/kit'
+import type { StateTone } from '../../../ui/kit'
 
-/** The state pill: the word, its `.status` modifier, and an inline color for a phase. */
+/** The state: the word, its tone, and an inline colour for a track phase. */
 export interface DetailPill {
   word: string
-  className?: string
+  tone?: StateTone
   style?: CSSProperties
 }
 
-/** The pane header: Back, glyph, name, state pill, the model line and the fidelity tags. */
+/** The pane header: Back, glyph, name, state, the model line and the fidelity tags. */
 export function DetailHeader({
   entity,
   color,
@@ -27,7 +29,6 @@ export function DetailHeader({
   tags?: ModelTag[]
 }) {
   const clearSelection = useStore((s) => s.clearSelection)
-  const pillClass = ['status', pill.className, 'det-pill'].filter(Boolean).join(' ')
   return (
     <div className="det-h">
       <button
@@ -39,9 +40,9 @@ export function DetailHeader({
       </button>
       <Glyph kind={entity.kind} color={color} size={16} />
       <span className="det-n">{entity.name}</span>
-      <span className={pillClass} style={pill.style}>
+      <State tone={pill.tone ?? 'inactive'} style={pill.style}>
         {pill.word}
-      </span>
+      </State>
       <span className="det-m">{modelLine}</span>
       {tags != null && tags.length > 0 ? (
         <div className="fid-tags">

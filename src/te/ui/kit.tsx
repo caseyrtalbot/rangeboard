@@ -1,36 +1,25 @@
 /**
- * Shared form kit for T&E panels. Reuses the app CSS conventions
- * (field, field-row, subsection, seg, card-chip) so panels look native.
+ * T&E form kit. Field, segmented control, state and provenance come from the
+ * shared primitives in src/ui/kit; this module adds the composite controls the
+ * phase panels need and re-exports the two primitives its panels import here.
  */
 
 import { useEffect, useId, useRef, useState } from 'react'
 import type { TePhaseTab } from '../state/teStore'
 import { PHASE_INTRO } from './help'
+import { Field, ProvMark, Seg, State } from '../../ui/kit'
+import type { StateTone } from '../../ui/kit'
+
+export { Field, Seg }
 
 export type PillKind = 'good' | 'warn' | 'bad' | 'neutral'
 
-export function Field({
-  label,
-  help,
-  children,
-}: {
-  label: string
-  help?: string
-  children: React.ReactNode
-}) {
-  return (
-    <label className="field">
-      <span>
-        {label}
-        {help && (
-          <span className="help-dot" tabIndex={0} data-help={help}>
-            ?
-          </span>
-        )}
-      </span>
-      {children}
-    </label>
-  )
+/** The T&E gate words to the shared state tones. */
+const PILL_TONE: Record<PillKind, StateTone> = {
+  good: 'nominal',
+  warn: 'warning',
+  bad: 'critical',
+  neutral: 'inactive',
 }
 
 export function TextField({
@@ -157,34 +146,6 @@ export function SelectField<T extends string>({
         ))}
       </select>
     </Field>
-  )
-}
-
-/** Segmented control: one active option, no typing. */
-export function Seg<T extends string>({
-  value,
-  options,
-  onChange,
-  disabled,
-}: {
-  value: T
-  options: Array<{ v: T; label: string }>
-  onChange: (v: T) => void
-  disabled?: boolean
-}) {
-  return (
-    <div className="seg">
-      {options.map((o) => (
-        <button
-          key={o.v}
-          className={value === o.v ? 'active' : ''}
-          disabled={disabled}
-          onClick={() => onChange(o.v)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
   )
 }
 
@@ -489,20 +450,20 @@ export function SubTitle({
   )
 }
 
-/** Status pill using the existing status color classes. */
+/** A gate word in its state ink, through the shared State square. */
 export function Pill({ kind, text }: { kind: PillKind; text: string }) {
-  return <span className={`status ${kind}`}>{text}</span>
+  return <State tone={PILL_TONE[kind]}>{text}</State>
 }
 
-/** Blocker or warning list for gate dashboards. */
+/** Blocker or warning list for gate dashboards: one state row per item. */
 export function GateList({ items, kind }: { items: string[]; kind: 'bad' | 'warn' }) {
   if (items.length === 0) return null
   return (
-    <div className="subsection">
+    <div className="subsection gate-list">
       {items.map((t, i) => (
-        <div key={i} className={`gate-item ${kind}`}>
+        <State key={i} tone={PILL_TONE[kind]}>
           {t}
-        </div>
+        </State>
       ))}
     </div>
   )
@@ -939,9 +900,17 @@ export function PersonPicker({
   )
 }
 
+/** The provenance state of an inherited field to the shared mark kind. */
+const PROVENANCE_MARK = {
+  inherited: 'inferred',
+  edited: 'sourced',
+  pending: 'probable',
+} as const
+
 /**
  * Inherited-value wrapper. `inherited` shows the source; `edited` offers
- * revert; `pending` renders a suggestion that writes only on confirm.
+ * revert; `pending` renders a suggestion that writes only on confirm. The
+ * shared mark carries the kind: inferred from a source, entered, or probable.
  */
 export function Provenance({
   source,
@@ -956,15 +925,13 @@ export function Provenance({
   onRevert?: () => void
   children: React.ReactNode
 }) {
+  const word = state === 'edited' ? 'edited' : `from ${source}`
   return (
     <div className={`provenance ${state}`}>
       {children}
       <div className="provenance-line">
-        {state === 'edited' ? (
-          <span className="provenance-chip">edited</span>
-        ) : (
-          <span className="provenance-chip">from {source}</span>
-        )}
+        <ProvMark kind={PROVENANCE_MARK[state]} title={word} />
+        <span className="provenance-chip">{word}</span>
         {state === 'pending' && onConfirm && (
           <button type="button" className="mini" onClick={onConfirm}>
             Confirm
@@ -1172,35 +1139,41 @@ export function NumberUnitField({
   help?: string
   disabled?: boolean
 }) {
+  const input = (
+    <input
+      type="number"
+      step={step}
+      value={value ?? ''}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
+    />
+  )
+  if (!(unitOptions && onUnit)) {
+    return (
+      <Field label={label} help={help} unit={unit}>
+        {input}
+      </Field>
+    )
+  }
   return (
     <Field label={label} help={help}>
       <div className="nu-row">
-        <input
-          type="number"
-          step={step}
-          value={value ?? ''}
+        {input}
+        <select
+          className="nu-unit"
+          value={unit}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
-        />
-        {unitOptions && onUnit ? (
-          <select
-            className="nu-unit"
-            value={unit}
-            disabled={disabled}
-            aria-label={`${label} unit`}
-            onChange={(e) => onUnit(e.target.value)}
-          >
-            {(unit !== '' && !unitOptions.includes(unit) ? [unit, ...unitOptions] : unitOptions).map(
-              (u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ),
-            )}
-          </select>
-        ) : (
-          <span className="nu-unit">{unit}</span>
-        )}
+          aria-label={`${label} unit`}
+          onChange={(e) => onUnit(e.target.value)}
+        >
+          {(unit !== '' && !unitOptions.includes(unit) ? [unit, ...unitOptions] : unitOptions).map(
+            (u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ),
+          )}
+        </select>
       </div>
     </Field>
   )
@@ -1347,7 +1320,7 @@ export function RegisterTable<Row extends { id: string }>({
                       if (c.kind === 'pill')
                         return (
                           <td key={c.key}>
-                            {text !== '' && <span className="status neutral">{text}</span>}
+                            {text !== '' && <State tone="inactive">{text}</State>}
                           </td>
                         )
                       if (c.kind === 'select')

@@ -17,6 +17,7 @@ import { AnalyzePanel } from './AnalyzePanel'
 import { DeliverPanel } from './DeliverPanel'
 import { ProductsPanel } from './ProductsPanel'
 import { Field, ReadinessRail } from './kit'
+import { State } from '../../ui/kit'
 import { loadDemoCampaign } from './demo'
 
 const PHASES: Array<{ id: TePhaseTab; label: string }> = [
@@ -102,9 +103,9 @@ function SavedIndicator() {
   const saveError = useTeStore((s) => s.saveError)
   if (saveError) {
     return (
-      <span className="status bad" role="status">
+      <State tone="critical" role="status">
         {saveError}
-      </span>
+      </State>
     )
   }
   if (!lastSavedAt) return null
@@ -211,13 +212,13 @@ export function OpsWorkspace() {
           ))}
           <option value="__new__">+ New / start screen…</option>
         </select>
-        <span className={`status ${campaign.phase === 'closed' ? 'neutral' : 'good'}`}>
+        <State tone={campaign.phase === 'closed' ? 'inactive' : 'nominal'}>
           {campaign.phase}
-        </span>
+        </State>
         {campaign.illustrative && (
-          <span className="status warn" title="Every number in this campaign is notional.">
+          <State tone="warning" title="Every number in this campaign is notional.">
             illustrative demo
-          </span>
+          </State>
         )}
         <SavedIndicator />
         <div className="spacer" />
@@ -262,10 +263,14 @@ export function OpsWorkspace() {
           })}
         </nav>
         <main className="te-main">
-          {campaign.evidencePackage.deliveredAt && <p className="status warn">
-            Delivered record: campaign evidence is frozen. Export this record and start a
-            follow-on campaign for further work.
-          </p>}
+          {campaign.evidencePackage.deliveredAt && (
+            <p>
+              <State tone="warning">
+                Delivered record: campaign evidence is frozen. Export this record and start a
+                follow-on campaign for further work.
+              </State>
+            </p>
+          )}
           {phase === 'campaign' && <CampaignPanel key={campaign.id} campaign={campaign} />}
           {phase === 'design' && <DesignPanel key={campaign.id} campaign={campaign} />}
           {phase === 'cards' && <CardsPanel key={campaign.id} campaign={campaign} />}

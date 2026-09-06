@@ -1,0 +1,189 @@
+// Design step 3 part B browser probe: the shared State and ProvMark primitives
+// on real surfaces. Board right tabs with a typed run loaded and stepped, the
+// Inspector on a sensor and on an effector, every T&E Ops phase panel. On each
+// view it sweeps: no element with a state word carries a background fill other
+// than the requirements verdict headline, every .prov-mark column is 36 px wide,
+// every .state-square is 8 by 8.
+// Run: npx vite --port 5312 --strictPort, then PORT=5312 node probe.mjs
+import { chromium } from 'playwright'
+import { mkdirSync, writeFileSync } from 'node:fs'
+
+const PORT = process.env.PORT || '5312'
+const BASE = `http://localhost:${PORT}`
+const OUT = 'docs/field-te/evidence/design-step3b-2026-09-05'
+mkdirSync(OUT, { recursive: true })
+
+const log = []
+const say = (...a) => { const s = a.join(' '); log.push(s); console.log(s) }
+
+async function loadFixture(page) {
+  await page.evaluate(async () => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const raw = await (await fetch('/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json')).text()
+    const s = window.__store.getState()
+    s.loadScenario(parseAutosave(raw))
+    s.setRightTab('analysis')
+    s.applyLens('run-summary')
+    s.startRun()
+    s.advanceRun(300)
+  })
+  await page.waitForTimeout(400)
+}
+
+async function openTab(page, tab, kind) {
+  await page.evaluate(([t, k]) => {
+    const s = window.__store.getState()
+    s.setRightTab(t)
+    if (t === 'inspect') {
+      const e = s.scenario.entities.find((x) => x.kind === k) ?? s.scenario.entities[0]
+      if (e) s.select({ entityIds: [e.id] })
+    }
+    if (t === 'library') {
+      const spec = s.scenario.library[0]
+      if (spec) s.select({ libraryId: spec.id })
+    }
+  }, [tab, kind ?? 'system'])
+  await page.waitForTimeout(350)
+}
+
+const shot = async (page, name) => {
+  await page.screenshot({ path: `${OUT}/${name}.png` })
+  say(`screenshot ${OUT}/${name}.png`)
+}
+
+// The three measurements on the current document. A state word is the text
+// of a .state element; its fill is checked on the element and on every
+// ancestor up to .app, so a tinted row behind a word is caught too. The
+// requirements verdict is the one allowed headline fill.
+async function sweep(page, view) {
+  const r = await page.evaluate(() => {
+    const name = (el) => `${el.tagName.toLowerCase()}.${String(el.className).split(' ').join('.') || '(none)'}`
+    const opaque = (el) => {
+      const c = getComputedStyle(el).backgroundColor.match(/[\d.]+/g)
+      if (!c) return false
+      const a = c.length > 3 ? Number(c[3]) : 1
+      return a > 0
+    }
+    const isSurface = (el) => {
+      // The panel, board, sunken and hover greys are surfaces, not state fills.
+      const c = getComputedStyle(el).backgroundColor.match(/[\d.]+/g).map(Number)
+      return Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) <= 24
+    }
+    const states = [...document.querySelectorAll('.state')]
+    const stateFills = []
+    for (const st of states) {
+      let el = st
+      while (el && !el.classList.contains('app')) {
+        if (opaque(el) && !isSurface(el) && !el.classList.contains('requirements-verdict')) {
+          stateFills.push(`${name(st)} "${st.textContent.trim().slice(0, 24)}" under ${name(el)} ${getComputedStyle(el).backgroundColor}`)
+          break
+        }
+        el = el.parentElement
+      }
+    }
+    const marks = [...document.querySelectorAll('.prov-mark')]
+    const markWidths = marks.map((m) => Math.round(m.getBoundingClientRect().width * 100) / 100)
+    const badMarks = marks.filter((m, i) => markWidths[i] !== 36).map((m, i) => `${name(m)} ${markWidths[i]}px`)
+    const squares = [...document.querySelectorAll('.state-square')]
+    const badSquares = squares
+      .map((sq) => sq.getBoundingClientRect())
+      .filter((b) => Math.round(b.width) !== 8 || Math.round(b.height) !== 8)
+      .map((b) => `${Math.round(b.width)}x${Math.round(b.height)}`)
+    const verdict = document.querySelector('.requirements-verdict')
+    const legacy = [...document.querySelectorAll('.pill, .status, .det-pill, .insp-status, .suggest-badge, .pf, .insp-tag')]
+      .map(name)
+    return {
+      states: states.length,
+      stateFills,
+      marks: marks.length,
+      markWidths: [...new Set(markWidths)],
+      badMarks,
+      squares: squares.length,
+      badSquares,
+      verdictFill: verdict ? getComputedStyle(verdict).backgroundColor : null,
+      legacy: [...new Set(legacy)],
+    }
+  })
+  say(`sweep ${view}`, JSON.stringify(r))
+  return { view, ...r }
+}
+
+const browser = await chromium.launch()
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+await ctx.addInitScript(() => window.localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await ctx.newPage()
+page.on('console', (m) => log.push(`console:${m.type()} ${m.text()}`))
+page.on('pageerror', (e) => log.push(`pageerror ${e.message}`))
+await page.goto(BASE, { waitUntil: 'networkidle' })
+await page.locator('.app').waitFor()
+
+await loadFixture(page)
+const sweeps = []
+
+// 1. Board right tabs with the run stepped to 300 s.
+for (const tab of ['analysis', 'cards', 'library']) {
+  await openTab(page, tab)
+  await shot(page, `tab-${tab}`)
+  sweeps.push(await sweep(page, `tab-${tab}`))
+}
+
+// 2. Inspector on a sensor and on an effector, selected through the store.
+for (const kind of ['sensor', 'effector']) {
+  await openTab(page, 'inspect', kind)
+  const selected = await page.evaluate(() => {
+    const s = window.__store.getState()
+    const id = s.selection.entityIds[0]
+    const e = s.scenario.entities.find((x) => x.id === id)
+    return e ? `${e.kind} ${e.name}` : null
+  })
+  say(`inspector selection ${kind}:`, selected)
+  await shot(page, `inspector-${kind}`)
+  sweeps.push(await sweep(page, `inspector-${kind}`))
+}
+
+// 3. The debrief record needs a finished run: step to the end and read the
+//    verdict headline, the one fill allowed under rule 3.
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.setRightTab('analysis')
+  s.advanceRun(2000)
+})
+await page.waitForTimeout(600)
+await shot(page, 'tab-analysis-complete')
+sweeps.push(await sweep(page, 'tab-analysis-complete'))
+
+// 4. T&E Ops workspace: every phase panel on a campaign built through the store.
+await page.evaluate(() => {
+  const te = window.__teStore.getState()
+  if (te.campaigns.length === 0) te.createCampaign('Step 3b kit check', 'STEP3B')
+  te.setWorkspace('ops')
+})
+await page.waitForTimeout(400)
+for (const p of ['campaign', 'design', 'cards', 'execute', 'analyze', 'deliver', 'products']) {
+  await page.evaluate((ph) => window.__teStore.getState().setPhase(ph), p)
+  await page.waitForTimeout(300)
+  await shot(page, `te-${p}`)
+  sweeps.push(await sweep(page, `te-${p}`))
+}
+await page.evaluate(() => window.__teStore.getState().setWorkspace('board'))
+await page.waitForTimeout(300)
+
+const total = {
+  views: sweeps.length,
+  states: sweeps.reduce((n, s) => n + s.states, 0),
+  stateFills: sweeps.flatMap((s) => s.stateFills),
+  marks: sweeps.reduce((n, s) => n + s.marks, 0),
+  markWidths: [...new Set(sweeps.flatMap((s) => s.markWidths))],
+  badMarks: sweeps.flatMap((s) => s.badMarks),
+  squares: sweeps.reduce((n, s) => n + s.squares, 0),
+  badSquares: sweeps.flatMap((s) => s.badSquares),
+  verdictFills: [...new Set(sweeps.map((s) => s.verdictFill).filter(Boolean))],
+  legacy: [...new Set(sweeps.flatMap((s) => s.legacy))],
+}
+say('total', JSON.stringify(total))
+
+await ctx.close()
+await browser.close()
+writeFileSync(`${OUT}/console.log`, log.join('\n') + '\n')
+writeFileSync(`${process.env.TMPDIR || '/tmp'}/step3b-measurements.json`, JSON.stringify({ sweeps, total }, null, 2))
+say('done')

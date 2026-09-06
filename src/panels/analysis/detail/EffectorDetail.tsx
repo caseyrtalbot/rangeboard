@@ -10,7 +10,7 @@ import { formatTime } from '../../../geometry/geo'
 import type { Entity } from '../../../model/types'
 import { effectiveDoctrine } from '../../../model/types'
 import { modelFor } from '../../../model/scenario'
-import { STATE_LABEL, stateClass } from '../SystemStatus'
+import { STATE_LABEL, stateTone } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -118,8 +118,8 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
   ]
 
   const pill = component
-    ? { word: STATE_LABEL[component.state], className: stateClass(component.state) }
-    : { word: 'OFFLINE', className: 'bad' }
+    ? { word: STATE_LABEL[component.state], tone: stateTone(component.state) }
+    : { word: 'OFFLINE', tone: 'critical' as const }
   const modelLine = model && spec ? `${model.name} · ${spec.effectorType}` : 'no model linked'
   const doctrineMeta = doctrine.enabled ? launchPolicyLabel(doctrine.launchPolicy) : 'doctrine off'
   const none = <p className="muted small">No salvo assigned.</p>

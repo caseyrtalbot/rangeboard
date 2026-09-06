@@ -1,4 +1,5 @@
 import type { AarEffectorShots, AarSummary, EnvironmentSpec } from '../model/types'
+import type { StateTone } from '../ui/kit'
 import type { ImpactSeverity } from '../analysis/impact'
 import type { ThreatAssessment } from '../playback/sim'
 import type { ExpenditureChannel } from '../playback/pk'
@@ -7,10 +8,10 @@ import { formatSpeed, formatTime } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
 
 /** Chip styling per tier: SEVERE red, MODERATE amber, LOW neutral. */
-export const TIER_CLS: Record<ImpactSeverity, string> = {
-  severe: 'bad',
-  moderate: 'warn',
-  low: 'neutral',
+export const TIER_TONE: Record<ImpactSeverity, StateTone> = {
+  severe: 'critical',
+  moderate: 'warning',
+  low: 'inactive',
 }
 
 /**

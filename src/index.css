@@ -964,31 +964,6 @@ input[type='color']::-webkit-color-swatch {
   gap: var(--space-3);
 }
 
-/* State is ink, never a box and never a tint: the word carries the state
-   colour and space separates one reading from the next. */
-.pill {
-  color: var(--text-dim);
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-  white-space: nowrap;
-}
-
-.pill-good {
-  color: var(--good);
-}
-
-.pill-warn {
-  color: var(--warn);
-}
-
-.pill-danger {
-  color: var(--danger);
-}
-
-.pill-dim {
-  color: var(--text-dim);
-}
-
 /* ---------- State square and provenance mark ---------- */
 
 /* Rule 3: a state is a text colour, a stroke or a solid 8 px square. The
@@ -1016,6 +991,38 @@ input[type='color']::-webkit-color-swatch {
    keeps one radius on controls alone. */
 .state-square.live {
   clip-path: circle(50%);
+}
+
+/* A state: the square and its word in one ink. The word is a label; the
+   colour is the only thing that changes between tones. */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: 15px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.state.nominal {
+  color: var(--status-nominal);
+}
+
+.state.warning {
+  color: var(--status-warning);
+}
+
+.state.critical {
+  color: var(--status-critical);
+}
+
+.state.inactive {
+  color: var(--status-inactive);
 }
 
 /* Provenance replaces the PF, SRC, DOC and PROB pills: one 8 px shape in a
@@ -1290,49 +1297,7 @@ p.muted.small {
   text-overflow: ellipsis;
 }
 
-/* ---------- Inspector: status ---------- */
-
-.insp-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex: 0 0 auto;
-  color: var(--text-tertiary);
-  font-family: var(--font-ui);
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-  white-space: nowrap;
-}
-
-.insp-status::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background: currentColor;
-  flex: 0 0 auto;
-}
-
-.insp-status.nominal {
-  color: var(--status-nominal);
-}
-
-.insp-status.warning {
-  color: var(--status-warning);
-}
-
-.insp-status.critical {
-  color: var(--status-critical);
-}
-
-.insp-status.inactive {
-  color: var(--status-inactive);
-}
-
-.insp-status.inactive::before {
-  background: transparent;
-  outline: 1px solid currentColor;
-  outline-offset: -1px;
-}
+/* ---------- Inspector: key and value grid ---------- */
 
 /* ---------- Inspector: property rows ---------- */
 
@@ -1342,7 +1307,6 @@ p.muted.small {
 .insp-row {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--space-3);
   min-height: 28px;
   margin: 0 calc(var(--panel-pad) * -1);
@@ -1365,22 +1329,18 @@ p.muted.small {
 /* Weight is reserved for machine data, where tabular numerals need it. A
    text value separates from its label on colour alone. */
 .insp-row-value {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   color: var(--text-primary);
-  font-size: var(--type-body-size);
-  font-weight: var(--type-body-weight);
+  font-family: var(--font-mono);
+  font-size: var(--type-machine-size);
+  font-weight: var(--type-machine-weight);
   line-height: 18px;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.insp-row-value.mono {
-  font-size: var(--type-machine-size);
-  font-weight: var(--type-machine-weight);
 }
 
 .insp-row-value.muted {
@@ -1413,8 +1373,16 @@ p.muted.small {
 }
 
 .insp-row.stacked .insp-row-value {
+  font-family: var(--font-ui);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
   text-align: left;
   white-space: normal;
+}
+
+/* Rows are separated by the rule alone. */
+.insp-row + .insp-row {
+  border-top: 1px solid var(--rule);
 }
 
 /* A ring row holds a control, not a value. The row centres on the control
@@ -1425,6 +1393,7 @@ p.muted.small {
 
 .insp-rings .insp-row-value {
   flex: 0 0 auto;
+  margin-left: auto;
 }
 
 /* ---------- Inspector: editable fields ---------- */
@@ -1574,14 +1543,6 @@ p.muted.small {
   border: 1px solid var(--border-control);
   padding: 4px 0;
   font-variant-numeric: tabular-nums;
-}
-
-/* Evidence grade on an integration row. Not a badge: a mono abbreviation. */
-.insp-tag {
-  margin-right: 5px;
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
 }
 
 .insp-more {
@@ -1752,31 +1713,6 @@ p.muted.small {
 }
 
 /* ---------- Analysis ---------- */
-
-.status {
-  display: inline-block;
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-  line-height: 15px;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-.status.good {
-  color: var(--good);
-}
-
-.status.warn {
-  color: var(--warn);
-}
-
-.status.bad {
-  color: var(--danger);
-}
-
-.status.neutral {
-  color: var(--text-dim);
-}
 
 /* Progressive disclosure: a lens bar over a stack of widget frames. */
 
@@ -2017,7 +1953,7 @@ p.muted.small {
   white-space: nowrap;
 }
 
-.det-pill {
+.det-h .state {
   flex: none;
   margin-left: auto;
 }
@@ -2077,21 +2013,6 @@ p.muted.small {
   color: var(--text-dim);
   font-size: var(--type-dense-size);
   font-style: normal;
-}
-
-/* Provenance tag: PF for a planning factor, SRC for a sourced value. */
-.pf {
-  display: inline-block;
-  margin-left: var(--space-1);
-  color: var(--warn);
-  font-family: var(--font-mono);
-  font-size: var(--type-dense-size);
-  line-height: 14px;
-  vertical-align: 1px;
-}
-
-.pf.src {
-  color: var(--good);
 }
 
 /* Four columns in a 320 px panel: fixed layout, so every cell clips instead
@@ -2194,10 +2115,6 @@ p.muted.small {
 .src-tb td:nth-child(5) {
   overflow-wrap: anywhere;
   white-space: normal;
-}
-
-.src-tb .pf {
-  margin-left: 0;
 }
 
 .src-tb a {
@@ -2527,21 +2444,10 @@ p.muted.small {
   font-size: var(--type-meta-size);
 }
 
-.suggest-badge {
-  color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
-}
-
 .suggest-empty {
   padding: 5px 10px;
   color: var(--text-dim);
   font-size: var(--type-meta-size);
-}
-
-/* Documented pairs wire themselves; this badge confirms it happened. */
-.suggest-auto {
-  color: var(--accent);
 }
 
 /* ---------- Run header strip ---------- */
@@ -2985,8 +2891,18 @@ input[type='number'] {
   font-size: var(--type-meta-size);
 }
 
-.gate-item.bad {
-  border-left-color: var(--danger);
+/* GateList: one state row per blocker, the sentence wrapping under its square. */
+.gate-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.gate-list .state {
+  align-items: flex-start;
+  white-space: normal;
+  font-size: var(--type-meta-size);
+  font-weight: var(--type-meta-weight);
 }
 
 .card-chip.dim {
@@ -4864,8 +4780,8 @@ select.nu-unit {
   font-size: var(--type-body-size);
 }
 
-.valid .status,
-.validity-finding .status {
+.valid .state,
+.validity-finding .state {
   flex: none;
 }
 

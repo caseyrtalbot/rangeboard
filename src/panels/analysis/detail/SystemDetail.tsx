@@ -5,7 +5,7 @@ import type { Entity, Scenario } from '../../../model/types'
 import { entityActive } from '../../../model/types'
 import { killChainRoutes } from '../../../playback/killChain'
 import { modelFor } from '../../../model/scenario'
-import { STATE_LABEL, stateClass } from '../SystemStatus'
+import { STATE_LABEL, stateTone } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow } from './detailRows'
@@ -80,8 +80,8 @@ export function SystemDetail({ entity }: { entity: Entity }) {
   }, [scenario, runId, threats, entity.id])
 
   const pill = component
-    ? { word: STATE_LABEL[component.state], className: stateClass(component.state) }
-    : { word: 'OFFLINE', className: 'bad' }
+    ? { word: STATE_LABEL[component.state], tone: stateTone(component.state) }
+    : { word: 'OFFLINE', tone: 'critical' as const }
   const modelLine = model ? `${model.name} · command and control` : 'no model linked'
 
   return (

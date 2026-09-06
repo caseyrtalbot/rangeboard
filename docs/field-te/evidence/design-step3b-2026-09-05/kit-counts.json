@@ -1,0 +1,36 @@
+{
+  "slice": "design step 3 part B, one kit (F2)",
+  "baseline": "dca021a",
+  "exports": {
+    "src/ui/kit.tsx": { "before": 0, "after": 6, "names": ["Field", "Seg", "State", "ProvMark", "StateTone (type)", "ProvKind (type)"] },
+    "src/te/ui/kit.tsx": { "before": 36, "after": 36, "note": "35 export statements; Field and Seg are one re-export line from src/ui/kit" },
+    "src/panels/inspector/kit.tsx": { "before": 11, "after": 9, "removed": ["Status", "StatusTone"] }
+  },
+  "unified": [
+    { "before": ["te/ui/kit Field", "(no Board field)"], "after": "ui/kit Field" },
+    { "before": ["te/ui/kit Seg", "panels/Inspector.tsx local Seg", "Toolbar workspace .seg markup"], "after": "ui/kit Seg" },
+    { "before": ["te/ui/kit Pill (.status)", "inspector/kit Status (.insp-status)", ".pill spans in Toolbar", ".status spans in eleven Board and T&E files", ".det-pill in DetailHeader", ".suggest-badge LINKED"], "after": "ui/kit State" },
+    { "before": ["inspector/kit PfTag (.pf PF and SRC words)", "Inspector .insp-tag DOC PROB INF", "ConnectSuggestPopup .suggest-badge DOC PROB INF", "te/ui/kit Provenance chip"], "after": "ui/kit ProvMark" }
+  ],
+  "word_to_mark": { "PF": "pf (hollow)", "SRC": "sourced (filled)", "DOC": "sourced (filled), title carries DOC and the source", "PROB": "probable (dashed)", "INF": "inferred (circle)" },
+  "css": {
+    "removed": 26,
+    "removed_selectors": [".pill", ".pill-good", ".pill-warn", ".pill-danger", ".pill-dim", ".insp-status", ".insp-status::before", ".insp-status.nominal", ".insp-status.warning", ".insp-status.critical", ".insp-status.inactive", ".insp-status.inactive::before", ".insp-tag", ".status", ".status.good", ".status.warn", ".status.bad", ".status.neutral", ".det-pill", ".pf", ".pf.src", ".src-tb .pf", ".suggest-badge", ".suggest-auto", ".gate-item.bad", ".insp-row-value.mono"],
+    "added": 9,
+    "added_selectors": [".state", ".state.nominal", ".state.warning", ".state.critical", ".state.inactive", ".det-h .state", ".gate-list", ".gate-list .state", ".insp-row + .insp-row"],
+    "retargeted": [".valid .status, .validity-finding .status -> .state"],
+    "modified": [".insp-row", ".insp-row-value", ".insp-row.stacked .insp-row-value", ".insp-rings .insp-row-value"]
+  },
+  "browser": {
+    "views": 13,
+    "state_elements": 41,
+    "state_squares_8x8": 41,
+    "state_squares_off_size": 0,
+    "prov_mark_columns": 45,
+    "prov_mark_widths_px": [36],
+    "prov_mark_off_width": 0,
+    "state_words_with_fill": 0,
+    "requirements_verdict_on_screen": false,
+    "legacy_class_hits": ["span.prov-mark.pf is the part A modifier class, not the removed .pf tag"]
+  }
+}

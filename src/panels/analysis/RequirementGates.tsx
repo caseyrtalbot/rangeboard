@@ -1,5 +1,6 @@
 import type { RequirementGate, RequirementGateReport } from '../../analysis/requirements'
 import { SURVIVAL_LABELS } from './widgets/labels'
+import { State } from '../../ui/kit'
 
 const STATUS_LABEL: Record<RequirementGate['status'], string> = {
   pass: 'PASS',
@@ -11,9 +12,9 @@ function GateCard({ gate }: { gate: RequirementGate }) {
   return (
     <div className={`requirement-gate gate-${gate.status}`}>
       <div className="gate-head">
-        <span className={`status gate-status ${gate.status === 'pass' ? 'good' : gate.status === 'fail' ? 'bad' : 'neutral'}`}>
+        <State tone={gate.status === 'pass' ? 'nominal' : gate.status === 'fail' ? 'critical' : 'inactive'}>
           {STATUS_LABEL[gate.status]}
-        </span>
+        </State>
         <strong>{gate.id === 'effect' ? SURVIVAL_LABELS.limit : gate.label}</strong>
         <span className="gate-count">
           {gate.met}/{gate.required}

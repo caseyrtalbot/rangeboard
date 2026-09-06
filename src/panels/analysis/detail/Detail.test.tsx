@@ -98,7 +98,7 @@ describe('DetailPane', () => {
     expect(html).toContain('aria-label="Back to the lens stack"')
     expect(html).toContain('‹ Back')
     expect(html).toContain(sensor.name)
-    expect(html).toContain('det-pill">SEARCH<')
+    expect(html).toContain('<span class="state inactive"><i class="state-square" aria-hidden="true"></i>SEARCH<')
     expect(html).toContain('surveillance')
     expectSections(html, [
       ['pd', 'Pd per track'],
@@ -121,7 +121,7 @@ describe('DetailPane', () => {
     const effector = entityOf('effector')
     const html = render(effector.id)
     expect(html).toContain('data-detail="effector"')
-    expect(html).toContain('det-pill">READY<')
+    expect(html).toContain('<span class="state inactive"><i class="state-square" aria-hidden="true"></i>READY<')
     expect(html).toContain('interceptor')
     expectSections(html, [
       ['pk', 'Pk per track'],
@@ -140,7 +140,7 @@ describe('DetailPane', () => {
     const uas = entityOf('uas')
     const html = render(uas.id)
     expect(html).toContain('data-detail="threat"')
-    expect(html).toContain('det-pill"')
+    expect(html).toContain('<span class="state inactive" style="color:')
     expect(html).toContain('quad')
     expectSections(html, [
       ['file', 'Track file'],

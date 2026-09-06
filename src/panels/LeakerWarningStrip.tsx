@@ -1,6 +1,7 @@
 import type { LeakerImpact } from '../analysis/impact'
 import { SEVERITY_LABEL, SEVERITY_RANK } from '../analysis/impact'
-import { TIER_CLS } from './headlines'
+import { TIER_TONE } from './headlines'
+import { State } from '../ui/kit'
 import { formatTime } from '../geometry/geo'
 
 /**
@@ -43,7 +44,7 @@ export function LeakerWarningStrip({ impacts }: { impacts: LeakerImpact[] }) {
     <div className="iw-strip">
       {lines.map((l) => (
         <div className="iw-asset" key={l.assetKey}>
-          <span className={`status ${TIER_CLS[l.tier]}`}>I&W {SEVERITY_LABEL[l.tier]}</span>
+          <State tone={TIER_TONE[l.tier]}>I&W {SEVERITY_LABEL[l.tier]}</State>
           <span className="iw-asset-name">{l.assetName}</span>
           <span className="iw-asset-stats">
             {[

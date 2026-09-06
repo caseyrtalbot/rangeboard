@@ -137,7 +137,7 @@ describe('SensitivityWidget', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     setSensitivity({}, 'stale')
     const html = render()
-    expect(html).toContain('<span class="status warn">STALE</span>')
+    expect(html).toContain('<span class="state warning"><i class="state-square" aria-hidden="true"></i>STALE</span>')
     expect(html).not.toContain('<td>Mavic 3</td>')
     expect(html).not.toContain('reps · seed')
     expect(html).toContain('Run sensitivity')

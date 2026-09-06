@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { State } from '../../ui/kit'
+import type { StateTone } from '../../ui/kit'
 import type { ComponentTelemetry, SystemTelemetryGroup } from '../../analysis/systemTelemetry'
 import { formatTime } from '../../geometry/geo'
 
@@ -15,11 +17,11 @@ export const STATE_LABEL: Record<ComponentTelemetry['state'], string> = {
 }
 
 /** `.status` modifier per component state. */
-export function stateClass(state: ComponentTelemetry['state']): string {
-  if (state === 'disabled' || state === 'depleted') return 'bad'
-  if (state === 'tracking' || state === 'routing' || state === 'target') return 'good'
-  if (state === 'cooldown') return 'warn'
-  return 'neutral'
+export function stateTone(state: ComponentTelemetry['state']): StateTone {
+  if (state === 'disabled' || state === 'depleted') return 'critical'
+  if (state === 'tracking' || state === 'routing' || state === 'target') return 'nominal'
+  if (state === 'cooldown') return 'warning'
+  return 'inactive'
 }
 
 /** "1 target", "2 targets": a count and its noun always agree. */
@@ -56,7 +58,7 @@ function ComponentRow({ component }: { component: ComponentTelemetry }) {
           {capacity ? ` · ${capacity}` : ''}
         </small>
       </span>
-      <span className={`status ${stateClass(component.state)}`}>{STATE_LABEL[component.state]}</span>
+      <State tone={stateTone(component.state)}>{STATE_LABEL[component.state]}</State>
     </div>
   )
 }

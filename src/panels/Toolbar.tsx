@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Seg, State } from '../ui/kit'
+import type { StateTone } from '../ui/kit'
 import { useStore } from '../state/store'
 import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
@@ -21,10 +23,10 @@ const TOOLS = [
 
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
 
-const ROE_PILLS: Record<Roe, { label: string; cls: string; hint: string }> = {
-  free: { label: 'ROE Free', cls: 'pill-good', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
-  tight: { label: 'ROE Tight', cls: 'pill-dim', hint: 'ROE tight: engage tracks declared hostile' },
-  hold: { label: 'ROE Hold', cls: 'pill-warn', hint: 'ROE hold: no engagements' },
+const ROE_PILLS: Record<Roe, { label: string; tone: StateTone; hint: string }> = {
+  free: { label: 'ROE Free', tone: 'nominal', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
+  tight: { label: 'ROE Tight', tone: 'inactive', hint: 'ROE tight: engage tracks declared hostile' },
+  hold: { label: 'ROE Hold', tone: 'warning', hint: 'ROE hold: no engagements' },
 }
 
 /** Local wall-clock HH:MM, 24-hour. */
@@ -200,17 +202,12 @@ export function Toolbar() {
   return (
     <header className="toolbar">
       <div className="brand">Rangeboard</div>
-      <div className="seg" aria-label="Workspace">
-        {workspaces.map((w) => (
-          <button
-            key={w.id}
-            className={workspace === w.id ? 'active' : ''}
-            onClick={() => setWorkspace(w.id)}
-          >
-            {w.label}
-          </button>
-        ))}
-      </div>
+      <Seg
+        value={workspace}
+        options={workspaces.map((w) => ({ v: w.id, label: w.label }))}
+        label="Workspace"
+        onChange={setWorkspace}
+      />
       <input
         className="scenario-name"
         value={scenario.name}
@@ -247,33 +244,33 @@ export function Toolbar() {
       <div className="spacer" />
 
       <div className="status-pills" aria-label="Status">
-        <span className={`pill ${ROE_PILLS[roe].cls}`} title={ROE_PILLS[roe].hint}>
+        <State tone={ROE_PILLS[roe].tone} title={ROE_PILLS[roe].hint}>
           {ROE_PILLS[roe].label}
-        </span>
+        </State>
         {ui.layers.threatWez && (
-          <span className="pill pill-danger" title="Threat weapon engagement zones are drawn on the canvas">
+          <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
             WEZ On
-          </span>
+          </State>
         )}
         {derates.length > 0 && (
-          <span className="pill pill-warn" title={`Sensor ranges derated: ${derates.join(', ')}`}>
+          <State tone="warning" title={`Sensor ranges derated: ${derates.join(', ')}`}>
             Env Derate
-          </span>
+          </State>
         )}
         {spawnWarning && (
-          <span className="pill pill-warn" title={spawnWarning.hint}>
+          <State tone="warning" title={spawnWarning.hint}>
             Spawn In Ring {spawnWarning.count}
-          </span>
+          </State>
         )}
         {save.error != null ? (
-          <span className="pill pill-danger" title={save.error} role="alert">
+          <State tone="critical" title={save.error} role="alert">
             Save failed
-          </span>
+          </State>
         ) : (
           save.lastAutosaveAt != null && (
-            <span className="pill pill-dim" title="Last autosave to browser storage">
+            <State tone="inactive" title="Last autosave to browser storage">
               Saved {clockHHMM(save.lastAutosaveAt)}
-            </span>
+            </State>
           )
         )}
 

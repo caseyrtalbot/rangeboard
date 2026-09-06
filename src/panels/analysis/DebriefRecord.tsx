@@ -24,6 +24,7 @@ import { ThreatPicture } from './ThreatPicture'
 import { EventLedgerList } from './widgets/EventLedgerWidget'
 import { currentSensitivity, currentSummary } from './widgets/mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './widgets/RunValidityWidget'
+import { State } from '../../ui/kit'
 
 function RunActions({
   scenario,
@@ -101,13 +102,13 @@ function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }
           <span className="debrief-kicker">Run validity</span>
           <strong>{text.line}</strong>
         </div>
-        <span className={`status ${text.cls}`}>{text.pill}</span>
+        <State tone={text.tone}>{text.pill}</State>
       </div>
       {assessment.findings.map((finding) => (
         <div className="validity-finding" key={finding.id}>
-          <span className={`status ${SEVERITY_PILL[finding.severity].cls}`}>
+          <State tone={SEVERITY_PILL[finding.severity].tone}>
             {SEVERITY_PILL[finding.severity].text}
-          </span>
+          </State>
           <span>
             {finding.message}
             <small> Gates: {finding.gates.join(', ')}.</small>
@@ -192,9 +193,9 @@ export function DebriefRecord({
           <span className="debrief-kicker">Run evidence record</span>
           <strong>{formatRunLabel(runSeq)} · COMPLETE</strong>
         </div>
-        <span className={`status ${requirements.overall === 'pass' ? 'good' : 'bad'}`}>
+        <State tone={requirements.overall === 'pass' ? 'nominal' : 'critical'}>
           {requirementLabel}
-        </span>
+        </State>
       </div>
       <div className="debrief-meta">
         planning envelope · {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events

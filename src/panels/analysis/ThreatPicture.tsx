@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { State } from '../../ui/kit'
 import type {
   ThreatOperationalGroup,
   ThreatOperationalRow,
@@ -100,7 +101,7 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) 
     <div className="threat-data-row">
       <div className="threat-data-head">
         <strong title={row.name}>{row.name}</strong>
-        <span className={`status ${row.effectMet ? 'good' : row.engaged ? 'warn' : 'neutral'}`}>
+        <State tone={row.effectMet ? 'nominal' : row.engaged ? 'warning' : 'inactive'}>
           {mode === 'live'
             ? liveState(row)
             : row.effectMet
@@ -108,7 +109,7 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) 
               : row.engaged
                 ? 'ENGAGED'
                 : row.status.replaceAll('-', ' ').toUpperCase()}
-        </span>
+        </State>
       </div>
       <Ladder
         c={{

@@ -7,35 +7,37 @@ import { useStore } from '../../../state/store'
 import { useEngagement } from './controls'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
+import { State } from '../../../ui/kit'
+import type { StateTone } from '../../../ui/kit'
 
-/** The pill, the one-line reading and the status class of each run validity. */
-export const VALIDITY_TEXT: Record<RunValidity, { pill: string; line: string; cls: string }> = {
+/** The state word, the one-line reading and the state tone of each run validity. */
+export const VALIDITY_TEXT: Record<RunValidity, { pill: string; line: string; tone: StateTone }> = {
   valid: {
     pill: 'VALID',
     line: 'No finding limits this run.',
-    cls: 'good',
+    tone: 'nominal',
   },
   'valid-limited': {
     pill: 'VALID, LIMITED',
     line: 'The results stand, with the caveats below.',
-    cls: 'warn',
+    tone: 'warning',
   },
   invalid: {
     pill: 'INVALID',
     line: 'A gate below is not scored: the run never made that measurement.',
-    cls: 'bad',
+    tone: 'critical',
   },
   pending: {
     pill: 'PENDING',
     line: 'No track was assessed, so nothing has been measured yet.',
-    cls: 'neutral',
+    tone: 'inactive',
   },
 }
 
-/** The pill text and status class of each finding severity. */
-export const SEVERITY_PILL: Record<RunValidityFinding['severity'], { text: string; cls: string }> = {
-  invalidating: { text: 'INVALIDATES', cls: 'bad' },
-  limiting: { text: 'LIMITS', cls: 'warn' },
+/** The state word and tone of each finding severity. */
+export const SEVERITY_PILL: Record<RunValidityFinding['severity'], { text: string; tone: StateTone }> = {
+  invalidating: { text: 'INVALIDATES', tone: 'critical' },
+  limiting: { text: 'LIMITS', tone: 'warning' },
 }
 
 function metaOf(findings: RunValidityFinding[]): string {
@@ -70,7 +72,7 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
       count={count}
     >
       <div className="valid">
-        <span className={`status ${text.cls}`}>{text.pill}</span>
+        <State tone={text.tone}>{text.pill}</State>
         <span>{text.line}</span>
       </div>
       <div className="fid-tags">
@@ -88,9 +90,9 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
       </div>
       {validity.findings.map((finding) => (
         <div className="validity-finding" key={finding.id}>
-          <span className={`status ${SEVERITY_PILL[finding.severity].cls}`}>
+          <State tone={SEVERITY_PILL[finding.severity].tone}>
             {SEVERITY_PILL[finding.severity].text}
-          </span>
+          </State>
           <span>{finding.message}</span>
         </div>
       ))}

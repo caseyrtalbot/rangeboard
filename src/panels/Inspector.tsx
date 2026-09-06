@@ -26,6 +26,8 @@ import {
   ShortcutList,
 } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
+import { ProvMark, Seg } from '../ui/kit'
+import type { ProvKind } from '../ui/kit'
 import { useStore } from '../state/store'
 import { modelFor } from '../model/scenario'
 import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
@@ -152,21 +154,18 @@ function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
         value={cal.pd0}
         tag={<PfTag model={model} field="placardPd" absent={spec.placardPd !== cal.pd0} />}
         title="The placard range is quoted at this Pd against the reference RCS."
-        mono
       />
       <Row
         label="Placard Pfa"
         value={pfaText(cal.pfa)}
         tag={<PfTag model={model} field="pfa" absent={spec.pfa !== cal.pfa} />}
         title="False-alarm probability the placard assumes."
-        mono
       />
       <Row
         label="Placard case"
         value={`Swerling ${cal.swerling0}`}
         unit="PF"
         title="Fluctuation case of the reference target."
-        mono
       />
     </>
   )
@@ -216,7 +215,6 @@ function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
           'One look at the full search volume. The initiation rule counts these scans. ' +
           'With no recorded period a Pd-modeled radar scans on the role planning factor.'
         }
-        mono
       />
       <Row
         label="Track initiation"
@@ -229,14 +227,12 @@ function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
           />
         }
         title="A track initiates when M of the last N scans detect and the cumulative Pd reaches the test's track threshold."
-        mono
       />
       <Row
         label="Track drop"
         value={`${trackDropMissesFor(spec)} missed scans`}
         tag={<PfTag model={model} field="trackDropMisses" absent={spec.trackDropMisses == null} />}
         title="After a missed scan the track coasts. It drops after this many consecutive misses."
-        mono
       />
     </>
   )
@@ -277,7 +273,6 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
             label={label}
             value={formatDistance(r, units)}
             unit={planning ? 'planning' : undefined}
-            mono
           />
         )
       })}
@@ -360,39 +355,9 @@ function MountHeight({
         value={heightM ?? MOUNT_HEIGHT_M}
         unit="m"
         tag={<PfTag model={model} field="mountHeightM" absent={heightM == null} />}
-        mono
       />
       <p className="muted small">{note}</p>
     </>
-  )
-}
-
-/** Segmented control: one active option, no typing. */
-function Seg<T extends string>({
-  value,
-  options,
-  onChange,
-  label,
-}: {
-  value: T
-  options: Array<{ v: T; label: string }>
-  onChange: (v: T) => void
-  label: string
-}) {
-  return (
-    <div className="seg" role="group" aria-label={label}>
-      {options.map((o) => (
-        <button
-          key={o.v}
-          type="button"
-          aria-pressed={value === o.v}
-          className={value === o.v ? 'active' : ''}
-          onClick={() => onChange(o.v)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
   )
 }
 
@@ -539,19 +504,18 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
       </Section>
 
       <Section label="Laydown">
-        <Row label="Ships" value={shipCount} mono />
-        <Row label="Waves" value={waveCount} mono />
-        <Row label="Ships per wave" value={perWave} unit="max" mono />
-        {waveCount > 1 && <Row label="Wave spacing" value={tactic.waveSpacingS} unit="s" mono />}
+        <Row label="Ships" value={shipCount} />
+        <Row label="Waves" value={waveCount} />
+        <Row label="Ships per wave" value={perWave} unit="max" />
+        {waveCount > 1 && <Row label="Wave spacing" value={tactic.waveSpacingS} unit="s" />}
         <Row
           label="Ingress axes"
           value={tactic.axes}
           unit={tactic.axes > 1 ? `across ${tactic.axisSpreadDeg}°` : undefined}
-          mono
         />
-        <Row label="Standoff" value={formatDistance(tactic.standoffM, units)} mono />
+        <Row label="Standoff" value={formatDistance(tactic.standoffM, units)} />
         {tactic.decoy && (
-          <Row label="Decoys" value={`1 in ${tactic.decoy.everyNth}`} mono />
+          <Row label="Decoys" value={`1 in ${tactic.decoy.everyNth}`} />
         )}
         <p className="muted small">
           Standoff is that range or beyond every sensor detection ring, whichever is greater.
@@ -586,6 +550,13 @@ const INTEGRATION_BADGE: Record<IntegrationConfidence, string> = {
   documented: 'DOC',
   probable: 'PROB',
   inferred: 'INF',
+}
+
+/** A documented pairing is sourced; the other two confidences keep their names. */
+const INTEGRATION_MARK: Record<IntegrationConfidence, ProvKind> = {
+  documented: 'sourced',
+  probable: 'probable',
+  inferred: 'inferred',
 }
 
 /**
@@ -633,9 +604,12 @@ function IntegrationSection({ entity }: { entity: Entity }) {
             {p.name}
           </span>
           <span className="insp-row-value">
-            <span className="insp-tag">{INTEGRATION_BADGE[p.confidence]}</span>
             <span className="unit">{p.role.replace('-', ' ')}</span>
           </span>
+          <ProvMark
+            kind={INTEGRATION_MARK[p.confidence]}
+            title={`${INTEGRATION_BADGE[p.confidence]}${p.source ? ` · ${p.source}` : ''}`}
+          />
         </div>
       ))}
       {!showAll && summary.partners.length > 6 && (
@@ -822,7 +796,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
               value={`${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`}
               unit={entity.altitudeFt == null ? 'model default' : undefined}
               title="The threat flies at this one altitude along the whole path. The engine measures the slant range to it and applies the elevation, ceiling and horizon gates. Leave the field empty to take the model threat profile, else the middle of the model altitude band."
-              mono
             />
           </>
         )}
@@ -837,14 +810,12 @@ function EntityInspector({ entity }: { entity: Entity }) {
             unit={referenceCondition(model.sensor)}
             title={referenceTitle(model.sensor)}
             tag={<PfTag model={model} field="detectRangeM" />}
-            mono
           />
           {model.sensor.classifyRangeM != null && (
             <Row
               label="Classification range"
               value={formatDistance(model.sensor.classifyRangeM, units)}
               tag={<PfTag model={model} field="classifyRangeM" />}
-              mono
             />
           )}
           <Row
@@ -863,7 +834,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
             label="Azimuth coverage"
             value={`${model.sensor.sectorDeg}°`}
             tag={<PfTag model={model} field="sectorDeg" />}
-            mono
           />
           {model.sensor.sensorType === 'eo-ir' && (
             <Row
@@ -879,7 +849,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
               value={formatDistance(model.sensor.instrumentedRangeM, units)}
               title="Instrumented range or the top of the vendor's detection band. Caps the target-scaled detection range."
               tag={<PfTag model={model} field="instrumentedRangeM" />}
-              mono
             />
           )}
           {effectiveDetectRangeM(model.sensor, scenario.environment) !==
@@ -890,7 +859,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
                 effectiveDetectRangeM(model.sensor, scenario.environment),
                 units,
               )}
-              mono
             />
           )}
           <AgainstThreats spec={model.sensor} />
@@ -901,7 +869,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
               value={`${model.sensor.elevationDeg[0]}° to ${model.sensor.elevationDeg[1]}°`}
               title="The geometry gate reads these limits. A threat above or below the coverage is not detected."
               tag={<PfTag model={model} field="elevationDeg" />}
-              mono
             />
           )}
           {model.sensor.maxAltitudeFt != null && model.sensor.maxAltitudeFt > 0 && (
@@ -910,7 +877,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
               value={`${model.sensor.maxAltitudeFt.toLocaleString()} ft`}
               title="The geometry gate reads this ceiling. A threat above it is not detected."
               tag={<PfTag model={model} field="maxAltitudeFt" />}
-              mono
             />
           )}
           <MountHeight
@@ -935,21 +901,18 @@ function EntityInspector({ entity }: { entity: Entity }) {
               units,
             )}`}
             tag={<PfTag model={model} field="maxRangeM" />}
-            mono
           />
           <Row
             label="Engagement time"
             value={model.effector.engageTimeS}
             unit="s"
             tag={<PfTag model={model} field="engageTimeS" />}
-            mono
           />
           <Row
             label="Single-shot Pk"
             value={model.effector.pk ?? DEFAULT_PK[model.effector.effectorType]}
             unit={model.effector.pk == null ? 'type PF' : undefined}
             tag={<PfTag model={model} field="pk" absent={model.effector.pk == null} />}
-            mono
           />
           <Row
             label="Magazine"
@@ -961,7 +924,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
                 absent={model.effector.magazineSize == null}
               />
             }
-            mono
           />
           {model.effector.flyoutSpeedMps != null &&
             Number.isFinite(model.effector.flyoutSpeedMps) &&
@@ -974,7 +936,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
                   'The engine adds the time of flight to the engagement time.'
                 }
                 tag={<PfTag model={model} field="flyoutSpeedMps" />}
-                mono
               />
             )}
           {model.effector.flyoutSpeedMps != null &&
@@ -988,7 +949,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
                   'Every stated speed is a maximum or a muzzle velocity.'
                 }
                 tag={<PfTag model={model} field="flyoutSpeedFactor" absent />}
-                mono
               />
             )}
           {(model.effector.sectorDeg ?? 360) < 360 && (
@@ -996,7 +956,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
               label="Azimuth coverage"
               value={`${model.effector.sectorDeg}°`}
               tag={<PfTag model={model} field="sectorDeg" />}
-              mono
             />
           )}
           {model.effector.maxAltitudeFt != null && model.effector.maxAltitudeFt > 0 && (
@@ -1005,7 +964,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
               value={`${model.effector.maxAltitudeFt.toLocaleString()} ft`}
               title="The geometry gate reads this ceiling. A threat above it has no engagement window."
               tag={<PfTag model={model} field="maxAltitudeFt" />}
-              mono
             />
           )}
           <MountHeight
@@ -1025,34 +983,30 @@ function EntityInspector({ entity }: { entity: Entity }) {
       )}
       {model?.uas && (
         <Section label="Platform">
-          <Row label="UAS group" value={model.uas.group} mono />
+          <Row label="UAS group" value={model.uas.group} />
           <Row
             label="Radar cross section"
             value={`${rcsM2For(model.uas)} m²`}
             tag={<PfTag model={model} field="rcsM2" absent={model.uas.rcsM2 == null} />}
             title="Planning factor, not measured signature data. Sets each radar's detection range against this threat by the fourth-root law."
-            mono
           />
           <Row
             label="Fluctuation model"
             value={`Swerling ${swerlingFor(model.uas)}`}
             tag={<PfTag model={model} field="swerling" absent={model.uas.swerling == null} />}
             title="Fluctuation case for radar. Multirotor, FPV and one-way attack airframes are Swerling 1. Fixed wing is Swerling 3. An unrecorded case is the airframe planning factor."
-            mono
           />
           <Row
             label="Span"
             value={`${spanMFor(model.uas)} m`}
             tag={<PfTag model={model} field="spanM" absent={model.uas.spanM == null} />}
             title="Planning factor: wingspan or motor-to-motor diagonal. Sets each EO/IR sensor's range against this threat linearly (Johnson criteria)."
-            mono
           />
           <Row
             label="Acoustic level"
             value={`${acousticDbFor(model.uas)} dB`}
             tag={<PfTag model={model} field="acousticDb" absent={model.uas.acousticDb == null} />}
             title="Planning factor: broadband source level at 1 m. Sets each acoustic sensor's range by spreading plus absorption."
-            mono
           />
           <Row
             label="IR signature"
@@ -1067,21 +1021,18 @@ function EntityInspector({ entity }: { entity: Entity }) {
             label="Cruise speed"
             value={formatSpeed(model.uas.cruiseSpeedMps, units)}
             tag={<PfTag model={model} field="cruiseSpeedMps" />}
-            mono
           />
           <Row
             label="Kinetic size factor"
             value={SIZE_PENALTY[model.uas.group]}
             tag={<PfTag model={model} field="sizePenalty" absent />}
             title="Planning factor on every kinetic per-shot Pk against this group."
-            mono
           />
           {model.uas.airframe === 'fpv' && (
             <Row
               label="Evasion factor"
               value={EVASION_PENALTY}
               tag={<PfTag model={model} field="evasionPenalty" absent />}
-              mono
             />
           )}
           <Row label="Navigation" value={model.uas.navMode} />
@@ -1111,7 +1062,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
             unit={
               entity.defendedRadiusM == null || entity.defendedRadiusM <= 0 ? 'default' : undefined
             }
-            mono
           />
           <p className="muted small">
             A threat that crosses this radius has ARRIVED at the asset. Arrival sets warning
@@ -1144,9 +1094,9 @@ function EntityInspector({ entity }: { entity: Entity }) {
                   label="Basis"
                   value={`${basis.source}, ${basis.oneWay ? 'one-way' : 'return-to-home'}`}
                 />
-                <Row label="Radius, calm" value={formatDistance(basis.radiusM, units)} mono />
-                <Row label="Downwind" value={formatDistance(down, units)} mono />
-                <Row label="Upwind" value={formatDistance(up, units)} mono />
+                <Row label="Radius, calm" value={formatDistance(basis.radiusM, units)} />
+                <Row label="Downwind" value={formatDistance(down, units)} />
+                <Row label="Upwind" value={formatDistance(up, units)} />
                 {basis.source === 'estimated' && (
                   <p className="muted small">
                     No reported employment radius. This is an estimate from endurance and cruise
@@ -1244,8 +1194,8 @@ function EntityInspector({ entity }: { entity: Entity }) {
         <Section label="Flight path">
           {path ? (
             <>
-              <Row label="Waypoints" value={path.points.length} mono />
-              <Row label="Track length" value={formatDistance(pathLength(path.points), units)} mono />
+              <Row label="Waypoints" value={path.points.length} />
+              <Row label="Track length" value={formatDistance(pathLength(path.points), units)} />
               <div className="field-row">
                 {(() => {
                   const cruise = model?.uas?.cruiseSpeedMps
@@ -1317,7 +1267,6 @@ function EntityInspector({ entity }: { entity: Entity }) {
                     label="Effective start delay"
                     value={effectivePathDelayS(scenario, path)}
                     unit="s"
-                    mono
                     title={`Path ${path.startDelayS} s + wave ${waves[waveIndex].startDelayS} s`}
                   />
                 )}
@@ -1408,7 +1357,7 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
           </Field>
         </div>
         <Options id="boundary-alt-options" values={BOUNDARY_ALT_SUGGESTIONS_FT} />
-        <Row label="Vertices" value={boundary.points.length} mono />
+        <Row label="Vertices" value={boundary.points.length} />
       </Section>
 
       <Actions>
@@ -1459,7 +1408,7 @@ function ConnectionInspector({ connection }: { connection: Connection }) {
         <Section label="Integration">
           <Row label="Medium" value={connection.medium ?? 'unspecified'} />
           <Row label="Confidence" value={connection.confidence} />
-          <Row label="Route latency" value={connection.latencyS ?? 0} unit="s" mono />
+          <Row label="Route latency" value={connection.latencyS ?? 0} unit="s" />
           {source && <Row label="Source" value={source} stacked />}
         </Section>
       )}
@@ -1499,7 +1448,7 @@ function MultiInspector({ ids }: { ids: string[] }) {
 
       <Section label="Composition">
         {byKind.map(([kind, n]) => (
-          <Row key={kind} label={KIND_LABEL[kind]} value={n} mono />
+          <Row key={kind} label={KIND_LABEL[kind]} value={n} />
         ))}
       </Section>
 

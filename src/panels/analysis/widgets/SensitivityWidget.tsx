@@ -5,6 +5,7 @@ import { uncertainFields } from '../../../analysis/uncertainty'
 import { entityActive, runSettings } from '../../../model/types'
 import { useStore } from '../../../state/store'
 import { PfTag } from '../../inspector/kit'
+import { State } from '../../../ui/kit'
 import { currentSensitivity, formatCount } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
@@ -94,7 +95,7 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
         </>
       ) : (
         <>
-          {sensitivity.status === 'stale' ? <span className="status warn">STALE</span> : null}
+          {sensitivity.status === 'stale' ? <State tone="warning">STALE</State> : null}
           <button className="mc-run" onClick={() => start()}>
             Run sensitivity
           </button>

@@ -35,7 +35,7 @@ import { DT } from '../../../playback/clock'
 import { entityPosAt, threatAltitudeFt } from '../../../playback/tracks'
 import { modelFor } from '../../../model/scenario'
 import { pfaText } from '../../inspector/kit'
-import { STATE_LABEL, stateClass } from '../SystemStatus'
+import { STATE_LABEL, stateTone } from '../SystemStatus'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -114,8 +114,8 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   }, [scenario, spec, threats, t, entity.pos])
 
   const pill = component
-    ? { word: STATE_LABEL[component.state], className: stateClass(component.state) }
-    : { word: 'OFFLINE', className: 'bad' }
+    ? { word: STATE_LABEL[component.state], tone: stateTone(component.state) }
+    : { word: 'OFFLINE', tone: 'critical' as const }
   const modelLine =
     model && spec
       ? `${model.name} · ${defaultSensorRole(spec).replace(/-/g, ' ')}`

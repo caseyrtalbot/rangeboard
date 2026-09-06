@@ -17,9 +17,8 @@ import type { SpecModel } from '../../model/types'
 import { basisFor } from '../../model/types'
 import { spreadFor } from '../../analysis/uncertainty'
 import { spreadText } from './spreadText'
-
-/** Semantic state of an object or a measurement. Drives colour, nothing else. */
-export type StatusTone = 'nominal' | 'warning' | 'critical' | 'inactive'
+import { ProvMark, State } from '../../ui/kit'
+import type { StateTone } from '../../ui/kit'
 
 /**
  * One titled block of the Inspector. Renders an uppercase eyebrow, an
@@ -46,18 +45,20 @@ export function Section({
 }
 
 /**
- * A read-only property. `mono` is for machine data, `unit` renders after the
- * number in the secondary text step so it never competes with it, and `muted`
- * drops the value a step for information that is negative or incidental. A
- * string value carries a title attribute so a truncated value stays readable.
- * `tag` follows the unit and carries the basis of the value.
+ * A read-only property in the key and value grid: key in text 2, value in
+ * mono right-aligned, then the provenance mark column. `unit` renders after
+ * the number in the secondary text step so it never competes with it, and
+ * `muted` drops the value a step for information that is negative or
+ * incidental. A string value carries a title attribute so a truncated value
+ * stays readable. `tag` is the mark of the value's provenance; a row without
+ * one keeps the empty column so the absence reads. A `stacked` row is prose
+ * under its key, so it stays sans and carries no mark column.
  */
 export function Row({
   label,
   value,
   unit,
   tag,
-  mono,
   stacked,
   muted,
   title,
@@ -66,7 +67,6 @@ export function Row({
   value: ReactNode
   unit?: string
   tag?: ReactNode
-  mono?: boolean
   stacked?: boolean
   muted?: boolean
   title?: string
@@ -85,15 +85,15 @@ export function Row({
         {label}
       </span>
       <span
-        className={['insp-row-value', mono ? 'mono' : '', muted ? 'muted' : '', empty ? 'empty' : '']
+        className={['insp-row-value', muted ? 'muted' : '', empty ? 'empty' : '']
           .filter(Boolean)
           .join(' ')}
         title={hover}
       >
         {empty ? '—' : value}
         {!empty && unit && <span className="unit">{unit}</span>}
-        {tag}
       </span>
+      {!stacked && (tag ?? <ProvMark kind="absent" />)}
     </div>
   )
 }
@@ -108,11 +108,11 @@ function spreadTitle(model: SpecModel | undefined, field: string): string {
 }
 
 /**
- * The provenance tag of one spec field. A planning factor reads PF; a
- * datasheet or reference row reads SRC with its basis, source and date. An
- * absent value, or no model at all, is always PF. Either title names the
- * field's spread, or says the row is pinned, so a total-uncertainty run is
- * readable from the tag.
+ * The provenance mark of one spec field. A planning factor is the hollow mark;
+ * a datasheet or reference row is the filled sourced mark with its basis,
+ * source and date in the title. An absent value, or no model at all, is
+ * always a planning factor. Either title names the field's spread, or says
+ * the row is pinned, so a total-uncertainty run is readable from the mark.
  */
 export function PfTag({
   model,
@@ -126,17 +126,9 @@ export function PfTag({
   const row = model?.provenance?.find((p) => p.field === field)
   const spread = spreadTitle(model, field)
   if (absent || !model || basisFor(model, field) === 'pf' || !row) {
-    return (
-      <span className="pf" title={`planning factor${spread}`}>
-        PF
-      </span>
-    )
+    return <ProvMark kind="pf" title={`planning factor${spread}`} />
   }
-  return (
-    <span className="pf src" title={`${row.basis} · ${row.source} · ${row.date}${spread}`}>
-      SRC
-    </span>
-  )
+  return <ProvMark kind="sourced" title={`${row.basis} · ${row.source} · ${row.date}${spread}`} />
 }
 
 /** False-alarm probability as a compact exponent, e.g. 1e-6. */
@@ -153,7 +145,7 @@ export function ObjectHeader({
 }: {
   name: string
   type: string
-  status?: StatusTone
+  status?: StateTone
   statusLabel?: string
 }) {
   return (
@@ -162,18 +154,13 @@ export function ObjectHeader({
         <span className="insp-header-name" title={name}>
           {name}
         </span>
-        {status && statusLabel && <Status tone={status}>{statusLabel}</Status>}
+        {status && statusLabel && <State tone={status}>{statusLabel}</State>}
       </div>
       <span className="insp-header-sub" title={type}>
         {type}
       </span>
     </header>
   )
-}
-
-/** Dot plus label. The only place colour enters the panel unprompted. */
-export function Status({ tone, children }: { tone: StatusTone; children: ReactNode }) {
-  return <span className={`insp-status ${tone}`}>{children}</span>
 }
 
 /**

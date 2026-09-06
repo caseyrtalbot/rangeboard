@@ -97,6 +97,6 @@ describe('LibraryEditor sources', () => {
     useStore.getState().select({ libraryId: id })
     const html = render()
     expect(html).toContain('aria-label="Delete source for detectRangeM"')
-    expect(html).toContain('class="pf src"')
+    expect(html).toContain('class="prov-mark" title="datasheet · a maker page · 2026-09-04')
   })
 })

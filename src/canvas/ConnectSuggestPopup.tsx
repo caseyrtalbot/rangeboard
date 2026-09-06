@@ -2,11 +2,20 @@ import { useEffect, useRef } from 'react'
 import type { IntegrationConfidence } from '../model/integration'
 import { integrationSummary } from '../model/integration'
 import { useStore } from '../state/store'
+import { ProvMark, State } from '../ui/kit'
+import type { ProvKind } from '../ui/kit'
 
 const CONFIDENCE_BADGE: Record<IntegrationConfidence, string> = {
   documented: 'DOC',
   probable: 'PROB',
   inferred: 'INF',
+}
+
+/** A documented pairing is sourced; the other two confidences keep their names. */
+const CONFIDENCE_MARK: Record<IntegrationConfidence, ProvKind> = {
+  documented: 'sourced',
+  probable: 'probable',
+  inferred: 'inferred',
 }
 
 /** Connect offers after placing or dragging a blue-force entity. Rendered as DOM over the Konva stage. */
@@ -51,7 +60,7 @@ export function ConnectSuggestPopup() {
             <div className="suggest-info">
               <div>{name(partnerId)}</div>
               <div className="suggest-meta">
-                <span className="suggest-badge suggest-auto">LINKED</span>
+                <State tone="nominal">LINKED</State>
                 {c.verdict.label}
                 {c.verdict.medium ? ` · ${c.verdict.medium}` : ''}
               </div>
@@ -67,7 +76,7 @@ export function ConnectSuggestPopup() {
             <div className="suggest-info">
               <div>{name(partnerId)}</div>
               <div className="suggest-meta">
-                <span className="suggest-badge">{CONFIDENCE_BADGE[confidence]}</span>
+                <ProvMark kind={CONFIDENCE_MARK[confidence]} title={`${CONFIDENCE_BADGE[confidence]} · ${c.verdict.note}`} />
                 {c.verdict.label}
                 {c.verdict.medium ? ` · ${c.verdict.medium}` : ''}
               </div>
@@ -98,7 +107,7 @@ export function ConnectSuggestPopup() {
               <div className="suggest-info">
                 <div>{p.name}</div>
                 <div className="suggest-meta">
-                  <span className="suggest-badge">{CONFIDENCE_BADGE[p.confidence]}</span>
+                  <ProvMark kind={CONFIDENCE_MARK[p.confidence]} title={`${CONFIDENCE_BADGE[p.confidence]} · ${p.note}`} />
                   {p.role.replace('-', ' ')}
                 </div>
               </div>

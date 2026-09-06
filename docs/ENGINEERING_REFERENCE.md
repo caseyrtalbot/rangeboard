@@ -146,12 +146,15 @@ src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPh
                series on the DT grid), runValidity.ts, requirements.ts, uncertainty.ts
                (sampling), parameterBasis.ts (pure spread resolution/enumeration), fidelity.ts (model tags), mcda.ts, aar.ts,
                systemTelemetry.ts, threatAggregation.ts, range.ts
+src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that both the
+               Board panels and the T&E kit render; reads index.css classes only, no store
 src/charts/    recharts kit: types.ts (Series), tokens.ts, timeAxis.ts, ChartFrame,
                TimeSeries, Ladder, Tornado, Sparkline. Props only; never reads the store.
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target),
                TrackFileReadout.tsx, layers/ (one Konva layer per concern;
                footprintStyle.ts is the ring style source)
-src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx, spreadText.ts),
+src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
+               spreadText.ts),
                LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/,
                analysis/detail/), TimelineBar (owns the rAF loop), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts

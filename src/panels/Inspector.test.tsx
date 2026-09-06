@@ -20,7 +20,7 @@ function selectFromModel(modelId: string): void {
   useStore.getState().select({ entityIds: [entity.id] })
 }
 
-describe('Inspector provenance tags', () => {
+describe('Inspector provenance marks', () => {
   beforeEach(() => {
     const st = useStore.getState()
     st.replaceScenario(emptyScenario())
@@ -29,47 +29,47 @@ describe('Inspector provenance tags', () => {
     useStore.getState().select({ entityIds: [sensor.id] })
   })
 
-  it('marks a sourced field SRC with its basis, source and date', () => {
+  it('marks a sourced field filled with its basis, source and date in the title', () => {
     const html = render()
-    const tag = /<span class="pf src" title="([^"]*)"/.exec(html)
+    const tag = /<span class="prov-mark" title="([^"]*)"/.exec(html)
     expect(tag).not.toBeNull()
     expect(tag![1]).toMatch(
       /^(datasheet|reference) · .+ · \d{4}-\d{2}-\d{2}( · spread .+)?$/,
     )
   })
 
-  it('marks an unsourced field PF', () => {
-    expect(render()).toContain('<span class="pf" title="planning factor">')
+  it('marks an unsourced field as a hollow planning factor', () => {
+    expect(render()).toContain('<span class="prov-mark pf" title="planning factor"')
   })
 
-  it('names the field spread in the tag title', () => {
+  it('names the field spread in the mark title', () => {
     const html = render()
     // The Giraffe 1X detection range is sourced and takes the 3 dB PF spread.
-    expect(html).toMatch(/<span class="pf src" title="[^"]* · spread ±3 dB"/)
+    expect(html).toMatch(/<span class="prov-mark" title="[^"]* · spread ±3 dB"/)
   })
 })
 
-describe('Inspector effector and threat tags', () => {
-  it('tags a sourced effector range SRC and its unsourced Pk PF', () => {
+describe('Inspector effector and threat marks', () => {
+  it('marks a sourced effector range and its unsourced Pk planning factor', () => {
     selectFromModel('lib-skyranger30')
     const html = render()
     const wez = html.slice(html.indexOf('WEZ'), html.indexOf('Engagement time'))
-    expect(wez).toContain('class="pf src"')
+    expect(wez).toContain('class="prov-mark" title="datasheet')
     const pk = html.slice(html.indexOf('Single-shot Pk'), html.indexOf('Magazine'))
     // A Pk with no row takes the PF table beta, so the title names its pseudo-counts.
-    expect(pk).toContain('<span class="pf" title="planning factor · spread 17 of 20 (pseudo)">')
+    expect(pk).toContain('<span class="prov-mark pf" title="planning factor · spread 17 of 20 (pseudo)"')
   })
 
   it('tags the threat radar cross section row', () => {
     selectFromModel('lib-mavic3')
     const html = render()
     const rcs = html.slice(html.indexOf('Radar cross section'), html.indexOf('Fluctuation model'))
-    expect(rcs).toContain('<span class="pf" title="planning factor · spread ±6 dB">')
+    expect(rcs).toContain('<span class="prov-mark pf" title="planning factor · spread ±6 dB"')
   })
 })
 
 describe('Inspector flyout speed rows', () => {
-  it('quotes the stated speed and 0.7 of it as the average, tagged PF', () => {
+  it('quotes the stated speed and 0.7 of it as the average, marked planning factor', () => {
     selectFromModel('lib-coyote')
     const html = render()
     const rows = html.slice(html.indexOf('Flyout speed'), html.indexOf('Altitude ceiling'))
@@ -77,6 +77,6 @@ describe('Inspector flyout speed rows', () => {
     expect(rows).toContain('154 m/s')
     expect(rows).toContain('Average flyout speed')
     expect(rows).toContain('108 m/s')
-    expect(rows).toContain('<span class="pf" title="planning factor">')
+    expect(rows).toContain('<span class="prov-mark pf" title="planning factor"')
   })
 })
