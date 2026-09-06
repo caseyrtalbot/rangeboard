@@ -1,0 +1,171 @@
+/**
+ * E2 radar study probe (2026-09-05). Scratch file: copied to
+ * docs/field-te/evidence/e2-radar-2026-09-05/ and deleted from src/.
+ * Independent numerics: Marcum Q by Rician-density quadrature for the
+ * nonfluctuating case; Swerling 3 by quadrature of Pfa^(1/(1+x)) over the
+ * 4-dof chi-square target; the fourth-root law against the Blighter table.
+ */
+import { expect, it } from 'vitest'
+import { writeFileSync } from 'node:fs'
+import { mOfN, pdFromSnr, rangeForPd, snrForPd } from './radarPd'
+import type { RadarCalibration } from './radarPd'
+import { assessAllThreats } from '../playback/sim'
+import { runReplicates } from '../playback/mcRun'
+import { fillScenario } from '../io/persist'
+import type { Scenario } from '../model/types'
+import detection from '../playback/__fixtures__/detection-outside-rings.json'
+
+const OUT = 'docs/field-te/evidence/e2-radar-2026-09-05/results.json'
+
+/** exp(-z) * I0(z) by the power series, stable for the z used here. */
+function i0Scaled(z: number): number {
+  if (z > 30) {
+    // Asymptotic series, relative error under 1e-9 at z 30.
+    const t = 1 / (8 * z)
+    return (1 / Math.sqrt(2 * Math.PI * z)) * (1 + t + 4.5 * t * t + 37.5 * t * t * t + 459.375 * t * t * t * t)
+  }
+  let term = 1
+  let sum = 1
+  for (let k = 1; k < 400; k++) {
+    term *= (z * z) / (4 * k * k)
+    sum += term
+    if (term < sum * 1e-17) break
+  }
+  return sum * Math.exp(-z)
+}
+/** Marcum Q1(a, b) = integral_b^inf x exp(-(x^2 + a^2)/2) I0(a x) dx, Simpson on [b, b + 40]. */
+function marcumQ(a: number, b: number, n = 20000): number {
+  const hi = Math.max(b + 40, a + 40)
+  const h = (hi - b) / n
+  const f = (x: number) => x * Math.exp(-((x - a) * (x - a)) / 2) * i0Scaled(a * x)
+  let s = f(b) + f(hi)
+  for (let i = 1; i < n; i++) s += f(b + i * h) * (i % 2 === 0 ? 2 : 4)
+  return (s * h) / 3
+}
+/** Nonfluctuating single-pulse Pd: Q1(sqrt(2 S), sqrt(-2 ln Pfa)). */
+const pdSw0Exact = (s: number, pfa: number) => marcumQ(Math.sqrt(2 * s), Math.sqrt(-2 * Math.log(pfa)))
+/**
+ * Swerling 3 single pulse by quadrature: the nonfluctuating Pd (Marcum Q) at
+ * SNR x averaged over the 4-dof chi-square target, x ~ (4x/S^2) exp(-2x/S).
+ */
+function pdSw3Exact(s: number, pfa: number): number {
+  if (s <= 0) return pfa
+  const n = 400
+  const hi = s * 12
+  const h = hi / n
+  const b = Math.sqrt(-2 * Math.log(pfa))
+  const f = (x: number) => marcumQ(Math.sqrt(2 * x), b, 2000) * ((4 * x) / (s * s)) * Math.exp((-2 * x) / s)
+  let sum = f(0) + f(hi)
+  for (let i = 1; i < n; i++) sum += f(i * h) * (i % 2 === 0 ? 2 : 4)
+  return (sum * h) / 3
+}
+const dB = (x: number) => 10 * Math.log10(x)
+const lin = (db: number) => Math.pow(10, db / 10)
+
+it('radar study', () => {
+  const out: Record<string, unknown> = { date: '2026-09-05' }
+
+  // A. Closed forms against independent numerics.
+  const snrDb = [-10, -5, 0, 3, 6, 9, 12, 15, 18, 21]
+  const pfas = [1e-4, 1e-6, 1e-8]
+  const sw0: unknown[] = []
+  const sw3: unknown[] = []
+  for (const pfa of pfas) {
+    for (const db of snrDb) {
+      const s = lin(db)
+      const e0 = pdSw0Exact(s, pfa)
+      const m0 = pdFromSnr(s, pfa, 0)
+      sw0.push({ pfa, snrDb: db, exact: e0, model: m0, delta: m0 - e0 })
+      const e3 = pdSw3Exact(s, pfa)
+      const m3 = pdFromSnr(s, pfa, 3)
+      sw3.push({ pfa, snrDb: db, exact: e3, model: m3, delta: m3 - e3 })
+    }
+  }
+  out.swerling0 = sw0
+  out.swerling3 = sw3
+  // Zero-SNR floor and the SNR at which exact and model reach 0.1 and 0.9, Pfa 1e-6.
+  const floors = pfas.map((pfa) => ({ pfa, modelAtZero: pdFromSnr(0, pfa, 0), exactAtZero: pfa }))
+  out.sw0Floors = floors
+  const dbFor = (pd: number, pfa: number, f: (s: number) => number) => {
+    let lo = 1e-6
+    let hi = 1e6
+    for (let i = 0; i < 200; i++) {
+      const mid = Math.sqrt(lo * hi)
+      if (f(mid) < pd) lo = mid
+      else hi = mid
+    }
+    return dB(hi)
+  }
+  out.sw0SnrDb = [0.1, 0.5, 0.9].map((pd) => ({
+    pd,
+    exactDb: dbFor(pd, 1e-6, (s) => pdSw0Exact(s, 1e-6)),
+    modelDb: dB(snrForPd(pd, 1e-6, 0)),
+  }))
+  out.sw3SnrDb = [0.1, 0.5, 0.9].map((pd) => ({
+    pd,
+    exactDb: dbFor(pd, 1e-6, (s) => pdSw3Exact(s, 1e-6)),
+    modelDb: dB(snrForPd(pd, 1e-6, 3)),
+  }))
+  // Swerling 1 inverse round trip.
+  out.sw1RoundTrip = [0.05, 0.5, 0.95].map((pd) => ({ pd, back: pdFromSnr(snrForPd(pd, 1e-6, 1), 1e-6, 1) }))
+
+  // B. Fourth-root law against the Blighter A400 free-space table (M10S).
+  const cal: RadarCalibration = { r0M: 2730, rcs0M2: 0.01, pd0: 0.5, pfa: 1e-6, swerling0: 1 }
+  const table: Array<[number, number]> = [[0.01, 2730], [0.05, 4090], [0.1, 4870], [0.5, 7280], [1, 8660], [10, 15400]]
+  out.blighter = table.map(([rcs, km]) => {
+    const model = rangeForPd(cal, rcs, 0.5, 1, 1)
+    return { rcsM2: rcs, tableM: km, modelM: model, pct: (100 * (model - km)) / km }
+  })
+
+  // C. Pd against range under the PF calibration (pd0 0.5, Pfa 1e-6, Swerling 1 reference)
+  //    for each target case, and the range ratios at Pd 0.9, 0.5, 0.1 and at the
+  //    3-of-5 track threshold (mOfN >= 0.9).
+  const ratios = [0.6, 0.8, 1, 1.2, 1.5, 2, 3, 4]
+  const pdTrackNeed = (() => {
+    let lo = 0
+    let hi = 1
+    for (let i = 0; i < 100; i++) {
+      const mid = (lo + hi) / 2
+      if (mOfN(mid, 3, 5) < 0.9) lo = mid
+      else hi = mid
+    }
+    return hi
+  })()
+  out.pdTrackNeed = pdTrackNeed
+  const curve = (pd0: number, pfa: number) => {
+    const c: RadarCalibration = { r0M: 1000, rcs0M2: 0.01, pd0, pfa, swerling0: 1 }
+    return ([1, 0, 3] as const).map((sw) => ({
+      swerling: sw,
+      pdAtRatio: ratios.map((r) => ({ r, pd: pdFromSnr(snrForPd(pd0, pfa, 1) / Math.pow(r, 4), pfa, sw) })),
+      rAtPd: [0.9, 0.5, 0.1, 0.01].map((pd) => ({ pd, r: rangeForPd(c, 0.01, pd, 1, sw) / 1000 })),
+      rAtTrack: rangeForPd(c, 0.01, pdTrackNeed, 1, sw) / 1000,
+    }))
+  }
+  out.curvePf = curve(0.5, 1e-6)
+  out.curvePd09 = curve(0.9, 1e-6)
+  out.curvePfa1e4 = curve(0.5, 1e-4)
+  out.curvePfa1e8 = curve(0.5, 1e-8)
+
+  // D. Engine effect of the placard Pd planning factor on the detection fixture:
+  //    Mavic 3 (0.01 m2, quad) 18 km north of a Giraffe 1X and a KuRFS.
+  const base = fillScenario(detection as unknown as Scenario)
+  const withPd = (pd: number | null): Scenario => ({
+    ...base,
+    library: base.library.map((m) =>
+      m.sensor?.sensorType === 'radar' ? { ...m, sensor: { ...m.sensor, placardPd: pd } } : m,
+    ),
+  })
+  const engine = (s: Scenario) => {
+    const a = assessAllThreats(s).find((x) => x.status !== 'no-path')!
+    const mc = runReplicates({ ...s, seed: 4821, replicates: 30, uncertainty: 'aleatory' })
+    const t = Object.values(mc.perThreat)[0]
+    return {
+      deterministic: { firstDetectS: a.firstDetectS, stableTrackAtS: a.stableTrackAtS, firstDetectSensorId: a.firstDetectSensorId, windowS: a.windowS },
+      mc: { firstDetect: mc.firstDetectS, firmTrack: mc.firmTrackS, kills: t?.killed, leaked: t?.leaked },
+    }
+  }
+  out.detectionFixture = { pd0_0_5: engine(withPd(null)), pd0_0_9: engine(withPd(0.9)), pd0_0_8: engine(withPd(0.8)) }
+
+  writeFileSync(OUT, JSON.stringify(out, null, 1))
+  expect(true).toBe(true)
+}, 300000)
