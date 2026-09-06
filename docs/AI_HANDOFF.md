@@ -31,21 +31,25 @@ with the evidence and one recommendation; never park a choice in the register or
   `Scenario.seed` JSDoc), D-20 decided and done in this commit. No D row is open.
 - Done 2026-09-05: Wave 2 engine (`a5d2ae3`); design steps 2, 3, 4 (`171ba23`, `dca021a`,
   `931f152`, `3c1282a`); E2 R-F-30 (`b7ec949`); E3 study (`7fe74dc`); R-F-38 study
-  (`8b6eed0`); E3 intervals slice (`106cffe`).
+  (`8b6eed0`); E3 intervals slice (`106cffe`); E3 follow-ups R-F-41 and R-F-42 (this
+  commit, capture `field-te/evidence/e3-followups-2026-09-05/`); E2 motion study (this
+  commit, `field-te/model-evidence/motion-effect-timing.md`, section "E2 study,
+  2026-09-05"), which ends at the poll on the bounded correction.
 
 ## Next
 
-1. Wave 3, E2: poll Casey on the next family from [PLAN section 5](field-te/PLAN.md)
-   before any study. Done so far: Effect/EW jam envelope (R-F-30). Dossiers for every
-   family are in `field-te/model-evidence/`. Recommendation to carry into the poll: Motion
-   and effect timing (`tactics.ts`, `attrition.ts`, `intercept.ts`), because PLAN section
-   5 puts physical-feasibility violations first and R-F-7's window-end cap does not
-   establish a feasible intercept. The study ends in a polled decision, then a bounded
-   correction with a before-and-after capture on the firing fixture.
-2. Wave 3, E3 follow-ups polled with the same conversation: R-F-41 (an all-zero sum keeps
-   a zero-width clamped interval) and R-F-42 (the stop rule tests the t half-width while
-   the tile shows Wilson or clamped). R-F-35 to R-F-37 and R-F-40 are evidence gaps to
-   raise only if the chosen family touches them.
+1. Wave 3, E2, Motion and effect timing (R-D-44 decided): poll Casey on the bounded
+   correction from the study section in `field-te/model-evidence/motion-effect-timing.md`.
+   Findings: the three-pass intercept solver has residual above one DT whenever the target
+   to interceptor speed ratio is above about 0.3, and an infeasible intercept (target out of
+   reach under the model itself) is credited with kill mass and no flag when the third pass
+   lands inside the window. Recommendation: decline the shot when reach is short of need
+   with a one DT tolerance, no round spent, event recorded as infeasible; the solver fix is
+   a separate follow-up. Then the correction with a before-and-after capture on the firing
+   fixture (shortfalls -3.4 to +0.004 m; a strict check with no tolerance would flag the
+   fourth Coyote event).
+2. Wave 3, E3: R-F-35 to R-F-37 and R-F-40 are evidence gaps to raise only if the chosen
+   family touches them.
 3. Wave 4: design steps 6, 7, 9, 10, 13; then 8 (R-F-33, paper chart colours), 11, 12
    (paper canvas colours); then 14 with R-F-34. Wave 5: T1 static bundle, then A1.
 

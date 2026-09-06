@@ -1,0 +1,818 @@
+{
+  "date": "2026-09-05",
+  "head": "785b4c3",
+  "DT": 0.5,
+  "FLYOUT_SPEED_FACTOR": 0.7,
+  "direct": [
+    {
+      "name": "stationary",
+      "equation": "tof = r / v = 3500 / 70",
+      "handNote": "target fixed at 3500 m",
+      "vMps": 70,
+      "uMps": 0,
+      "releaseS": 10,
+      "capS": 2000,
+      "passesTofS": [
+        50,
+        50
+      ],
+      "engine": {
+        "tEffectS": 60,
+        "tofS": 50,
+        "slantM": 3500,
+        "capped": false,
+        "pos": {
+          "x": 3500,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 50,
+        "solverTofS": 50,
+        "tEffectS": 60,
+        "pos": {
+          "x": 3500,
+          "y": 0
+        },
+        "segment": "end",
+        "insideEnvelope": true,
+        "beforeWindowEnd": true
+      },
+      "residualS": 0,
+      "residualDt": 0,
+      "feasibility": {
+        "reachM": 3500,
+        "neededM": 3500,
+        "shortfallM": 0,
+        "reachable": true
+      },
+      "pkAtEngine": 0.4475,
+      "pkAtAnalytic": 0.4475
+    },
+    {
+      "name": "radial closing",
+      "equation": "tof = r / (v + u) = 4800 / (70 + 20)",
+      "handNote": "r at release (t = 10) is 5000 - 20 * 10 = 4800 m",
+      "vMps": 70,
+      "uMps": 20,
+      "releaseS": 10,
+      "capS": 2000,
+      "passesTofS": [
+        68.57142857142857,
+        48.9795918367347,
+        54.57725947521866
+      ],
+      "engine": {
+        "tEffectS": 64.57725947521865,
+        "tofS": 54.57725947521865,
+        "slantM": 3708.454810495627,
+        "capped": false,
+        "pos": {
+          "x": 3708.454810495627,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 53.333333333333336,
+        "solverTofS": 53.333333333333336,
+        "tEffectS": 63.333333333333336,
+        "pos": {
+          "x": 3733.333333333333,
+          "y": 0
+        },
+        "segment": 0,
+        "insideEnvelope": true,
+        "beforeWindowEnd": true
+      },
+      "residualS": 1.2439261418853178,
+      "residualDt": 2.4878522837706356,
+      "feasibility": {
+        "reachM": 3820.4081632653056,
+        "neededM": 3708.454810495627,
+        "shortfallM": -111.95335276967853,
+        "reachable": true
+      },
+      "pkAtEngine": 0.4443731778425656,
+      "pkAtAnalytic": 0.444
+    },
+    {
+      "name": "radial receding, slower interceptor (Merops-like, attrition.test.ts:1157)",
+      "equation": "tof = r / (v - u) = 1100 / (54.6 - 97) < 0: no solution",
+      "handNote": "v < u: the separation grows at 42.4 m/s for ever",
+      "vMps": 54.599999999999994,
+      "uMps": 97,
+      "releaseS": 0,
+      "capS": 29.5,
+      "passesTofS": [
+        20.14652014652015,
+        55.93795703685815,
+        119.52347678709232
+      ],
+      "engine": {
+        "tEffectS": 29.5,
+        "tofS": 29.5,
+        "slantM": 3961.5,
+        "capped": true,
+        "pos": {
+          "x": 3961.5,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": null,
+        "solverTofS": 146.52014652014654,
+        "tEffectS": 146.52014652014654,
+        "pos": {
+          "x": 8000,
+          "y": 0
+        },
+        "segment": "end",
+        "insideEnvelope": false,
+        "beforeWindowEnd": false
+      },
+      "residualS": -117.02014652014654,
+      "residualDt": -234.04029304029308,
+      "feasibility": {
+        "reachM": 1610.6999999999998,
+        "neededM": 3961.5,
+        "shortfallM": 2350.8,
+        "reachable": false
+      },
+      "pkAtEngine": 0.35144375,
+      "pkAtAnalytic": 0
+    },
+    {
+      "name": "radial receding, faster interceptor",
+      "equation": "tof = r / (v - u) = 1200 / (70 - 20)",
+      "handNote": "r at release is 1000 + 20 * 10 = 1200 m",
+      "vMps": 70,
+      "uMps": 20,
+      "releaseS": 10,
+      "capS": 450,
+      "passesTofS": [
+        17.142857142857142,
+        22.040816326530614,
+        23.440233236151602
+      ],
+      "engine": {
+        "tEffectS": 33.4402332361516,
+        "tofS": 23.4402332361516,
+        "slantM": 1668.804664723032,
+        "capped": false,
+        "pos": {
+          "x": 1668.804664723032,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 24,
+        "solverTofS": 24,
+        "tEffectS": 34,
+        "pos": {
+          "x": 1680,
+          "y": 0
+        },
+        "segment": 0,
+        "insideEnvelope": true,
+        "beforeWindowEnd": true
+      },
+      "residualS": -0.5597667638484012,
+      "residualDt": -1.1195335276968024,
+      "feasibility": {
+        "reachM": 1640.8163265306118,
+        "neededM": 1668.804664723032,
+        "shortfallM": 27.988338192420088,
+        "reachable": false
+      },
+      "pkAtEngine": 0.4749679300291545,
+      "pkAtAnalytic": 0.4748
+    },
+    {
+      "name": "crossing (perpendicular track, 3000 m abeam)",
+      "equation": "(u^2 - v^2) tof^2 + 2 (P0 . d) u tof + |P0|^2 = 0, P0 = (3000, -3700), d = (0, 1)",
+      "handNote": "smaller positive root of -4000 tof^2 - 222000 tof + 22690000 = 0",
+      "vMps": 70,
+      "uMps": 30,
+      "releaseS": 10,
+      "capS": 2000,
+      "passesTofS": [
+        68.0486020789403,
+        48.97054791440903,
+        53.40802024487059
+      ],
+      "engine": {
+        "tEffectS": 63.40802024487059,
+        "tofS": 53.40802024487059,
+        "slantM": 3660.6822409856313,
+        "capped": false,
+        "pos": {
+          "x": 3000,
+          "y": -2097.759392653882
+        }
+      },
+      "analytic": {
+        "handTofS": 52.51557481261814,
+        "solverTofS": 52.51557481261814,
+        "tEffectS": 62.51557481261814,
+        "pos": {
+          "x": 3000,
+          "y": -2124.532755621456
+        },
+        "segment": 0,
+        "insideEnvelope": true,
+        "beforeWindowEnd": true
+      },
+      "residualS": 0.8924454322524511,
+      "residualDt": 1.7848908645049022,
+      "feasibility": {
+        "reachM": 3738.5614171409416,
+        "neededM": 3660.6822409856313,
+        "shortfallM": -77.87917615531023,
+        "reachable": true
+      },
+      "pkAtEngine": 0.4450897663852155,
+      "pkAtAnalytic": 0.44485864644675094
+    },
+    {
+      "name": "near-equal speed, receding",
+      "equation": "tof = r / (v - u) = 1150 / (70 - 65)",
+      "handNote": "r at release is 500 + 65 * 10 = 1150 m; intercept at x = 1150 + 65 * 230 = 16100 m, outside the 10 km envelope",
+      "vMps": 70,
+      "uMps": 65,
+      "releaseS": 10,
+      "capS": 146,
+      "passesTofS": [
+        16.428571428571427,
+        31.683673469387752,
+        45.849125364431494
+      ],
+      "engine": {
+        "tEffectS": 55.849125364431494,
+        "tofS": 45.849125364431494,
+        "slantM": 4130.193148688048,
+        "capped": false,
+        "pos": {
+          "x": 4130.193148688048,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 230,
+        "solverTofS": 230,
+        "tEffectS": 240,
+        "pos": {
+          "x": 16100,
+          "y": 0
+        },
+        "segment": 0,
+        "insideEnvelope": false,
+        "beforeWindowEnd": false
+      },
+      "residualS": -184.1508746355685,
+      "residualDt": -368.301749271137,
+      "feasibility": {
+        "reachM": 3209.438775510205,
+        "neededM": 4130.193148688048,
+        "shortfallM": 920.7543731778428,
+        "reachable": false
+      },
+      "pkAtEngine": 0.4380471027696793,
+      "pkAtAnalytic": 0
+    },
+    {
+      "name": "near-equal speed, closing",
+      "equation": "tof = r / (v + u) = 5000 / (70 + 65)",
+      "handNote": "r at release is 5650 - 65 * 10 = 5000 m; contraction factor u / v = 0.93",
+      "vMps": 70,
+      "uMps": 65,
+      "releaseS": 10,
+      "capS": 2000,
+      "passesTofS": [
+        71.42857142857143,
+        5.102040816326527,
+        66.69096209912537
+      ],
+      "engine": {
+        "tEffectS": 76.69096209912537,
+        "tofS": 66.69096209912537,
+        "slantM": 665.0874635568507,
+        "capped": false,
+        "pos": {
+          "x": 665.0874635568507,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 37.03703703703704,
+        "solverTofS": 37.03703703703704,
+        "tEffectS": 47.03703703703704,
+        "pos": {
+          "x": 2592.5925925925926,
+          "y": 0
+        },
+        "segment": 0,
+        "insideEnvelope": true,
+        "beforeWindowEnd": true
+      },
+      "residualS": 29.653925062088334,
+      "residualDt": 59.30785012417667,
+      "feasibility": {
+        "reachM": 4668.367346938776,
+        "neededM": 665.0874635568507,
+        "shortfallM": -4003.279883381925,
+        "reachable": true
+      },
+      "pkAtEngine": 0.49002368804664725,
+      "pkAtAnalytic": 0.46111111111111114
+    },
+    {
+      "name": "path end, target stops at the last point",
+      "equation": "moving root 2600 / (70 + 40) = 23.64 lands at t = 33.64 > path end 25 s, so tof = r_end / v = 2000 / 70",
+      "handNote": "the path is 1000 m at 40 m/s and ends at 25 s; posAlongPath holds the target there",
+      "vMps": 70,
+      "uMps": 40,
+      "releaseS": 10,
+      "capS": 2000,
+      "passesTofS": [
+        37.142857142857146,
+        28.571428571428573,
+        28.571428571428573
+      ],
+      "engine": {
+        "tEffectS": 38.57142857142857,
+        "tofS": 28.57142857142857,
+        "slantM": 2000,
+        "capped": false,
+        "pos": {
+          "x": 2000,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 28.571428571428573,
+        "solverTofS": 28.571428571428573,
+        "tEffectS": 38.57142857142857,
+        "pos": {
+          "x": 2000,
+          "y": 0
+        },
+        "segment": "end",
+        "insideEnvelope": true,
+        "beforeWindowEnd": true
+      },
+      "residualS": -3.552713678800501e-15,
+      "residualDt": -7.105427357601002e-15,
+      "feasibility": {
+        "reachM": 1999.9999999999998,
+        "neededM": 2000,
+        "shortfallM": 2.2737367544323206e-13,
+        "reachable": true
+      },
+      "pkAtEngine": 0.47,
+      "pkAtAnalytic": 0.47
+    },
+    {
+      "name": "path end, target leaves the envelope before a feasible intercept",
+      "equation": "tof = r / (v - u) = 3500 / (70 - 50) = 175 s at x = 12250 m, outside the 5 km envelope",
+      "handNote": "a finite solution exists but 7250 m past the envelope; the window ends at the last grid sample with x <= 5000",
+      "vMps": 70,
+      "uMps": 50,
+      "releaseS": 10,
+      "capS": 40,
+      "passesTofS": [
+        50,
+        85.71428571428571,
+        111.22448979591836
+      ],
+      "engine": {
+        "tEffectS": 40,
+        "tofS": 30,
+        "slantM": 5000,
+        "capped": true,
+        "pos": {
+          "x": 5000,
+          "y": 0
+        }
+      },
+      "analytic": {
+        "handTofS": 175,
+        "solverTofS": 175,
+        "tEffectS": 185,
+        "pos": {
+          "x": 12250,
+          "y": 0
+        },
+        "segment": 0,
+        "insideEnvelope": false,
+        "beforeWindowEnd": false
+      },
+      "residualS": -145,
+      "residualDt": -290,
+      "feasibility": {
+        "reachM": 2100,
+        "neededM": 5000,
+        "shortfallM": 2900,
+        "reachable": false
+      },
+      "pkAtEngine": 0.35,
+      "pkAtAnalytic": 0
+    }
+  ],
+  "fullEngine": {
+    "recedingLegacy": {
+      "events": [
+        {
+          "tS": 0,
+          "tEffectS": 29.5,
+          "pk": 0.35144375,
+          "killDelta": 0.35144375,
+          "analytic": {
+            "tEffectS": 146.52014652014654,
+            "slantM": 8000,
+            "pk": 0
+          },
+          "lateEffect": false,
+          "flightCapped": true,
+          "creditedPos": {
+            "x": 3961.5,
+            "y": 0
+          },
+          "slantM": 3961.5,
+          "vMps": 54.599999999999994,
+          "flightS": 29.5,
+          "reachM": 1610.6999999999998,
+          "shortfallM": 2350.8,
+          "reachable": false
+        }
+      ],
+      "threats": [
+        {
+          "uasId": "uas-3",
+          "expectedKills": 0.35144375,
+          "expectedLateKills": 0,
+          "expectedLeakers": 0,
+          "expectedNoArrival": 0.64855625
+        }
+      ],
+      "effectors": [
+        {
+          "effectorId": "effector-2",
+          "shotsFired": 1,
+          "expectedRoundsRemaining": 0
+        }
+      ],
+      "totals": {
+        "raidSize": 1,
+        "expectedKills": 0.35144375,
+        "expectedHardKills": 0.35144375,
+        "expectedSoftKills": 0,
+        "expectedLateKills": 0,
+        "expectedLeakers": 0,
+        "expectedNoArrival": 0.64855625,
+        "reportedLeakers": null,
+        "shotsFired": 1,
+        "deSalvos": 0,
+        "jamSalvos": 0
+      },
+      "windows": [
+        {
+          "effectorId": "effector-2",
+          "intervals": [
+            [
+              0,
+              29.5
+            ]
+          ]
+        }
+      ],
+      "reportKeys": [
+        "tS",
+        "tEffectS",
+        "effectorId",
+        "uasId",
+        "shipIdx",
+        "channel",
+        "softShot",
+        "effectorType",
+        "channelClass",
+        "lateEffect",
+        "pk",
+        "killDelta",
+        "flightCapped"
+      ]
+    },
+    "recedingDoctrine": {
+      "events": [
+        {
+          "tS": 24,
+          "tEffectS": 29.5,
+          "pk": 0.35144375,
+          "killDelta": 0.35144375,
+          "analytic": {
+            "tEffectS": 170.52014652014654,
+            "slantM": 8000,
+            "pk": 0
+          },
+          "lateEffect": false,
+          "flightCapped": true,
+          "creditedPos": {
+            "x": 3961.5,
+            "y": 0
+          },
+          "slantM": 3961.5,
+          "vMps": 54.599999999999994,
+          "flightS": 5.5,
+          "reachM": 300.29999999999995,
+          "shortfallM": 3661.2,
+          "reachable": false
+        }
+      ],
+      "threats": [
+        {
+          "uasId": "uas-8",
+          "expectedKills": 0.35144375,
+          "expectedLateKills": 0,
+          "expectedLeakers": 0,
+          "expectedNoArrival": 0.64855625
+        }
+      ],
+      "effectors": [
+        {
+          "effectorId": "effector-7",
+          "shotsFired": 1,
+          "expectedRoundsRemaining": 0
+        }
+      ],
+      "totals": {
+        "raidSize": 1,
+        "expectedKills": 0.35144375,
+        "expectedHardKills": 0.35144375,
+        "expectedSoftKills": 0,
+        "expectedLateKills": 0,
+        "expectedLeakers": 0,
+        "expectedNoArrival": 0.64855625,
+        "reportedLeakers": null,
+        "shotsFired": 1,
+        "deSalvos": 0,
+        "jamSalvos": 0
+      },
+      "windows": [
+        {
+          "effectorId": "effector-7",
+          "intervals": [
+            [
+              0,
+              29.5
+            ]
+          ]
+        }
+      ],
+      "reportKeys": [
+        "tS",
+        "tEffectS",
+        "effectorId",
+        "uasId",
+        "shipIdx",
+        "channel",
+        "softShot",
+        "effectorType",
+        "channelClass",
+        "lateEffect",
+        "pk",
+        "killDelta",
+        "flightCapped"
+      ]
+    },
+    "nearEqual": {
+      "events": [
+        {
+          "tS": 0,
+          "tEffectS": 55.849125364431494,
+          "pk": 0.4380471027696793,
+          "killDelta": 0.4380471027696793,
+          "analytic": {
+            "tEffectS": 240,
+            "slantM": 16100,
+            "pk": 0
+          },
+          "lateEffect": false,
+          "flightCapped": null,
+          "creditedPos": {
+            "x": 4130.193148688048,
+            "y": 0
+          },
+          "slantM": 4130.193148688048,
+          "vMps": 70,
+          "flightS": 45.849125364431494,
+          "reachM": 3209.438775510205,
+          "shortfallM": 920.7543731778428,
+          "reachable": false
+        }
+      ],
+      "threats": [
+        {
+          "uasId": "uas-13",
+          "expectedKills": 0.4380471027696793,
+          "expectedLateKills": 0,
+          "expectedLeakers": 0,
+          "expectedNoArrival": 0.5619528972303207
+        }
+      ],
+      "effectors": [
+        {
+          "effectorId": "effector-12",
+          "shotsFired": 1,
+          "expectedRoundsRemaining": 0
+        }
+      ],
+      "totals": {
+        "raidSize": 1,
+        "expectedKills": 0.4380471027696793,
+        "expectedHardKills": 0.4380471027696793,
+        "expectedSoftKills": 0,
+        "expectedLateKills": 0,
+        "expectedLeakers": 0,
+        "expectedNoArrival": 0.5619528972303207,
+        "reportedLeakers": null,
+        "shotsFired": 1,
+        "deSalvos": 0,
+        "jamSalvos": 0
+      },
+      "windows": [
+        {
+          "effectorId": "effector-12",
+          "intervals": [
+            [
+              0,
+              146
+            ]
+          ]
+        }
+      ],
+      "reportKeys": [
+        "tS",
+        "tEffectS",
+        "effectorId",
+        "uasId",
+        "shipIdx",
+        "channel",
+        "softShot",
+        "effectorType",
+        "channelClass",
+        "lateEffect",
+        "pk",
+        "killDelta"
+      ]
+    },
+    "firingFixture": {
+      "events": [
+        {
+          "tS": 20,
+          "tEffectS": 111.70309018224668,
+          "pk": 0.5340567998311609,
+          "killDelta": 0.5340567998311609,
+          "analytic": {
+            "tEffectS": 111.66478302124793,
+            "slantM": 3414.5833667200855,
+            "pk": 0.5340496869040464
+          },
+          "lateEffect": false,
+          "flightCapped": null,
+          "creditedPos": {
+            "x": 0,
+            "y": -4659.56291781304
+          },
+          "slantM": 3414.1848834083426,
+          "vMps": 107.8,
+          "flightS": 31.703090182246683,
+          "reachM": 3417.5931216461922,
+          "shortfallM": -3.408238237849673,
+          "reachable": true
+        },
+        {
+          "tS": 122,
+          "tEffectS": 205.2466339386394,
+          "pk": 0.5502952348137695,
+          "killDelta": 0.2564063227467905,
+          "analytic": {
+            "tEffectS": 205.22051742616702,
+            "slantM": 2504.698526067187,
+            "pk": 0.5502911313097008
+          },
+          "lateEffect": false,
+          "flightCapped": null,
+          "creditedPos": {
+            "x": 0,
+            "y": -3537.0403927363272
+          },
+          "slantM": 2504.46863788406,
+          "vMps": 107.8,
+          "flightS": 23.246633938639405,
+          "reachM": 2505.987138585328,
+          "shortfallM": -1.5185007012678398,
+          "reachable": true
+        },
+        {
+          "tS": 215.5,
+          "tEffectS": 292.8921513019451,
+          "pk": 0.561537401867614,
+          "killDelta": 0.11766279374302988,
+          "analytic": {
+            "tEffectS": 292.8721313854529,
+            "slantM": 1874.7560064996217,
+            "pk": 0.5615356052839817
+          },
+          "lateEffect": false,
+          "flightCapped": null,
+          "creditedPos": {
+            "x": 0,
+            "y": -2485.2941843766594
+          },
+          "slantM": 1874.6553575566368,
+          "vMps": 107.8,
+          "flightS": 17.39215130194509,
+          "reachM": 1874.8739103496807,
+          "shortfallM": -0.2185527930439548,
+          "reachable": true
+        },
+        {
+          "tS": 303,
+          "tEffectS": 378.9567620044647,
+          "pk": 0.5642954436633489,
+          "killDelta": 0.0518441268108155,
+          "analytic": {
+            "tEffectS": 378.93583674632754,
+            "slantM": 1720.107103279058,
+            "pk": 0.5642960882064688
+          },
+          "lateEffect": false,
+          "flightCapped": null,
+          "creditedPos": {
+            "x": 0,
+            "y": -1452.518855946424
+          },
+          "slantM": 1720.1432121373116,
+          "vMps": 107.8,
+          "flightS": 15.956762004464679,
+          "reachM": 1720.1389440812923,
+          "shortfallM": 0.00426805601932756,
+          "reachable": false
+        }
+      ],
+      "threats": [
+        {
+          "uasId": "ent-mtnvzhmr-25",
+          "expectedKills": 0.9599700431317969,
+          "expectedLateKills": 0,
+          "expectedLeakers": 0.0400299568682031,
+          "expectedNoArrival": 0
+        }
+      ],
+      "effectors": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "shotsFired": 4,
+          "expectedRoundsRemaining": 0
+        }
+      ],
+      "totals": {
+        "raidSize": 1,
+        "expectedKills": 0.9599700431317969,
+        "expectedHardKills": 0.9599700431317969,
+        "expectedSoftKills": 0,
+        "expectedLateKills": 0,
+        "expectedLeakers": 0.0400299568682031,
+        "expectedNoArrival": 0,
+        "reportedLeakers": 0.0400299568682031,
+        "shotsFired": 4,
+        "deSalvos": 0,
+        "jamSalvos": 0
+      },
+      "windows": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "intervals": [
+            [
+              0,
+              500
+            ]
+          ]
+        }
+      ],
+      "reportKeys": [
+        "tS",
+        "tEffectS",
+        "effectorId",
+        "uasId",
+        "shipIdx",
+        "channel",
+        "softShot",
+        "effectorType",
+        "channelClass",
+        "lateEffect",
+        "pk",
+        "killDelta"
+      ]
+    }
+  }
+}

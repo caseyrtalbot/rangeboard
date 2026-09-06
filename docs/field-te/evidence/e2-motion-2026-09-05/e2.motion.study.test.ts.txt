@@ -1,0 +1,450 @@
+/**
+ * E2 study probe, motion and effect timing (2026-09-05). Scratch file: it is
+ * copied to docs/field-te/evidence/e2-motion-2026-09-05/ and deleted from src/.
+ *
+ * Every direct case puts the launcher at the origin at mount height 4 m and
+ * the target at 4 m AGL, so the slant equals the ground range and every
+ * analytic value is exact by hand. Unless the case says otherwise the
+ * interceptor states 100 m/s, so v = 70 m/s (FLYOUT_SPEED_FACTOR), engage
+ * time E = 10 s, assignment at tS = 0, release R = 10 s. Analytic
+ * constant-speed intercept time tof after release (r is the range at
+ * release, u the target speed):
+ *   stationary        tof = r / v
+ *   radial closing    tof = r / (v + u)
+ *   radial receding   tof = r / (v - u), only when v > u
+ *   general segment   |P0 + u tof d|^2 = (v tof)^2, the smaller positive root
+ *   path end          the target stops at the last point: tof = r_end / v when
+ *                     the moving root lands after the path end
+ */
+import { describe, expect, it } from 'vitest'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import type { Connection, Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
+import { MOUNT_HEIGHT_M, mountHeightOf } from '../model/types'
+import { emptyScenario } from '../model/seed'
+import { modelFor, pathSpeed } from '../model/scenario'
+import { FT_TO_M } from '../analysis/sensorEnv'
+import { dist, posAtTime } from '../geometry/geo'
+import { slantRangeM } from '../geometry/slant'
+import { DT } from './clock'
+import { FLYOUT_SPEED_FACTOR, interceptAt } from './intercept'
+import { resolveEngagements } from './attrition'
+import { assessAllThreats } from './sim'
+import { distanceFalloff, kineticPk } from './pk'
+import { effectivePathDelayS } from './raid'
+import { threatAltitudeFt } from './tracks'
+import type { EffectorState, ThreatState } from './sweepState'
+import fixture from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+
+const OUT_DIR = 'docs/field-te/evidence/e2-motion-2026-09-05'
+
+interface DirectCase {
+  name: string
+  points: Vec2[]
+  uMps: number
+  statedMps: number
+  engageTimeS: number
+  maxRangeM: number
+  equation: string
+  /** Hand value of tof after release, or null when no finite solution exists. */
+  handTofS: number | null
+  handNote: string
+}
+
+/** Independent solver: piecewise-linear path, constant target speed, constant v. */
+function analyticIntercept(
+  points: Vec2[],
+  uMps: number,
+  vMps: number,
+  releaseS: number,
+): { tofS: number | null; pos: Vec2 | null; segment: number | 'end' | 'none' } {
+  if (uMps === 0) {
+    // A zero-speed target holds its first point (posAlongPath at distance 0).
+    const p = points[0]
+    return { tofS: Math.hypot(p.x, p.y) / vMps, pos: p, segment: 'end' }
+  }
+  let tStart = 0
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]
+    const b = points[i]
+    const seg = dist(a, b)
+    if (seg === 0 || uMps === 0) continue
+    const tEnd = tStart + seg / uMps
+    const d = { x: (b.x - a.x) / seg, y: (b.y - a.y) / seg }
+    const t0 = Math.max(releaseS, tStart)
+    if (t0 > tEnd) {
+      tStart = tEnd
+      continue
+    }
+    const along = (t0 - tStart) * uMps
+    const p0 = { x: a.x + d.x * along, y: a.y + d.y * along }
+    // tau is measured from release; on this segment s = tau - off with
+    // off = t0 - releaseS (flight already spent before the segment starts).
+    // |p0 + u s d|^2 = v^2 (s + off)^2.
+    const off = t0 - releaseS
+    const A = uMps * uMps - vMps * vMps
+    const B = 2 * (uMps * (p0.x * d.x + p0.y * d.y) - vMps * vMps * off)
+    const C = p0.x * p0.x + p0.y * p0.y - vMps * vMps * off * off
+    const roots: number[] = []
+    if (Math.abs(A) < 1e-12) {
+      if (Math.abs(B) > 1e-12) roots.push(-C / B)
+    } else {
+      const disc = B * B - 4 * A * C
+      if (disc >= 0) {
+        const sq = Math.sqrt(disc)
+        roots.push((-B - sq) / (2 * A), (-B + sq) / (2 * A))
+      }
+    }
+    const valid = roots
+      .filter((s) => s >= -1e-9 && t0 + s <= tEnd + 1e-9)
+      .sort((x, y) => x - y)
+    if (valid.length > 0) {
+      const s = Math.max(0, valid[0])
+      return {
+        tofS: s + off,
+        pos: { x: p0.x + uMps * s * d.x, y: p0.y + uMps * s * d.y },
+        segment: i - 1,
+      }
+    }
+    tStart = tEnd
+  }
+  // Path end: the target holds at the last point (posAlongPath clamps there).
+  const last = points[points.length - 1]
+  const tofEnd = Math.hypot(last.x, last.y) / vMps
+  if (releaseS + tofEnd >= tStart - 1e-9) return { tofS: tofEnd, pos: last, segment: 'end' }
+  return { tofS: null, pos: null, segment: 'none' }
+}
+
+/** Window end as sim.ts builds it: the last DT grid time inside maxRange from t = 0. */
+function windowEndS(points: Vec2[], uMps: number, maxRangeM: number, horizonS: number): number {
+  let end = Number.NaN
+  for (let t = 0; t <= horizonS + 1e-9; t += DT) {
+    const p = posAtTime(points, uMps, 0, t).pos
+    if (Math.hypot(p.x, p.y) <= maxRangeM) end = t
+    else if (!Number.isNaN(end)) break
+  }
+  return end
+}
+
+function directStates(
+  statedMps: number,
+  engageTimeS: number,
+  maxRangeM: number,
+): { ts: ThreatState; es: EffectorState } {
+  const spec = {
+    effectorType: 'interceptor',
+    minRangeM: 0,
+    maxRangeM,
+    engageTimeS,
+    flyoutSpeedMps: statedMps,
+  } as SpecModel['effector']
+  const ts = { altM: MOUNT_HEIGHT_M } as ThreatState
+  const es = {
+    entity: { pos: { x: 0, y: 0 } },
+    spec,
+    mountM: MOUNT_HEIGHT_M,
+    engageTimeS,
+  } as EffectorState
+  return { ts, es }
+}
+
+/** The three fixed-point passes of interceptAt, replayed to record each pass. */
+function passTrace(points: Vec2[], uMps: number, vMps: number, releaseS: number): number[] {
+  const trace: number[] = []
+  let tof = 0
+  for (let pass = 0; pass < 3; pass++) {
+    const p = posAtTime(points, uMps, 0, releaseS + tof).pos
+    const next = Math.hypot(p.x, p.y) / vMps
+    trace.push(next)
+    if (next === tof) break
+    tof = next
+  }
+  return trace
+}
+
+const V100 = 100 * FLYOUT_SPEED_FACTOR // 70 m/s
+const CROSS_P0 = { x: 3000, y: -3700 }
+const CROSS_U = 30
+// Crossing by hand: (u^2 - v^2) tof^2 + 2 (P0.d) u tof + |P0|^2 = 0 with d = (0, 1).
+const crossA = CROSS_U * CROSS_U - V100 * V100
+const crossB = 2 * CROSS_P0.y * CROSS_U
+const crossC = CROSS_P0.x * CROSS_P0.x + CROSS_P0.y * CROSS_P0.y
+const crossHand = (-crossB - Math.sqrt(crossB * crossB - 4 * crossA * crossC)) / (2 * crossA)
+
+const DIRECT_CASES: DirectCase[] = [
+  {
+    name: 'stationary',
+    points: [{ x: 3500, y: 0 }, { x: 0, y: 0 }],
+    uMps: 0, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: 'tof = r / v = 3500 / 70',
+    handTofS: 3500 / 70,
+    handNote: 'target fixed at 3500 m',
+  },
+  {
+    name: 'radial closing',
+    points: [{ x: 5000, y: 0 }, { x: -1000, y: 0 }],
+    uMps: 20, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: 'tof = r / (v + u) = 4800 / (70 + 20)',
+    handTofS: 4800 / 90,
+    handNote: 'r at release (t = 10) is 5000 - 20 * 10 = 4800 m',
+  },
+  {
+    name: 'radial receding, slower interceptor (Merops-like, attrition.test.ts:1157)',
+    points: [{ x: 1100, y: 0 }, { x: 8000, y: 0 }],
+    uMps: 97, statedMps: 78, engageTimeS: 0, maxRangeM: 4000,
+    equation: 'tof = r / (v - u) = 1100 / (54.6 - 97) < 0: no solution',
+    handTofS: null,
+    handNote: 'v < u: the separation grows at 42.4 m/s for ever',
+  },
+  {
+    name: 'radial receding, faster interceptor',
+    points: [{ x: 1000, y: 0 }, { x: 20000, y: 0 }],
+    uMps: 20, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: 'tof = r / (v - u) = 1200 / (70 - 20)',
+    handTofS: 1200 / 50,
+    handNote: 'r at release is 1000 + 20 * 10 = 1200 m',
+  },
+  {
+    name: 'crossing (perpendicular track, 3000 m abeam)',
+    points: [{ x: 3000, y: -4000 }, { x: 3000, y: 4000 }],
+    uMps: CROSS_U, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: '(u^2 - v^2) tof^2 + 2 (P0 . d) u tof + |P0|^2 = 0, P0 = (3000, -3700), d = (0, 1)',
+    handTofS: crossHand,
+    handNote: 'smaller positive root of -4000 tof^2 - 222000 tof + 22690000 = 0',
+  },
+  {
+    name: 'near-equal speed, receding',
+    points: [{ x: 500, y: 0 }, { x: 20000, y: 0 }],
+    uMps: 65, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: 'tof = r / (v - u) = 1150 / (70 - 65)',
+    handTofS: 1150 / 5,
+    handNote: 'r at release is 500 + 65 * 10 = 1150 m; intercept at x = 1150 + 65 * 230 = 16100 m, outside the 10 km envelope',
+  },
+  {
+    name: 'near-equal speed, closing',
+    points: [{ x: 5650, y: 0 }, { x: -3000, y: 0 }],
+    uMps: 65, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: 'tof = r / (v + u) = 5000 / (70 + 65)',
+    handTofS: 5000 / 135,
+    handNote: 'r at release is 5650 - 65 * 10 = 5000 m; contraction factor u / v = 0.93',
+  },
+  {
+    name: 'path end, target stops at the last point',
+    points: [{ x: 3000, y: 0 }, { x: 2000, y: 0 }],
+    uMps: 40, statedMps: 100, engageTimeS: 10, maxRangeM: 10000,
+    equation: 'moving root 2600 / (70 + 40) = 23.64 lands at t = 33.64 > path end 25 s, so tof = r_end / v = 2000 / 70',
+    handTofS: 2000 / 70,
+    handNote: 'the path is 1000 m at 40 m/s and ends at 25 s; posAlongPath holds the target there',
+  },
+  {
+    name: 'path end, target leaves the envelope before a feasible intercept',
+    points: [{ x: 3000, y: 0 }, { x: 20000, y: 0 }],
+    uMps: 50, statedMps: 100, engageTimeS: 10, maxRangeM: 5000,
+    equation: 'tof = r / (v - u) = 3500 / (70 - 50) = 175 s at x = 12250 m, outside the 5 km envelope',
+    handTofS: 3500 / 20,
+    handNote: 'a finite solution exists but 7250 m past the envelope; the window ends at the last grid sample with x <= 5000',
+  },
+]
+
+interface DirectResult {
+  name: string
+  equation: string
+  handNote: string
+  vMps: number
+  uMps: number
+  releaseS: number
+  capS: number
+  passesTofS: number[]
+  engine: { tEffectS: number; tofS: number; slantM: number; capped: boolean; pos: Vec2 }
+  analytic: {
+    handTofS: number | null
+    solverTofS: number | null
+    tEffectS: number | null
+    pos: Vec2 | null
+    segment: number | 'end' | 'none'
+    insideEnvelope: boolean | null
+    beforeWindowEnd: boolean | null
+  }
+  residualS: number | null
+  residualDt: number | null
+  feasibility: { reachM: number; neededM: number; shortfallM: number; reachable: boolean }
+  pkAtEngine: number
+  pkAtAnalytic: number | null
+}
+
+function runDirect(c: DirectCase): DirectResult {
+  const vMps = c.statedMps * FLYOUT_SPEED_FACTOR
+  const releaseS = c.engageTimeS
+  const cap = windowEndS(c.points, c.uMps, c.maxRangeM, 2000)
+  const capS = Number.isNaN(cap) ? Number.POSITIVE_INFINITY : cap
+  const { ts, es } = directStates(c.statedMps, c.engageTimeS, c.maxRangeM)
+  const membersAt = (_ts: ThreatState, tS: number) => [posAtTime(c.points, c.uMps, 0, tS).pos]
+  const ic = interceptAt(ts, es, 0, 0, membersAt, capS)
+  const an = analyticIntercept(c.points, c.uMps, vMps, releaseS)
+  const engineTof = ic.tEffectS - releaseS
+  const reachM = vMps * engineTof
+  const neededM = ic.slantM
+  const residualS = an.tofS == null ? null : engineTof - an.tofS
+  const anR = an.pos ? Math.hypot(an.pos.x, an.pos.y) : null
+  return {
+    name: c.name,
+    equation: c.equation,
+    handNote: c.handNote,
+    vMps,
+    uMps: c.uMps,
+    releaseS,
+    capS,
+    passesTofS: passTrace(c.points, c.uMps, vMps, releaseS),
+    engine: { tEffectS: ic.tEffectS, tofS: engineTof, slantM: ic.slantM, capped: ic.capped, pos: ic.pos },
+    analytic: {
+      handTofS: c.handTofS,
+      solverTofS: an.tofS,
+      tEffectS: an.tofS == null ? null : releaseS + an.tofS,
+      pos: an.pos,
+      segment: an.segment,
+      insideEnvelope: anR == null ? null : anR <= c.maxRangeM,
+      beforeWindowEnd: an.tofS == null ? null : releaseS + an.tofS <= capS,
+    },
+    residualS,
+    residualDt: residualS == null ? null : residualS / DT,
+    feasibility: {
+      reachM,
+      neededM,
+      shortfallM: neededM - reachM,
+      reachable: neededM - reachM <= 1e-6,
+    },
+    pkAtEngine: kineticPk(0.5, c.maxRangeM, undefined, ic.slantM),
+    pkAtAnalytic: anR == null ? null : kineticPk(0.5, c.maxRangeM, undefined, anR),
+  }
+}
+
+// Full-engine fixtures, built as attrition.test.ts builds its flyout cases.
+const SENSOR: SpecModel = {
+  id: 'tst-radar', name: 'test radar', kind: 'sensor', description: '', color: '#fff', builtin: false,
+  sensor: { sensorType: 'radar', role: 'surveillance', detectRangeM: 50000, classifyRangeM: null, sectorDeg: 360 },
+}
+const TARGET: SpecModel = {
+  id: 'tst-uas', name: 'test uas', kind: 'uas', description: '', color: '#fff', builtin: false,
+  uas: {
+    group: 4, airframe: 'fixed-wing', cruiseSpeedMps: 40, maxSpeedMps: 60, enduranceMin: 60,
+    altBandFt: [0, 5000], navMode: 'gps', emissionsNote: '',
+  },
+}
+function interceptor(patch: Partial<NonNullable<SpecModel['effector']>>): SpecModel {
+  return {
+    id: 'tst-int', name: 'test interceptor', kind: 'effector', description: '', color: '#fff', builtin: false,
+    effector: { effectorType: 'interceptor', minRangeM: 0, maxRangeM: 1000, engageTimeS: 0, ...patch },
+  }
+}
+const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
+let seq = 0
+function ent(kind: Entity['kind'], specId: string, pos: Vec2): Entity {
+  seq += 1
+  return {
+    id: `${kind}-${seq}`, name: `${kind}-${seq}`, kind, specId, pos, headingDeg: 0, color: null, notes: '',
+    ...(kind === 'uas' ? { altitudeFt: FIXTURE_ALT_FT } : {}),
+  }
+}
+function link(fromId: string, toId: string): Connection {
+  seq += 1
+  return { id: `con-${seq}`, fromId, toId, label: '' }
+}
+function flight(entityId: string, points: Vec2[], speedMps: number): FlightPath {
+  seq += 1
+  return { id: `path-${seq}`, entityId, points, speedMps, startDelayS: 0 }
+}
+function scenarioFor(
+  eff: SpecModel,
+  points: Vec2[],
+  uMps: number,
+  doctrineOn: boolean,
+): Scenario {
+  const scenario = emptyScenario()
+  scenario.roe = 'free'
+  scenario.doctrine = { ...scenario.doctrine!, enabled: doctrineOn }
+  scenario.library = [...scenario.library, SENSOR, TARGET, eff]
+  const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+  const launcher = ent('effector', eff.id, { x: 0, y: 0 })
+  const uas = ent('uas', TARGET.id, points[0])
+  scenario.entities = [sensor, launcher, uas]
+  scenario.connections = [link(sensor.id, launcher.id)]
+  scenario.paths = [flight(uas.id, points, uMps)]
+  return scenario
+}
+
+/** Feasibility of every event of a report under the flight model that produced it. */
+function auditEvents(scenario: Scenario) {
+  const assessments = assessAllThreats(scenario)
+  const report = resolveEngagements(scenario, assessments)
+  const events = report.events.map((ev) => {
+    const effEnt = scenario.entities.find((e) => e.id === ev.effectorId)!
+    const uasEnt = scenario.entities.find((e) => e.id === ev.uasId)!
+    const spec = modelFor(scenario, effEnt)!.effector!
+    const path = scenario.paths.find((p) => p.entityId === ev.uasId)!
+    const uMps = pathSpeed(scenario, path)
+    const at = posAtTime(path.points, uMps, effectivePathDelayS(scenario, path), ev.tEffectS).pos
+    const dAltM = threatAltitudeFt(scenario, uasEnt) * FT_TO_M - mountHeightOf(spec)
+    const slantM = slantRangeM(dist(effEnt.pos, at), dAltM)
+    const vMps = (spec.flyoutSpeedMps ?? 0) * FLYOUT_SPEED_FACTOR
+    const flightS = ev.tEffectS - ev.tS - spec.engageTimeS
+    const reachM = vMps * flightS
+    // Closed-form intercept from the same release, for the closed-form option.
+    const delayS = effectivePathDelayS(scenario, path)
+    const rel = analyticIntercept(
+      path.points.map((q) => ({ x: q.x - effEnt.pos.x, y: q.y - effEnt.pos.y })),
+      uMps, vMps, ev.tS + spec.engageTimeS - delayS,
+    )
+    const anSlant = rel.pos ? slantRangeM(Math.hypot(rel.pos.x, rel.pos.y), dAltM) : null
+    const analytic = rel.tofS == null ? null : {
+      tEffectS: delayS + ev.tS + spec.engageTimeS + rel.tofS,
+      slantM: anSlant,
+      pk: anSlant == null ? null : ev.pk * distanceFalloff(anSlant, spec.maxRangeM) / distanceFalloff(slantM, spec.maxRangeM),
+    }
+    return {
+      tS: ev.tS, tEffectS: ev.tEffectS, pk: ev.pk, killDelta: ev.killDelta, analytic,
+      lateEffect: ev.lateEffect, flightCapped: ev.flightCapped ?? null,
+      creditedPos: at, slantM, vMps, flightS, reachM, shortfallM: slantM - reachM,
+      reachable: slantM - reachM <= 1e-6,
+    }
+  })
+  const a = assessments[0]
+  return {
+    events,
+    threats: report.threats.map((t) => ({
+      uasId: t.uasId, expectedKills: t.expectedKills, expectedLateKills: t.expectedLateKills,
+      expectedLeakers: t.expectedLeakers, expectedNoArrival: t.expectedNoArrival, outcome: t.outcome,
+    })),
+    effectors: report.effectors.map((e) => ({
+      effectorId: e.effectorId, shotsFired: e.shotsFired, expectedRoundsRemaining: e.expectedRoundsRemaining,
+    })),
+    totals: report.totals,
+    windows: a?.effectorWindows ?? [],
+    reportKeys: Object.keys(report.events[0] ?? {}),
+  }
+}
+
+describe('E2 motion and effect timing study', () => {
+  it('records residual, cap and feasibility per case', () => {
+    const direct = DIRECT_CASES.map(runDirect)
+    // Case 1: the Merops-like receding fixture, legacy and doctrine (attrition.test.ts:1157).
+    const merops = interceptor({ pk: 0.5, maxRangeM: 4000, flyoutSpeedMps: 78, magazineSize: 1, salvoCooldownS: 1000 })
+    const away = [{ x: 1100, y: 0 }, { x: 8000, y: 0 }]
+    const recedingLegacy = auditEvents(scenarioFor(merops, away, 97, false))
+    const recedingDoctrine = auditEvents(scenarioFor(merops, away, 97, true))
+    // Case 2: near-equal receding through the full engine: the cap does not fire.
+    const eq = interceptor({ pk: 0.5, maxRangeM: 10000, engageTimeS: 10, flyoutSpeedMps: 100, magazineSize: 1, salvoCooldownS: 1000 })
+    const nearEqual = auditEvents(scenarioFor(eq, [{ x: 500, y: 0 }, { x: 20000, y: 0 }], 65, false))
+    // Case 3: the firing fixture, deterministic run.
+    const firing = auditEvents({ ...(fixture as unknown as Scenario) })
+    const out = {
+      date: '2026-09-05', head: '785b4c3', DT, FLYOUT_SPEED_FACTOR,
+      direct, fullEngine: { recedingLegacy, recedingDoctrine, nearEqual, firingFixture: firing },
+    }
+    mkdirSync(OUT_DIR, { recursive: true })
+    writeFileSync(`${OUT_DIR}/results.json`, JSON.stringify(out, null, 2))
+    console.log(JSON.stringify(out, null, 2))
+    // Sanity: the receding fixture reproduces the pinned test values.
+    expect(recedingLegacy.events[0].tEffectS).toBe(29.5)
+    expect(recedingLegacy.events[0].pk).toBeCloseTo(0.35144375, 9)
+    expect(direct[0].residualS).toBe(0)
+  })
+})
