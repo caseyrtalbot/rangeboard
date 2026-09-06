@@ -1,6 +1,6 @@
 # RangeBoard E1 model evidence baseline
 
-Status: E1 DOSSIERS AND SOURCE RECONCILIATION COMPLETE, 2026-09-05. This completes the documentary baseline selected for the C2/C3/E1 wave. Empirical validation and later E2/E3 studies remain open. Source baseline: `d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446`; the E1 lane changed only this directory and its source-capture directory, preserving code, seeds, historical research and user files.
+Status: E1 DOSSIERS AND SOURCE RECONCILIATION COMPLETE, 2026-09-05. This completes the documentary baseline selected for the C2/C3/E1 wave. E2 and E3 closed 2026-09-06 on Casey's word; the dossiers stay as the dated evidence baseline. Source baseline: `d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446`; the E1 lane changed only this directory and its source-capture directory, preserving code, seeds, historical research and user files.
 
 ## Dossiers and applicability
 

@@ -209,6 +209,9 @@ for calibration is not an independent validation point (R-F-16).
 
 ### E2. Prioritized model studies and bounded corrections
 
+Status 2026-09-06: E2 closed on Casey's word. The rows below are the families studied
+(Effect/EW `b7ec949`, Motion `ab66434`, Track/C2/doctrine `7026348`, Radar `f2dccd4`).
+
 The following are study scopes and acceptance cases, not chosen replacement algorithms.
 Prioritize violations of physical feasibility and high-impact unsupported assumptions
 before lower-impact detail. Use E3 sensitivity as one input to prioritization, with its
@@ -216,13 +219,10 @@ known local/interaction limitations.
 
 | Family and source | Current limitation or question | Required next evidence and acceptance |
 | --- | --- | --- |
-| Geometry/time: `geometry/geo.ts`, `slant.ts`, `playback/sim.ts` | Uniform threat altitude, 0.5 s grid, 4/3-earth horizon; no terrain or per-waypoint altitude | Unit/frame and slant/ground round trips; edge, delayed-start, path-end and timestep error cases. Scope 3D paths or terrain only after datum, data resolution and user need are specified. |
 | Radar: `radarPd.ts`, `sensorEnv.ts`, `scanModel.test.ts` | Placard calibration and assumed Pd/Pfa/Swerling; simplified scan/hold behavior | Independently reproducible closed-form checks, scan timing/phase tests, published comparisons with matching conditions. Investigate detection, tentative hold and firm track separately (F-15); reject invalid M-of-N inputs. More detailed clutter/aspect/correlation needs evidence. |
-| EO/IR, acoustic, RF: `sensorEnv.ts`, `signatureFactors.ts`, `fidelity.ts` | Span scaling, calibrated transmission loss and band/range gates are reduced models | State which hardware, signature and environmental inputs are needed for each fidelity increment; use dimensional/limiting-case tests now. Do not imply image-quality, absorption or RF link-budget physics that is absent. |
 | Track/C2/doctrine: `sim.ts`, `trackState.ts`, `doctrineFactors.ts`, `integration.ts` | Role PFs, route latency, hold/classification distinctions, hidden `no-fc-uplink` reason | Trace one observation through track state, route eligibility and timing. Test routed versus unrouted sensors, scan misses/coast/drop and capacity. Explain blocked engagement in the UI. |
 | Motion/effect timing: `tactics.ts`, `attrition.ts` | Constant effective speed, three intercept iterations and window-end cap; a cap does not establish a feasible intercept | Quantify numerical residuals and feasibility against independent analytic cases; report unsupported/infeasible outcomes explicitly. Preserve release/effect/arrival distinctions. Review the scope of any higher-fidelity motion model before implementation. |
 | Effect/EW: `attrition.ts`, `ewPhysics.ts` | Distance/size/evasion Pk factors and simplified illumination closure; common effect abstractions span different technologies | Verify dimensions, timing, conservation and channel semantics. Audit what available sources support for each mechanism. Keep unsupported response parameters exposed; avoid false precision from generalizing a small demonstration count to all conditions. |
-| Environment: `sensorEnv.ts`, `ewPhysics.ts` | PF condition multipliers, no actual weather/terrain dataset | Identify mechanisms already represented to avoid double counting. Introduce physical models only with defined inputs and operating domains; retain transparent reduced modes where data is absent. |
 
 No sixth draw site, changed raid partition or changed save schema is implied by this table.
 Each such change needs a decision row and Casey's approval under AGENTS.md.

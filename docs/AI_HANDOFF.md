@@ -57,14 +57,11 @@ live in this file under Next.
   Albersheim inverse whose tail floored at 0.017; fixtures byte-identical (no seed target is
   Swerling 0). Placard Pd stays 0.5 by Casey's word; its sensitivity (firm track at 0.79 to
   1.29 of the quoted range for Pd 0.5 to 0.9) is in the dossier.
+- Wave 3 (E2, E3) closed 2026-09-06 on Casey's word. No E2 study is pending.
 
 ## Next
 
-1. Wave 3, E2: poll Casey on the next family: Geometry and time; EO/IR, acoustic and RF;
-   Environment (dossiers in `field-te/model-evidence/`). Radar is done. No open finding
-   remains in any of them; each study starts from its dossier's unsupported-conditions
-   section.
-2. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
+1. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
    then A1.
 
 ## Inputs Casey holds
