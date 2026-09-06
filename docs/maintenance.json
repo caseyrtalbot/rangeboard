@@ -96,9 +96,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "eb246c9f4a499682dbc422a0ed87401034107fec1c366295ffdeef48bafec965",
+      "sha256": "6c4227c6c6f81e194c94dee16ba5b437b095f387b424e223d85e21f816d7cf3f",
       "reviewedAt": "2026-09-06",
-      "note": "Created the one central handoff for the performance and quality refactor: ledger, approved decisions, measured 955ad6b baseline, Wave 0 and Wave 1 task with lane briefs, remaining waves, traps, update rule."
+      "note": "Wave 0 and Wave 1 recorded: ledger rows with e1a877a and 10aadd3, dev and prod after-tables, the React dev JSX runtime analysis, Casey's merge word; section 4 replaced with the Wave 2 task at 10aadd3 line numbers, integration steps and acceptance including the five carried dev targets; traps updated."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

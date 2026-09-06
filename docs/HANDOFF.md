@@ -13,8 +13,8 @@ every instruction a session needs; the lane reports add detail, not requirements
 
 | Wave | Scope | State | Commit | Evidence |
 | --- | --- | --- | --- | --- |
-| 0 | Baseline evidence into the repo | Not started | | `docs/field-te/evidence/perf-2026-09-06/` |
-| 1 | Performance hot fixes: React shell and canvas/engine micro | Not started | | after-capture in the same evidence directory |
+| 0 | Baseline evidence into the repo | Done 2026-09-06 | `e1a877a` | `docs/field-te/evidence/perf-2026-09-06/`: README, harness, both profiles, `parity-before.json` |
+| 1 | Performance hot fixes: React shell and canvas/engine micro | Done 2026-09-06; gate, parity and browser check green; the five dev acceptance targets were not met and are carried to Wave 2 | `10aadd3` | same directory: `profile-dev-after.txt`, `profile-prod-after.txt`, `parity-after.json`, `browser-check.mjs.txt`, `browser-check-after.json`, README "After Wave 1" |
 | 2 | Structural performance: Layer split, shared timeline cache, first-play hitch, phase-switch layout thrash, engine hot loop, memory | Not started | | |
 | 3 | Bundle and startup: lazy T&E workspace, lazy charts, deferred T&E autosave load, seed data, fonts | Not started | | |
 | 4 | Correctness, accessibility, deduplication, docs drift, one browser test | Not started | | |
@@ -24,11 +24,41 @@ Base: branch `codex/board-workspace-ui` at `955ad6b`, one commit ahead of `main`
 typecheck passes, 101 test files and 1414 tests pass, oxlint shows only pre-existing fast-refresh
 warnings, `node scripts/check-docs.mjs` passes.
 
+Head after Wave 1: `10aadd3` plus this handoff update. Gate: 101 test files and 1415 tests pass,
+63 pre-existing oxlint warnings, build 604 KB gzip. Casey approved the merge to `main` on
+2026-09-06; `main` is fast-forwarded to this branch and pushed in the same session as this update.
+
+Measured after Wave 1, script milliseconds per phase, same harness and scenario as section 3:
+
+| Phase | Dev before | Dev after | Prod before | Prod after |
+| --- | ---: | ---: | ---: | ---: |
+| Load to first canvas | 594 | 542 | 379 | 364 |
+| Playback 5 s at 1x | 2387 | 2162 | 1285 | 1103 |
+| Playback script share of wall time | 46 percent | 42 percent | 25 percent | 21 percent |
+| First-play long task | 157 | 127 | 97 | 82 |
+| Zoom, 30 wheel events | 750 | 703 | 197 | 169 |
+| Pan drag, 40 moves | 116 | 91 | 78 | 70 |
+| moveEntity, 20 edits | 2143 | 1710 | n/a | n/a |
+| Select and clear, 10 cycles | 716 | 250 | n/a | n/a |
+| Right tabs, 12 switches | 474 | 145 | n/a | n/a |
+| Lifecycle phases, 9 switches | 815 | 540 | 287 | 245 |
+| Library drawer, 6 toggles | 74 | 78 | 16 | 13 |
+| Undo and redo, 10 steps | 371 | 358 | n/a | n/a |
+
+The dev numbers count React elements: in every phase the largest self-time is the React 19.2
+development JSX runtime, which builds an `Error` and a `console.createTask` per element and is
+absent from the production build. Wave 1 removed the wasted re-renders (right tabs 3.3 times
+faster, select 2.9 times, lifecycle 1.5 times). What remains is the element count of legitimate
+re-renders: every layer on a zoom, every scenario subscriber on an undo, the whole `LiveScene` on
+each of the 120 animation frames per second during playback, the engine on each edit. Wave 2 owns
+those. The evidence README carries the analysis and the acceptance table.
+
 ## 2. Decisions
 
 Approved by Casey on 2026-09-06:
 
-1. Fix on `codex/board-workspace-ui`. Merge to `main` after Wave 1. The merge itself needs Casey's word.
+1. Fix on `codex/board-workspace-ui`. Merge to `main` after Wave 1. The merge itself needs Casey's word
+   (given 2026-09-06, with push). Later merges need it again.
 2. Keep the deterministic engine on the main thread and optimize it. No worker offload of `engagementPicture`.
 3. Commit the measurement harness and both profile outputs as dated evidence under `docs/field-te/evidence/perf-2026-09-06/`.
 4. Keep recharts. Lazy-load it in Wave 3.
@@ -66,169 +96,92 @@ localStorage; per-frame Konva reconciliation from one shared Layer, inline array
 hover state; whole-`camera` subscriptions on zoom; layout thrash on phase switch; one 2.1 MB chunk
 with no code splitting and synchronous T&E autosave validation before first paint.
 
-## 4. Current task: Wave 0, then Wave 1
+## 4. Current task: Wave 2, structural performance
 
-### Wave 0. Baseline evidence into the repo (integrator)
-
-1. Create `docs/field-te/evidence/perf-2026-09-06/`. Copy from the local harness directory:
-   `profile.mjs` as `profile.mjs.txt` (preserved scripts use `.txt`, see the verification guide),
-   `profile-dev.txt`, `profile-prod.txt`, `scenario.json`.
-2. Write `docs/field-te/evidence/perf-2026-09-06/README.md`: capture date, commit `955ad6b`, browser and
-   viewport, the scenario shape, the table in section 3, and the two run commands. State that the numbers
-   describe `955ad6b` only.
-3. Add one line under "Captured checks" in `docs/README.md` linking the new README.
-4. `npm run docs:check`. For each reported reference, read the changed input, then
-   `npm run docs:review -- <doc> --note "<what you checked>"`.
-5. Commit on the branch: `docs: preserve the 955ad6b performance baseline (perf-2026-09-06)`. Do not push.
-
-### Wave 1. Performance hot fixes
-
-Two parallel lanes with disjoint files, both `opus-high`. Read first: `AGENTS.md`,
-`docs/ENGINEERING_REFERENCE.md` sections 3 and 7, then the lane reports if available locally.
+Owner `fable-medium` for the code; the orchestrator session reviews, integrates and measures.
+Line numbers are at `10aadd3`. Read first: `AGENTS.md`, `docs/ENGINEERING_REFERENCE.md` sections 3,
+4 and 7, the evidence README `docs/field-te/evidence/perf-2026-09-06/README.md` ("After Wave 1"),
+then `.claude/plans/perf-2026-09-06/lane2-canvas-engine.md` and `lane1-react-render.md` if present
+locally.
 
 Shared rules:
 
-- Touch only the owned files. Preserve the other lane's edits; both lanes share the tree.
-- Scenario changes go through `mutate`, view state through `set`, panels subscribe through selectors,
-  never write derived state into the scenario, playback derives from `simTimeS` or the frame clock.
+- Scenario changes go through `mutate`, view state through `set`, panels subscribe through
+  selectors, never write derived state into the scenario, playback derives from `simTimeS` or the
+  frame clock. `engagementPicture` and `buildTrackTimeline` are keyed by scenario identity.
 - Two spaces, no semicolons, single quotes, named exports, short rationale comments only where needed.
-- Run the focused tests for each touched file, then `npm run typecheck` and `npm run lint` before reporting.
-- Report: diff summary, checks run with output, anything not done, findings outside the owned files.
+- Run the focused tests for each touched file, then `npm run typecheck` and `npm run lint` before
+  reporting. Report: diff summary, checks run with output, anything not done, findings outside scope.
 
-#### Lane A: React shell
+Items:
 
-Owned: `src/App.tsx`, `src/state/store.ts` (two guards only), `src/panels/Palette.tsx`,
-`src/panels/Toolbar.tsx`, `src/panels/BoardPreparation.tsx`,
-`src/panels/analysis/widgets/ThreatPictureWidget.tsx`, `src/panels/Inspector.tsx` (one subscription),
-`src/canvas/CanvasStage.tsx` (the `memo` wrapper on the export only).
+1. Split the LiveScene Konva Layer (`src/canvas/CanvasStage.tsx:358-382`) into a static Layer
+   (Boundary, Footprint, Range, Connection) and a live Layer (WEZ, Path, Engagement, Entity,
+   SystemHandle, Callout, marquee). The frame clock stays mounted once, in the live Layer. Same
+   child order. The static Layer must not re-render on a frame: its inputs are the scenario, the
+   camera and the ui slices it already subscribes to.
+2. Shared `buildTrackTimeline` cache keyed by scenario identity (WeakMap, next to `durationOf` in
+   `src/state/selectors.ts` or in `src/playback/trackState.ts:388`). Callers today:
+   `src/canvas/CanvasStage.tsx:121` and `src/panels/analysis/detail/ThreatDetail.tsx:49`.
+3. First-play hitch: the first `advanceRun` applies `observedPatch` and replaces the scenario
+   (`src/state/store.ts:452`, `1451-1457`). Stamp on the Play click before the first publication,
+   or let `engagementPicture` reuse the previous picture when only presentation fields differ.
+   Decide after reading `src/analysis/analysisBasis.ts`.
+4. `src/canvas/TrackFileReadout.tsx`: pass LiveScene's `detections` and `trackStates` into
+   `threatReadoutAt` (`src/panels/analysis/threatReadout.ts:68`) instead of rerunning the sweep at
+   10 Hz.
+5. Phase-switch layout thrash: trace one Prepare to Analyze switch, find the measure-write loop
+   (recharts responsive containers are the first suspect), fix at the source.
+6. Engine hot loop: profile `assessThreat` (`src/playback/sim.ts:290`), `sweepSensorHits`,
+   `admittedSlantsM` with the parity harness in place. Hoist per-sensor constants, reuse
+   `deterministicPolicy` across threats, avoid per-step allocation in `recordScan`
+   (`src/playback/sim.ts:269`). Parity capture before and after.
+7. Memory: heap snapshot after 30 edits. If `pictureCache` (`src/analysis/impact.ts:248`) retention
+   through `past` (`HISTORY_LIMIT` 100 at `src/state/store.ts:108`) is confirmed, bound the retained
+   pictures.
 
-Line numbers are at `955ad6b`.
+### Integration (orchestrator)
 
-1. `src/App.tsx:261-262`. Replace the whole `selection` and `scenario` subscriptions with primitive
-   selectors: the single selected entity id or null (only when the entity exists), a boolean for any
-   object selection (entityIds, boundaryId or connectionId), and a selection key string
-   (`entityIds.join('|')`) for the `entityView` memory at 264-267. `selectedEntity` at 268-269 is used
-   only for `.id` at 595.
-2. `src/App.tsx:347-351`. Depend on the boolean. Skip when `useStore.getState().ui.rightTab === 'inspect'`.
-3. `src/state/store.ts:1330-1333` (`setRightTab`): return early when the tab is unchanged, before
-   `writeView`. `src/state/store.ts:1296-1302` (`select`): return the current state when the merged
-   selection equals the current one field by field (`entityIds` in order, `boundaryId`, `connectionId`,
-   `libraryId`, `cardId`). This also fixes the undo tab jump and the section memory reset.
-4. `src/App.tsx:272-300, 542`. `useCallback` for `openTelemetry` (read the selection key through
-   `useStore.getState()` at call time) and `placeAt` (deps `[placement]`). `memo` on the CanvasStage export.
-5. `src/App.tsx:278-291, 532` and `src/panels/Palette.tsx`. `useCallback` for `closeLibrary` and
-   `armPlacement` (deps `[]`). `memo(Palette)`.
-6. `src/panels/Toolbar.tsx:180`. Subscribe to `ui.layers.threatWez` only; use it at 250.
-7. `src/panels/BoardPreparation.tsx:47`. Move the `mc` subscription into a wrapper around `McPopover`.
-8. `src/panels/analysis/widgets/ThreatPictureWidget.tsx:30`. Use `selectObservedThroughStep`.
-9. `src/panels/Inspector.tsx:569`. Drop the `camera` subscription; read it inside `suggest()`.
-10. `src/App.tsx:414-478`. Remove the `libraryOpen` dependency with a functional setter. Delete the
-    unreachable Escape branch at 453-457. Split the Escape at 428-434: the Location dialog Escape closes
-    the dialog only; the calibrate Escape keeps `cancelDraft` and `setTool('select')`.
-
-Tests: `npx vitest run src/panels/Toolbar.test.tsx src/panels/Palette.test.tsx src/panels/BoardPreparation.test.tsx src/panels/Inspector.test.tsx src/state/store.test.ts src/state/store.analysis.test.ts src/panels/AnalysisPanel.test.tsx`.
-Add a store test for the two guards, sized like its neighbors in `src/state/store.test.ts`.
-
-#### Lane B: canvas and engine micro
-
-Owned: `src/canvas/**` except the `memo` wrapper on the `CanvasStage` export, `src/playback/detection.ts`,
-`src/model/scenario.ts`.
-
-1. `src/model/scenario.ts:4-8` (`modelFor`). Build a `Map<string, SpecModel>` per library array identity
-   (module-level `WeakMap<SpecModel[], Map>`). Same return for a missing id. No signature change.
-2. `src/canvas/layers/EntityLayer.tsx:125, 191, 387`. `perfectDrawEnabled={false}` on the FriendFrame
-   `Path`, the hostile diamond and the formation member `RegularPolygon`.
-3. Hoist every inline `dash={[...]}` and `points={[...]}` literal in `src/canvas` to module constants
-   (13 dash sites, 18 points sites). Memoize `wedgePoints` in FootprintLayer `Ring` (105, 123) and
-   `JammerNode` (645, 647) on `[pos.x, pos.y, headingDeg, sectorDeg, radiusM]`. Memoize the per-render
-   `flatMap` arrays in PathLayer (29, 70).
-4. `src/canvas/CanvasStage.tsx:51, 321-325`. Keep `mouseWorld` in a ref. Set state only while a draw or
-   calibrate tool or a marquee is active (PathLayer reads it only then: 60-66, 85-87). Give HudLayer its
-   own pointer position from a stage `mousemove` listener registered in a `useEffect` on `stageRef`.
-5. `src/canvas/layers/FootprintLayer.tsx:706-743`. `memo(FootprintLayer)`. Compute `activeSensorIds` once
-   in `LiveScene` and pass the `Set`. Replace the whole-`ui` subscription at 708 with field subscriptions
-   (`ui.units`, `ui.basemap`, `ui.layers`, `ui.ringOverrides`; `useShallow` where an object is needed).
-6. `src/canvas/layers/EntityLayer.tsx:242-248` and `src/canvas/layers/SystemHandleLayer.tsx:57-69`.
-   Preview rotation with local Konva node rotation during the drag. Commit one `updateEntity` or
-   `rotateSystem` on `dragEnd`. One undo entry per gesture.
-7. Subscribe to `camera.scale` where x and y are not read: EngagementLayer.tsx:34, CalloutLayer.tsx:20,
-   RangeLayer.tsx:14, ConnectionLayer.tsx:10, ThreatWezLayer.tsx:103, PathLayer.tsx:18, HudLayer.tsx:11,
-   TrackFileReadout.tsx:46. In EntityLayer read `camera.x/y` inside handlers through `useStore.getState()`.
-   Move `fontSize={n / k}` Text nodes (PathLayer.tsx:52, 103, 128; ConnectionLayer.tsx:75;
-   BoundaryLayer.tsx:51) into `scale={1 / k}` Groups with a constant font size.
-8. `src/canvas/layers/EntityLayer.tsx:263-337`. Memoize per node `color`, `boardName`, `labelLines`,
-   `sectorDeg` on `[entity, model]`. In `src/canvas/LiveScene.tsx:67-78` precompute per-entity label
-   inputs on `scenario.entities` so `layoutLabels` does geometry only per frame. `listening={false}` on
-   the EntityNode inner shapes other than the hit disc.
-9. `src/playback/detection.ts:177-222` (`sweepSensorHits`). Build the sensor spec lookup once per call.
-   Pure, no store import.
-
-Tests: `ls src/playback/*.test.ts src/canvas/*.test.tsx` first, then run the detection, sim, trackState,
-accuracy, impact and canvas test files. Steps 1 and 9 touch engine inputs; the integrator runs parity.
-
-#### Integration (orchestrator)
-
-1. Before either lane lands, capture the parity baseline at `955ad6b` per the verification guide: fixed
-   IDs, seed and settings; deterministic, aleatory MC, total MC and sensitivity. Use
-   `src/playback/__fixtures__/detection-outside-rings.json` and
-   `docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`. Keep the capture in
-   `docs/field-te/evidence/perf-2026-09-06/parity-before.json`.
-2. After both lanes: `npm run check`. Compare parity. Any numerical difference from Lane B steps 1 or 9
-   is a defect, because both are pure lookups.
-3. Rerun the harness against dev with the same scenario. Start the dev server yourself
-   (`npm run dev -- --port 5377 --strictPort`), then
-   `node profile.mjs scenario.json http://localhost:5377 dev` from the harness directory. The Chromium
-   launch fails inside the Claude sandbox with a Mach port error; run that command with the sandbox
-   disabled. Record the after-table in the evidence README and in section 1 of this file.
-4. Browser check at 1400 by 900, panel 320: canvas click selection, entity drag, heading rotate (one undo
-   entry), Space to play, wheel zoom, hover while paused, Library drawer, phase switches, undo and redo
-   keep the right tab.
-5. Docs: check `docs/ENGINEERING_REFERENCE.md` section 7 against the `mouseWorld`, HudLayer and
-   drag-commit changes; update in the same change and `npm run docs:review` with a concrete note.
+1. Parity: `parity-after.json` is byte-identical to `parity-before.json`, so either is the baseline.
+   Copy `parity-capture.ts.txt` to `src/playback/perf.parity.capture.test.ts`, run
+   `PARITY_CAPTURE=1 PARITY_TAG=wave2 npx vitest run src/playback/perf.parity.capture.test.ts`,
+   `cmp` against `parity-before.json`, then delete the scratch file. Item 6 must not change a byte.
+   Item 3 may change no number either: the observed stamp is presentation.
+2. `npm run check`.
+3. Harness: copy `profile.mjs.txt` and `scenario.json` to a scratch directory as `profile.mjs` and
+   `scenario.json`; start `npm run dev -- --port 5377 --strictPort` and `npm run build` outside the
+   sandbox; run the dev and prod commands in the evidence README. Record both after-tables in the
+   README and in section 1 here.
+4. Browser check: `browser-check.mjs.txt` as `browser-check.mjs` against the dev server, outside the
+   sandbox. Add: the first Space press shows no long task over the target, a Prepare to Analyze
+   switch, and a heap reading after 30 `moveEntity` calls.
+5. Docs: `docs/ENGINEERING_REFERENCE.md` section 4 (architecture map) and section 7 for the Layer
+   split, the timeline cache and the readout inputs; `npm run docs:review` with a concrete note.
 6. Commit on the branch when gate, parity and browser check are green:
-   `perf: stop the selection re-render cascade; Konva repaint and engine lookup fixes (Wave 1)`. Do not push.
-7. Update this file: ledger rows for Wave 0 and Wave 1 with commits, the after-table, and the new current
-   task (Wave 2). `npm run docs:review -- docs/HANDOFF.md --note "..."`. Include in the Wave 1 commit.
-8. Ask Casey for the merge to `main`.
+   `perf: split the live layer, share the timeline, fix the first-play hitch and the engine hot loop (Wave 2)`.
+   Do not push.
+7. Update this file: ledger row, after-tables, the new current task (Wave 3).
+   `npm run docs:review -- docs/HANDOFF.md --note "..."`. Ask Casey before any merge or push.
 
-#### Wave 1 acceptance (dev harness, same scenario)
+### Wave 2 acceptance (dev harness, same scenario; prod recorded beside it)
 
-| Phase | Baseline | Target |
+| Phase | After Wave 1 | Target |
 | --- | ---: | ---: |
-| moveEntity per edit | 105 ms | at or below 60 ms |
-| Select and clear per change | 36 ms | at or below 10 ms |
-| Playback script share | 46 percent | at or below 25 percent |
-| Zoom per wheel event | 25 ms | at or below 10 ms |
-| Undo and redo per step | 37 ms | at or below 15 ms |
+| Playback script share | 42 percent | at or below 15 percent |
+| First-play long task | 127 ms | at or below 40 ms |
+| Phase switch forced layouts | about 120 per switch | at or below 20 |
+| moveEntity per edit | 85 ms | at or below 40 ms |
+| Select and clear per change (carried from Wave 1) | 12.5 ms | at or below 10 ms |
+| Zoom per wheel event (carried from Wave 1) | 23 ms | at or below 10 ms |
+| Undo and redo per step (carried from Wave 1) | 36 ms | at or below 15 ms |
 
-Parity unchanged. `npm run check` green. No new lint warnings.
+Parity unchanged. `npm run check` green. No new lint warnings. If a dev target is out of reach
+because the remaining cost is a legitimate element count, say so with the prod number beside it
+and poll Casey; do not lower a target silently.
 
 ## 5. Remaining waves
 
 Each wave is one session. Update section 1 and section 4 at its end.
-
-### Wave 2. Structural performance (`fable-medium`, orchestrator reviews)
-
-1. Split the LiveScene Konva Layer (`src/canvas/CanvasStage.tsx:344-368`) into a static Layer (Boundary,
-   Footprint, Range, Connection) and a live Layer (WEZ, Path, Engagement, Entity, SystemHandle, Callout,
-   marquee). Frame clock stays mounted once in the live Layer. Same child order.
-2. Shared `buildTrackTimeline` cache keyed by scenario identity, next to `durationOf` in
-   `src/state/selectors.ts` or in `trackState.ts`. Removes the double build in CanvasStage and ThreatDetail.
-3. First-play hitch: `advanceRun` applies `observedPatch` and replaces the scenario (`store.ts:1441-1444`).
-   Stamp on the Play click before the first publication, or let `engagementPicture` reuse the previous
-   picture when only presentation fields differ. Decide after reading `analysisBasis.ts`.
-4. `TrackFileReadout`: pass LiveScene's `detections` and `trackStates` into `threatReadoutAt` instead of
-   rerunning the sweep at 10 Hz.
-5. Phase-switch layout thrash: trace one Prepare to Analyze switch, find the measure-write loop (recharts
-   responsive containers are the first suspect), fix at the source.
-6. Engine hot loop: profile `assessThreat` (`sim.ts:80`), `sweepSensorHits`, `admittedSlantsM` with the
-   parity harness in place. Hoist per-sensor constants, reuse `deterministicPolicy` across threats, avoid
-   per-step allocation in `recordScan`. Parity capture before and after.
-7. Memory: heap snapshot after 30 edits. If `pictureCache` retention through `past` (up to 100 scenarios)
-   is confirmed, bound the retained pictures.
-
-Acceptance: playback script share at or below 15 percent dev; first-play hitch at or below 40 ms; phase
-switch layouts at or below 20; moveEntity at or below 40 ms. Parity unchanged.
 
 ### Wave 3. Bundle and startup (`opus-high`)
 
@@ -304,7 +257,14 @@ load and switch; PROJECT_GUIDE execution section updated and reviewed.
 - Playwright's Chromium launch needs the sandbox off (`bootstrap_check_in ... Permission denied`).
 - macOS `base64` decodes with `-D -i <file>`.
 - `.claude/launch.json` and `.claude/settings*.json` are not writable from the sandbox.
-- `select()` always allocates (`store.ts:1296`) until Lane A step 3 lands.
+- The dev harness measures React 19.2's development JSX runtime as much as the app: `jsxDEV`
+  builds an `Error` and a `console.createTask` per element. Read the prod run for the user-facing
+  number; read the dev run for how many elements a re-render creates.
+- Konva drag events bubble from a draggable child to its group. A group drag handler must check
+  `e.target === e.currentTarget`, or a handle drag moves the entity.
+- The Palette focuses its search field on open, so `L` inside the drawer types a letter. Close with
+  Escape or press `L` with focus on the canvas.
+- The sandbox refuses a listening port: start the dev server and the Playwright scripts outside it.
 - The first `advanceRun` replaces the scenario object (`store.ts:1441-1444`). Wave 2 item 3 owns this.
 - `engagementPicture` and `buildTrackTimeline` are keyed by scenario identity. Never pass a spread or
   cloned scenario.
