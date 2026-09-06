@@ -16,18 +16,19 @@ invented to fill a gap. `CLAUDE.md` holds tool-environment notes only.
   model, a distribution, a threshold, a design, a presentation, a fixture's validity), stop
   at that point and poll Casey in the conversation: the evidence, the options, and the one
   recommendation that best serves realism, evidence, design, simulation, modeling and
-  performance quality. Continue on the answer. Never defer a choice into the register or
-  a report; a study ends in a polled decision, not an options table.
+  performance quality. Continue on the answer. Never defer a choice into a report or a
+  list; a study ends in a polled decision, not an options table.
 - Read before starting: this file and the handoff. Then read only the source, tests,
-  reference sections and register rows the item touches. Specs are consulted by section,
+  reference sections the item touches. Specs are consulted by section,
   not read cover to cover.
 - Trust order for any claim: source, tests and tool output; git; this contract; the
-  handoff and register; the specs; memory. Verify before you recommend.
+  handoff; the specs; memory. Verify before you recommend.
 - Measure before you design. A claim about runtime behavior (render cost, cadence, worker
   time) gets a measurement on a named fixture before it drives a change. The F1 brief is the
   template: the contract's Inspector claim was wrong until measured.
-- Deliver the item as scoped. Record adjacent problems as register follow-ups; do not fix
-  them in passing unless the fix is one line and in an owned file. Fix a wrong sentence in a
+- Deliver the item as scoped. Name an adjacent problem to Casey in the conversation when it
+  matters; otherwise let it go. There is no findings register. Do not fix an adjacent
+  problem in passing unless the fix is one line and in an owned file. Fix a wrong sentence in a
   document when you find it.
 - Subagents only when write paths are disjoint and wall-clock time matters. The session
   integrates, runs the gates on the combined tree and owns the records. One model by
@@ -99,10 +100,6 @@ are in the reference; type floor and tokens follow the [design contract](docs/de
   defaults taken); Open findings (register IDs, one line each). Rewrite it whole at every
   commit that changes state; never append, never add a section, never create a second
   handoff, brief record or completion narrative for a slice. Superseded text lives in git.
-- [The register](docs/data-engine/outstanding.md) holds Casey's decisions and open
-  findings. A decision row records an answer Casey gave in the conversation, with the date;
-  it never holds a pending choice. Append rows with the next ID and dated status notes;
-  closed rows are history. Never renumber; D-58 stays absent.
 - Evidence is kept only where it proves something later work depends on: numerical
   baselines and parity captures, browser screenshots, measurement JSON, and the script that
   produced them, under `docs/field-te/evidence/<slice>-<date>/`. No hashes of logs, no

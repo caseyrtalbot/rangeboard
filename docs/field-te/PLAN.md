@@ -49,7 +49,7 @@ reference. This is a proposed local process, not a claim of NASA certification.
 
 The source findings are in [OWNERSHIP_FINDINGS.md](OWNERSHIP_FINDINGS.md). The routing of
 all inherited register items is in [BACKLOG_TRIAGE.md](BACKLOG_TRIAGE.md). The append-only
-[outstanding register](../data-engine/outstanding.md) remains the status authority.
+the [handoff](../AI_HANDOFF.md) is the status authority (the register was retired 2026-09-05).
 
 ## 2. Scope and sequencing
 

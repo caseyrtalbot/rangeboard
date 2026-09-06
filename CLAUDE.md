@@ -2,7 +2,7 @@
 
 Read `AGENTS.md` first and follow it. It is the one engineering contract: product,
 standing authorization and hard exceptions, invariants, gates, code style, records, git.
-Then read `docs/AI_HANDOFF.md`. Open the register, the design
+Then read `docs/AI_HANDOFF.md`. Open the design
 contract, the plan and the engineering reference by section, only where the item touches
 them.
 

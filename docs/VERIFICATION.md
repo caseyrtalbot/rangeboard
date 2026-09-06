@@ -15,7 +15,7 @@ Current procedure. Read with [AGENTS.md](../AGENTS.md). Actual run results belon
   `Object.assign(useStore.getInitialState(), useStore.getState())` before each render.
 - A statistical test asserts within 3 standard errors of an analytic value named in a
   comment. When you touch one, sweep the entity ids: a test once passed only by the ids it
-  happened to get (`outstanding.md` R-D-23).
+  happened to get.
 - A scratch check that must import TypeScript runs as a vitest file under `src/` and is
   deleted after. Report it.
 
@@ -29,7 +29,7 @@ Current procedure. Read with [AGENTS.md](../AGENTS.md). Actual run results belon
 - A Coyote under a fully typed route needs a fire-control source (KuRFS or TPQ-53) in the
   kill chain. `completeConnect` types a hand-drawn link when a researched pairing exists,
   so a browser laydown Giraffe 1X to FAAD C2 to Coyote reaches the status `no-fc-uplink`
-  and fires nothing. Add a KuRFS to a Coyote demo laydown (`outstanding.md` R-F-20).
+  and fires nothing. Add a KuRFS to a Coyote demo laydown.
 - The [detection fixture](../src/playback/__fixtures__/detection-outside-rings.json) is
   that laydown with the Mavic 3 spawned 18 km north, outside every ring: detection at
   250.5 s, four firing events, MC kills mean 0.9 at seed 4821. Load it through

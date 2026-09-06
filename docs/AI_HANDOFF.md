@@ -6,7 +6,9 @@
 2026-09-05 on Casey's word (after the register sweep and D-20). Remote verified equal after
 each push. Tree clean except untracked `.claude/`. Contributor: Claude Fable under
 [AGENTS.md](../AGENTS.md). Rule: at every choice, stop and poll Casey in the conversation
-with the evidence and one recommendation; never park a choice in the register or a report.
+with the evidence and one recommendation; never park a choice in a report or a list. The
+findings register (`docs/data-engine/outstanding.md`) was retired on 2026-09-05; open items
+live in this file under Next.
 
 ## Verified
 
@@ -37,15 +39,36 @@ with the evidence and one recommendation; never park a choice in the register or
   2026-09-05"); E2 motion correction (this commit, capture
   `field-te/evidence/e2-motion-fix-2026-09-05/`): `interceptAt` reports `infeasible` and both
   selection passes decline the shot; firing and layered fixtures byte-identical.
+- Done 2026-09-05: Track, C2 and doctrine slice (this commit, capture
+  `field-te/evidence/track-c2-slice-2026-09-05/`): no coast before track initiation (F-15;
+  only the tracked-count band and one uninitiated radar's hold interval move; kills, leakers,
+  events and gates identical), and the editor couples Initiation M and N (F-16, browser-checked
+  through the library editor inputs, `browser-check.md`). Register cut to six rows
+  (`347b09e`), then retired in this commit.
 
 ## Next
 
-1. Wave 3, E2, Track, C2 and doctrine (approved 2026-09-05): one bounded slice with capture.
-   F-16: reject or clamp `trackInitM` above `trackInitN` at input. F-15: gate coast on
-   `trackInitAtS != null`. R-F-20's per-threat blocked-route reason stays with design step 7.
-2. Poll R-F-35 (Stinger 2 of 2 and Leonidas 61 of 61 spreads) and R-F-43 (closed-form
-   intercept solver) as the two open numerical items; each is a capture item on Casey's word.
-   F-62 (SPEXER 2000 reference RCS) is a seed decision.
+1. Four open choices, each with the specialist review's recommendation (2026-09-05), await
+   Casey's word in the conversation:
+   - R-F-35 seed Pk spreads. Recommendation: drop the Stinger (2 of 2) and Leonidas (61 of 61)
+     `spread` rows so both take the PF pseudo-beta around 0.7; the rows' `basis` is already
+     `pf`. Only `total` mode moves, and only where those two fire; `seedLibrary.test.ts:88-98`
+     changes. Capture on the firing fixture.
+   - R-F-43 intercept solver. Recommendation: replace the three fixed-point passes with the
+     closed-form constant-speed root per path segment (`analyticIntercept` in
+     `field-te/evidence/e2-motion-2026-09-05/e2.motion.study.test.ts.txt`), keeping the cap
+     and the `infeasible` test. Firing fixture moves under 0.1 DT and Pk under 1e-5.
+   - F-62 SPEXER 2000 `refRcsM2` 0.04. Recommendation: keep 0.04 and add a `refRcsM2`
+     provenance row (`basis: 'pf'`, back-solved from the datasheet's 9 km UAV and 6 km micro-UAV
+     lines by the fourth-root law). No output moves. Dropping to 0.01 would move a 0.01 m2
+     target's range from 4243 m to 6000 m.
+   - R-F-20 remainder. Recommendation: keep the engine rule (a typed route without a
+     fire-control source blocks a command-guided Coyote; the untyped hand-drawn edge is the
+     degrade path) and add one `Engage` row to the Threat detail Track file section
+     (`ThreatDetail.tsx:118-160`) that names the missing source from `profile.fcSources`.
+     UI text only; browser check.
+2. Wave 3, E2 next family after those: Radar; Geometry and time; EO/IR, acoustic and RF;
+   Environment (dossiers in `field-te/model-evidence/`).
 3. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
    then A1.
 
@@ -59,7 +82,3 @@ taken in the E3 intervals slice, reversible: a 0/1 count is one whose support ma
 mirror of 0 of n; count subs print the interval as two ends because a Wilson or clamped
 interval is not symmetric; the Defeat interval is printed in percent, not percentage
 points. Assumption in D-20: `[10, 4]` is the distinct classify dash; no other dash changed.
-
-## Open findings
-
-R-F-20 (step 7). F-15, F-16 (Track, C2 and doctrine slice). F-62 (seed). R-F-35 (E3). R-F-43 (E2).
