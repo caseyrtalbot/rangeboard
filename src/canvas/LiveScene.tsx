@@ -7,7 +7,7 @@ import type { LeakerImpact } from '../analysis/impact'
 import { effectorStatesAt, shotsInFlightAt, trackStatesAt } from '../playback/trackState'
 import type { TrackTimeline } from '../playback/trackState'
 import { useFrameClock } from './frameClock'
-import { layoutLabels } from './labelLayout'
+import { boardDesignator, layoutLabels } from './labelLayout'
 import { BoundaryLayer } from './layers/BoundaryLayer'
 import { FootprintLayer } from './layers/FootprintLayer'
 import { ThreatWezLayer } from './layers/ThreatWezLayer'
@@ -63,18 +63,37 @@ export function LiveScene(props: Props) {
   const trackStates = useMemo(() => trackStatesAt(timeline, simTimeS), [timeline, simTimeS])
   const effectorStates = useMemo(() => effectorStatesAt(timeline, simTimeS), [timeline, simTimeS])
 
+  // Sensors holding a track, for the footprint layer. Derived from the sweep,
+  // so it changes at the publication and not on a frame.
+  const activeSensorIds = useMemo(
+    () => new Set([...detections.values()].flat().map((h) => h.sensorId)),
+    [detections],
+  )
+
   const prevSpokeIds = useRef<Set<string>>(new Set())
+  // The drawn designator is scenario work; only the screen position of a label
+  // moves per frame, so layoutLabels is left with geometry alone.
+  const labelText = useMemo(
+    () => scenario.entities.map((e) => ({ id: e.id, name: e.name, drawn: boardDesignator(e.name), pos: e.pos })),
+    [scenario.entities],
+  )
   const labelPlacements = useMemo(
     () =>
       layoutLabels(
-        scenario.entities.map((e) => {
+        labelText.map((e) => {
           const pos = tracks.get(e.id)?.pos ?? e.pos
-          return { id: e.id, name: e.name, sx: pos.x * camera.scale + camera.x, sy: pos.y * camera.scale + camera.y }
+          return {
+            id: e.id,
+            name: e.name,
+            drawn: e.drawn,
+            sx: pos.x * camera.scale + camera.x,
+            sy: pos.y * camera.scale + camera.y,
+          }
         }),
         // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
         { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
       ),
-    [scenario.entities, tracks, camera, size],
+    [labelText, tracks, camera, size],
   )
   const spokeIds = useMemo(
     () => new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
@@ -87,7 +106,7 @@ export function LiveScene(props: Props) {
   return (
     <>
       <StaticBoundaryLayer />
-      <FootprintLayer detections={detections} />
+      <FootprintLayer activeSensorIds={activeSensorIds} />
       <ThreatWezLayer tracks={tracks} impacts={impacts} displayTimeS={displayTimeS} />
       <StaticRangeLayer />
       <PathLayer mouseWorld={mouseWorld} tracks={tracks} />

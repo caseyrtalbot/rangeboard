@@ -1,4 +1,6 @@
+import { useMemo, useRef } from 'react'
 import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
+import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Entity } from '../../model/types'
 import { entityActive } from '../../model/types'
@@ -76,6 +78,24 @@ const JAM_DIAMOND_R = 21
 /** Gap under the wrapped name before the DEFEATED tag, px. */
 const TAG_GAP = 6
 
+/**
+ * Konva compares array props by identity, so an inline literal is re-set on
+ * every render and dirties the layer. Every fixed dash and point list below is
+ * one module constant instead.
+ */
+/** Heading tick: straight up from the glyph centre, screen px. */
+const HEADING_TICK = [0, 0, 0, -16]
+/** Inactive-entity slash, the opposite diagonal to the destroyed strike. */
+const OFF_SLASH = [-11, 11, 11, -11]
+/** Destroyed strike at the main glyph and at a formation member. */
+const STRIKE_MAIN = [-10, -10, 10, 10]
+const STRIKE_MEMBER = [-6.5, -6.5, 6.5, 6.5]
+const GHOST_DIAMOND_DASH = [3.5, 3]
+const MEMBER_GHOST_DASH = [3, 2.5]
+const SELECT_DASH = [4, 3]
+const CARD_LINK_DASH = [2, 3]
+const HEADING_LEADER_DASH = [2, 3]
+
 /** Four corner brackets of a target reticle, each an L of two segments. */
 const BRACKETS: number[][] = [-1, 1].flatMap((sx) =>
   [-1, 1].map((sy) => {
@@ -92,6 +112,8 @@ interface GlyphProps {
   ghost?: boolean
   /** Effector only: false draws the friend frame as an outline. */
   filled?: boolean
+  /** The sensor heading tick, so a heading drag can preview on the node itself. */
+  tickRef?: React.Ref<Konva.Line>
 }
 
 /**
@@ -100,10 +122,10 @@ interface GlyphProps {
  * to the inactive-entity slash, so a defeated track and a switched-off system
  * never read the same.
  */
-function DestroyedStrike({ reach, width }: { reach: number; width: number }) {
+function DestroyedStrike({ points, width }: { points: number[]; width: number }) {
   return (
     <Line
-      points={[-reach, -reach, reach, reach]}
+      points={points}
       stroke={DESTROYED}
       strokeWidth={width}
       strokeScaleEnabled={false}
@@ -132,6 +154,10 @@ function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: str
         stroke={filled ? EDGE : color}
         strokeWidth={filled ? 1 : 1.5}
         strokeScaleEnabled={false}
+        // A 1 px edge over an opaque fill: the buffer-canvas pass Konva runs
+        // for a fill+stroke shape under a transparent group buys nothing here.
+        perfectDrawEnabled={false}
+        listening={false}
       />
       <Text
         fontFamily="JetBrains Mono"
@@ -142,6 +168,7 @@ function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: str
         fontSize={9}
         fill={filled ? FRAME_INK : color}
         align="center"
+        listening={false}
       />
     </>
   )
@@ -156,7 +183,7 @@ function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: str
  *   neutral frame - hollow square with a centre dot: marker.
  * Heading ticks draw under the frame so only the protruding tip shows.
  */
-function Glyph({ entity, color, ghost, filled = true }: GlyphProps) {
+function Glyph({ entity, color, ghost, filled = true, tickRef }: GlyphProps) {
   switch (FRAME_FOR[entity.kind]) {
     case 'friend':
       // Guidance treatment: an idle or empty weapon is an outline, a weapon
@@ -164,7 +191,14 @@ function Glyph({ entity, color, ghost, filled = true }: GlyphProps) {
       return (
         <>
           {entity.kind === 'sensor' && (
-            <Line points={[0, 0, 0, -16]} stroke={color} strokeWidth={2} rotation={entity.headingDeg} />
+            <Line
+              ref={tickRef}
+              points={HEADING_TICK}
+              stroke={color}
+              strokeWidth={2}
+              rotation={entity.headingDeg}
+              listening={false}
+            />
           )}
           <FriendFrame
             kind={entity.kind}
@@ -177,18 +211,34 @@ function Glyph({ entity, color, ghost, filled = true }: GlyphProps) {
       return (
         <>
           <Line
-            points={[0, 0, 0, -16]}
+            points={HEADING_TICK}
             stroke={ghost ? GHOST : color}
             strokeWidth={ghost ? 1.6 : 2}
             rotation={entity.headingDeg}
+            listening={false}
           />
           {ghost ? (
             <>
-              <RegularPolygon sides={4} radius={11} stroke={GHOST} strokeWidth={1.7} dash={[3.5, 3]} />
-              <DestroyedStrike reach={10} width={2.6} />
+              <RegularPolygon
+                sides={4}
+                radius={11}
+                stroke={GHOST}
+                strokeWidth={1.7}
+                dash={GHOST_DIAMOND_DASH}
+                listening={false}
+              />
+              <DestroyedStrike points={STRIKE_MAIN} width={2.6} />
             </>
           ) : (
-            <RegularPolygon sides={4} radius={11} fill={color} stroke={EDGE} strokeWidth={1} />
+            <RegularPolygon
+              sides={4}
+              radius={11}
+              fill={color}
+              stroke={EDGE}
+              strokeWidth={1}
+              perfectDrawEnabled={false}
+              listening={false}
+            />
           )}
         </>
       )
@@ -203,24 +253,42 @@ function Glyph({ entity, color, ghost, filled = true }: GlyphProps) {
             stroke={color}
             strokeWidth={1.5}
             strokeScaleEnabled={false}
+            listening={false}
           />
-          <Circle radius={2} fill={color} />
+          <Circle radius={2} fill={color} listening={false} />
         </>
       )
   }
 }
 
+/** Handle offset from the glyph centre, screen px. */
+const HANDLE_REACH = 34
+
+function handlePoint(headingDeg: number): { x: number; y: number } {
+  const r = (headingDeg * Math.PI) / 180
+  return { x: Math.sin(r) * HANDLE_REACH, y: -Math.cos(r) * HANDLE_REACH }
+}
+
 /** Drag handle that points a directional sensor/effector. Child drag does not move the group. */
-function HeadingHandle({ entity, pos, color }: { entity: Entity; pos: { x: number; y: number }; color: string }) {
+function HeadingHandle({ entity, pos, color, tickRef }: {
+  entity: Entity
+  pos: { x: number; y: number }
+  color: string
+  tickRef: React.RefObject<Konva.Line | null>
+}) {
   const updateEntity = useStore((s) => s.updateEntity)
-  const camera = useStore((s) => s.camera)
-  const r = (entity.headingDeg * Math.PI) / 180
-  const hx = Math.sin(r) * 34
-  const hy = -Math.cos(r) * 34
+  const leaderRef = useRef<Konva.Line>(null)
+  /** Heading under the pointer, held until the gesture commits it. */
+  const draft = useRef<number | null>(null)
+  const { x: hx, y: hy } = handlePoint(entity.headingDeg)
+  const leaderPoints = useMemo(() => [0, 0, hx, hy], [hx, hy])
 
   function headingFromPointer(e: KonvaEventObject<DragEvent>): number | null {
     const pointer = e.target.getStage()?.getPointerPosition()
     if (!pointer) return null
+    // The camera is read here, not subscribed: a pan or a zoom must not
+    // re-render every entity node.
+    const camera = useStore.getState().camera
     const world = {
       x: (pointer.x - camera.x) / camera.scale,
       y: (pointer.y - camera.y) / camera.scale,
@@ -230,7 +298,14 @@ function HeadingHandle({ entity, pos, color }: { entity: Entity; pos: { x: numbe
 
   return (
     <Group>
-      <Line points={[0, 0, hx, hy]} stroke={color} strokeWidth={1} dash={[2, 3]} />
+      <Line
+        ref={leaderRef}
+        points={leaderPoints}
+        stroke={color}
+        strokeWidth={1}
+        dash={HEADING_LEADER_DASH}
+        listening={false}
+      />
       <Circle
         x={hx}
         y={hy}
@@ -241,10 +316,23 @@ function HeadingHandle({ entity, pos, color }: { entity: Entity; pos: { x: numbe
         draggable
         onDragMove={(e) => {
           const h = headingFromPointer(e)
-          if (h != null) updateEntity(entity.id, { headingDeg: h % 360 })
+          if (h == null) return
+          const deg = h % 360
+          draft.current = deg
+          // Preview on the Konva nodes alone. A store write per pointer move
+          // reruns the whole deterministic picture and pushes an undo entry
+          // for every frame of the gesture.
+          const p = handlePoint(deg)
+          tickRef.current?.rotation(deg)
+          leaderRef.current?.points([0, 0, p.x, p.y])
+          e.target.position(p)
         }}
         onDragEnd={(e) => {
-          e.target.position({ x: hx, y: hy })
+          const deg = draft.current
+          draft.current = null
+          e.target.position(handlePoint(deg ?? entity.headingDeg))
+          // One mutation, so the gesture is one undo entry.
+          if (deg != null && deg !== entity.headingDeg) updateEntity(entity.id, { headingDeg: deg })
         }}
       />
     </Group>
@@ -261,7 +349,9 @@ function EntityNode({
   displayTimeS,
 }: { entity: Entity } & Props) {
   const scenario = useStore((s) => s.scenario)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read at render; the handlers take x and y from the store
+  // directly, so a pan never re-renders a node.
+  const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
   const connectFromId = useStore((s) => s.ui.connectFromId)
   const pathEntityId = useStore((s) => s.ui.pathEntityId)
@@ -282,13 +372,15 @@ function EntityNode({
   const openContextMenu = useStore((s) => s.openContextMenu)
   const openConnectSuggestion = useStore((s) => s.openConnectSuggestion)
 
-  const k = camera.scale
+  const tickRef = useRef<Konva.Line>(null)
   const track = tracks.get(entity.id)
   const pos = track?.pos ?? entity.pos
   const headingDeg = track?.headingDeg ?? entity.headingDeg
   const heading = track ? { ...entity, headingDeg: track.headingDeg } : entity
   const off = !entityActive(entity)
-  const color = entityInk(entity, modelFor(scenario, entity))
+  // One library lookup and one ink resolution per entity, not per frame.
+  const model = useMemo(() => modelFor(scenario, entity), [scenario, entity])
+  const color = useMemo(() => entityInk(entity, model), [entity, model])
   const hits = detections.get(entity.id) ?? []
   const detected = hits.length > 0
   const classified = hits.some((h) => h.classified)
@@ -318,13 +410,15 @@ function EntityNode({
     effectorState === 'beam' ||
     (effectorState === 'active' && blinkOn(displayTimeS))
 
-  const model = modelFor(scenario, entity)
-  const sectorDeg =
-    entity.kind === 'sensor'
-      ? model?.sensor?.sectorDeg
-      : entity.kind === 'effector'
-        ? (model?.effector?.sectorDeg ?? 360)
-        : undefined
+  const sectorDeg = useMemo(
+    () =>
+      entity.kind === 'sensor'
+        ? model?.sensor?.sectorDeg
+        : entity.kind === 'effector'
+          ? (model?.effector?.sectorDeg ?? 360)
+          : undefined,
+    [entity, model],
+  )
   const directional = sectorDeg != null && sectorDeg < 360
   const members = entity.kind === 'uas' ? memberPositions(entity, pos, headingDeg) : [pos]
   // Konva hit-tests a stroke-only Circle over its whole disc. The selection
@@ -332,9 +426,11 @@ function EntityNode({
   const hitR = cardLinked ? 19 : selected ? 16 : 13
   const labelDrawn = showLabels && !spokeIds.has(entity.id)
   // Board labels carry the short designator. Entity.name is untouched, so the
-  // Inspector and the panels keep the full vendor string.
-  const boardName = boardDesignator(entity.name)
-  const labelLines = labelDrawn ? labelLineCount(boardName) : 0
+  // Inspector and the panels keep the full vendor string. Both the designator
+  // and its wrap count are string work, so they are keyed on the entity.
+  const boardName = useMemo(() => boardDesignator(entity.name), [entity])
+  const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
+  const labelLines = labelDrawn ? nameLines : 0
 
   function handleClick(e: KonvaEventObject<MouseEvent>) {
     if (tool === 'connect') {
@@ -369,6 +465,7 @@ function EntityNode({
     if (e.evt.button !== 2) return
     const pointer = e.target.getStage()?.getPointerPosition()
     if (!pointer) return
+    const camera = useStore.getState().camera
     const world = { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
     select({ entityIds: [entity.id] })
     openContextMenu(pointer, world, entity.id)
@@ -380,11 +477,26 @@ function EntityNode({
         <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
           {ghost ? (
             <>
-              <RegularPolygon sides={4} radius={7} stroke={GHOST} strokeWidth={1.4} dash={[3, 2.5]} />
-              <DestroyedStrike reach={6.5} width={1.8} />
+              <RegularPolygon
+                sides={4}
+                radius={7}
+                stroke={GHOST}
+                strokeWidth={1.4}
+                dash={MEMBER_GHOST_DASH}
+              />
+              <DestroyedStrike points={STRIKE_MEMBER} width={1.8} />
             </>
           ) : (
-            <RegularPolygon sides={4} radius={7} fill={color} stroke={EDGE} strokeWidth={1} />
+            <RegularPolygon
+              sides={4}
+              radius={7}
+              fill={color}
+              stroke={EDGE}
+              strokeWidth={1}
+              // The member group carries an opacity, so a fill+stroke shape
+              // under it would take Konva's stage-sized buffer canvas path.
+              perfectDrawEnabled={false}
+            />
           )}
         </Group>
       ))}
@@ -397,8 +509,13 @@ function EntityNode({
         draggable={tool === 'select'}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        onDragStart={() => select({ entityIds: [entity.id] })}
+        onDragStart={(e) => {
+          if (e.target === e.currentTarget) select({ entityIds: [entity.id] })
+        }}
         onDragEnd={(e) => {
+          // The heading handle's drag events bubble here; only a drag of the
+          // group itself moves the entity.
+          if (e.target !== e.currentTarget) return
           moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })
           // A repositioned blue-force system gets fresh connect offers.
           if (entity.kind !== 'sensor' && entity.kind !== 'effector' && entity.kind !== 'c2') return
@@ -410,12 +527,14 @@ function EntityNode({
             It alone sets the grab area, because every ring below is a cue. */}
         <Circle radius={hitR} fill="#000" opacity={0} />
         {selected && (
-          <Circle radius={SELECT_R} stroke="#ffffff" strokeWidth={1.3} dash={[4, 3]} listening={false} />
+          <Circle radius={SELECT_R} stroke="#ffffff" strokeWidth={1.3} dash={SELECT_DASH} listening={false} />
         )}
         {cardLinked && (
-          <Circle radius={32} stroke={EW_INK} strokeWidth={1.5} dash={[2, 3]} listening={false} />
+          <Circle radius={32} stroke={EW_INK} strokeWidth={1.5} dash={CARD_LINK_DASH} listening={false} />
         )}
-        {connectFromId === entity.id && <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} />}
+        {connectFromId === entity.id && (
+          <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} listening={false} />
+        )}
         {bracketed &&
           BRACKETS.map((points, i) => (
             <Line
@@ -430,8 +549,8 @@ function EntityNode({
         {ringColor && (
           <Circle radius={RING_R} stroke={ringColor} strokeWidth={1.6} opacity={pulse} listening={false} />
         )}
-        <Glyph entity={heading} color={color} ghost={ghost} filled={effectorFilled} />
-        {off && <Line points={[-11, 11, 11, -11]} stroke={DANGER_INK} strokeWidth={2} />}
+        <Glyph entity={heading} color={color} ghost={ghost} filled={effectorFilled} tickRef={tickRef} />
+        {off && <Line points={OFF_SLASH} stroke={DANGER_INK} strokeWidth={2} listening={false} />}
         {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
           <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
         )}
@@ -496,7 +615,7 @@ function EntityNode({
           />
         )}
         {selected && directional && tool === 'select' && (
-          <HeadingHandle entity={entity} pos={pos} color={color} />
+          <HeadingHandle entity={entity} pos={pos} color={color} tickRef={tickRef} />
         )}
         {selected && entity.kind === 'uas' && tool === 'select' && (
           <Group

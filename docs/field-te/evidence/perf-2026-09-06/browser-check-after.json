@@ -1,0 +1,82 @@
+{
+ "clickSelect": {
+  "id": "ent-mt5bn8cr-23",
+  "selected": [
+   "ent-mt5bn8cr-23"
+  ],
+  "ok": true
+ },
+ "drag": {
+  "before": {
+   "x": 1239.999999999999,
+   "y": 1960.0000000000011
+  },
+  "after": {
+   "x": 3522.0623803576555,
+   "y": 3329.237428214593
+  },
+  "pastBefore": 0,
+  "pastAfter": 1,
+  "ok": true
+ },
+ "rotate": {
+  "headingBefore": 315,
+  "headingAfter": 15,
+  "posMoved": false,
+  "pos": {
+   "x": 3522.0623803576555,
+   "y": 3329.237428214593
+  },
+  "pastBefore": 1,
+  "pastAfter": 2,
+  "ok": true
+ },
+ "rotateUndo": {
+  "heading": 315,
+  "ok": true
+ },
+ "space": {
+  "whilePlaying": {
+   "phase": "running",
+   "simTimeS": 1.138
+  },
+  "afterPause": {
+   "phase": "paused",
+   "simTimeS": 1.138
+  },
+  "ok": true
+ },
+ "hover": {
+  "errors": 0,
+  "ok": true
+ },
+ "zoom": {
+  "before": 0.01752800464364649,
+  "after": 0.028229026758639118,
+  "ok": true
+ },
+ "library": {
+  "open1": true,
+  "focusInDrawer": true,
+  "closed1": true,
+  "focusOnTrigger": true,
+  "open2": true,
+  "closed2": true,
+  "ok": true
+ },
+ "phases": {
+  "phases": [
+   "execute",
+   "analyze",
+   "prepare"
+  ],
+  "ok": true
+ },
+ "undoTab": {
+  "tabAfterUndo": "cards",
+  "tabAfterRedo": "cards",
+  "ok": true
+ },
+ "pageErrors": [],
+ "allOk": true
+}

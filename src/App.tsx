@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './state/store'
-import type { RightTab } from './state/store'
+import type { RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
 import { useTeStore } from './te/state/teStore'
 import { OpsWorkspace } from './te/ui/OpsWorkspace'
@@ -71,6 +71,27 @@ function moveTab(
   e.preventDefault()
   setRightTab(TABS[to].id)
   document.getElementById(`insp-tab-${TABS[to].id}`)?.focus()
+}
+
+/** The one selected entity id, when exactly one is selected and it still exists. */
+function selectSelectedEntityId(s: Store): string | null {
+  if (s.selection.entityIds.length !== 1) return null
+  const id = s.selection.entityIds[0]
+  return s.scenario.entities.some((entity) => entity.id === id) ? id : null
+}
+
+/** True when any canvas object is selected: entity, boundary or connection. */
+function selectHasObjectSelection(s: Store): boolean {
+  return (
+    s.selection.entityIds.length > 0 ||
+    s.selection.boundaryId != null ||
+    s.selection.connectionId != null
+  )
+}
+
+/** Selection identity as a primitive, so the section memory needs no object. */
+function selectSelectionKey(s: Store): string {
+  return s.selection.entityIds.join('|')
 }
 
 function isTypingTarget(t: EventTarget | null): boolean {
@@ -258,29 +279,31 @@ export default function App() {
   }, [setRightTab])
   const runSeq = useStore((s) => s.playback.runSeq)
   const runPhase = useStore((s) => s.playback.phase)
-  const selection = useStore((s) => s.selection)
-  const scenario = useStore((s) => s.scenario)
+  // Primitives only: App renders the whole Board tree, so a whole `selection`
+  // or `scenario` subscription re-renders it on every click and every edit.
+  const selectedEntityId = useStore(selectSelectedEntityId)
+  const hasObjectSelection = useStore(selectHasObjectSelection)
+  const selectionKey = useStore(selectSelectionKey)
   const raidDraft = useStore((s) => s.ui.raidDraft)
-  const [entityView, setEntityView] = useState<{ selection: typeof selection; section: EntityWorkspaceSection } | null>(null)
-  const entitySection = entityView?.selection === selection
+  const [entityView, setEntityView] = useState<{ key: string; section: EntityWorkspaceSection } | null>(null)
+  const entitySection = entityView?.key === selectionKey
     ? entityView.section : boardPhase === 'prepare' ? 'configure' : 'telemetry'
-  const setEntitySection = (section: EntityWorkspaceSection) => setEntityView({ selection, section })
-  const selectedEntity = selection.entityIds.length === 1
-    ? scenario.entities.find((entity) => entity.id === selection.entityIds[0]) : undefined
+  const setEntitySection = (section: EntityWorkspaceSection) => setEntityView({ key: selectionKey, section })
   const activeTab = rightTab
 
-  function openTelemetry() {
-    setEntitySection('telemetry')
+  const openTelemetry = useCallback(() => {
+    // Read the selection at call time so the canvas keeps one stable handler.
+    setEntityView({ key: selectSelectionKey(useStore.getState()), section: 'telemetry' })
     setRightTab('inspect')
     requestAnimationFrame(() => document.getElementById('entity-section-telemetry')?.focus())
-  }
+  }, [setRightTab])
 
-  function closeLibrary() {
+  const closeLibrary = useCallback(() => {
     setLibraryOpen(false)
     libraryTrigger.current?.focus()
-  }
+  }, [])
 
-  function armPlacement(next: LibraryPlacement) {
+  const armPlacement = useCallback((next: LibraryPlacement) => {
     useStore.getState().cancelDraft()
     useStore.getState().closeContextMenu()
     useStore.getState().dismissConnectSuggestion()
@@ -288,16 +311,16 @@ export default function App() {
     setPlacement(next)
     setLibraryOpen(false)
     requestAnimationFrame(() => document.getElementById('place-at-center')?.focus())
-  }
+  }, [])
 
-  function placeAt(world: Vec2, screen?: Vec2) {
+  const placeAt = useCallback((world: Vec2, screen?: Vec2) => {
     if (!placement) return
     const store = useStore.getState()
     if (placement.kind === 'model') store.addEntityFromModel(placement.id, world, screen)
     else store.addSystemFromPreset(placement.id, world)
     setPlacement(null)
     document.querySelector<HTMLElement>('.canvas-host')?.focus()
-  }
+  }, [placement])
 
   function placeAtCenter() {
     const rect = document.querySelector('.canvas-host')?.getBoundingClientRect()
@@ -345,10 +368,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (selection.entityIds.length || selection.boundaryId || selection.connectionId) {
-      setRightTab('inspect')
-    }
-  }, [selection, setRightTab])
+    if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
+  }, [hasObjectSelection, setRightTab])
   const openPreparation = useCallback<NonNullable<WidgetProps['onOpenPreparation']>>((section) => {
     setBoardPhase('prepare')
     setPlacement(null)
@@ -425,8 +446,12 @@ export default function App() {
       }
       const st = useStore.getState()
       if (useTeStore.getState().ui.workspace === 'ops') return
-      if (e.key === 'Escape' && (st.ui.locationDialogOpen || (st.ui.calibrateA && st.ui.calibrateB))) {
+      if (e.key === 'Escape' && st.ui.locationDialogOpen) {
         st.setLocationDialogOpen(false)
+        document.querySelector<HTMLButtonElement>('[aria-controls="range-setup-menu-panel"]')?.focus()
+        return
+      }
+      if (e.key === 'Escape' && st.ui.calibrateA && st.ui.calibrateB) {
         st.cancelDraft()
         st.setTool('select')
         document.querySelector<HTMLButtonElement>('[aria-controls="range-setup-menu-panel"]')?.focus()
@@ -435,8 +460,10 @@ export default function App() {
       if (isTypingTarget(e.target)) return
       if (!mod && e.key.toLowerCase() === 'l') {
         e.preventDefault()
-        setLibraryOpen(!libraryOpen)
-        if (libraryOpen) libraryTrigger.current?.focus()
+        setLibraryOpen((open) => {
+          if (open) libraryTrigger.current?.focus()
+          return !open
+        })
         return
       }
       if (mod && e.key.toLowerCase() === 'z') {
@@ -451,10 +478,6 @@ export default function App() {
         return
       }
       if (e.key === 'Escape') {
-        if (st.ui.locationDialogOpen) {
-          st.setLocationDialogOpen(false)
-          return
-        }
         st.closeContextMenu()
         st.cancelDraft()
         st.setTool('select')
@@ -475,7 +498,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [libraryOpen])
+  }, [])
 
   if (workspace === 'ops') {
     return (
@@ -590,9 +613,9 @@ export default function App() {
             tabIndex={0}
             aria-labelledby={`insp-tab-${activeTab}`}
           >
-            {activeTab === 'inspect' && (selectedEntity && !raidDraft
+            {activeTab === 'inspect' && (selectedEntityId && !raidDraft
               ? <EntityWorkspace
-                  entityId={selectedEntity.id}
+                  entityId={selectedEntityId}
                   section={entitySection}
                   onSectionChange={setEntitySection}
                   onOpenSettings={() => openPreparation('run')}

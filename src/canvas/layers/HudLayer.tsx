@@ -1,14 +1,31 @@
+import { useEffect, useState } from 'react'
+import type Konva from 'konva'
 import type { Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
 import { formatAxis, formatDistance, gridStepM } from '../../geometry/geo'
 
 interface Props {
-  mouseWorld: Vec2 | null
+  /** The Konva stage this overlay reads its cursor from. */
+  stageRef: React.RefObject<Konva.Stage | null>
 }
 
 /** DOM overlay: scale bar, cursor readout, and active-tool hint. */
-export function HudLayer({ mouseWorld }: Props) {
-  const camera = useStore((s) => s.camera)
+export function HudLayer({ stageRef }: Props) {
+  // This overlay owns its cursor: a pointer move then re-renders one small DOM
+  // subtree instead of the stage and every Konva layer under it.
+  const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    // getRelativePointerPosition inverts the stage transform, so this is the
+    // same world point CanvasStage computes from the camera.
+    const onMove = () => setMouseWorld(stage.getRelativePointerPosition())
+    stage.on('mousemove.hud', onMove)
+    return () => {
+      stage.off('mousemove.hud')
+    }
+  }, [stageRef])
+  const scale = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
   const tool = useStore((s) => s.ui.tool)
   const draftCount = useStore((s) => s.ui.draftPoints.length)
@@ -24,8 +41,8 @@ export function HudLayer({ mouseWorld }: Props) {
       s.ui.raidDraft.targetEntityId != null,
   )
 
-  const stepM = gridStepM(camera.scale, 120, units)
-  const barPx = stepM * camera.scale
+  const stepM = gridStepM(scale, 120, units)
+  const barPx = stepM * scale
 
   const hints: Record<string, string> = {
     boundary:

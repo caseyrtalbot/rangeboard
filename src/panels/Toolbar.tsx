@@ -177,7 +177,7 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
 
 export function Toolbar() {
   const scenario = useStore((s) => s.scenario)
-  const ui = useStore((s) => s.ui)
+  const threatWez = useStore((s) => s.ui.layers.threatWez)
   const save = useStore((s) => s.save)
   const { setScenarioName } = useStore.getState()
 
@@ -247,7 +247,7 @@ export function Toolbar() {
         <State tone={ROE_PILLS[roe].tone} title={ROE_PILLS[roe].hint}>
           {ROE_PILLS[roe].label}
         </State>
-        {ui.layers.threatWez && (
+        {threatWez && (
           <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
             WEZ On
           </State>

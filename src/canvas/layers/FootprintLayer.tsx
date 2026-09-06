@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Arc, Circle, Group, Line, Ring as KonvaRing, Text } from 'react-konva'
+import { useShallow } from 'zustand/react/shallow'
 import type { Entity, Scenario, SensorSpec, Vec2 } from '../../model/types'
 import {
   DEFAULT_REQUIREMENT_THRESHOLDS,
@@ -27,7 +28,6 @@ import { effectiveJamRangeM } from '../../analysis/ewPhysics'
 import { DEFAULT_PK } from '../../playback/pk'
 import { defendedRadiusOf } from '../../playback/sim'
 import { threatAltitudeFt } from '../../playback/tracks'
-import type { DetectionHit } from '../../playback/detection'
 import { LABEL_FONT_PX } from '../labelLayout'
 import type { EnvelopeBand } from './footprintStyle'
 import {
@@ -45,7 +45,15 @@ import {
 } from './footprintStyle'
 
 interface Props {
-  detections: Map<string, DetectionHit[]>
+  /** Sensors holding a track at the published sim time. Computed once in LiveScene. */
+  activeSensorIds: Set<string>
+}
+
+/** The ring visibility and unit state buildRings reads. A narrow slice of `ui`. */
+interface RingView {
+  units: UiState['units']
+  layers: UiState['layers']
+  ringOverrides: UiState['ringOverrides']
 }
 
 // Fill alphas come from the one style source, never from a literal here.
@@ -95,6 +103,14 @@ interface RingProps {
 
 /** A full circle or a sector wedge, whichever the sector angle asks for. */
 function Ring({ entity, sectorDeg, radiusM, fill, fillOpacity, stroke, strokeWidth, dash, strokeOpacity }: RingProps) {
+  const { x, y } = entity.pos
+  const headingDeg = entity.headingDeg
+  // One wedge per ring, shared by the fill and the stroke node: Konva compares
+  // point arrays by identity, so a fresh array per render repaints the layer.
+  const wedge = useMemo(
+    () => (sectorDeg >= 360 || !(radiusM > 0) ? null : wedgePoints({ x, y }, headingDeg, sectorDeg, radiusM)),
+    [x, y, headingDeg, sectorDeg, radiusM],
+  )
   if (!(radiusM > 0)) return null
   const full = sectorDeg >= 360
   const fillNode =
@@ -102,7 +118,7 @@ function Ring({ entity, sectorDeg, radiusM, fill, fillOpacity, stroke, strokeWid
       full ? (
         <Circle x={entity.pos.x} y={entity.pos.y} radius={radiusM} fill={fill} opacity={fillOpacity} />
       ) : (
-        <Line points={wedgePoints(entity.pos, entity.headingDeg, sectorDeg, radiusM)} closed fill={fill} opacity={fillOpacity} />
+        <Line points={wedge!} closed fill={fill} opacity={fillOpacity} />
       )
     ) : null
   const strokeNode =
@@ -120,7 +136,7 @@ function Ring({ entity, sectorDeg, radiusM, fill, fillOpacity, stroke, strokeWid
         />
       ) : (
         <Line
-          points={wedgePoints(entity.pos, entity.headingDeg, sectorDeg, radiusM)}
+          points={wedge!}
           closed
           stroke={stroke}
           strokeWidth={strokeWidth ?? 1}
@@ -237,7 +253,7 @@ type EntityRings = SensorRings | EffectorRings | JammerRings | AssetRings
  * no work on a playback frame. Visibility is `ringVisible`: the per-entity
  * override, else ui.layers.
  */
-function buildRings(scenario: Scenario, ui: UiState, selectedUasId: string | null): EntityRings[] {
+function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | null): EntityRings[] {
   const env = scenario.environment
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const pdLow = thresholds.pdDetect
@@ -617,6 +633,14 @@ function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
   const e = r.entity
   const rangeM = r.rangeM ?? 0
   const full = r.sectorDeg >= 360
+  const { x, y } = e.pos
+  const headingDeg = e.headingDeg
+  const sectorDeg = r.sectorDeg
+  // One cone outline for both the gradient fill and the edge stroke.
+  const wedge = useMemo(
+    () => (sectorDeg >= 360 ? null : wedgePoints({ x, y }, headingDeg, sectorDeg, rangeM)),
+    [x, y, headingDeg, sectorDeg, rangeM],
+  )
   const gradient = {
     fillRadialGradientStartPoint: { x: e.pos.x, y: e.pos.y },
     fillRadialGradientEndPoint: { x: e.pos.x, y: e.pos.y },
@@ -642,9 +666,9 @@ function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
           </>
         ) : (
           <>
-            <Line points={wedgePoints(e.pos, e.headingDeg, r.sectorDeg, rangeM)} closed {...gradient} />
+            <Line points={wedge!} closed {...gradient} />
             <Line
-              points={wedgePoints(e.pos, e.headingDeg, r.sectorDeg, rangeM)}
+              points={wedge!}
               closed
               stroke={r.color}
               strokeWidth={1}
@@ -703,9 +727,14 @@ function AssetNode({ r, dim }: { r: AssetRings; dim: boolean }) {
  * projected to the plan view. The hold gate picks the placard dash, and a
  * label prints the Pd, the release and the commit distance.
  */
-export function FootprintLayer({ detections }: Props) {
+export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: Props) {
   const scenario = useStore((s) => s.scenario)
-  const ui = useStore((s) => s.ui)
+  // Field subscriptions, not the whole `ui`: an unrelated ui action must not
+  // rebuild the rings, which run the Pd bisection per radar.
+  const units = useStore((s) => s.ui.units)
+  const basemap = useStore((s) => s.ui.basemap)
+  const layers = useStore(useShallow((s) => s.ui.layers))
+  const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
   const scale = useStore((s) => s.camera.scale)
   const selectedUasId = useStore((s) => {
     const hit = s.scenario.entities.find(
@@ -713,12 +742,12 @@ export function FootprintLayer({ detections }: Props) {
     )
     return hit?.id ?? null
   })
-  const dim = ui.basemap === 'airspace'
-  const activeSensorIds = new Set([...detections.values()].flat().map((h) => h.sensorId))
+  const dim = basemap === 'airspace'
+  const view = useMemo(() => ({ units, layers, ringOverrides }), [units, layers, ringOverrides])
   // Ring geometry is scenario work, so it must not run on a playback frame.
-  // `detections` changes every frame and is not a key here; `ui` changes only
-  // on a user action, so it is a safe key.
-  const rings = useMemo(() => buildRings(scenario, ui, selectedUasId), [scenario, ui, selectedUasId])
+  // The sweep reaches this layer as a sensor-id set, which changes at the 10 Hz
+  // publication and is not a key here.
+  const rings = useMemo(() => buildRings(scenario, view, selectedUasId), [scenario, view, selectedUasId])
 
   return (
     <>
@@ -740,4 +769,4 @@ export function FootprintLayer({ detections }: Props) {
       })}
     </>
   )
-}
+})

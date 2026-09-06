@@ -169,7 +169,8 @@ src/App.tsx    workspace toggle, right panel tabs, keyboard map, resizer
 ```
 
 Data flow for a click or drag: Konva event, store action, new scenario, React re-render of
-layers. Drag-in-progress is Konva-native; the store updates once on `dragend`. Analysis
+layers. Drag and rotate in progress are Konva-native previews; the store updates once on
+`dragend`, one undo entry per gesture. Analysis
 reads `engagementPicture(scenario)` (`src/analysis/impact.ts`), a WeakMap cache keyed on
 the scenario object, so the deterministic sweep runs once per scenario change. Engine entry
 points in call order: `assessAllThreats(scenario, policy?)` (`sim.ts`) sweeps detection and
@@ -486,6 +487,23 @@ Konva conventions:
   gating.
 - Everything a layer draws at time t is derived at render from the scenario and
   `simTimeS`. A layer never stores derived state.
+- Fixed `dash` and `points` arrays are module constants. Konva compares array props by
+  identity, so an inline literal re-sets the attribute and dirties the layer on every
+  render. Per-render geometry (shot endpoints, grid lines, a trimmed link) stays inline.
+- A layer that reads only the zoom subscribes to `camera.scale`. A handler reads
+  `camera.x` and `camera.y` through `useStore.getState()`. A pan reaches the layers
+  through the stage transform alone and re-renders no layer.
+- The heading handle and the system handle preview a rotation on the Konva nodes during
+  the drag and commit one store action on `dragend`. Drag events bubble from a child to
+  the entity group; the group acts only on a drag whose target is itself.
+- The cursor: `CanvasStage` keeps the pointer's world position in a ref and sets state
+  only while a boundary, path or calibrate tool or a marquee is active. `HudLayer` reads
+  its own cursor from a stage `mousemove` listener. A plain hover re-renders neither the
+  stage nor a Konva layer.
+- `App` subscribes to primitives (the one selected entity id, an object-selection flag,
+  a selection key), never to the whole `selection` or `scenario`. `select` and
+  `setRightTab` return the current state when nothing changes, so a repeated call
+  re-renders no subscriber and writes no view state.
 
 Design system (`src/index.css`):
 

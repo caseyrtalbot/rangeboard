@@ -9,9 +9,15 @@ import { DANGER_INK, entityInk } from '../../ui/ink'
  * Wind-adjusted range rings for drones with showRange on, plus an endurance
  * exhaustion marker on the flight path. Never intercepts pointer events.
  */
+/** Fixed dash and point arrays: an inline literal is re-set on every render. */
+const RANGE_DASH = [10, 5]
+const EXHAUST_X_DOWN = [-6, -6, 6, 6]
+const EXHAUST_X_UP = [-6, 6, 6, -6]
+
 export function RangeLayer() {
   const scenario = useStore((s) => s.scenario)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read; the stage transform carries the pan.
+  const scale = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
   const show = useStore((s) => s.ui.layers.rangeRings)
   if (!show) return null
@@ -31,7 +37,7 @@ export function RangeLayer() {
         const exhaust = path
           ? pathExhaustionPoint(path.points, pathSpeed(scenario, path), uas, env)
           : null
-        const k = camera.scale
+        const k = scale
         return (
           <Group key={e.id} listening={false}>
             <Line points={curve} closed fill={color} opacity={0.05} />
@@ -40,7 +46,7 @@ export function RangeLayer() {
               closed
               stroke={color}
               strokeWidth={1.5}
-              dash={[10, 5]}
+              dash={RANGE_DASH}
               strokeScaleEnabled={false}
               opacity={0.8}
             />
@@ -59,8 +65,8 @@ export function RangeLayer() {
             {exhaust && (
               <Group x={exhaust.pos.x} y={exhaust.pos.y} scaleX={1 / k} scaleY={1 / k}>
                 <Circle radius={9} stroke={DANGER_INK} strokeWidth={2} />
-                <Line points={[-6, -6, 6, 6]} stroke={DANGER_INK} strokeWidth={2} />
-                <Line points={[-6, 6, 6, -6]} stroke={DANGER_INK} strokeWidth={2} />
+                <Line points={EXHAUST_X_DOWN} stroke={DANGER_INK} strokeWidth={2} />
+                <Line points={EXHAUST_X_UP} stroke={DANGER_INK} strokeWidth={2} />
                 <Text
                   fontFamily="JetBrains Mono"
                   x={12}

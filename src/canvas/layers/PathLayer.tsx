@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { Arrow, Circle, Group, Line, Text } from 'react-konva'
-import type { Vec2 } from '../../model/types'
+import type { FlightPath, Vec2 } from '../../model/types'
+import type { UiState } from '../../state/store'
 import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
@@ -11,48 +13,108 @@ interface Props {
   tracks: Map<string, LiveTrack>
 }
 
+/** Fixed dash arrays: an inline literal is re-set on every render. */
+const PATH_DASH = [8, 5]
+const DRAFT_DASH = [6, 4]
+
+/**
+ * One committed flight path. The flattened point list is memoized on the
+ * path's own points, so a playback frame or a zoom leaves the array identity
+ * alone and Konva does not re-set it.
+ */
+function FlightPathShape({ path, color, lengthM, etaS, units, k }: {
+  path: FlightPath
+  color: string
+  lengthM: number
+  etaS: number
+  units: UiState['units']
+  k: number
+}) {
+  const flat = useMemo(() => path.points.flatMap((pt) => [pt.x, pt.y]), [path.points])
+  const last = path.points[path.points.length - 1]
+  return (
+    <Group listening={false}>
+      <Arrow
+        points={flat}
+        stroke={color}
+        strokeWidth={1.5}
+        dash={PATH_DASH}
+        strokeScaleEnabled={false}
+        pointerLength={10 / k}
+        pointerWidth={8 / k}
+        fill={color}
+      />
+      {path.points.map((pt, i) => (
+        <Circle key={i} x={pt.x} y={pt.y} radius={3 / k} fill={color} />
+      ))}
+      {/* Counter-scaled group, so the caption font size never changes and Konva
+          never re-measures the text on a zoom step. */}
+      <Group x={last.x} y={last.y} scaleX={1 / k} scaleY={1 / k}>
+        <Text fontFamily="JetBrains Mono"
+          x={8}
+          text={`${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`}
+          fontSize={11}
+          fill={color}
+        />
+      </Group>
+    </Group>
+  )
+}
+
+/** The rubber band of a boundary or path draft, from its start to the cursor. */
+function DraftShape({ start, draftPoints, mouseWorld, k }: {
+  start: Vec2 | undefined
+  draftPoints: Vec2[]
+  mouseWorld: Vec2 | null
+  k: number
+}) {
+  const pts = useMemo(() => (start ? [start, ...draftPoints] : draftPoints), [start, draftPoints])
+  const flat = useMemo(
+    () => (mouseWorld ? [...pts, mouseWorld] : pts).flatMap((p) => [p.x, p.y]),
+    [pts, mouseWorld],
+  )
+  return (
+    <Group listening={false}>
+      <Line
+        points={flat}
+        stroke="#ffffff"
+        strokeWidth={1.5}
+        dash={DRAFT_DASH}
+        strokeScaleEnabled={false}
+        opacity={0.8}
+      />
+      {pts.map((p, i) => (
+        <Circle key={i} x={p.x} y={p.y} radius={3.5 / k} fill="#ffffff" />
+      ))}
+    </Group>
+  )
+}
+
 /** Flight paths, in-progress drafts, and calibration markers. */
 export function PathLayer({ mouseWorld }: Props) {
   const scenario = useStore((s) => s.scenario)
   const ui = useStore((s) => s.ui)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read; the stage transform carries the pan.
+  const k = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
   const showPaths = useStore((s) => s.ui.layers.flightPaths)
-  const k = camera.scale
 
   // The flightPaths toggle hides committed paths only. The draft below and the
   // calibrate markers always draw, or the drawing tools lose their feedback.
   const paths = (showPaths ? scenario.paths : []).map((p) => {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null
-    const color = entityInk(entity, modelFor(scenario, entity))
-    const flat = p.points.flatMap((pt) => [pt.x, pt.y])
     const lengthM = pathLength(p.points)
-    const etaS = lengthM / pathSpeed(scenario, p)
-    const last = p.points[p.points.length - 1]
     return (
-      <Group key={p.id} listening={false}>
-        <Arrow
-          points={flat}
-          stroke={color}
-          strokeWidth={1.5}
-          dash={[8, 5]}
-          strokeScaleEnabled={false}
-          pointerLength={10 / k}
-          pointerWidth={8 / k}
-          fill={color}
-        />
-        {p.points.map((pt, i) => (
-          <Circle key={i} x={pt.x} y={pt.y} radius={3 / k} fill={color} />
-        ))}
-        <Text fontFamily="JetBrains Mono"
-          x={last.x + 8 / k}
-          y={last.y}
-          text={`${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`}
-          fontSize={11 / k}
-          fill={color}
-        />
-      </Group>
+      <FlightPathShape
+        key={p.id}
+        path={p}
+        color={entityInk(entity, modelFor(scenario, entity))}
+        lengthM={lengthM}
+        etaS={lengthM / pathSpeed(scenario, p)}
+        units={units}
+        k={k}
+      />
     )
   })
 
@@ -62,23 +124,7 @@ export function PathLayer({ mouseWorld }: Props) {
       ui.tool === 'path' && ui.pathEntityId
         ? scenario.entities.find((e) => e.id === ui.pathEntityId)?.pos
         : undefined
-    const pts = start ? [start, ...ui.draftPoints] : ui.draftPoints
-    const withCursor = mouseWorld ? [...pts, mouseWorld] : pts
-    draft = (
-      <Group listening={false}>
-        <Line
-          points={withCursor.flatMap((p) => [p.x, p.y])}
-          stroke="#ffffff"
-          strokeWidth={1.5}
-          dash={[6, 4]}
-          strokeScaleEnabled={false}
-          opacity={0.8}
-        />
-        {pts.map((p, i) => (
-          <Circle key={i} x={p.x} y={p.y} radius={3.5 / k} fill="#ffffff" />
-        ))}
-      </Group>
-    )
+    draft = <DraftShape start={start} draftPoints={ui.draftPoints} mouseWorld={mouseWorld} k={k} />
   }
 
   let calibrate = null
@@ -96,13 +142,14 @@ export function PathLayer({ mouseWorld }: Props) {
               strokeWidth={1.5}
               strokeScaleEnabled={false}
             />
-            <Text fontFamily="JetBrains Mono"
-              x={(a.x + b.x) / 2}
-              y={(a.y + b.y) / 2 - 16 / k}
-              text={formatDistance(dist(a, b), units)}
-              fontSize={12 / k}
-              fill="#a9b4bd"
-            />
+            <Group x={(a.x + b.x) / 2} y={(a.y + b.y) / 2} scaleX={1 / k} scaleY={1 / k}>
+              <Text fontFamily="JetBrains Mono"
+                y={-16}
+                text={formatDistance(dist(a, b), units)}
+                fontSize={12}
+                fill="#a9b4bd"
+              />
+            </Group>
           </>
         )}
         {ui.calibrateB && <CalMark p={ui.calibrateB} k={k} label="B" />}
@@ -121,11 +168,15 @@ export function PathLayer({ mouseWorld }: Props) {
 
 function CalMark({ p, k, label }: { p: Vec2; k: number; label: string }) {
   const r = 8 / k
+  const across = useMemo(() => [p.x - r, p.y, p.x + r, p.y], [p, r])
+  const down = useMemo(() => [p.x, p.y - r, p.x, p.y + r], [p, r])
   return (
     <Group listening={false}>
-      <Line points={[p.x - r, p.y, p.x + r, p.y]} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Line points={[p.x, p.y - r, p.x, p.y + r]} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Text fontFamily="JetBrains Mono" x={p.x + r} y={p.y + r} text={label} fontSize={12 / k} fill="#a9b4bd" />
+      <Line points={across} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Line points={down} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Group x={p.x} y={p.y} scaleX={1 / k} scaleY={1 / k}>
+        <Text fontFamily="JetBrains Mono" x={8} y={8} text={label} fontSize={12} fill="#a9b4bd" />
+      </Group>
     </Group>
   )
 }

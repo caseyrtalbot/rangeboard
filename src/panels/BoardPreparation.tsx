@@ -38,13 +38,21 @@ function findingEntityScope(finding: RunValidityFinding, entities: Entity[]): st
     .join(', ')
 }
 
+/**
+ * The MC slice publishes every ten replicates. Only the popover reads it, so it
+ * subscribes here and the Prepare panel does not re-render during a run.
+ */
+function PrepareMcPopover({ run }: { run: ReturnType<typeof runSettings> }) {
+  const mc = useStore((state) => state.mc)
+  return <McPopover run={run} mc={mc} />
+}
+
 /** Prepare-stage overview for the current Board scenario and playback run. */
 export function BoardPreparation() {
   const scenario = useStore((state) => state.scenario)
   const runId = useStore((state) => state.playback.runId)
   const runSeq = useStore((state) => state.playback.runSeq)
   const runPhase = useStore((state) => state.playback.phase)
-  const mc = useStore((state) => state.mc)
   const picture = useMemo(() => engagementPicture(scenario), [scenario])
   const validity = useMemo(
     () => assessRunValidity(scenario, picture.assessments),
@@ -84,7 +92,7 @@ export function BoardPreparation() {
             Scenario and run · Mode, seed and uncertainty settings define the run.
             Analysis-affecting changes reset playback and mark estimates stale.
           </p>
-          <McPopover run={run} mc={mc} />
+          <PrepareMcPopover run={run} />
         </Section>
       </div>
 

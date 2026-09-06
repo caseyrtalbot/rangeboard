@@ -1,4 +1,4 @@
-import { Arrow, Text } from 'react-konva'
+import { Arrow, Group, Text } from 'react-konva'
 import { useStore } from '../../state/store'
 import { dist } from '../../geometry/geo'
 
@@ -7,11 +7,11 @@ export function ConnectionLayer() {
   const scenario = useStore((s) => s.scenario)
   const select = useStore((s) => s.select)
   const selectedId = useStore((s) => s.selection.connectionId)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read; the stage transform carries the pan.
+  const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
   const show = useStore((s) => s.ui.layers.connections)
   if (!show) return null
-  const k = camera.scale
 
   return (
     <>
@@ -67,15 +67,25 @@ export function ConnectionLayer() {
         const to = scenario.entities.find((e) => e.id === c.toId)
         if (!from || !to) return null
         return (
-          <Text fontFamily="JetBrains Mono"
+          // Counter-scaled group, so the label font size never changes and
+          // Konva never re-measures the text on a zoom step.
+          <Group
             key={`${c.id}-label`}
             x={(from.pos.x + to.pos.x) / 2}
-            y={(from.pos.y + to.pos.y) / 2 - 14 / k}
-            text={c.label}
-            fontSize={10 / k}
-            fill="#8a9199"
+            y={(from.pos.y + to.pos.y) / 2}
+            scaleX={1 / k}
+            scaleY={1 / k}
             listening={false}
-          />
+          >
+            <Text
+              fontFamily="JetBrains Mono"
+              y={-14}
+              text={c.label}
+              fontSize={10}
+              fill="#8a9199"
+              listening={false}
+            />
+          </Group>
         )
       })}
     </>

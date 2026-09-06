@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { threatPictureAt } from '../../../analysis/threatAggregation'
 import { formatTime } from '../../../geometry/geo'
 import { detectionsAt } from '../../../playback/detection'
+import { selectObservedThroughStep } from '../../../state/selectors'
 import { useStore } from '../../../state/store'
 import { ThreatPicture } from '../ThreatPicture'
 import { useEngagement, useRunCursor } from './controls'
@@ -27,7 +28,7 @@ function WezCheck() {
 export function ThreatPictureWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
-  const observedThroughS = useStore((s) => s.playback.observedThroughS)
+  const observedThroughS = useStore(selectObservedThroughStep)
   const completedAtMs = useStore((s) => s.playback.completedAtMs)
   const { assessments, report } = useEngagement(scenario, runId)
   const { t, phase, untouched } = useRunCursor(scenario)

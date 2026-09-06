@@ -188,11 +188,16 @@ export function sweepSensorHits(
 ): Array<{ spec: SensorSpec; hit: DetectionHit }> {
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const out: Array<{ spec: SensorSpec; hit: DetectionHit }> = []
+  // One spec lookup per sensor, not one per sensor per pass. A sensor with no
+  // sensor spec is skipped in both passes, so dropping it here is the same set.
+  const specced: Array<{ sensor: Entity; spec: SensorSpec }> = []
+  for (const sensor of sensors) {
+    const spec = modelFor(scenario, sensor)?.sensor
+    if (spec) specced.push({ sensor, spec })
+  }
   let cued = false
   for (const pass of ['search', 'cued'] as const) {
-    for (const sensor of sensors) {
-      const spec = modelFor(scenario, sensor)?.sensor
-      if (!spec) continue
+    for (const { sensor, spec } of specced) {
       const cueSensor = eoIrNeedsCue(spec)
       if (pass === 'search' ? cueSensor : !cueSensor) continue
       const scanStep = scan ? scan.scanStep(sensor.id) : true

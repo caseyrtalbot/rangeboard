@@ -1,0 +1,153 @@
+hasStore false
+{"label":"prod","loadMs":364,"domContentLoaded":141,"loadEvent":141,"resources":5,"scriptResources":1,"transferKB":2327,"domNodes":1546,"heapMB":14.5}
+{"phase":"idle 3s","wallMs":3001,"ms":3033,"frames":361,"fps":119,"over33":1,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":6,"layoutMs":0,"styleMs":0,"taskMs":84,"layouts":0,"styleRecalcs":9,"domNodes":2690,"heapMB":12.8}
+  profile total 3036 ms; special: (idle)=2965 (program)=68 requestAnimationFrame=2 tick=1
+  files: 
+  fns:
+    
+{"phase":"playback x1 5s (Space key)","wallMs":5153,"ms":5175,"frames":609,"fps":117.7,"over33":1,"over100":1,"maxFrame":108,"longTasks":1,"longMs":82,"longMax":82,"sets":0,"scenarioChanges":0,"scriptMs":1103,"layoutMs":5,"styleMs":1,"taskMs":1856,"layouts":52,"styleRecalcs":9,"domNodes":2699,"heapMB":44.5}
+  profile total 5177 ms; special: (idle)=3332 (program)=722 (garbage collector)=66 save=25 transform=19 fillText=19
+  files: 908ms /assets/index-BZFBUiiy.js
+  fns:
+    104ms S /assets/index-BZFBUiiy.js:9
+    95ms bx /assets/index-BZFBUiiy.js:89
+    44ms (anonymous) /assets/index-BZFBUiiy.js:70
+    42ms Hb /assets/index-BZFBUiiy.js:89
+    37ms (anonymous) /assets/index-BZFBUiiy.js:89
+    31ms setAttr /assets/index-BZFBUiiy.js:70
+    30ms off /assets/index-BZFBUiiy.js:70
+    23ms drawScene /assets/index-BZFBUiiy.js:70
+    21ms qr /assets/index-BZFBUiiy.js:9
+    18ms on /assets/index-BZFBUiiy.js:70
+    17ms ww /assets/index-BZFBUiiy.js:89
+    17ms Gt /assets/index-BZFBUiiy.js:78
+    16ms LT /assets/index-BZFBUiiy.js:89
+    15ms measureSize /assets/index-BZFBUiiy.js:70
+    14ms _getCache /assets/index-BZFBUiiy.js:70
+    14ms _sceneFunc /assets/index-BZFBUiiy.js:70
+    13ms e.<computed> /assets/index-BZFBUiiy.js:70
+    10ms _off /assets/index-BZFBUiiy.js:70
+    10ms It /assets/index-BZFBUiiy.js:78
+    9ms _ /assets/index-BZFBUiiy.js:78
+    9ms Ot /assets/index-BZFBUiiy.js:78
+    9ms drawHit /assets/index-BZFBUiiy.js:70
+    8ms strokeShape /assets/index-BZFBUiiy.js:70
+    8ms (anonymous) /assets/index-BZFBUiiy.js:9
+    8ms Tn /assets/index-BZFBUiiy.js:78
+{"phase":"zoom wheel x30","wallMs":1755,"ms":1807,"frames":213,"fps":117.9,"over33":1,"over100":0,"maxFrame":42,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":169,"layoutMs":2,"styleMs":1,"taskMs":319,"layouts":30,"styleRecalcs":30,"domNodes":2699,"heapMB":65.1}
+  profile total 1804 ms; special: (idle)=1490 (program)=146 save=5 fillText=4 (garbage collector)=4 restore=3
+  files: 140ms /assets/index-BZFBUiiy.js
+  fns:
+    15ms S /assets/index-BZFBUiiy.js:9
+    14ms bx /assets/index-BZFBUiiy.js:89
+    8ms Hb /assets/index-BZFBUiiy.js:89
+    6ms (anonymous) /assets/index-BZFBUiiy.js:89
+    5ms (anonymous) /assets/index-BZFBUiiy.js:70
+    5ms _getCache /assets/index-BZFBUiiy.js:70
+    5ms e.<computed> /assets/index-BZFBUiiy.js:70
+    4ms setAttr /assets/index-BZFBUiiy.js:70
+    4ms off /assets/index-BZFBUiiy.js:70
+    3ms measureSize /assets/index-BZFBUiiy.js:70
+    3ms drawScene /assets/index-BZFBUiiy.js:70
+    3ms _clearSelfAndDescendantCache /assets/index-BZFBUiiy.js:70
+    2ms on /assets/index-BZFBUiiy.js:70
+    2ms ww /assets/index-BZFBUiiy.js:89
+    2ms LT /assets/index-BZFBUiiy.js:89
+    2ms Sa /assets/index-BZFBUiiy.js:78
+    2ms Gt /assets/index-BZFBUiiy.js:78
+    2ms It /assets/index-BZFBUiiy.js:78
+    2ms Dt /assets/index-BZFBUiiy.js:78
+    2ms getLayer /assets/index-BZFBUiiy.js:70
+    2ms _off /assets/index-BZFBUiiy.js:70
+    1ms _useBufferCanvas /assets/index-BZFBUiiy.js:70
+    1ms _getProtoListeners /assets/index-BZFBUiiy.js:70
+    1ms D /assets/index-BZFBUiiy.js:1
+    1ms _requestDraw /assets/index-BZFBUiiy.js:70
+{"phase":"pan drag 40 moves","wallMs":1064,"ms":1142,"frames":130,"fps":113.9,"over33":1,"over100":0,"maxFrame":66,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":70,"layoutMs":0,"styleMs":0,"taskMs":264,"layouts":2,"styleRecalcs":0,"domNodes":2699,"heapMB":30.2}
+  profile total 1144 ms; special: (idle)=886 (program)=184 fillText=5 (garbage collector)=4 transform=3 stroke=2
+  files: 46ms /assets/index-BZFBUiiy.js
+  fns:
+    8ms (anonymous) /assets/index-BZFBUiiy.js:70
+    4ms _getProtoListeners /assets/index-BZFBUiiy.js:70
+    4ms setAttr /assets/index-BZFBUiiy.js:70
+    4ms _getCache /assets/index-BZFBUiiy.js:70
+    3ms e.<computed> /assets/index-BZFBUiiy.js:70
+    3ms _sceneFunc /assets/index-BZFBUiiy.js:70
+    2ms drawScene /assets/index-BZFBUiiy.js:70
+    2ms _clearSelfAndDescendantCache /assets/index-BZFBUiiy.js:70
+    2ms strokeShape /assets/index-BZFBUiiy.js:70
+    1ms _stroke /assets/index-BZFBUiiy.js:70
+    1ms _pointermove /assets/index-BZFBUiiy.js:70
+    1ms _calculate /assets/index-BZFBUiiy.js:70
+    1ms measureSize /assets/index-BZFBUiiy.js:70
+    1ms _getAbsoluteTransform /assets/index-BZFBUiiy.js:70
+    1ms hasStroke /assets/index-BZFBUiiy.js:70
+    1ms _useBufferCanvas /assets/index-BZFBUiiy.js:70
+    1ms Hb /assets/index-BZFBUiiy.js:89
+    0ms Jt /assets/index-BZFBUiiy.js:8
+    0ms getLayer /assets/index-BZFBUiiy.js:70
+    0ms _applyLineJoin /assets/index-BZFBUiiy.js:70
+    0ms multiply /assets/index-BZFBUiiy.js:70
+    0ms _fireAndBubble /assets/index-BZFBUiiy.js:70
+    0ms shouldDrawHit /assets/index-BZFBUiiy.js:70
+    0ms (anonymous) /assets/index-BZFBUiiy.js:146
+    0ms _batchTransformChanges /assets/index-BZFBUiiy.js:70
+{"phase":"lifecycle phases x3 cycles","wallMs":2277,"ms":2325,"frames":263,"fps":113.1,"over33":2,"over100":0,"maxFrame":41,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":245,"layoutMs":15,"styleMs":18,"taskMs":428,"layouts":1092,"styleRecalcs":1263,"domNodes":6504,"heapMB":51.8}
+  profile total 2315 ms; special: (idle)=1906 (program)=128 (garbage collector)=17 getBoundingClientRect=16 setAttribute=4 query=4
+  files: 221ms /assets/index-BZFBUiiy.js
+  fns:
+    39ms Y5 /assets/index-BZFBUiiy.js:144
+    12ms (anonymous) /assets/index-BZFBUiiy.js:134
+    11ms (anonymous) /assets/index-BZFBUiiy.js:144
+    11ms (anonymous) /assets/index-BZFBUiiy.js:94
+    8ms _5 /assets/index-BZFBUiiy.js:143
+    6ms o /assets/index-BZFBUiiy.js:94
+    4ms (anonymous) /assets/index-BZFBUiiy.js:95
+    4ms J5 /assets/index-BZFBUiiy.js:144
+    4ms f4 /assets/index-BZFBUiiy.js:135
+    3ms (anonymous) /assets/index-BZFBUiiy.js:146
+    3ms vse /assets/index-BZFBUiiy.js:146
+    2ms JI /assets/index-BZFBUiiy.js:95
+    2ms XZ /assets/index-BZFBUiiy.js:134
+    2ms C$ /assets/index-BZFBUiiy.js:134
+    2ms ko /assets/index-BZFBUiiy.js:8
+    2ms sL /assets/index-BZFBUiiy.js:95
+    2ms (anonymous) /assets/index-BZFBUiiy.js:8
+    2ms Zie /assets/index-BZFBUiiy.js:144
+    2ms d /assets/index-BZFBUiiy.js:133
+    2ms NG /assets/index-BZFBUiiy.js:133
+    2ms map /assets/index-BZFBUiiy.js:133
+    2ms GR /assets/index-BZFBUiiy.js:95
+    2ms animationInterpolateFn /assets/index-BZFBUiiy.js:144
+    2ms EM /assets/index-BZFBUiiy.js:94
+    1ms Mse /assets/index-BZFBUiiy.js:146
+{"phase":"library drawer open/close x3","wallMs":1542,"ms":1607,"frames":187,"fps":116.4,"over33":1,"over100":0,"maxFrame":58,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":13,"layoutMs":3,"styleMs":2,"taskMs":118,"layouts":9,"styleRecalcs":11,"domNodes":6505,"heapMB":53.3}
+  profile total 1605 ms; special: (idle)=1497 (program)=93 focus=3 removeChild=1 requestAnimationFrame=0 postMessage=0
+  files: 10ms /assets/index-BZFBUiiy.js
+  fns:
+    1ms Ud /assets/index-BZFBUiiy.js:9
+    1ms (anonymous) /assets/index-BZFBUiiy.js:89
+    1ms qu /assets/index-BZFBUiiy.js:8
+    0ms k /assets/index-BZFBUiiy.js:89
+    0ms Nd /assets/index-BZFBUiiy.js:8
+    0ms wl /assets/index-BZFBUiiy.js:8
+    0ms el /assets/index-BZFBUiiy.js:8
+    0ms e /assets/index-BZFBUiiy.js:146
+    0ms Bu /assets/index-BZFBUiiy.js:8
+    0ms _t /assets/index-BZFBUiiy.js:8
+    0ms zc /assets/index-BZFBUiiy.js:8
+    0ms (anonymous) /assets/index-BZFBUiiy.js:8
+    0ms Cr /assets/index-BZFBUiiy.js:8
+    0ms t /assets/index-BZFBUiiy.js:8
+    0ms p /assets/index-BZFBUiiy.js:8
+    0ms dn /assets/index-BZFBUiiy.js:8
+    0ms Lc /assets/index-BZFBUiiy.js:8
+    0ms l /assets/index-BZFBUiiy.js:8
+    0ms Pu /assets/index-BZFBUiiy.js:8
+    0ms yt /assets/index-BZFBUiiy.js:8
+    0ms ir /assets/index-BZFBUiiy.js:8
+    0ms V /assets/index-BZFBUiiy.js:8
+    0ms un /assets/index-BZFBUiiy.js:8
+    0ms n /assets/index-BZFBUiiy.js:8
+    0ms Bd /assets/index-BZFBUiiy.js:9
+page errors/warnings: []

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, memo, useEffect, useRef, useState } from 'react'
 import type { DragEvent, KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import type { EntityKind, SpecModel } from '../model/types'
 import { useStore } from '../state/store'
@@ -170,7 +170,7 @@ interface PaletteProps {
 }
 
 /** Drawer-ready library: place, drag or inspect a model or integrated system. */
-export function Palette({
+export const Palette = memo(function Palette({
   open = true,
   onClose,
   onArmPlacement,
@@ -447,4 +447,4 @@ export function Palette({
       />
     </aside>
   )
-}
+})

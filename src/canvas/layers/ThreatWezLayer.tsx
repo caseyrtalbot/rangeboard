@@ -9,6 +9,11 @@ import { DANGER_INK } from '../../ui/ink'
 
 const MONO = 'JetBrains Mono'
 
+/** Fixed dash and point arrays: an inline literal is re-set on every render. */
+const WEZ_DASH = [3, 3]
+const IMPACT_X_DOWN = [-5, -5, 5, 5]
+const IMPACT_X_UP = [-5, 5, 5, -5]
+
 /** Badge copy: `I&W SEVERE · 1.6 ships · 64 kg`. Unknown warheads (kg 0) must
  *  stay visible: partial sums show `>= n kg`, fully unknown shows the words. */
 function badgeText(severity: ImpactSeverity, ships: number, kg: number, unknown = false): string {
@@ -100,10 +105,10 @@ export function ThreatWezLayer({
   displayTimeS: number
 }) {
   const scenario = useStore((s) => s.scenario)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read; the stage transform carries the pan.
+  const k = useStore((s) => s.camera.scale)
   const show = useStore((s) => s.ui.layers.threatWez)
   const units = useStore((s) => s.ui.units)
-  const k = camera.scale
 
   const wezList = useMemo(() => threatWezList(scenario), [scenario])
   const entityById = (id: string | null) =>
@@ -179,14 +184,14 @@ export function ThreatWezLayer({
                 radius={wez.radiusM}
                 stroke={DANGER_INK}
                 strokeWidth={1.5}
-                dash={[3, 3]}
+                dash={WEZ_DASH}
                 strokeScaleEnabled={false}
                 opacity={0.85}
               />
               {wez.kind === 'impact' && (
                 <Group x={wez.planCenter.x} y={wez.planCenter.y} scaleX={1 / k} scaleY={1 / k}>
-                  <Line points={[-5, -5, 5, 5]} stroke={DANGER_INK} strokeWidth={1.5} />
-                  <Line points={[-5, 5, 5, -5]} stroke={DANGER_INK} strokeWidth={1.5} />
+                  <Line points={IMPACT_X_DOWN} stroke={DANGER_INK} strokeWidth={1.5} />
+                  <Line points={IMPACT_X_UP} stroke={DANGER_INK} strokeWidth={1.5} />
                 </Group>
               )}
               <Group x={center.x} y={center.y + wez.radiusM} scaleX={1 / k} scaleY={1 / k}>

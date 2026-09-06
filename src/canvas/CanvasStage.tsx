@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Layer, Rect, Stage } from 'react-konva'
 import { registerStage } from '../te/io/frameCapture'
 import type Konva from 'konva'
@@ -27,6 +27,8 @@ const DBL_CLICK_PX = 6
 const DBL_CLICK_MS = 400
 /** Pointer travel (screen px) before a modifier-drag counts as a box select. */
 const MARQUEE_MIN_PX = 4
+/** Fixed dash array: an inline literal is re-set on every render. */
+const MARQUEE_DASH = [4, 4]
 
 interface Marquee {
   a: Vec2
@@ -35,7 +37,7 @@ interface Marquee {
   additive: boolean
 }
 
-export function CanvasStage({ onOpenDetail, onPlace }: {
+export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: {
   onOpenDetail?: () => void
   onPlace?: (world: Vec2, screen?: Vec2) => void
 }) {
@@ -48,6 +50,10 @@ export function CanvasStage({ onOpenDetail, onPlace }: {
     return () => registerStage(null)
   })
   const [size, setSize] = useState({ w: 800, h: 600 })
+  // The cursor lives in a ref. Only the draft rubber band and the calibrate
+  // line read it, so state is set only while one of those tools is up; a plain
+  // hover must not re-render the stage and repaint every layer.
+  const mouseWorldRef = useRef<Vec2 | null>(null)
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
   const lastClicks = useRef<Array<{ x: number; y: number; t: number }>>([])
   const [marquee, setMarquee] = useState<Marquee | null>(null)
@@ -270,6 +276,13 @@ export function CanvasStage({ onOpenDetail, onPlace }: {
   }
 
   const drawing = tool !== 'select'
+  // Tools whose draft geometry follows the cursor.
+  const cursorDrawn = tool === 'boundary' || tool === 'path' || tool === 'calibrate'
+  // Picking one of those tools must start from the cursor's current place, not
+  // from wherever the last draft left it.
+  useEffect(() => {
+    if (cursorDrawn) setMouseWorld(mouseWorldRef.current)
+  }, [cursorDrawn])
 
   return (
     <div
@@ -320,7 +333,8 @@ export function CanvasStage({ onOpenDetail, onPlace }: {
         onMouseUp={finishMarquee}
         onMouseMove={() => {
           const world = pointerWorld()
-          setMouseWorld(world)
+          mouseWorldRef.current = world
+          if (cursorDrawn || marqueeRef.current) setMouseWorld(world)
           updateMarquee(world)
         }}
         onDragStart={(e) => {
@@ -359,7 +373,7 @@ export function CanvasStage({ onOpenDetail, onPlace }: {
               height={Math.abs(marquee.b.y - marquee.a.y)}
               stroke="#a9b4bd"
               strokeWidth={1}
-              dash={[4, 4]}
+              dash={MARQUEE_DASH}
               strokeScaleEnabled={false}
               fill="rgba(169, 180, 189, 0.08)"
               listening={false}
@@ -372,7 +386,7 @@ export function CanvasStage({ onOpenDetail, onPlace }: {
           Imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics)
         </div>
       )}
-      <HudLayer mouseWorld={mouseWorld} />
+      <HudLayer stageRef={stageRef} />
       <TrackFileReadout onOpenDetail={onOpenDetail} timeline={timeline} assessments={assessments} size={size} />
       <ContextMenu />
       <ConnectSuggestPopup />
@@ -391,4 +405,4 @@ export function CanvasStage({ onOpenDetail, onPlace }: {
       )}
     </div>
   )
-}
+})

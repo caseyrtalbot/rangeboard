@@ -566,7 +566,6 @@ const INTEGRATION_MARK: Record<IntegrationConfidence, ProvKind> = {
  */
 function IntegrationSection({ entity }: { entity: Entity }) {
   const scenario = useStore((s) => s.scenario)
-  const camera = useStore((s) => s.camera)
   const openConnectSuggestion = useStore((s) => s.openConnectSuggestion)
   const [showAll, setShowAll] = useState(false)
   const summary = integrationSummary(entity.specId, scenario.library)
@@ -576,6 +575,8 @@ function IntegrationSection({ entity }: { entity: Entity }) {
   function suggest() {
     // Popup coordinates are canvas-host px; clamp so it stays in view even
     // when the entity sits off-screen.
+    // Read the camera here, not through a subscription: it changes every pan frame.
+    const camera = useStore.getState().camera
     const host = document.querySelector('[data-testid="canvas-host"]')
     const w = host instanceof HTMLElement ? host.clientWidth : 800
     const h = host instanceof HTMLElement ? host.clientHeight : 600

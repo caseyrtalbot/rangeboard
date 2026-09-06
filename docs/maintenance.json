@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "c02b7f2c6ea113c2c96f2a24246612a0e1f2cf861fc0a77d4e14f8bb2ff59bbd",
+      "sha256": "c9ef9bc1f5d1449cf64964fb03218fd58728955a1265163a4fa491b475fe4770",
       "reviewedAt": "2026-09-06",
-      "note": "Reviewed final Board workspace integration and keyboard overlay precedence; setup and persistence narrative remain accurate."
+      "note": "Wave 1: App.tsx now subscribes to selection primitives and memoizes its canvas handlers; the setup, persistence and workspace narrative in the README is unchanged and still accurate."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "875f840ae2aff822fc9f4d9cee751c8ee57c3c1de25122d169dcb7bf0c29bf5a",
+      "sha256": "4db094dc7d80647bbd2d1c53c9601780ed3c1473b680b90f978cc0d21805f48f",
       "reviewedAt": "2026-09-06",
-      "note": "Reviewed four completed UI stages, unchanged result basis, actual playback, saved layouts, exports, Prepare routes and overlay focus."
+      "note": "Wave 1 performance hot fixes across App, store, panels and canvas: checked the Library drawer L and Escape claim, rotation, selection and undo/redo rows against the browser check; no user-facing behavior changed, so the guide stands."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "0eb5302b7fc8a34d5c4ce71d6931cfde6d90a5cc437ac080d2ccefca8ab4b350",
+      "sha256": "9ec06337d582cc4fa86a7f6cb0450d52b24b0ca834a846ac6eba19d0188729c4",
       "reviewedAt": "2026-09-06",
-      "note": "Reviewed final render-only hierarchy and scope labels, unchanged calculation/persistence producers, evidence export guards and topmost overlay Escape routing."
+      "note": "Wave 1: added the Konva conventions for constant dash and point arrays, camera.scale subscriptions, rotation preview with one dragend commit, the cursor ref and HudLayer listener, and the App primitive subscriptions with the select and setRightTab no-op guards; the data-flow line now covers rotate."
     },
     {
       "document": "docs/VERIFICATION.md",

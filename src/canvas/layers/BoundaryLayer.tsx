@@ -14,7 +14,8 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
   const select = useStore((s) => s.select)
   const selected = useStore((s) => s.selection.boundaryId === boundary.id)
   const basemap = useStore((s) => s.ui.basemap)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read; the stage transform carries the pan.
+  const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
   const style = STYLE[boundary.type]
   const flat = boundary.points.flatMap((p) => [p.x, p.y])
@@ -44,14 +45,17 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
           select({ boundaryId: boundary.id })
         }}
       />
-      <Text fontFamily="JetBrains Mono"
-        x={boundary.points[0].x}
-        y={boundary.points[0].y}
-        text={label}
-        fontSize={12 / camera.scale}
-        fill={style.stroke}
-        listening={false}
-      />
+      {/* Counter-scaled group, so the label font size never changes and Konva
+          never re-measures the text on a zoom step. */}
+      <Group x={boundary.points[0].x} y={boundary.points[0].y} scaleX={1 / k} scaleY={1 / k} listening={false}>
+        <Text
+          fontFamily="JetBrains Mono"
+          text={label}
+          fontSize={12}
+          fill={style.stroke}
+          listening={false}
+        />
+      </Group>
     </Group>
   )
 }

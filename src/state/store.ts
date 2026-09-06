@@ -376,8 +376,19 @@ function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined):
   return [...have, id]
 }
 
-/** Drop selection ids that the scenario no longer holds. */
+/** Field-by-field selection equality, entity id order included. */
+function sameSelection(a: Selection, b: Selection): boolean {
+  return (
+    a.boundaryId === b.boundaryId &&
+    a.connectionId === b.connectionId &&
+    a.libraryId === b.libraryId &&
+    a.cardId === b.cardId &&
+    a.entityIds.length === b.entityIds.length &&
+    a.entityIds.every((id, i) => id === b.entityIds[i])
+  )
+}
 
+/** Drop selection ids that the scenario no longer holds. */
 function pruneSelection(sel: Selection, s: Scenario): Selection {
   const entityIds = sel.entityIds.filter((id) => s.entities.some((e) => e.id === id))
   const keep = <T extends { id: string }>(id: string | null, list: T[]) =>
@@ -1295,11 +1306,11 @@ export const useStore = create<Store>()((set, get) => {
 
     select: (patch, additive = false) =>
       set((st) => {
-        if (additive && patch.entityIds) {
-          const merged = new Set([...st.selection.entityIds, ...patch.entityIds])
-          return { selection: { ...st.selection, entityIds: [...merged] } }
-        }
-        return { selection: { ...EMPTY_SELECTION, ...patch } }
+        const next = additive && patch.entityIds
+          ? { ...st.selection, entityIds: [...new Set([...st.selection.entityIds, ...patch.entityIds])] }
+          : { ...EMPTY_SELECTION, ...patch }
+        // Re-selecting the same objects keeps the identity, so no subscriber re-renders.
+        return sameSelection(next, st.selection) ? st : { selection: next }
       }),
 
     clearSelection: () => set({ selection: EMPTY_SELECTION }),
@@ -1328,6 +1339,8 @@ export const useStore = create<Store>()((set, get) => {
     },
     setBoundaryType: (t) => set((st) => ({ ui: { ...st.ui, boundaryType: t } })),
     setRightTab: (t) => {
+      // An unchanged tab must not write storage or allocate a new `ui`.
+      if (get().ui.rightTab === t) return
       writeView({ rightTab: t })
       set((st) => ({ ui: { ...st.ui, rightTab: t } }))
     },

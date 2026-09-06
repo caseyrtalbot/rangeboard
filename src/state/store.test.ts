@@ -1126,6 +1126,34 @@ describe('deleted seed ids', () => {
   })
 })
 
+describe('no-op guards', () => {
+  beforeEach(reset)
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('keeps state identity when a select or a right-tab set changes nothing', () => {
+    useStore.getState().addEntityFromModel('lib-rps42', { x: 0, y: 0 })
+    const id = useStore.getState().scenario.entities[0].id
+    useStore.getState().select({ entityIds: [id] })
+    const selection = useStore.getState().selection
+    useStore.getState().select({ entityIds: [id] })
+    expect(useStore.getState().selection).toBe(selection)
+    useStore.getState().select({ entityIds: [id] }, true)
+    expect(useStore.getState().selection).toBe(selection)
+
+    const tabBefore = useStore.getState().ui.rightTab
+    useStore.getState().setRightTab('cards')
+    const ui = useStore.getState().ui
+    const store = stubStorage()
+    useStore.getState().setRightTab('cards')
+    expect(useStore.getState().ui).toBe(ui)
+    expect(store.has(VIEW_KEY)).toBe(false)
+    useStore.getState().setRightTab('library')
+    expect(useStore.getState().ui).not.toBe(ui)
+    expect(JSON.parse(store.get(VIEW_KEY)!).rightTab).toBe('library')
+    useStore.getState().setRightTab(tabBefore)
+  })
+})
+
 describe('view state', () => {
   beforeEach(reset)
   afterEach(() => vi.unstubAllGlobals())

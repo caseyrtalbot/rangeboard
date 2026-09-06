@@ -1,0 +1,138 @@
+import { chromium } from '/Users/caseytalbot/Projects/rangeboard/node_modules/playwright/index.mjs'
+import fs from 'node:fs'
+const [,, scenarioPath, url = 'http://localhost:5377'] = process.argv
+const SCEN = fs.readFileSync(scenarioPath, 'utf8')
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+await ctx.addInitScript(([s]) => {
+  localStorage.setItem('rangeboard.scenario.v1', s)
+  localStorage.setItem('rangeboard.rightpanel.width', '320')
+}, [SCEN])
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text().slice(0, 200)}`) })
+await page.goto(url, { waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, { timeout: 60000 })
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const st = () => page.evaluate(() => {
+  const s = window.__store.getState()
+  return { sel: s.selection, cam: s.camera, past: s.past.length, future: s.future.length, rightTab: s.ui.rightTab, tool: s.ui.tool, playback: { phase: s.playback.phase, simTimeS: s.playback.simTimeS }, entities: s.scenario.entities.map((e) => ({ id: e.id, kind: e.kind, pos: e.pos, headingDeg: e.headingDeg, sectorDeg: e.sectorDeg, systemId: e.systemId })) }
+})
+const results = {}
+const host = await page.locator('.canvas-host').boundingBox()
+const screenOf = (cam, pos) => ({ x: host.x + cam.x + pos.x * cam.scale, y: host.y + cam.y + pos.y * cam.scale })
+// Click an empty canvas corner far from the drawer, so focus lands on the host.
+const focusCanvas = () => page.mouse.click(host.x + host.width - 30, host.y + host.height - 30)
+const onScreen = (p) => p.x > host.x + 20 && p.x < host.x + host.width - 20 && p.y > host.y + 20 && p.y < host.y + host.height - 20
+
+// 1. canvas click selection
+let s = await st()
+await page.evaluate(() => window.__store.getState().clearSelection())
+s = await st()
+const models = await page.evaluate(() => Object.fromEntries(window.__store.getState().scenario.library.map((m) => [m.id, m.sensor?.sectorDeg ?? m.effector?.sectorDeg ?? null])))
+const cand = s.entities.filter((e) => e.kind === 'sensor' && onScreen(screenOf(s.cam, e.pos)))
+const target = cand.find((e) => e.headingDeg != null) ?? cand[0]
+let sp = screenOf(s.cam, target.pos)
+await page.mouse.click(sp.x, sp.y)
+await sleep(150)
+s = await st()
+results.clickSelect = { id: target.id, selected: s.sel.entityIds, ok: s.sel.entityIds.length === 1 && s.sel.entityIds[0] === target.id }
+
+// 2. entity drag
+const past0 = s.past
+const pos0 = target.pos
+await page.mouse.move(sp.x, sp.y); await page.mouse.down()
+for (let i = 1; i <= 8; i++) { await page.mouse.move(sp.x + i * 5, sp.y + i * 3); await sleep(16) }
+await page.mouse.up(); await sleep(200)
+s = await st()
+let e = s.entities.find((x) => x.id === target.id)
+results.drag = { before: pos0, after: e.pos, pastBefore: past0, pastAfter: s.past, ok: (e.pos.x !== pos0.x || e.pos.y !== pos0.y) && s.past === past0 + 1 }
+
+// 3. heading rotate: one undo entry per gesture
+sp = screenOf(s.cam, e.pos)
+const directional = e.headingDeg != null
+results.rotate = { skipped: !directional }
+if (directional) {
+  const past1 = s.past
+  const h0 = e.headingDeg
+  const r = (h0 * Math.PI) / 180
+  const hx = sp.x + Math.sin(r) * 34, hy = sp.y - Math.cos(r) * 34
+  await page.mouse.move(hx, hy); await page.mouse.down()
+  for (let i = 1; i <= 12; i++) {
+    const a = ((h0 + i * 5) * Math.PI) / 180
+    await page.mouse.move(sp.x + Math.sin(a) * 34, sp.y - Math.cos(a) * 34); await sleep(16)
+  }
+  await page.mouse.up(); await sleep(200)
+  s = await st()
+  e = s.entities.find((x) => x.id === target.id)
+  const posMoved = e.pos.x !== results.drag.after.x || e.pos.y !== results.drag.after.y
+  results.rotate = { headingBefore: h0, headingAfter: e.headingDeg, posMoved, pos: e.pos, pastBefore: past1, pastAfter: s.past, ok: e.headingDeg !== h0 && !posMoved && s.past === past1 + 1 }
+  // undo restores heading in one step
+  await page.evaluate(() => window.__store.getState().undo()); await sleep(100)
+  s = await st(); e = s.entities.find((x) => x.id === target.id)
+  results.rotateUndo = { heading: e.headingDeg, ok: e.headingDeg === h0 }
+  await page.evaluate(() => window.__store.getState().redo()); await sleep(100)
+}
+
+// 4. Space to play, then pause
+await focusCanvas()
+await page.keyboard.press('Escape')
+await page.keyboard.press(' '); await sleep(1200)
+s = await st()
+const playing = s.playback
+await page.keyboard.press(' '); await sleep(200)
+s = await st()
+results.space = { whilePlaying: playing, afterPause: s.playback, ok: playing.phase === 'running' && playing.simTimeS > 0 && s.playback.phase === 'paused' }
+
+// 5. hover while paused
+await page.mouse.move(sp.x + 200, sp.y + 100)
+for (let i = 0; i < 10; i++) { await page.mouse.move(sp.x + i * 3, sp.y + i * 2); await sleep(30) }
+await sleep(200)
+results.hover = { errors: errors.length, ok: errors.length === 0 }
+
+// 6. wheel zoom
+s = await st(); const scale0 = s.cam.scale
+await page.mouse.move(host.x + host.width / 2, host.y + host.height / 2)
+for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, -120); await sleep(40) }
+await sleep(150); s = await st()
+results.zoom = { before: scale0, after: s.cam.scale, ok: s.cam.scale > scale0 }
+
+// 7. library drawer: L opens (focus moves to the search field), Escape closes and
+// returns focus to the trigger; L from the canvas closes it too.
+const drawerOpen = () => page.evaluate(() => !document.getElementById('board-library-drawer').hidden)
+await focusCanvas()
+await page.keyboard.press('l'); await sleep(250)
+const open1 = await drawerOpen()
+const focusInDrawer = await page.evaluate(() => !!document.activeElement?.closest('#board-library-drawer'))
+await page.keyboard.press('Escape'); await sleep(250)
+const closed1 = !(await drawerOpen())
+const focusOnTrigger = await page.evaluate(() => document.activeElement?.getAttribute('aria-controls') === 'board-library-drawer')
+await focusCanvas()
+await page.keyboard.press('l'); await sleep(250)
+const open2 = await drawerOpen()
+await focusCanvas()
+await page.keyboard.press('l'); await sleep(250)
+const closed2 = !(await drawerOpen())
+results.library = { open1, focusInDrawer, closed1, focusOnTrigger, open2, closed2, ok: open1 && closed1 && focusOnTrigger && open2 && closed2 }
+
+// 8. phase switches
+const phases = []
+for (const p of ['execute', 'analyze', 'prepare']) {
+  await page.click(`#board-phase-${p}`); await sleep(300)
+  phases.push(await page.evaluate(() => document.querySelector('.board-app').getAttribute('data-board-phase')))
+}
+results.phases = { phases, ok: phases.join() === 'execute,analyze,prepare' }
+
+// 9. undo and redo keep the right tab
+await page.evaluate(() => window.__store.getState().setRightTab('cards')); await sleep(150)
+await page.evaluate(() => window.__store.getState().undo()); await sleep(150)
+const tabAfterUndo = (await st()).rightTab
+await page.evaluate(() => window.__store.getState().redo()); await sleep(150)
+const tabAfterRedo = (await st()).rightTab
+results.undoTab = { tabAfterUndo, tabAfterRedo, ok: tabAfterUndo === 'cards' && tabAfterRedo === 'cards' }
+
+results.pageErrors = errors.slice(0, 10)
+results.allOk = Object.values(results).every((r) => typeof r !== 'object' || Array.isArray(r) || r.ok !== false)
+console.log(JSON.stringify(results, null, 1))
+await browser.close()

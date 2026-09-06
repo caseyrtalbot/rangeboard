@@ -15,6 +15,19 @@ export interface LabelInput {
   name: string
   sx: number
   sy: number
+  /**
+   * The string the canvas draws, when the caller already holds it. Absent, the
+   * layout derives it with `boardDesignator`.
+   */
+  drawn?: string
+}
+
+/** A label input with its box measured once, so the O(n^2) pass does no string work. */
+interface Measured extends LabelInput {
+  /** Anchored box width, px. */
+  w: number
+  /** Anchored box height, px. */
+  h: number
 }
 
 export interface SpokePlacement {
@@ -66,7 +79,7 @@ interface Rect {
 }
 
 interface Cluster {
-  members: LabelInput[]
+  members: Measured[]
   cx: number
   cy: number
   radius: number
@@ -160,10 +173,20 @@ export function labelLineCount(name: string): number {
   return lines
 }
 
+/** One label measured: the drawn designator and its anchored box. */
+function measure(m: LabelInput): Measured {
+  const name = m.drawn ?? boardDesignator(m.name)
+  return {
+    ...m,
+    name,
+    w: Math.min(ANCHOR_W, name.length * CHAR_W),
+    h: labelLineCount(name) * LABEL_LINE_H,
+  }
+}
+
 /** Footprint of the default anchored label (centered, 120px wrap). */
-function anchoredRect(m: LabelInput): Rect {
-  const w = Math.min(ANCHOR_W, m.name.length * CHAR_W)
-  return { x: m.sx - w / 2, y: m.sy + LABEL_ANCHOR_TOP, w, h: labelLineCount(m.name) * LABEL_LINE_H }
+function anchoredRect(m: Measured): Rect {
+  return { x: m.sx - m.w / 2, y: m.sy + LABEL_ANCHOR_TOP, w: m.w, h: m.h }
 }
 
 function overlaps(a: Rect, b: Rect): boolean {
@@ -175,20 +198,20 @@ function inflate(r: Rect, pad: number): Rect {
 }
 
 /** Two entities tangle when their glyphs converge or their anchored labels overlap. */
-function near(a: LabelInput, b: LabelInput, sticky?: Set<string>): boolean {
+function near(a: Measured, b: Measured, sticky?: Set<string>): boolean {
   const pad = sticky && (sticky.has(a.id) || sticky.has(b.id)) ? STICKY_PAD : 0
   if (Math.hypot(a.sx - b.sx, a.sy - b.sy) < GLYPH_NEAR + pad) return true
   return overlaps(inflate(anchoredRect(a), pad), anchoredRect(b))
 }
 
-function clusters(inputs: LabelInput[], sticky?: Set<string>): LabelInput[][] {
+function clusters(inputs: Measured[], sticky?: Set<string>): Measured[][] {
   const seen = new Array<boolean>(inputs.length).fill(false)
-  const out: LabelInput[][] = []
+  const out: Measured[][] = []
   for (let i = 0; i < inputs.length; i++) {
     if (seen[i]) continue
     const queue = [i]
     seen[i] = true
-    const group: LabelInput[] = []
+    const group: Measured[] = []
     while (queue.length) {
       const a = queue.pop()!
       group.push(inputs[a])
@@ -204,7 +227,7 @@ function clusters(inputs: LabelInput[], sticky?: Set<string>): LabelInput[][] {
   return out
 }
 
-function geometry(members: LabelInput[]): Cluster {
+function geometry(members: Measured[]): Cluster {
   const cx = members.reduce((s, m) => s + m.sx, 0) / members.length
   const cy = members.reduce((s, m) => s + m.sy, 0) / members.length
   const ext = Math.max(...members.map((m) => Math.hypot(m.sx - cx, m.sy - cy)))
@@ -314,7 +337,7 @@ export function layoutLabels(inputs: LabelInput[], opts: LayoutOptions = {}): Ma
   const out = new Map<string, LabelPlacement>()
   // Measure what the canvas draws, not what the scenario stores: both layers
   // render boardDesignator(name), so clustering must use the same metric.
-  const drawn = inputs.map((m) => ({ ...m, name: boardDesignator(m.name) }))
+  const drawn = inputs.map(measure)
   const cs = consolidate(clusters(drawn, opts.sticky).map(geometry))
   for (const c of cs) {
     if (c.members.length === 1) out.set(c.members[0].id, { mode: 'anchored' })

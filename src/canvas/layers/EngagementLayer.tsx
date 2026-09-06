@@ -23,6 +23,8 @@ const TRIM_TARGET = 15
 
 /** Travelling round, screen px. The nose sits on -y and turns with the flight line. */
 const ROUND = [0, -8, 6, 6, -6, 6]
+/** Fixed dash array: an inline literal is re-set on every render. */
+const BEAM_DASH = [2, 4]
 
 /**
  * Salvos between launch and effect: the shot line plus a round riding it. A
@@ -31,9 +33,9 @@ const ROUND = [0, -8, 6, 6, -6, 6]
  */
 export function EngagementLayer({ shots, displayTimeS }: Props) {
   const show = useStore((s) => s.ui.layers.engagements)
-  const camera = useStore((s) => s.camera)
+  // Only the scale is read; the stage transform carries the pan.
+  const k = useStore((s) => s.camera.scale)
   if (!show) return null
-  const k = camera.scale
   const lit = blinkOn(displayTimeS)
 
   return (
@@ -63,7 +65,7 @@ export function EngagementLayer({ shots, displayTimeS }: Props) {
               points={[ax, ay, bx, by]}
               stroke={color}
               strokeWidth={1.4}
-              dash={[2, 4]}
+              dash={BEAM_DASH}
               opacity={lit ? 0.9 : 0.32}
               strokeScaleEnabled={false}
             />
