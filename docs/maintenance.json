@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "985f0a6b0bfeb73c5700559fab578897813db92f2ad77f241afbf401ac619a76",
+      "sha256": "82faad31f8fa949f2483eb398b102ed576505de4a6485d0160085a70e49ce33f",
       "reviewedAt": "2026-09-06",
-      "note": "Indexed the dated Board workspace design plan and interactive HTML prototype; preserved its review-only status and explicit boundary before production implementation."
+      "note": "Indexed docs/HANDOFF.md as a current reference; checked that every other index row still resolves."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -89,9 +89,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "c91f988ba3fe99a9504f5369190f46e4365a785f9436d2f1d8eca2bd35f2a84d",
+      "sha256": "a2a19bef7f2fb3dfddfa56b20d57381113c3d3940b55ec2437ac3d287c04a15a",
       "reviewedAt": "2026-09-06",
-      "note": "Checked local and CI command wiring, scoped lint configuration, documented hash review limits, placement rules, bounded ownership and handoff protocol. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+      "note": "Session-state row and handoff protocol now name the one central docs/HANDOFF.md for a multi-wave refactor, updated only in the commit that closes a passing wave; commands, lint scopes and CI wiring unchanged."
+    },
+    {
+      "document": "docs/HANDOFF.md",
+      "inputs": [],
+      "sha256": "eb246c9f4a499682dbc422a0ed87401034107fec1c366295ffdeef48bafec965",
+      "reviewedAt": "2026-09-06",
+      "note": "Created the one central handoff for the performance and quality refactor: ledger, approved decisions, measured 955ad6b baseline, Wave 0 and Wave 1 task with lane briefs, remaining waves, traps, update rule."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

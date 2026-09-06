@@ -32,7 +32,7 @@ the same change; do not retain competing active descriptions or mark an active g
 | Current references | Root `README.md`, this workflow, project/engineering/verification guides, `docs/README.md`, and the design system. Each is registered in [maintenance.json](maintenance.json). |
 | Historical evidence | `docs/field-te/`, including dated captures and model dossiers. Dates, measurements and limitations describe the capture, not the current tree. Preserve evidence paths used by tests and scripts. |
 | Source material | `docs/te-compilation/`, `docs/inventory/`, `docs/threat/`, and `docs/te-plan.md`. Preserve unique source content and distinguish original intent from implemented behavior. |
-| Session state | A task message or `/private/tmp/rangeboard-<slice>-handoff.md`. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
+| Session state | A task message, or the one central [handoff](HANDOFF.md) for a multi-wave refactor, updated only at the end of a wave whose gate passed. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
 
 Every Markdown file must have a direct link in [the index](README.md), except the index
 itself. Add a current reference only when no existing document owns the subject; register
@@ -66,8 +66,9 @@ pretend an old capture is current. Use Git history to retrieve its original byte
 
 ## Handoffs and orchestration
 
-A handoff carries exactly one session task. Point to current source and docs instead of
-copying them. Include:
+A handoff carries exactly one session task. A multi-wave refactor keeps one central handoff
+(`docs/HANDOFF.md`) with a status ledger and the current task; it changes only in the commit that
+closes a passing wave. Point to current source and docs instead of copying them. Include:
 
 - Repository, branch/base commit and dirty paths relevant to the next task.
 - Requested outcome, owned files and explicit exclusions.
