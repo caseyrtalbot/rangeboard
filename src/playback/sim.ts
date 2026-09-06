@@ -245,9 +245,11 @@ function extendIntervals(intervals: Array<[number, number]>, t: number): void {
  * scan before the target is first admitted is a miss with Pd 0 that advances
  * the counter and stays out of the M-of-N window. Between scans the hold
  * carries the last scan result: none before the first detection, a detected
- * scan holds with a measurement, a missed scan coasts (held for continuity,
- * no measurement) until the next detection or the drop at the dropMisses-th
- * consecutive miss.
+ * scan holds with a measurement, and a missed scan after the track has
+ * initiated (M-of-N) coasts (held for continuity, no measurement) until the
+ * next detection or the drop at the dropMisses-th consecutive miss. A missed
+ * scan before initiation ends the hold: a tentative detection is not
+ * extrapolated (F-15).
  */
 interface ScanState {
   sensor: Entity
@@ -561,7 +563,15 @@ export function assessThreat(
           const admitted = scan.pdModeled && pd > 0
           if (scan.hold !== 'none') {
             scan.consecutiveMisses += 1
-            scan.hold = scan.consecutiveMisses >= scan.dropMisses ? 'dropped' : 'coast'
+            // A coast extrapolates a track file. Before the M-of-N rule has
+            // initiated one there is only a tentative detection, so a miss
+            // ends the hold and the window keeps counting (F-15).
+            scan.hold =
+              observation?.trackInitAtS == null
+                ? 'none'
+                : scan.consecutiveMisses >= scan.dropMisses
+                  ? 'dropped'
+                  : 'coast'
           }
           if (scan.windowOpen || admitted) {
             scan.windowOpen = true

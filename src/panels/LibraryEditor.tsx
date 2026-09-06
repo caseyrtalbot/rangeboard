@@ -654,18 +654,30 @@ export function LibraryEditor() {
                   value={sensor.trackInitM ?? 0}
                   step={1}
                   min={0}
-                  onChange={(n) =>
-                    patch({ sensor: { ...sensor, trackInitM: n > 0 ? n : undefined } })
-                  }
+                  onChange={(n) => {
+                    // M of N: N follows M up so the pair in use stays valid (F-16).
+                    const trackInitM = n > 0 ? n : undefined
+                    const trackInitN =
+                      trackInitM != null && (sensor.trackInitN ?? TRACK_INIT_N) < trackInitM
+                        ? trackInitM
+                        : sensor.trackInitN
+                    patch({ sensor: { ...sensor, trackInitM, trackInitN } })
+                  }}
                 />
                 <Num
                   label={`Initiation N (0 = PF ${TRACK_INIT_N})`}
                   value={sensor.trackInitN ?? 0}
                   step={1}
                   min={0}
-                  onChange={(n) =>
-                    patch({ sensor: { ...sensor, trackInitN: n > 0 ? n : undefined } })
-                  }
+                  onChange={(n) => {
+                    // M follows N down so the pair in use stays valid (F-16).
+                    const trackInitN = n > 0 ? n : undefined
+                    const trackInitM =
+                      trackInitN != null && (sensor.trackInitM ?? TRACK_INIT_M) > trackInitN
+                        ? trackInitN
+                        : sensor.trackInitM
+                    patch({ sensor: { ...sensor, trackInitM, trackInitN } })
+                  }}
                 />
               </div>
               <Num

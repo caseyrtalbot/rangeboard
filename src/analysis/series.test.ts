@@ -484,31 +484,43 @@ describe('trackLadderRows', () => {
     expectPartition(rows[0].spans)
   })
 
-  it('subtracts a coast that lands inside the init window', () => {
+  it('a miss before initiation ends the hold: no coast inside the init window (F-15)', () => {
     // Inside at scan 0, out at scan 1 (3050 m), back at 2: M-of-N initiates at 4.
+    // The miss at 1 lands before the track has initiated, so the tentative
+    // detection is not extrapolated: the hold ends at 0.5, a new hold starts
+    // at 2, and the ladder draws a drop marker at 1, not a coast.
     const { scenario, sensorId } = coastScenario([
       { x: 0, y: -2990 }, { x: 0, y: -3050 }, { x: 0, y: -2600 },
     ])
+    const obs = engagementPicture(scenario).assessments[0].sensorObservations!.find(
+      (o) => o.sensorId === sensorId,
+    )!
+    expect(obs.intervals).toEqual([[0, 0.5], [2, 9]])
+    expect(obs.coastIntervals).toEqual([])
+    expect(obs.trackInitAtS).toBe(4)
     const spans = trackLadderRows(scenario, sensorId)[0].spans
     expect(triples(spans)).toEqual([
-      ['init', 0, 1], ['coast', 1, 2], ['init', 2, 4], ['track', 4, 9.5],
+      ['init', 0, 1], ['drop', 1, 1], ['init', 2, 4], ['track', 4, 9.5],
     ])
     expectPartition(spans)
   })
 
-  it('keeps the init fill inside the hold intervals when the window spans a drop', () => {
-    // Out at scan 1, dropped at the fifth miss, back at 18: M-of-N initiates at 21
-    // in the second interval, so the gap between 5 and 18 draws nothing.
+  it('keeps the init fill inside the hold intervals when the window spans a gap', () => {
+    // Out at scan 1, back at 18: the miss at 1 comes before initiation, so the
+    // first hold ends at 0.5 with no coast (F-15; before the rule it coasted to
+    // 4.5 and dropped at the fifth miss). M-of-N initiates at 21 in the second
+    // interval, so the gap between 1 and 18 draws nothing.
     const { scenario, sensorId } = coastScenario([
       { x: 0, y: -2950 }, { x: 0, y: -3500 }, { x: 0, y: -2600 },
     ])
     const { assessments } = engagementPicture(scenario)
     const obs = assessments[0].sensorObservations!.find((o) => o.sensorId === sensorId)!
-    expect(obs.intervals).toEqual([[0, 4.5], [18, 24.5]])
+    expect(obs.intervals).toEqual([[0, 0.5], [18, 24.5]])
+    expect(obs.coastIntervals).toEqual([])
     expect(obs.trackInitAtS).toBe(21)
     const spans = trackLadderRows(scenario, sensorId)[0].spans
     expect(triples(spans)).toEqual([
-      ['init', 0, 1], ['coast', 1, 5], ['drop', 5, 5], ['init', 18, 21], ['track', 21, 25],
+      ['init', 0, 1], ['drop', 1, 1], ['init', 18, 21], ['track', 21, 25],
     ])
     expectPartition(spans)
   })

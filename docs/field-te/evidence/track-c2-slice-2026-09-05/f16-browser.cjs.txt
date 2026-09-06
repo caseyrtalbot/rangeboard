@@ -1,0 +1,38 @@
+const { chromium } = require('playwright')
+;(async () => {
+  const browser = await chromium.launch()
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+  await ctx.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+  const page = await ctx.newPage()
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await page.goto('http://localhost:5321/')
+  await page.waitForFunction(() => Boolean(window.__store))
+  const id = await page.evaluate(() => {
+    const s = window.__store.getState()
+    const id = s.addModel('sensor')
+    s.select({ libraryId: id })
+    s.setRightTab('library')
+    return id
+  })
+  const m = page.locator('label.field:has-text("Initiation M") input')
+  const n = page.locator('label.field:has-text("Initiation N") input')
+  await m.waitFor()
+  const read = async (step) => {
+    const stored = await page.evaluate((id) => {
+      const s = window.__store.getState().scenario.library.find((x) => x.id === id).sensor
+      return { m: s.trackInitM ?? null, n: s.trackInitN ?? null }
+    }, id)
+    return { step, stored, shown: { m: await m.inputValue(), n: await n.inputValue() } }
+  }
+  const out = [await read('new sensor model')]
+  await m.fill('5'); out.push(await read('type M 5 with N at PF'))
+  await n.fill('3'); out.push(await read('type N 3 under M 5'))
+  await m.fill('0'); out.push(await read('type M 0 (PF) with N 3'))
+  await n.fill('2'); out.push(await read('type N 2 under PF M'))
+  await n.fill('6'); out.push(await read('type N 6 over M 2'))
+  await m.fill('7'); out.push(await read('type M 7 over N 6'))
+  await page.screenshot({ path: process.argv[2] + '/f16-editor.png' })
+  console.log(JSON.stringify({ errors, out }, null, 1))
+  await browser.close()
+})().catch((e) => { console.error(e); process.exit(1) })

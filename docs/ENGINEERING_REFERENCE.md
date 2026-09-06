@@ -212,7 +212,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   admission is a miss at Pd 0 that advances the counter and stays out of the M-of-N window.
   `SensorObservation.trackInitAtS` is the one field consumers read; `pdSeriesStartS` is
   where `pdSeries` starts, the first scan taken. A coast is extrapolation, not a
-  measurement: it holds continuity and never moves the classification ladder.
+  measurement: it holds continuity and never moves the classification ladder, and it
+  exists only after the track has initiated; a missed scan before `trackInitAtS` ends the
+  hold while the M-of-N window keeps counting (F-15).
 - **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
