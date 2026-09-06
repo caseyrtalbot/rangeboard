@@ -39,8 +39,10 @@ export interface Stat {
   /**
    * Interval on the mean at conf, by `interval`. A time keeps the t-interval
    * (meanInterval from src/te/calc/stats.ts). A count clamps it to the
-   * count's support. A 0/1 count (support {0, 1}) takes the Wilson interval,
-   * and at 0 of n or n of n the rule-of-three bound (3 / n) instead.
+   * count's support. A 0/1 count (support {0, 1}) takes the Wilson interval.
+   * A count with a finite support maximum that samples all zero reports the
+   * rule-of-three upper bound 3 max / n (no independence between ships), and
+   * all at max the mirror max - 3 max / n; both are bounds, not a CI.
    */
   lo: number
   hi: number
@@ -267,10 +269,13 @@ function definedOf(n: number, total: number): Stat['defined'] {
 }
 
 /**
- * The interval on the mean of `sorted` (R-D-39). A 0/1 count is a
- * proportion: Wilson at STAT_CONF (z 1.96, the `wilson` default), and at 0
- * of n or n of n the rule of three, 3 / n from the observed end. Any other
- * count clamps the t-interval to [0, max]. A time keeps the t-interval.
+ * The interval on the mean of `sorted` (R-D-39, R-F-41). A count with a
+ * finite support maximum at 0 of n reports the rule-of-three upper bound
+ * 3 max / n on its mean, with no independence assumed between ships, and at
+ * n of n the mirror max - 3 max / n; at max 1 these are the 0/1 bounds 3 / n.
+ * A 0/1 count is otherwise a proportion: Wilson at STAT_CONF (z 1.96, the
+ * `wilson` default). Any other count clamps the t-interval to [0, max]; an
+ * unbounded count (salvos) always does. A time keeps the t-interval.
  */
 function intervalOf(
   sorted: number[],
@@ -278,13 +283,15 @@ function intervalOf(
   t: { lo: number; hi: number },
 ): { lo: number; hi: number; interval: IntervalMethod } {
   if (kind.kind === 'time') return { ...t, interval: 't' }
-  if (kind.max !== 1) {
-    return { lo: Math.max(0, t.lo), hi: Math.min(kind.max, t.hi), interval: 't' }
-  }
+  const { max } = kind
   const n = sorted.length
   const k = sorted.reduce((s, v) => s + v, 0)
-  if (k === 0) return { lo: 0, hi: Math.min(1, 3 / n), interval: 'rule-of-three' }
-  if (k === n) return { lo: Math.max(0, 1 - 3 / n), hi: 1, interval: 'rule-of-three' }
+  if (Number.isFinite(max)) {
+    const bound = (3 * max) / n
+    if (k === 0) return { lo: 0, hi: Math.min(max, bound), interval: 'rule-of-three' }
+    if (k === n * max) return { lo: Math.max(0, max - bound), hi: max, interval: 'rule-of-three' }
+  }
+  if (max !== 1) return { lo: Math.max(0, t.lo), hi: Math.min(max, t.hi), interval: 't' }
   const w = wilson(k, n)
   return { lo: w.lo, hi: w.hi, interval: 'wilson' }
 }
@@ -323,10 +330,21 @@ function statOf(samples: number[], kind: StatKind): Stat {
   }
 }
 
-/** Half-width of the 95 percent t-interval on the mean of `values`. */
-function halfWidthOf(values: number[]): number {
-  const { lo, hi } = meanInterval(values, STAT_CONF)
+/**
+ * Half-width of the displayed interval on the end-of-run leaker mean
+ * (R-F-42): the same `statOf` path and ship support the leakers Stat uses,
+ * so the stopping rule and the tile read one interval.
+ */
+function halfWidthOf(values: number[], ships: number): number {
+  const { lo, hi } = statOf(values, count(ships))
   return (hi - lo) / 2
+}
+
+/** Ships over the raid: the support of the kills and leakers counts. */
+function raidSizeOf(threatShips: Map<string, number>): number {
+  let raidSize = 0
+  for (const ships of threatShips.values()) raidSize += ships
+  return raidSize
 }
 
 /** The same count Stat per step over `rows` (one row per replicate, one entry per step). */
@@ -430,9 +448,10 @@ function drive<T>(loop: Loop<T>, budget?: ExecutionBudget): T {
 
 /**
  * Run `runSettings(scenario).replicates` replicates from the scenario's seed
- * and summarize them. With `targetHalfWidth` set, the loop checks the 95
- * percent half-width of the end-of-run leaker mean after 30 replicates and
- * every 10 after that, and stops once it is under the target; `replicates`
+ * and summarize them. With `targetHalfWidth` set, the loop checks the
+ * half-width of the displayed interval on the end-of-run leaker mean (the
+ * leakers Stat over the raid's ships) after 30 replicates and every 10
+ * after that, and stops once it is under the target; `replicates`
  * on the summary is then the count run. `onProgress` fires after every 10th
  * replicate and after the last, with the configured count as `total`.
  * `elapsedMs` is 0 here; the worker fills it. With a `budget`, a run whose
@@ -553,7 +572,7 @@ export function* replicateLoop(
       targetHalfWidth != null &&
       done >= STOP_FIRST &&
       (done - STOP_FIRST) % STOP_EVERY === 0 &&
-      halfWidthOf(leakers.map((row) => row[n - 1])) < targetHalfWidth
+      halfWidthOf(leakers.map((row) => row[n - 1]), raidSizeOf(threatShips)) < targetHalfWidth
     ) {
       stopped = { rule: 'halfWidth', at: done }
       break
@@ -568,8 +587,7 @@ export function* replicateLoop(
 
   // Count supports: ships for kills, leakers and residual; tracks for the
   // detected, tracked and engaged counts; salvos are unbounded.
-  let raidSize = 0
-  for (const ships of threatShips.values()) raidSize += ships
+  const raidSize = raidSizeOf(threatShips)
   const trackCount = threatResidual.size
   const perThreat: Record<string, McThreatSummary> = {}
   for (const [uasId, rows] of threatResidual) {

@@ -190,8 +190,9 @@ describe('stopping, rare outcomes and undefined times', () => {
   it('a half-width stop at n equals the fixed-n run at the same seed', () => {
     // End-of-run leakers with one Pk 0.5 salvo and an asset: Bernoulli(q) with
     // q = 1 - deterministic expectedKills = 0.5013 (the salvo's falloff Pk).
-    // The 95 percent half-width is about 0.98 / sqrt(n); a target of 0.1156
-    // is crossed near n 75, so the loop stops at 70 or 80 (mcRun.test.ts). A
+    // The displayed Wilson half-width is about 0.93 / sqrt(n) near p 0.5; a
+    // target of 0.1156 is crossed near n 68, so the loop stops at 70
+    // (mcRun.test.ts, and the R-F-42 test below). A
     // replicate depends on its index only, so the stopped summary is the
     // fixed-n summary at that n: optional stopping picks n, not the estimate
     // at n. Both means sit within 3 SE = 3 * 0.5 / sqrt(70) = 0.179 of q.
@@ -201,7 +202,7 @@ describe('stopping, rare outcomes and undefined times', () => {
     const stopped = runReplicates({ ...scenario, replicates: 1000, targetHalfWidth: 0.1156 })
     expect(stopped.stopped.rule).toBe('halfWidth')
     const n = stopped.stopped.at
-    expect([70, 80]).toContain(n)
+    expect(n).toBe(70)
     const fixed = runReplicates({ ...scenario, replicates: n })
     expect(fixed.stopped).toEqual({ rule: 'replicates', at: n })
     expect(canonical(stopped)).toBe(canonical({ ...fixed, stopped: stopped.stopped }))
@@ -304,5 +305,75 @@ describe('stopping, rare outcomes and undefined times', () => {
     expect(timeStatSub(summary.firstDetectS, 'detected')).toBe(
       'MC conditional mean · first single-scan hit · mean CI unavailable under 30 defined · n=10 · detected in 10 of 10 · 72% to 100% (95% Wilson)',
     )
+  })
+})
+
+describe('bounded counts over more than one ship and the displayed-interval stop', () => {
+  it('an all-zero multi-ship kill count reports 3 max / n; all at max the mirror; salvos unchanged', () => {
+    // R-F-41. A three-ship formation against an interceptor whose 1 m reach
+    // never binds: no shot, no kill, every ship alive to the end. Killed and
+    // leaked are counts over 3 ships; residual at step 0 is 3 in every
+    // replicate. At 0 of 30 the mean's upper bound is 3 * 3 / 30 = 0.3 (no
+    // independence between ships), at 3 of 3 the mirror 3 - 0.3 = 2.7 (the
+    // default taken for a finite support); the unbounded salvos count keeps
+    // its clamped t-interval, zero width at 0 of 30.
+    const { scenario, uasId } = build(0.5)
+    const uas = scenario.entities.find((e) => e.id === uasId)!
+    uas.formation = { count: 3, shape: 'line', spacingM: 50 }
+    const eff = scenario.library.find((m) => m.id === 'tst-int')!
+    eff.effector = { ...eff.effector!, maxRangeM: 1 }
+    const summary = runReplicates({ ...scenario, replicates: 30 })
+    const t = summary.perThreat[uasId]
+    expect(t.shipCount).toBe(3)
+    expect(t.killed.mean).toBe(0)
+    expect(t.killed.interval).toBe('rule-of-three')
+    expect(t.killed.lo).toBe(0)
+    expect(t.killed.hi).toBeCloseTo(0.3, 12)
+    expect(t.residual.mean[0]).toBe(3)
+    expect(t.residual.lo[0]).toBeCloseTo(2.7, 12)
+    expect(t.residual.hi[0]).toBe(3)
+    expect(last(summary.kills.hi)).toBeCloseTo(0.3, 12)
+    expect(countSub(summary.kills, summary.kills.mean.length - 1, 30))
+      .toBe('MC mean · 0 to 0.3 (95% mean CI) · n=30')
+    const salvos = summary.perEffector['e3-effector'].salvos
+    expect(salvos.mean).toBe(0)
+    expect(salvos.interval).toBe('t')
+    expect(salvos.lo).toBe(0)
+    expect(salvos.hi).toBe(0)
+  })
+
+  it('the stop rule reads the displayed leaker interval, not the t half-width', () => {
+    // R-F-42. Leakers on a one-ship raid are 0/1, so the displayed interval is
+    // Wilson (or the rule of three at 0 of n), and the stop rule tests its
+    // half-width through the same statOf path. At the fixture's q 0.5013 the
+    // Wilson half-width at n is z / (1 + z^2 / n) * sqrt(p (1 - p) / n + z^2 /
+    // (4 n^2)): 0.1140 at 70 for p 0.5, under the t half-width 1.994 * 0.5036 /
+    // sqrt(70) = 0.1200 there, so the target 0.1156 is met at 70 where the t
+    // rule needed 80 (mcRun.test.ts). The stopped n is the first checkpoint
+    // whose displayed half-width is under the target: the run 10 shorter is not.
+    const { scenario, uasId } = build(0.5)
+    const target = 0.1156
+    const stopped = runReplicates({ ...scenario, replicates: 1000, targetHalfWidth: target })
+    expect(stopped.stopped).toEqual({ rule: 'halfWidth', at: 70 })
+    const leaked = stopped.perThreat[uasId].leaked
+    expect(leaked.interval).toBe('wilson')
+    const w = wilson(Math.round(leaked.mean * 70), 70)
+    expect((leaked.hi - leaked.lo) / 2).toBeCloseTo((w.hi - w.lo) / 2, 12)
+    expect((leaked.hi - leaked.lo) / 2).toBeLessThan(target)
+    const shorter = runReplicates({ ...scenario, replicates: 60 }).perThreat[uasId].leaked
+    expect((shorter.hi - shorter.lo) / 2).toBeGreaterThanOrEqual(target)
+    // Every ship leaks when the interceptor's 1 m reach never binds: 1 of 1 in
+    // every replicate, the rule-of-three mirror 1 - 3 / n to 1, half-width
+    // 1.5 / n: 0.05 at 30 and 0.0375 at 40, so a target of 0.04 stops at 40.
+    // The t half-width of a constant sample is 0, which stopped at 30 before.
+    const eff = scenario.library.find((m) => m.id === 'tst-int')!
+    eff.effector = { ...eff.effector!, maxRangeM: 1 }
+    const all = runReplicates({ ...scenario, replicates: 1000, targetHalfWidth: 0.04 })
+    expect(all.stopped).toEqual({ rule: 'halfWidth', at: 40 })
+    const one = all.perThreat[uasId].leaked
+    expect(one.mean).toBe(1)
+    expect(one.interval).toBe('rule-of-three')
+    expect(one.lo).toBeCloseTo(0.925, 12)
+    expect(one.hi).toBe(1)
   })
 })

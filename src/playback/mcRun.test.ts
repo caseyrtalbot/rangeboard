@@ -741,11 +741,11 @@ describe('runReplicates', () => {
 
   describe('stopping rule', () => {
     // End-of-run leakers with one Pk 0.5 salvo and an asset: Bernoulli(0.5),
-    // sd about 0.5, so the 95 percent half-width is about 0.98 / sqrt(n)
-    // (t about 1.98 at n near 100). The rule checks at 30, 40, 50, ...; a
-    // target of 0.1156 is crossed near n 75 (0.98 / sqrt(75) = 0.113), so the
-    // loop stops at 70 or 80 with the sample sd where it lands; 3 SE on p-hat
-    // at n 70 moves the sd by under 7 percent, which keeps the stop in 50 to 110.
+    // a 0/1 count, so the displayed interval is Wilson (R-F-42) with half-width
+    // about 0.93 / sqrt(n) near p 0.5 (0.1140 at n 70, 0.1067 at 80). The rule
+    // checks at 30, 40, 50, ...; a target of 0.1156 is crossed near n 68, so the
+    // loop stops at 70 with the sample p where it lands; 3 SE on p-hat at n 70
+    // moves the half-width by under 7 percent, which keeps the stop in 50 to 110.
     const TARGET_H = 0.1156
 
     it('stops before the cap once the leaker half-width is under the target', () => {

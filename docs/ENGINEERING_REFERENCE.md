@@ -263,14 +263,17 @@ Each fact below has exactly one definition. Read it there; never add a second co
   samples of `total` run, and the `defined` fraction with a Wilson interval, built from
   `meanInterval`, `quantile` and `wilson` in `src/te/calc/stats.ts` (the one engine
   dependency on `src/te/`; import a statistic from there, never copy it). `statOf` takes
-  the statistic's kind (R-D-39): a time keeps the t-interval; a count clamps it to
+  the statistic's kind (R-D-39, R-F-41): a time keeps the t-interval; a count clamps it to
   [0, max] (ships, tracks, or unbounded for salvos); a 0/1 count (max 1) takes the Wilson
-  interval, and at 0 of n or n of n the rule-of-three bound 3 / n from the observed end.
+  interval; a count with a finite max at 0 of n reports the rule-of-three upper bound
+  3 max / n on its mean (no independence between ships), and at n of n the mirror
+  max - 3 max / n; an all-zero unbounded count keeps its zero-width clamped t-interval.
   `p10`/`p90` are NaN under `BAND80_MIN_N` (10) samples and `p025`/`p975` under
   `BAND95_MIN_N` (40) (R-D-40). `McSummary.firmTrackS` is the earliest `stableTrackAtS`
   per replicate; `firstDetectS` is the first single-scan hit (R-D-43). The replicate loop
-  stops after 30 replicates, and every 10 after that, when the 95 percent t half-width of
-  the end-of-run leaker mean is under `targetHalfWidth`; `McSummary.stopped` records the
+  stops after 30 replicates, and every 10 after that, when the half-width of the displayed
+  interval on the end-of-run leaker mean (the leakers `Stat` through `statOf` over the
+  raid's ships, R-F-42) is under `targetHalfWidth`; `McSummary.stopped` records the
   rule and the replicate. Panels read a time `Stat` through `timeStatSub(stat, quantity)`
   (names the single-scan-hit basis, shows the defined fraction's Wilson interval, withholds
   the mean CI under `TIME_CI_MIN_N` 30 defined; R-D-41) and a band step through

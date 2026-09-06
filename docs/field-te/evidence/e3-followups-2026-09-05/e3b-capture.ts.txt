@@ -1,0 +1,34 @@
+import { expect, it } from 'vitest'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { assessAllThreats } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates, runSensitivity } from './mcRun'
+import { fillScenario } from '../io/persist'
+import type { Scenario } from '../model/types'
+import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import layered from './__fixtures__/layered-acoustic-merops.json'
+const dir = 'docs/field-te/evidence/e3-followups-2026-09-05'
+const tag = process.env.E3B_TAG ?? 'scratch'
+it('preserves the original deterministic and seeded outputs', () => {
+  const scenario = { ...probe, replicates: 4 } as Scenario
+  const assessments = assessAllThreats(scenario)
+  const value = JSON.stringify({ assessments, report: resolveEngagements(scenario, assessments),
+    aleatory: runReplicates({ ...scenario, uncertainty: 'aleatory' }),
+    total: runReplicates({ ...scenario, uncertainty: 'total' }),
+    sensitivity: runSensitivity(scenario) })
+  const file = `${dir}/numerical-${tag}.json`
+  if (process.env.E3B_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+}, 120000)
+it('stop rule on the firing fixture and a multi-ship count on the layered fixture', () => {
+  const firing = { ...probe, replicates: 200, targetHalfWidth: 0.04 } as Scenario
+  const layer = fillScenario(layered as unknown as Scenario)
+  const value = JSON.stringify({
+    firingStop: runReplicates({ ...firing, uncertainty: 'aleatory' }),
+    firingStopTotal: runReplicates({ ...firing, uncertainty: 'total' }),
+    layered: runReplicates({ ...layer, seed: 7, replicates: 30, uncertainty: 'aleatory' }),
+  })
+  const file = `${dir}/stop-${tag}.json`
+  if (process.env.E3B_CAPTURE === '1') writeFileSync(file, value)
+  else expect(value === readFileSync(file, 'utf8')).toBe(true)
+}, 120000)
