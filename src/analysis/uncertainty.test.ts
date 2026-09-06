@@ -3,7 +3,8 @@ import { emptyScenario } from '../model/seed'
 import type { Entity, Scenario, SpecModel } from '../model/types'
 import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
-import { betaQuantile } from '../te/calc/stats'
+import { mulberry32 } from '../geometry/prng'
+import { betaQuantile, meanInterval, quantile } from '../te/calc/stats'
 import {
   PF_SPREAD,
   normalQuantile,
@@ -295,5 +296,104 @@ describe('sampleScenario', () => {
     expect(strip(out.doctrine, ['declareHostileS'])).toEqual(strip(s.doctrine, ['declareHostileS']))
     expect(strip(out, ['library', 'connections', 'doctrine'])).toEqual(
       strip(s, ['library', 'connections', 'doctrine']))
+  })
+})
+
+/** The first `n` uniforms of one mulberry32 stream, plus the hash range ends 0 and 1. */
+function uniforms(n: number, seed = 1): number[] {
+  const next = mulberry32(seed)
+  return [0, 1, ...Array.from({ length: n }, () => next())]
+}
+
+describe('support and convergence', () => {
+  it('a sampled probability, time and RCS never leave their support over 2000 uniforms', () => {
+    // The support is exact: a beta lies in the open unit interval, a triangular
+    // in [nominal (1 + lo), nominal (1 + hi)], a lognormal in (0, Infinity).
+    const tri = PF_SPREAD.trackInitS.spread
+    for (const u of uniforms(2000)) {
+      for (const spread of [
+        PF_SPREAD.pk.spread,
+        { kind: 'beta', successes: 2, trials: 2 } as const,
+        { kind: 'beta', successes: 61, trials: 61 } as const,
+      ]) {
+        const p = sampleSpread(0.7, spread, u)
+        expect(p).toBeGreaterThan(0)
+        expect(p).toBeLessThan(1)
+      }
+      const s = sampleSpread(10, tri, u)
+      expect(s).toBeGreaterThanOrEqual(7)
+      expect(s).toBeLessThanOrEqual(15)
+      const r = sampleSpread(0.2, PF_SPREAD.rcsM2.spread, u)
+      expect(r).toBeGreaterThan(0)
+      expect(Number.isFinite(r)).toBe(true)
+    }
+    // End to end: the written pk of a sampled scenario keeps the same support.
+    for (const u of [0, 1e-9, 0.5, 1 - 1e-9, 1]) {
+      const out = sampleScenario(scenario([INTERCEPTOR]), () => u)
+      expect(out.library[0].effector!.pk).toBeGreaterThan(0)
+      expect(out.library[0].effector!.pk).toBeLessThan(1)
+    }
+  })
+
+  it('replicate means converge to the analytic lognormal and triangular means within 3 SE', () => {
+    // Lognormal 3 dB: sigma_ln = 0.3 ln 10 = 0.6908, mean exp(sigma^2 / 2) = 1.2695
+    // times the nominal, sd 0.9927; SE 0.0628 at n 250 and 0.0157 at n 4000.
+    // Triangular -0.3 / +0.5 on 10: bounds 7 and 15, mode 10, mean (7 + 10 + 15) / 3
+    // = 10.6667, variance (a^2 + b^2 + c^2 - ab - ac - bc) / 18 = 49 / 18, sd 1.6499;
+    // SE 0.1044 at n 250 and 0.0261 at n 4000.
+    const us = uniforms(4000).slice(2)
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+    const log = us.map((u) => sampleSpread(1, PF_SPREAD.detectRangeM.spread, u))
+    const tri = us.map((u) => sampleSpread(10, PF_SPREAD.trackInitS.spread, u))
+    expect(Math.abs(mean(log.slice(0, 250)) - 1.2695)).toBeLessThan(3 * 0.0628)
+    expect(Math.abs(mean(log) - 1.2695)).toBeLessThan(3 * 0.0157)
+    expect(Math.abs(mean(tri.slice(0, 250)) - 10.6667)).toBeLessThan(3 * 0.1044)
+    expect(Math.abs(mean(tri) - 10.6667)).toBeLessThan(3 * 0.0261)
+    // The lognormal nominal is the median, not the mean: the sample median sits
+    // at 1 within 3 SE = 3 sqrt(0.25 / 4000) / f(1), f(1) = 1 / (sigma sqrt(2 pi))
+    // = 0.5776, so 0.041, while the mean sits a quarter above it.
+    expect(Math.abs(quantile(log, 0.5) - 1)).toBeLessThan(0.041)
+    expect(mean(log)).toBeGreaterThan(1.2)
+  })
+
+  it('the mean interval narrows with n while the p10 and p90 stay at the analytic quantiles', () => {
+    // Lognormal 3 dB on 1: p10 = 10^(-0.3 z90) = 0.4126 and p90 = 2.4236 with
+    // z90 = 1.2816. A sample quantile has SE sqrt(q (1 - q) / n) / f(x_q); with
+    // f(x_q) = phi(z_q) / (x_q sigma_ln) that is 0.0109 for p10 and 0.0640 for p90
+    // at n 2000. The 95 percent mean interval half-width is t sd / sqrt(n) =
+    // 1.9612 * 0.9927 / sqrt(2000) = 0.0435; the sample sd of a lognormal with
+    // excess kurtosis 16.9 has relative SE sqrt(18.9 / (4 n)) = 4.9 percent at
+    // n 2000, so 3 SE is 15 percent of the half-width. The interval on the mean
+    // says nothing about the replicate spread: p10 and p90 do not move with n.
+    const us = uniforms(2000).slice(2)
+    const xs = us.map((u) => sampleSpread(1, PF_SPREAD.detectRangeM.spread, u))
+    const half = (values: number[]) => {
+      const { lo, hi } = meanInterval(values, 0.95)
+      return (hi - lo) / 2
+    }
+    expect(Math.abs(half(xs) - 0.0435)).toBeLessThan(0.15 * 0.0435)
+    expect(half(xs.slice(0, 500))).toBeGreaterThan(half(xs))
+    expect(Math.abs(quantile(xs, 0.1) - 0.4126)).toBeLessThan(3 * 0.0109)
+    expect(Math.abs(quantile(xs, 0.9) - 2.4236)).toBeLessThan(3 * 0.064)
+    expect(Math.abs(quantile(xs.slice(0, 500), 0.1) - 0.4126)).toBeLessThan(3 * 0.0109 * 2)
+    // The half-width covers the mean, not the replicates: most samples lie outside it.
+    const { lo, hi } = meanInterval(xs, 0.95)
+    const inside = xs.filter((x) => x >= lo && x <= hi).length
+    expect(inside / xs.length).toBeLessThan(0.1)
+  })
+
+  it('a connection with no latency samples an inert 0 when doctrine is off', () => {
+    // The nominal is 0 with doctrine off, so the triangular bounds are 0 and 0:
+    // the field is enumerated and written, and the value cannot move.
+    const s = { ...scenario([RADAR]), doctrine: { ...DEFAULT_FIRE_DOCTRINE, enabled: false } }
+    expect(uncertainFields(s).map((f) => `${f.modelId}.${f.field}`)).toContain('k1.latencyS')
+    for (const u of [0, 0.1, 0.5, 0.9, 1]) {
+      const out = sampleScenario(s, (m, f) => (m === 'k1' && f === 'latencyS' ? u : null))
+      expect(out.connections[0].latencyS).toBe(0)
+      // A stated latency still samples with doctrine off.
+      const stated = sampleScenario(s, (m, f) => (m === 'k2' && f === 'latencyS' ? u : null))
+      expect(stated.connections[1].latencyS).toBeCloseTo(
+        sampleSpread(6, PF_SPREAD.latencyS.spread, u), 9)
+    }
   })
 })
