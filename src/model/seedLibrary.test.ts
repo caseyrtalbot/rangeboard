@@ -84,17 +84,18 @@ describe('seed library provenance', () => {
     expect(offenders).toEqual([])
   })
 
-  it('the two sourced kill probabilities carry their stated trial counts', () => {
+  it('the Stinger and Leonidas kill probabilities keep their counts in the text, not as a spread', () => {
+    // R-F-35: 2 of 2 and 61 of 61 (49 in one pulse) are outside their trial
+    // domain, so both rows take the PF pseudo-beta around the nominal 0.7
+    // like every other effector; the counts stay in the row value.
     const rows = ['lib-stinger', 'lib-leonidas'].map((id) => {
       const model = SEED_LIBRARY.find((m) => m.id === id)
       return model?.provenance?.find((row) => row.field === 'pk')
     })
-    expect(rows.map((row) => row?.spread)).toEqual([
-      { kind: 'beta', successes: 2, trials: 2 },
-      { kind: 'beta', successes: 61, trials: 61 },
-    ])
-    // No pseudo flag: these are stated trials, not the PF table pseudo-counts.
+    expect(rows.map((row) => row?.spread)).toEqual([undefined, undefined])
     expect(rows.map((row) => row?.basis)).toEqual(['pf', 'pf'])
+    expect(rows[0]?.value).toContain('2 of 2')
+    expect(rows[1]?.value).toContain('61 of 61')
   })
 
   it('no model answers one field twice', () => {

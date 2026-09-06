@@ -223,12 +223,15 @@ Each fact below has exactly one definition. Read it there; never add a second co
   from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at
   `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, in `attrition.ts` beside
   `SIZE_PENALTY`) because a stated speed is a maximum. `interceptAt` is the one predicted
-  intercept, solved by three fixed-point passes, and it caps the flight at the end of the
-  envelope interval that holds the release: a flight past that end lands at the end and the
-  event carries `flightCapped`. It also reports `infeasible` (R-D-44): the slant to the
-  credited point exceeds the reach `v * (tEffectS - release)` by more than one DT of flight,
-  which happens when the passes do not converge (target speed near or above the
-  interceptor's); both selection passes decline such a shot (no event, no round, no
+  intercept: the exact constant-speed meeting time along the path (`analyticTofS`, R-F-43:
+  the target holds the first point before its delay and the last point after the path ends,
+  and on each straight segment the formation member moves at constant velocity, so the
+  meeting time is the smallest root of a quadratic per phase in time order), and it caps the
+  flight at the end of the envelope interval that holds the release: a flight past that end
+  lands at the end and the event carries `flightCapped`. It also reports `infeasible`
+  (R-D-44): the slant to the credited point exceeds the reach `v * (tEffectS - release)` by
+  more than one DT of flight, which with the exact solution happens only at a cap or when
+  no meeting exists; both selection passes decline such a shot (no event, no round, no
   cooldown). `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
   kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
   commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` stay PF. Per-system factors and spec

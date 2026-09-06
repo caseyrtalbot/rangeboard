@@ -1,0 +1,51 @@
+const { chromium } = require('playwright')
+;(async () => {
+  const browser = await chromium.launch()
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+  await ctx.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+  const page = await ctx.newPage()
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await page.goto('http://localhost:5322/')
+  await page.waitForFunction(() => Boolean(window.__store))
+  const built = await page.evaluate(() => {
+    const s = window.__store.getState()
+    const ids = {}
+    const last = (kind) => { const es = window.__store.getState().scenario.entities.filter((e) => e.kind === kind); return es[es.length - 1].id }
+    s.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 }); ids.sensor = last('sensor')
+    s.addEntityFromModel('lib-coyote', { x: 1697, y: -1697 }); ids.effector = last('effector')
+    s.addEntityFromModel('lib-faadc2', { x: -500, y: 0 }); ids.c2 = last('c2')
+    s.addEntityFromModel('lib-mavic3', { x: 0, y: -3000 }); ids.uas = last('uas')
+    s.beginPath(ids.uas)
+    s.addDraftPoint({ x: 0, y: -100 })
+    s.finishPath()
+    return ids
+  })
+  const readRow = async () => {
+    const html = await page.content()
+    const i = html.indexOf('<span class="rl">Engage</span>')
+    return i < 0 ? null : html.slice(i, i + 400).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  }
+  // Untyped hand-drawn links first: the gate does not bind.
+  await page.evaluate((ids) => {
+    const s = window.__store.getState()
+    s.patchScenario({ connections: [
+      { id: 'con-1', fromId: ids.sensor, toId: ids.c2, label: '', latencyS: 2 },
+      { id: 'con-2', fromId: ids.c2, toId: ids.effector, label: '', latencyS: 3 },
+    ] })
+    s.select({ entityIds: [ids.uas] })
+    s.setRightTab('analysis')
+  }, built)
+  await page.waitForSelector('[data-detail="threat"]')
+  const untyped = { status: await page.evaluate((id) => window.__store.getState().analysis?.assessments?.find((a) => a.uasId === id)?.status ?? null, built.uas), row: await readRow() }
+  // Typed links (a confidence types a hop): no fire-control source on the route.
+  await page.evaluate(() => {
+    const s = window.__store.getState()
+    s.patchScenario({ connections: s.scenario.connections.map((c) => ({ ...c, confidence: 'researched' })) })
+  })
+  await page.waitForFunction(() => document.body.innerText.includes('no fire-control source'), null, { timeout: 15000 }).catch(() => {})
+  const typed = { status: await page.evaluate((id) => window.__store.getState().analysis?.assessments?.find((a) => a.uasId === id)?.status ?? null, built.uas), row: await readRow() }
+  await page.screenshot({ path: process.argv[2] + '/rf20-threat-detail.png' })
+  console.log(JSON.stringify({ errors, untyped, typed }, null, 1))
+  await browser.close()
+})().catch((e) => { console.error(e); process.exit(1) })

@@ -149,11 +149,29 @@ describe('DetailPane', () => {
       ['survival', 'Survival'],
     ])
     const file = section(html, 'file')
-    for (const label of ['Altitude', 'Speed', 'Held by', 'Arrival', 'CPA', 'RCS', 'Swerling']) {
+    for (const label of ['Altitude', 'Speed', 'Held by', 'Engage', 'Arrival', 'CPA', 'RCS', 'Swerling']) {
       expect(file).toContain(`<span class="rl">${label}</span>`)
     }
     expect(file).toContain('no defended asset placed')
     expectNoControls(html)
+  })
+
+  it('names the missing fire-control source when a typed route blocks the Coyote (R-F-20)', () => {
+    // The beforeEach links are untyped, so the route does not bind the gate.
+    const uas = entityOf('uas')
+    const before = section(render(uas.id), 'file')
+    expect(before).not.toContain('no fire-control source')
+    // Typed links (a confidence is what types a hop) make Giraffe 1X to FAAD C2
+    // to Coyote a fully typed route with no fire-control sensor: no-fc-uplink.
+    const store = useStore.getState()
+    store.patchScenario({
+      connections: store.scenario.connections.map((c) => ({ ...c, confidence: 'documented' as const })),
+    })
+    const file = section(render(uas.id), 'file')
+    expect(file).toContain('<span class="rl">Engage</span>')
+    expect(file).toContain('no fire-control source on the route')
+    expect(file).toContain('needs a fire-control track from')
+    expect(file).toContain('KuRFS')
   })
 
   it('renders the system pane with the hop through this node', () => {

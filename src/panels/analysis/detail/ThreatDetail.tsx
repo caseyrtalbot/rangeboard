@@ -16,6 +16,7 @@ import type { TrackPhase } from '../../../playback/trackState'
 import { buildTrackTimeline, trackStatesAt } from '../../../playback/trackState'
 import { useStore } from '../../../state/store'
 import { modelFor, pathSpeed } from '../../../model/scenario'
+import { profileFor } from '../../../model/integration'
 import { SURVIVAL_LABELS } from '../widgets/labels'
 import { bandNote, currentSummary } from '../widgets/mc'
 import { DetailHeader } from './DetailHeader'
@@ -133,6 +134,24 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     const firstSensor = assessment?.firstDetectSensorId
       ? scenario.entities.find((e) => e.id === assessment.firstDetectSensorId)
       : undefined
+    // Why no shot: a fully typed route to a command-guided effector with no
+    // fire-control sensor on it blocks that effector (sim.ts fcBlocked); name
+    // the effector and the sensors its profile accepts (R-F-20).
+    const engageText = !assessment
+      ? DASH
+      : assessment.status === 'no-fc-uplink'
+        ? `no fire-control source on the route · ${scenario.entities
+            .filter((e) => e.kind === 'effector')
+            .flatMap((e) => {
+              const profile = profileFor(e.specId)
+              if (profile?.guidance !== 'fc-uplink' || !profile.fcSources?.length) return []
+              const names = profile.fcSources
+                .map((id) => scenario.library.find((m) => m.id === id)?.name ?? id)
+                .join(' or ')
+              return [`${e.name} needs a fire-control track from ${names}`]
+            })
+            .join(' · ')}`
+        : assessment.status.replaceAll('-', ' ')
     const rows: DetailRow[] = [
       {
         label: 'Altitude',
@@ -145,6 +164,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       { label: 'Bearing', value: bearingText, unit: sensor ? ' °' : undefined },
       { label: 'Held by', value: holdNames.length > 0 ? holdNames.join(' · ') : 'none' },
       { label: 'Classification', value: state ? state.classification : DASH },
+      { label: 'Engage', value: engageText },
       { label: 'Arrival', value: arrivalText },
       { label: 'CPA', value: cpaText },
       {

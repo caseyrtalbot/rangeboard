@@ -1,5 +1,5 @@
 import type { EffectorSpec, FireDoctrine, Vec2 } from '../model/types'
-import { dist, posAtTime } from '../geometry/geo'
+import { bearingDeg, dist, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { memberPositions } from './tracks'
 import { expenditureChannel } from './pk'
@@ -53,21 +53,116 @@ export function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
 }
 
 /**
+ * Smallest tau at or after tau0 (and at or before tau1) with
+ * |C + B tau|^2 + dAlt^2 = (v tau)^2: the interceptor, flying the slant at
+ * constant v from tau 0, meets a target moving at constant velocity B from
+ * position C at tau 0. Null when no such tau exists in the range.
+ */
+function meetTau(
+  C: Vec2,
+  B: Vec2,
+  dAltM: number,
+  v: number,
+  tau0: number,
+  tau1: number,
+): number | null {
+  const a = B.x * B.x + B.y * B.y - v * v
+  const b = 2 * (C.x * B.x + C.y * B.y)
+  const c = C.x * C.x + C.y * C.y + dAltM * dAltM
+  const roots: number[] = []
+  if (Math.abs(a) < 1e-12) {
+    if (Math.abs(b) > 1e-12) roots.push(-c / b)
+  } else {
+    const disc = b * b - 4 * a * c
+    if (disc < 0) return null
+    const sq = Math.sqrt(disc)
+    roots.push((-b - sq) / (2 * a), (-b + sq) / (2 * a))
+  }
+  let best: number | null = null
+  for (const r of roots) {
+    if (r < tau0 - EPS || r > tau1 + EPS) continue
+    if (best == null || r < best) best = r
+  }
+  return best == null ? null : Math.max(best, tau0)
+}
+
+/**
+ * Exact constant-speed flight time from `releaseS` to the ship (R-F-43): the
+ * target flies its path at ts.speedMps after ts.delayS, holding the first
+ * point before the delay and the last point after the path ends, and on each
+ * straight segment its formation member moves at constant velocity, so the
+ * meeting time is the smallest root of a quadratic per phase, taken in time
+ * order. Null only when no phase yields a meeting (a path that never ends).
+ */
+function analyticTofS(
+  ts: ThreatState,
+  es: EffectorState,
+  releaseS: number,
+  memberIdx: number,
+  dAltM: number,
+): number | null {
+  const v = averageFlyoutMps(es.spec)
+  const pts = ts.path!.points
+  const u = ts.speedMps
+  const L = es.entity.pos
+  const offsetAt = (headingDeg: number): Vec2 => {
+    const ms = memberPositions(ts.entity, { x: 0, y: 0 }, headingDeg)
+    return ms[Math.min(memberIdx, ms.length - 1)]
+  }
+  // Relative position of the member when the entity is at `pos` with `heading`.
+  const rel = (pos: Vec2, headingDeg: number): Vec2 => {
+    const o = offsetAt(headingDeg)
+    return { x: pos.x + o.x - L.x, y: pos.y + o.y - L.y }
+  }
+  const still = (P: Vec2, tau0: number, tau1: number) =>
+    meetTau(P, { x: 0, y: 0 }, dAltM, v, tau0, tau1)
+  const heading0 = bearingDeg(pts[0], pts[1])
+  const INF = Number.POSITIVE_INFINITY
+  // Before the delay the target holds the first point.
+  if (releaseS < ts.delayS) {
+    const tau = still(rel(pts[0], heading0), 0, ts.delayS - releaseS)
+    if (tau != null) return tau
+  }
+  let tStart = ts.delayS
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1]
+    const b = pts[i]
+    const seg = dist(a, b)
+    if (seg === 0) continue
+    const tEnd = tStart + seg / u
+    if (tEnd > releaseS) {
+      const heading = bearingDeg(a, b)
+      const B = { x: ((b.x - a.x) / seg) * u, y: ((b.y - a.y) / seg) * u }
+      const A = rel(a, heading) // member position at tStart
+      const tau0 = Math.max(0, tStart - releaseS)
+      // Position at release-relative tau: A + B (tau - (tStart - releaseS)).
+      const shift = tStart - releaseS
+      const C = { x: A.x - B.x * shift, y: A.y - B.y * shift }
+      const tau = meetTau(C, B, dAltM, v, tau0, tEnd - releaseS)
+      if (tau != null) return tau
+    }
+    tStart = tEnd
+  }
+  // After the path ends the target holds the last point with the last heading.
+  const last = pts[pts.length - 1]
+  const headingEnd = bearingDeg(pts[pts.length - 2], last)
+  return still(rel(last, headingEnd), Math.max(0, tStart - releaseS), INF)
+}
+
+/**
  * Predicted intercept for one ship: the target position at tS + engageTimeS + timeOfFlight,
- * solved by three fixed-point passes (flight time from the slant at the previous pass).
- * The returned position and slant are sampled at the returned tEffectS. With no stated
- * speed the flight time is 0 and the result is the position at tS + engageTimeS.
- * `membersAt` lets the sweep supply its per-tick geometry cache; the default samples the path.
- * `capS` is the end of the in-range interval that contains tS: a target faster than the
- * interceptor recedes and the passes never close, so a flight past the cap is held at
- * the cap, sampled there, and reported `capped` (R-F-7). Only the flight is capped: a
- * release at or before the cap with a flight past it; a release after the cap is not.
- * `infeasible` (R-D-44) is true when the interceptor cannot be at the credited point when
- * the effect is credited under the same constant-speed model: the slant to the sampled
- * point exceeds the reach `v * (tEffectS - release)` by more than one DT of flight,
- * `v * DT`. The passes are a fixed-point iteration that does not converge when the
- * target's speed approaches or exceeds the interceptor's, and the cap only moves where
- * such a credit lands; the caller declines an infeasible shot. Never true without a flyout.
+ * with the flight time the exact constant-speed meeting time along the path
+ * (analyticTofS, R-F-43). The returned position and slant are sampled at the returned
+ * tEffectS. With no stated speed the flight time is 0 and the result is the position at
+ * tS + engageTimeS. `membersAt` lets the sweep supply its per-tick geometry cache; the
+ * default samples the path. `capS` is the end of the in-range interval that contains tS: a
+ * flight past the cap is held at the cap, sampled there, and reported `capped` (R-F-7).
+ * Only the flight is capped: a release at or before the cap with a flight past it; a
+ * release after the cap is not. `infeasible` (R-D-44) is true when the interceptor cannot
+ * be at the credited point when the effect is credited: the slant to the sampled point
+ * exceeds the reach `v * (tEffectS - release)` by more than one DT of flight, `v * DT`,
+ * which after the exact solution happens only at a cap or when no meeting exists; the
+ * caller declines an infeasible shot. Never true without a flyout.
  */
 export function interceptAt(
   ts: ThreatState,
@@ -83,21 +178,28 @@ export function interceptAt(
     const pos = members[Math.min(memberIdx, members.length - 1)]
     return { pos, slantM: slantRangeM(dist(es.entity.pos, pos), dAltM) }
   }
-  let tofS = 0
-  for (let pass = 0; pass < 3; pass++) {
-    const next = timeOfFlightS(es.spec, sampleAt(tS + es.engageTimeS + tofS).slantM)
-    if (next === tofS) break
-    tofS = next
-  }
-  // The geometry is sampled at the returned time, so the last update is kept.
-  // The cap trims the flight only: a release (tS + engageTimeS) already past
-  // the window end is not a flight to cap, and without a stated speed there
-  // is no flight, so the flyout-free arithmetic is unchanged.
   const releaseS = tS + es.engageTimeS
+  const v = averageFlyoutMps(es.spec)
+  // Without a stated speed there is no flight, so the flyout-free arithmetic is unchanged.
+  // A ship with no path (or no speed) is stationary where the sampler puts it.
+  const moving = ts.path != null && ts.path.points.length >= 2 && ts.speedMps > 0
+  const tofS =
+    v <= 0
+      ? 0
+      : moving
+        ? analyticTofS(ts, es, releaseS, memberIdx, dAltM)
+        : sampleAt(releaseS).slantM / v
+  if (tofS == null) {
+    // No meeting on a path that never ends: credit nothing, decline.
+    const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
+    return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
+  }
+  // The geometry is sampled at the returned time. The cap trims the flight
+  // only: a release (tS + engageTimeS) already past the window end is not a
+  // flight to cap.
   const capped = releaseS <= capS && releaseS + tofS > capS
   const tEffectS = capped ? capS : releaseS + tofS
   const at = sampleAt(tEffectS)
-  const v = averageFlyoutMps(es.spec)
   const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * DT
   return { ...at, tEffectS, capped, infeasible }
 }

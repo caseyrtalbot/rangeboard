@@ -45,31 +45,20 @@ live in this file under Next.
   events and gates identical), and the editor couples Initiation M and N (F-16, browser-checked
   through the library editor inputs, `browser-check.md`). Register cut to six rows
   (`347b09e`), then retired in this commit.
+- Done 2026-09-05 (this commit, capture `field-te/evidence/e2-solver-spreads-2026-09-05/`):
+  R-F-43 closed-form intercept solver (`analyticTofS`; firing fixture moves under 0.06 DT and
+  Pk under 1e-5; detection fixture one replicate's effect one DT earlier; layered identical);
+  R-F-35 Stinger and Leonidas `pk` rows take the PF pseudo-beta (no capture moves); F-62
+  SPEXER 2000 `refRcsM2` 0.04 recorded as a PF provenance row; R-F-20 `Engage` row in the
+  Threat detail names the missing fire-control source (browser-checked, `browser-check.md`).
+  The engine rule for a typed route without a fire-control source is unchanged.
 
 ## Next
 
-1. Four open choices, each with the specialist review's recommendation (2026-09-05), await
-   Casey's word in the conversation:
-   - R-F-35 seed Pk spreads. Recommendation: drop the Stinger (2 of 2) and Leonidas (61 of 61)
-     `spread` rows so both take the PF pseudo-beta around 0.7; the rows' `basis` is already
-     `pf`. Only `total` mode moves, and only where those two fire; `seedLibrary.test.ts:88-98`
-     changes. Capture on the firing fixture.
-   - R-F-43 intercept solver. Recommendation: replace the three fixed-point passes with the
-     closed-form constant-speed root per path segment (`analyticIntercept` in
-     `field-te/evidence/e2-motion-2026-09-05/e2.motion.study.test.ts.txt`), keeping the cap
-     and the `infeasible` test. Firing fixture moves under 0.1 DT and Pk under 1e-5.
-   - F-62 SPEXER 2000 `refRcsM2` 0.04. Recommendation: keep 0.04 and add a `refRcsM2`
-     provenance row (`basis: 'pf'`, back-solved from the datasheet's 9 km UAV and 6 km micro-UAV
-     lines by the fourth-root law). No output moves. Dropping to 0.01 would move a 0.01 m2
-     target's range from 4243 m to 6000 m.
-   - R-F-20 remainder. Recommendation: keep the engine rule (a typed route without a
-     fire-control source blocks a command-guided Coyote; the untyped hand-drawn edge is the
-     degrade path) and add one `Engage` row to the Threat detail Track file section
-     (`ThreatDetail.tsx:118-160`) that names the missing source from `profile.fcSources`.
-     UI text only; browser check.
-2. Wave 3, E2 next family after those: Radar; Geometry and time; EO/IR, acoustic and RF;
-   Environment (dossiers in `field-te/model-evidence/`).
-3. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
+1. Wave 3, E2: poll Casey on the next family: Radar; Geometry and time; EO/IR, acoustic and
+   RF; Environment (dossiers in `field-te/model-evidence/`). No open finding remains in any
+   of them; each study starts from its dossier's unsupported-conditions section.
+2. Wave 4: design steps 6, 7, 9, 10, 13; then 8, 11, 12; then 14. Wave 5: T1 static bundle,
    then A1.
 
 ## Inputs Casey holds

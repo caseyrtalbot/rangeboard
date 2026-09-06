@@ -1098,16 +1098,12 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // Threat closes radially from x = 4700 at 20 m/s (west), so
     // x(tau) = 4700 - 20 tau and the slant equals x while x > 0.
     // Window opens at x = 4600: tau = 5, a grid point, so the one shot is
-    // assigned at t = 5. Three fixed-point passes from a 0 flight time:
-    //   pass 0: tEffect 15,      x 4400,    flight 4400/140 = 31.4286
-    //   pass 1: tEffect 46.4286, x 3771.43, flight 26.9388
-    //   pass 2: tEffect 41.9388, x 3861.22, flight 27.5802
-    // so tEffectS = 5 + 10 + 27.5802 = 42.5802 and the intercept is sampled
-    // there, x 4700 - 20 * 42.5802 = 3848.40 (the slant used for the
-    // falloff), within one DT of t + E + 27.5 (the exact fixed point is
-    // 4400 / (140 + 20) = 27.5 s at 3850 m). Pk at the intercept:
-    // 0.5 * (1 - 0.3 * 3848.40/4600). Moved at wave 2 from 35.02 s at the
-    // stated 200 m/s.
+    // assigned at t = 5. Release at 15 with the target at x 4400; the exact
+    // constant-speed meeting (R-F-43) is 4400 / (140 + 20) = 27.5 s later, so
+    // tEffectS = 42.5 and the intercept is sampled there, x 4700 - 20 * 42.5
+    // = 3850 (the slant used for the falloff). Pk at the intercept:
+    // 0.5 * (1 - 0.3 * 3850/4600). Before the closed form, three fixed-point
+    // passes gave 42.5802 s and 3848.40 m.
     const scenario = legacyScenario()
     const eff = interceptor({
       pk: 0.5,
@@ -1133,15 +1129,14 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     expect(r.events).toHaveLength(1)
     const ev = r.events[0]
     expect(ev.tS).toBeCloseTo(5, 9)
-    const tof2 = (4700 - 20 * (15 + (4700 - 20 * (15 + 4400 / 140)) / 140)) / 140
-    expect(tof2).toBeCloseTo(27.5802, 4)
-    expect(ev.tEffectS).toBeCloseTo(15 + tof2, 9)
-    expect(Math.abs(ev.tEffectS - (5 + 10 + 27.5))).toBeLessThan(0.5)
+    const tof = 4400 / (140 + 20)
+    expect(tof).toBe(27.5)
+    expect(ev.tEffectS).toBeCloseTo(15 + tof, 9)
     expect(ev.flightCapped).toBeUndefined()
     // The intercept point is where posAtTime puts the target at tEffectS.
     const at = posAtTime(points, 20, 0, ev.tEffectS).pos
-    const xAt = 4700 - 20 * (15 + tof2)
-    expect(xAt).toBeCloseTo(3848.4, 1)
+    const xAt = 4700 - 20 * (15 + tof)
+    expect(xAt).toBeCloseTo(3850, 9)
     expect(at.x).toBeCloseTo(xAt, 6)
     expect(at.y).toBeCloseTo(0, 9)
     expect(ev.pk).toBeCloseTo(0.5 * (1 - 0.3 * (xAt / 4600)), 9)
@@ -1220,11 +1215,8 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     }
 
     // Receding but slower than the interceptor: 70 against 20 m/s from
-    // x = 1000, r at release 1200 m, true flight 1200 / 50 = 24.0 s. The
-    // passes climb to 23.44 s and credit the effect 0.56 s early, 28 m
-    // beyond the reach 70 * 23.44 = 1640.8 m; that is inside the one-DT
-    // tolerance 70 * 0.5 = 35 m, so the shot is taken: a solver residual is
-    // not an infeasible intercept.
+    // x = 1000, r at release 1200 m, exact flight 1200 / (70 - 20) = 24.0 s
+    // (R-F-43), reach 1680 m equal to the need: the shot is taken.
     const slow = [
       { x: 1000, y: 0 },
       { x: 8000, y: 0 },
@@ -1232,7 +1224,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     const slower = resolveEngagements(build(false, { ...near, effector: { ...near.effector!, maxRangeM: 5000 } }, slow, 20))
     expect(slower.events).toHaveLength(1)
     expect(slower.events[0].flightCapped).toBeUndefined()
-    expect(slower.events[0].tEffectS).toBeCloseTo(10 + 23.44, 1)
+    expect(slower.events[0].tEffectS).toBeCloseTo(10 + 24, 9)
 
     // A closing target at the same speeds lands its effect in flight: no flag.
     const closing = build(false)
