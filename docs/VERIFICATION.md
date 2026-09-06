@@ -1,7 +1,7 @@
 # RangeBoard verification guide
 
-Current procedure. Read with [AGENTS.md](../AGENTS.md). Actual run results belong in the
-[current handoff](AI_HANDOFF.md) and linked evidence, not in this guide.
+Current procedure. Read with [CLAUDE.md](../CLAUDE.md). Run results belong in a dated
+record under `field-te/` and its evidence directory, not in this guide.
 
 ## Test conventions
 
@@ -42,9 +42,8 @@ Current procedure. Read with [AGENTS.md](../AGENTS.md). Actual run results belon
 
 ## Reusable browser entrypoints
 
-Start `npm run dev -- --port <available-port> --strictPort`. Track the server/session you
-start and stop only that process. Use the runtime's actual permission mechanism; old
-sandbox flags and fixed port assumptions are not portable instructions.
+Start `npm run dev -- --port <available-port> --strictPort`. Track the server you start
+and stop only that process.
 
 Use an isolated Playwright browser context. A 1400 by 900 viewport and a 320 px right panel
 match the preserved wave checks. Before loading the app, set

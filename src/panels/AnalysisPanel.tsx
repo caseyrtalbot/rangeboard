@@ -137,9 +137,11 @@ export function AnalysisPanel() {
     void runId
     return engagementPicture(scenario)
   }, [scenario, runId])
+  // The AAR summary feeds the debrief record alone, so it is built only once
+  // the run completes.
   const aar = useMemo(
-    () => buildAarSummary(scenario, assessments, report, impacts),
-    [scenario, assessments, report, impacts],
+    () => (complete ? buildAarSummary(scenario, assessments, report, impacts) : null),
+    [complete, scenario, assessments, report, impacts],
   )
   const threats = assessments.filter((assessment) => assessment.status !== 'no-path')
   const noPath = assessments.length - threats.length
@@ -179,7 +181,7 @@ export function AnalysisPanel() {
         </p>
       )}
 
-      {complete && (
+      {complete && aar && (
         <DebriefRecord
           scenario={scenario}
           assessments={assessments}

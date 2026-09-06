@@ -1,6 +1,6 @@
 # E1 source and description reconciliation
 
-Status: verified current code versus repository evidence, 2026-09-05. Proposed changes only; no seeds, descriptions, provenance, physics or tests modified. Current source links point to the unchanged seed module; the literal evidence snapshot is [seed-inventory.json](seed-inventory.json). Freshly opened originals are enumerated in [sources.md](sources.md); all other provenance below is historical, not re-fetched.
+Dated reconciliation record, 2026-09-05, of current code against repository evidence. Source and tests decide current behaviour. Proposed changes only at that date; no seeds, descriptions, provenance, physics or tests modified. Current source links point to the unchanged seed module; the literal evidence snapshot is [seed-inventory.json](seed-inventory.json). Freshly opened originals are enumerated in [sources.md](sources.md); all other provenance below is historical, not re-fetched.
 
 ## Inherited register audit
 

@@ -104,7 +104,7 @@ export function Tornado({ rows, nominal, unit, width, rowHeight = 16 }: TornadoP
   const plotW = Math.max(1, w - x0 - VALUE_W - RIGHT_PAD)
   const [dLo, dHi] = domainOf(rows, nominal)
   const x = (v: number) => x0 + (plotW * (v - dLo)) / (dHi - dLo)
-  const font = { fontFamily: tokens.fontMono, fontSize: 10, fill: tokens.ink }
+  const font = { fontFamily: tokens.fontMono, fontSize: 11, fill: tokens.ink }
   const lowColor = resolveColor('chart-2', tokens)
   const highColor = resolveColor('chart-1', tokens)
   const xNominal = x(nominal)

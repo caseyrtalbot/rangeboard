@@ -259,7 +259,7 @@ describe('runReplicates', () => {
     const summary = runReplicates(scenario)
     // One ship and one track: every band is a 0/1 statistic, so a constant
     // column reads the rule-of-three bound, 3 / 10 from the observed end
-    // (R-D-39); the 95 percent quantiles are unavailable under 40 (R-D-40).
+    // the 95 percent quantiles are unavailable under 40.
     for (const band of bands(summary)) {
       for (let k = 0; k < band.mean.length; k += 1) {
         const m = band.mean[k]
@@ -302,7 +302,7 @@ describe('runReplicates', () => {
     expect(summary.perEffector[effId].kills.mean).toBe(kills)
     // Bernoulli(0.5): sd near 0.5, se = sd / sqrt(200) near 0.035. A one-ship
     // kill count is a 0/1 statistic, so the interval is Wilson on k of 200
-    // (R-D-39), half-width near 1.96 * 0.5 / sqrt(200) = 0.07; the unbounded
+    // half-width near 1.96 * 0.5 / sqrt(200) = 0.07; the unbounded
     // salvo count keeps the t-interval.
     const killed = summary.perThreat[uasId].killed
     expect(Math.abs(killed.sd - 0.5)).toBeLessThan(0.05)
@@ -705,7 +705,7 @@ describe('runReplicates', () => {
       expect(t.firstDetectS.n).toBe(10)
     }
     expect(summary.firstDetectS.n).toBe(10)
-    // R-D-43: the earliest stable track file per replicate, at or after the
+    // The earliest stable track file per replicate, at or after the
     // first hit, and the same as the deterministic value when Pd is 1 at the
     // first scan for the fire-control-quality radar.
     expect(summary.firmTrackS.n).toBe(10)
@@ -741,7 +741,7 @@ describe('runReplicates', () => {
 
   describe('stopping rule', () => {
     // End-of-run leakers with one Pk 0.5 salvo and an asset: Bernoulli(0.5),
-    // a 0/1 count, so the displayed interval is Wilson (R-F-42) with half-width
+    // a 0/1 count, so the displayed interval is Wilson with half-width
     // about 0.93 / sqrt(n) near p 0.5 (0.1140 at n 70, 0.1067 at 80). The rule
     // checks at 30, 40, 50, ...; a target of 0.1156 is crossed near n 68, so the
     // loop stops at 70 with the sample p where it lands; 3 SE on p-hat at n 70
@@ -953,7 +953,7 @@ describe('runSensitivity', () => {
     expect(Math.abs(pkRow.swing - expected)).toBeLessThan(3 * se)
     expect(pkRow.low).toBeGreaterThanOrEqual(pkRow.high)
     expect(pkRow.swing).toBe(Math.abs(pkRow.high - pkRow.low))
-    // R-D-42: the per-replicate difference high - low is 0 or -1, so its
+    // The per-replicate difference high - low is 0 or -1, so its
     // sample sd is sqrt(n / (n - 1) * p (1 - p)) with p the swing, and the
     // paired SE is that over sqrt(n): sqrt(p (1 - p) / (n - 1)). A row that
     // moves nothing has se 0.

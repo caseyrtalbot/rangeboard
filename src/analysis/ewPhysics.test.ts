@@ -141,7 +141,7 @@ describe('assessJam', () => {
     expect(assessJam(standoff, ORIGIN, 0, uas(), { x: 0, y: -400 }).effective).toBe(true)
   })
 
-  it('evaluates range, min range and falloff on the slant range (R-F-30)', () => {
+  it('evaluates range, min range and falloff on the slant range', () => {
     // Jammer mount m = 4 m, target altitude h = 1204 m, so dAltM = 1200.
     // d = 1600: slant = sqrt(1600^2 + 1200^2) = 2000, the envelope edge,
     // powerFactor = 1 - 0.3 * 2000 / 2000 = 0.7 (horizontal would give 0.76).

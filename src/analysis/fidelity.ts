@@ -4,7 +4,8 @@
  * Every engine model carries one tag: how it is built (`tier`) and how far it is checked
  * (`validation`). A result then states which models produced it. `MODEL_TAGS` records what
  * is true today, not what is planned. `standard` quotes a row of the standards table in
- * `docs/engine-refactor/PLAN.md` section 12 where a published method applies.
+ * `docs/ENGINEERING_REFERENCE.md`, section "Standards referenced by model tags", where a
+ * published method applies.
  */
 import type {
   Entity, EntityKind, Scenario, SensorSpec, SpecModel, UasSpec,
@@ -32,7 +33,10 @@ export interface ModelTag {
   label: string
   tier: FidelityTier
   validation: ValidationStatus
-  /** A row of docs/engine-refactor/PLAN.md section 12 where one applies. */
+  /**
+   * A row of docs/ENGINEERING_REFERENCE.md, section "Standards referenced by model tags",
+   * where one applies.
+   */
   standard?: string
   note: string
 }
@@ -56,7 +60,7 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     tier: 'physics',
     validation: 'analytic',
     standard: 'Statistical rigor in T&E',
-    note: 'One draw per scan, M-of-N over scans. The closed forms landed in wave 1 slice 1.',
+    note: 'One draw per scan, M-of-N over scans, in closed form.',
   },
   'eoir-range': {
     id: 'eoir-range',

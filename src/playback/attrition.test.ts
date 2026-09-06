@@ -1099,7 +1099,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // x(tau) = 4700 - 20 tau and the slant equals x while x > 0.
     // Window opens at x = 4600: tau = 5, a grid point, so the one shot is
     // assigned at t = 5. Release at 15 with the target at x 4400; the exact
-    // constant-speed meeting (R-F-43) is 4400 / (140 + 20) = 27.5 s later, so
+    // constant-speed meeting is 4400 / (140 + 20) = 27.5 s later, so
     // tEffectS = 42.5 and the intercept is sampled there, x 4700 - 20 * 42.5
     // = 3850 (the slant used for the falloff). Pk at the intercept:
     // 0.5 * (1 - 0.3 * 3850/4600). Before the closed form, three fixed-point
@@ -1152,7 +1152,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     // The passes never close (pass 2 flight 119.52 s), so the flight is held
     // at the cap, 29.5, and sampled there: x 3961.5. The interceptor has flown
     // 54.6 * 29.5 = 1610.7 m by then, 2350.8 m short of the credited point,
-    // far past the one-DT tolerance 54.6 * 0.5 = 27.3 m (R-D-44). Before the
+    // far past the one-DT tolerance 54.6 * 0.5 = 27.3 m. Before the
     // feasibility test this event was credited at Pk 0.35144375 with
     // flightCapped; now no shot is taken in either pass: no event, no round
     // spent, the ship undefeated and never arriving (no asset).
@@ -1216,7 +1216,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
 
     // Receding but slower than the interceptor: 70 against 20 m/s from
     // x = 1000, r at release 1200 m, exact flight 1200 / (70 - 20) = 24.0 s
-    // (R-F-43), reach 1680 m equal to the need: the shot is taken.
+    // reach 1680 m equal to the need: the shot is taken.
     const slow = [
       { x: 1000, y: 0 },
       { x: 8000, y: 0 },

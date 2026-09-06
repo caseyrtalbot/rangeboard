@@ -9,8 +9,8 @@ scope: "Defensive counter-UAS threat representation and T&E"
 
 # Public-Source UAS / UCAS Threat Study for Counter-UAS Test and Evaluation
 
-> Status (2026-09-04): REFERENCE / RESEARCH. A public-source study that informed the threat
-> seeds and tactics. It is not a contract and is not edited.
+> Dated source document, 2026-08-22. A public-source study that informed the threat seeds
+> and tactics. Source and tests decide current behaviour. It is not edited.
 
 **Version:** 1.0  
 **Date:** 22 August 2026  

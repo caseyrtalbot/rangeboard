@@ -192,7 +192,7 @@ describe('stopping, rare outcomes and undefined times', () => {
     // q = 1 - deterministic expectedKills = 0.5013 (the salvo's falloff Pk).
     // The displayed Wilson half-width is about 0.93 / sqrt(n) near p 0.5; a
     // target of 0.1156 is crossed near n 68, so the loop stops at 70
-    // (mcRun.test.ts, and the R-F-42 test below). A
+    // (mcRun.test.ts, and the stop-rule test below). A
     // replicate depends on its index only, so the stopped summary is the
     // fixed-n summary at that n: optional stopping picks n, not the estimate
     // at n. Both means sit within 3 SE = 3 * 0.5 / sqrt(70) = 0.179 of q.
@@ -222,12 +222,12 @@ describe('stopping, rare outcomes and undefined times', () => {
     // / (n (n - 1)) = 1 / 30) and se = sd / sqrt(30) = 0.0333; the type-7 p90
     // is 0 and the p975 interpolates between the 29th and 30th order statistic
     // at position 0.975 * 29 = 28.275, so 0.275. For 0 of 30 every statistic is
-    // 0. The killed count of a one-ship threat is a 0/1 statistic (R-D-39):
+    // 0. The killed count of a one-ship threat is a 0/1 statistic:
     // 1 of 30 takes the Wilson interval, 0.0059 to 0.167 (wilson(1, 30)), and
     // 0 of 30 the rule-of-three bound, 0 to 3 / 30 = 0.1, in place of the
     // t-interval (1 / 30 - 2.045 * 0.0333 = -0.035, below the support) and the
     // zero-width interval. The p975 at 30 replicates is unavailable
-    // (BAND95_MIN_N 40, R-D-40); the 0.275 interpolation is recorded in the
+    // (BAND95_MIN_N 40); the 0.275 interpolation is recorded in the
     // crosswalk and no longer reported.
     const { scenario, uasId } = build(0.03)
     const p = resolveEngagements(scenario).totals.expectedKills
@@ -258,7 +258,7 @@ describe('stopping, rare outcomes and undefined times', () => {
   })
 
   it('replicate quantiles need 10 samples for p10/p90 and 40 for p025/p975', () => {
-    // R-D-40: at 9 replicates no quantile is reported, at 10 the 80 percent
+    // At 9 replicates no quantile is reported, at 10 the 80 percent
     // pair is, at 40 both pairs are. Pd 1 and Pk 1 give a constant 1, so
     // every reported quantile equals the mean.
     const { scenario, uasId } = build(1 / (1 - FALLOFF_AT_MAX))
@@ -282,7 +282,7 @@ describe('stopping, rare outcomes and undefined times', () => {
     expect(summary.firstDetectS.n).toBe(0)
     expect(summary.firstDetectS.total).toBe(10)
     expect(statMean(summary.firstDetectS)).toBeNull()
-    // wilson(0, 10): 0 to 3.8416 / 13.8416 = 0.2775, shown as whole percents (R-D-41).
+    // wilson(0, 10): 0 to 3.8416 / 13.8416 = 0.2775, shown as whole percents.
     expect(timeStatSub(summary.firstDetectS, 'detected'))
       .toBe('MC estimate unavailable · detected in 0 of 10 · 0% to 28% (95% Wilson)')
     expect(timeStatSub(summary.minWarningS, 'warning'))
@@ -297,7 +297,7 @@ describe('stopping, rare outcomes and undefined times', () => {
   it('a defined time under 30 replicates shows the defined fraction but no mean CI', () => {
     // Every replicate detects at the first scan (planning radar, Pd 1), so the
     // time is defined in 10 of 10: wilson(10, 10) is 0.722 to 1 (72% to 100%),
-    // and the mean CI is withheld under TIME_CI_MIN_N 30 (R-D-41).
+    // and the mean CI is withheld under TIME_CI_MIN_N 30.
     const { scenario } = build(1)
     const summary = runReplicates({ ...scenario, replicates: 10 })
     expect(summary.firstDetectS.n).toBe(10)
@@ -310,7 +310,7 @@ describe('stopping, rare outcomes and undefined times', () => {
 
 describe('bounded counts over more than one ship and the displayed-interval stop', () => {
   it('an all-zero multi-ship kill count reports 3 max / n; all at max the mirror; salvos unchanged', () => {
-    // R-F-41. A three-ship formation against an interceptor whose 1 m reach
+    // A three-ship formation against an interceptor whose 1 m reach
     // never binds: no shot, no kill, every ship alive to the end. Killed and
     // leaked are counts over 3 ships; residual at step 0 is 3 in every
     // replicate. At 0 of 30 the mean's upper bound is 3 * 3 / 30 = 0.3 (no
@@ -343,7 +343,7 @@ describe('bounded counts over more than one ship and the displayed-interval stop
   })
 
   it('the stop rule reads the displayed leaker interval, not the t half-width', () => {
-    // R-F-42. Leakers on a one-ship raid are 0/1, so the displayed interval is
+    // Leakers on a one-ship raid are 0/1, so the displayed interval is
     // Wilson (or the rule of three at 0 of n), and the stop rule tests its
     // half-width through the same statOf path. At the fixture's q 0.5013 the
     // Wilson half-width at n is z / (1 + z^2 / n) * sqrt(p (1 - p) / n + z^2 /

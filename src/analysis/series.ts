@@ -849,7 +849,7 @@ function bandFor(summary: McSummary, id: string, uasId?: string): BandSeries | n
  * Mean lines and replicate quantile bands share the same samples. Unsupported quantities
  * remain explicitly deterministic; a missing or mismatched mean stays unavailable. Each
  * band is drawn only when both of its quantile vectors are finite on the grid: the
- * engine reports NaN quantiles under BAND80_MIN_N and BAND95_MIN_N replicates (R-D-40).
+ * engine reports NaN quantiles under BAND80_MIN_N and BAND95_MIN_N replicates.
  */
 export function withBands(series: Series[], summary: McSummary | null, uasId?: string): Series[] {
   const covered = new Set(['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected', 'kpi.engaged', 'tracksHeld', 'residual'])

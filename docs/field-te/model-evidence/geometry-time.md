@@ -1,6 +1,6 @@
 # Geometry and time dossier
 
-Status: E1 evidence baseline, 2026-09-05. Source tree `d8a76f1`; numerical source files unchanged by this lane. [Index and verification](README.md).
+Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`. Source and tests decide current behaviour. [Index and verification](README.md).
 
 ## Intended quantity and use
 
@@ -15,7 +15,7 @@ Predict position, bearing, slant distance, angular eligibility, sampled boundary
 
 ## Inputs, pedigree and calibration
 
-Instance altitude resolves through the entity, threat profile, then the altitude-band midpoint; mount height defaults to 4 m PF ([types.ts](../../../src/model/types.ts#L355)). Stated ceilings/range/angle rows retain source conditions in [seed inventory](seed-inventory.json). The horizon is an analytical approximation, not fitted to a local terrain survey. No site calibration or measured datum offset is available. Historical geodesy/terrain standards in [engine-refactor plan §12](../../engine-refactor/PLAN.md#L768) describe possible methods, not implemented WGS84/EGM2008/DTED processing in this model.
+Instance altitude resolves through the entity, threat profile, then the altitude-band midpoint; mount height defaults to 4 m PF ([types.ts](../../../src/model/types.ts#L355)). Stated ceilings/range/angle rows retain source conditions in [seed inventory](seed-inventory.json). The horizon is an analytical approximation, not fitted to a local terrain survey. No site calibration or measured datum offset is available. Geodesy/terrain standards in the [standards table](../../ENGINEERING_REFERENCE.md#9-standards-referenced-by-model-tags) describe possible methods, not implemented WGS84/EGM2008/DTED processing in this model.
 
 ## Numerical method, verification and independent comparison
 

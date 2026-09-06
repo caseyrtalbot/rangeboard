@@ -1,7 +1,7 @@
-# C3 — Runtime validation and recovery
+# C3: runtime validation and recovery
 
-Implemented for R-F-26, 2026-09-05. Parent owns integrated gates/browser evidence and the
-final register disposition. No store transitions, schema/key changes, export payload changes,
+Dated lane record, 2026-09-05. Source and tests decide current behaviour. Integrated gates
+and browser evidence are in ../WAVE_C2_C3_E1_COMPLETION.md. No store transitions, schema/key changes, export payload changes,
 new dependencies, engine equations or draw changes were made in this lane.
 
 ## Boundaries and implementation

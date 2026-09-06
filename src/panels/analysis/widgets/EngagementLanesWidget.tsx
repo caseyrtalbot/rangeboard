@@ -16,7 +16,7 @@ export function EngagementLanesWidget({ id, params, collapsed, customize, index,
       index={index}
       count={count}
     >
-      <EngagementStrip />
+      <EngagementStrip embedded />
     </WidgetFrame>
   )
 }

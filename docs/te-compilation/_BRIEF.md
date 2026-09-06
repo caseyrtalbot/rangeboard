@@ -1,8 +1,8 @@
 # Extraction brief: RangeBoard T&E Operations module
 
-> Status (2026-09-04): REFERENCE. This folder holds the research compilation behind
+> Dated source document (August 2026). This folder holds the research compilation behind
 > `docs/te-plan.md` and `src/te/`. `MASTER-CALCULATIONS.md` is the fixture source of the
-> `src/te/calc/` tests. Nothing here is an instruction to an agent.
+> `src/te/calc/` tests. Source and tests decide current behaviour.
 
 ## Mission context
 

@@ -183,9 +183,9 @@ function SeriesTip({ series, tokens, label, active }: TipProps) {
   )
 }
 
-/** Shared axis tick style: mono, 10 px, dim ink. */
+/** Shared axis tick style: mono, dim ink, at the 11 px type floor (`--type-dense-size`). */
 function tickStyle(tokens: ChartTokens) {
-  return { fill: tokens.ink, fontFamily: tokens.fontMono, fontSize: 10 }
+  return { fill: tokens.ink, fontFamily: tokens.fontMono, fontSize: 11 }
 }
 
 interface PlotProps {

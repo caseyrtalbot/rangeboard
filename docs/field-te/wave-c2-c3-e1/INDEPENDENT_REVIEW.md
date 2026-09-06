@@ -1,6 +1,6 @@
 # Independent integration review
 
-Final status: PASS, 2026-09-05. A separate spotcheck-verifier reviewed the integrated diff,
+Dated review record, 2026-09-05, final status PASS. Source and tests decide current behaviour. A separate reviewer reviewed the integrated diff,
 C2/C3 compatibility and input security, C1 freshness, and selected E1 claims.
 
 Four confirmed findings were fixed and rechecked:

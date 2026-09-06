@@ -1,6 +1,6 @@
 # Environment dossier
 
-Status: E1 evidence baseline, 2026-09-05. Source tree `d8a76f1`; numerical source files unchanged by this lane. [Index and verification](README.md).
+Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`. Source and tests decide current behaviour. [Index and verification](README.md).
 
 ## Intended quantity and applicability
 
@@ -28,7 +28,7 @@ The code references the retrieved [COURAGEOUS paper](../evidence/model-evidence-
 3. Acoustic baseline absorption is already present. Rain/urban/wind are intended as noise-floor proxies applied afterwards. Do not add absorption because the fidelity note incorrectly says it is absent.
 4. RF vendor urban range replaces generic urban derating (rather than multiplying both). Propagation changes must preserve or explicitly reconsider that source normalization.
 
-No empirical calibration was performed. Source references in [historical plan §12](../../engine-refactor/PLAN.md#L768) to ITU-R/standard atmosphere/terrain are candidate methods, not code implementations or compliance claims.
+No empirical calibration was performed. Source references in the [standards table](../../ENGINEERING_REFERENCE.md#9-standards-referenced-by-model-tags) to ITU-R/standard atmosphere/terrain are candidate methods, not code implementations or compliance claims.
 
 ## Numerical error, verification and independent comparison
 

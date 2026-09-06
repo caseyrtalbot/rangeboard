@@ -1,11 +1,10 @@
 # C1: analysis identity and result invalidation
 
-Status: VERIFIED in the working tree, 2026-09-04. Source baseline `8b528f2`, branch
-`analysis-hardening`. R-F-24 is closed; R-D-26 selects this slice and R-D-27 records the
-bounded implementation choices. Publication update, 2026-09-05: Casey authorized commit
-and push; C1 and its records are published as `002684c` on `origin/analysis-hardening`.
-The verification below predates publication; its source/evidence hashes were rechecked.
-Stop before C2.
+Dated completion record, verified 2026-09-04 in the working tree at source baseline
+`8b528f2`, branch `analysis-hardening`. Source and tests decide current behaviour. The
+work and its records were published as `002684c` on `origin/analysis-hardening` on
+2026-09-05; the verification below predates publication and its source/evidence hashes
+were rechecked.
 
 ## Behavior and scope
 

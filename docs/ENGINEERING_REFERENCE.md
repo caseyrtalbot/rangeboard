@@ -1,11 +1,10 @@
 # RangeBoard engineering reference
 
-Current technical contract, extracted from AGENTS.md on 2026-09-05 at `66db3ad`.
-Read the sections relevant to a change before editing. Source and tests determine actual
-behavior; requirements and known implementation gaps are distinguished below.
-Repository paths in code spans are relative to the repository root.
-For workflow and authorization, read [AGENTS.md](../AGENTS.md); for current scope and evidence,
-read [the handoff](AI_HANDOFF.md). Section numbers are retained for existing references.
+Technical reference for the application as built. Read [CLAUDE.md](../CLAUDE.md) for the
+codebase guide and this file for details. Source and tests determine actual behavior;
+requirements and known implementation gaps are distinguished below. Repository paths in
+code spans are relative to the repository root. Section numbering starts at 3 because
+other documents link to these sections by number.
 
 ## 3. Hard architectural invariants
 
@@ -46,7 +45,7 @@ Breaking one of these breaks the app.
   `rangeboard.scenario.recovered.<ms>` before anything writes when recovery storage is
   available. Recovery names avoid collisions and exact readback is verified. Read denial or failed
   recovery pauses autosave so the only raw copy is retained; the notice explains export,
-  storage cleanup and reload. C3 validates required/nested shapes, finite/ranged values,
+  storage cleanup and reload. Runtime validation checks required/nested shapes, finite/ranged values,
   IDs/references and engine representability before default filling and adoption.
   Missing supported legacy fields fill; malformed present fields fail with a path/reason.
   Unknown extension data and legitimate legacy edits remain. `loadScenario` is the one
@@ -68,7 +67,7 @@ Breaking one of these breaks the app.
   `scenarioDurationS`; engine and validation consumers import that leaf directly.
   `state/rings.ts` owns shared ring keys/types, so `viewState.ts` has no runtime store
   dependency. Panels and canvas import every leaf directly; `store.ts`, `sim.ts` and
-  `attrition.ts` carry no re-exports (Wave 2, 2026-09-05).
+  `attrition.ts` carry no re-exports.
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
   `attrition.ts`; worker execution stays behind `mcClient.ts`. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.
@@ -89,7 +88,7 @@ Breaking one of these breaks the app.
   object key order is ignored and array order is preserved. See the input matrix in
   `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
-- **Worker budget and cancel (R-F-31):** `replicateLoop` and `sensitivityLoop` (`mcRun.ts`)
+- **Worker budget and cancel:** `replicateLoop` and `sensitivityLoop` (`mcRun.ts`)
   are generators that yield a `Checkpoint` after every replicate; `runReplicates` and
   `runSensitivity` drive them synchronously and unchanged. The worker drives them
   asynchronously under `DEFAULT_BUDGET` (96 million retained numbers, one quarter of the
@@ -110,7 +109,7 @@ Breaking one of these breaks the app.
 - **No invented values:** every unsourced number is a planning factor (PF) and is labeled
   as one. Never invent a value to fill a blank; record the blank as an open item instead.
 - **No `Math.random` under `src/`.** Every draw goes through `DrawPolicy` (section 5). The
-  engine draws in exactly five places; a sixth needs a plan entry and a decision row.
+  engine draws in exactly five places; a sixth changes the draw keys and the CRN tests.
 - **T&E store is separate** (section 8 below). Never embed campaign data in `Scenario`.
 
 ## 4. Architecture map
@@ -214,7 +213,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   where `pdSeries` starts, the first scan taken. A coast is extrapolation, not a
   measurement: it holds continuity and never moves the classification ladder, and it
   exists only after the track has initiated; a missed scan before `trackInitAtS` ends the
-  hold while the M-of-N window keeps counting (F-15).
+  hold while the M-of-N window keeps counting.
 - **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
@@ -223,13 +222,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at
   `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, in `attrition.ts` beside
   `SIZE_PENALTY`) because a stated speed is a maximum. `interceptAt` is the one predicted
-  intercept: the exact constant-speed meeting time along the path (`analyticTofS`, R-F-43:
+  intercept: the exact constant-speed meeting time along the path (`analyticTofS`:
   the target holds the first point before its delay and the last point after the path ends,
   and on each straight segment the formation member moves at constant velocity, so the
   meeting time is the smallest root of a quadratic per phase in time order), and it caps the
   flight at the end of the envelope interval that holds the release: a flight past that end
-  lands at the end and the event carries `flightCapped`. It also reports `infeasible`
-  (R-D-44): the slant to the credited point exceeds the reach `v * (tEffectS - release)` by
+  lands at the end and the event carries `flightCapped`. It also reports `infeasible`:
+  the slant to the credited point exceeds the reach `v * (tEffectS - release)` by
   more than one DT of flight, which with the exact solution happens only at a cap or when
   no meeting exists; both selection passes decline such a shot (no event, no round, no
   cooldown). `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
@@ -272,20 +271,20 @@ Each fact below has exactly one definition. Read it there; never add a second co
   samples of `total` run, and the `defined` fraction with a Wilson interval, built from
   `meanInterval`, `quantile` and `wilson` in `src/te/calc/stats.ts` (the one engine
   dependency on `src/te/`; import a statistic from there, never copy it). `statOf` takes
-  the statistic's kind (R-D-39, R-F-41): a time keeps the t-interval; a count clamps it to
+  the statistic's kind: a time keeps the t-interval; a count clamps it to
   [0, max] (ships, tracks, or unbounded for salvos); a 0/1 count (max 1) takes the Wilson
   interval; a count with a finite max at 0 of n reports the rule-of-three upper bound
   3 max / n on its mean (no independence between ships), and at n of n the mirror
   max - 3 max / n; an all-zero unbounded count keeps its zero-width clamped t-interval.
   `p10`/`p90` are NaN under `BAND80_MIN_N` (10) samples and `p025`/`p975` under
-  `BAND95_MIN_N` (40) (R-D-40). `McSummary.firmTrackS` is the earliest `stableTrackAtS`
-  per replicate; `firstDetectS` is the first single-scan hit (R-D-43). The replicate loop
+  `BAND95_MIN_N` (40). `McSummary.firmTrackS` is the earliest `stableTrackAtS`
+  per replicate; `firstDetectS` is the first single-scan hit. The replicate loop
   stops after 30 replicates, and every 10 after that, when the half-width of the displayed
   interval on the end-of-run leaker mean (the leakers `Stat` through `statOf` over the
-  raid's ships, R-F-42) is under `targetHalfWidth`; `McSummary.stopped` records the
+  raid's ships) is under `targetHalfWidth`; `McSummary.stopped` records the
   rule and the replicate. Panels read a time `Stat` through `timeStatSub(stat, quantity)`
   (names the single-scan-hit basis, shows the defined fraction's Wilson interval, withholds
-  the mean CI under `TIME_CI_MIN_N` 30 defined; R-D-41) and a band step through
+  the mean CI under `TIME_CI_MIN_N` 30 defined) and a band step through
   `countSub` (the interval as its two ends, since a count interval is not symmetric)
   (`widgets/mc.ts`). Bands and tile subs read current `McSummary` through `withBands`
   (`series.ts`) and `currentSummary`, only when `mc.status` is `done` for the current run
@@ -327,13 +326,14 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `aleatory` it never calls it. `runSensitivity` (`mcRun.ts`) is one-at-a-time on the
   end-of-run leaker mean, the field at its p10 and at its p90 with every other field
   nominal, paired by the same seed and replicate index, rows sorted by swing, each row
-  with `se`, the paired standard error of the per-replicate difference (R-D-42); the
+  with `se`, the paired standard error of the per-replicate difference; the
   `sensitivity` widget runs it on demand on its own worker slot into `mc.sensitivity`,
   which a basis change marks stale. The sensitivity widget reads `currentSensitivity`
   and hides stale rows and replicate metadata. `spreadText` (`src/panels/inspector/spreadText.ts`) is
   the one spread wording, shown by the Sources table and appended to the `PfTag` title.
 - **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row
-  for each of the fourteen model ids with a tier and a validation status. `modelsUsed
+  for each of the fourteen model ids with a tier, a validation status and, where a
+  published method applies, a `standard` that quotes a row of section 9. `modelsUsed
   (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
   run-validity widget and the detail pane header show the tags, and the export carries
   `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with
@@ -366,7 +366,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   paired OAT parameter perturbations, not mean CIs or outcome quantiles; leaker display
   remains undefined without a defended asset.
   A sensor-only MC case at neutral covariates with environment application and doctrine
-  disabled can be `valid`; the old universal claim in R-F-14 was disproved in onboarding.
+  disabled can be `valid`; an earlier claim that no MC run could be valid was wrong.
 - **Symbology** (`src/panels/Glyph.tsx`, `src/playback/trackState.ts`): MIL-STD-2525
   split, the frame carries affiliation and the icon carries function; `FRAME_FOR`,
   `FUNCTION_LETTER` and `FRIEND_FRAME_D` are shared by the palette, the library lists and
@@ -477,24 +477,25 @@ Design system (`src/index.css`):
 
 - **Tokens, not literals.** `:root` holds a graphite ramp (`--surface-*`, `--border-*`,
   `--text-*`, `--status-*`) and short aliases (`--bg`, `--text`, `--accent`, `--danger`,
-  `--good`, `--warn`, `--ew`, `--chart-1` to `--chart-5`). New rules read the semantic
-  names. Spacing is `--space-1` to `--space-6` plus `--panel-pad`; motion is `--dur-fast` /
+  `--good`, `--warn`, `--ew`, `--chart-1` to `--chart-5`). The surfaces are
+  `--surface-board`, `--surface-panel` and `--surface-sunken`; the two rules are `--rule`
+  and `--rule-strong`; the `--paper-*` palette remaps them under the light theme. New
+  rules read the semantic names. Spacing is `--space-1` to `--space-6` plus `--panel-pad`; motion is `--dur-fast` /
   `--dur`. `--border-control` is the boundary of an interactive control (WCAG 1.4.11 needs
   3:1); `--border-default` and `--border-subtle` are decorative hairlines and never go on
   an input.
 - **Monospace is machine data only:** ids, coordinates, timestamps, units, keys, numeric
   readouts, fixed abbreviation codes, chart axis ticks. Interface chrome and prose are
   `--font-ui`; mark a number in prose with `.num`.
-- **Type floor is 10 px in the current source.** The right panel is checked at 320 px
-  width: no element under it may overflow (`scrollWidth <= clientWidth`). The
-  [design contract](design/DESIGN_CONTRACT.md) raises the floor to 11 px and replaces the
-  token, radius and shadow rules below when its steps 2 and 3 land; update this section in
-  that slice.
+- **Type floor is 11 px** (`--type-dense-size`); no `font-size` rule in the sheet is
+  below it. Sizes and weights come from the `--type-*` role tokens (display, value, title,
+  body, meta, label, machine); weights are 400 and 500 only. The right panel is checked at
+  320 px width: no element under it may overflow (`scrollWidth <= clientWidth`).
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
-  rule and interaction state. `--radius` is 3 px. The only shadows are `--shadow-float`
-  (menus, dialogs, palette), `--shadow-pop` (tooltips, popovers) and the wash on
-  `.right-panel`. The design contract removes shadows and reduces the radius to 2 px on
-  controls and 0 elsewhere.
+  rule and interaction state. `--radius-control` (2 px) is the only non-zero radius and
+  applies to controls; containers are square. The sheet has no `box-shadow`,
+  `backdrop-filter` or `rgba(` tint. The full rule set, token table and component list are
+  in the [design system](design/DESIGN_SYSTEM.md).
 - **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render and keeps
   `TOKEN_FALLBACK` equal to the sheet (a test proves it) for node and static markup.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,
@@ -512,9 +513,9 @@ Design system (`src/index.css`):
 - **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`,
   recovery copy at `rangeboard.te.recovered.<ms>`. Records are versioned and append-only
   (runs never renumber, issued cards freeze, changes create new versions). Never embed
-  campaign data in `Scenario`. C4 enforces issued/superseded card immutability, frozen
-  baselines and generic action guards. Delivery freezes campaign evidence; closure remains
-  available. See [C4 record rules](field-te/C4_COMPLETION.md#record-rules).
+  campaign data in `Scenario`. The store enforces issued/superseded card immutability,
+  frozen baselines and generic action guards. Delivery freezes campaign evidence; closure
+  remains available. The [record rules](field-te/C4_COMPLETION.md#record-rules) list them.
 - IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the
   record. Cards use `id` (per version) plus `cardCode` (shared across versions).
 - Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
@@ -533,7 +534,29 @@ Design system (`src/index.css`):
   (`src/te/io/frameCapture.ts`) works only from the Board workspace.
 - The module was built 2026-08-19 to 2026-08-22, rebuilt as a guided decision workflow in
   `3d93aa1` (2026-08-25), and its persistence hardened in `7e5a5ae` (2026-09-02). Since
-  then `calc/stats.ts` gained the engine exports. C3 now also hardens persistence and
-  imports through `io/validateTe.ts`, including embedded Board snapshots and campaign-local
-  references. C4 adds internal transition and evidence-history checks. Do not touch
-  `src/te/` unless the task names it.
+  then `calc/stats.ts` gained the engine exports. Persistence and imports are validated
+  through `io/validateTe.ts`, including embedded Board snapshots and campaign-local
+  references, and the store checks internal transitions and evidence history.
+
+## 9. Standards referenced by model tags
+
+The `standard` column of `MODEL_TAGS` in `src/analysis/fidelity.ts` quotes a row of this
+table where a published method applies. A row here is a reference, not a claim that the
+code implements the method in full.
+
+| Area | Standard or reference |
+| --- | --- |
+| VV&A policy | DoDI 5000.61, DoD M&S Verification, Validation and Accreditation |
+| VV&A documentation | MIL-STD-3022, Documentation of VV&A for Models and Simulations |
+| Credibility assessment | NASA-STD-7009A credibility factors: verification, validation, input pedigree, results uncertainty, results robustness, use history, M&S management, people qualification |
+| Statistical rigor in T&E | DOT&E guidance on scientific test and analysis techniques; STAT COE design of experiments guidance |
+| Geodesy | WGS 84 (NGA.STND.0036), EGM2008 geoid |
+| Atmosphere | US Standard Atmosphere 1976 (ISO 2533); ITU-R P.676 gaseous attenuation; ITU-R P.838 rain attenuation |
+| RF propagation | ITU-R P.2001 wide-range terrestrial model; ITU-R P.526 diffraction; ITU-R P.528 aeronautical paths; NTIA ITM (Longley-Rice) as the cross-check model |
+| Radar | Blake range performance method; Barton radar equations; Swerling cases evaluated with Marcum-Q and Shnidman; Billingsley land clutter; IEEE 686 definitions |
+| EO/IR | NVESD NV-IPM methodology and the Targeting Task Performance metric; Johnson criteria retained as a legacy cross-check |
+| Acoustic | ISO 9613-2 outdoor attenuation; ANSI/ASA S1.26 atmospheric absorption |
+| Navigation | GPS SPS Performance Standard; INS error as random walk plus bias |
+| Tracking | Bar-Shalom and Li, estimation and data association; Blackman and Popoli, multi-target tracking |
+| Terrain data | DTED (MIL-PRF-89020B), SRTM, USGS 3DEP |
+| Symbology | MIL-STD-2525 (already in use) |

@@ -10,7 +10,7 @@ import { rangeForPd } from './radarPd'
 import { FT_TO_M, effectiveDetectRangeM, radarCalibration } from './sensorEnv'
 
 /**
- * VALIDATION AGAINST PUBLIC DATASHEETS (engine refactor slice 7).
+ * VALIDATION AGAINST PUBLIC DATASHEETS.
  *
  * The radar range law (radarPd.ts, calibrated at the placard by
  * sensorEnv.ts) is checked against manufacturer range-versus-RCS points.

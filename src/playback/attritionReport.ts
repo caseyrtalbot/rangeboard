@@ -151,7 +151,7 @@ export interface EngagementEvent {
   /**
    * Present only when the flight time was capped at the end of the in-range
    * window: the target would have left the envelope before the interceptor
-   * arrived, so the effect lands at the window end (R-F-7).
+   * arrived, so the effect lands at the window end.
    */
   flightCapped?: true
 }

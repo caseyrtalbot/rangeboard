@@ -36,7 +36,7 @@ export function bandMean(band: BandSeries, i: number, n: number): number | null 
 
 /**
  * Mean CI, never the replicate quantile band, printed as its two ends: a
- * count interval is clamped, Wilson or rule of three (R-D-39), so it is not
+ * count interval is clamped, Wilson or rule of three, so it is not
  * symmetric about the mean. `scale` converts counts to percentages.
  */
 export function countSub(band: BandSeries, i: number, n: number, scale = 1, unit = ''): string {
@@ -49,12 +49,12 @@ export function countSub(band: BandSeries, i: number, n: number, scale = 1, unit
   return `MC mean · ${formatCount(lo)} to ${formatCount(hi)}${unit} (${conf}% mean CI) · n=${n}`
 }
 
-/** Minimum defined replicates before a conditional time mean claims its CI (R-D-41). */
+/** Minimum defined replicates before a conditional time mean claims its CI. */
 export const TIME_CI_MIN_N = 30
 
 /**
  * Undefined samples are excluded: time estimates are conditional on a finite time.
- * The Monte Carlo first detection is the first single-scan hit (R-D-43), so the
+ * The Monte Carlo first detection is the first single-scan hit, so the
  * detected and warning subs name it.
  */
 export type StatQuantity = 'detected' | 'warning'
@@ -84,7 +84,7 @@ export function timeStatSub(stat: Stat, quantity: StatQuantity): string {
   return `MC conditional mean · ${QUANTITY_BASIS[quantity]} · ${interval} · n=${stat.n} · ${defined}`
 }
 
-/** The replicate-quantile bands `replicates` supports, for a chart note (R-D-40). */
+/** The replicate-quantile bands `replicates` supports, for a chart note. */
 export function bandNote(replicates: number): string {
   if (replicates >= BAND95_MIN_N) return '80/95% replicate quantiles'
   if (replicates >= BAND80_MIN_N) {

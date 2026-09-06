@@ -20,7 +20,7 @@ import { assessAllThreats } from './sim'
 import { stepIndex } from './clock'
 
 /**
- * CLOSED-FORM CONVERGENCE of the replicate engine (engine refactor slice 2).
+ * CLOSED-FORM CONVERGENCE of the replicate engine.
  * Every expected number below is derived by hand in the comment above the
  * assertion; none is copied from engine output. Each Monte Carlo assertion
  * is within 3 standard errors at 1000 replicates. For a proportion p over n

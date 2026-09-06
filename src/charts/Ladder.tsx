@@ -65,7 +65,7 @@ export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14 }: 
   const x = (t: number) => GUTTER_W + (plotW * t) / Math.max(durationS, 1e-9)
   const ticks = useMemo(() => timeTicks(durationS, plotW), [durationS, plotW])
   const accent = tokens.color('accent')
-  const font = { fontFamily: tokens.fontMono, fontSize: 10, fill: tokens.ink }
+  const font = { fontFamily: tokens.fontMono, fontSize: 11, fill: tokens.ink }
 
   function scrub(e: PointerEvent<SVGSVGElement>) {
     if (!onScrub) return

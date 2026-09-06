@@ -6,18 +6,11 @@ import type { RunPhase } from '../../../state/runState'
 import { useStore } from '../../../state/store'
 import { durationOf, selectSimTimeStep } from '../../../state/selectors'
 
-/** A labeled input row. */
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      {children}
-    </label>
-  )
-}
-
-/** Segmented control: one active option, no typing. */
-export function Seg<T extends string>({
+/**
+ * Segmented control that carries a `data-role` for browser checks. The shared
+ * `Seg` in `src/ui/kit.tsx` has the group role and pressed state instead.
+ */
+export function RoleSeg<T extends string>({
   value,
   options,
   onChange,
@@ -26,8 +19,8 @@ export function Seg<T extends string>({
   value: T
   options: Array<{ v: T; label: string }>
   onChange: (v: T) => void
-  /** Optional `data-role` on the control, so a browser check can find it. */
-  dataRole?: string
+  /** `data-role` on the control, so a browser check can find it. */
+  dataRole: string
 }) {
   return (
     <div className="seg" data-role={dataRole}>

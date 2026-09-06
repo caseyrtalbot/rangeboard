@@ -87,7 +87,7 @@ function meetTau(
 }
 
 /**
- * Exact constant-speed flight time from `releaseS` to the ship (R-F-43): the
+ * Exact constant-speed flight time from `releaseS` to the ship: the
  * target flies its path at ts.speedMps after ts.delayS, holding the first
  * point before the delay and the last point after the path ends, and on each
  * straight segment its formation member moves at constant velocity, so the
@@ -152,13 +152,13 @@ function analyticTofS(
 /**
  * Predicted intercept for one ship: the target position at tS + engageTimeS + timeOfFlight,
  * with the flight time the exact constant-speed meeting time along the path
- * (analyticTofS, R-F-43). The returned position and slant are sampled at the returned
+ * (analyticTofS). The returned position and slant are sampled at the returned
  * tEffectS. With no stated speed the flight time is 0 and the result is the position at
  * tS + engageTimeS. `membersAt` lets the sweep supply its per-tick geometry cache; the
  * default samples the path. `capS` is the end of the in-range interval that contains tS: a
- * flight past the cap is held at the cap, sampled there, and reported `capped` (R-F-7).
+ * flight past the cap is held at the cap, sampled there, and reported `capped`.
  * Only the flight is capped: a release at or before the cap with a flight past it; a
- * release after the cap is not. `infeasible` (R-D-44) is true when the interceptor cannot
+ * release after the cap is not. `infeasible` is true when the interceptor cannot
  * be at the credited point when the effect is credited: the slant to the sampled point
  * exceeds the reach `v * (tEffectS - release)` by more than one DT of flight, `v * DT`,
  * which after the exact solution happens only at a cap or when no meeting exists; the

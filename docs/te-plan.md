@@ -1,10 +1,11 @@
 # RangeBoard T&E Operations module: product plan and implementation plan
 
-> Status (2026-09-04): COMPLETED / HISTORICAL IMPLEMENTATION SPEC for `src/te/`. The module
-> was built in `c3f9853` (2026-08-19) and `901248e` (2026-08-22). Which of the stages in
-> section 11 were completed is not recorded in this historical plan. Later ownership
-> review and C3 persistence work are recorded in `docs/AI_HANDOFF.md` and
-> `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md`; internal transition gaps remain C4.
+> Dated source document: the completed implementation spec for `src/te/`, as it stood on
+> 2026-09-04. Source and tests decide current behaviour. The module was built in `c3f9853`
+> (2026-08-19) and `901248e` (2026-08-22). Which of the stages in section 11 were completed
+> is not recorded here. Later persistence validation and record-transition work are
+> recorded in `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md` and
+> `docs/field-te/C4_COMPLETION.md`.
 
 Part B deliverable. Sources: `docs/te-compilation/MASTER-DATAMODEL.md`, `MASTER-CALCULATIONS.md`, `MASTER-FORMS.md`, `MASTER-SEEDDATA.md`. Those four documents are the authoritative build inputs. This plan selects scope, resolves decisions, and sequences the build.
 

@@ -3,7 +3,8 @@ import { effectiveDoctrine } from '../../../model/types'
 import { LAUNCH_POLICIES, launchPolicyLabel } from '../../../analysis/doctrineFactors'
 import { useStore } from '../../../state/store'
 import { Info } from '../Info'
-import { Field, Seg } from './controls'
+import { Field, Seg } from '../../../ui/kit'
+import { RoleSeg } from './controls'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -112,7 +113,7 @@ function DoctrineControls() {
   return (
     <>
       <span className="roe-label">ROE</span>
-      <Seg
+      <RoleSeg
         value={scenario.roe ?? 'tight'}
         options={[
           { v: 'hold' as Roe, label: 'Hold' },

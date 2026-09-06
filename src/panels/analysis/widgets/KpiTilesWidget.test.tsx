@@ -179,7 +179,7 @@ describe('KpiTilesWidget', () => {
     setMc('done', 98)
     const partial = render({ tiles: ['firstDetect'] })
     expect(partial).toContain('±2.0 s (95% mean CI) · n=98 · detected in 98 of 100')
-    // R-D-41: under 30 defined replicates the mean CI is not claimed.
+    // Under 30 defined replicates the mean CI is not claimed.
     setMc('done', 12)
     const few = render({ tiles: ['firstDetect'] })
     expect(few).toContain('mean CI unavailable under 30 defined · n=12 · detected in 12 of 100')
@@ -188,7 +188,7 @@ describe('KpiTilesWidget', () => {
   })
 
   it('words undefined warning replicates explicitly, including n 0', () => {
-    // R-F-13: a replicate with no warning time had no defended asset, which is
+    // A replicate with no warning time had no defended asset, which is
     // not a detection miss. The tile needs an arrival, so the laydown gains a
     // defended asset and a radar; the threat crosses the 500 m boundary at
     // 125 s, so the cursor sits past it.

@@ -141,7 +141,7 @@ describe('spawnInRingViolations on the captured fixture', () => {
     for (const name of names) expect(name).toContain('THR-G1-Q-01')
   })
 
-  // R-F-20: the firing laydown (Giraffe 1X, KuRFS, FAAD C2, Coyote) with the Mavic 3
+  // The firing laydown (Giraffe 1X, KuRFS, FAAD C2, Coyote) with the Mavic 3
   // spawned 18 km north, 3 km beyond the 15 km KuRFS placard. The search problem runs:
   // detection lands well after T0 and the routed chain still fires.
   it('the detection fixture spawns outside every ring and still fires', () => {

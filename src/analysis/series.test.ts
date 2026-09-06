@@ -787,7 +787,7 @@ describe('withBands', () => {
   })
 
   it('drops one band when its quantiles are NaN and keeps the mean and the other band', () => {
-    // The engine reports NaN p025/p975 under BAND95_MIN_N replicates (R-D-40).
+    // The engine reports NaN p025/p975 under BAND95_MIN_N replicates.
     const summary = summaryOf(4)
     summary.kills.p025.fill(NaN)
     summary.kills.p975.fill(NaN)

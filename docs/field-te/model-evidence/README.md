@@ -1,10 +1,10 @@
-# RangeBoard E1 model evidence baseline
+# RangeBoard model evidence baseline
 
-Status: E1 DOSSIERS AND SOURCE RECONCILIATION COMPLETE, 2026-09-05. This completes the documentary baseline selected for the C2/C3/E1 wave. E2 and E3 closed 2026-09-06 on Casey's word; the dossiers stay as the dated evidence baseline. Source baseline: `d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446`; the E1 lane changed only this directory and its source-capture directory, preserving code, seeds, historical research and user files.
+Dated evidence baseline, 2026-09-05, against source `d8a76f1ac4edcd49e4c0bcaef6f94cf64ea14446`. Source and tests decide current behaviour. The dossiers below record what each model family could support at that date; later engine work (for example the closed-form intercept solver and the radar study of 2026-09-06) is in source and tests, not in these dossiers.
 
 ## Dossiers and applicability
 
-| PLAN family | Dossier | Supported evidence boundary |
+| Model family | Dossier | Supported evidence boundary |
 | --- | --- | --- |
 | Geometry/time | [Geometry and time](geometry-time.md) | Flat local geometry and selected time/grid identities; no terrain or variable-altitude validation. |
 | Radar | [Radar](radar.md) | Closed-form/scan verification and qualified published range comparisons; calibration separated from independence. |
@@ -22,8 +22,8 @@ Each dossier records quantity/use, equation/units, frame/time, input pedigree, P
 - [Source register](sources.md): seven originals captured from primary publishers (four PDFs, three HTML pages); exact URLs/read times/status/hashes in the linked capture catalog. Three radar source pages were rendered and inspected. Text extracts are derived and never replace originals.
 - [Seed snapshot](seed-inventory.json): all 90 current models and 205 provenance rows, source hash, descriptions, spec values and line pointers. Existing saved model copies can differ.
 - [Historical repository inventory](repository-evidence-inventory.json): 27 artifacts across inventory/threat/T&E compilation and both historical plans, hashed without changing them. Relevant original research and implementation intent were reconciled first; targeted retrieval followed the identified gaps.
-- [Reconciliation and proposed register rows](reconciliation-findings.md): F-61, R-F-2/3/4/6/7/16/29, M-11; parent owns actual append-only register integration.
-- [Artifact hashes](artifact-hashes.json): lane deliverables/evidence integrity list; parent owns the overall wave manifest.
+- [Reconciliation findings](reconciliation-findings.md): seed descriptions and provenance rows that disagreed with the sources at capture time.
+- [Artifact hashes](artifact-hashes.json): integrity list of the dossier deliverables and evidence at capture.
 
 Primary-source status does not establish independent experimental evidence. Current sources qualify the radar comparisons and vendor-count spreads; they do not prove the selected model family across all conditions. Historical standards/reference lists remain historical unless explicitly captured now.
 
@@ -31,10 +31,10 @@ Primary-source status does not establish independent experimental evidence. Curr
 
 `npx vitest run` over the sixteen named model/geometry/statistics test files: **320 tests passed in 16 files**, duration 3.82 s. [Exact output](../evidence/model-evidence-2026-09-05/focused-tests.txt). No test or equation was changed. This is mathematical/regression evidence only; it does not validate missing mechanisms or empirical uncertainty coverage.
 
-Concurrent `npx tsc --noEmit -p tsconfig.app.json` exited **2** while the parent-owned temporary `src/playback/wave-parity.verify.test.ts` existed: node:fs/process type errors and a Scenario cast. [Exact output](../evidence/model-evidence-2026-09-05/typecheck.txt). Parent confirmed scratch removal afterward and owns the final integrated typecheck/full-test/lint/build/browser gates. E1 does not claim this failed concurrent check passed. No new temporary TypeScript test was created by E1.
+Concurrent `npx tsc --noEmit -p tsconfig.app.json` exited **2** while a temporary `src/playback/wave-parity.verify.test.ts` existed: node:fs/process type errors and a Scenario cast. [Exact output](../evidence/model-evidence-2026-09-05/typecheck.txt). The scratch file was removed afterward and the integrated gates were rerun for the [wave record](../WAVE_C2_C3_E1_COMPLETION.md). The dossier work did not claim this concurrent check passed.
 
 Local artifact QA verifies all Markdown relative targets and source #L pointers exist, seven original hashes match the capture catalog, the seed source hash still matches, all 27 historical artifacts remain byte-identical, and all eight dossiers carry their required sections. See [QA output](../evidence/model-evidence-2026-09-05/artifact-qa.txt).
 
-## Remaining limits and next bounded work
+## Limits at capture
 
-The strongest immediate E2 candidate is the already quantified capped-intercept feasibility problem; any selection belongs to Casey/the orchestrator after this wave. Source/configuration reconciliation, EW geometry and E3 uncertainty coverage remain proposed follow-ups. Do not start them as part of E1. No physics, seed, provenance, UI, schema, key, draw or dependency changes were made; no commit or push performed.
+At capture the open questions were capped-intercept feasibility, source and configuration reconciliation, EW geometry and uncertainty coverage. The dossier work made no physics, seed, provenance, UI, schema, key, draw or dependency change.

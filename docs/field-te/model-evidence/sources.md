@@ -1,6 +1,6 @@
 # E1 source register
 
-Status: 2026-09-05. Originals were saved before derived text; PDF tables below were also rendered and visually inspected. Capture URLs, timestamps, HTTP status, byte count and SHA-256 are in [source-captures.json](../evidence/model-evidence-2026-09-05/source-captures.json). A failed attempt has no successful-capture hash. These are public documents, not independent trial records.
+Dated source register, 2026-09-05. Source and tests decide current behaviour. Originals were saved before derived text; PDF tables below were also rendered and visually inspected. Capture URLs, timestamps, HTTP status, byte count and SHA-256 are in [source-captures.json](../evidence/model-evidence-2026-09-05/source-captures.json). A failed attempt has no successful-capture hash. These are public documents, not independent trial records.
 
 | ID | Opened now / original | Location used and bounded purpose |
 | --- | --- | --- |

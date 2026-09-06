@@ -1,8 +1,9 @@
 # C-UAS inventory evidence
 
-> Status (2026-09-04): REFERENCE / RESEARCH, August 2026. The current provenance record is
-> `SpecModel.provenance` in `src/model/seedLibrary.ts` (written 2026-09-04 from a fresh read
-> of every page); this folder is the earlier evidence and is not edited.
+> Dated source document, August 2026. Source and tests decide current behaviour: the
+> current provenance record is `SpecModel.provenance` in `src/model/seedLibrary.ts`
+> (written 2026-09-04 from a fresh read of every page). This folder is the earlier evidence
+> and is not edited.
 
 Provenance for the RangeBoard selectable inventory: what each number means,
 where it came from, and what the public record does not establish.

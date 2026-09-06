@@ -6,23 +6,17 @@ and deterministic/Monte Carlo analysis. **T&E Ops** carries campaign questions, 
 test cards, runs, findings and deliverables in a separate store.
 
 The engine combines physical relationships with explicit planning factors and provenance.
-The next development stage targets field workflows, stronger model evidence and a more
-usable interface. The current application is a single-user React/TypeScript web app with
-localStorage persistence. Offline installation and field durability are planned work.
+The application is a single-user React/TypeScript web app with localStorage persistence.
 
 ## Engineering entrypoints
 
-1. [AGENTS.md](AGENTS.md): durable engineering contract for every contributor.
-2. [AI_HANDOFF.md](docs/AI_HANDOFF.md): current scope, state, evidence and next action.
-3. [Outstanding register](docs/data-engine/outstanding.md): decisions and follow-ups.
-4. [Field T&E plan](docs/field-te/PLAN.md): proposed correction and enhancement sequence.
-5. [Ownership findings](docs/field-te/OWNERSHIP_FINDINGS.md) and
-   [backlog triage](docs/field-te/BACKLOG_TRIAGE.md): evidence and inherited task routing.
+1. [CLAUDE.md](CLAUDE.md): codebase guide for Claude Code and other agents.
+2. [Document index](docs/README.md): current reference, dated records and source material.
+3. [Engineering reference](docs/ENGINEERING_REFERENCE.md): module contracts, equations
+   and invariants.
+4. [Verification guide](docs/VERIFICATION.md): test conventions and browser procedures.
 
-The [document index](docs/README.md) separates current guidance, verified evidence and
-historical reference. Read the [engineering reference](docs/ENGINEERING_REFERENCE.md) for
-module contracts and the [verification guide](docs/VERIFICATION.md) for browser procedures.
-Source and tests determine implemented behavior; an old plan or accepted decision is not proof of completion.
+Source and tests determine implemented behavior.
 
 ## Local development
 
@@ -42,4 +36,5 @@ npm run build
 ```
 
 Use a separate browser profile for scripted checks so the user's saved work is preserved.
-Read the persistence and browser rules in AGENTS.md before testing save/import changes.
+Read the persistence rules in the engineering reference and the browser procedures in the
+verification guide before testing save/import changes.

@@ -4,7 +4,7 @@ import { visibilityMFor } from '../../../analysis/sensorEnv'
 import { useStore } from '../../../state/store'
 import { environmentHeadline } from '../../headlines'
 import { Info } from '../Info'
-import { Field, Seg } from './controls'
+import { Field, Seg } from '../../../ui/kit'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 

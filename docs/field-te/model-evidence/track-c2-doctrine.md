@@ -1,6 +1,6 @@
 # Track, C2 and doctrine dossier
 
-Status: E1 evidence baseline, 2026-09-05. Source tree `d8a76f1`; numerical source files unchanged by this lane. [Index and verification](README.md).
+Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`. Source and tests decide current behaviour. [Index and verification](README.md).
 
 ## Intended quantity and applicability
 

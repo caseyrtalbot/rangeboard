@@ -4,7 +4,8 @@ import { emptyScenario } from '../../model/seed'
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { IDLE_MC } from '../../state/runState'
-import { LiveStrip } from './LiveStrip'
+import { runSettings } from '../../model/types'
+import { LiveStrip, McPopover } from './LiveStrip'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading panel needs the two in step.
@@ -15,6 +16,18 @@ function render(): string {
 
 function setMc(patch: Partial<McState>): void {
   useStore.setState({ mc: { ...IDLE_MC, runId: useStore.getState().playback.runId, ...patch } })
+}
+
+/** The popover rendered on its own; the strip keeps it closed in static markup. */
+function renderPopover(): string {
+  Object.assign(useStore.getInitialState(), useStore.getState())
+  const st = useStore.getState()
+  return renderToStaticMarkup(<McPopover run={runSettings(st.scenario)} mc={st.mc} />)
+}
+
+/** The run button of the popover. */
+function runButton(html: string): string {
+  return html.match(/<button class="mc-run"[^>]*>[^<]*<\/button>/)?.[0] ?? ''
 }
 
 /** The chip element: the one button with a `chip` class. */
@@ -77,5 +90,25 @@ describe('LiveStrip mode chip', () => {
     const el = chip(render())
     expect(el).toContain('class="chip mc warn"')
     expect(el).toContain('MC 100 · stale')
+  })
+})
+
+describe('McPopover run button', () => {
+  beforeEach(() => {
+    useStore.getState().replaceScenario(emptyScenario())
+    useStore.setState({ mc: IDLE_MC })
+  })
+
+  it('offers a run while idle and a stop while a run is live', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    expect(runButton(renderPopover())).toContain('>Run replicates<')
+    setMc({ status: 'running', progress: 40, total: 100 })
+    const live = runButton(renderPopover())
+    expect(live).toContain('>Stop<')
+    expect(live).not.toContain('disabled')
+  })
+
+  it('stays disabled under the deterministic mode', () => {
+    expect(runButton(renderPopover())).toContain('disabled')
   })
 })

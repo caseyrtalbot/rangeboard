@@ -12,7 +12,7 @@
  * no series. The five hues were validated against the panel surface on 2026-09-03.
  */
 
-/** The five categorical chart hues, in slot order. Exactly the values in PLAN.md slice 5. */
+/** The five categorical chart hues, in slot order. Fixed values. */
 export const CHART_HUES: readonly string[] = [
   '#3987e5',
   '#d95926',

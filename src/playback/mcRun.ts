@@ -67,7 +67,7 @@ export type IntervalMethod = 't' | 'wilson' | 'rule-of-three' | 'none'
 export const STAT_CONF = 0.95
 
 /**
- * Minimum samples before a replicate quantile is reported (R-D-40): below
+ * Minimum samples before a replicate quantile is reported: below
  * these, the type-7 quantile interpolates toward one extreme sample.
  */
 export const BAND80_MIN_N = 10
@@ -269,7 +269,7 @@ function definedOf(n: number, total: number): Stat['defined'] {
 }
 
 /**
- * The interval on the mean of `sorted` (R-D-39, R-F-41). A count with a
+ * The interval on the mean of `sorted`. A count with a
  * finite support maximum at 0 of n reports the rule-of-three upper bound
  * 3 max / n on its mean, with no independence assumed between ships, and at
  * n of n the mirror max - 3 max / n; at max 1 these are the 0/1 bounds 3 / n.
@@ -331,8 +331,8 @@ function statOf(samples: number[], kind: StatKind): Stat {
 }
 
 /**
- * Half-width of the displayed interval on the end-of-run leaker mean
- * (R-F-42): the same `statOf` path and ship support the leakers Stat uses,
+ * Half-width of the displayed interval on the end-of-run leaker mean:
+ * the same `statOf` path and ship support the leakers Stat uses,
  * so the stopping rule and the tile read one interval.
  */
 function halfWidthOf(values: number[], ships: number): number {
@@ -670,7 +670,7 @@ function meanOf(samples: Samples): number {
   return sum / samples.length
 }
 
-/** The paired standard error of `high - low` over the replicates (R-D-42). */
+/** The paired standard error of `high - low` over the replicates. */
 function pairedSe(low: Samples, high: Samples): number {
   const d = high.map((v, i) => v - low[i])
   const { sd } = meanInterval(d, STAT_CONF)

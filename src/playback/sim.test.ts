@@ -1379,7 +1379,7 @@ describe('probability of detection', () => {
   })
 })
 
-describe('slice 3: scan-model track initiation, coast and drop', () => {
+describe('scan-model track initiation, coast and drop', () => {
   beforeEach(reset)
 
   /** Threat altitude equal to the phase-center height, so slant range equals ground range. */
@@ -1566,7 +1566,7 @@ describe('slice 3: scan-model track initiation, coast and drop', () => {
     //   t = 1 (off-scan): x 3995, inside 4 km, but no scan: no radar hit
     //   t = 4 (scan):     x 3965, the first detected scan
     // The camera is 205 m from the target from t = 0, so only the cue gates
-    // it: before R-F-9 the radar's off-scan range test at t = 1 cued it and
+    // it: earlier the radar's off-scan range test at t = 1 cued it and
     // the camera took first detection at 1 s; now the hold from the scan at
     // 4 s is the one cue, so both observations start at 4 and the radar
     // keeps the credit. Between scans (4.5 to 7.5) the carried hold keeps
@@ -1601,7 +1601,7 @@ describe('slice 3: scan-model track initiation, coast and drop', () => {
   })
 })
 
-describe('slice 1: one draw per scan', () => {
+describe('one draw per scan', () => {
   /** Threat altitude equal to the phase-center height, so slant range equals ground range. */
   const ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
 

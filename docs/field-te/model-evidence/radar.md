@@ -1,6 +1,6 @@
 # Radar dossier
 
-Status: E1 evidence baseline, 2026-09-05. Source tree `d8a76f1`; numerical source files unchanged by this lane. [Index and verification](README.md).
+Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`. Source and tests decide current behaviour. [Index and verification](README.md).
 
 ## Intended quantity and applicability
 
@@ -12,7 +12,7 @@ Model single-scan detection probability and a threshold range, then pass observa
 
 ## Pedigree, PFs and calibration
 
-The implementation cites Mahafza and Albersheim/Richards; those full texts were not retrieved in E1. [Historical engine plan](../../engine-refactor/PLAN.md#L768) lists broader radar references without implementing every method. [types.ts](../../../src/model/types.ts#L126) supplies placard Pd=0.5, Pfa=1e-6, Swerling 1 PF; [rcsFactors.ts](../../../src/model/rcsFactors.ts#L33) supplies reference RCS=0.01 m² and group tiers 0.01/0.05/0.2/1/5 m². Actual per-model rows and omissions are retained in [seed-inventory.json](seed-inventory.json). Missing source conditions are assumptions, even when the nominal range is sourced. A source's false alarms/day is not per-look Pfa without an opportunity count.
+The implementation cites Mahafza and Albersheim/Richards; those full texts were not retrieved in E1. The [standards table](../../ENGINEERING_REFERENCE.md#9-standards-referenced-by-model-tags) lists broader radar references without implementing every method. [types.ts](../../../src/model/types.ts#L126) supplies placard Pd=0.5, Pfa=1e-6, Swerling 1 PF; [rcsFactors.ts](../../../src/model/rcsFactors.ts#L33) supplies reference RCS=0.01 m² and group tiers 0.01/0.05/0.2/1/5 m². Actual per-model rows and omissions are retained in [seed-inventory.json](seed-inventory.json). Missing source conditions are assumptions, even when the nominal range is sourced. A source's false alarms/day is not per-look Pfa without an opportunity count.
 
 Calibration sets S0 to pass through the nominal placard. Under matched Swerling and Pd the range is exactly `r0*(sigma/sigma0)^0.25`; equality at that point is calibration. `rangeBasis:'planning'` bypasses target/Pd scaling; provenance basis alone does not choose that branch.
 

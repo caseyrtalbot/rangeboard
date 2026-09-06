@@ -1,6 +1,6 @@
 # Uncertainty coverage crosswalk
 
-Status: E1 evidence baseline, 2026-09-05. Source tree `d8a76f1`; numerical source files unchanged by this lane. [Index and verification](README.md). E3 study appended 2026-09-05 against `b7ec949`; line pointers below cite that tree. Numerical source files are unchanged by E3; the E3 tests are in the tree.
+Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`. Source and tests decide current behaviour. [Index and verification](README.md). A later uncertainty study was appended on 2026-09-05 against `b7ec949`; line pointers below cite that tree, and its tests are in the tree.
 
 ## Intended quantity and use
 

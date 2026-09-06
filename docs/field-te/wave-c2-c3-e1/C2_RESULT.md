@@ -1,6 +1,6 @@
 # C2 result consistency
 
-Status: integrated and verified. Parent export integration, independent review, full gates and browser acceptance are complete; see ../WAVE_C2_C3_E1_COMPLETION.md. The lane record below preserves its handover evidence. No physics, distributions, draw keys, worker protocol, save schema or storage keys changed.
+Dated lane record, 2026-09-05, integrated and verified. Source and tests decide current behaviour. Export integration, independent review, full gates and browser acceptance are complete; see ../WAVE_C2_C3_E1_COMPLETION.md. The lane record below preserves its handover evidence. No physics, distributions, draw keys, worker protocol, save schema or storage keys changed.
 
 ## Serial export integration specification (parent only)
 

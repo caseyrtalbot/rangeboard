@@ -156,7 +156,7 @@ describe('DetailPane', () => {
     expectNoControls(html)
   })
 
-  it('names the missing fire-control source when a typed route blocks the Coyote (R-F-20)', () => {
+  it('names the missing fire-control source when a typed route blocks the Coyote', () => {
     // The beforeEach links are untyped, so the route does not bind the gate.
     const uas = entityOf('uas')
     const before = section(render(uas.id), 'file')

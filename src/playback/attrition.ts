@@ -72,8 +72,8 @@ import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
  * interval of the same effector still contains tEffect — a target that exits
  * the envelope before the effect arrives cannot be engaged by that
  * assignment, so the salvo is never fired; nor is a salvo whose interceptor
- * cannot reach the predicted point by tEffect (interceptAt `infeasible`,
- * R-D-44). Kill math (target position,
+ * cannot reach the predicted point by tEffect (interceptAt `infeasible`).
+ * Kill math (target position,
  * distance falloff, jam-state coupling) is evaluated at tEffect; magazine
  * decrement, cooldown, firstShotS, and the expenditure counts stay at
  * assignment time. Nonzero-latency effects are buffered and applied in
@@ -498,7 +498,7 @@ export function resolveEngagements(
       // Jam physics (band coverage, alignment, power out) decide whether a
       // jammer can affect this ship at all; a ship the physics cannot reach
       // is never a jam candidate, so the dwell is not wasted on it. The
-      // physics take the same slant range as inEnvelope (R-F-30).
+      // physics take the same slant range as inEnvelope.
       const jamFactor = (ts: ThreatState, p: Vec2): number =>
         assessJam(es.spec, es.entity.pos, es.entity.headingDeg, ts.uasSpec, p, ts.altM - es.mountM)
           .factor
@@ -545,7 +545,7 @@ export function resolveEngagements(
           // Geometry is evaluated where the effect lands, not where it is
           // fired: the predicted intercept of this ship.
           const ic = interceptAt(ts, es, t, i, membersAt, within[1])
-          // An intercept the interceptor cannot reach is no shot (R-D-44).
+          // An intercept the interceptor cannot reach is no shot.
           if (ic.infeasible) continue
           if (!contains(ic.tEffectS)) continue
           if (!inEnvelope(ic.pos, ts)) continue

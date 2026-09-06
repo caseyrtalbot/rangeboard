@@ -1,14 +1,13 @@
 # C2/C3/E1 wave completion
 
-Verified 2026-09-05 in the working tree on `analysis-hardening`, baseline `d8a76f1`.
-C2 and C3 are implemented and verified; E1's qualified evidence baseline is complete.
-Casey subsequently authorized commit, push and handoff on 2026-09-05. The wave is
-published as `798380d` to `origin/analysis-hardening` (remote hash verified); this
-publication-record commit follows it. The manifest's `committed: false` and `pushed: false`
+Dated completion record, verified 2026-09-05 in the working tree on `analysis-hardening`
+at baseline `d8a76f1`. Source and tests decide current behaviour. C2 (result consistency)
+and C3 (runtime validation) were implemented and verified; the E1 evidence baseline was
+complete. The wave was published as `798380d` to `origin/analysis-hardening` (remote hash
+verified); this publication-record commit follows it. The manifest's `committed: false` and `pushed: false`
 retain the original pre-publication verification snapshot. All source/evidence hashes matched
 and type-check, 1,327 tests, lint, build and schema checks passed again before publication.
-The five incoming user files remain unchanged. A later
-untracked `.claude/launch.json` is preserved as an unowned change.
+The five incoming user files remain unchanged.
 
 ## Scope and result
 

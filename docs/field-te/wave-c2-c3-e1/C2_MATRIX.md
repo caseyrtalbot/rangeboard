@@ -1,6 +1,6 @@
 # C2 measure inventory
 
-Verified by source trace 2026-09-05. Scope is Board result consistency (R-F-25), including every Board headline, chart family, gate and exported result group. T&E campaign calculations/record enforcement remain the separate C4 scope. Configuration inputs, provenance tags, model fidelity tags and validity findings are metadata, not numerical estimates.
+Dated record, verified by source trace 2026-09-05. Source and tests decide current behaviour. Scope is Board result consistency, including every Board headline, chart family, gate and exported result group. T&E campaign calculations and record enforcement were a separate scope (C4_COMPLETION.md). Configuration inputs, provenance tags, model fidelity tags and validity findings are metadata, not numerical estimates.
 
 Notation: **E** = deterministic planning envelope. **M** = MC mean, finite replicate denominator n; mean CI is `lo/hi`, replicate quantiles are `p10/p90` and `p025/p975`. **T** = path-bearing threat tracks (one formation counts one track), **R** = ships in raid (formation ship count included). **Cursor** = quantized playback time; **run** = full configured duration. E-only means no corresponding replicate statistic is available to that consumer; an M estimate never silently substitutes E under an estimate label.
 

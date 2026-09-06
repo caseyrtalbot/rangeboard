@@ -136,7 +136,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       : undefined
     // Why no shot: a fully typed route to a command-guided effector with no
     // fire-control sensor on it blocks that effector (sim.ts fcBlocked); name
-    // the effector and the sensors its profile accepts (R-F-20).
+    // the effector and the sensors its profile accepts.
     const engageText = !assessment
       ? DASH
       : assessment.status === 'no-fc-uplink'

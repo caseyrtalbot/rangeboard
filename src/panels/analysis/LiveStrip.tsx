@@ -14,7 +14,8 @@ import type { RunMode, UncertaintyMode } from '../../model/types'
 import { runSettings } from '../../model/types'
 import type { StopRule } from '../../playback/mcRun'
 import { resetAnalysisRun } from '../../playback/runSession'
-import { Field, Seg, useSimTimeStep } from './widgets/controls'
+import { Field } from '../../ui/kit'
+import { RoleSeg, useSimTimeStep } from './widgets/controls'
 
 const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
   { v: 'deterministic', label: 'Deterministic' },
@@ -184,20 +185,20 @@ function DecimalInput({
  * The run mode popover: mode, uncertainty mode, seed, replicate count, target
  * half-width and the run button. Every control writes a scenario fact.
  */
-function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McState }) {
+export function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McState }) {
   const patchScenario = useStore((s) => s.patchScenario)
   const deterministic = run.runMode === 'deterministic'
   const running = mc.status === 'running'
   return (
     <div className="mc-pop">
-      <Seg
+      <RoleSeg
         value={run.runMode}
         options={MODE_OPTIONS}
         onChange={(v) => patchScenario({ runMode: v })}
         dataRole="run-mode"
       />
       <Field label="Uncertainty">
-        <Seg
+        <RoleSeg
           value={run.uncertainty}
           options={UNCERTAINTY_OPTIONS}
           onChange={(v) => patchScenario({ uncertainty: v })}
@@ -229,9 +230,11 @@ function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McSta
       <button
         className="mc-run"
         disabled={deterministic}
-        onClick={() => useStore.getState().runMonteCarlo()}
+        onClick={() =>
+          running ? useStore.getState().cancelMonteCarlo() : useStore.getState().runMonteCarlo()
+        }
       >
-        {running ? 'Running…' : 'Run replicates'}
+        {running ? 'Stop' : 'Run replicates'}
       </button>
     </div>
   )

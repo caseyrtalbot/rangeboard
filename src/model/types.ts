@@ -128,7 +128,7 @@ export const PLACARD_PD = 0.5
 /** False-alarm probability a radar placard assumes when the source states none. PF. */
 export const PLACARD_PFA = 1e-6
 
-/** Fluctuation case of the placard's reference target (a Group 1 multirotor), PF until slice 9 verifies a datasheet. */
+/** Fluctuation case of the placard's reference target (a Group 1 multirotor), a PF until a datasheet confirms it. */
 export const PLACARD_SWERLING: SwerlingCase = 1
 
 /** Scans that must detect inside the M-of-N window to initiate a track. PF. */
@@ -838,7 +838,7 @@ export interface AarEffectorShots {
  */
 export interface AarSummary {
   roe: Roe
-  /** Lens preset the run was observed under; absent on pins made before slice 6. */
+  /** Lens preset the run was observed under; absent on older pins. */
   observedPresetId?: string | null
   raidSize: number
   /** Pre-arrival hard-kill mass: destruction that defended the asset. */

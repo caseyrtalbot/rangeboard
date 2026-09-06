@@ -223,12 +223,17 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
   )
 })
 
-/** Engagement timeline lane strip: detection, classification, window, shot, arrival per threat. */
-export function EngagementStrip() {
+/**
+ * Engagement timeline lane strip: detection, classification, window, shot, arrival per threat.
+ * Under the board it owns a collapse header and persists its open flag. `embedded` (inside a
+ * widget frame, which has its own header) renders it open with no header and no storage.
+ */
+export function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
   const scenario = useStore((s) => s.scenario)
-  const [open, setOpen] = useState(
-    () => typeof localStorage !== 'undefined' && localStorage.getItem(OPEN_KEY) === '1',
+  const [openFlag, setOpen] = useState(
+    () => !embedded && typeof localStorage !== 'undefined' && localStorage.getItem(OPEN_KEY) === '1',
   )
+  const open = embedded || openFlag
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [hover, setHover] = useState<{ i: number; tipLeft: number; tipTop: number } | null>(null)
   const [w, setW] = useState(0)
@@ -310,6 +315,7 @@ export function EngagementStrip() {
 
   return (
     <div className="engstrip" ref={stripRef}>
+      {!embedded && (
       <div className="engstrip-head" onClick={toggleOpen}>
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
         <span className="engstrip-title">
@@ -336,6 +342,7 @@ export function EngagementStrip() {
           </div>
         )}
       </div>
+      )}
       {open && (
         <div className="engstrip-scroll">
           <div className="engstrip-axis">

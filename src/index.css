@@ -331,7 +331,7 @@ body,
 
 /* ---------- Toolbar ---------- */
 
-/* HANDOFF 6.5: the board bar holds one row at 1440px. Secondary controls sit
+/* The board bar holds one row at 1440px. Secondary controls sit
    behind the View and overflow menus, so the bar must never wrap. */
 .toolbar {
   display: flex;

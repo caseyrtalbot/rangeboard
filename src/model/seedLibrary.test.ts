@@ -85,7 +85,7 @@ describe('seed library provenance', () => {
   })
 
   it('the Stinger and Leonidas kill probabilities keep their counts in the text, not as a spread', () => {
-    // R-F-35: 2 of 2 and 61 of 61 (49 in one pulse) are outside their trial
+    // 2 of 2 and 61 of 61 (49 in one pulse) are outside their trial
     // domain, so both rows take the PF pseudo-beta around the nominal 0.7
     // like every other effector; the counts stay in the row value.
     const rows = ['lib-stinger', 'lib-leonidas'].map((id) => {

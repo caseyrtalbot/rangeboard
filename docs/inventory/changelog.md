@@ -1,5 +1,7 @@
 # Inventory change log, August 2026
 
+> Dated source document, August 2026. Source and tests decide current behaviour.
+
 Every change to the selectable inventory, with its justification. Read
 `provenance.md` for the per-field evidence and `gaps.md` for what was excluded.
 

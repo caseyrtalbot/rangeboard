@@ -67,7 +67,7 @@ describe('Inspector effector and threat marks', () => {
     expect(rcs).toContain('<span class="prov-mark pf" title="planning factor · spread ±6 dB"')
   })
 
-  it('tags the size factor as a planning factor with no spread (R-D-37)', () => {
+  it('tags the size factor as a planning factor with no spread', () => {
     selectFromModel('lib-mavic3')
     const html = render()
     const size = html.slice(html.indexOf('Kinetic size factor'), html.indexOf('Navigation'))
