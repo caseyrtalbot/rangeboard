@@ -48,13 +48,11 @@ function PanelLoading({ label }: { label: string }) {
   return <State tone="inactive">{label}</State>
 }
 
-const RIGHT_W_KEY = RIGHT_PANEL_WIDTH_KEY
-
 const RIGHT_MIN_W = 280
 const RIGHT_MAX_W = 560
 
 function savedRightWidth(): number {
-  const n = Number(readSetting(RIGHT_W_KEY))
+  const n = Number(readSetting(RIGHT_PANEL_WIDTH_KEY))
   return n >= RIGHT_MIN_W && n <= RIGHT_MAX_W ? n : 408
 }
 
@@ -534,7 +532,7 @@ export default function App() {
   function setRightWidth(w: number) {
     const next = Math.min(RIGHT_MAX_W, Math.max(RIGHT_MIN_W, w))
     setRightW(next)
-    writeSetting(RIGHT_W_KEY, String(next))
+    writeSetting(RIGHT_PANEL_WIDTH_KEY, String(next))
   }
 
   function nudgeRightWidth(e: React.KeyboardEvent) {

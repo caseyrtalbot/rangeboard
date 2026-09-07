@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "e9c7c093dd4df0fc280efda76896e2bcf9443830e6b880cbc29e5241a3488f27",
+      "sha256": "e3677cbdf82052c2e3609e78bbeb6eb2a3b3b27ee1d86893a5b240c20edd8213",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed final Ops root boundary including Toolbar; startup commands and local-first architecture remain accurate."
+      "note": "Reviewed App.tsx alias removal: RIGHT_PANEL_WIDTH_KEY is now read directly; startup commands and architecture unchanged."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "d467fce6c1218eca011e155ab61dff6110cb6b0dc7d2299323a019f8ef8e9567",
+      "sha256": "fc9b1f704bcd0c80770e883dbde32ba921f70df7b6fe3e0db85347724fd5d958",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed PR 3 merge: the duplicated AccountingLine in AnalyzePanel and ExecutePanel moved to src/te/ui/AccountingLine.tsx with no behavior change; documented entry points are unchanged."
+      "note": "Reviewed dead-surface cleanup: removed unused vite.svg and icons.svg assets, the uncalled PersonField, the RIGHT_W_KEY alias, a duplicate .lens-layout rule, and wired favicon.svg; no documented behavior changed."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d5ddba07e0e517efa3eb1198134d40f7f6548887ef87c16216e62098521df868",
+      "sha256": "015e32f4c99a61f0e943d447bdbb35375ee06a2c384d5c8a228656d3ec1cfcd1",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed PR 3 merge: the duplicated AccountingLine in AnalyzePanel and ExecutePanel moved to src/te/ui/AccountingLine.tsx with no behavior change; documented entry points are unchanged."
+      "note": "Reviewed dead-surface cleanup: removed unused vite.svg and icons.svg assets, the uncalled PersonField, the RIGHT_W_KEY alias, a duplicate .lens-layout rule, and wired favicon.svg; no documented behavior changed."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "8a837c233a874a948a18931df0be31afb8033bc9a785a129f1e1a31f67734452",
+      "sha256": "53a0712aeb82f86474c6fc45dd7d6214e6c94f39ba31e47aa87b15d7c7e81dd3",
       "reviewedAt": "2026-09-07",
-      "note": "Verified --dir src limits Vitest discovery to 107 current files; positional src also matches archived paths and must not be used for this distinction."
+      "note": "Reviewed vite.config.ts change: only the scaffold URL comment was removed; the config and verification commands are unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "8b7da69cbeaab705cb22e728afdfd56a9914494483ec1783c2cdf3b166a52d30",
+      "sha256": "f8c9d3f9479cbdcc72f7744714c6a7ea4f78d4378985e3fe9481a10a1ee1ab03",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 5 Storage and boundary views reuse State, inspector-actions, toolbar/popover styles and semantic tokens; no token or typography changes."
+      "note": "Reviewed index.css change: two .lens-layout rules folded into one with the same declarations; no token or component style changed."
     }
   ],
   "historical": [
