@@ -43,7 +43,7 @@ const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokeP
  * the same string EntityLayer anchors and the same string layoutLabels
  * measured when it placed the spoke.
  */
-export function CalloutLayer({ placements }: Props) {
+export const CalloutLayer = memo(function CalloutLayer({ placements }: Props) {
   const entities = useStore((s) => s.scenario.entities)
   const camera = useStore((s) => s.camera)
   const show = useStore((s) => s.ui.layers.labels)
@@ -58,4 +58,4 @@ export function CalloutLayer({ placements }: Props) {
       })}
     </Group>
   )
-}
+})

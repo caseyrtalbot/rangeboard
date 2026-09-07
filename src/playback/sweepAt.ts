@@ -53,15 +53,19 @@ export function sweepAt(input: Scenario, timeline: TrackTimeline, tS: number): S
     }
     return slot.sweep
   }
-  // The newest result for the same inputs lends its identities to every value
-  // that did not change, so a memo keyed on a state object or the sensor set
-  // holds across publications where nothing happened.
-  const prev = slots.find((slot) => slot.scenario === scenario && slot.timeline === timeline)?.sweep
-  const hits = detectionsAt(scenario, tS)
+  // The newest result for the same inputs, else the newest result of all,
+  // lends its identities to every value that did not change, so a memo keyed
+  // on a state object, a hit list or the sensor set holds across publications
+  // where nothing happened and across an edit that changed no hold. The
+  // sweep object itself stays fresh per scenario.
+  const prev = (
+    slots.find((slot) => slot.scenario === scenario && slot.timeline === timeline) ?? slots[0]
+  )?.sweep
+  const hits = stableHits(detectionsAt(scenario, tS), prev?.hits)
   const sweep: Sweep = {
     hits,
     states: stableStates(trackStatesAt(timeline, tS), prev?.states),
-    effectorStates: effectorStatesAt(timeline, tS),
+    effectorStates: stableEffectorStates(effectorStatesAt(timeline, tS), prev?.effectorStates),
     activeSensorIds: stableSet(activeSensors(hits), prev?.activeSensorIds),
   }
   slots.unshift({ scenario, timeline, tS, sweep })
@@ -85,6 +89,43 @@ function sameStrings(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
   return true
+}
+
+function sameHit(a: DetectionHit, b: DetectionHit): boolean {
+  return (
+    a.sensorId === b.sensorId &&
+    a.sensorType === b.sensorType &&
+    a.classified === b.classified &&
+    a.resolved === b.resolved &&
+    a.slantM === b.slantM &&
+    a.pd === b.pd
+  )
+}
+
+/** Field-equal hit lists keep the previous array; an unchanged map keeps the previous map. */
+function stableHits(
+  next: Map<string, DetectionHit[]>,
+  prev: Map<string, DetectionHit[]> | undefined,
+): Map<string, DetectionHit[]> {
+  if (!prev) return next
+  let reused = 0
+  for (const [id, list] of next) {
+    const old = prev.get(id)
+    if (!old || old.length !== list.length || !list.every((hit, i) => sameHit(hit, old[i]))) continue
+    next.set(id, old)
+    reused++
+  }
+  return reused === next.size && prev.size === next.size ? prev : next
+}
+
+/** An unchanged effector state map keeps the previous map. */
+function stableEffectorStates(
+  next: Map<string, EffectorLiveState>,
+  prev: Map<string, EffectorLiveState> | undefined,
+): Map<string, EffectorLiveState> {
+  if (!prev || prev.size !== next.size) return next
+  for (const [id, state] of next) if (prev.get(id) !== state) return next
+  return prev
 }
 
 /** Field-equal track states keep the previous object; an unchanged map keeps the previous map. */

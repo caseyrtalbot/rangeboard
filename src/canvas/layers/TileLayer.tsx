@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Image as KonvaImage } from 'react-konva'
 import { useStore } from '../../state/store'
 import {
@@ -49,7 +49,7 @@ function tileImage(z: number, x: number, y: number): HTMLImageElement | null {
 }
 
 /** Esri World Imagery tiles anchored at the scenario geo reference. Sat mode only. */
-export function TileLayer({ size }: Props) {
+export const TileLayer = memo(function TileLayer({ size }: Props) {
   const camera = useStore((s) => s.camera)
   const basemap = useStore((s) => s.ui.basemap)
   const geoRef = useStore((s) => s.scenario.geoRef)
@@ -111,4 +111,4 @@ export function TileLayer({ size }: Props) {
     }
   }
   return <>{tiles}</>
-}
+})

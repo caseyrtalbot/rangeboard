@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { gridStepM } from '../../geometry/geo'
@@ -7,7 +8,7 @@ interface Props {
 }
 
 /** Adaptive world grid. Hidden in sat mode when an image or geo reference is set. */
-export function GridLayer({ size }: Props) {
+export const GridLayer = memo(function GridLayer({ size }: Props) {
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
   const basemap = useStore((s) => s.ui.basemap)
@@ -55,4 +56,4 @@ export function GridLayer({ size }: Props) {
     )
   }
   return <>{lines}</>
-}
+})

@@ -9,7 +9,7 @@ import type {
   SpecModel,
   Vec2,
 } from '../model/types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M, newId } from '../model/types'
+import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { heldTracksSeries, kpiSeries, sampleCount, threatSeries } from '../analysis/series'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
@@ -38,16 +38,19 @@ function laydown(): Scenario {
   const common = { headingDeg: 0, color: null, notes: '' }
   const s = emptyScenario()
   s.roe = 'free'
+  // Fixed ids: the draw keys hash the ids, so a time-based id would give the
+  // replicates a different sample set on every run.
+  let seq = 0
   const ent = (kind: EntityKind, specId: string, pos: Vec2, extra?: Partial<Entity>) => {
-    const id = newId('e')
+    const id = `lay-e${++seq}`
     s.entities.push({ id, name: specId, kind, specId, pos, ...common, ...extra })
     return id
   }
   const flight = (entityId: string, from: Vec2, to: Vec2) => {
-    s.paths.push({ id: newId('p'), entityId, points: [from, to], speedMps: 0, startDelayS: 0 })
+    s.paths.push({ id: `lay-p${++seq}`, entityId, points: [from, to], speedMps: 0, startDelayS: 0 })
   }
   const link = (fromId: string, toId: string) => {
-    s.connections.push({ id: newId('c'), fromId, toId, label: 'track data' })
+    s.connections.push({ id: `lay-c${++seq}`, fromId, toId, label: 'track data' })
   }
   const mohajer = s.library.find((m) => m.id === 'lib-mohajer6')!
   mohajer.uas = { ...mohajer.uas!, swerling: 1 }

@@ -13,6 +13,9 @@ import {
   wezRadiusM,
 } from './impact'
 import { markPresentationVariant } from '../model/scenario'
+import { fillScenario } from '../io/persist'
+import captured from '../playback/__fixtures__/layered-acoustic-merops.json'
+import harness from '../../docs/field-te/evidence/perf-2026-09-06/scenario.json'
 
 /** UAS model builder; base spec has none of the weapon fields (legacy shape). */
 function uasModel(patch: Partial<UasSpec>, id = 'tst-uas'): SpecModel {
@@ -404,6 +407,78 @@ describe('assessLeakerImpacts', () => {
     const { scenario } = scenarioWith(impactModel, { x: 0, y: 0 })
     scenario.paths = []
     expect(impactsFor(scenario)).toEqual([])
+  })
+})
+
+describe('engagementPicture incremental assessments', () => {
+  const base = fillScenario(captured as unknown as Scenario)
+  const fresh = (s: Scenario) => JSON.stringify(assessAllThreats(s))
+  const moved = (s: Scenario, id: string): Scenario => ({
+    ...s,
+    entities: s.entities.map((e) => (e.id === id ? { ...e, pos: { x: e.pos.x + 5, y: e.pos.y } } : e)),
+  })
+  const firstOf = (s: Scenario, test: (e: Entity) => boolean) => s.entities.find(test)!.id
+
+  it('reuses every assessment across an edit no threat reads, and recomputes exactly otherwise', () => {
+    let prev = engagementPicture(base)
+    expect(JSON.stringify(prev.assessments)).toBe(fresh(base))
+    // A marker is never an engine input, so a move of one carries every
+    // assessment object over.
+    const marker: Entity = {
+      id: 'marker-1',
+      name: 'marker',
+      kind: 'marker',
+      specId: null,
+      pos: { x: 0, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    }
+    prev = engagementPicture({ ...base, entities: [...base.entities, marker] })
+    let next = moved({ ...base, entities: [...base.entities, marker] }, marker.id)
+    let picture = engagementPicture(next)
+    expect(JSON.stringify(picture.assessments)).toBe(fresh(next))
+    expect(picture.assessments.every((a, i) => a === prev.assessments[i])).toBe(true)
+    // A presentation edit reads the same engine objects.
+    prev = picture
+    next = { ...next, name: 'renamed', testCards: [] }
+    picture = engagementPicture(next)
+    expect(picture.assessments.every((a, i) => a === prev.assessments[i])).toBe(true)
+    // Every other kind of edit must match a fresh run byte for byte.
+    const edits: Array<(s: Scenario) => Scenario> = [
+      (s) => moved(s, firstOf(s, (e) => e.kind === 'sensor' && e.name.startsWith('RPS-42'))),
+      (s) => moved(s, firstOf(s, (e) => e.kind === 'effector')),
+      (s) => moved(s, firstOf(s, (e) => e.kind === 'asset')),
+      (s) => moved(s, firstOf(s, (e) => e.kind === 'c2')),
+      (s) => moved(s, firstOf(s, (e) => e.kind === 'uas')),
+      (s) => ({
+        ...s,
+        entities: s.entities.map((e) => (e.kind === 'sensor' && e.name.startsWith('KuRFS') ? { ...e, enabled: false } : e)),
+      }),
+      (s) => ({ ...s, environment: { ...s.environment, apply: !s.environment.apply } }),
+      (s) => ({ ...s, requirements: { ...s.requirements, pdDetect: 0.6 } }),
+      (s) => ({ ...s, paths: s.paths.map((p) => ({ ...p, speedMps: (p.speedMps || 20) + 1 })) }),
+      (s) => ({ ...s, connections: s.connections.slice(1) }),
+      (s) => ({ ...s, roe: s.roe === 'free' ? 'tight' : 'free' }),
+    ]
+    for (const edit of edits) {
+      next = edit(next)
+      picture = engagementPicture(next)
+      expect(JSON.stringify(picture.assessments)).toBe(fresh(next))
+    }
+  })
+
+  it('reuses every assessment when a sensor the technology gate refuses is moved', () => {
+    // The harness scenario: its RF sensors hear none of its threats, so the
+    // first sensor the harness moves is no input to any assessment.
+    const scenario = fillScenario(harness as unknown as Scenario)
+    const prev = engagementPicture(scenario)
+    const rf = firstOf(scenario, (e) => e.kind === 'sensor')
+    expect(scenario.entities.find((e) => e.id === rf)!.name.startsWith('RfOne')).toBe(true)
+    const next = moved(scenario, rf)
+    const picture = engagementPicture(next)
+    expect(JSON.stringify(picture.assessments)).toBe(fresh(next))
+    expect(picture.assessments.every((a, i) => a === prev.assessments[i])).toBe(true)
   })
 })
 

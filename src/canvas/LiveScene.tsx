@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef } from 'react'
 import type { Scenario, Vec2 } from '../model/types'
 import type { Camera } from '../state/store'
 import { liveTracks } from '../playback/tracks'
+import type { LiveTrack } from '../playback/tracks'
 import type { LeakerImpact } from '../analysis/impact'
 import { blinkOn, shotsInFlightAt } from '../playback/trackState'
 import type { TrackTimeline } from '../playback/trackState'
@@ -65,6 +66,44 @@ function stablePlacements(
   return reused === next.size && prev.size === next.size ? prev : next
 }
 
+function sameTrack(a: LiveTrack, b: LiveTrack): boolean {
+  return (
+    a.pos.x === b.pos.x &&
+    a.pos.y === b.pos.y &&
+    a.headingDeg === b.headingDeg &&
+    a.flying === b.flying &&
+    a.done === b.done
+  )
+}
+
+/**
+ * A scenario swap at one display time rebuilds the tracks. A track whose
+ * fields did not change keeps the previous object, and the Map keeps its
+ * identity when nothing moved, so an edit that flies no threat re-renders
+ * no flying node.
+ */
+function stableTracks(
+  next: Map<string, LiveTrack>,
+  prev: Map<string, LiveTrack> | null,
+): Map<string, LiveTrack> {
+  if (!prev) return next
+  let reused = 0
+  for (const [id, track] of next) {
+    const old = prev.get(id)
+    if (!old || !sameTrack(track, old)) continue
+    next.set(id, old)
+    reused++
+  }
+  return reused === next.size && prev.size === next.size ? prev : next
+}
+
+/** The previous spoke set when it holds the same ids, so the entity groups hold across a frame. */
+function stableIds(next: Set<string>, prev: Set<string>): Set<string> {
+  if (prev.size !== next.size) return next
+  for (const id of next) if (!prev.has(id)) return next
+  return prev
+}
+
 /**
  * Every time-dependent canvas layer, under one frame clock. This is the only
  * place `useFrameClock` is mounted: it sits inside the live Konva `Layer`, so
@@ -83,7 +122,12 @@ export function LiveScene(props: Props) {
   const { scenario, camera, size, mouseWorld, impacts, timeline, durationS } = props
   const { simTimeS, displayTimeS } = useFrameClock(durationS)
 
-  const tracks = useMemo(() => liveTracks(scenario, displayTimeS), [scenario, displayTimeS])
+  const prevTracks = useRef<Map<string, LiveTrack> | null>(null)
+  const tracks = useMemo(
+    // eslint-disable-next-line react/refs -- the previous tracks lend identities; one render stale by design
+    () => stableTracks(liveTracks(scenario, displayTimeS), prevTracks.current),
+    [scenario, displayTimeS],
+  )
   const shots = useMemo(() => shotsInFlightAt(timeline, displayTimeS), [timeline, displayTimeS])
   const sweep = sweepAt(scenario, timeline, simTimeS)
   // One pulse phase per frame. The nodes read this boolean, never the time.
@@ -118,14 +162,23 @@ export function LiveScene(props: Props) {
     },
     [labelText, tracks, camera, size],
   )
+  // A moved label changes the placements but seldom the spoke set; the set
+  // keeps its identity while its ids hold, so the entity groups do not
+  // re-render for a callout that moved.
   const spokeIds = useMemo(
-    () => new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
+    () =>
+      stableIds(
+        new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
+        // eslint-disable-next-line react/refs -- last frame's spoke set lends its identity; one frame stale by design
+        prevSpokeIds.current,
+      ),
     [labelPlacements],
   )
   useEffect(() => {
+    prevTracks.current = tracks
     prevSpokeIds.current = spokeIds
     prevPlacements.current = labelPlacements
-  }, [spokeIds, labelPlacements])
+  }, [tracks, spokeIds, labelPlacements])
 
   return (
     <>

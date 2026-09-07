@@ -378,9 +378,52 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
   const ghost = state?.phase === 'ghost'
   const members = entity.kind === 'uas' ? memberPositions(entity, { x, y }, headingDeg) : null
 
+  const main = (
+    <Group
+      x={x}
+      y={y}
+      scaleX={1 / k}
+      scaleY={1 / k}
+      opacity={off ? 0.45 : ghost ? GHOST_OPACITY : 1}
+      draggable={tool === 'select'}
+      onClick={(e) => handleClick(e, entity)}
+      onContextMenu={(e) => handleContextMenu(e, entity)}
+      onDragStart={(e) => {
+        if (e.target === e.currentTarget) useStore.getState().select({ entityIds: [entity.id] })
+      }}
+      onDragEnd={(e) => {
+        // The heading handle's drag events bubble here; only a drag of the
+        // group itself moves the entity.
+        if (e.target !== e.currentTarget) return
+        const store = useStore.getState()
+        store.moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })
+        // A repositioned blue-force system gets fresh connect offers.
+        if (entity.kind !== 'sensor' && entity.kind !== 'effector' && entity.kind !== 'c2') return
+        const pointer = e.target.getStage()?.getPointerPosition()
+        if (pointer) store.openConnectSuggestion(entity.id, pointer)
+      }}
+    >
+      <EntityBody
+        entity={entity}
+        headingDeg={headingDeg}
+        detected={props.detected}
+        classified={props.classified}
+        state={state}
+        effectorState={props.effectorState}
+        blink={props.blink}
+        spoked={props.spoked}
+        model={model}
+        color={color}
+        tool={tool}
+      />
+    </Group>
+  )
+  // A single ship needs no fragment: one element fewer per node on a zoom.
+  if (!members || members.length < 2) return main
+
   return (
     <>
-      {members?.slice(1).map((m, i) => (
+      {members.slice(1).map((m, i) => (
         <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
           {ghost ? (
             <>
@@ -407,44 +450,7 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
           )}
         </Group>
       ))}
-      <Group
-        x={x}
-        y={y}
-        scaleX={1 / k}
-        scaleY={1 / k}
-        opacity={off ? 0.45 : ghost ? GHOST_OPACITY : 1}
-        draggable={tool === 'select'}
-        onClick={(e) => handleClick(e, entity)}
-        onContextMenu={(e) => handleContextMenu(e, entity)}
-        onDragStart={(e) => {
-          if (e.target === e.currentTarget) useStore.getState().select({ entityIds: [entity.id] })
-        }}
-        onDragEnd={(e) => {
-          // The heading handle's drag events bubble here; only a drag of the
-          // group itself moves the entity.
-          if (e.target !== e.currentTarget) return
-          const store = useStore.getState()
-          store.moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })
-          // A repositioned blue-force system gets fresh connect offers.
-          if (entity.kind !== 'sensor' && entity.kind !== 'effector' && entity.kind !== 'c2') return
-          const pointer = e.target.getStage()?.getPointerPosition()
-          if (pointer) store.openConnectSuggestion(entity.id, pointer)
-        }}
-      >
-        <EntityBody
-          entity={entity}
-          headingDeg={headingDeg}
-          detected={props.detected}
-          classified={props.classified}
-          state={state}
-          effectorState={props.effectorState}
-          blink={props.blink}
-          spoked={props.spoked}
-          model={model}
-          color={color}
-          tool={tool}
-        />
-      </Group>
+      {main}
     </>
   )
 })
@@ -700,7 +706,13 @@ interface GroupProps {
   entities: Entity[]
   /** Live tracks for the entities that fly a path; null for the group at rest. */
   tracks: Map<string, LiveTrack> | null
-  sweep: Sweep
+  /**
+   * The sweep's parts, not the sweep: `sweepAt` keeps each map's identity
+   * while its contents hold, so a group re-renders only for a change it draws.
+   */
+  hits: Sweep['hits']
+  states: Sweep['states']
+  effectorStates: Sweep['effectorStates']
   spokeIds: Set<string>
   blink: boolean
 }
@@ -713,14 +725,14 @@ interface GroupProps {
  * what moved.
  */
 const EntityGroup = memo(function EntityGroup(group: GroupProps) {
-  const { entities, tracks, sweep, spokeIds, blink } = group
+  const { entities, tracks, states, effectorStates, spokeIds, blink } = group
   return (
     <>
       {entities.map((e) => {
         const track = tracks?.get(e.id)
-        const hits = sweep.hits.get(e.id)
-        const state = sweep.states.get(e.id)
-        const effectorState = sweep.effectorStates.get(e.id) ?? 'idle'
+        const hits = group.hits.get(e.id)
+        const state = states.get(e.id)
+        const effectorState = effectorStates.get(e.id) ?? 'idle'
         // The pulse reaches only the nodes that draw it, so the 2 Hz flip
         // re-renders nothing else.
         const pulses = state?.phase === 'engaged' || effectorState === 'active'
@@ -762,8 +774,24 @@ export function EntityLayer({ tracks, sweep, spokeIds, blink }: Props) {
   }, [entities, paths])
   return (
     <>
-      <EntityGroup entities={groups.atRest} tracks={null} sweep={sweep} spokeIds={spokeIds} blink={blink} />
-      <EntityGroup entities={groups.flying} tracks={tracks} sweep={sweep} spokeIds={spokeIds} blink={blink} />
+      <EntityGroup
+        entities={groups.atRest}
+        tracks={null}
+        hits={sweep.hits}
+        states={sweep.states}
+        effectorStates={sweep.effectorStates}
+        spokeIds={spokeIds}
+        blink={blink}
+      />
+      <EntityGroup
+        entities={groups.flying}
+        tracks={tracks}
+        hits={sweep.hits}
+        states={sweep.states}
+        effectorStates={sweep.effectorStates}
+        spokeIds={spokeIds}
+        blink={blink}
+      />
     </>
   )
 }

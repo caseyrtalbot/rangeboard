@@ -124,7 +124,7 @@ export function rcsRangeFactor(spec: SensorSpec, target: UasSpec | undefined): n
 }
 
 /** The instrumented range when the spec records one, else null. */
-function instrumentedM(spec: SensorSpec): number | null {
+export function instrumentedM(spec: SensorSpec): number | null {
   const cap = spec.instrumentedRangeM
   return cap != null && Number.isFinite(cap) && cap > 0 ? cap : null
 }

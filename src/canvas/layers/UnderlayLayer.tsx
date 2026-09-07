@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Image as KonvaImage } from 'react-konva'
 import { useStore } from '../../state/store'
 
 /** Calibrated satellite/range image. Visible in sat mode only. */
-export function UnderlayLayer() {
+export const UnderlayLayer = memo(function UnderlayLayer() {
   const underlay = useStore((s) => s.scenario.underlay)
   const basemap = useStore((s) => s.ui.basemap)
   const moveUnderlay = useStore((s) => s.ui.moveUnderlay)
@@ -40,4 +40,4 @@ export function UnderlayLayer() {
       onDragEnd={(e) => updateUnderlay({ pos: { x: e.target.x(), y: e.target.y() } })}
     />
   )
-}
+})

@@ -1,11 +1,15 @@
-import type { ImpactSeverity, Scenario, SpecModel, Vec2 } from '../model/types'
+import type { Entity, ImpactSeverity, Scenario, SensorSpec, SpecModel, UasSpec, Vec2 } from '../model/types'
 import { entityActive } from '../model/types'
-import { engineKeyOf } from '../model/scenario'
+import { engineKeyOf, modelFor, scenarioDurationS } from '../model/scenario'
+import { formationOffsets } from '../geometry/geo'
 import { defaultEffectRadiusM, defaultWeaponProfile } from '../model/weaponFactors'
 import type { ThreatAssessment } from '../playback/sim'
-import { assessAllThreats } from '../playback/sim'
+import { assessThreat } from '../playback/sim'
 import type { AttritionReport } from '../playback/attritionReport'
 import { resolveEngagements } from '../playback/attrition'
+import { deterministicPolicy } from '../playback/policy'
+import { resolvedThresholds } from '../playback/detection'
+import { effectiveDetectRangeM, instrumentedM, radarPdCurve, sensorHoldGate } from './sensorEnv'
 
 /**
  * Threat WEZ geometry and leaker engagement-potential (I&W) warnings. Pure functions
@@ -267,6 +271,125 @@ function touchKey(key: Scenario): void {
   if (recentKeys.length > PICTURE_LIMIT) pictureCache.delete(recentKeys.shift()!)
 }
 
+interface ThreatMemo {
+  /** Every object and value the assessment read, in a fixed order. */
+  inputs: unknown[]
+  assessment: ThreatAssessment
+}
+
+/**
+ * The per-threat assessments of the last deterministic run. The picture cache
+ * serves a repeated scenario object; this serves the next edit, so a threat
+ * whose inputs the edit did not touch keeps its assessment object.
+ */
+let lastAssessed: Map<string, ThreatMemo> | null = null
+
+/** Ground distance from p to the segment ab, meters. */
+function distToSegment(p: Vec2, a: Vec2, b: Vec2): number {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const len2 = dx * dx + dy * dy
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2)) : 0
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+}
+
+/**
+ * The farthest ground distance, meters, at which `spec` can still hit this
+ * target: the effective detect range of a threshold sensor, the instrumented
+ * range of a Pd-modeled radar (its Pd is 0 beyond it), null when it has no
+ * bound. The sweep hits on slant range, which is never below ground range,
+ * so a member farther than this on the ground is never detected.
+ */
+function sensorReachM(spec: SensorSpec, scenario: Scenario, uasSpec: UasSpec | undefined): number | null {
+  if (radarPdCurve(spec, scenario.environment, uasSpec)) return instrumentedM(spec)
+  return effectiveDetectRangeM(spec, scenario.environment, uasSpec)
+}
+
+/**
+ * The entity objects one threat's assessment reads, in scenario order: the
+ * threat itself, every asset, effector and C2 node, and every sensor that
+ * can hit it. A sensor whose technology gate refuses the target, or whose
+ * reach ends short of every point of the flight path with the formation's
+ * spread added, never hits, so it never cues, never routes and writes no
+ * observation, wherever it stands or points. Other threats reach the
+ * assessment only through the run duration, which the shared inputs carry
+ * as a number. Markers are never read.
+ */
+function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
+  const path = scenario.paths.find((p) => p.entityId === uas.id)
+  // A threat with no flight path is 'no-path' before any other read.
+  if (!path || path.points.length < 2) return [uas]
+  const uasSpec = modelFor(scenario, uas)?.uas
+  const f = uas.formation
+  const spreadM =
+    f && f.count > 1
+      ? Math.max(...formationOffsets(f.shape, f.count, f.spacingM, 0).map((o) => Math.hypot(o.x, o.y)))
+      : 0
+  const out: Entity[] = [uas]
+  for (const e of scenario.entities) {
+    if (e === uas || e.kind === 'uas' || e.kind === 'marker') continue
+    if (e.kind === 'sensor') {
+      const spec = modelFor(scenario, e)?.sensor
+      if (spec) {
+        const gate = sensorHoldGate(spec, uasSpec)
+        if (gate !== 'ok' && gate !== 'needs-cue') continue
+        const reachM = sensorReachM(spec, scenario, uasSpec)
+        if (reachM != null) {
+          let nearestM = Number.POSITIVE_INFINITY
+          for (let i = 1; i < path.points.length; i++) {
+            nearestM = Math.min(nearestM, distToSegment(e.pos, path.points[i - 1], path.points[i]))
+          }
+          if (nearestM - spreadM > reachM) continue
+        }
+      }
+    }
+    out.push(e)
+  }
+  return out
+}
+
+function sameInputs(a: unknown[], b: unknown[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
+/**
+ * `assessAllThreats` for the deterministic path, reusing the last run's
+ * assessment of every threat whose inputs are the same objects: the scenario
+ * fields the assessment reads, the run duration, and the entities it reads
+ * (`threatEntityInputs`). Every scenario change replaces the objects it
+ * touches, so identity equality on that list is exact. The deterministic
+ * policy is pure, so one threat's assessment does not depend on another's.
+ */
+function assessThreatsIncremental(scenario: Scenario): ThreatAssessment[] {
+  const draw = deterministicPolicy(resolvedThresholds(scenario))
+  const shared: unknown[] = [
+    scenario.paths,
+    scenario.connections,
+    scenario.library,
+    scenario.environment,
+    scenario.requirements,
+    scenario.roe,
+    scenario.doctrine,
+    scenario.raid,
+    scenarioDurationS(scenario),
+  ]
+  const byThreat = new Map<string, ThreatMemo>()
+  const out: ThreatAssessment[] = []
+  for (const e of scenario.entities) {
+    if (e.kind !== 'uas' || !entityActive(e)) continue
+    const inputs = [...shared, ...threatEntityInputs(scenario, e)]
+    const old = lastAssessed?.get(e.id)
+    const assessment =
+      old && sameInputs(old.inputs, inputs) ? old.assessment : assessThreat(scenario, e.id, draw)
+    byThreat.set(e.id, { inputs, assessment })
+    out.push(assessment)
+  }
+  lastAssessed = byThreat
+  return out
+}
+
 /** The deterministic picture of a scenario, computed once per engine identity. */
 export function engagementPicture(scenario: Scenario): EngagementPicture {
   const key = engineKeyOf(scenario)
@@ -275,7 +398,7 @@ export function engagementPicture(scenario: Scenario): EngagementPicture {
     touchKey(key)
     return hit
   }
-  const assessments = assessAllThreats(key)
+  const assessments = assessThreatsIncremental(key)
   const report = resolveEngagements(key, assessments)
   const impacts = assessLeakerImpacts(key, assessments, report)
   const picture: EngagementPicture = { assessments, report, impacts }

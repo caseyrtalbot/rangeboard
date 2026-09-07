@@ -295,20 +295,25 @@ function spokeSide(
   }
   let terminalX = c.cx + dir * c.radius
   if (viewport) terminalX = Math.min(Math.max(terminalX, EDGE_MARGIN), viewport.w - EDGE_MARGIN)
+  // Spoke geometry snaps to whole pixels. A cluster centroid drifts by a
+  // fraction of a pixel per frame while one member flies, and a placement
+  // that snaps to the same pixel is the same placement, so the callouts hold
+  // their identities until a label really moves.
+  terminalX = Math.round(terminalX)
   sorted.forEach((m, i) => {
-    const ly = c.cy + (i - (sorted.length - 1) / 2) * SLOT_H + shift
+    const ly = Math.round(c.cy + (i - (sorted.length - 1) / 2) * SLOT_H + shift)
     const elbowX = terminalX - dir * TERMINAL_LEN
     const dx = elbowX - m.sx
     const dy = ly - m.sy
     const d = Math.hypot(dx, dy) || 1
-    const ax = m.sx + (dx / d) * GLYPH_CLEAR
-    const ay = m.sy + (dy / d) * GLYPH_CLEAR
+    const ax = Math.round(m.sx + (dx / d) * GLYPH_CLEAR)
+    const ay = Math.round(m.sy + (dy / d) * GLYPH_CLEAR)
     const width = m.name.length * CHAR_W
     out.set(m.id, {
       mode: 'spoke',
       points: [ax, ay, elbowX, ly, terminalX, ly],
       tx: dir === 1 ? terminalX + TEXT_GAP : terminalX - TEXT_GAP - width,
-      ty: ly - LABEL_FONT_PX / 2,
+      ty: Math.round(ly - LABEL_FONT_PX / 2),
       width,
       align: dir === 1 ? 'left' : 'right',
     })
