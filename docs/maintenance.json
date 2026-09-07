@@ -96,9 +96,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "6c4227c6c6f81e194c94dee16ba5b437b095f387b424e223d85e21f816d7cf3f",
-      "reviewedAt": "2026-09-06",
-      "note": "Wave 0 and Wave 1 recorded: ledger rows with e1a877a and 10aadd3, dev and prod after-tables, the React dev JSX runtime analysis, Casey's merge word; section 4 replaced with the Wave 2 task at 10aadd3 line numbers, integration steps and acceptance including the five carried dev targets; traps updated."
+      "sha256": "4c05e832bcf1d1e9f3db68f96299f8015de7dd0eb921ac005238238674434139",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 2 recorded: ledger row with ae55f0a, the dev and prod after-tables, the acceptance result with the four open dev targets and the prod numbers beside them, the traps for the presentation variant, engine-keyed caches, the flaky replicate test, quantized heap readings and the recharts grid; section 4 replaced with the Wave 3 task at ae55f0a line numbers with Casey's pending decision on the open targets."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
