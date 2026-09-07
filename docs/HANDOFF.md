@@ -26,8 +26,9 @@ warnings, `node scripts/check-docs.mjs` passes.
 
 Head after Wave 4: `0219d21` plus this handoff update. Gate: 203 test files and 2830 tests pass
 (the eight AnalysisPanel tests that covered the removed selection-detail paths are gone),
-63 pre-existing oxlint warnings, entry chunk 245.75 kB gzip, build warning-free. Not merged to
-`main`; the merge needs Casey's word.
+63 pre-existing oxlint warnings, entry chunk 245.75 kB gzip, build warning-free. Merged to
+`main` and pushed 2026-09-07 on Casey's word; `codex/board-workspace-ui` is deleted and `main`
+is the working branch from Wave 5 on.
 
 Measured after Wave 4, script milliseconds per phase, same harness and scenario as section 3:
 
@@ -60,8 +61,9 @@ contract) and became a `role="group"` of `aria-pressed` buttons rather than a hi
 
 Approved by Casey on 2026-09-06:
 
-1. Fix on `codex/board-workspace-ui`. Merge to `main` after Wave 1. The merge itself needs Casey's word
-   (given 2026-09-06, with push). Later merges need it again.
+1. Waves 1 to 4 were fixed on `codex/board-workspace-ui` and merged to `main` on Casey's word
+   (2026-09-06 and 2026-09-07, with push). From 2026-09-07 `main` is the working branch: commit
+   there when the gate is green; a push still needs Casey's word each time.
 2. Keep the deterministic engine on the main thread and optimize it. No worker offload of `engagementPicture`.
 3. Commit the measurement harness and both profile outputs as dated evidence under `docs/field-te/evidence/perf-2026-09-06/`.
 4. Keep recharts. Lazy-load it in Wave 3.
