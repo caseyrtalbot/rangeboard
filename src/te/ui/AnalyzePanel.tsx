@@ -10,10 +10,10 @@ import type { DeviationEffect, NextAction, ResultLabel, TeCampaign } from '../mo
 import { useTeStore } from '../state/teStore'
 import { chainHealth } from '../validate'
 import { computeAllMeasures } from '../calc/measures'
-import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
 import { templateByKey } from '../seed/checklistTemplates'
 import { allPeople, decisionRightHolder } from './help'
+import { AccountingLine } from './AccountingLine'
 import {
   AdvancedDisclosure,
   CheckField,
@@ -54,16 +54,6 @@ const STATE_KIND = { empty: 'bad', thin: 'warn', met: 'good', redundant: 'neutra
 
 function fmtNum(n: number): number {
   return Math.round(n * 1000) / 1000
-}
-
-function AccountingLine({ campaign }: { campaign: TeCampaign }) {
-  const acc = runAccounting(campaign)
-  const rate = validRunRate(campaign)
-  return (
-    <div className="spec-summary">
-      planned {acc.planned} · attempted {acc.attempted} · valid {acc.valid} · conditional {acc.conditional} · invalid {acc.invalid} · excluded {acc.excluded} · pending {acc.pending} · valid-run rate {rate === null ? 'n/a' : `${Math.round(rate * 100)}%`}
-    </div>
-  )
 }
 
 function ResultsGroup({ campaign }: { campaign: TeCampaign }) {
