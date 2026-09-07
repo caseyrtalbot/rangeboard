@@ -71,14 +71,22 @@ export function ProductsPanel({ campaign }: { campaign: TeCampaign }) {
       const card = campaign.cards.find((c) => c.id === open.id)
       if (!card) return null
       return (
-        <PrintOverlay title={`Test card ${displayId(card.cardCode, card.version)}`} onClose={() => setOpen(null)}>
+        <PrintOverlay
+          title={`Test card ${displayId(card.cardCode, card.version)}`}
+          onExport={() => exportCampaignJson(campaign)}
+          onClose={() => setOpen(null)}
+        >
           <TestCardPrint campaign={campaign} card={card} />
         </PrintOverlay>
       )
     }
     if (open.kind === 'day') {
       return (
-        <PrintOverlay title="Day sheet" onClose={() => setOpen(null)}>
+        <PrintOverlay
+          title="Day sheet"
+          onExport={() => exportCampaignJson(campaign)}
+          onClose={() => setOpen(null)}
+        >
           <DaySheetPrint campaign={campaign} />
         </PrintOverlay>
       )
@@ -89,6 +97,7 @@ export function ProductsPanel({ campaign }: { campaign: TeCampaign }) {
       return (
         <PrintOverlay
           title={open.kind === 'run' ? `Run record ${run.id}` : `Quick look ${run.id}`}
+          onExport={() => exportCampaignJson(campaign)}
           onClose={() => setOpen(null)}
         >
           {open.kind === 'run' ? (
@@ -103,7 +112,11 @@ export function ProductsPanel({ campaign }: { campaign: TeCampaign }) {
       const cl = campaign.checklists.find((c) => c.id === open.id)
       if (!cl) return null
       return (
-        <PrintOverlay title={cl.name} onClose={() => setOpen(null)}>
+        <PrintOverlay
+          title={cl.name}
+          onExport={() => exportCampaignJson(campaign)}
+          onClose={() => setOpen(null)}
+        >
           <ChecklistPrint checklist={cl} />
         </PrintOverlay>
       )
@@ -112,13 +125,21 @@ export function ProductsPanel({ campaign }: { campaign: TeCampaign }) {
       const d = campaign.debriefs.find((x) => x.id === open.id)
       if (!d) return null
       return (
-        <PrintOverlay title={`Debrief ${d.id}`} onClose={() => setOpen(null)}>
+        <PrintOverlay
+          title={`Debrief ${d.id}`}
+          onExport={() => exportCampaignJson(campaign)}
+          onClose={() => setOpen(null)}
+        >
           <DebriefPrint campaign={campaign} debrief={d} />
         </PrintOverlay>
       )
     }
     return (
-      <PrintOverlay title="Decision evidence package" onClose={() => setOpen(null)}>
+      <PrintOverlay
+        title="Decision evidence package"
+        onExport={() => exportCampaignJson(campaign)}
+        onClose={() => setOpen(null)}
+      >
         <PackagePrint campaign={campaign} />
       </PrintOverlay>
     )

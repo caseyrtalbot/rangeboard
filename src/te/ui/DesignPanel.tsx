@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { State } from '../../ui/kit'
 import type {
   CampaignPhase,
   EvidenceLevel,
@@ -443,6 +444,7 @@ function QuestionsGroup({ campaign }: { campaign: TeCampaign }) {
 // D2 Test object (configs)
 
 function ConfigsGroup({ campaign }: { campaign: TeCampaign }) {
+  const [snapshotError, setSnapshotError] = useState<string | null>(null)
   const { addConfig, patchItem, selectRecord, duplicateConfig, bumpRecordVersion } =
     useTeStore.getState()
   const selected = useTeStore((s) => s.ui.selected.configs ?? null)
@@ -472,15 +474,19 @@ function ConfigsGroup({ campaign }: { campaign: TeCampaign }) {
   }
   const snapshot = () => {
     if (!cfg) return
-    const sc = useStore.getState().scenario
-    const snap = JSON.stringify(sc)
-    set({
-      scenarioSnapshot: snap,
-      driftLog: [
-        ...cfg.driftLog,
-        { time: nowIso(), note: `Board scenario snapshot captured (${(snap.length / 1024).toFixed(1)} KB)` },
-      ],
-    })
+    try {
+      const snap = JSON.stringify(useStore.getState().scenario)
+      set({
+        scenarioSnapshot: snap,
+        driftLog: [
+          ...cfg.driftLog,
+          { time: nowIso(), note: `Board scenario snapshot captured (${(snap.length / 1024).toFixed(1)} KB)` },
+        ],
+      })
+      setSnapshotError(null)
+    } catch (error) {
+      setSnapshotError(error instanceof Error ? error.message : 'Could not capture the Board snapshot.')
+    }
   }
   const freezeGaps =
     cfg == null
@@ -521,10 +527,11 @@ function ConfigsGroup({ campaign }: { campaign: TeCampaign }) {
       {cfg && (
         <div className="run-row">
           <div className="inspector-actions">
-            <button className="mini" onClick={snapshot}>
+            <button className="mini" onClick={snapshot} disabled={locked}>
               Snapshot board scenario
             </button>
           </div>
+          {snapshotError && <State tone="critical" role="status">{snapshotError}</State>}
           {cfg.scenarioSnapshot != null && (
             <p className="muted small">
               Snapshot stored: {(cfg.scenarioSnapshot.length / 1024).toFixed(1)} KB. Capture time is

@@ -5,14 +5,17 @@
  */
 
 import { createPortal } from 'react-dom'
+import { ErrorBoundary } from '../../ui/ErrorBoundary'
 
 export function PrintOverlay({
   title,
   onClose,
+  onExport,
   children,
 }: {
   title: string
   onClose: () => void
+  onExport: () => void
   children: React.ReactNode
 }) {
   // Portal to body: @media print hides .app, so the overlay must live outside it.
@@ -26,7 +29,9 @@ export function PrintOverlay({
         </button>
         <button onClick={onClose}>Close</button>
       </div>
-      <div className="print-root">{children}</div>
+      <div className="print-root">
+        <ErrorBoundary label={title} onExport={onExport}>{children}</ErrorBoundary>
+      </div>
     </div>,
     document.body,
   )

@@ -1,0 +1,153 @@
+hasStore false
+{"label":"wave4-prod-current","loadMs":334,"domContentLoaded":106,"loadEvent":106,"resources":13,"scriptResources":9,"transferKB":1442,"domNodes":1557,"heapMB":11.3}
+{"phase":"idle 3s","wallMs":3001,"ms":3050,"frames":362,"fps":118.7,"over33":1,"over100":0,"maxFrame":41,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":6,"layoutMs":0,"styleMs":1,"taskMs":93,"layouts":0,"styleRecalcs":8,"domNodes":2714,"heapMB":10.6}
+  profile total 3041 ms; special: (idle)=2965 (program)=71 tick=3 requestAnimationFrame=2
+  files:
+  fns:
+
+{"phase":"playback x1 5s (Space key)","wallMs":5075,"ms":5091,"frames":608,"fps":119.4,"over33":0,"over100":0,"maxFrame":26,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":513,"layoutMs":5,"styleMs":0,"taskMs":941,"layouts":51,"styleRecalcs":8,"domNodes":2721,"heapMB":23.1}
+  profile total 5093 ms; special: (idle)=4173 (program)=403 save=27 (garbage collector)=23 fillText=23 restore=19
+  files: 338ms /assets/index-Cr7Rv_38.js | 18ms /assets/uncertainty-Ca_uX-8w.js | 2ms /assets/jsx-runtime-BfrqlXfA.js
+  fns:
+    36ms (anonymous) /assets/index-Cr7Rv_38.js:23
+    30ms setAttr /assets/index-Cr7Rv_38.js:23
+    21ms drawScene /assets/index-Cr7Rv_38.js:23
+    18ms (anonymous) /assets/index-Cr7Rv_38.js:42
+    14ms measureSize /assets/index-Cr7Rv_38.js:23
+    13ms e.<computed> /assets/index-Cr7Rv_38.js:23
+    9ms _sceneFunc /assets/index-Cr7Rv_38.js:23
+    7ms off /assets/index-Cr7Rv_38.js:23
+    7ms _getCache /assets/index-Cr7Rv_38.js:23
+    6ms strokeShape /assets/index-Cr7Rv_38.js:23
+    6ms rf /assets/index-Cr7Rv_38.js:42
+    6ms on /assets/index-Cr7Rv_38.js:23
+    5ms drawHit /assets/index-Cr7Rv_38.js:23
+    5ms E /assets/uncertainty-Ca_uX-8w.js:1
+    5ms Qd /assets/index-Cr7Rv_38.js:42
+    4ms Js /assets/index-Cr7Rv_38.js:42
+    4ms Ec /assets/index-Cr7Rv_38.js:42
+    4ms _fill /assets/index-Cr7Rv_38.js:23
+    4ms fillStrokeShape /assets/index-Cr7Rv_38.js:23
+    4ms (anonymous) /assets/uncertainty-Ca_uX-8w.js:1
+    3ms _getContextFont /assets/index-Cr7Rv_38.js:23
+    3ms Zd /assets/index-Cr7Rv_38.js:42
+    3ms _clearSelfAndDescendantCache /assets/index-Cr7Rv_38.js:23
+    3ms _useBufferCanvas /assets/index-Cr7Rv_38.js:24
+    3ms _useBufferCanvas /assets/index-Cr7Rv_38.js:23
+{"phase":"zoom wheel x30","wallMs":1753,"ms":1775,"frames":212,"fps":119.4,"over33":0,"over100":0,"maxFrame":17,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":128,"layoutMs":2,"styleMs":1,"taskMs":264,"layouts":30,"styleRecalcs":30,"domNodes":2721,"heapMB":25.9}
+  profile total 1784 ms; special: (idle)=1526 (program)=130 save=8 fillText=4 (garbage collector)=3 stroke=2
+  files: 97ms /assets/index-Cr7Rv_38.js | 4ms /assets/uncertainty-Ca_uX-8w.js | 0ms /assets/jsx-runtime-BfrqlXfA.js
+  fns:
+    7ms (anonymous) /assets/index-Cr7Rv_38.js:42
+    6ms (anonymous) /assets/index-Cr7Rv_38.js:23
+    6ms setAttr /assets/index-Cr7Rv_38.js:23
+    5ms Js /assets/index-Cr7Rv_38.js:42
+    5ms off /assets/index-Cr7Rv_38.js:23
+    4ms Ec /assets/index-Cr7Rv_38.js:42
+    3ms fillShape /assets/index-Cr7Rv_38.js:23
+    3ms _getCache /assets/index-Cr7Rv_38.js:23
+    3ms e.<computed> /assets/index-Cr7Rv_38.js:23
+    3ms drawScene /assets/index-Cr7Rv_38.js:23
+    2ms measureSize /assets/index-Cr7Rv_38.js:23
+    2ms _off /assets/index-Cr7Rv_38.js:23
+    2ms _clearSelfAndDescendantCache /assets/index-Cr7Rv_38.js:23
+    2ms E /assets/uncertainty-Ca_uX-8w.js:1
+    2ms _clearCache /assets/index-Cr7Rv_38.js:23
+    2ms _getProtoListeners /assets/index-Cr7Rv_38.js:23
+    2ms hasStroke /assets/index-Cr7Rv_38.js:23
+    2ms on /assets/index-Cr7Rv_38.js:23
+    2ms strokeShape /assets/index-Cr7Rv_38.js:23
+    1ms jt /assets/index-Cr7Rv_38.js:31
+    1ms r /assets/uncertainty-Ca_uX-8w.js:1
+    1ms _sceneFunc /assets/index-Cr7Rv_38.js:23
+    1ms _batchTransformChanges /assets/index-Cr7Rv_38.js:23
+    1ms _requestDraw /assets/index-Cr7Rv_38.js:23
+    1ms Lr /assets/index-Cr7Rv_38.js:31
+{"phase":"pan drag 40 moves","wallMs":1015,"ms":1050,"frames":124,"fps":118.1,"over33":0,"over100":0,"maxFrame":25,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":72,"layoutMs":0,"styleMs":0,"taskMs":237,"layouts":2,"styleRecalcs":0,"domNodes":2720,"heapMB":20.9}
+  profile total 1054 ms; special: (idle)=823 (program)=154 save=6 (garbage collector)=3 fillText=3 restore=2
+  files: 49ms /assets/index-Cr7Rv_38.js | 0ms /assets/uncertainty-Ca_uX-8w.js
+  fns:
+    12ms (anonymous) /assets/index-Cr7Rv_38.js:23
+    6ms setAttr /assets/index-Cr7Rv_38.js:23
+    3ms _getCache /assets/index-Cr7Rv_38.js:23
+    3ms _getProtoListeners /assets/index-Cr7Rv_38.js:23
+    3ms _sceneFunc /assets/index-Cr7Rv_38.js:23
+    3ms drawScene /assets/index-Cr7Rv_38.js:23
+    2ms measureSize /assets/index-Cr7Rv_38.js:23
+    2ms e.<computed> /assets/index-Cr7Rv_38.js:23
+    2ms strokeShape /assets/index-Cr7Rv_38.js:23
+    1ms _clearCache /assets/index-Cr7Rv_38.js:23
+    1ms _useBufferCanvas /assets/index-Cr7Rv_38.js:23
+    1ms getLayer /assets/index-Cr7Rv_38.js:23
+    1ms (anonymous) /assets/index-Cr7Rv_38.js:9
+    1ms Js /assets/index-Cr7Rv_38.js:42
+    1ms ko /assets/index-Cr7Rv_38.js:23
+    0ms _getIntersection /assets/index-Cr7Rv_38.js:23
+    0ms ne /assets/index-Cr7Rv_38.js:2
+    0ms _clearSelfAndDescendantCache /assets/index-Cr7Rv_38.js:23
+    0ms mn /assets/index-Cr7Rv_38.js:9
+    0ms fillShape /assets/index-Cr7Rv_38.js:23
+    0ms _createDragElement /assets/index-Cr7Rv_38.js:23
+    0ms _drag /assets/index-Cr7Rv_38.js:23
+    0ms get node /assets/index-Cr7Rv_38.js:23
+    0ms getSceneFunc /assets/index-Cr7Rv_38.js:23
+    0ms save /assets/index-Cr7Rv_38.js:23
+{"phase":"lifecycle phases x3 cycles","wallMs":2185,"ms":2218,"frames":254,"fps":114.5,"over33":1,"over100":0,"maxFrame":50,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":213,"layoutMs":14,"styleMs":17,"taskMs":396,"layouts":32,"styleRecalcs":202,"domNodes":4158,"heapMB":31}
+  profile total 2213 ms; special: (idle)=1830 (program)=130 (garbage collector)=23 getBoundingClientRect=14 query=4 removeChild=3
+  files: 139ms /assets/TimeSeriesChart-hjN1pZrZ.js | 47ms /assets/index-Cr7Rv_38.js | 4ms /assets/uncertainty-Ca_uX-8w.js | 3ms /assets/jsx-runtime-BfrqlXfA.js | 2ms /assets/kit-D8Jt_6tg.js | 1ms /assets/persist-BkfVVX4a.js | 0ms /assets/react-dom-I6x7Zm1e.js | 0ms /assets/types-0llxno5L.js
+  fns:
+    36ms Xj /assets/TimeSeriesChart-hjN1pZrZ.js:51
+    10ms (anonymous) /assets/TimeSeriesChart-hjN1pZrZ.js:41
+    10ms (anonymous) /assets/TimeSeriesChart-hjN1pZrZ.js:51
+    7ms (anonymous) /assets/TimeSeriesChart-hjN1pZrZ.js:1
+    5ms o /assets/TimeSeriesChart-hjN1pZrZ.js:1
+    4ms (anonymous) /assets/TimeSeriesChart-hjN1pZrZ.js:2
+    4ms (anonymous) /assets/index-Cr7Rv_38.js:43
+    3ms ry /assets/index-Cr7Rv_38.js:43
+    3ms rx /assets/index-Cr7Rv_38.js:43
+    3ms Zj /assets/TimeSeriesChart-hjN1pZrZ.js:51
+    3ms wi /assets/TimeSeriesChart-hjN1pZrZ.js:2
+    2ms (anonymous) /assets/TimeSeriesChart-hjN1pZrZ.js:53
+    2ms bo /assets/index-Cr7Rv_38.js:9
+    2ms (anonymous) /assets/TimeSeriesChart-hjN1pZrZ.js:40
+    2ms (anonymous) /assets/index-Cr7Rv_38.js:9
+    2ms o /assets/TimeSeriesChart-hjN1pZrZ.js:2
+    2ms Yj /assets/TimeSeriesChart-hjN1pZrZ.js:51
+    2ms br /assets/TimeSeriesChart-hjN1pZrZ.js:1
+    2ms (anonymous) /assets/kit-D8Jt_6tg.js:2
+    2ms e.createElement /assets/jsx-runtime-BfrqlXfA.js:1
+    2ms pe /assets/TimeSeriesChart-hjN1pZrZ.js:1
+    1ms Uv /assets/index-Cr7Rv_38.js:43
+    1ms lu /assets/TimeSeriesChart-hjN1pZrZ.js:9
+    1ms Kt /assets/index-Cr7Rv_38.js:9
+    1ms Pu /assets/index-Cr7Rv_38.js:9
+{"phase":"library drawer open/close x3","wallMs":1542,"ms":1592,"frames":188,"fps":118.1,"over33":1,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":15,"layoutMs":3,"styleMs":3,"taskMs":113,"layouts":9,"styleRecalcs":11,"domNodes":4159,"heapMB":32.4}
+  profile total 1584 ms; special: (idle)=1484 (program)=83 focus=5 removeChild=2 requestAnimationFrame=1 tick=0
+  files: 9ms /assets/index-Cr7Rv_38.js
+  fns:
+    1ms (anonymous) /assets/index-Cr7Rv_38.js:42
+    1ms e /assets/index-Cr7Rv_38.js:43
+    1ms bt /assets/index-Cr7Rv_38.js:9
+    1ms mn /assets/index-Cr7Rv_38.js:9
+    0ms Id /assets/index-Cr7Rv_38.js:10
+    0ms E /assets/index-Cr7Rv_38.js:42
+    0ms Ic /assets/index-Cr7Rv_38.js:9
+    0ms kr /assets/index-Cr7Rv_38.js:9
+    0ms wd /assets/index-Cr7Rv_38.js:9
+    0ms c /assets/index-Cr7Rv_38.js:9
+    0ms e.unstable_now /assets/index-Cr7Rv_38.js:2
+    0ms cn /assets/index-Cr7Rv_38.js:9
+    0ms Ac /assets/index-Cr7Rv_38.js:9
+    0ms p /assets/index-Cr7Rv_38.js:9
+    0ms Ht /assets/index-Cr7Rv_38.js:9
+    0ms Lc /assets/index-Cr7Rv_38.js:9
+    0ms tS /assets/index-Cr7Rv_38.js:43
+    0ms il /assets/index-Cr7Rv_38.js:9
+    0ms bo /assets/index-Cr7Rv_38.js:9
+    0ms qc /assets/index-Cr7Rv_38.js:9
+    0ms cl /assets/index-Cr7Rv_38.js:9
+    0ms n /assets/index-Cr7Rv_38.js:9
+    0ms Nd /assets/index-Cr7Rv_38.js:10
+    0ms rl /assets/index-Cr7Rv_38.js:9
+    0ms ar /assets/index-Cr7Rv_38.js:9
+page errors/warnings: []

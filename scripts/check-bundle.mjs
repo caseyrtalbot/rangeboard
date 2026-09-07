@@ -1,0 +1,78 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { resolve, relative, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+export const BUNDLE_BUDGET = { entry: 260_000, initial: 400_000 }
+
+// Match the Wave 3 evidence method: entry + modulepreloaded JS + initial CSS.
+// Report other preloads separately so the total transfer is also visible.
+export function measureBundle(directory) {
+  const root = resolve(directory)
+  const html = readFileSync(resolve(root, 'index.html'), 'utf8')
+  const entries = new Set()
+  const initial = new Set()
+  const preloads = new Set()
+  for (const tag of html.matchAll(/<(script|link)\b[^>]*>/gi)) {
+    const attrs = Object.fromEntries([...tag[0].matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)]
+      .map((match) => [match[1].toLowerCase(), match[2] ?? match[3]]))
+    const rels = (attrs.rel ?? '').toLowerCase().split(/\s+/)
+    if (tag[1].toLowerCase() === 'script' && attrs.src) {
+      entries.add(attrs.src)
+      initial.add(attrs.src)
+    }
+    if (tag[1].toLowerCase() !== 'link' || !attrs.href) continue
+    if (rels.includes('stylesheet') || rels.includes('modulepreload')) initial.add(attrs.href)
+    if (rels.includes('preload')) {
+      if (['script', 'style'].includes(attrs.as)) initial.add(attrs.href)
+      else preloads.add(attrs.href)
+    }
+  }
+  if (entries.size !== 1) throw new Error(`Expected one built entry script; found ${entries.size}`)
+  const files = new Map()
+  const measure = (url) => {
+    if (/^(?:[a-z][\w+.-]*:|\/\/)/i.test(url)) throw new Error(`Cannot measure external initial asset: ${url}`)
+    const file = resolve(root, decodeURIComponent(url.split(/[?#]/, 1)[0]).replace(/^\//, ''))
+    const name = relative(root, file)
+    if (name === '..' || name.startsWith(`..${sep}`)) throw new Error(`Asset outside dist: ${url}`)
+    if (!files.has(name)) {
+      const bytes = execFileSync('gzip', ['-9', '-c'], { input: readFileSync(file) }).length
+      files.set(name, bytes)
+    }
+    return name
+  }
+  const initialFiles = new Set([...initial].map(measure))
+  const preloadFiles = new Set([...preloads].map(measure).filter(file => !initialFiles.has(file)))
+  const total = (names) => [...names].reduce((sum, name) => sum + files.get(name), 0)
+  const entryFile = measure([...entries][0])
+  const initialBytes = total(initialFiles)
+  const preloadBytes = total(preloadFiles)
+  return {
+    entryFile,
+    entryBytes: files.get(entryFile),
+    initialBytes,
+    preloadBytes,
+    allBytes: initialBytes + preloadBytes,
+    files: [...files].map(([file, gzipBytes]) => ({ file, gzipBytes })),
+  }
+}
+
+export function budgetFailures(result, budget = BUNDLE_BUDGET) {
+  return [
+    result.entryBytes > budget.entry && `Entry exceeds ${budget.entry} bytes gzip-9: ${result.entryBytes}`,
+    result.initialBytes > budget.initial && `Initial JavaScript + CSS exceeds ${budget.initial} bytes gzip-9: ${result.initialBytes}`,
+  ].filter(Boolean)
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  try {
+    const result = measureBundle(process.argv[2] ?? 'dist')
+    console.log(JSON.stringify(result, null, 2))
+    const failures = budgetFailures(result)
+    if (failures.length) throw new Error(failures.join('\n'))
+    console.log('Bundle budget passed: entry <= 260 kB; initial JavaScript + CSS <= 400 kB (gzip -9).')
+  } catch (error) {
+    console.error(error.message)
+    process.exitCode = 1
+  }
+}

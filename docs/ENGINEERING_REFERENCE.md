@@ -46,8 +46,9 @@ Breaking one of these breaks the app.
   defaults where needed. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
   `rangeboard.scenario.recovered.<ms>` before anything writes; the copy is read back and
-  checked. Read denial or a failed recovery pauses autosave so the only raw copy survives,
-  and the notice explains export, storage cleanup and reload. Runtime validation
+  checked. Read denial or a failed recovery pauses autosave so the only raw copy survives.
+  Read denial uses the save-status error; failed recovery queues an in-app Storage notice
+  explaining export, storage cleanup and reload. Runtime validation
   (`src/io/runtimeValidation.ts`, `validateScenario.ts`) checks shapes, finite and ranged
   values, ids, references and engine representability before default filling. Missing
   legacy fields fill; a malformed present field fails with a path and reason. Unknown
@@ -61,7 +62,11 @@ Breaking one of these breaks the app.
   settings key (view, layers, rings, run sequence, analysis layout, units, panel widths,
   collapse flags) is read and written through `readSetting` and `writeSetting` in
   `src/io/viewState.ts`, the one guarded localStorage path for settings. The camera write
-  is queued and flushed by `flushViewWrites` on pagehide and tab hide.
+  is queued and flushed by `flushViewWrites` on pagehide and tab hide. `storageManagement.ts`
+  guards enumeration, exact raw recovery downloads and per-key deletion; it cannot delete
+  live keys or change autosave admission. `recovery.ts` retains startup notices in memory
+  until dismissed, so recovery before React mounts is visible in `StoragePanel.tsx`.
+  Usage is an estimate of UTF-16 key and value bytes, not a browser quota guarantee.
 - **Module cycles:** `model/scenario.ts` owns `modelFor`, `pathSpeed` and
   `scenarioDurationS`; engine and validation consumers import that leaf directly.
   `state/rings.ts` owns shared ring keys/types, so `viewState.ts` has no runtime store
@@ -499,6 +504,12 @@ exports and interfaces for object shapes, JSDoc on exported symbols, short ratio
 comments and lines near 100 characters. There is no source formatter. Do not add unused
 exports or TODO markers.
 
+`src/ui/ErrorBoundary.tsx` isolates Board and Ops roots, each analysis widget invocation
+and frame body, and print contents. Its fallback uses `State` with Export and Reload.
+Exports read the owning Board scenario or T&E campaign; a caught render error never clears
+records. `startAutosave` and `startTeAutosave` stay outside React in `main.tsx`. The widget
+render probe is dev-only and absent from the production bundle.
+
 Konva conventions:
 
 - Constant screen-size strokes: `strokeScaleEnabled={false}` (stroke width and dash are
@@ -629,7 +640,11 @@ Design system (`src/index.css`):
   campaign marked `illustrative`). The measure dictionary, the card templates and the threat
   vignettes load with `applyPreset` (async), not at startup. Print artifacts in `src/te/print/` render into
   `PrintOverlay`; CSV exports in `src/te/io/exportCsv.ts`. Board frame capture
-  (`src/te/io/frameCapture.ts`) works only from the Board workspace.
+  (`src/te/io/frameCapture.ts`) works only from the Board workspace. New PNG captures and
+  serialized Board config snapshots are admitted against `MAX_IMAGE_CODE_UNITS` (5 MiB
+  accounting for UTF-16) before the campaign changes. Generic frame/config add and patch
+  actions enforce admission too; unchanged legacy payloads remain editable. Capture errors
+  render a `State` notice. Admission does not reserve storage or guarantee the actual write.
 - Persistence and imports are validated through `io/validateTe.ts`, including campaign-local
   references. An embedded Board snapshot is stored verbatim at load and validated by
   `parseConfigSnapshot` when it is opened. The store checks internal transitions and

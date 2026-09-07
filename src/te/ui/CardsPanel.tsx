@@ -15,6 +15,7 @@ import { CARD_TEMPLATES } from '../seed/cardTemplates'
 import { DATA_STANDARDS, GENERIC_MARKS, KINETIC_MARKS, RESET_ACTIONS, STOP_TAXONOMY, WHY_NEXT_REASONS } from '../seed/constants'
 import { boardSignals } from './DesignBuilders'
 import { PrintOverlay } from '../print/PrintOverlay'
+import { exportCampaignJson } from '../io/persistTe'
 import { TestCardPrint } from '../print/TestCardPrint'
 import { HELP, HINTS, allPeople } from './help'
 import {
@@ -1154,7 +1155,11 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
       </DecisionGroup>
 
       {printing && (
-        <PrintOverlay title={`Test card ${card.cardCode} ${card.version}`} onClose={() => setPrinting(false)}>
+        <PrintOverlay
+          title={`Test card ${card.cardCode} ${card.version}`}
+          onExport={() => exportCampaignJson(campaign)}
+          onClose={() => setPrinting(false)}
+        >
           <TestCardPrint campaign={campaign} card={card} />
         </PrintOverlay>
       )}

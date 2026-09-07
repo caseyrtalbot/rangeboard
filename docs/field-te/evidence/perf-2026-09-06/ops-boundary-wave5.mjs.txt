@@ -1,0 +1,29 @@
+import { chromium } from '/Users/caseytalbot/Projects/rangeboard/node_modules/playwright/index.mjs'
+import fs from 'node:fs'
+const browser = await chromium.launch({ headless: true })
+try {
+  const context = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+  const page = await context.newPage()
+  const diagnostics = []
+  page.on('pageerror', error => diagnostics.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') diagnostics.push(message.text().slice(0,200)) })
+  await page.goto('http://localhost:5377')
+  await page.waitForFunction(() => window.__teStore && document.querySelector('canvas'))
+  await page.evaluate(async () => {
+    const { restoreTeAutosave } = await import('/src/te/io/persistTe.ts')
+    restoreTeAutosave()
+    window.__teStore.getState().createCampaign('Ops boundary retained campaign', 'OB')
+    window.__teStore.getState().setWorkspace('ops')
+  })
+  await page.waitForFunction(() => document.querySelector('.te-workspace'))
+  await page.route('**/src/ui/StoragePanel.tsx*', route => route.abort())
+  await page.locator('button[aria-controls="storage-panel"]').click()
+  const boundary = page.getByRole('region', { name: 'T&E Ops error', exact: true })
+  await boundary.waitFor()
+  const [download] = await Promise.all([page.waitForEvent('download'), boundary.getByRole('button', {name:'Export',exact:true}).click()])
+  const exported = JSON.parse(fs.readFileSync(await download.path(), 'utf8'))
+  await page.waitForFunction(() => localStorage.getItem('rangeboard.te.v1')?.includes('Ops boundary retained campaign'))
+  const result = { campaignExported: exported.campaign.name, fallback: await boundary.innerText(), expectedDiagnostics: diagnostics, ok: exported.campaign.name === 'Ops boundary retained campaign' }
+  console.log(JSON.stringify(result,null,2))
+  if (!result.ok) process.exitCode = 1
+} finally { await browser.close() }

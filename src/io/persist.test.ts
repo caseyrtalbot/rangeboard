@@ -22,6 +22,7 @@ import {
 } from './persist'
 
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+import { getRecoveryNotices } from './recovery'
 
 
 /** A save written before the roe field existed. */
@@ -664,8 +665,8 @@ describe('autosave recovery', () => {
     expect(keys).toHaveLength(1)
     expect(store.get(keys[0])).toBe('{not json')
     expect(store.get(SCENARIO_KEY)).toBe('{not json')
-    expect(alert).toHaveBeenCalledTimes(1)
-    expect(alert.mock.calls[0][0]).toContain(keys[0])
+    expect(alert).not.toHaveBeenCalled()
+    expect(getRecoveryNotices().at(-1)?.message).toContain(keys[0])
   })
 
   it('copies a save with another schema version to a recovery key', () => {

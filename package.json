@@ -18,7 +18,9 @@
     "docs:review": "node scripts/check-docs.mjs --review",
     "test:docs": "node --test scripts/test-docs.mjs",
     "test:e2e": "node --test scripts/e2e/board-shell.e2e.mjs",
-    "check": "npm run docs:check && npm run test:docs && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
+    "test:bundle": "node --test scripts/test-bundle.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",

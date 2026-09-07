@@ -1,0 +1,73 @@
+{
+  "entryFile": "assets/index-XTpfiwzT.js",
+  "entryBytes": 243196,
+  "initialBytes": 380735,
+  "preloadBytes": 88204,
+  "allBytes": 468939,
+  "files": [
+    {
+      "file": "assets/index-XTpfiwzT.js",
+      "gzipBytes": 243196
+    },
+    {
+      "file": "assets/jsx-runtime-B-hcVAMW.js",
+      "gzipBytes": 3275
+    },
+    {
+      "file": "assets/react-dom-sF8Euvcq.js",
+      "gzipBytes": 1341
+    },
+    {
+      "file": "assets/types-0llxno5L.js",
+      "gzipBytes": 1006
+    },
+    {
+      "file": "assets/clock-C56FyJev.js",
+      "gzipBytes": 1248
+    },
+    {
+      "file": "assets/storageKeys-CmLUB5Br.js",
+      "gzipBytes": 426
+    },
+    {
+      "file": "assets/uncertainty-BLU97vng.js",
+      "gzipBytes": 83962
+    },
+    {
+      "file": "assets/empty-DwOrOnY1.js",
+      "gzipBytes": 3691
+    },
+    {
+      "file": "assets/teStore-CaYCHNOA.js",
+      "gzipBytes": 16727
+    },
+    {
+      "file": "assets/recovery-DlmfAnPL.js",
+      "gzipBytes": 543
+    },
+    {
+      "file": "assets/persist-CrSKkQdr.js",
+      "gzipBytes": 9361
+    },
+    {
+      "file": "assets/kit-CVvT5uhx.js",
+      "gzipBytes": 551
+    },
+    {
+      "file": "assets/ErrorBoundary-BjJToiHo.js",
+      "gzipBytes": 1811
+    },
+    {
+      "file": "assets/index-D-oLIqrp.css",
+      "gzipBytes": 13597
+    },
+    {
+      "file": "assets/Archivo-Regular-CpqDCVrH.woff2",
+      "gzipBytes": 52383
+    },
+    {
+      "file": "assets/JetBrainsMono-Regular-DhGaPbHz.woff2",
+      "gzipBytes": 35821
+    }
+  ]
+}

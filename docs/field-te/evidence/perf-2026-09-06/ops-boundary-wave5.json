@@ -1,0 +1,9 @@
+{
+  "campaignExported": "Ops boundary retained campaign",
+  "fallback": "T&E Ops could not be displayed.\n\nYour records are still available. Export a copy before reloading.\n\nExport\nReload",
+  "expectedDiagnostics": [
+    "Failed to load resource: net::ERR_FAILED",
+    "%o\n\n%s\n\n%s\n TypeError: Failed to fetch dynamically imported module: http://localhost:5377/src/ui/StoragePanel.tsx The above error occurred in one of your React components. React will try to recreate t"
+  ],
+  "ok": true
+}

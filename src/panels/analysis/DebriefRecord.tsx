@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../../playback/mcRun'
@@ -41,6 +41,7 @@ function RunActions({
   mc: McSummary | null
   sensitivity: SensitivitySummary | null
 }) {
+  const [captureError, setCaptureError] = useState<string | null>(null)
   const startedAtMs = useStore((state) => state.playback.startedAtMs)!
   const completedAtMs = useStore((state) => state.playback.completedAtMs)!
   const runId = useStore((state) => state.playback.runId)
@@ -61,8 +62,11 @@ function RunActions({
     useStore.getState().scrubTo(durationS)
     window.requestAnimationFrame(() =>
       window.requestAnimationFrame(() => {
-        if (!downloadBoardFrame(`${scenario.name}-${label}-final`)) {
-          window.alert('Could not capture the board canvas.')
+        try {
+          setCaptureError(downloadBoardFrame(`${scenario.name}-${label}-final`)
+            ? null : 'Could not capture the board canvas.')
+        } catch (error) {
+          setCaptureError(error instanceof Error ? error.message : 'Could not capture the board canvas.')
         }
       }),
     )
@@ -80,6 +84,7 @@ function RunActions({
       </button>
       <button onClick={captureFinal}>Capture final PNG</button>
       <button onClick={() => resetAnalysisRun('manual')}>New clean run</button>
+      {captureError && <State tone="critical" role="status">{captureError}</State>}
     </div>
   )
 }

@@ -30,11 +30,34 @@ export function recoverUnreadableSave(raw: string, liveKey: string, prefix: stri
   return key
 }
 
+export interface RecoveryNotice {
+  id: number
+  message: string
+}
+
+// Recovery can run before React mounts. Keep notices until the user dismisses them.
+let notices: RecoveryNotice[] = []
+let nextNoticeId = 0
+const listeners = new Set<() => void>()
+
+export function getRecoveryNotices(): RecoveryNotice[] { return notices }
+export function subscribeRecoveryNotices(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => { listeners.delete(listener) }
+}
+export function dismissRecoveryNotice(id: number): void {
+  notices = notices.filter(notice => notice.id !== id)
+  listeners.forEach(listener => listener())
+}
+
 /** Startup notice includes the actual validation failure and copy result. */
 export function notifyRecovery(what: string, key: string | null, reason?: string): void {
-  if (typeof window === 'undefined' || typeof window.alert !== 'function') return
   const where = key
     ? `A copy is kept in browser storage under "${key}".`
     : 'A recovery copy could not be verified. The original is retained; autosave is paused. Export current work, free browser storage, and reload.'
-  window.alert(`The saved ${what} could not be read and was not loaded. ${reason ?? ''} ${where}`)
+  notices = [...notices, {
+    id: ++nextNoticeId,
+    message: `The saved ${what} could not be read and was not loaded. ${reason ?? ''} ${where}`,
+  }]
+  listeners.forEach(listener => listener())
 }

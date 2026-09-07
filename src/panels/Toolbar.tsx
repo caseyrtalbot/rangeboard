@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react'
+import { memo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
@@ -17,6 +17,7 @@ import { captureFrameToCampaign } from '../te/io/frameCapture'
 import type { BoundaryType, EnvironmentSpec, Roe, Scenario } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
+import { StorageMenu } from '../ui/StorageMenu'
 
 const BOARD_TOOLS = [
   { id: 'select', label: 'Select', hint: 'Move, pan, edit' },
@@ -100,6 +101,7 @@ function OverflowMenu() {
 }
 
 export function FileActions({ onRequestClose }: { onRequestClose: () => void }) {
+  const [captureError, setCaptureError] = useState<string | null>(null)
   const scenario = useStore((s) => s.scenario)
   const replaceScenario = useStore((s) => s.replaceScenario)
   const hasCampaign = useTeStore((s) => s.activeCampaignId != null)
@@ -152,21 +154,27 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
           className="tb-menu-item"
           title="Save the current board view as a PNG frame on the active T&E campaign"
           onClick={() => {
-            onRequestClose()
             const st = useStore.getState()
             const frameName = defaultFrameName(
               st.scenario.name,
               st.playback.simTimeS,
               st.ui.basemap,
             )
-            if (!captureFrameToCampaign(frameName)) {
-              window.alert('Could not capture: no active campaign or canvas.')
+            try {
+              if (!captureFrameToCampaign(frameName)) {
+                setCaptureError('Could not capture: no canvas or writable active campaign.')
+                return
+              }
+              onRequestClose()
+            } catch (error) {
+              setCaptureError(error instanceof Error ? error.message : 'Could not capture the board canvas.')
             }
           }}
         >
           Capture frame
         </button>
       )}
+      {captureError && <State tone="critical" role="status" style={{ whiteSpace: 'normal', padding: 'var(--space-2)' }}>{captureError}</State>}
     </div>
   )
 }
@@ -211,6 +219,7 @@ export const Toolbar = memo(function Toolbar() {
           ))}
         </div>
         <div className="spacer" />
+        <StorageMenu />
         <Seg value={theme} options={THEMES} label="Theme" onChange={setTheme} />
       </header>
     )
@@ -235,6 +244,8 @@ export const Toolbar = memo(function Toolbar() {
       <OverflowMenu />
 
       <div className="spacer" />
+
+      <StorageMenu />
 
       <div className="status-pills" aria-label="Status">
         <State tone={ROE_PILLS[roe].tone} title={ROE_PILLS[roe].hint}>

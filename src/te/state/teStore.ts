@@ -47,13 +47,26 @@ import {
   campaignReferenceBlockers, cardIssueBlockers, checklistBlockers, deliveryBlockers, designBlockers,
   qualificationBlockers, sanitizeCardTemplatePatch,
 } from '../validate'
-import { validateShape } from '../../io/runtimeValidation'
+import { MAX_IMAGE_CODE_UNITS, validateImage, validateShape } from '../../io/runtimeValidation'
 import { validateCampaignShape } from '../io/validateTe'
 
 /** Campaign fields that are arrays of records keyed by `id`. */
 type TeListKey = {
   [K in keyof TeCampaign]-?: TeCampaign[K] extends Array<{ id: string }> ? K : never
 }[keyof TeCampaign]
+
+/** Admission applies only to newly supplied payloads; legacy stored values remain editable. */
+function admitStoredPayload(key: TeListKey, value: object, previous?: object): void {
+  if (key === 'frames' && 'pngDataUrl' in value && typeof value.pngDataUrl === 'string' &&
+      (!previous || !('pngDataUrl' in previous) || value.pngDataUrl !== previous.pngDataUrl)) {
+    validateImage(value.pngDataUrl, 'Frame capture', true)
+  }
+  if (key === 'configs' && 'scenarioSnapshot' in value && typeof value.scenarioSnapshot === 'string' &&
+      (!previous || !('scenarioSnapshot' in previous) || value.scenarioSnapshot !== previous.scenarioSnapshot) &&
+      value.scenarioSnapshot.length > MAX_IMAGE_CODE_UNITS) {
+    throw new Error('Board snapshot exceeds the 5 MiB browser-storage budget. Reduce the scenario or its underlay image before capturing.')
+  }
+}
 
 export type TePhaseTab =
   | 'campaign'
@@ -758,6 +771,7 @@ export const useTeStore = create<TeStore>()((set, get) => {
       if (key === 'runs' || key === 'cards') return c
       if (key === 'checklists' && (item as TeChecklist).completedAt &&
           checklistBlockers(item as TeChecklist).length > 0) return c
+      admitStoredPayload(key, item)
       return push(c, key, structuredClone(item))
     }),
 
@@ -793,6 +807,7 @@ export const useTeStore = create<TeStore>()((set, get) => {
           'observationAmendments', 'excluded', 'exclusionReason'].includes(k))) return c
         if (run.adjudications.length > 0 && 'observations' in patch) return c
       }
+      admitStoredPayload(key, patch, record)
       return { ...c, [key]: c[key].map(r => {
         if (r.id !== id) return r
         const updated = { ...r, ...structuredClone(patch) }

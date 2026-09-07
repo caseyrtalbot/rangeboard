@@ -310,7 +310,132 @@ await page.evaluate(() => window.__store.getState().applyLens('run-summary'))
 await page.click('#board-phase-prepare'); await sleep(300)
 results.lensRoles = { ...lensRoles, presetBefore, presetAfter, focusMoved, ok: lensRoles.role === 'group' && lensRoles.buttons === 5 && lensRoles.pressed === 1 && lensRoles.tabbable === 1 && lensRoles.tabs === 0 && presetAfter !== presetBefore && focusMoved }
 
+// 18. A widget render fails inside its frame. Siblings, canvas and both
+// independently started autosaves survive; Export downloads the current Board.
+await page.click('#board-phase-analyze')
+await page.evaluate(() => { window.__store.getState().clearSelection(); window.__store.getState().setRightTab('analysis') })
+await page.waitForFunction(() => document.querySelectorAll('section.wg').length > 1)
+const widgetProbe = await page.evaluate(() => {
+  const s = window.__store.getState()
+  const w = s.ui.analysis.layout.widgets.find(w => w.type === 'run-validity')
+  window.__throwWidgetRender = w.id
+  s.toggleAnalysisWidget(w.id)
+  return w.id
+})
+await sleep(100)
+await page.evaluate(id => window.__store.getState().toggleAnalysisWidget(id), widgetProbe)
+await page.waitForFunction(() => [...document.querySelectorAll('section[aria-label$=" error"]')].some(e => e.textContent.includes('could not be displayed.')))
+const boundary = page.locator('section[aria-label$=" error"]').first()
+const boardName5 = 'Wave 5 autosave after widget failure'
+const campaignName5 = 'Wave 5 campaign after widget failure'
+await page.evaluate(([board, campaign]) => {
+  window.__store.getState().setScenarioName(board)
+  window.__teStore.getState().patchCampaign({ name: campaign })
+}, [boardName5, campaignName5])
+await page.waitForFunction(([board, campaign]) => localStorage.getItem('rangeboard.scenario.v1')?.includes(board) && localStorage.getItem('rangeboard.te.v1')?.includes(campaign), [boardName5, campaignName5])
+const [exportedBoundary] = await Promise.all([
+  page.waitForEvent('download'),
+  boundary.getByRole('button', { name: 'Export', exact: true }).click(),
+])
+const exportedBoard = JSON.parse(fs.readFileSync(await exportedBoundary.path(), 'utf8'))
+const boundaryState = await page.evaluate(() => ({
+  canvas: !!document.querySelector('.konvajs-content canvas'),
+  siblings: document.querySelectorAll('section.wg').length,
+  boardSaveError: window.__store.getState().save.error,
+  teSaveError: window.__teStore.getState().saveError,
+}))
+const expectedProbeErrors = errors.filter(e => e.includes(`Widget render probe: ${widgetProbe}`))
+for (let i = errors.length - 1; i >= 0; i--) if (errors[i].includes(`Widget render probe: ${widgetProbe}`)) errors.splice(i, 1)
+await page.evaluate(() => { delete window.__throwWidgetRender })
+await Promise.all([page.waitForEvent('load'), boundary.getByRole('button', { name: 'Reload', exact: true }).click()])
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store)
+results.widgetBoundary = { ...boundaryState, exportName: exportedBoard.name, expectedProbeErrors: expectedProbeErrors.length, reloaded: true, ok: boundaryState.canvas && boundaryState.siblings > 1 && !boundaryState.boardSaveError && !boundaryState.teSaveError && exportedBoard.name === boardName5 }
+
+// 19. Drive the real capture button with an oversized stage image. Refusal
+// precedes the campaign write and the reason is visible in the File actions UI.
+await page.evaluate(async () => {
+  const { restoreTeAutosave } = await import('/src/te/io/persistTe.ts')
+  restoreTeAutosave()
+  const { registerStage } = await import('/src/te/io/frameCapture.ts')
+  const { MAX_IMAGE_CODE_UNITS } = await import('/src/io/runtimeValidation.ts')
+  registerStage({ width: () => 1400, toDataURL: () => 'data:image/png;base64,' + 'A'.repeat(MAX_IMAGE_CODE_UNITS) })
+})
+const framesBefore = await page.evaluate(() => window.__teStore.getState().campaigns.find(c => c.id === window.__teStore.getState().activeCampaignId).frames.length)
+await page.getByRole('button', { name: 'More actions', exact: true }).click()
+await page.getByRole('button', { name: 'Capture frame', exact: true }).click()
+await page.waitForFunction(() => document.getElementById('file-actions-panel')?.textContent.includes('5 MiB'))
+const captureRefusal = await page.evaluate(() => ({
+  reason: document.getElementById('file-actions-panel')?.textContent,
+  frames: window.__teStore.getState().campaigns.find(c => c.id === window.__teStore.getState().activeCampaignId).frames.length,
+}))
+results.oversizeFrame = { before: framesBefore, after: captureRefusal.frames, reason: captureRefusal.reason, ok: framesBefore === captureRefusal.frames && captureRefusal.reason.includes('5 MiB') }
+await page.keyboard.press('Escape')
+
+// 20. Recovery UI lists exact raw copies, downloads their original bytes and
+// deletes only the selected recovery key after explicit in-app confirmation.
+const recoveryKey5 = 'rangeboard.scenario.recovered.1788800000000.wave5'
+const recoveryRaw5 = '{ "unreadable": [ Wave 5 original raw bytes'
+await page.evaluate(([key, raw]) => localStorage.setItem(key, raw), [recoveryKey5, recoveryRaw5])
+await page.locator('button[aria-controls="storage-panel"]').click()
+const storagePanel = page.getByRole('dialog', { name: 'Storage', exact: true })
+await storagePanel.getByText(recoveryKey5, { exact: true }).waitFor()
+const recoveryRow5 = storagePanel.getByText(recoveryKey5, { exact: true }).locator('..')
+const recoveryDownload5 = page.waitForEvent('download')
+await recoveryRow5.getByRole('button', { name: 'Download', exact: true }).click()
+const recoveryFile5 = await recoveryDownload5
+const downloadedRaw5 = fs.readFileSync(await recoveryFile5.path(), 'utf8')
+const liveBeforeDelete5 = await page.evaluate(() => [localStorage.getItem('rangeboard.scenario.v1'), localStorage.getItem('rangeboard.te.v1')])
+await recoveryRow5.getByRole('button', { name: 'Delete', exact: true }).click()
+const retainedUntilConfirm5 = await page.evaluate(key => localStorage.getItem(key) !== null, recoveryKey5)
+await recoveryRow5.getByRole('button', { name: 'Confirm delete', exact: true }).click()
+const storageAfter5 = await page.evaluate(key => ({ deleted: localStorage.getItem(key) === null, live: [localStorage.getItem('rangeboard.scenario.v1'), localStorage.getItem('rangeboard.te.v1')], overflow: document.getElementById('storage-panel').scrollWidth > document.getElementById('storage-panel').clientWidth + 1 }), recoveryKey5)
+results.storageRecovery = { downloadedExact: downloadedRaw5 === recoveryRaw5, retainedUntilConfirm: retainedUntilConfirm5, deleted: storageAfter5.deleted, liveUnchanged: JSON.stringify(storageAfter5.live) === JSON.stringify(liveBeforeDelete5), overflow: storageAfter5.overflow, ok: downloadedRaw5 === recoveryRaw5 && retainedUntilConfirm5 && storageAfter5.deleted && JSON.stringify(storageAfter5.live) === JSON.stringify(liveBeforeDelete5) && !storageAfter5.overflow }
+await storagePanel.getByRole('button', { name: 'Close', exact: true }).click()
+
+// 21. An oversized Board snapshot is rejected by the actual Ops control,
+// with no config snapshot or drift-history append.
+const snapshotConfig5 = await page.evaluate(async () => {
+  const { MAX_IMAGE_CODE_UNITS } = await import('/src/io/runtimeValidation.ts')
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const board = window.__store.getState()
+  board.loadScenario(parseAutosave(JSON.stringify({ ...board.scenario, wave5Padding: 'A'.repeat(MAX_IMAGE_CODE_UNITS) })))
+  const te = window.__teStore.getState()
+  const id = te.addConfig()
+  te.selectRecord('configs', id)
+  te.setPhase('design')
+  te.setWorkspace('ops')
+  return id
+})
+await page.waitForFunction(() => document.querySelector('.te-workspace'))
+const snapshotButton5 = page.getByRole('button', { name: 'Snapshot board scenario', exact: true })
+if (!(await snapshotButton5.isVisible())) await page.getByText('What exact system are we testing?', { exact: true }).click()
+await snapshotButton5.click()
+await page.waitForFunction(() => document.body.textContent.includes('Board snapshot exceeds the 5 MiB'))
+const snapshotState5 = await page.evaluate(id => {
+  const te = window.__teStore.getState()
+  const cfg = te.campaigns.find(c => c.id === te.activeCampaignId).configs.find(c => c.id === id)
+  return { snapshot: cfg.scenarioSnapshot, driftEntries: cfg.driftLog.length }
+}, snapshotConfig5)
+results.oversizeSnapshot = { ...snapshotState5, ok: snapshotState5.snapshot === null && snapshotState5.driftEntries === 0 }
+
+// 22. A genuinely unreadable live autosave is rescued before React mounts;
+// its queued notice is discoverable in Storage and startup raises no dialog.
+const recoveryCtx5 = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+await recoveryCtx5.addInitScript(() => localStorage.setItem('rangeboard.scenario.v1', '{Wave5 unreadable startup'))
+const recoveryPage5 = await recoveryCtx5.newPage()
+const recoveryDialogs5 = []
+recoveryPage5.on('dialog', async dialog => { recoveryDialogs5.push(dialog.message()); await dialog.dismiss() })
+await recoveryPage5.goto(url, { waitUntil: 'load' })
+await recoveryPage5.waitForFunction(() => document.querySelector('.konvajs-content canvas'))
+await recoveryPage5.locator('button[aria-controls="storage-panel"]').click()
+const recoveryNotice5 = await recoveryPage5.locator('#storage-panel').innerText()
+const savedRecovery5 = await recoveryPage5.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('rangeboard.scenario.recovered.')).map(k => localStorage.getItem(k)))
+results.startupRecovery = { dialogs: recoveryDialogs5.length, notice: recoveryNotice5.includes('could not be read and was not loaded'), rawPreserved: savedRecovery5.includes('{Wave5 unreadable startup'), ok: recoveryDialogs5.length === 0 && recoveryNotice5.includes('could not be read and was not loaded') && savedRecovery5.includes('{Wave5 unreadable startup') }
+await recoveryCtx5.close()
+
 results.pageErrors = errors.slice(0, 10)
-results.allOk = Object.values(results).every((r) => typeof r !== 'object' || Array.isArray(r) || r.ok !== false)
+results.allOk = errors.length === 0 && Object.values(results).every((r) => typeof r !== 'object' || Array.isArray(r) || r.ok !== false)
 console.log(JSON.stringify(results, null, 1))
 await browser.close()
+
+if (!results.allOk) process.exitCode = 1

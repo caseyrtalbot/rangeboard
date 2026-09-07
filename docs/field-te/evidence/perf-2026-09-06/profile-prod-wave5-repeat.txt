@@ -1,0 +1,151 @@
+hasStore false
+{"label":"wave5-prod-repeat","loadMs":287,"domContentLoaded":91,"loadEvent":91,"resources":17,"scriptResources":13,"transferKB":1448,"domNodes":1563,"heapMB":11.3}
+{"phase":"idle 3s","wallMs":2999,"ms":3042,"frames":361,"fps":118.7,"over33":1,"over100":0,"maxFrame":42,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":7,"layoutMs":0,"styleMs":1,"taskMs":107,"layouts":0,"styleRecalcs":9,"domNodes":2725,"heapMB":10.6}
+  profile total 3040 ms; special: (idle)=2945 (program)=91 requestAnimationFrame=4
+  files:
+  fns:
+
+{"phase":"playback x1 5s (Space key)","wallMs":5070,"ms":5092,"frames":609,"fps":119.6,"over33":0,"over100":0,"maxFrame":25,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":497,"layoutMs":5,"styleMs":0,"taskMs":921,"layouts":51,"styleRecalcs":9,"domNodes":2732,"heapMB":14.2}
+  profile total 5087 ms; special: (idle)=4196 (program)=389 (garbage collector)=30 save=29 fillText=20 restore=16
+  files: 327ms /assets/index-XTpfiwzT.js | 20ms /assets/uncertainty-BLU97vng.js | 1ms /assets/jsx-runtime-B-hcVAMW.js | 1ms /assets/clock-C56FyJev.js
+  fns:
+    31ms setAttr /assets/index-XTpfiwzT.js:23
+    29ms (anonymous) /assets/index-XTpfiwzT.js:23
+    21ms drawScene /assets/index-XTpfiwzT.js:23
+    20ms measureSize /assets/index-XTpfiwzT.js:23
+    12ms e.<computed> /assets/index-XTpfiwzT.js:23
+    11ms off /assets/index-XTpfiwzT.js:23
+    10ms _sceneFunc /assets/index-XTpfiwzT.js:23
+    10ms (anonymous) /assets/index-XTpfiwzT.js:42
+    7ms _getCache /assets/index-XTpfiwzT.js:23
+    7ms drawHit /assets/index-XTpfiwzT.js:23
+    6ms Mc /assets/index-XTpfiwzT.js:42
+    6ms de /assets/uncertainty-BLU97vng.js:1
+    6ms on /assets/index-XTpfiwzT.js:23
+    5ms ec /assets/index-XTpfiwzT.js:42
+    5ms strokeShape /assets/index-XTpfiwzT.js:23
+    4ms _fill /assets/index-XTpfiwzT.js:23
+    4ms _useBufferCanvas /assets/index-XTpfiwzT.js:23
+    4ms _calculate /assets/index-XTpfiwzT.js:23
+    4ms lf /assets/index-XTpfiwzT.js:42
+    3ms getLayer /assets/index-XTpfiwzT.js:23
+    3ms rf /assets/index-XTpfiwzT.js:42
+    3ms _getCanvasCache /assets/index-XTpfiwzT.js:23
+    3ms er /assets/index-XTpfiwzT.js:31
+    3ms Ke /assets/index-XTpfiwzT.js:31
+    3ms hasStroke /assets/index-XTpfiwzT.js:23
+{"phase":"zoom wheel x30","wallMs":1751,"ms":1767,"frames":212,"fps":120,"over33":0,"over100":0,"maxFrame":9,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":114,"layoutMs":2,"styleMs":1,"taskMs":234,"layouts":30,"styleRecalcs":30,"domNodes":2732,"heapMB":28.4}
+  profile total 1772 ms; special: (idle)=1542 (program)=115 restore=3 save=2 fillText=2 stroke=2
+  files: 89ms /assets/index-XTpfiwzT.js | 3ms /assets/uncertainty-BLU97vng.js | 1ms /assets/jsx-runtime-B-hcVAMW.js
+  fns:
+    8ms (anonymous) /assets/index-XTpfiwzT.js:23
+    5ms (anonymous) /assets/index-XTpfiwzT.js:42
+    4ms off /assets/index-XTpfiwzT.js:23
+    3ms _getCache /assets/index-XTpfiwzT.js:23
+    3ms Mc /assets/index-XTpfiwzT.js:42
+    3ms _clearSelfAndDescendantCache /assets/index-XTpfiwzT.js:23
+    3ms ec /assets/index-XTpfiwzT.js:42
+    3ms e.<computed> /assets/index-XTpfiwzT.js:23
+    3ms setAttr /assets/index-XTpfiwzT.js:23
+    2ms _useBufferCanvas /assets/index-XTpfiwzT.js:23
+    2ms _off /assets/index-XTpfiwzT.js:23
+    2ms strokeShape /assets/index-XTpfiwzT.js:23
+    2ms on /assets/index-XTpfiwzT.js:23
+    2ms drawScene /assets/index-XTpfiwzT.js:23
+    1ms de /assets/uncertainty-BLU97vng.js:1
+    1ms measureSize /assets/index-XTpfiwzT.js:23
+    1ms E /assets/index-XTpfiwzT.js:2
+    1ms _calculate /assets/index-XTpfiwzT.js:23
+    1ms hasStroke /assets/index-XTpfiwzT.js:23
+    1ms _sceneFunc /assets/index-XTpfiwzT.js:23
+    1ms drawHit /assets/index-XTpfiwzT.js:23
+    1ms _clearCache /assets/index-XTpfiwzT.js:23
+    1ms (anonymous) /assets/index-XTpfiwzT.js:31
+    1ms Fr /assets/index-XTpfiwzT.js:31
+    1ms getLayer /assets/index-XTpfiwzT.js:23
+{"phase":"pan drag 40 moves","wallMs":1011,"ms":1050,"frames":124,"fps":118.1,"over33":0,"over100":0,"maxFrame":25,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":74,"layoutMs":0,"styleMs":0,"taskMs":234,"layouts":2,"styleRecalcs":0,"domNodes":2732,"heapMB":20.3}
+  profile total 1056 ms; special: (idle)=829 (program)=149 save=9 stroke=3 restore=3 fillText=3
+  files: 47ms /assets/index-XTpfiwzT.js | 0ms /assets/uncertainty-BLU97vng.js
+  fns:
+    6ms (anonymous) /assets/index-XTpfiwzT.js:23
+    4ms setAttr /assets/index-XTpfiwzT.js:23
+    4ms _getProtoListeners /assets/index-XTpfiwzT.js:23
+    3ms _getCache /assets/index-XTpfiwzT.js:23
+    3ms drawScene /assets/index-XTpfiwzT.js:23
+    3ms measureSize /assets/index-XTpfiwzT.js:23
+    2ms strokeShape /assets/index-XTpfiwzT.js:23
+    2ms _clearSelfAndDescendantCache /assets/index-XTpfiwzT.js:23
+    2ms _clearCache /assets/index-XTpfiwzT.js:23
+    2ms _useBufferCanvas /assets/index-XTpfiwzT.js:23
+    1ms fillShape /assets/index-XTpfiwzT.js:23
+    1ms _sceneFunc /assets/index-XTpfiwzT.js:23
+    1ms e.<computed> /assets/index-XTpfiwzT.js:23
+    1ms _calculate /assets/index-XTpfiwzT.js:23
+    1ms copyInto /assets/index-XTpfiwzT.js:23
+    1ms setAbsolutePosition /assets/index-XTpfiwzT.js:23
+    1ms _getContentPosition /assets/index-XTpfiwzT.js:23
+    1ms getLayer /assets/index-XTpfiwzT.js:23
+    0ms _drawChildren /assets/index-XTpfiwzT.js:23
+    0ms wd /assets/index-XTpfiwzT.js:9
+    0ms _pointermove /assets/index-XTpfiwzT.js:23
+    0ms _getIntersection /assets/index-XTpfiwzT.js:23
+    0ms _fireAndBubble /assets/index-XTpfiwzT.js:23
+    0ms yt /assets/index-XTpfiwzT.js:9
+    0ms _getAbsoluteTransform /assets/index-XTpfiwzT.js:23
+{"phase":"lifecycle phases x3 cycles","wallMs":2228,"ms":2267,"frames":259,"fps":114.3,"over33":1,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":217,"layoutMs":13,"styleMs":17,"taskMs":407,"layouts":32,"styleRecalcs":200,"domNodes":3484,"heapMB":23.8}
+  profile total 2255 ms; special: (idle)=1867 (program)=134 (garbage collector)=23 getBoundingClientRect=13 query=3 (anonymous)=2
+  files: 139ms /assets/TimeSeriesChart-CsHQjSkU.js | 50ms /assets/index-XTpfiwzT.js | 4ms /assets/uncertainty-BLU97vng.js | 4ms /assets/jsx-runtime-B-hcVAMW.js | 2ms /assets/persist-CrSKkQdr.js | 0ms /assets/AnalysisPanel-DB47aD2V.js | 0ms /assets/clock-C56FyJev.js | 0ms /assets/teStore-CaYCHNOA.js
+  fns:
+    37ms Xj /assets/TimeSeriesChart-CsHQjSkU.js:51
+    11ms (anonymous) /assets/TimeSeriesChart-CsHQjSkU.js:51
+    10ms (anonymous) /assets/TimeSeriesChart-CsHQjSkU.js:41
+    7ms (anonymous) /assets/TimeSeriesChart-CsHQjSkU.js:1
+    5ms (anonymous) /assets/TimeSeriesChart-CsHQjSkU.js:2
+    3ms wi /assets/TimeSeriesChart-CsHQjSkU.js:2
+    3ms o /assets/TimeSeriesChart-CsHQjSkU.js:1
+    3ms (anonymous) /assets/index-XTpfiwzT.js:43
+    3ms So /assets/index-XTpfiwzT.js:9
+    3ms ux /assets/index-XTpfiwzT.js:43
+    2ms Ox /assets/TimeSeriesChart-CsHQjSkU.js:41
+    2ms e.createElement /assets/jsx-runtime-B-hcVAMW.js:1
+    2ms qv /assets/index-XTpfiwzT.js:43
+    2ms lh /assets/index-XTpfiwzT.js:42
+    2ms Zj /assets/TimeSeriesChart-CsHQjSkU.js:51
+    2ms zi /assets/TimeSeriesChart-CsHQjSkU.js:2
+    2ms Xv /assets/index-XTpfiwzT.js:43
+    2ms uy /assets/index-XTpfiwzT.js:43
+    2ms (anonymous) /assets/TimeSeriesChart-CsHQjSkU.js:53
+    2ms tr /assets/uncertainty-BLU97vng.js:1
+    2ms wx /assets/index-XTpfiwzT.js:43
+    2ms Mt /assets/index-XTpfiwzT.js:9
+    2ms T /assets/TimeSeriesChart-CsHQjSkU.js:39
+    1ms W /assets/TimeSeriesChart-CsHQjSkU.js:2
+    1ms Hc /assets/index-XTpfiwzT.js:9
+{"phase":"library drawer open/close x3","wallMs":1543,"ms":1592,"frames":188,"fps":118.1,"over33":1,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":15,"layoutMs":3,"styleMs":2,"taskMs":119,"layouts":9,"styleRecalcs":11,"domNodes":3485,"heapMB":25.1}
+  profile total 1582 ms; special: (idle)=1482 (program)=85 focus=3 removeChild=2 requestAnimationFrame=1 (garbage collector)=0
+  files: 8ms /assets/index-XTpfiwzT.js | 1ms /assets/uncertainty-BLU97vng.js
+  fns:
+    1ms Pr /assets/index-XTpfiwzT.js:9
+    1ms Id /assets/index-XTpfiwzT.js:10
+    1ms kr /assets/index-XTpfiwzT.js:9
+    1ms (anonymous) /assets/index-XTpfiwzT.js:42
+    0ms dn /assets/index-XTpfiwzT.js:9
+    0ms li /assets/index-XTpfiwzT.js:9
+    0ms n /assets/uncertainty-BLU97vng.js:1
+    0ms (anonymous) /assets/uncertainty-BLU97vng.js:1
+    0ms (anonymous) /assets/index-XTpfiwzT.js:9
+    0ms lp /assets/index-XTpfiwzT.js:10
+    0ms Fl /assets/index-XTpfiwzT.js:9
+    0ms D /assets/index-XTpfiwzT.js:2
+    0ms Ao /assets/index-XTpfiwzT.js:9
+    0ms vt /assets/index-XTpfiwzT.js:9
+    0ms a /assets/index-XTpfiwzT.js:9
+    0ms Ng /assets/index-XTpfiwzT.js:42
+    0ms Lc /assets/index-XTpfiwzT.js:9
+    0ms h /assets/index-XTpfiwzT.js:9
+    0ms O /assets/index-XTpfiwzT.js:42
+    0ms rr /assets/index-XTpfiwzT.js:9
+    0ms Nd /assets/index-XTpfiwzT.js:10
+    0ms il /assets/index-XTpfiwzT.js:9
+    0ms n /assets/index-XTpfiwzT.js:9
+page errors/warnings: []

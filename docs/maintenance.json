@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "7b3a945dd434daeb8b411490991ee65da564078383555742b99ed5ff5f5bed41",
+      "sha256": "3e196f15f8bfcaf9906a1ecc9eb91e43b47ee6db5314fac8338694825f3ac28c",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: package.json gains the test:e2e script; the guidance is unchanged."
+      "note": "Wave 5 adds bundle-check commands and accounting tests; complete gate and separate real browser verification guidance remain accurate."
     },
     {
       "document": "CLAUDE.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "796ef576366e6d5a130dba8197c9d4cc5604cc9be972ac9a9a53bd5ce3ab978b",
+      "sha256": "e9c7c093dd4df0fc280efda76896e2bcf9443830e6b880cbc29e5241a3488f27",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: App.tsx gains the calibrate strip, the Escape order and the shared roving helper; package.json gains test:e2e. The start commands and the gate are unchanged."
+      "note": "Reviewed final Ops root boundary including Toolbar; startup commands and local-first architecture remain accurate."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "c886ce382c8df1393cce213349c8682d44b6adec31b6a727a15fbecd73a2a940",
+      "sha256": "c8933099e6bee4e6aa2da2b9376471d08f07d5fdf7b1162abf1a0af85f9c0819",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: placement cancel keys on the entity and system-preset counts, Escape closes an open dialog before a placement, the calibrate tool shows a strip; the entity heading is an h3 and the debrief record opens on completion."
+      "note": "Reviewed final workspace roots including Ops Toolbar, lazy Storage dialog, render fallbacks and recovery/admission source and tests."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d2fc6f3756a91533da7111652451449a8b360b59da511e37ca7e23da02cc54df",
+      "sha256": "a5b1bda3a9ea232a95020e0c950c04aca9a5f0f77f72b4fd59d759c53aae2526",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: AnalysisPanel renders the widget stack alone (selection detail and lens navigation are the Board shell's), the lens buttons are a pressed group, usePopover and rovingTabs in src/ui, the Escape order and the calibrate strip in section 7, the right-panel check restated as the 1400 by 900 harness with a 320 px panel."
+      "note": "Verified final Ops root boundary and lazy Storage focus; distinguished read-denial save-status errors from queued recovery notices in section 3."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "c93a1440eaf7c4ee493a31ac8d224563b1026c07b40cac9d2ddd56901b5535c5",
+      "sha256": "b114377663c74a5dd0c9d7e492dbdf4b0026fbcf1fc7789b2b3f5e2cfcfde2af",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: scripts/e2e/board-shell.e2e.mjs and npm run test:e2e added to the commands table and the browser checks; src/io, src/te/io, fixtures and the workflow are unchanged."
+      "note": "Added bundle accounting commands and current CI browser lifecycle; documented widget probe and Wave 5 browser acceptance against the updated harness."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -89,16 +89,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "f743a80dc5294b9c68acb3c0d3c575a7db138c3bbf04b3815ebd822ff31027cd",
+      "sha256": "06551ddf12bdf26ca1b55b0354bab560ddb2aab0534a1b18dc4eb9aad4d98cbf",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: package.json gains test:e2e and scripts/e2e holds the Board shell spec; CI still runs npm run check only, so the sentence on browser checks stays true."
+      "note": "CI now runs the built bundle budget and Chromium shell spec after check, with readiness and process cleanup; documented JS plus CSS accounting and separate font totals."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "161561c097d493ebc9213afae2e248e6c0685aee82e4012002d3f9d0b876ac06",
+      "sha256": "5d5f1d90499cdcbcf30fdd7d20b3b27fef1c0e8d0cf5c72cf4884f9a95b26aab",
       "reviewedAt": "2026-09-07",
-      "note": "2026-09-07: Wave 4 merged to main and pushed, the feature branch deleted, main recorded as the working branch from Wave 5 on."
+      "note": "Closed Wave 5 with verified local gate, parity, browser and bundle evidence; recorded Casey acceptance of paired timing variation and publication authorization; selected named scenario library alone for Wave 6."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "497652a97b765fbc62c679b2cf6f2b1353f5be77e54a1d6d8d85bc2592a8a398",
+      "sha256": "8b7da69cbeaab705cb22e728afdfd56a9914494483ec1783c2cdf3b166a52d30",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 4: the entity workspace heading rule moves from h2 to h3 in index.css; src/ui gains usePopover and rovingTabs, which add no tokens or classes. No text change."
+      "note": "Wave 5 Storage and boundary views reuse State, inspector-actions, toolbar/popover styles and semantic tokens; no token or typography changes."
     }
   ],
   "historical": [

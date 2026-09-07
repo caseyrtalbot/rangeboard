@@ -408,3 +408,85 @@ it; the three lifecycle buttons switch `data-board-phase`; undo and redo keep th
 The first run found a defect present at `955ad6b`: the heading handle's `dragend` bubbled to the
 entity group, whose handler moved the entity to the handle's local coordinates and pushed a second
 undo entry. The group now ignores any drag whose target is not itself.
+
+## Wave 5 verification, 2026-09-07
+
+Captured against Wave 5 part one on `main`, based on `12d369f`. The change adds workspace,
+widget and print error boundaries; admission for new T&E frame images and config snapshots;
+a lazy Storage dialog with startup recovery notices and exact-copy download/deletion; and
+CI browser and bundle checks. Later scenario-library and seam capabilities are outside this wave.
+
+`npm run check` passes: 208 Vitest files, 2,850 tests, the documentation tests and five new
+bundle-accounting tests; typecheck, runtime schema check, documentation review, lint and build
+pass. Lint retains 63 existing warnings. The build is warning-free. `npm run test:e2e` passes
+6 of 6. These local checks were captured before publication; remote CI status is verified separately
+after push. The browser-server lifecycle was exercised locally, including cleanup of its own PID.
+
+### Browser check after Wave 5
+
+`browser-check-wave5.json` records every previous assertion plus the new capability checks.
+The harness uses the visible run-validity widget for the dev-only render probe, then changes
+both records through their real store actions and waits for both live autosaves. The boundary
+exports the current Board JSON and reloads; five sibling widget frames and the canvas survive.
+Only the exact injected render diagnostic is expected; all other page errors fail the harness.
+
+The real Capture frame button rejects a stage adapter returning an oversized image string
+before adding a frame, with the 5 MiB reason visible in `State`. The actual Ops snapshot button
+rejects a scenario with oversized extension data, preserving the null snapshot and empty drift
+history. The Storage dialog lists a planted recovery key, downloads its exact malformed text,
+retains it until explicit confirmation, deletes only that key, and leaves both live saves
+unchanged. A separate fresh context starts with an unreadable live save: the original text is
+rescued, the queued startup notice appears in Storage, and no native dialog opens.
+
+No first-play long task; phase-switch layout counts 17 and 1; heap growth after 30 edits
+4.6 MB; no unexpected page errors. At 1400 by 900, Storage has no horizontal overflow and
+receives focus on Refresh after its lazy chunk mounts; its contents were visually inspected.
+
+`ops-boundary-wave5.mjs.txt` and `ops-boundary-wave5.json` record the independent-review fix:
+a failed first Storage chunk load in Ops is caught by the workspace boundary, which also wraps
+the Toolbar. The fallback exports the retained campaign and its autosave survives. The two
+network/chunk diagnostics are deliberately induced. Independent source review found no remaining
+functional or security blocker after that fix and the lazy-dialog focus fix.
+
+### Parity and bundle after Wave 5
+
+`parity-wave5-before.json` and `parity-wave5-after.json` are byte-identical: the fixed-ID
+firing and detection-outside-rings probes cover deterministic assessments/report, aleatory MC,
+total MC and sensitivity. The temporary Vitest capture file was removed.
+
+`bundle-size-wave5.json` uses actual `gzip -9` output from `dist/`: entry 243,196 bytes against
+260,000; initial JavaScript plus CSS 380,735 against 400,000. As in the Wave 3 method, entry,
+modulepreloads and stylesheets form the initial budget. Other preloads (fonts) are reported
+separately at 88,204 bytes; the all-in total is 468,939. The Storage panel is lazy so adding
+recovery management does not exceed the existing minified-chunk warning threshold. The dev
+render probe is absent from production output.
+
+### Performance after Wave 5
+
+Same preserved harness/scenario, viewport and panel width. Load is wall milliseconds to first
+canvas; playback and zoom are script milliseconds. All original and repeat outputs are retained;
+no run was discarded from the table. No page warnings/errors or playback/zoom long tasks occurred.
+
+| Measure | Wave 4 historical | Wave 4 recheck | Wave 5 first | Wave 5 repeat |
+| --- | ---: | ---: | ---: | ---: |
+| Dev load | 385 | 565 | 407 | 414 |
+| Dev playback, 5 s | 808 | 864 | 868 | 880 |
+| Dev zoom, 30 events | 398 | 410 | 407 | 395 |
+| Prod load | 271 | 334 | 271 | 287 |
+| Prod playback, 5 s | 452 | 513 | 520 | 497 |
+| Prod zoom, 30 events | 115 | 128 | 124 | 114 |
+
+The unchanged Wave 4 recheck comes from `git archive 12d369f` in a temporary directory, with
+locked dependencies shared and a separate dev server/build. Its cold server startup makes its
+load measurement unsuitable as a claimed speedup. Its playback and zoom also exceed the
+historical numbers; current Wave 5 dev playback differs from that recheck by 4–16 ms (0.5–1.9
+percent), and production playback spans both sides of the recheck. This is evidence of run
+variation, not proof of exact equality. The historical absolute acceptance numbers are not all
+met: observed dev playback is about 17–18 percent of wall time and production about 10 percent.
+Casey accepted closure on this paired evidence on 2026-09-07 by instructing the orchestrator
+to commit, push and merge to main after these timing misses were disclosed. The work was
+already on `main`; this decision closes Wave 5 without claiming its historical absolute
+limits were all met or changing future gates.
+
+Raw captures: `profile-dev-wave5.txt`, `profile-prod-wave5.txt`, their `-repeat.txt` counterparts,
+and `profile-dev-wave4-recheck.txt`, `profile-prod-wave4-recheck.txt`.

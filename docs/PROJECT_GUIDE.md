@@ -59,6 +59,16 @@ Board test cards (`Scenario.testCards`) differ from controlled T&E cards
 (`TeCampaign.cards`). Board saved frames and T&E captured image records also have
 different purposes. Follow their types and import paths before changing either feature.
 
+The shared toolbar's Storage section shows estimated UTF-16 bytes per live and recovery key.
+It retains startup recovery notices and lets the user download the exact unreadable copy or
+explicitly delete one recovery key. Deletion does not resume a paused autosave. New campaign
+frames and Board config snapshots have a 5 MiB admission budget; refusals appear beside the
+capture action. Existing valid saved payloads remain loadable.
+
+Workspace, analysis-widget and print boundaries isolate render failures. Their Export action
+reads the owning scenario or campaign, and Reload reloads the page. Both autosave subscriptions
+remain outside React and continue when a view fails.
+
 ## T&E Ops features
 
 The [workspace](../src/te/ui/OpsWorkspace.tsx) presents six phases plus Products.

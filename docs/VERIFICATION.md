@@ -20,6 +20,8 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run schema:check` | Reject descriptors that differ from current types |
 | `npm run docs:check` | Lint Markdown, validate local links, placement and source review |
 | `npm run test:docs` | Exercise documentation maintenance failure paths |
+| `npm run test:bundle` | Test bundle accounting and over-budget rejection |
+| `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run check` | Complete documentation, type, schema, test, lint and build gate |
 
@@ -73,8 +75,16 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
   in the page, then checks phase switching, selection routing, placement, the Escape chain,
-  the debrief record and the lens roles against store state. Start the dev server first;
-  the spec is not part of `npm run check` until CI runs it.
+  the debrief record and the lens roles against store state. Start the dev server first.
+  CI runs it separately after `npm run check` and `npm run check:bundle`, installing Chromium
+  and managing its own fixed-port Vite process. Locally the browser and built-bundle checks
+  remain separate commands; bundle-accounting unit tests are included in `check`.
+- The performance-wave browser harness additionally verifies a widget render failure,
+  surviving Board/T&E autosaves, boundary export/reload, oversized frame and snapshot
+  refusal, and recovery listing/download/deletion and startup notices. Its dev-only
+  `window.__throwWidgetRender` probe takes a widget id; collapse and re-expand that widget
+  to throw inside its frame. Delete the hook before Reload. Only the exact injected
+  diagnostic is expected; every other page error fails the harness.
 
 ## Harness setup
 

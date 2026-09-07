@@ -172,6 +172,7 @@ export function OpsWorkspace() {
       return (
         <PrintOverlay
           title={`Test card ${displayId(card.cardCode, card.version)}`}
+          onExport={() => exportCampaignJson(campaign)}
           onClose={() => setPreview(null)}
         >
           <TestCardPrint campaign={campaign} card={card} />
@@ -182,13 +183,21 @@ export function OpsWorkspace() {
       const run = campaign.runs.find((r) => r.id === preview.id)
       if (!run) return null
       return (
-        <PrintOverlay title={`Run record ${run.id}`} onClose={() => setPreview(null)}>
+        <PrintOverlay
+          title={`Run record ${run.id}`}
+          onExport={() => exportCampaignJson(campaign)}
+          onClose={() => setPreview(null)}
+        >
           <RunRecordPrint campaign={campaign} run={run} />
         </PrintOverlay>
       )
     }
     return (
-      <PrintOverlay title="Decision evidence package" onClose={() => setPreview(null)}>
+      <PrintOverlay
+        title="Decision evidence package"
+        onExport={() => exportCampaignJson(campaign)}
+        onClose={() => setPreview(null)}
+      >
         <PackagePrint campaign={campaign} />
       </PrintOverlay>
     )

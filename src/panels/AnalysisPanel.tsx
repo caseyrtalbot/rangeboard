@@ -9,6 +9,8 @@ import { DebriefRecord } from './analysis/DebriefRecord'
 import { LiveStrip } from './analysis/LiveStrip'
 import { WIDGETS } from './analysis/widgets/registry'
 import type { WidgetProps } from './analysis/widgets/registry'
+import { ErrorBoundary } from '../ui/ErrorBoundary'
+import { exportScenario } from '../io/persist'
 
 /**
  * Every widget subscribes to the store on its own, so a panel render must not
@@ -67,15 +69,17 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
         {instance.type === 'time-series' && !groupSummary && (
           <p className="analysis-scope">Full-run time series · playback cursor marker</p>
         )}
-        <Widget
-          id={instance.id}
-          params={instance.params}
-          collapsed={instance.collapsed}
-          customize={customize}
-          index={widgets.indexOf(instance)}
-          count={widgets.length}
-          onOpenPreparation={onOpenPreparation}
-        />
+        <ErrorBoundary label={WIDGETS[instance.type].label} onExport={() => exportScenario(useStore.getState().scenario)}>
+          <Widget
+            id={instance.id}
+            params={instance.params}
+            collapsed={instance.collapsed}
+            customize={customize}
+            index={widgets.indexOf(instance)}
+            count={widgets.length}
+            onOpenPreparation={onOpenPreparation}
+          />
+        </ErrorBoundary>
       </Fragment>
     )
   }

@@ -20,7 +20,9 @@ import { TimelineBar } from './panels/TimelineBar'
 import { toggleAnalysisRun } from './playback/runSession'
 import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
-import { restoreTeAutosave } from './te/io/persistTe'
+import { exportCampaignJson, restoreTeAutosave } from './te/io/persistTe'
+import { exportScenario } from './io/persist'
+import { ErrorBoundary } from './ui/ErrorBoundary'
 import { State } from './ui/kit'
 import { nextTabIndex } from './ui/rovingTabs'
 
@@ -379,6 +381,14 @@ function LocationDialogForm({ geoRef }: { geoRef: GeoRef | null }) {
   )
 }
 
+function exportOpsRecord() {
+  restoreTeAutosave()
+  const state = useTeStore.getState()
+  const campaign = state.campaigns.find((item) => item.id === state.activeCampaignId)
+  if (!campaign) throw new Error('No active campaign is available to export.')
+  exportCampaignJson(campaign)
+}
+
 export default function App() {
   const rightTab = useStore((s) => s.ui.rightTab)
   const setRightTab = useStore((s) => s.setRightTab)
@@ -636,16 +646,18 @@ export default function App() {
 
   if (workspace === 'ops') {
     return (
-      <div className="app">
-        <Toolbar />
-        <Suspense fallback={<PanelLoading label="Loading T&E Ops" />}>
-          <OpsWorkspace />
-        </Suspense>
-      </div>
+      <ErrorBoundary key="ops" label="T&E Ops" onExport={exportOpsRecord}>
+        <div className="app">
+          <Toolbar />
+          <Suspense fallback={<PanelLoading label="Loading T&E Ops" />}>
+            <OpsWorkspace />
+          </Suspense>
+        </div>
+      </ErrorBoundary>
     )
   }
 
-  return (
+  const board = (
     <div className="app board-app" data-board-phase={boardPhase}>
       <Toolbar />
       <LifecycleNav boardPhase={boardPhase} runSeq={runSeq} runPhase={runPhase} onOpenPhase={openPhase} />
@@ -739,5 +751,10 @@ export default function App() {
         </Suspense>
       )}
     </div>
+  )
+  return (
+    <ErrorBoundary key="board" label="Board" onExport={() => exportScenario(useStore.getState().scenario)}>
+      {board}
+    </ErrorBoundary>
   )
 }

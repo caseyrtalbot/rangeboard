@@ -1,6 +1,17 @@
 import { useId } from 'react'
 import type { WidgetType } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
+import { exportScenario } from '../../../io/persist'
+import { ErrorBoundary } from '../../../ui/ErrorBoundary'
+
+function RenderFailureProbe({ id }: { id: string }) {
+  // Browser verification opts in by id, then triggers a normal widget render.
+  if (import.meta.env.DEV && typeof window !== 'undefined' &&
+    (window as Window & { __throwWidgetRender?: string }).__throwWidgetRender === id) {
+    throw new Error(`Widget render probe: ${id}`)
+  }
+  return null
+}
 
 /**
  * The frame every analysis widget renders: a header with the collapse
@@ -87,7 +98,12 @@ export function WidgetFrame({
           </span>
         ) : null}
       </header>
-      {collapsed ? null : <div className="wg-b" id={contentId}>{children}</div>}
+      {collapsed ? null : <div className="wg-b" id={contentId}>
+        <ErrorBoundary label={title} onExport={() => exportScenario(useStore.getState().scenario)}>
+          {import.meta.env.DEV && <RenderFailureProbe id={id} />}
+          {children}
+        </ErrorBoundary>
+      </div>}
     </section>
   )
 }

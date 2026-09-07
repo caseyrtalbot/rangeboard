@@ -10,6 +10,7 @@ import { restoreTeAutosave } from './persistTe'
 import { useStore } from '../../state/store'
 import { newId } from '../../model/types'
 import { nowIso } from '../model/empty'
+import { validateImage } from '../../io/runtimeValidation'
 
 let stage: Konva.Stage | null = null
 
@@ -34,7 +35,8 @@ export function downloadBoardFrame(name: string): boolean {
 
 /**
  * Capture the current board view as a PNG frame on the active campaign.
- * Returns the frame id, or null when no stage or campaign is available.
+ * Returns the frame id, or null when no writable campaign or stage is available.
+ * Admission and canvas errors propagate to the caller's State notice.
  */
 export function captureFrameToCampaign(name: string): string | null {
   // A Board-side write into the T&E store: the saved record must be back first.
@@ -43,6 +45,7 @@ export function captureFrameToCampaign(name: string): string | null {
   if (!stage || !te.activeCampaignId) return null
   const pixelRatio = Math.min(2, 1600 / Math.max(1, stage.width()))
   const pngDataUrl = stage.toDataURL({ pixelRatio })
+  validateImage(pngDataUrl, 'Frame capture', true)
   const id = newId('tefrm')
   te.addItem('frames', {
     id,
@@ -52,5 +55,6 @@ export function captureFrameToCampaign(name: string): string | null {
     simTimeS: useStore.getState().playback.simTimeS,
     note: '',
   })
-  return id
+  return useTeStore.getState().campaigns.find(c => c.id === te.activeCampaignId)
+    ?.frames.some(frame => frame.id === id) ? id : null
 }

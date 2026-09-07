@@ -6,7 +6,8 @@ import { useTeStore } from '../te/state/teStore'
 import { loadTeAutosave, restoreTeAutosave, startTeAutosave } from '../te/io/persistTe'
 import { loadAutosave, startAutosave } from './persist'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY, TE_RECOVERY_PREFIX } from './storageKeys'
-import { allowAutosave, assertAutosaveAllowed, stashUnreadableSave } from './recovery'
+import { allowAutosave, assertAutosaveAllowed, dismissRecoveryNotice, getRecoveryNotices,
+  notifyRecovery, stashUnreadableSave, subscribeRecoveryNotices } from './recovery'
 
 function storage(initial: Record<string, string> = {}, fail?: (key: string) => boolean) {
   const data = new Map(Object.entries(initial))
@@ -29,11 +30,23 @@ function browser() {
 }
 
 afterEach(() => {
+  getRecoveryNotices().forEach(notice => dismissRecoveryNotice(notice.id))
   allowAutosave(SCENARIO_KEY); allowAutosave(TE_KEY)
   vi.restoreAllMocks(); vi.unstubAllGlobals()
 })
 
 describe('recovery durability', () => {
+  it('retains notices before React or window exists and publishes dismissals', () => {
+    const listener = vi.fn()
+    notifyRecovery('scenario', 'rangeboard.scenario.recovered.1', 'Invalid scenario')
+    const before = getRecoveryNotices()
+    expect(before.at(-1)?.message).toContain('Invalid scenario')
+    const unsubscribe = subscribeRecoveryNotices(listener)
+    dismissRecoveryNotice(before.at(-1)!.id)
+    expect(listener).toHaveBeenCalledOnce()
+    expect(getRecoveryNotices()).toHaveLength(0)
+    unsubscribe()
+  })
   it('does not overwrite an earlier recovery created in the same millisecond', () => {
     vi.spyOn(Date, 'now').mockReturnValue(123)
     const { data } = storage()
@@ -53,7 +66,8 @@ describe('recovery durability', () => {
       const { data } = storage({ [key]: raw }, k => k.startsWith(prefix)); browser()
       expect(load()).toBeNull(); expect(data.get(key)).toBe(raw)
       expect(() => assertAutosaveAllowed(key)).toThrow('preserve')
-      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('autosave is paused'))
+      expect(getRecoveryNotices().at(-1)?.message).toContain('autosave is paused')
+      expect(window.alert).not.toHaveBeenCalled()
     }
   })
   it.each([[SCENARIO_KEY, loadAutosave], [TE_KEY, loadTeAutosave]] as const)('fails closed after a denied read of %s', (key, load) => {

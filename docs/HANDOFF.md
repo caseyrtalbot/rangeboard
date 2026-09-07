@@ -18,13 +18,14 @@ every instruction a session needs; the lane reports add detail, not requirements
 | 2 | Structural performance: Layer split, shared timeline cache, first-play hitch, phase-switch layout thrash, engine hot loop, memory | Done 2026-09-06; gate, parity and browser check green; first-play and phase-switch targets met, four dev targets open for Casey's decision (section 4) | `ae55f0a` | same directory: `profile-dev-wave2.txt`, `profile-prod-wave2.txt`, `browser-check-wave2.json`, `browser-check.mjs.txt` (extended), README "After Wave 2", "Parity after Wave 2", "Memory after Wave 2" |
 | 3 | Bundle and startup: lazy T&E workspace, lazy charts, deferred T&E autosave load, seed data, fonts; plus the open-target change set (per-threat assessment memo, identity lending, pixel-snapped callouts) | Done 2026-09-06; gate, parity and browser check green; every Wave 3 criterion met; moveEntity and undo met in dev, playback, zoom and select closed on the prod numbers (section 2) | `00e25e5`, `442c1b0` | same directory: `profile-dev-wave3.txt`, `profile-prod-wave3.txt`, `browser-check-wave3.json`, `browser-check.mjs.txt` (extended), README "After Wave 3", "Parity after Wave 3", "Memory after Wave 3", "Browser check after Wave 3" |
 | 4 | Correctness, accessibility, deduplication, docs drift, one browser test | Done 2026-09-07; gate, browser check and the shell spec green; every acceptance number at or below Wave 3 | `0219d21` | same directory: `profile-dev-wave4.txt`, `profile-prod-wave4.txt`, `browser-check-wave4.json`, `browser-check.mjs.txt` (extended), README "After Wave 4", "Browser check after Wave 4"; the tracked spec `scripts/e2e/board-shell.e2e.mjs` |
-| 5 | Capabilities: error boundary, storage admission and recovery UI, CI browser test and size budget, then scenario library, bundle export, two-way seam, canvas keyboard access | Not started | | |
+| 5 | Error boundaries, storage admission and recovery UI, CI browser test and size budget | Done 2026-09-07; local gate, parity, browser and bundle checks green; Casey accepted paired performance evidence and authorized publication | This commit | same directory: `browser-check-wave5.json`, `ops-boundary-wave5.json`, `parity-wave5-before.json`, `parity-wave5-after.json`, `bundle-size-wave5.json`, all Wave 5 profiles and Wave 4 rechecks; README "Wave 5 verification, 2026-09-07" |
+| 6 | Named scenario library | Not started | | Section 4 |
 
 Base: branch `codex/board-workspace-ui` at `955ad6b`, one commit ahead of `main`. Gate at base:
 typecheck passes, 101 test files and 1414 tests pass, oxlint shows only pre-existing fast-refresh
 warnings, `node scripts/check-docs.mjs` passes.
 
-Head after Wave 4: `0219d21` plus this handoff update. Gate: 203 test files and 2830 tests pass
+Historical head after Wave 4: `0219d21` plus this handoff update. Gate: 203 test files and 2830 tests pass
 (the eight AnalysisPanel tests that covered the removed selection-detail paths are gone),
 63 pre-existing oxlint warnings, entry chunk 245.75 kB gzip, build warning-free. Merged to
 `main` and pushed 2026-09-07 on Casey's word; `codex/board-workspace-ui` is deleted and `main`
@@ -57,9 +58,23 @@ PROJECT_GUIDE, VERIFICATION, WORKFLOW, DESIGN_SYSTEM, README and AGENTS reviewed
 parity capture was taken. The lens buttons stayed rendered in every phase (the documented
 contract) and became a `role="group"` of `aria-pressed` buttons rather than a hidden tablist.
 
+Head after Wave 5: this closing commit on `main`. `npm run check` passes: 208 test files,
+2,850 tests, five bundle-accounting tests, 63 unchanged lint warnings, warning-free build.
+The shell spec passes 6 of 6; the extended browser harness passes every assertion; fixed-ID
+numerical captures are byte-identical. Entry 243,196 bytes and initial JavaScript plus CSS
+380,735 bytes under the `gzip -9` budgets. Remote CI status is checked after publication;
+these counts describe the local gate.
+
+Wave 5 performance is accepted on Casey's 2026-09-07 instruction to commit and push after
+reviewing the paired measurements. The historical absolute targets were not all met and are
+not relabeled as passed. Dev load 407/414 ms, playback 868/880 ms, zoom 407/395 ms; prod load
+271/287 ms, playback 520/497 ms, zoom 124/114 ms. An unchanged Wave 4 snapshot rechecked at
+864/513 ms playback (dev/prod) and 410/128 ms zoom. All captures remain in the evidence README;
+this acceptance is specific to Wave 5 and does not silently change future performance gates.
+
 ## 2. Decisions
 
-Approved by Casey on 2026-09-06:
+Approved by Casey on the dates recorded below:
 
 1. Waves 1 to 4 were fixed on `codex/board-workspace-ui` and merged to `main` on Casey's word
    (2026-09-06 and 2026-09-07, with push). From 2026-09-07 `main` is the working branch: commit
@@ -74,6 +89,12 @@ Approved by Casey on 2026-09-06:
    (playback 9 percent, zoom 4.1 ms per event, no long task in any phase); their dev numbers
    stay in the evidence README as the React development runtime's element cost. No imperative
    Konva update outside render.
+
+7. Wave 5 closure, 2026-09-07: after the orchestrator reported the historical timing misses
+   and paired unchanged-Wave-4 measurements, Casey instructed "commit and push. merge to main."
+   Accept that documented performance variation for this wave. The work is already on `main`,
+   so publication is a direct commit and push with no separate merge. Later capabilities remain
+   unstarted.
 
 Standing rules for this refactor: no per-slice approvals; poll Casey at a real choice with one
 recommendation; commit on the branch when the integrated gate is green; never push or merge without
@@ -107,79 +128,42 @@ localStorage; per-frame Konva reconciliation from one shared Layer, inline array
 hover state; whole-`camera` subscriptions on zoom; layout thrash on phase switch; one 2.1 MB chunk
 with no code splitting and synchronous T&E autosave validation before first paint.
 
-## 4. Current task: Wave 5, capabilities part one
+## 4. Current task: Wave 6, named scenario library
 
-Decision 5 fixes the order: the error boundary, storage admission and recovery UI, then the CI
-browser test and size budget. The later capability items stay in section 5. Owner `fable-medium`
-for items 1 and 2 (judgment on failure states and storage semantics), `opus-high` for item 3;
-the orchestrator session integrates and reviews. Line numbers are at `0219d21`. Read first:
-`AGENTS.md`, `docs/ENGINEERING_REFERENCE.md` sections 3, 7 and 8, `docs/PROJECT_GUIDE.md`,
-`docs/VERIFICATION.md`, the evidence README `docs/field-te/evidence/perf-2026-09-06/README.md`
-("Browser check after Wave 4"), then `.claude/plans/perf-2026-09-06/lane5-capabilities.md` if
-present locally.
+Next bounded session task, from section 5 item 1. Do not start it as part of Wave 5 publication.
+Read `AGENTS.md`, the current engineering/project/verification guides, `src/io/storageKeys.ts`,
+`src/io/persist.ts` and its tests, `src/state/store.ts` (`loadScenario`, `replaceScenario` and
+history), `src/panels/Toolbar.tsx`, and the Wave 5 recovery/admission helpers and tests.
 
-Shared rules: the Wave 4 shared rules hold unchanged (mutate and set, selectors, one load path,
-storage keys never renamed, worker import graph independent, the Wave 3 lazy boundaries stay,
-`restoreTeAutosave()` before any Board-side T&E write, code style, focused tests then
-`npm run typecheck` and `npm run lint`, report format).
+Outcome: retain several named Board scenarios in local browser storage, with an index key,
+one body key per scenario, an active pointer and a Toolbar switcher. `loadScenario` stays the
+one adoption path. Preserve the existing autosave and recovery key contracts, unknown extension
+data, legacy-save compatibility and verified recovery before writes. Preserve the separate
+T&E store and the Wave 3/Wave 5 lazy boundaries. Do not place campaign records in a scenario.
 
-Items:
+Ownership: one implementation owner for the coupled storage/index/active-pointer transition
+and its store consumers; the orchestrator owns shared docs and integration. If parallel UI work
+is used, give Toolbar/switcher files to one separate owner only after agreeing the transition
+contract. Workers preserve each other's edits. Inspect the current source before choosing any
+new key names or migration behavior; resolve a material persistence ambiguity with evidence.
 
-1. Error boundary. One class component (`src/ui/ErrorBoundary.tsx`; React 19 still needs a class
-   for `getDerivedStateFromError`) that renders the design-system `State` (`src/ui/kit.tsx:95`)
-   with an Export action (the existing `exportScenario` from `src/io/persist.ts` for the Board,
-   the T&E export for Ops) and a Reload action. Wrap each `WidgetFrame` child
-   (`src/panels/analysis/widgets/WidgetFrame.tsx:11`), each print view (`src/te/print/PrintOverlay.tsx:9`
-   and the print surfaces in `src/te/ui/ProductsPanel.tsx` and `CardsPanel.tsx`) and each workspace
-   root (the Board tree and the `OpsWorkspace` boundary in `src/App.tsx:637-650`). Autosave stays
-   outside React: `startAutosave` and `startTeAutosave` in `src/main.tsx` keep running when a
-   subtree fails. A caught error must not clear the scenario or the T&E record.
-2. Storage admission and recovery UI. T&E frames (`captureFrameToCampaign`,
-   `src/te/io/frameCapture.ts:39`) and config snapshots (`src/te/state/teStore.ts:605`) are
-   admitted against `MAX_IMAGE_CODE_UNITS` (`src/io/runtimeValidation.ts:29`) the way the underlay
-   image is (`src/io/persist.ts:419`); an oversize capture is refused with a `State` notice, not an
-   `alert` (`src/panels/Toolbar.tsx:163`, `src/panels/analysis/DebriefRecord.tsx:65`). A storage
-   readout (bytes used per live key and per recovery key, from `src/io/storageKeys.ts`) and a
-   Storage section that lists, downloads and deletes the `rangeboard.scenario.recovered.*` and
-   `rangeboard.te.recovered.*` copies. Replace `notifyRecovery` (`src/io/recovery.ts:34-40`) with
-   that section's notice; the recovery copy itself, its key and the autosave pause rules stay.
-3. CI. `.github/workflows/quality.yml` runs the Wave 4 spec after `npm run check`: install the
-   Playwright Chromium (`npx playwright install --with-deps chromium`), start the dev server on a
-   fixed port in the background, wait for it, run `npm run test:e2e`, stop it. Add a bundle size
-   budget step: fail when the built entry chunk exceeds 260 kB gzip or the preloaded initial set
-   exceeds 400 kB (read the numbers from `dist/` with `gzip -9`; the Wave 3 README section
-   "Bundle after Wave 3" holds the method).
+Verification: cover retaining and switching named scenarios across reload, compatibility with
+the existing autosave, failed reads/writes and recovery, and adoption through `loadScenario`
+with the existing history/selection/reset behavior. Run fixed-ID parity for store touches,
+real browser checks at 1400 by 900 and 320 px panel width, `npm run check`, `npm run test:e2e`
+and `npm run check:bundle`. Recheck load/playback/zoom and compare both the historical evidence
+and a matched current baseline; preserve measured misses and seek a decision if necessary.
+Update affected current docs and their source reviews in the same closing commit.
 
-### Integration (orchestrator)
-
-1. `npm run check`; the build must stay warning-free.
-2. Browser check: extend `browser-check.mjs.txt` with a thrown widget render (force one widget to
-   throw through a dev-only hook or a malformed layout param) that leaves the rest of the panel
-   and the autosave alive, an oversize frame capture refused, and the Storage section listing a
-   planted recovery key.
-3. Harness: rerun load, playback and zoom in dev and prod; no regression from the boundaries.
-4. Docs: `docs/ENGINEERING_REFERENCE.md` sections 3, 7 and 8, `docs/PROJECT_GUIDE.md`,
-   `docs/VERIFICATION.md` and `docs/WORKFLOW.md` (CI now runs a browser check);
-   `npm run docs:review` with a concrete note per document.
-5. Commit on the branch when gate and browser check are green:
-   `feat: error boundaries, storage admission and recovery UI, CI browser test and size budget (Wave 5)`.
-   Do not push.
-6. Update this file: ledger row, the new current task (section 5 item 1 onward).
-   `npm run docs:review -- docs/HANDOFF.md --note "..."`. Ask Casey before any merge or push.
-
-### Wave 5 acceptance
-
-A widget that throws leaves the other widgets, the canvas and both autosaves running; the
-boundary offers Export and Reload. An oversize frame or snapshot is refused before it reaches
-storage and the user sees why. The Storage section lists, downloads and deletes recovery copies,
-and no `alert` remains on the recovery path. CI runs the spec and the size budget and is green.
-Harness load, playback and zoom at or below the Wave 4 numbers (dev 385 ms, 16 percent, 13.3 ms
-per event; prod 271 ms, 9 percent, 3.8 ms). `npm run check` green. No new lint warnings.
+Stop after the named-library slice passes and its handoff ledger/current task are updated.
+Bundle export, run import, the two-way seam, additional canvas keyboard access, scorecards,
+restore points/run comparison and File System Access remain outside this task. Commit locally
+when the integrated gate passes; a future push still needs Casey's instruction for that wave.
 
 ## 5. Remaining waves
 
-Each wave is one session. Update section 1 and section 4 at its end. Wave 5 part one (section 4)
-comes first; these follow, in order, one or more per wave:
+Each wave is one session. Update section 1 and section 4 at its end. Wave 5 part one is
+complete. These follow in order; section 4 selects item 1 alone for the next session:
 
 1. Named scenario library: an index key plus one body key per scenario, an active pointer, a Toolbar
    switcher. `loadScenario` stays the one load path. Never rename existing keys.
