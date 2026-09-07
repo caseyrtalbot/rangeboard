@@ -96,9 +96,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "4c05e832bcf1d1e9f3db68f96299f8015de7dd0eb921ac005238238674434139",
+      "sha256": "81822f30ef479e23bb8a3e1c79ba6925bfc728ea50f589e1863807706a6c9f46",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 2 recorded: ledger row with ae55f0a, the dev and prod after-tables, the acceptance result with the four open dev targets and the prod numbers beside them, the traps for the presentation variant, engine-keyed caches, the flaky replicate test, quantized heap readings and the recharts grid; section 4 replaced with the Wave 3 task at ae55f0a line numbers with Casey's pending decision on the open targets."
+      "note": "Wave 3 recorded: ledger row with 00e25e5 and 442c1b0, the dev and prod after-tables, the acceptance and open-target outcome, decision 6 on the dev targets, Wave 4 set as the current task with anchors at 442c1b0, six new traps."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
