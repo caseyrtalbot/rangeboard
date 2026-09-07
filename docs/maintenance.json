@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "c8933099e6bee4e6aa2da2b9376471d08f07d5fdf7b1162abf1a0af85f9c0819",
+      "sha256": "92aeccf2eb922f782bc05f28ec836c798574ab6ca4ef05e895c5306784d37560",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed final workspace roots including Ops Toolbar, lazy Storage dialog, render fallbacks and recovery/admission source and tests."
+      "note": "Reviewed test-only CI follow-up: one full-engine parity matrix receives 15 seconds; product behavior and source entry points remain unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "a5b1bda3a9ea232a95020e0c950c04aca9a5f0f77f72b4fd59d759c53aae2526",
+      "sha256": "518981bee2561e2cf58e7596338ed83b42b73436e89f486b1c6072fc83af0e61",
       "reviewedAt": "2026-09-07",
-      "note": "Verified final Ops root boundary and lazy Storage focus; distinguished read-denial save-status errors from queued recovery notices in section 3."
+      "note": "Reviewed parity-matrix test timeout adjustment; engine computations, exact numerical assertions and invariants are unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b114377663c74a5dd0c9d7e492dbdf4b0026fbcf1fc7789b2b3f5e2cfcfde2af",
+      "sha256": "8a837c233a874a948a18931df0be31afb8033bc9a785a129f1e1a31f67734452",
       "reviewedAt": "2026-09-07",
-      "note": "Added bundle accounting commands and current CI browser lifecycle; documented widget probe and Wave 5 browser acceptance against the updated harness."
+      "note": "Verified --dir src limits Vitest discovery to 107 current files; positional src also matches archived paths and must not be used for this distinction."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -96,9 +96,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "5d5f1d90499cdcbcf30fdd7d20b3b27fef1c0e8d0cf5c72cf4884f9a95b26aab",
+      "sha256": "02c20cb9df3158ece5aeec51b5868617df320ef1bcaad2f90f564affcc29a178",
       "reviewedAt": "2026-09-07",
-      "note": "Closed Wave 5 with verified local gate, parity, browser and bundle evidence; recorded Casey acceptance of paired timing variation and publication authorization; selected named scenario library alone for Wave 6."
+      "note": "Recorded Wave 5 publication and first remote CI timeout, scoped 15-second parity-matrix timeout fix, and distinct current-source versus broad local test counts."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

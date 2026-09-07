@@ -13,7 +13,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run dev -- --port <port> --strictPort` | Start Vite on an available explicit port |
 | `npm run typecheck` | Check application and colocated TypeScript tests |
 | `npm test` | Run all Vitest tests |
-| `npx vitest run src/playback/pk.test.ts` | Run one file; `-t 'fragment'` selects test names |
+| `npx vitest run --dir src/playback/pk.test.ts` | Run one file; `-t 'fragment'` selects test names |
 | `npm run lint` | Run oxlint; do not add to existing fast-refresh warnings |
 | `npm run build` | TypeScript project build and Vite production bundle |
 | `npm run schema:generate` | Regenerate runtime descriptors after domain type changes |
@@ -32,6 +32,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 
 ## Test conventions
 
+- `npx vitest run --dir src` limits discovery to the current source when ignored local checkouts
+  exist under directories such as `.claude/plans/`; the broad `npm test` command can discover
+  those copies too. Record the scope with a test count.
 - Tests colocate as `*.test.ts` or `*.test.tsx`; Vitest uses Node, without jsdom or
   testing-library. Keep engine, geometry and store logic testable without a DOM.
 - Component checks use `renderToStaticMarkup`. Recharts sizes charts in an effect, so

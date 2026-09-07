@@ -419,6 +419,7 @@ describe('engagementPicture incremental assessments', () => {
   })
   const firstOf = (s: Scenario, test: (e: Entity) => boolean) => s.entities.find(test)!.id
 
+  // This parity matrix runs the full engine for every edit; shared CI took 5.9 s.
   it('reuses every assessment across an edit no threat reads, and recomputes exactly otherwise', () => {
     let prev = engagementPicture(base)
     expect(JSON.stringify(prev.assessments)).toBe(fresh(base))
@@ -466,7 +467,7 @@ describe('engagementPicture incremental assessments', () => {
       picture = engagementPicture(next)
       expect(JSON.stringify(picture.assessments)).toBe(fresh(next))
     }
-  })
+  }, 15_000)
 
   it('reuses every assessment when a sensor the technology gate refuses is moved', () => {
     // The harness scenario: its RF sensors hear none of its threats, so the

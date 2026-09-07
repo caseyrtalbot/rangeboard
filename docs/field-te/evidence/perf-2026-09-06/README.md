@@ -490,3 +490,19 @@ limits were all met or changing future gates.
 
 Raw captures: `profile-dev-wave5.txt`, `profile-prod-wave5.txt`, their `-repeat.txt` counterparts,
 and `profile-dev-wave4-recheck.txt`, `profile-prod-wave4-recheck.txt`.
+
+### Publication follow-up, 2026-09-07
+
+Wave 5 was committed and pushed on `main` as `51ce5eb`. The first Quality run
+[34153087358](https://github.com/caseyrtalbot/rangeboard/actions/runs/34153087358) reached the
+pre-existing incremental-assessment parity matrix in `src/analysis/impact.test.ts`, which
+finished after 5.9 seconds and exceeded Vitest's default five-second timeout. No numerical
+assertion mismatch was reported. The follow-up raises only that matrix's timeout to 15 seconds;
+the full engine/edit matrix and all exact equality checks remain intact.
+
+The remote checkout contains 107 current test files and 1,435 tests. The previously recorded
+local total (208 files, 2,850 tests) also included an ignored historical source copy under
+`.claude/plans/perf-2026-09-06/wave2/laneB/head/`, as confirmed with `vitest list --filesOnly`.
+Use `npx vitest run --dir src` for an unambiguous current-source count when such local copies exist;
+the historical local counts above remain records of the command actually run. No historical
+copy was removed or edited by this follow-up.

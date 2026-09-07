@@ -18,7 +18,7 @@ every instruction a session needs; the lane reports add detail, not requirements
 | 2 | Structural performance: Layer split, shared timeline cache, first-play hitch, phase-switch layout thrash, engine hot loop, memory | Done 2026-09-06; gate, parity and browser check green; first-play and phase-switch targets met, four dev targets open for Casey's decision (section 4) | `ae55f0a` | same directory: `profile-dev-wave2.txt`, `profile-prod-wave2.txt`, `browser-check-wave2.json`, `browser-check.mjs.txt` (extended), README "After Wave 2", "Parity after Wave 2", "Memory after Wave 2" |
 | 3 | Bundle and startup: lazy T&E workspace, lazy charts, deferred T&E autosave load, seed data, fonts; plus the open-target change set (per-threat assessment memo, identity lending, pixel-snapped callouts) | Done 2026-09-06; gate, parity and browser check green; every Wave 3 criterion met; moveEntity and undo met in dev, playback, zoom and select closed on the prod numbers (section 2) | `00e25e5`, `442c1b0` | same directory: `profile-dev-wave3.txt`, `profile-prod-wave3.txt`, `browser-check-wave3.json`, `browser-check.mjs.txt` (extended), README "After Wave 3", "Parity after Wave 3", "Memory after Wave 3", "Browser check after Wave 3" |
 | 4 | Correctness, accessibility, deduplication, docs drift, one browser test | Done 2026-09-07; gate, browser check and the shell spec green; every acceptance number at or below Wave 3 | `0219d21` | same directory: `profile-dev-wave4.txt`, `profile-prod-wave4.txt`, `browser-check-wave4.json`, `browser-check.mjs.txt` (extended), README "After Wave 4", "Browser check after Wave 4"; the tracked spec `scripts/e2e/board-shell.e2e.mjs` |
-| 5 | Error boundaries, storage admission and recovery UI, CI browser test and size budget | Done 2026-09-07; local gate, parity, browser and bundle checks green; Casey accepted paired performance evidence and authorized publication | This commit | same directory: `browser-check-wave5.json`, `ops-boundary-wave5.json`, `parity-wave5-before.json`, `parity-wave5-after.json`, `bundle-size-wave5.json`, all Wave 5 profiles and Wave 4 rechecks; README "Wave 5 verification, 2026-09-07" |
+| 5 | Error boundaries, storage admission and recovery UI, CI browser test and size budget | Done 2026-09-07; local gate, parity, browser and bundle checks green; Casey accepted paired performance evidence and authorized publication | `51ce5eb` plus CI timeout follow-up | same directory: `browser-check-wave5.json`, `ops-boundary-wave5.json`, `parity-wave5-before.json`, `parity-wave5-after.json`, `bundle-size-wave5.json`, all Wave 5 profiles and Wave 4 rechecks; README "Wave 5 verification, 2026-09-07" |
 | 6 | Named scenario library | Not started | | Section 4 |
 
 Base: branch `codex/board-workspace-ui` at `955ad6b`, one commit ahead of `main`. Gate at base:
@@ -58,12 +58,16 @@ PROJECT_GUIDE, VERIFICATION, WORKFLOW, DESIGN_SYSTEM, README and AGENTS reviewed
 parity capture was taken. The lens buttons stayed rendered in every phase (the documented
 contract) and became a `role="group"` of `aria-pressed` buttons rather than a hidden tablist.
 
-Head after Wave 5: this closing commit on `main`. `npm run check` passes: 208 test files,
+Head after Wave 5: `51ce5eb` plus the CI timeout follow-up on `main`. `npm run check` passes: 208 test files,
 2,850 tests, five bundle-accounting tests, 63 unchanged lint warnings, warning-free build.
 The shell spec passes 6 of 6; the extended browser harness passes every assertion; fixed-ID
 numerical captures are byte-identical. Entry 243,196 bytes and initial JavaScript plus CSS
 380,735 bytes under the `gzip -9` budgets. Remote CI status is checked after publication;
-these counts describe the local gate.
+these counts describe the local gate, which also discovered an ignored historical checkout
+under `.claude/plans/`. The current `src/` suite has 107 files and 1,435 tests. First remote
+run `34153087358` hit the default five-second timeout in the pre-existing incremental-assessment
+parity matrix (5.9 seconds); its individual timeout is now 15 seconds, with every numerical
+assertion and engine input unchanged. Publication checks the follow-up remote run.
 
 Wave 5 performance is accepted on Casey's 2026-09-07 instruction to commit and push after
 reviewing the paired measurements. The historical absolute targets were not all met and are
