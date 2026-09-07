@@ -25,7 +25,9 @@ button. Prepare groups run configuration, environment, doctrine and requirement 
 The canvas toolbar separates View preferences (theme, layers, units and basemap) from
 Range setup (location, calibrated image, image movement and saved opacity). Existing
 scenario actions govern changes and undo; automatic documented connections remain their
-own undo step. Pending placement is cancelled by competing tools or workspace changes.
+own undo step. Pending placement is cancelled by a competing tool, a change to the entity
+or system-preset count, or a workspace change. Escape closes an open dialog before it
+cancels a placement. The calibrate tool shows a strip until Escape or Cancel ends it.
 
 A single selected entity opens [EntityWorkspace](../src/panels/EntityWorkspace.tsx):
 Telemetry, Configure and Model basis share one content scroller. Overview preserves the

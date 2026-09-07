@@ -1,13 +1,15 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
+import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
-import type { Store, Theme } from '../state/store'
+import type { Store } from '../state/store'
 import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
 import { ViewMenu } from './ViewMenu'
+import { THEMES } from '../state/themes'
 import { RangeSetupMenu } from './RangeSetupMenu'
 import { useTeStore } from '../te/state/teStore'
 import type { Workspace } from '../te/state/teStore'
@@ -24,12 +26,6 @@ const BOARD_TOOLS = [
 ] as const
 
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
-
-const THEMES: Array<{ v: Theme; label: string }> = [
-  { v: 'system', label: 'System' },
-  { v: 'dark', label: 'Dark' },
-  { v: 'light', label: 'Light' },
-]
 
 const ROE_PILLS: Record<Roe, { label: string; tone: StateTone; hint: string }> = {
   free: { label: 'ROE Free', tone: 'nominal', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
@@ -79,32 +75,9 @@ function selectSpawnWarning(s: Store): SpawnWarning | null {
 
 // File actions sit behind one button so the bar holds a single row at 1440px.
 function OverflowMenu() {
-  const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    // Capture phase: Escape must close only the menu, never also reach the
-    // global canvas shortcut in App.tsx that clears the tool and the selection.
-    // The command palette can open over the menu, and then it owns Escape.
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      if (document.querySelector('.cmdk-panel')) return
-      e.stopPropagation()
-      setOpen(false)
-      buttonRef.current?.focus()
-    }
-    window.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey, true)
-    return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('keydown', onKey, true)
-    }
-  }, [open])
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
 
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>
@@ -117,7 +90,7 @@ function OverflowMenu() {
         aria-controls="file-actions-panel"
         aria-label="More actions"
         title="File actions"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         ⋯
       </button>

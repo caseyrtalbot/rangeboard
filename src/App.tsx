@@ -22,6 +22,7 @@ import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { restoreTeAutosave } from './te/io/persistTe'
 import { State } from './ui/kit'
+import { nextTabIndex } from './ui/rovingTabs'
 
 // The T&E workspace and its seed tables load on the first switch to Ops, not at startup.
 // The saved campaigns are restored inside the boundary, so no Ops render reads an
@@ -76,17 +77,7 @@ function moveTab(
   current: RightTab,
   setRightTab: (t: RightTab) => void,
 ) {
-  const i = TABS.findIndex((t) => t.id === current)
-  const to =
-    e.key === 'ArrowRight'
-      ? (i + 1) % TABS.length
-      : e.key === 'ArrowLeft'
-        ? (i - 1 + TABS.length) % TABS.length
-        : e.key === 'Home'
-          ? 0
-          : e.key === 'End'
-            ? TABS.length - 1
-            : -1
+  const to = nextTabIndex(e.key, TABS.findIndex((t) => t.id === current), TABS.length)
   if (to < 0) return
   e.preventDefault()
   setRightTab(TABS[to].id)
@@ -142,9 +133,7 @@ const LifecycleNav = memo(function LifecycleNav({
             tabIndex={boardPhase === phase.id ? 0 : -1}
             onClick={() => onOpenPhase(phase.id)}
             onKeyDown={(event) => {
-              const to = event.key === 'ArrowRight' ? (index + 1) % PHASES.length
-                : event.key === 'ArrowLeft' ? (index + PHASES.length - 1) % PHASES.length
-                  : event.key === 'Home' ? 0 : event.key === 'End' ? PHASES.length - 1 : -1
+              const to = nextTabIndex(event.key, index, PHASES.length)
               if (to < 0) return
               event.preventDefault()
               onOpenPhase(PHASES[to].id)
@@ -412,6 +401,7 @@ export default function App() {
   const hasObjectSelection = useStore(selectHasObjectSelection)
   const selectionKey = useStore(selectSelectionKey)
   const raidDraft = useStore((s) => s.ui.raidDraft)
+  const calibrating = useStore((s) => s.ui.tool === 'calibrate')
   const [entityView, setEntityView] = useState<{ key: string; section: EntityWorkspaceSection } | null>(null)
   const entitySection = entityView?.key === selectionKey
     ? entityView.section : boardPhase === 'prepare' ? 'configure' : 'telemetry'
@@ -461,6 +451,8 @@ export default function App() {
     if (!libraryOpen && !placement) return
     function onEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape' || document.querySelector('.cmdk-panel, .analysis-layout-popover')) return
+      // An open dialog owns Escape: it closes first and the placement stays armed.
+      if (useStore.getState().ui.locationDialogOpen) return
       event.stopPropagation()
       setLibraryOpen(false)
       setPlacement(null)
@@ -473,7 +465,8 @@ export default function App() {
   useEffect(() => {
     const stopBoard = useStore.subscribe((state, previous) => {
       if (state.ui.tool !== previous.ui.tool || state.ui.raidDraft !== previous.ui.raidDraft ||
-        state.scenario !== previous.scenario) setPlacement(null)
+        state.scenario.entities.length !== previous.scenario.entities.length ||
+        state.scenario.systemPresets.length !== previous.scenario.systemPresets.length) setPlacement(null)
     })
     const stopWorkspace = useTeStore.subscribe((state, previous) => {
       if (state.ui.workspace !== previous.ui.workspace) {
@@ -677,6 +670,11 @@ export default function App() {
             <button id="place-at-center" className="mini" onClick={placeAtCenter}>Place at center</button>
             <button onClick={() => { setPlacement(null); libraryTrigger.current?.focus() }}>Cancel</button>
           </div>}
+          {calibrating && <div className="board-placement" role="status" aria-label="Calibrating image scale">
+            <span><strong>Calibrating</strong> image scale</span>
+            <span className="muted">Click two points on the image · Escape cancels</span>
+            <button onClick={() => { const st = useStore.getState(); st.cancelDraft(); st.setTool('select') }}>Cancel</button>
+          </div>}
           <CanvasStage onOpenDetail={openTelemetry} onPlace={placement ? placeAt : undefined} />
           <EngagementStrip />
           <TimelineBar />
@@ -728,7 +726,7 @@ export default function App() {
             {activeTab === 'analysis' && (boardPhase === 'prepare'
               ? <BoardPreparation />
               : <Suspense fallback={<PanelLoading label="Loading analysis" />}>
-                  <AnalysisPanel showNavigation={false} showDetail={false} phase={boardPhase} onOpenPreparation={openPreparation} />
+                  <AnalysisPanel phase={boardPhase} onOpenPreparation={openPreparation} />
                 </Suspense>)}
           </div>
         </aside>

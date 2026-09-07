@@ -263,7 +263,6 @@ export const Palette = memo(function Palette({
       className="palette"
       style={{ width }}
       hidden={!open}
-      data-open={open}
       aria-label="Model library"
     >
       <div className="palette-header">
@@ -282,7 +281,6 @@ export const Palette = memo(function Palette({
           ref={searchRef}
           type="search"
           aria-label="Search library"
-          autoFocus={open}
           placeholder="Filter models…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}

@@ -188,8 +188,8 @@ export function DebriefRecord({
         ? 'REQUIREMENTS NOT MET'
         : 'REQUIREMENTS NOT RUN'
   return (
-    <details className="debrief-record evidence-products">
-      <summary className="debrief-header">
+    <details className="debrief-record evidence-products" open>
+      <summary className="debrief-header" role="status">
         <strong>Evidence products</strong>
         <span>{formatRunLabel(runSeq)} · COMPLETE</span>
         <State tone={VALIDITY_TEXT[validity.validity].tone}>

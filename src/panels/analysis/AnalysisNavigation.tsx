@@ -2,6 +2,7 @@ import { memo, useCallback, useId, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { BUILTIN_LENSES } from '../../state/analysisLayout'
 import { useStore } from '../../state/store'
+import { nextTabIndex } from '../../ui/rovingTabs'
 import { AnalysisLayoutControls } from './AnalysisLayoutControls'
 
 interface AnalysisNavigationProps {
@@ -9,8 +10,10 @@ interface AnalysisNavigationProps {
 }
 
 /**
- * Persistent analysis view navigation and the user-owned lens controls. Memoized:
- * `App` passes one stable `onNavigate`, so its selection renders stop here.
+ * Persistent analysis view navigation and the user-owned lens controls. The lens
+ * buttons stay rendered in every phase, so they are a toggle group with
+ * `aria-pressed`, never a tablist. Memoized: `App` passes one stable
+ * `onNavigate`, so its selection renders stop here.
  */
 export const AnalysisNavigation = memo(function AnalysisNavigation({ onNavigate }: AnalysisNavigationProps) {
   const presetId = useStore((state) => state.ui.analysis.layout.presetId)
@@ -35,32 +38,26 @@ export const AnalysisNavigation = memo(function AnalysisNavigation({ onNavigate 
   }, [])
 
   const handleBuiltinKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    let next = index
-    if (event.key === 'ArrowRight') next = (index + 1) % BUILTIN_LENSES.length
-    else if (event.key === 'ArrowLeft') {
-      next = (index - 1 + BUILTIN_LENSES.length) % BUILTIN_LENSES.length
-    } else if (event.key === 'Home') next = 0
-    else if (event.key === 'End') next = BUILTIN_LENSES.length - 1
-    else return
+    const next = nextTabIndex(event.key, index, BUILTIN_LENSES.length)
+    if (next < 0) return
 
     event.preventDefault()
     setRovingIndex(next)
     navigate(BUILTIN_LENSES[next].id)
     event.currentTarget.parentElement
-      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      ?.querySelectorAll<HTMLButtonElement>('button')
       [next]?.focus()
   }
 
   return (
     <nav className="lens" aria-label="Analysis navigation">
-      <div className="lens-builtins" role="tablist" aria-label="Analysis lenses">
+      <div className="lens-builtins" role="group" aria-label="Analysis lenses">
         {BUILTIN_LENSES.map((preset, index) => (
           <button
             key={preset.id}
             className={`lens-b${preset.id === presetId ? ' on' : ''}`}
             type="button"
-            role="tab"
-            aria-selected={preset.id === presetId}
+            aria-pressed={preset.id === presetId}
             tabIndex={index === tabbableIndex ? 0 : -1}
             onClick={() => navigate(preset.id)}
             onKeyDown={(event) => handleBuiltinKeyDown(event, index)}

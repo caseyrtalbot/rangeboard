@@ -244,6 +244,72 @@ await page.evaluate(() => window.__teStore.getState().setWorkspace('board'))
 await page.waitForFunction(() => document.querySelector('.konvajs-content canvas'), null, { timeout: 15000 })
 results.teRoundTrip = { savedHasCampaign, beforeOps, restored, shownInOps, stillSaved, ok: savedHasCampaign && restored && stillSaved }
 
+// 14. Escape chain: a placement armed from the Library, then the Location dialog
+// opened from Range setup. The open dialog owns the first Escape; the placement
+// stays armed until the second.
+const stripPresent = () => page.evaluate(() => !!document.querySelector('.board-placement'))
+const dialogOpen = () => page.evaluate(() => window.__store.getState().ui.locationDialogOpen)
+await focusCanvas()
+await page.keyboard.press('l'); await sleep(250)
+await page.locator('button[aria-label^="Place "]').first().click(); await sleep(250)
+const armed = await stripPresent()
+await page.click('button[aria-controls="range-setup-menu-panel"]'); await sleep(150)
+await page.getByRole('button', { name: 'Location…' }).click(); await sleep(200)
+const dialogOpened = await dialogOpen()
+const armedWithDialog = await stripPresent()
+await page.keyboard.press('Escape'); await sleep(200)
+const dialogClosed = !(await dialogOpen())
+const armedAfterFirstEscape = await stripPresent()
+await page.keyboard.press('Escape'); await sleep(200)
+const cancelledAfterSecondEscape = !(await stripPresent())
+results.escapeChain = { armed, dialogOpened, armedWithDialog, dialogClosed, armedAfterFirstEscape, cancelledAfterSecondEscape, ok: armed && dialogOpened && armedWithDialog && dialogClosed && armedAfterFirstEscape && cancelledAfterSecondEscape }
+
+// 15. calibrate strip: Range setup > Calibrate scale shows a status strip while
+// the tool is armed; Escape returns the tool to select and removes the strip.
+await page.click('button[aria-controls="range-setup-menu-panel"]'); await sleep(150)
+await page.getByRole('button', { name: 'Calibrate scale' }).click(); await sleep(200)
+const calibrateTool = (await st()).tool
+const calibrateStrip = await page.evaluate(() => document.querySelector('.board-placement[role="status"]')?.textContent?.includes('Calibrating') ?? false)
+await page.keyboard.press('Escape'); await sleep(200)
+const toolAfterEscape = (await st()).tool
+const stripGone = !(await stripPresent())
+results.calibrateStrip = { calibrateTool, calibrateStrip, toolAfterEscape, stripGone, ok: calibrateTool === 'calibrate' && calibrateStrip && toolAfterEscape === 'select' && stripGone }
+
+// 16. debrief record opens on run completion and its summary is a live region.
+await page.click('#board-phase-analyze'); await sleep(300)
+await page.evaluate(() => window.__store.getState().setRightTab('analysis')); await sleep(200)
+await page.evaluate(async () => {
+  const { durationOf } = await import('/src/state/selectors.ts')
+  const s = window.__store.getState()
+  s.startRun()
+  s.completeRun(durationOf(s.scenario))
+})
+let debrief = { present: false, open: false, summaryStatus: false }
+try {
+  await page.waitForFunction(() => document.querySelector('details.evidence-products'), null, { timeout: 15000 })
+  debrief = await page.evaluate(() => {
+    const d = document.querySelector('details.evidence-products')
+    return { present: !!d, open: d?.hasAttribute('open') ?? false, summaryStatus: d?.querySelector('summary')?.getAttribute('role') === 'status' }
+  })
+} catch {}
+results.debriefOpen = { ...debrief, ok: debrief.present && debrief.open && debrief.summaryStatus }
+
+// 17. lens roles: the five built-in destinations are a group of pressed buttons,
+// one pressed and one tabbable, with arrow-key movement between them.
+const lensRoles = await page.evaluate(() => {
+  const g = document.querySelector('.lens-builtins')
+  const buttons = [...(g?.querySelectorAll('button[aria-pressed]') ?? [])]
+  return { role: g?.getAttribute('role'), buttons: buttons.length, pressed: buttons.filter((b) => b.getAttribute('aria-pressed') === 'true').length, tabbable: buttons.filter((b) => b.tabIndex === 0).length, tabs: g?.querySelectorAll('[role="tab"]').length ?? 0 }
+})
+const presetBefore = await page.evaluate(() => window.__store.getState().ui.analysis.layout.presetId)
+await page.focus('.lens-builtins button[aria-pressed="true"]')
+await page.keyboard.press('ArrowRight'); await sleep(200)
+const presetAfter = await page.evaluate(() => window.__store.getState().ui.analysis.layout.presetId)
+const focusMoved = await page.evaluate(() => document.activeElement?.getAttribute('aria-pressed') === 'true' && document.activeElement?.closest('.lens-builtins') != null)
+await page.evaluate(() => window.__store.getState().applyLens('run-summary'))
+await page.click('#board-phase-prepare'); await sleep(300)
+results.lensRoles = { ...lensRoles, presetBefore, presetAfter, focusMoved, ok: lensRoles.role === 'group' && lensRoles.buttons === 5 && lensRoles.pressed === 1 && lensRoles.tabbable === 1 && lensRoles.tabs === 0 && presetAfter !== presetBefore && focusMoved }
+
 results.pageErrors = errors.slice(0, 10)
 results.allOk = Object.values(results).every((r) => typeof r !== 'object' || Array.isArray(r) || r.ok !== false)
 console.log(JSON.stringify(results, null, 1))

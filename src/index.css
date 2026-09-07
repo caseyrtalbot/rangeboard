@@ -5336,7 +5336,7 @@ select.nu-unit {
   flex: 0 0 auto;
 }
 
-.entity-workspace-header h2 {
+.entity-workspace-header h3 {
   margin: var(--space-2) 0;
   font-size: var(--type-title-size);
 }

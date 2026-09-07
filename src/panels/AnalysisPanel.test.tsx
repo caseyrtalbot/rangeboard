@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { AnalysisPanel } from './AnalysisPanel'
 import { emptyScenario } from '../model/seed'
 import type { Entity, EntityKind } from '../model/types'
-import { BUILTIN_LENSES } from '../state/analysisLayout'
 import { useStore } from '../state/store'
 import { selectDurationS } from '../state/selectors'
 import { engagementPicture } from '../analysis/impact'
@@ -51,7 +50,7 @@ describe('AnalysisPanel lenses', () => {
 
   it('leads Analyze with full-run validity and outcomes without editing the saved layout or run', () => {
     const state = useStore.getState()
-    const html = render({ phase: 'analyze', showDetail: false })
+    const html = render({ phase: 'analyze' })
     expect(widgetTypes(html)).toEqual(['run-validity', 'projection', 'time-series', 'kpi-tiles', 'threat-picture'])
     expect(html).toContain('Full-run results · entire configured duration')
     expect(html).toContain('<summary>Cursor-scoped supplemental data</summary>')
@@ -91,9 +90,9 @@ describe('AnalysisPanel lenses', () => {
       ...state.playback, phase: 'complete', startedAtMs: 1000, completedAtMs: 2000,
       observedThroughS: durationS,
     } })
-    const html = render({ phase: 'analyze', showDetail: false })
+    const html = render({ phase: 'analyze' })
     expect(html.match(/class="outcome-summary"/g)).toHaveLength(1)
-    expect(html).toContain('<details class="debrief-record evidence-products">')
+    expect(html).toContain('<details class="debrief-record evidence-products" open="">')
     expect(html).toContain('Export debrief JSON')
     expect(html).toContain('Capture final PNG')
     expect(html).toContain('New clean run')
@@ -103,7 +102,7 @@ describe('AnalysisPanel lenses', () => {
     expect(html).not.toContain('class="run-validity validity-')
 
     useStore.getState().applyLens('sensors')
-    const sensors = render({ phase: 'analyze', showDetail: false })
+    const sensors = render({ phase: 'analyze' })
     expect(sensors).not.toContain('class="outcome-summary"')
     expect(sensors).toContain('class="run-validity validity-')
     expect(sensors).toContain('Full-run system and component record')
@@ -115,40 +114,6 @@ describe('AnalysisPanel lenses', () => {
     expect(html).toContain('Edit run settings in Prepare')
     expect(html).not.toContain('data-role="roe"')
     expect(render()).toContain('data-role="roe"')
-  })
-
-  it('renders the five built-in lenses as one roving tablist', () => {
-    const html = render()
-    const tablist = html.slice(
-      html.indexOf('class="lens-builtins"'),
-      html.indexOf('class="lens-layout"'),
-    )
-
-    expect(tablist).toContain('role="tablist"')
-    expect(tablist.match(/role="tab"/g)?.length).toBe(BUILTIN_LENSES.length)
-    for (const preset of BUILTIN_LENSES) expect(tablist).toContain(`>${preset.label}</button>`)
-    expect(tablist.match(/tabindex="0"/g)?.length).toBe(1)
-    expect(tablist.match(/tabindex="-1"/g)?.length).toBe(BUILTIN_LENSES.length - 1)
-  })
-
-  it('marks the active built-in lens as the single selected and tabbable tab', () => {
-    useStore.getState().applyLens('effectors')
-    const html = render()
-    const active = html.match(/<button[^>]*aria-selected="true"[^>]*>Effectors<\/button>/)?.[0]
-
-    expect(active).toContain('tabindex="0"')
-    expect(html.match(/aria-selected="true"/g)?.length).toBe(1)
-  })
-
-  it('keeps layout editing behind the dedicated Layout surface', () => {
-    useStore.getState().saveAnalysisPreset('Wide look')
-    useStore.getState().setAnalysisCustomize(true)
-    const html = render()
-    expect(html).toContain('lens-layout-trigger')
-    expect(html).toContain('aria-haspopup="dialog"')
-    expect(html).not.toContain('Add widget')
-    expect(html).not.toContain('Save as preset')
-    expect(html).not.toContain('Delete Wide look preset')
   })
 
   it('keeps modeled future results out of the default live view', () => {
@@ -234,53 +199,12 @@ describe('AnalysisPanel selection detail', () => {
     useStore.getState().clearSelection()
   })
 
-  it('keeps the five-lens navigation above selected entity detail', () => {
-    useStore.getState().select({ entityIds: [idOf('sensor')] })
-    const html = render()
-
-    expect(html).toContain('data-detail="sensor"')
-    expect(html.match(/role="tab"/g)?.length).toBe(BUILTIN_LENSES.length)
-    expect(html).not.toContain('data-widget-type')
-    expect(html).toContain('live-strip')
-  })
-
-  it('lets an owner hide navigation and detail independently', () => {
-    useStore.getState().select({ entityIds: [idOf('sensor')] })
-    const html = render({ showNavigation: false, showDetail: false })
-
-    expect(html).not.toContain('class="lens')
-    expect(html).not.toContain('data-detail')
-    expect(widgetTypes(html)).toEqual(RUN_SUMMARY)
-  })
-
-  it('renders the pane of the effector, the C2 and the threat', () => {
-    useStore.getState().select({ entityIds: [idOf('effector')] })
-    expect(render()).toContain('data-detail="effector"')
-
-    useStore.getState().select({ entityIds: [idOf('c2')] })
-    expect(render()).toContain('data-detail="system"')
-
-    useStore.getState().select({ entityIds: [idOf('uas')] })
-    expect(render()).toContain('data-detail="threat"')
-  })
-
-  it('returns the widget stack when the selection is cleared', () => {
-    useStore.getState().select({ entityIds: [idOf('sensor')] })
-    expect(render()).toContain('data-detail="sensor"')
-
-    useStore.getState().clearSelection()
-    const html = render()
-    expect(widgetTypes(html)).toEqual(RUN_SUMMARY)
-    expect(html).not.toContain('data-detail')
-  })
-
   it('keeps the stack and adds one note for two selected entities', () => {
     useStore.getState().select({ entityIds: [idOf('sensor'), idOf('effector')] })
     const html = render()
 
     expect(widgetTypes(html)).toEqual(RUN_SUMMARY)
     expect(html).toContain('2 entities selected')
-    expect(html).not.toContain('data-detail')
   })
 
   it('shows the note for a placed system, never a pane', () => {
@@ -296,21 +220,7 @@ describe('AnalysisPanel selection detail', () => {
     const html = render()
 
     expect(html).toContain('2 entities selected')
-    expect(html).not.toContain('data-detail')
     expect(widgetTypes(html)).toEqual(RUN_SUMMARY)
-  })
-
-  it('never moves the preset id or the undo history on a selection', () => {
-    useStore.getState().applyLens('sensors')
-    const past = useStore.getState().past.length
-
-    useStore.getState().select({ entityIds: [idOf('sensor')] })
-    expect(render()).toContain('data-detail="sensor"')
-    expect(useStore.getState().ui.analysis.layout.presetId).toBe('sensors')
-
-    useStore.getState().clearSelection()
-    expect(useStore.getState().ui.analysis.layout.presetId).toBe('sensors')
-    expect(useStore.getState().past.length).toBe(past)
   })
 
   it('keeps the widget stack for an entity kind with no pane', () => {
@@ -319,6 +229,5 @@ describe('AnalysisPanel selection detail', () => {
     const html = render()
 
     expect(widgetTypes(html)).toEqual(RUN_SUMMARY)
-    expect(html).not.toContain('data-detail')
   })
 })

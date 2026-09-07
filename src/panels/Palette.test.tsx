@@ -30,7 +30,7 @@ describe('Palette drawer', () => {
 
     expect(html).toContain('style="width:306px"')
     expect(html).toContain('aria-label="Close library"')
-    expect(html).toContain('type="search" aria-label="Search library" autofocus=""')
+    expect(html).toContain('type="search" aria-label="Search library"')
   })
 
   it('retains a valid saved width and stays mounted while closed', () => {
@@ -39,9 +39,7 @@ describe('Palette drawer', () => {
 
     expect(html).toContain('style="width:412px"')
     expect(html).toContain('hidden=""')
-    expect(html).toContain('data-open="false"')
     expect(html).toContain('Filter models…')
-    expect(html).not.toContain('autofocus')
   })
 
   it('exposes model and system placement as keyboard buttons', () => {

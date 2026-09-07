@@ -20,6 +20,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run schema:check` | Reject descriptors that differ from current types |
 | `npm run docs:check` | Lint Markdown, validate local links, placement and source review |
 | `npm run test:docs` | Exercise documentation maintenance failure paths |
+| `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run check` | Complete documentation, type, schema, test, lint and build gate |
 
 Run the complete gate for source changes and after integrating lanes. Documentation-only
@@ -69,6 +70,11 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   fields, write it back, reload, and expect no `rangeboard.scenario.recovered.*` key.
 - Handle the `window.confirm` dialog before a script clicks the run reset control with a
   dirty run.
+- `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
+  `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
+  in the page, then checks phase switching, selection routing, placement, the Escape chain,
+  the debrief record and the lens roles against store state. Start the dev server first;
+  the spec is not part of `npm run check` until CI runs it.
 
 ## Harness setup
 

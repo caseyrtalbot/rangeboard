@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Seg } from '../ui/kit'
+import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
-import type { Theme } from '../state/store'
+import { THEMES } from '../state/themes'
 import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
 import type { RingKey } from '../state/rings'
 import type { LayerKey, LayerPreset } from '../state/layers'
@@ -62,42 +63,14 @@ const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
   { id: 'metric', label: 'm km', hint: 'Metric units: m/s and km. Altitude is always feet.' },
 ]
 
-const THEMES: Array<{ v: Theme; label: string }> = [
-  { v: 'system', label: 'System' },
-  { v: 'dark', label: 'Dark' },
-  { v: 'light', label: 'Light' },
-]
-
 /**
  * Board View dropdown. Every control here is saved view state and stays out
  * of scenario history: theme, layer visibility, basemap and display units.
  */
 export function ViewMenu() {
-  const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    // Capture phase keeps Escape from also reaching the global canvas shortcut.
-    // The command palette can open over this surface, and then it owns Escape.
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      if (document.querySelector('.cmdk-panel')) return
-      e.stopPropagation()
-      setOpen(false)
-      buttonRef.current?.focus()
-    }
-    window.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey, true)
-    return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('keydown', onKey, true)
-    }
-  }, [open])
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
 
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>
@@ -109,7 +82,7 @@ export function ViewMenu() {
         aria-expanded={open}
         aria-controls="view-menu-panel"
         title="Theme, layers, basemap and units"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         View <span className="tb-caret">▾</span>
       </button>

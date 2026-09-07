@@ -153,7 +153,11 @@ src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPh
 src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that both the
                Board panels and the T&E kit render; reads index.css classes only, no store.
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
-               the layers, the palette glyphs, the detail panels and trackState share
+               the layers, the palette glyphs, the detail panels and trackState share.
+               usePopover.ts: the one dismissal rule for the toolbar dropdowns (outside
+               pointer, capture-phase Escape, focus in on open and back on close).
+               rovingTabs.ts: nextTabIndex, the one arrow-key mapping for every
+               roving-tabindex group
 src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.ts (pure
                series helpers), TimeSeries (a lazy shell whose fallback holds the plot
                box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
@@ -421,7 +425,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   telemetry kind-to-pane map (sensor, effector, uas, c2); Inspector owns configuration
   and LibraryEditor owns shared model edits. Overview preserves entity selection and
   the preset id. Multi-selection, boundaries, connections and raid drafts retain the
-  existing Inspector. Standalone AnalysisPanel retains its optional selection detail.
+  existing Inspector. AnalysisPanel renders the widget stack alone; the Board shell owns
+  selection detail.
   Series and ladder rows memo on `[scenario, runId]`, so only the now-readouts read
   quantized time. `threatReadoutAt` (`panels/analysis/threatReadout.ts`) shares the existing
   telemetry readers between the compact canvas card and complete threat detail; full-path
@@ -564,9 +569,10 @@ Design system (`src/index.css`):
   `--font-ui`; mark a number in prose with `.num`.
 - **Type floor is 11 px** (`--type-dense-size`); no `font-size` rule in the sheet is
   below it. Sizes and weights come from the `--type-*` role tokens (display, value, title,
-  body, meta, label, machine); weights are 400 and 500 only. The right panel is checked at
-  both 1440 by 900 and 1280 by 800 viewports, including a saved 320 px panel width:
-  no panel content may be clipped or inaccessible. Lifecycle views are local UI composition;
+  body, meta, label, machine); weights are 400 and 500 only. The right panel is checked by
+  the browser harness at 1400 by 900 with a saved 320 px panel width (see
+  [VERIFICATION](VERIFICATION.md) "Harness setup"): no panel content may be clipped or
+  inaccessible. Lifecycle views are local UI composition;
   they do not advance playback or change the analysis basis. The five built-in analysis
   destinations remain outside the scrolling content, including during object inspection.
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
@@ -587,7 +593,12 @@ Design system (`src/index.css`):
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to
   select), Enter (finish boundary or path), Space (play/pause). Shortcuts are suppressed
-  while typing in inputs and inside the T&E workspace.
+  while typing in inputs and inside the T&E workspace. Escape order: the command palette,
+  then an open dialog (Location, Calibrate), then a toolbar dropdown or the Layout
+  surface, then an armed placement or the open drawer, then the canvas draft and the
+  selection. The lens buttons in `AnalysisNavigation.tsx` are a `role="group"` of
+  `aria-pressed` buttons with one roving tab stop, since they stay rendered in every
+  phase and tab; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 
 ## 8. T&E Operations module (`src/te/`)
 

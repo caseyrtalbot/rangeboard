@@ -1,34 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { importUnderlayImage } from '../io/persist'
+import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
 
 /** Scenario-scoped range geometry and calibrated-image controls. */
 export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) {
-  const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    // Capture phase keeps Escape from also reaching the global canvas shortcut.
-    // The command palette can open over this surface, and then it owns Escape.
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      if (document.querySelector('.cmdk-panel')) return
-      e.stopPropagation()
-      setOpen(false)
-      buttonRef.current?.focus()
-    }
-    window.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey, true)
-    return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('keydown', onKey, true)
-    }
-  }, [open])
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
 
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>
@@ -40,7 +19,7 @@ export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) 
         aria-expanded={open}
         aria-controls="range-setup-menu-panel"
         title="Scenario-scoped range geometry and image calibration"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         Range setup <span className="tb-caret">▾</span>
       </button>

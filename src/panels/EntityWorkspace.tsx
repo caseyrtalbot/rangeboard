@@ -1,6 +1,7 @@
 import { modelsForEntity } from '../analysis/fidelity'
 import type { SpecModel } from '../model/types'
 import { useStore } from '../state/store'
+import { nextTabIndex } from '../ui/rovingTabs'
 import { DetailPane } from './analysis/detail/DetailPane'
 import { DetailOverviewContext } from './analysis/detail/DetailNavigation'
 import { LiveStrip } from './analysis/LiveStrip'
@@ -78,7 +79,7 @@ export function EntityWorkspace({
       <div className="entity-workspace-header">
         <button className="mini" onClick={onOverview}>‹ Overview</button>
         <div>
-          <h2>{entity?.name || (entity ? 'Unnamed entity' : 'Entity unavailable')}</h2>
+          <h3>{entity?.name || (entity ? 'Unnamed entity' : 'Entity unavailable')}</h3>
           <p>{entity ? `${entity.kind} · ${model?.name ?? 'No linked model'}` : entityId}</p>
         </div>
       </div>
@@ -94,12 +95,8 @@ export function EntityWorkspace({
             className={section === item.id ? 'active' : ''}
             onClick={() => onSectionChange(item.id)}
             onKeyDown={(event) => {
-              let next = index
-              if (event.key === 'ArrowRight') next = (index + 1) % SECTIONS.length
-              else if (event.key === 'ArrowLeft') next = (index + SECTIONS.length - 1) % SECTIONS.length
-              else if (event.key === 'Home') next = 0
-              else if (event.key === 'End') next = SECTIONS.length - 1
-              else return
+              const next = nextTabIndex(event.key, index, SECTIONS.length)
+              if (next < 0) return
               event.preventDefault()
               onSectionChange(SECTIONS[next].id)
               document.getElementById(`entity-section-${SECTIONS[next].id}`)?.focus()

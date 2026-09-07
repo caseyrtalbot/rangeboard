@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "4461bb0f3cc33612718c09cd464c2df511602fb10bb1677acbd32da7b04e29cf",
-      "reviewedAt": "2026-09-06",
-      "note": "Condensed the original CLAUDE guidance; checked commands, core evidence and persistence boundaries, and handoff links against the prepared tree. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+      "sha256": "7b3a945dd434daeb8b411490991ee65da564078383555742b99ed5ff5f5bed41",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 4: package.json gains the test:e2e script; the guidance is unchanged."
     },
     {
       "document": "CLAUDE.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "bb8e4446027bddb774cb0e2cb3cd62a320ef0b72cdea0034ac39910a90bc46ef",
+      "sha256": "796ef576366e6d5a130dba8197c9d4cc5604cc9be972ac9a9a53bd5ce3ab978b",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 3: main.tsx schedules the T&E restore on idle and App.tsx adds lazy boundaries; the README's feature summary and commands are unchanged."
+      "note": "Wave 4: App.tsx gains the calibrate strip, the Escape order and the shared roving helper; package.json gains test:e2e. The start commands and the gate are unchanged."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "42ed70968d8fc8bb03fc6b3dd5dfe549daf9241cfef3b0ef27645572842d57fd",
+      "sha256": "c886ce382c8df1393cce213349c8682d44b6adec31b6a727a15fbecd73a2a940",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 3: main.tsx starts both autosave subscriptions and schedules the T&E restore on idle; the Ops workspace, the analysis and test-card panels, the command palette and the recharts plot load behind lazy boundaries."
+      "note": "Wave 4: placement cancel keys on the entity and system-preset counts, Escape closes an open dialog before a placement, the calibrate tool shows a strip; the entity heading is an h3 and the debrief record opens on completion."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "09f2124da1f0fc2557cefa1e0769dae09e94256c2f13380326076c01479adc69",
+      "sha256": "d2fc6f3756a91533da7111652451449a8b360b59da511e37ca7e23da02cc54df",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 3: chart kit split (seriesData, TimeSeries shell over TimeSeriesChart), lazy boundaries in App, T&E restore split and on-demand seed tables in section 8, the per-threat assessment memo in section 4, identity lending for tracks, spoke ids and sweep parts plus pixel-snapped callouts in section 7."
+      "note": "Wave 4: AnalysisPanel renders the widget stack alone (selection detail and lens navigation are the Board shell's), the lens buttons are a pressed group, usePopover and rovingTabs in src/ui, the Escape order and the calibrate strip in section 7, the right-panel check restated as the 1400 by 900 harness with a 320 px panel."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4a7dc94fe65eab219e8039ce4da17f5925cf0b15e1a700b3cb6bd73d28dcc9dc",
+      "sha256": "c93a1440eaf7c4ee493a31ac8d224563b1026c07b40cac9d2ddd56901b5535c5",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 3: vite.config.ts gains build.chunkSizeWarningLimit; src/io emits the runtime schema as JSON.parse; src/te/io splits restoreTeAutosave from startTeAutosave and adds parseConfigSnapshot. Commands, fixtures and the parity probe are unchanged."
+      "note": "Wave 4: scripts/e2e/board-shell.e2e.mjs and npm run test:e2e added to the commands table and the browser checks; src/io, src/te/io, fixtures and the workflow are unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -89,9 +89,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "a2a19bef7f2fb3dfddfa56b20d57381113c3d3940b55ec2437ac3d287c04a15a",
-      "reviewedAt": "2026-09-06",
-      "note": "Session-state row and handoff protocol now name the one central docs/HANDOFF.md for a multi-wave refactor, updated only in the commit that closes a passing wave; commands, lint scopes and CI wiring unchanged."
+      "sha256": "f743a80dc5294b9c68acb3c0d3c575a7db138c3bbf04b3815ebd822ff31027cd",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 4: package.json gains test:e2e and scripts/e2e holds the Board shell spec; CI still runs npm run check only, so the sentence on browser checks stays true."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "f19a7c2a93f627dc9f7992d6f0abad2919beba9ef4ea90bec64ede0a6e2851e4",
+      "sha256": "497652a97b765fbc62c679b2cf6f2b1353f5be77e54a1d6d8d85bc2592a8a398",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 3: JetBrains Mono subset to Latin plus the code points the source uses, 400 faces preloaded; src/charts split into a recharts-free kit plus the lazy TimeSeriesChart, tokens and ChartFrame unchanged."
+      "note": "Wave 4: the entity workspace heading rule moves from h2 to h3 in index.css; src/ui gains usePopover and rovingTabs, which add no tokens or classes. No text change."
     }
   ],
   "historical": [

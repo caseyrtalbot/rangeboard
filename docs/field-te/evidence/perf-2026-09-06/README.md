@@ -346,6 +346,54 @@ entry, and `beforeOps` records that idle had not fired when the canvas appeared)
 `browser-check-wave3.json`: every Wave 2 assertion still holds, `firstPlay` saw no long task,
 `phaseLayouts` 17 and 1, heap growth 4.6 MB, all three new steps pass, no page errors.
 
+## After Wave 4
+
+Same harness, same scenario, same viewport, captured 2026-09-07 on the integrated Wave 4 tree
+(the correctness and accessibility pass: Escape precedence, the calibrate strip, the placement
+cancel keyed on entity and system-preset counts, the lens group, `role="application"` on the
+canvas host, focus-on-open for the toolbar dropdowns, the shared `usePopover` and `nextTabIndex`
+helpers, and the AnalysisPanel detail paths removed). Raw output: `profile-dev-wave4.txt` and
+`profile-prod-wave4.txt`. Script milliseconds per phase. Wave 4 changed no engine, store or
+playback code, so no parity capture was taken.
+
+| Phase | Dev after Wave 3 | Dev after Wave 4 | Prod after Wave 3 | Prod after Wave 4 |
+| --- | ---: | ---: | ---: | ---: |
+| Load to first canvas | 419 | 432 | 280 | 271 |
+| Playback 5 s at 1x | 842 | 808 | 461 | 452 |
+| Playback script share of wall time | 17 percent | 16 percent | 9 percent | 9 percent |
+| Zoom, 30 wheel events | 407 | 398 | 124 | 115 |
+| Pan drag, 40 moves | 76 | 70 | 67 | 67 |
+| moveEntity, 20 edits | 426 | 405 | n/a | n/a |
+| Select and clear, 10 cycles | 210 | 192 | n/a | n/a |
+| Right tabs, 12 switches | 105 | 106 | n/a | n/a |
+| Lifecycle phases, 9 switches | 478 | 455 | 230 | 217 |
+| Library drawer, 6 toggles | 77 | 69 | 16 | 15 |
+| Undo and redo, 10 steps | 146 | 136 | n/a | n/a |
+
+The dev load figure is the first run after the production build; two further dev runs of the
+same harness loaded in 385 and 374 ms with playback at 16 percent and zoom at 396 and 395 ms.
+The Wave 4 acceptance (load, playback share and zoom at or below the Wave 3 numbers) holds in
+both builds: dev playback 16 percent and zoom 13.3 ms per event; prod load 271 ms, playback
+9 percent and zoom 3.8 ms per event. No long task in any phase except the lifecycle cycle in
+dev (five, 83 ms max), unchanged from Wave 3. No page errors in either build.
+
+## Browser check after Wave 4
+
+`browser-check.mjs.txt` now also arms a placement from the Library and opens the Location
+dialog from Range setup: the first Escape closes the dialog and leaves the placement armed, the
+second cancels it (`escapeChain`); picks Calibrate scale and expects a `role="status"` strip
+with the word Calibrating that Escape removes while returning the tool to select
+(`calibrateStrip`); completes a run in the Analyze phase through `startRun` and `completeRun`
+and expects the evidence-products record open with a `role="status"` summary (`debriefOpen`);
+and reads the lens group (`role="group"`, five `aria-pressed` buttons, one pressed, one
+tabbable, no `role="tab"`) and moves the pressed lens with ArrowRight (`lensRoles`). Results in
+`browser-check-wave4.json`: every Wave 3 assertion still holds, `firstPlay` saw no long task,
+`phaseLayouts` 17 and 1, heap growth 4.6 MB, all four new steps pass, no page errors.
+
+The tracked Board shell spec `scripts/e2e/board-shell.e2e.mjs` (`npm run test:e2e`) passed
+6 of 6 against the same dev server: phase switching, selection routing, placement, the Escape
+chain, the debrief record and the lens group.
+
 ## Browser check after Wave 1
 
 `browser-check.mjs.txt` (run as `browser-check.mjs` against the dev server on port 5377, headless

@@ -1,0 +1,300 @@
+hasStore true
+{"label":"dev","loadMs":432,"domContentLoaded":154,"loadEvent":156,"resources":177,"scriptResources":174,"transferKB":11629,"entities":54,"paths":9,"connections":39,"domNodes":1551,"heapMB":37.8}
+{"phase":"idle 3s","wallMs":3000,"ms":3067,"frames":361,"fps":117.7,"over33":1,"over100":0,"maxFrame":67,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":6,"layoutMs":0,"styleMs":0,"taskMs":114,"layouts":0,"styleRecalcs":5,"domNodes":2703,"heapMB":25.6}
+  profile total 3065 ms; special: (idle)=2962 (program)=96 requestAnimationFrame=4 tick=2
+  files: 
+  fns:
+    
+{"phase":"playback x1 5s","wallMs":5018,"ms":5050,"frames":605,"fps":119.8,"over33":0,"over100":0,"maxFrame":17,"longTasks":0,"longMs":0,"longMax":0,"sets":50,"scenarioChanges":0,"scriptMs":808,"layoutMs":5,"styleMs":0,"taskMs":1168,"layouts":49,"styleRecalcs":6,"domNodes":2704,"heapMB":52.8}
+  profile total 5052 ms; special: (idle)=3900 (program)=330 run=33 save=28 (garbage collector)=24 transform=17
+  files: 291ms npm:react-konva | 242ms npm:react_jsx-dev-runtime | 24ms /src/canvas/labelLayout.ts | 20ms npm:react-dom_client | 10ms npm:zustand | 8ms /src/canvas/layers/EntityLayer.tsx | 4ms /src/canvas/LiveScene.tsx | 4ms npm:scheduler-kNtYHXIZ | 3ms /src/playback/detection.ts | 2ms /src/canvas/layers/ThreatWezLayer.tsx | 2ms /src/playback/tracks.ts | 2ms /src/playback/trackState.ts | 2ms /src/playback/raid.ts | 2ms /src/canvas/frameClock.ts | 2ms /src/analysis/sensorEnv.ts | 1ms /src/playback/sweepAt.ts | 1ms /src/App.tsx | 1ms /src/model/scenario.ts
+  fns:
+    215ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    36ms setAttr /node_modules/.vite/deps/react-konva.js:1655
+    18ms measureSize /node_modules/.vite/deps/react-konva.js:8336
+    16ms prepareFreshStack /node_modules/.vite/deps/react-konva.js:17789
+    15ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    14ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    13ms applyNodeProps /node_modules/.vite/deps/react-konva.js:20694
+    11ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    8ms useStore /node_modules/.vite/deps/zustand.js:35
+    7ms _drawChildren /node_modules/.vite/deps/react-konva.js:3768
+    7ms drawScene /node_modules/.vite/deps/react-konva.js:3743
+    6ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2265
+    6ms _getCache /node_modules/.vite/deps/react-konva.js:2418
+    6ms commitUpdate /node_modules/.vite/deps/react-konva.js:20917
+    5ms strokeShape /node_modules/.vite/deps/react-konva.js:1583
+    5ms shallowEqual /node_modules/.vite/deps/react-konva.js:13087
+    5ms getLayer /node_modules/.vite/deps/react-konva.js:3098
+    5ms off /node_modules/.vite/deps/react-konva.js:2661
+    5ms defineKeyPropWarningGetter /node_modules/.vite/deps/react_jsx-dev-runtime.js:88
+    4ms addObjectDiffToProperties /node_modules/.vite/deps/react-konva.js:11805
+    4ms on /node_modules/.vite/deps/react-konva.js:2642
+    4ms _sceneFunc /node_modules/.vite/deps/react-konva.js:8217
+    4ms logComponentRender /node_modules/.vite/deps/react-konva.js:11857
+    4ms spokeSide /src/canvas/labelLayout.ts:210
+    3ms EntityNode /src/canvas/layers/EntityLayer.tsx:381
+  simTimeS after x1: 4.932300000762938
+{"phase":"playback x8 5s","wallMs":5017,"ms":5067,"frames":604,"fps":119.2,"over33":1,"over100":0,"maxFrame":42,"longTasks":0,"longMs":0,"longMax":0,"sets":51,"scenarioChanges":0,"scriptMs":848,"layoutMs":6,"styleMs":1,"taskMs":1228,"layouts":50,"styleRecalcs":42,"domNodes":2715,"heapMB":38.5}
+  profile total 5069 ms; special: (idle)=3859 (program)=353 run=31 (garbage collector)=26 save=20 restore=16
+  files: 299ms npm:react_jsx-dev-runtime | 290ms npm:react-konva | 22ms /src/canvas/labelLayout.ts | 16ms npm:react-dom_client | 11ms /src/canvas/layers/EntityLayer.tsx | 9ms npm:zustand | 4ms /src/canvas/LiveScene.tsx | 3ms npm:scheduler-kNtYHXIZ | 3ms /src/model/scenario.ts | 3ms /src/playback/detection.ts | 2ms /src/playback/raid.ts | 1ms /src/playback/sweepAt.ts | 1ms npm:react | 1ms /src/geometry/geo.ts | 1ms /src/canvas/layers/EngagementLayer.tsx | 1ms /src/canvas/layers/ThreatWezLayer.tsx | 1ms /src/playback/trackState.ts | 1ms /src/playback/tracks.ts
+  fns:
+    265ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    30ms setAttr /node_modules/.vite/deps/react-konva.js:1655
+    26ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    20ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    19ms measureSize /node_modules/.vite/deps/react-konva.js:8336
+    16ms applyNodeProps /node_modules/.vite/deps/react-konva.js:20694
+    15ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    14ms prepareFreshStack /node_modules/.vite/deps/react-konva.js:17789
+    11ms commitUpdate /node_modules/.vite/deps/react-konva.js:20917
+    9ms strokeShape /node_modules/.vite/deps/react-konva.js:1583
+    8ms _getCache /node_modules/.vite/deps/react-konva.js:2418
+    7ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2265
+    7ms useStore /node_modules/.vite/deps/zustand.js:35
+    6ms off /node_modules/.vite/deps/react-konva.js:2661
+    6ms on /node_modules/.vite/deps/react-konva.js:2642
+    6ms fillShape /node_modules/.vite/deps/react-konva.js:1579
+    5ms getLayer /node_modules/.vite/deps/react-konva.js:3098
+    5ms _sceneFunc /node_modules/.vite/deps/react-konva.js:8217
+    5ms spokeSide /src/canvas/labelLayout.ts:210
+    5ms drawScene /node_modules/.vite/deps/react-konva.js:3743
+    5ms EntityNode /src/canvas/layers/EntityLayer.tsx:381
+    5ms addObjectDiffToProperties /node_modules/.vite/deps/react-konva.js:11805
+    4ms clusters /src/canvas/labelLayout.ts:137
+    4ms shallowEqual /node_modules/.vite/deps/react-konva.js:13087
+    4ms defineKeyPropWarningGetter /node_modules/.vite/deps/react_jsx-dev-runtime.js:88
+  simTimeS after x8: 44.93230000228879 phase paused
+{"phase":"zoom wheel x30","wallMs":2006,"ms":2050,"frames":237,"fps":115.6,"over33":0,"over100":0,"maxFrame":25,"longTasks":0,"longMs":0,"longMax":0,"sets":30,"scenarioChanges":0,"scriptMs":398,"layoutMs":2,"styleMs":1,"taskMs":547,"layouts":31,"styleRecalcs":31,"domNodes":2716,"heapMB":57.8}
+  profile total 2044 ms; special: (idle)=1502 (program)=140 run=15 now=5 (garbage collector)=5 save=4
+  files: 241ms npm:react_jsx-dev-runtime | 81ms npm:react-konva | 8ms npm:react-dom_client | 6ms npm:zustand | 4ms npm:react | 3ms /src/canvas/labelLayout.ts | 2ms /src/canvas/layers/EntityLayer.tsx | 2ms /src/canvas/layers/ConnectionLayer.tsx | 1ms /src/canvas/layers/PathLayer.tsx | 1ms /src/canvas/LiveScene.tsx | 1ms npm:scheduler-kNtYHXIZ | 1ms /src/io/viewState.ts | 1ms /src/canvas/layers/FootprintLayer.tsx | 1ms /src/canvas/CanvasStage.tsx | 1ms /src/canvas/layers/CalloutLayer.tsx | 0ms /src/model/scenario.ts | 0ms npm:zustand_react_shallow | 0ms /src/panels/analysis/widgets/RequirementGatesWidget.tsx
+  fns:
+    228ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    8ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    6ms commitUpdate /node_modules/.vite/deps/react-konva.js:20917
+    4ms setAttr /node_modules/.vite/deps/react-konva.js:1655
+    4ms useStore /node_modules/.vite/deps/zustand.js:35
+    3ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    3ms _getCache /node_modules/.vite/deps/react-konva.js:2418
+    3ms exports.createElement /node_modules/.vite/deps/react.js:591
+    3ms (anonymous) /node_modules/.vite/deps/react-konva.js:2755
+    3ms _getProtoListeners /node_modules/.vite/deps/react-konva.js:3367
+    3ms applyNodeProps /node_modules/.vite/deps/react-konva.js:20694
+    3ms off /node_modules/.vite/deps/react-konva.js:2661
+    2ms on /node_modules/.vite/deps/react-konva.js:2642
+    2ms runWithFiberInDEV /node_modules/.vite/deps/react-konva.js:12514
+    2ms jsxDEVImpl /node_modules/.vite/deps/react_jsx-dev-runtime.js:148
+    2ms prepareFreshStack /node_modules/.vite/deps/react-konva.js:17789
+    2ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    2ms _fire /node_modules/.vite/deps/react-konva.js:3392
+    2ms _batchTransformChanges /node_modules/.vite/deps/react-konva.js:2833
+    2ms _clearCache /node_modules/.vite/deps/react-konva.js:2413
+    2ms defineKeyPropWarningGetter /node_modules/.vite/deps/react_jsx-dev-runtime.js:88
+    1ms setState /node_modules/.vite/deps/zustand.js:7
+    1ms _sceneFunc /node_modules/.vite/deps/react-konva.js:8217
+    1ms logComponentRender /node_modules/.vite/deps/react-konva.js:11857
+    1ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2265
+{"phase":"pan drag 40 moves","wallMs":1032,"ms":1092,"frames":126,"fps":115.4,"over33":1,"over100":0,"maxFrame":50,"longTasks":0,"longMs":0,"longMax":0,"sets":1,"scenarioChanges":0,"scriptMs":70,"layoutMs":0,"styleMs":0,"taskMs":251,"layouts":2,"styleRecalcs":1,"domNodes":2704,"heapMB":45.3}
+  profile total 1094 ms; special: (idle)=848 (program)=171 (garbage collector)=5 fillText=3 restore=3 stroke=2
+  files: 42ms npm:react-konva | 6ms npm:react_jsx-dev-runtime | 1ms npm:react-dom_client | 0ms npm:zustand | 0ms npm:react | 0ms /src/canvas/labelLayout.ts | 0ms /src/canvas/LiveScene.tsx
+  fns:
+    6ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    4ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    4ms measureSize /node_modules/.vite/deps/react-konva.js:8336
+    4ms setAttr /node_modules/.vite/deps/react-konva.js:1655
+    3ms (anonymous) /node_modules/.vite/deps/react-konva.js:3723
+    2ms _getProtoListeners /node_modules/.vite/deps/react-konva.js:3367
+    2ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    2ms _getCache /node_modules/.vite/deps/react-konva.js:2418
+    1ms _sceneFunc /node_modules/.vite/deps/react-konva.js:8217
+    1ms strokeShape /node_modules/.vite/deps/react-konva.js:1583
+    1ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2265
+    1ms getLayer /node_modules/.vite/deps/react-konva.js:3098
+    1ms _useBufferCanvas /node_modules/.vite/deps/react-konva.js:4705
+    1ms fill /node_modules/.vite/deps/react-konva.js:1706
+    1ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2217
+    1ms _sceneFunc /node_modules/.vite/deps/react-konva.js:7441
+    1ms fillShape /node_modules/.vite/deps/react-konva.js:1579
+    1ms drawScene /node_modules/.vite/deps/react-konva.js:3743
+    1ms reconcileChildFibersImpl /node_modules/.vite/deps/react-konva.js:13455
+    1ms _clearSelfAndDescendantCache /node_modules/.vite/deps/react-konva.js:3716
+    1ms (anonymous) /node_modules/.vite/deps/react-konva.js:2755
+    1ms _clearCache /node_modules/.vite/deps/react-konva.js:2413
+    1ms beginPath /node_modules/.vite/deps/react-konva.js:1664
+    1ms save /node_modules/.vite/deps/react-konva.js:1749
+    0ms _fire /node_modules/.vite/deps/react-konva.js:3392
+{"phase":"moveEntity x20","wallMs":2416,"ms":2467,"frames":276,"fps":111.9,"over33":1,"over100":0,"maxFrame":42,"longTasks":0,"longMs":0,"longMax":0,"sets":20,"scenarioChanges":20,"scriptMs":405,"layoutMs":0,"styleMs":0,"taskMs":531,"layouts":1,"styleRecalcs":1,"domNodes":2704,"heapMB":34.9}
+  profile total 2464 ms; special: (idle)=1940 (program)=111 (garbage collector)=12 run=9 tick=3 now=2
+  files: 140ms npm:react_jsx-dev-runtime | 116ms /src/playback/attrition.ts | 40ms npm:react-konva | 15ms npm:react-dom_client | 14ms /src/analysis/impact.ts | 5ms /src/geometry/geo.ts | 5ms npm:zustand | 4ms /src/playback/intercept.ts | 4ms npm:react | 4ms /src/analysis/ewPhysics.ts | 2ms /src/canvas/labelLayout.ts | 2ms /src/playback/trackState.ts | 2ms /src/playback/killChain.ts | 2ms /src/playback/detection.ts | 2ms /src/analysis/sensorEnv.ts | 2ms /src/canvas/layers/ConnectionLayer.tsx | 2ms /src/panels/BoardPreparation.tsx | 2ms /src/canvas/layers/EntityLayer.tsx
+  fns:
+    128ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    96ms resolveEngagements /src/playback/attrition.ts:110
+    12ms engagementPicture /src/analysis/impact.ts:290
+    8ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    8ms (anonymous) /src/playback/attrition.ts:436
+    4ms membersAt /src/playback/attrition.ts:252
+    3ms (anonymous) /src/analysis/ewPhysics.ts:92
+    3ms addObjectDiffToProperties /node_modules/.vite/deps/react-konva.js:11805
+    3ms dist /src/geometry/geo.ts:3
+    3ms jsxDEVImpl /node_modules/.vite/deps/react_jsx-dev-runtime.js:148
+    2ms exports.createElement /node_modules/.vite/deps/react.js:591
+    2ms interceptAt /src/playback/intercept.ts:144
+    2ms setAttr /node_modules/.vite/deps/react-konva.js:1655
+    2ms addValueToProperties /node_modules/.vite/deps/react-dom_client.js:2089
+    2ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    2ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    2ms commitUpdate /node_modules/.vite/deps/react-konva.js:20917
+    2ms applyDueEffects /src/playback/attrition.ts:238
+    2ms setState /node_modules/.vite/deps/zustand.js:7
+    2ms (anonymous) /src/canvas/layers/ConnectionLayer.tsx:18
+    2ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2265
+    2ms measureSize /node_modules/.vite/deps/react-konva.js:8336
+    1ms addValueToProperties /node_modules/.vite/deps/react-konva.js:11732
+    1ms useStore /node_modules/.vite/deps/zustand.js:35
+    1ms drawScene /node_modules/.vite/deps/react-konva.js:3743
+{"phase":"select/clear x10","wallMs":2608,"ms":2658,"frames":313,"fps":117.7,"over33":1,"over100":0,"maxFrame":33,"longTasks":0,"longMs":0,"longMax":0,"sets":22,"scenarioChanges":0,"scriptMs":192,"layoutMs":14,"styleMs":12,"taskMs":336,"layouts":22,"styleRecalcs":38,"domNodes":4246,"heapMB":37.5}
+  profile total 2651 ms; special: (idle)=2324 (program)=106 get direction=17 run=10 (garbage collector)=6 now=4
+  files: 93ms npm:react_jsx-dev-runtime | 25ms npm:react-dom_client | 24ms npm:react-konva | 6ms /src/model/integration.ts | 5ms npm:zustand | 2ms /src/panels/Inspector.tsx | 1ms /src/panels/Toolbar.tsx | 1ms /src/panels/inspector/kit.tsx | 1ms npm:scheduler-kNtYHXIZ | 1ms /src/canvas/TrackFileReadout.tsx | 1ms /src/canvas/layers/EntityLayer.tsx | 0ms /src/canvas/layers/BoundaryLayer.tsx | 0ms /src/canvas/CanvasStage.tsx | 0ms /src/canvas/layers/CalloutLayer.tsx | 0ms /src/model/scenario.ts | 0ms /src/canvas/layers/SystemHandleLayer.tsx | 0ms /src/canvas/layers/ThreatWezLayer.tsx | 0ms /src/App.tsx
+  fns:
+    85ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    7ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    6ms (anonymous) /src/model/integration.ts:239
+    3ms setAttr /node_modules/.vite/deps/react-konva.js:1655
+    3ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    2ms useStore /node_modules/.vite/deps/zustand.js:35
+    2ms runWithFiberInDEV /node_modules/.vite/deps/react-dom_client.js:600
+    2ms validateProperty /node_modules/.vite/deps/react-dom_client.js:1628
+    2ms react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:12615
+    2ms updatedAncestorInfoDev /node_modules/.vite/deps/react-dom_client.js:1396
+    1ms setTextContent /node_modules/.vite/deps/react-dom_client.js:1542
+    1ms setState /node_modules/.vite/deps/zustand.js:7
+    1ms (anonymous) /node_modules/.vite/deps/zustand.js:36
+    1ms prepareFreshStack /node_modules/.vite/deps/react-konva.js:17789
+    1ms validateProperties$2 /node_modules/.vite/deps/react-dom_client.js:1620
+    1ms EntityInspector /src/panels/Inspector.tsx:1010
+    1ms completeWork /node_modules/.vite/deps/react-dom_client.js:6029
+    1ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    1ms on /node_modules/.vite/deps/react-konva.js:2642
+    1ms _sceneFunc /node_modules/.vite/deps/react-konva.js:8217
+    1ms clockHHMM /src/panels/Toolbar.tsx:65
+    1ms setInitialProperties /node_modules/.vite/deps/react-dom_client.js:9513
+    1ms commitDeletionEffectsOnFiber /node_modules/.vite/deps/react-dom_client.js:6828
+    1ms drawHit /node_modules/.vite/deps/react-konva.js:4822
+    1ms setProp /node_modules/.vite/deps/react-dom_client.js:9281
+{"phase":"right tabs x3 cycles","wallMs":1936,"ms":1992,"frames":231,"fps":116,"over33":1,"over100":0,"maxFrame":42,"longTasks":0,"longMs":0,"longMax":0,"sets":11,"scenarioChanges":0,"scriptMs":106,"layoutMs":6,"styleMs":17,"taskMs":340,"layouts":11,"styleRecalcs":196,"domNodes":5056,"heapMB":38.9}
+  profile total 1987 ms; special: (idle)=1657 (program)=216 (garbage collector)=5 run=4 removeChild=1 now=1
+  files: 71ms npm:react_jsx-dev-runtime | 19ms npm:react-dom_client | 3ms npm:zustand | 1ms /src/canvas/layers/EntityLayer.tsx | 1ms npm:react | 1ms /src/playback/detection.ts | 1ms /src/panels/BoardPreparation.tsx | 1ms /src/analysis/radarPd.ts | 0ms /src/canvas/layers/ThreatWezLayer.tsx | 0ms /src/io/viewState.ts | 0ms /src/App.tsx | 0ms /src/canvas/layers/FootprintLayer.tsx | 0ms /src/panels/analysis/EngagementStrip.tsx | 0ms /src/panels/TestCardsPanel.tsx | 0ms npm:zustand_react_shallow | 0ms /src/model/rcsFactors.ts | 0ms /src/analysis/fidelity.ts
+  fns:
+    66ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    2ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    2ms prepareFreshStack /node_modules/.vite/deps/react-dom_client.js:7891
+    2ms setState /node_modules/.vite/deps/zustand.js:7
+    1ms getTaskName /node_modules/.vite/deps/react_jsx-dev-runtime.js:64
+    1ms react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:12615
+    1ms validateProperty /node_modules/.vite/deps/react-dom_client.js:1628
+    1ms completeWork /node_modules/.vite/deps/react-dom_client.js:6029
+    1ms useStore /node_modules/.vite/deps/zustand.js:35
+    1ms validateProperties$2 /node_modules/.vite/deps/react-dom_client.js:1620
+    1ms (anonymous) /node_modules/.vite/deps/react-dom_client.js:8993
+    1ms prepareSweep /src/playback/detection.ts:95
+    1ms BoardPreparation /src/panels/BoardPreparation.tsx:211
+    1ms initInput /node_modules/.vite/deps/react-dom_client.js:1111
+    1ms setProp /node_modules/.vite/deps/react-dom_client.js:9281
+    1ms recursivelyTraversePassiveMountEffects /node_modules/.vite/deps/react-dom_client.js:7356
+    1ms (anonymous) /src/canvas/layers/EntityLayer.tsx:386
+    1ms reconcileChildFibersImpl /node_modules/.vite/deps/react-dom_client.js:3530
+    1ms createFiberFromTypeAndProps /node_modules/.vite/deps/react-dom_client.js:2527
+    0ms commitPassiveMountOnFiber /node_modules/.vite/deps/react-dom_client.js:7363
+    0ms beginWork /node_modules/.vite/deps/react-dom_client.js:5834
+    0ms pushHostContainer /node_modules/.vite/deps/react-dom_client.js:293
+    0ms (anonymous) /src/canvas/layers/ThreatWezLayer.tsx:267
+    0ms updateProperties /node_modules/.vite/deps/react-dom_client.js:9679
+    0ms writeView /src/io/viewState.ts:85
+{"phase":"lifecycle phases x3 cycles","wallMs":2453,"ms":2533,"frames":269,"fps":106.2,"over33":6,"over100":0,"maxFrame":82,"longTasks":5,"longMs":330,"longMax":83,"sets":0,"scenarioChanges":0,"scriptMs":455,"layoutMs":8,"styleMs":12,"taskMs":639,"layouts":31,"styleRecalcs":180,"domNodes":8198,"heapMB":101.1}
+  profile total 2505 ms; special: (idle)=1887 (program)=138 (garbage collector)=22 run=15 getBoundingClientRect=8 query=4
+  files: 190ms npm:recharts | 80ms npm:react_jsx-dev-runtime | 59ms npm:react | 48ms npm:react-dom_client | 7ms /src/analysis/liveStats.ts | 5ms /src/charts/seriesData.ts | 4ms /src/analysis/series.ts | 3ms /src/analysis/threatAggregation.ts | 3ms /src/panels/analysis/widgets/TimeSeriesWidget.tsx | 2ms /src/analysis/fidelity.ts | 1ms /src/charts/TimeSeriesChart.tsx | 1ms /src/panels/analysis/widgets/RunValidityWidget.tsx | 1ms /src/model/types.ts | 1ms /src/playback/detection.ts | 1ms /src/panels/analysis/widgets/KpiTilesWidget.tsx | 1ms /src/panels/analysis/widgets/EnvironmentWidget.tsx | 1ms /src/panels/analysis/OutcomeSummary.tsx | 1ms /src/analysis/radarPd.ts
+  fns:
+    72ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    56ms _objectSpread$20 /node_modules/.vite/deps/recharts.js:28605
+    53ms exports.createElement /node_modules/.vite/deps/react.js:591
+    7ms memoized /node_modules/.vite/deps/recharts.js:4274
+    7ms ownKeys$20 /node_modules/.vite/deps/recharts.js:28595
+    5ms (anonymous) /node_modules/.vite/deps/recharts.js:28770
+    5ms seriesRows /src/charts/seriesData.ts:15
+    5ms (anonymous) /node_modules/.vite/deps/recharts.js:1361
+    4ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    4ms shallowCopy /node_modules/.vite/deps/recharts.js:5063
+    4ms react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:12615
+    3ms liveKpisAt /src/analysis/liveStats.ts:115
+    3ms (anonymous) /node_modules/.vite/deps/recharts.js:16285
+    3ms completeWork /node_modules/.vite/deps/react-dom_client.js:6029
+    3ms each /node_modules/.vite/deps/recharts.js:5030
+    3ms (anonymous) /node_modules/.vite/deps/recharts.js:28500
+    3ms line /node_modules/.vite/deps/recharts.js:1493
+    2ms kpiSeries /src/analysis/series.ts:185
+    2ms _defineProperty$20 /node_modules/.vite/deps/recharts.js:28616
+    2ms idsCharts /src/panels/analysis/widgets/TimeSeriesWidget.tsx:49
+    2ms insertOrAppendPlacementNodeIntoContainer /node_modules/.vite/deps/react-dom_client.js:6552
+    2ms map /node_modules/.vite/deps/recharts.js:12738
+    2ms computeLinePoints /node_modules/.vite/deps/recharts.js:28950
+    2ms runWithFiberInDEV /node_modules/.vite/deps/react-dom_client.js:600
+    2ms ReactElement /node_modules/.vite/deps/react.js:132
+{"phase":"library drawer open/close x3","wallMs":1605,"ms":1716,"frames":193,"fps":112.5,"over33":1,"over100":0,"maxFrame":92,"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":69,"layoutMs":3,"styleMs":2,"taskMs":225,"layouts":9,"styleRecalcs":11,"domNodes":8199,"heapMB":95.5}
+  profile total 1703 ms; special: (idle)=1497 (program)=134 focus=4 (garbage collector)=1 removeChild=1 createTask=1
+  files: 49ms npm:react_jsx-dev-runtime | 11ms npm:react-dom_client | 2ms /src/panels/Palette.tsx | 1ms npm:scheduler-kNtYHXIZ | 0ms npm:zustand | 0ms /src/canvas/CanvasStage.tsx
+  fns:
+    44ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    3ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    1ms runWithFiberInDEV /node_modules/.vite/deps/react-dom_client.js:600
+    1ms jsxDEVImpl /node_modules/.vite/deps/react_jsx-dev-runtime.js:148
+    1ms Palette /src/panels/Palette.tsx:251
+    1ms updateElement /node_modules/.vite/deps/react-dom_client.js:3356
+    1ms setProp /node_modules/.vite/deps/react-dom_client.js:9281
+    1ms detachDeletedInstance /node_modules/.vite/deps/react-dom_client.js:881
+    1ms (anonymous) /src/panels/Palette.tsx:476
+    1ms prepareFreshStack /node_modules/.vite/deps/react-dom_client.js:7891
+    0ms getNativeBeforeInputChars /node_modules/.vite/deps/react-dom_client.js:1900
+    0ms useStore /node_modules/.vite/deps/zustand.js:35
+    0ms batchedUpdates$1 /node_modules/.vite/deps/react-dom_client.js:1793
+    0ms update /src/canvas/CanvasStage.tsx:94
+    0ms checkScheduledUpdateOrContext /node_modules/.vite/deps/react-dom_client.js:5773
+    0ms performWorkUntilDeadline /node_modules/.vite/deps/scheduler-kNtYHXIZ.js:14
+    0ms (anonymous) /src/panels/Palette.tsx:187
+    0ms getActiveElement /node_modules/.vite/deps/react-dom_client.js:1081
+    0ms getOwner /node_modules/.vite/deps/react_jsx-dev-runtime.js:74
+    0ms dispatchDiscreteEvent /node_modules/.vite/deps/react-dom_client.js:11049
+    0ms commitRootWhenReady /node_modules/.vite/deps/react-dom_client.js:7812
+    0ms reconcileChildrenArray /node_modules/.vite/deps/react-dom_client.js:3473
+    0ms startUpdateTimerByLane /node_modules/.vite/deps/react-dom_client.js:2999
+    0ms TacticsSection /src/panels/Palette.tsx:182
+    0ms mapRemainingChildren /node_modules/.vite/deps/react-dom_client.js:3327
+{"phase":"undo/redo x5","wallMs":1342,"ms":1450,"frames":162,"fps":111.7,"over33":1,"over100":0,"maxFrame":92,"longTasks":0,"longMs":0,"longMax":0,"sets":10,"scenarioChanges":10,"scriptMs":136,"layoutMs":0,"styleMs":1,"taskMs":281,"layouts":0,"styleRecalcs":10,"domNodes":8199,"heapMB":89.5}
+  profile total 1444 ms; special: (idle)=1171 (program)=133 run=3 (garbage collector)=2 measure=2 stroke=1
+  files: 81ms npm:react_jsx-dev-runtime | 22ms npm:react-konva | 9ms npm:react-dom_client | 3ms npm:react | 2ms /src/canvas/labelLayout.ts | 1ms npm:zustand | 1ms /src/panels/BoardPreparation.tsx | 1ms /src/canvas/layers/EntityLayer.tsx | 1ms npm:zustand_react_shallow | 1ms /src/analysis/radarPd.ts | 0ms /src/canvas/layers/ThreatWezLayer.tsx | 0ms /src/analysis/impact.ts | 0ms /src/playback/detection.ts | 0ms /src/analysis/fidelity.ts | 0ms /src/canvas/layers/FootprintLayer.tsx | 0ms /src/canvas/CanvasStage.tsx | 0ms /src/analysis/runValidity.ts | 0ms /src/geometry/geo.ts
+  fns:
+    73ms exports.jsxDEV /node_modules/.vite/deps/react_jsx-dev-runtime.js:191
+    5ms ReactElement /node_modules/.vite/deps/react_jsx-dev-runtime.js:104
+    2ms exports.createElement /node_modules/.vite/deps/react.js:591
+    2ms addObjectDiffToProperties /node_modules/.vite/deps/react-konva.js:11805
+    1ms drawScene /node_modules/.vite/deps/react-konva.js:4766
+    1ms applyNodeProps /node_modules/.vite/deps/react-konva.js:20694
+    1ms (anonymous) /node_modules/.vite/deps/react-konva.js:3794
+    1ms addValueToProperties /node_modules/.vite/deps/react-konva.js:11732
+    1ms commitUpdate /node_modules/.vite/deps/react-konva.js:20917
+    1ms prepareFreshStack /node_modules/.vite/deps/react-konva.js:17789
+    1ms getTaskName /node_modules/.vite/deps/react_jsx-dev-runtime.js:64
+    1ms setState /node_modules/.vite/deps/zustand.js:7
+    1ms (anonymous) /node_modules/.vite/deps/zustand_react_shallow.js:40
+    1ms _sceneFunc /node_modules/.vite/deps/react-konva.js:7441
+    1ms reconcileChildrenArray /node_modules/.vite/deps/react-dom_client.js:3473
+    1ms drawScene /node_modules/.vite/deps/react-konva.js:3743
+    1ms runWithFiberInDEV /node_modules/.vite/deps/react-konva.js:12514
+    1ms react_stack_bottom_frame /node_modules/.vite/deps/react-dom_client.js:12615
+    1ms clusters /src/canvas/labelLayout.ts:137
+    1ms commitUpdate /node_modules/.vite/deps/react-dom_client.js:10311
+    1ms useStore /node_modules/.vite/deps/zustand.js:35
+    1ms constructor.<computed> /node_modules/.vite/deps/react-konva.js:2265
+    1ms jsxDEVImpl /node_modules/.vite/deps/react_jsx-dev-runtime.js:148
+    1ms addValueToProperties /node_modules/.vite/deps/react-dom_client.js:2089
+    1ms boardDesignator /src/canvas/labelLayout.ts:51
+page errors/warnings: []

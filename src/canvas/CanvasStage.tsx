@@ -289,6 +289,7 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
       className={`canvas-host ${basemap} ${drawing ? 'drawing' : ''} ${dropActive ? 'drop-active' : ''}`}
       data-testid="canvas-host"
       tabIndex={0}
+      role="application"
       aria-label="Board canvas"
       onDragOver={(e) => e.preventDefault()}
       onDragEnter={(e) => {
