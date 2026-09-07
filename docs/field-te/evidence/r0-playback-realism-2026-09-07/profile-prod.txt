@@ -1,0 +1,153 @@
+hasStore false
+browser 151.0.7922.34
+recoveryKeys []
+{"label":"prod","loadMs":177,"domContentLoaded":87,"loadEvent":88,"resources":18,"scriptResources":14,"transferKB":1455,"domNodes":1327,"heapMB":9.5}
+{"phase":"idle 3s","wallMs":3001,"ms":3033,"frames":361,"fps":119,"over33":1,"over100":0,"maxFrame":33,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":5,"layoutMs":0,"styleMs":0,"taskMs":77,"layouts":0,"styleRecalcs":10,"domNodes":2162,"heapMB":7.2}
+  profile total 3033 ms; special: (idle)=2967 (program)=64 requestAnimationFrame=1 tick=1
+  files: 
+  fns:
+    
+{"phase":"playback x1 5s (Space key)","wallMs":5052,"ms":5067,"frames":608,"fps":120,"over33":0,"over100":0,"maxFrame":9,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":137,"layoutMs":5,"styleMs":1,"taskMs":377,"layouts":53,"styleRecalcs":9,"domNodes":2173,"heapMB":9}
+  profile total 5064 ms; special: (idle)=4708 (program)=222 (garbage collector)=12 fillText=3 requestAnimationFrame=3 save=3
+  files: 86ms /assets/index-UJU9lE_e.js | 10ms /assets/uncertainty-V2VyxgKc.js | 1ms /assets/jsx-runtime-B-hcVAMW.js | 0ms /assets/kit-CVvT5uhx.js
+  fns:
+    5ms (anonymous) /assets/index-UJU9lE_e.js:42
+    4ms (anonymous) /assets/index-UJU9lE_e.js:23
+    4ms measureSize /assets/index-UJU9lE_e.js:23
+    3ms e.<computed> /assets/index-UJU9lE_e.js:23
+    3ms drawScene /assets/index-UJU9lE_e.js:23
+    3ms setAttr /assets/index-UJU9lE_e.js:23
+    2ms T /assets/index-UJU9lE_e.js:2
+    2ms r /assets/uncertainty-V2VyxgKc.js:1
+    2ms (anonymous) /assets/uncertainty-V2VyxgKc.js:1
+    2ms _sceneFunc /assets/index-UJU9lE_e.js:23
+    2ms drawHit /assets/index-UJU9lE_e.js:23
+    2ms Fc /assets/index-UJU9lE_e.js:42
+    2ms off /assets/index-UJU9lE_e.js:23
+    1ms fe /assets/uncertainty-V2VyxgKc.js:1
+    1ms Gt /assets/index-UJU9lE_e.js:31
+    1ms rc /assets/index-UJU9lE_e.js:42
+    1ms br /assets/index-UJU9lE_e.js:31
+    1ms nf /assets/index-UJU9lE_e.js:42
+    1ms _getAbsoluteTransform /assets/index-UJU9lE_e.js:23
+    1ms getLayer /assets/index-UJU9lE_e.js:23
+    1ms _useBufferCanvas /assets/index-UJU9lE_e.js:23
+    1ms Pd /assets/index-UJU9lE_e.js:42
+    1ms (anonymous) /assets/index-UJU9lE_e.js:43
+    1ms Ht /assets/index-UJU9lE_e.js:9
+    1ms _getCache /assets/index-UJU9lE_e.js:23
+{"phase":"zoom wheel x30","wallMs":1671,"ms":1683,"frames":202,"fps":120,"over33":0,"over100":0,"maxFrame":9,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":43,"layoutMs":2,"styleMs":1,"taskMs":116,"layouts":30,"styleRecalcs":30,"domNodes":2172,"heapMB":11.5}
+  profile total 1686 ms; special: (idle)=1576 (program)=67 restore=1 (garbage collector)=1 clearRect=1 requestAnimationFrame=1
+  files: 33ms /assets/index-UJU9lE_e.js | 2ms /assets/uncertainty-V2VyxgKc.js | 1ms /assets/jsx-runtime-B-hcVAMW.js | 0ms /assets/clock-C56FyJev.js
+  fns:
+    4ms (anonymous) /assets/index-UJU9lE_e.js:42
+    2ms T /assets/index-UJU9lE_e.js:2
+    1ms (anonymous) /assets/index-UJU9lE_e.js:23
+    1ms e.<computed> /assets/index-UJU9lE_e.js:23
+    1ms _getCache /assets/index-UJU9lE_e.js:23
+    1ms off /assets/index-UJU9lE_e.js:23
+    1ms measureSize /assets/index-UJU9lE_e.js:23
+    1ms setAttr /assets/index-UJU9lE_e.js:23
+    1ms _getAbsoluteTransform /assets/index-UJU9lE_e.js:23
+    1ms on /assets/index-UJU9lE_e.js:23
+    1ms _clearSelfAndDescendantCache /assets/index-UJU9lE_e.js:23
+    1ms mc /assets/index-UJU9lE_e.js:9
+    1ms r /assets/uncertainty-V2VyxgKc.js:1
+    1ms si /assets/index-UJU9lE_e.js:9
+    1ms Cr /assets/index-UJU9lE_e.js:31
+    1ms drawScene /assets/index-UJU9lE_e.js:23
+    1ms zc /assets/index-UJU9lE_e.js:9
+    1ms dh /assets/index-UJU9lE_e.js:42
+    1ms _getTransform /assets/index-UJU9lE_e.js:23
+    1ms rc /assets/index-UJU9lE_e.js:42
+    0ms _clearCache /assets/index-UJU9lE_e.js:23
+    0ms fillStrokeShape /assets/index-UJU9lE_e.js:23
+    0ms (anonymous) /assets/uncertainty-V2VyxgKc.js:1
+    0ms _fillColor /assets/index-UJU9lE_e.js:23
+    0ms _fill /assets/index-UJU9lE_e.js:23
+{"phase":"pan drag 40 moves","wallMs":1006,"ms":1025,"frames":123,"fps":120,"over33":0,"over100":0,"maxFrame":9,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":19,"layoutMs":0,"styleMs":0,"taskMs":101,"layouts":2,"styleRecalcs":0,"domNodes":2172,"heapMB":14.9}
+  profile total 1027 ms; special: (idle)=925 (program)=78 (anonymous)=3 save=1 evaluate=1 tick=1
+  files: 15ms /assets/index-UJU9lE_e.js | 0ms /assets/uncertainty-V2VyxgKc.js
+  fns:
+    2ms (anonymous) /assets/index-UJU9lE_e.js:23
+    1ms setAttr /assets/index-UJU9lE_e.js:23
+    1ms hasStroke /assets/index-UJU9lE_e.js:23
+    1ms isDragging /assets/index-UJU9lE_e.js:10
+    1ms _fire /assets/index-UJU9lE_e.js:23
+    1ms e.<computed> /assets/index-UJU9lE_e.js:23
+    1ms un /assets/index-UJU9lE_e.js:9
+    1ms strokeShape /assets/index-UJU9lE_e.js:23
+    1ms getLayer /assets/index-UJU9lE_e.js:23
+    1ms (anonymous) /assets/index-UJU9lE_e.js:9
+    1ms _getCache /assets/index-UJU9lE_e.js:23
+    0ms drawScene /assets/index-UJU9lE_e.js:23
+    0ms Ec /assets/index-UJU9lE_e.js:9
+    0ms fire /assets/index-UJU9lE_e.js:23
+    0ms _sceneFunc /assets/index-UJU9lE_e.js:23
+    0ms fc /assets/index-UJU9lE_e.js:9
+    0ms draw /assets/index-UJU9lE_e.js:23
+    0ms _fireAndBubble /assets/index-UJU9lE_e.js:23
+    0ms fillShape /assets/index-UJU9lE_e.js:23
+    0ms _useBufferCanvas /assets/index-UJU9lE_e.js:24
+    0ms Ro /assets/index-UJU9lE_e.js:23
+    0ms measureSize /assets/index-UJU9lE_e.js:23
+    0ms _getPoints /assets/index-UJU9lE_e.js:23
+    0ms get isDragging /assets/index-UJU9lE_e.js:23
+    0ms _useBufferCanvas /assets/index-UJU9lE_e.js:23
+{"phase":"lifecycle phases x3 cycles","wallMs":2125,"ms":2167,"frames":248,"fps":114.5,"over33":1,"over100":0,"maxFrame":42,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":200,"layoutMs":11,"styleMs":13,"taskMs":354,"layouts":30,"styleRecalcs":199,"domNodes":5604,"heapMB":35.4}
+  profile total 2148 ms; special: (idle)=1815 (program)=103 (garbage collector)=16 getBoundingClientRect=12 query=4 setAttribute=3
+  files: 134ms /assets/TimeSeriesChart-BeKJWnXg.js | 42ms /assets/index-UJU9lE_e.js | 2ms /assets/jsx-runtime-B-hcVAMW.js | 1ms /assets/uncertainty-V2VyxgKc.js | 1ms /assets/persist-DK8wCtJY.js | 1ms /assets/teStore-Bn2hPMuU.js | 0ms /assets/react-dom-sF8Euvcq.js | 0ms /assets/clock-C56FyJev.js
+  fns:
+    15ms UM /assets/TimeSeriesChart-BeKJWnXg.js:51
+    12ms Xj /assets/TimeSeriesChart-BeKJWnXg.js:51
+    8ms (anonymous) /assets/TimeSeriesChart-BeKJWnXg.js:41
+    8ms (anonymous) /assets/TimeSeriesChart-BeKJWnXg.js:51
+    7ms (anonymous) /assets/TimeSeriesChart-BeKJWnXg.js:1
+    4ms Ql /assets/TimeSeriesChart-BeKJWnXg.js:9
+    4ms (anonymous) /assets/TimeSeriesChart-BeKJWnXg.js:2
+    4ms o /assets/TimeSeriesChart-BeKJWnXg.js:1
+    3ms wi /assets/TimeSeriesChart-BeKJWnXg.js:2
+    3ms yo /assets/index-UJU9lE_e.js:9
+    3ms Tx /assets/index-UJU9lE_e.js:43
+    2ms br /assets/TimeSeriesChart-BeKJWnXg.js:1
+    2ms (anonymous) /assets/index-UJU9lE_e.js:43
+    2ms (anonymous) /assets/TimeSeriesChart-BeKJWnXg.js:9
+    2ms l /assets/TimeSeriesChart-BeKJWnXg.js:1
+    2ms d /assets/TimeSeriesChart-BeKJWnXg.js:40
+    2ms Zl /assets/TimeSeriesChart-BeKJWnXg.js:9
+    2ms oN /assets/TimeSeriesChart-BeKJWnXg.js:51
+    2ms z /assets/TimeSeriesChart-BeKJWnXg.js:1
+    1ms lineTo /assets/TimeSeriesChart-BeKJWnXg.js:1
+    1ms zi /assets/TimeSeriesChart-BeKJWnXg.js:2
+    1ms point /assets/TimeSeriesChart-BeKJWnXg.js:1
+    1ms QM /assets/TimeSeriesChart-BeKJWnXg.js:51
+    1ms (anonymous) /assets/TimeSeriesChart-BeKJWnXg.js:53
+    1ms Bc /assets/index-UJU9lE_e.js:9
+{"phase":"library drawer open/close x3","wallMs":1536,"ms":1592,"frames":188,"fps":118.1,"over33":1,"over100":0,"maxFrame":33,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":11,"layoutMs":3,"styleMs":2,"taskMs":103,"layouts":9,"styleRecalcs":11,"domNodes":5605,"heapMB":36.8}
+  profile total 1580 ms; special: (idle)=1493 (program)=75 focus=3 removeChild=1 requestAnimationFrame=1
+  files: 8ms /assets/index-UJU9lE_e.js
+  fns:
+    2ms (anonymous) /assets/index-UJU9lE_e.js:42
+    1ms Hg /assets/index-UJU9lE_e.js:42
+    1ms Kc /assets/index-UJU9lE_e.js:9
+    0ms (anonymous) /assets/index-UJU9lE_e.js:9
+    0ms l /assets/index-UJU9lE_e.js:9
+    0ms nl /assets/index-UJU9lE_e.js:9
+    0ms Ed /assets/index-UJU9lE_e.js:9
+    0ms fc /assets/index-UJU9lE_e.js:9
+    0ms bt /assets/index-UJU9lE_e.js:9
+    0ms Kf /assets/index-UJU9lE_e.js:42
+    0ms yt /assets/index-UJU9lE_e.js:9
+    0ms Zt /assets/index-UJU9lE_e.js:9
+    0ms sl /assets/index-UJU9lE_e.js:9
+    0ms z /assets/index-UJU9lE_e.js:9
+    0ms Ht /assets/index-UJU9lE_e.js:9
+    0ms As /assets/index-UJU9lE_e.js:9
+    0ms si /assets/index-UJU9lE_e.js:9
+    0ms pl /assets/index-UJU9lE_e.js:9
+    0ms n /assets/index-UJU9lE_e.js:9
+    0ms i /assets/index-UJU9lE_e.js:9
+    0ms nr /assets/index-UJU9lE_e.js:9
+    0ms un /assets/index-UJU9lE_e.js:9
+    0ms Nd /assets/index-UJU9lE_e.js:10
+page errors/warnings: []

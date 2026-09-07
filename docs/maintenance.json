@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "741c47040df2b0055e5af71b892833ad8dba05639524410d86d1425df83c389a",
-      "reviewedAt": "2026-09-06",
-      "note": "Added the perf-2026-09-06 performance baseline README under Captured checks; every other index row is unchanged and still resolves."
+      "sha256": "cc96e79c8917232aa7cb9109e8698191e021f3e662cf59068f2d1f7a9a02a9e0",
+      "reviewedAt": "2026-09-07",
+      "note": "Added the four R0 playback realism baseline records (directory README, numerical baseline, consumer matrix, browser and performance baseline) under Captured checks; every other index row is unchanged and still resolves."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
