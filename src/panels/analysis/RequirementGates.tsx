@@ -8,7 +8,7 @@ const STATUS_LABEL: Record<RequirementGate['status'], string> = {
   'not-evaluated': 'NOT RUN',
 }
 
-function GateCard({ gate }: { gate: RequirementGate }) {
+function GateCard({ gate, runWideCaveats }: { gate: RequirementGate; runWideCaveats: Set<string> }) {
   return (
     <div className={`requirement-gate gate-${gate.status}`}>
       <div className="gate-head">
@@ -20,16 +20,19 @@ function GateCard({ gate }: { gate: RequirementGate }) {
           {gate.met}/{gate.required}
         </span>
       </div>
-      <div className="gate-metric">{gate.metric}</div>
-      <div className="gate-detail">{gate.detail}</div>
-      {gate.notEvaluatedReason && (
-        <div className="gate-detail">NOT SCORED: {gate.notEvaluatedReason}</div>
+      <div className="gate-metric" title={gate.detail}>{gate.metric}</div>
+      {gate.status === 'not-evaluated' && gate.notEvaluatedReason && (
+        <div className="gate-detail">{gate.notEvaluatedReason}</div>
       )}
-      {gate.caveats.map((caveat) => (
-        <div className="gate-detail" key={caveat}>
-          CAVEAT: {caveat}
-        </div>
-      ))}
+      <details>
+        <summary>Why</summary>
+        <div className="gate-detail">{gate.detail}</div>
+        {gate.caveats.filter((caveat) => !runWideCaveats.has(caveat)).map((caveat) => (
+          <div className="gate-detail" key={caveat}>
+            CAVEAT: {caveat}
+          </div>
+        ))}
+      </details>
       {gate.failures.length > 0 && (
         <details className="gate-failures">
           <summary>
@@ -48,6 +51,11 @@ function GateCard({ gate }: { gate: RequirementGate }) {
 }
 
 export function RequirementGates({ report }: { report: RequirementGateReport }) {
+  const runWideCaveats = new Set(
+    (report.gates[0]?.caveats ?? []).filter((caveat) =>
+      report.gates.every((gate) => gate.caveats.includes(caveat)),
+    ),
+  )
   const label =
     report.overall === 'pass'
       ? 'REQUIREMENTS MET'
@@ -56,16 +64,26 @@ export function RequirementGates({ report }: { report: RequirementGateReport }) 
         : 'REQUIREMENTS NOT RUN'
   return (
     <div className="requirements-block">
-      <div className={`requirements-verdict verdict-${report.overall}`}>
+      <div
+        className={`requirements-verdict verdict-${report.overall}`}
+        title="Planning envelope · test-defined thresholds. No MC probability of pass is calculated."
+      >
         <span>{label}</span>
         <strong>
           {report.met}/{report.required}
         </strong>
       </div>
-      <p className="muted small">Planning envelope · test-defined thresholds. No MC probability of pass is calculated.</p>
+      {runWideCaveats.size > 0 && (
+        <details>
+          <summary>{runWideCaveats.size} run-wide caveats</summary>
+          {[...runWideCaveats].map((caveat) => (
+            <div className="gate-detail" key={caveat}>{caveat}</div>
+          ))}
+        </details>
+      )}
       <div className="requirement-grid">
         {report.gates.map((gate) => (
-          <GateCard key={gate.id} gate={gate} />
+          <GateCard key={gate.id} gate={gate} runWideCaveats={runWideCaveats} />
         ))}
       </div>
     </div>

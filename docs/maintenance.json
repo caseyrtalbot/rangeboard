@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "e3677cbdf82052c2e3609e78bbeb6eb2a3b3b27ee1d86893a5b240c20edd8213",
+      "sha256": "6e65dc0149ed14c2be54bed611e05d92492a90c0ea223e3b46aeedc0b1966ecb",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed App.tsx alias removal: RIGHT_PANEL_WIDTH_KEY is now read directly; startup commands and architecture unchanged."
+      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. No README claim changed."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "fc9b1f704bcd0c80770e883dbde32ba921f70df7b6fe3e0db85347724fd5d958",
+      "sha256": "a5329bf691af8adae3f7efca9cbe4fb13e0a6eb0f4f461423a17b840d38cc587",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed dead-surface cleanup: removed unused vite.svg and icons.svg assets, the uncalled PersonField, the RIGHT_W_KEY alias, a duplicate .lens-layout rule, and wired favicon.svg; no documented behavior changed."
+      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. Updated the Describe-the-range feature row."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "015e32f4c99a61f0e943d447bdbb35375ee06a2c384d5c8a228656d3ec1cfcd1",
+      "sha256": "c252ca43a25982123c129028cc4351a3d06e7ce0cc601888485ce4efddd6568e",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed dead-surface cleanup: removed unused vite.svg and icons.svg assets, the uncalled PersonField, the RIGHT_W_KEY alias, a duplicate .lens-layout rule, and wired favicon.svg; no documented behavior changed."
+      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. No invariant changed; ring hit test stays a DOM overlay with listening=false rings."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "f8c9d3f9479cbdcc72f7744714c6a7ea4f78d4378985e3fe9481a10a1ee1ab03",
+      "sha256": "280430ad02a9d087c90129a3896a150841618662e5fe9ea7fadf44b7463ebf96",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed index.css change: two .lens-layout rules folded into one with the same declarations; no token or component style changed."
+      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. index.css adds settings-panel, declutter and roe-menu rules on existing tokens; no token changed."
     }
   ],
   "historical": [

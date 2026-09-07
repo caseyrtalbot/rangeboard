@@ -23,7 +23,6 @@ import {
   pfaText,
   Row,
   Section,
-  ShortcutList,
 } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
 import { ProvMark, Seg } from '../ui/kit'
@@ -1547,21 +1546,6 @@ export function Inspector({ entityId }: { entityId?: string } = {}) {
           body="Select an entity on the board to inspect its configuration, operational parameters, relationships, and test state."
         />
       </Section>
-      <Section label="Board controls">
-        <ShortcutList items={BOARD_CONTROLS} />
-      </Section>
     </div>
   )
 }
-
-/** Matches the keyboard map in App.tsx and the CanvasStage gestures. */
-const BOARD_CONTROLS: Array<[string, string[]]> = [
-  ['Undo', ['⌘', 'Z']],
-  ['Play / pause', ['Space']],
-  ['Cancel action', ['Esc']],
-  ['Finish path', ['Enter']],
-  ['Box select', ['⌘', 'Drag']],
-  ['Add to selection', ['⇧', 'Click']],
-  ['Zoom', ['Scroll']],
-  ['Pan', ['Drag']],
-]

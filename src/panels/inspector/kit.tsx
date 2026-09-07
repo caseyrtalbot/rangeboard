@@ -176,32 +176,6 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
   )
 }
 
-/** A single keyboard key or gesture token. */
-function Kbd({ children }: { children: ReactNode }) {
-  return <kbd className="kbd">{children}</kbd>
-}
-
-/**
- * Two-column keyboard reference: action left, keys right, aligned across
- * every row. Each entry is an action and the keys pressed for it.
- */
-export function ShortcutList({ items }: { items: Array<[string, string[]]> }) {
-  return (
-    <div className="insp-shortcuts">
-      {items.map(([action, keys]) => (
-        <div key={action} className="insp-shortcut">
-          <span>{action}</span>
-          <span className="insp-shortcut-keys">
-            {keys.map((k) => (
-              <Kbd key={k}>{k}</Kbd>
-            ))}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 /** Footer button group. Buttons share the width evenly. */
 export function Actions({ children }: { children: ReactNode }) {
   return <div className="inspector-actions">{children}</div>

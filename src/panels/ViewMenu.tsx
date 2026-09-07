@@ -5,6 +5,7 @@ import { useStore } from '../state/store'
 import { THEMES } from '../state/themes'
 import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
 import type { RingKey } from '../state/rings'
+import { activeLayerPreset } from '../state/layers'
 import type { LayerKey, LayerPreset } from '../state/layers'
 import type { BasemapMode } from '../model/types'
 import type { DisplayUnits } from '../geometry/geo'
@@ -70,7 +71,7 @@ const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
 export function ViewMenu() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
+  const { open, toggle } = usePopover(wrapRef, buttonRef)
 
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>
@@ -86,96 +87,110 @@ export function ViewMenu() {
       >
         View <span className="tb-caret">▾</span>
       </button>
-      {open && <ViewMenuPanel onRequestClose={() => setOpen(false)} />}
+      {open && <ViewMenuPanel />}
     </div>
   )
 }
 
-export function ViewMenuPanel({ onRequestClose }: { onRequestClose: () => void }) {
+export function DeclutterControl() {
   const layers = useStore((s) => s.ui.layers)
-  const basemap = useStore((s) => s.ui.basemap)
-  const units = useStore((s) => s.ui.units)
-  const theme = useStore((s) => s.ui.theme)
-  const {
-    setBasemap,
-    toggleLayer,
-    applyLayerPreset,
-    setUnits,
-    setTheme,
-  } = useStore.getState()
-
+  const active = activeLayerPreset(layers)
   return (
-    <div
-      id="view-menu-panel"
-      className="tb-menu-panel view-menu-panel"
-      role="dialog"
-      aria-label="View controls"
-    >
-      <div className="tb-menu-head">Theme</div>
-      <Seg value={theme} options={THEMES} label="Theme" onChange={setTheme} />
-      <div className="tb-menu-head">Layer preset</div>
-      <div className="seg tb-menu-seg" role="group" aria-label="Layer preset">
-        {PRESETS.map((p) => (
+    <div className="board-declutter">
+      <span className="muted">Declutter</span>
+      <div className="seg" role="group" aria-label="Declutter">
+        {PRESETS.map((preset) => (
           <button
-            key={p.id}
+            key={preset.id}
             type="button"
-            title={p.hint}
-            onClick={() => {
-              applyLayerPreset(p.id)
-              onRequestClose()
-            }}
+            title={preset.hint}
+            aria-pressed={active === preset.id}
+            className={active === preset.id ? 'active' : ''}
+            onClick={() => useStore.getState().applyLayerPreset(preset.id)}
           >
-            {p.label}
+            {preset.label}
           </button>
         ))}
       </div>
-      {LAYER_GROUPS.map((g) => (
-        <div key={g.title} role="group" aria-label={`${g.title} layers`}>
-          <div className="tb-menu-head">{g.title}</div>
-          {g.layers.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              className="tb-menu-item"
-              aria-pressed={layers[l.id]}
-              title={l.hint}
-              onClick={() => toggleLayer(l.id)}
-            >
-              <span className="tb-menu-tick" aria-hidden="true">{layers[l.id] ? '✓' : ''}</span>
-              {l.label}
+    </div>
+  )
+}
+
+export function ThemeSettings() {
+  const theme = useStore((s) => s.ui.theme)
+  return (
+    <>
+      <div className="tb-menu-head">Theme</div>
+      <Seg value={theme} options={THEMES} label="Theme" onChange={useStore.getState().setTheme} />
+    </>
+  )
+}
+
+export function UnitsSettings() {
+  const units = useStore((s) => s.ui.units)
+  return (
+    <>
+      <div className="tb-menu-head">Units</div>
+      <div className="seg tb-menu-seg" role="group" aria-label="Units">
+        {UNITS.map((unit) => (
+          <button key={unit.id} type="button" title={unit.hint}
+            aria-pressed={units === unit.id} className={units === unit.id ? 'active' : ''}
+            onClick={() => useStore.getState().setUnits(unit.id)}>
+            {unit.label}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+export function BasemapSettings() {
+  const basemap = useStore((s) => s.ui.basemap)
+  return (
+    <>
+      <div className="tb-menu-head">Basemap</div>
+      <div className="seg tb-menu-seg" role="group" aria-label="Basemap">
+        {BASEMAPS.map((map) => (
+          <button key={map.id} type="button"
+            aria-pressed={basemap === map.id} className={basemap === map.id ? 'active' : ''}
+            onClick={() => useStore.getState().setBasemap(map.id)}>
+            {map.label}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+export function LayerSettings() {
+  const layers = useStore((s) => s.ui.layers)
+  return (
+    <>
+      {LAYER_GROUPS.map((group) => (
+        <div key={group.title} role="group" aria-label={`${group.title} layers`}>
+          <div className="tb-menu-head">{group.title}</div>
+          {group.layers.map((layer) => (
+            <button key={layer.id} type="button" className="tb-menu-item"
+              aria-pressed={layers[layer.id]} title={layer.hint}
+              onClick={() => useStore.getState().toggleLayer(layer.id)}>
+              <span className="tb-menu-tick" aria-hidden="true">{layers[layer.id] ? '✓' : ''}</span>
+              {layer.label}
             </button>
           ))}
         </div>
       ))}
-      <div className="tb-menu-head">Basemap</div>
-      <div className="seg tb-menu-seg" role="group" aria-label="Basemap">
-        {BASEMAPS.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            aria-pressed={basemap === b.id}
-            className={basemap === b.id ? 'active' : ''}
-            onClick={() => setBasemap(b.id)}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
-      <div className="tb-menu-head">Units</div>
-      <div className="seg tb-menu-seg" role="group" aria-label="Units">
-        {UNITS.map((u) => (
-          <button
-            key={u.id}
-            type="button"
-            aria-pressed={units === u.id}
-            className={units === u.id ? 'active' : ''}
-            title={u.hint}
-            onClick={() => setUnits(u.id)}
-          >
-            {u.label}
-          </button>
-        ))}
-      </div>
+    </>
+  )
+}
+
+export function ViewMenuPanel() {
+  return (
+    <div id="view-menu-panel" className="tb-menu-panel view-menu-panel"
+      role="dialog" aria-label="View controls">
+      <ThemeSettings />
+      <UnitsSettings />
+      <BasemapSettings />
+      <LayerSettings />
     </div>
   )
 }

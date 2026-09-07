@@ -460,7 +460,7 @@ export default function App() {
     function onEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape' || document.querySelector('.cmdk-panel, .analysis-layout-popover')) return
       // An open dialog owns Escape: it closes first and the placement stays armed.
-      if (useStore.getState().ui.locationDialogOpen) return
+      if (useStore.getState().ui.locationDialogOpen || document.querySelector('#settings-panel[open], #roe-menu-panel')) return
       event.stopPropagation()
       setLibraryOpen(false)
       setPlacement(null)
@@ -576,6 +576,7 @@ export default function App() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (document.querySelector('#settings-panel[open]')) return
       const mod = e.metaKey || e.ctrlKey
       // Cmd+K toggles the command palette. Deliberately ahead of the typing
       // suppression so it opens from inside an input; Board workspace only

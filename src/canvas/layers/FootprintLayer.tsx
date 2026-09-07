@@ -246,7 +246,7 @@ interface AssetRings {
   radiusM: number
 }
 
-type EntityRings = SensorRings | EffectorRings | JammerRings | AssetRings
+export type EntityRings = SensorRings | EffectorRings | JammerRings | AssetRings
 
 /**
  * Every ring the board draws, one record per entity. Pure over the scenario,
@@ -760,36 +760,8 @@ const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: bool
  * label prints the Pd, the release and the commit distance.
  */
 export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: Props) {
-  const scenario = useStore((s) => s.scenario)
-  // Field subscriptions, not the whole `ui`: an unrelated ui action must not
-  // rebuild the rings, which run the Pd bisection per radar.
-  const units = useStore((s) => s.ui.units)
-  const basemap = useStore((s) => s.ui.basemap)
-  const layers = useStore(useShallow((s) => s.ui.layers))
-  const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
-  const selectedUasId = useStore((s) => {
-    const hit = s.scenario.entities.find(
-      (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
-    )
-    return hit?.id ?? null
-  })
-  const dim = basemap === 'airspace'
-  const view = useMemo(() => ({ units, layers, ringOverrides }), [units, layers, ringOverrides])
-  // Ring geometry is scenario work, so it must not run on a playback frame.
-  // The sweep reaches this layer as a sensor-id set, which changes at the 10 Hz
-  // publication and is not a key here. A scenario swap (an edit, an undo)
-  // rebuilds the records, and every record whose fields did not change keeps
-  // its previous object, so the memoized nodes re-render only for the entity
-  // that changed.
-  const prevRings = useRef<EntityRings[]>([])
-  const rings = useMemo(
-    // eslint-disable-next-line react/refs -- the previous records lend identities; one render stale by design
-    () => stableRings(buildRings(scenario, view, selectedUasId), prevRings.current),
-    [scenario, view, selectedUasId],
-  )
-  useEffect(() => {
-    prevRings.current = rings
-  }, [rings])
+  const rings = useEntityRings()
+  const dim = useStore((s) => s.ui.basemap === 'airspace')
 
   return (
     <>
@@ -811,3 +783,52 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
     </>
   )
 })
+
+// Both consumers share the expensive geometry; old scenarios can be collected.
+const ringCache = new WeakMap<Scenario, { view: RingView; selected: string | null; rings: EntityRings[] }>()
+
+function sharedRings(scenario: Scenario, view: RingView, selected: string | null): EntityRings[] {
+  const cached = ringCache.get(scenario)
+  if (cached && cached.selected === selected && cached.view.units === view.units &&
+    cached.view.layers === view.layers && cached.view.ringOverrides === view.ringOverrides) {
+    return cached.rings
+  }
+  const rings = buildRings(scenario, view, selected)
+  ringCache.set(scenario, { view, selected, rings })
+  return rings
+}
+
+// The HUD shares this hook with the footprint renderer to reuse its geometry cache.
+// oxlint-disable-next-line react/only-export-components
+export function useEntityRings(): EntityRings[] {
+  const scenario = useStore((s) => s.scenario)
+  // Field subscriptions, not the whole `ui`: an unrelated ui action must not
+  // rebuild the rings, which run the Pd bisection per radar.
+  const units = useStore((s) => s.ui.units)
+  const layers = useStore(useShallow((s) => s.ui.layers))
+  const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
+  const selectedUasId = useStore((s) => {
+    const hit = s.scenario.entities.find(
+      (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
+    )
+    return hit?.id ?? null
+  })
+  const view = useMemo(() => ({ units, layers, ringOverrides }), [units, layers, ringOverrides])
+  // Ring geometry is scenario work, so it must not run on a playback frame.
+  // The sweep reaches this layer as a sensor-id set, which changes at the 10 Hz
+  // publication and is not a key here. A scenario swap (an edit, an undo)
+  // rebuilds the records, and every record whose fields did not change keeps
+  // its previous object, so the memoized nodes re-render only for the entity
+  // that changed.
+  const prevRings = useRef<EntityRings[]>([])
+  const rings = useMemo(
+    // eslint-disable-next-line react/refs -- the previous records lend identities; one render stale by design
+    () => stableRings(sharedRings(scenario, view, selectedUasId), prevRings.current),
+    [scenario, view, selectedUasId],
+  )
+  useEffect(() => {
+    prevRings.current = rings
+  }, [rings])
+
+  return rings
+}

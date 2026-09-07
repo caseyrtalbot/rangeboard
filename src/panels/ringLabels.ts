@@ -32,3 +32,28 @@ export const RING_HINTS: Record<RingKey, string> = {
   effectorDoctrinal:
     'The release range and the commit Pk range for the selected threat under the fire doctrine.',
 }
+
+/** Individual edges whose meaning is more specific than the visibility control. */
+export const EXTRA_RING_HINTS = {
+  defendedArea: 'The boundary used to score arrival at the defended asset.',
+  jammerEffective: 'The effective jamming range against the selected threat.',
+  jammerMin: 'The minimum jamming range.',
+  envelopeInner: 'The shortest detection range against threats on the board.',
+  envelopeOuter: 'The longest detection range against threats on the board.',
+  pdLow: 'The detection range at the test detect Pd against the selected threat.',
+  pdHigh: 'The detection range at Pd 0.9 against the selected threat.',
+  release: 'The doctrinal release range for the selected threat.',
+  commitPk: 'The range meeting the doctrinal commit Pk for the selected threat.',
+}
+
+export const EXTRA_RING_LABELS: Record<keyof typeof EXTRA_RING_HINTS, string> = {
+  defendedArea: 'Defended area',
+  jammerEffective: 'Jammer effective range',
+  jammerMin: 'Jammer minimum range',
+  envelopeInner: 'Envelope band inner edge',
+  envelopeOuter: 'Envelope band outer edge',
+  pdLow: 'Test Pd contour',
+  pdHigh: 'Pd 0.9 contour',
+  release: 'Release ring',
+  commitPk: 'Commit-Pk ring',
+}

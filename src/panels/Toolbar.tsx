@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react'
+import { lazy, memo, Suspense, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
@@ -8,7 +8,7 @@ import type { Store } from '../state/store'
 import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
-import { ViewMenu } from './ViewMenu'
+import { DeclutterControl, ViewMenu } from './ViewMenu'
 import { THEMES } from '../state/themes'
 import { RangeSetupMenu } from './RangeSetupMenu'
 import { useTeStore } from '../te/state/teStore'
@@ -18,6 +18,26 @@ import type { BoundaryType, EnvironmentSpec, Roe, Scenario } from '../model/type
 import { emptyScenario } from '../model/seed'
 import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
 import { StorageMenu } from '../ui/StorageMenu'
+
+const SettingsPanel = lazy(() => import('./SettingsPanel').then((module) => ({ default: module.SettingsPanel })))
+
+function SettingsButton() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" title="Settings (all scenario, run and view settings)"
+        aria-haspopup="dialog" aria-expanded={open} aria-controls="settings-panel"
+        onClick={() => setOpen(true)}>
+        <span aria-hidden="true">⚙</span> Settings
+      </button>
+      {open && (
+        <Suspense fallback={null}>
+          <SettingsPanel onRequestClose={() => setOpen(false)} />
+        </Suspense>
+      )}
+    </>
+  )
+}
 
 const BOARD_TOOLS = [
   { id: 'select', label: 'Select', hint: 'Move, pan, edit' },
@@ -32,6 +52,40 @@ const ROE_PILLS: Record<Roe, { label: string; tone: StateTone; hint: string }> =
   free: { label: 'ROE Free', tone: 'nominal', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
   tight: { label: 'ROE Tight', tone: 'inactive', hint: 'ROE tight: engage tracks declared hostile' },
   hold: { label: 'ROE Hold', tone: 'warning', hint: 'ROE hold: no engagements' },
+}
+
+const ROE_OPTIONS: { v: Roe; label: string }[] = [
+  { v: 'hold', label: 'Hold' },
+  { v: 'tight', label: 'Tight' },
+  { v: 'free', label: 'Free' },
+]
+
+function RoeMenu() {
+  const roe = useStore((s) => s.scenario.roe ?? 'tight')
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
+  return (
+    <div className="tb-menu-wrap" ref={wrapRef}>
+      <button ref={buttonRef} type="button" title="ROE · click to change"
+        aria-haspopup="dialog" aria-expanded={open} aria-controls="roe-menu-panel"
+        onClick={toggle}>
+        <State tone={ROE_PILLS[roe].tone}>{ROE_PILLS[roe].label}</State>
+      </button>
+      {open && (
+        <div id="roe-menu-panel" className="tb-menu-panel tb-menu-right roe-menu-panel"
+          role="dialog" aria-label="Rules of engagement">
+          <div className="tb-menu-head">ROE</div>
+          <Seg value={roe} options={ROE_OPTIONS} label="ROE" onChange={(next) => {
+            useStore.getState().patchScenario({ roe: next })
+            setOpen(false)
+            buttonRef.current?.focus()
+          }} />
+          {ROE_OPTIONS.map(({ v }) => <p key={v} className="roe-hint">{ROE_PILLS[v].hint}</p>)}
+        </div>
+      )}
+    </div>
+  )
 }
 
 /** Local wall-clock HH:MM, 24-hour. */
@@ -185,7 +239,6 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
  */
 export const Toolbar = memo(function Toolbar() {
   const scenarioName = useStore((s) => s.scenario.name)
-  const roe = useStore((s) => s.scenario.roe ?? 'tight')
   const environment = useStore((s) => s.scenario.environment)
   const spawnWarning = useStore(useShallow(selectSpawnWarning))
   const threatWez = useStore((s) => s.ui.layers.threatWez)
@@ -245,12 +298,11 @@ export const Toolbar = memo(function Toolbar() {
 
       <div className="spacer" />
 
+      <SettingsButton />
       <StorageMenu />
 
       <div className="status-pills" aria-label="Status">
-        <State tone={ROE_PILLS[roe].tone} title={ROE_PILLS[roe].hint}>
-          {ROE_PILLS[roe].label}
-        </State>
+        <RoeMenu />
         {threatWez && (
           <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
             WEZ On
@@ -325,6 +377,7 @@ export const BoardTools = memo(function BoardTools({ onSelectTool }: { onSelectT
       </div>
       <RangeSetupMenu onSelectTool={onSelectTool} />
       <ViewMenu />
+      <DeclutterControl />
       <div className="seg" role="group" aria-label="History">
         <button
           type="button"

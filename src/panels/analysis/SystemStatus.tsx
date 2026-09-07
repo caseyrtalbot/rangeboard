@@ -29,7 +29,7 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function ComponentRow({ component }: { component: ComponentTelemetry }) {
+function componentDetail(component: ComponentTelemetry): string {
   // holdSeconds is the clock reading: the elapsed seconds this sensor held at
   // least one track. trackSeconds is INTEGRATED sensor loading and can exceed
   // the run length, so it is labeled track-seconds and never given to a clock
@@ -46,17 +46,24 @@ function ComponentRow({ component }: { component: ComponentTelemetry }) {
       : component.capacityTotal == null
         ? 'continuous'
         : `${component.capacityRemaining}/${component.capacityTotal} remaining`
+  return `${component.purpose} · ${detail}${capacity ? ` · ${capacity}` : ''}`
+}
+
+function ComponentRow({ component }: { component: ComponentTelemetry }) {
+  const summary =
+    component.kind === 'sensor'
+      ? `${component.tracksNow} now · ${component.tracksSeen} seen${component.holdSeconds > 0 ? ` · hold ${formatTime(component.holdSeconds)}` : ''}`
+      : component.kind === 'c2'
+        ? `${component.tracksNow} now · ${component.tracksSeen} routed`
+        : `${plural(component.targetsNow, 'target')} · ${plural(component.salvosAssigned, 'salvo')}${component.capacityTotal != null ? ` · ${component.capacityRemaining}/${component.capacityTotal}` : ''}`
   return (
-    <div className="component-telemetry-row">
+    <div className="component-telemetry-row" title={componentDetail(component)}>
       <span className={`component-kind kind-${component.kind}`}>
         {component.kind === 'sensor' ? 'S' : component.kind === 'c2' ? 'C2' : 'E'}
       </span>
       <span className="component-copy">
         <strong title={component.name}>{component.name}</strong>
-        <small>
-          {component.purpose} · {detail}
-          {capacity ? ` · ${capacity}` : ''}
-        </small>
+        <small>{summary}</small>
       </span>
       <State tone={stateTone(component.state)}>{STATE_LABEL[component.state]}</State>
     </div>
@@ -79,6 +86,14 @@ function SystemCard({ group, defaultOpen }: { group: SystemTelemetryGroup; defau
           {group.components.map((component) => (
             <ComponentRow key={component.entityId} component={component} />
           ))}
+          <details>
+            <summary>Details</summary>
+            {group.components.map((component) => (
+              <p className="muted small" key={component.entityId}>
+                <strong>{component.name}</strong> · {componentDetail(component)}
+              </p>
+            ))}
+          </details>
         </div>
       )}
     </div>
@@ -108,8 +123,7 @@ export function SystemStatus({
     <div className="system-telemetry-list">
       {endOfRun && (
         <p className="muted small telemetry-note">
-          State column: the state at the end of the run. It is one sampled instant, not a run
-          outcome. The counts beside it cover the whole run.
+          State shows the final sampled instant, not the run outcome; cumulative counts cover the run.
         </p>
       )}
       {groups.map((group, index) => (

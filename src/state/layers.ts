@@ -145,6 +145,14 @@ export const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
   },
 }
 
+/** Exact layer match; an individually adjusted view has no active preset. */
+export function activeLayerPreset(layers: LayerVisibility): LayerPreset | null {
+  return (Object.keys(LAYER_PRESETS) as LayerPreset[]).find((name) => {
+    const preset = LAYER_PRESETS[name]
+    return (Object.keys(preset) as LayerKey[]).every((key) => layers[key] === preset[key])
+  }) ?? null
+}
+
 /** Effective visibility of one ring for one entity: the override, else the layer flag. */
 export function ringVisible(ui: RingView, entityId: string, key: RingKey): boolean {
   return ui.ringOverrides[entityId]?.[key] ?? ui.layers[key]

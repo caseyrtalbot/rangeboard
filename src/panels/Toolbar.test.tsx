@@ -7,6 +7,9 @@ import { useTeStore } from '../te/state/teStore'
 import { RangeSetupMenuPanel } from './RangeSetupMenu'
 import { BoardTools, FileActions, Toolbar } from './Toolbar'
 import { ViewMenuPanel } from './ViewMenu'
+import { SettingsPanel } from './SettingsPanel'
+import { activeLayerPreset, DEFAULT_LAYERS, LAYER_PRESETS } from '../state/layers'
+import type { LayerPreset } from '../state/layers'
 
 function render(node: ReactNode): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
@@ -31,6 +34,8 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('aria-label="Scenario name"')
     expect(html).toContain('aria-label="More actions"')
     expect(html).toContain('aria-label="Status"')
+    expect(html).toContain('title="Settings (all scenario, run and view settings)"')
+    expect(html).toContain('title="ROE · click to change"')
     expect(html).not.toContain('aria-label="Board tools"')
     expect(html).not.toContain('aria-label="Theme"')
   })
@@ -46,7 +51,7 @@ describe('Board toolbar grouping', () => {
 
   it('orders canvas tools before range setup, view and history', () => {
     const html = render(<BoardTools />)
-    const labels = ['Select', 'Boundary', 'Connect', 'Path', 'Range setup', 'View', 'History']
+    const labels = ['Select', 'Boundary', 'Connect', 'Path', 'Range setup', 'View', 'Declutter', 'History']
     const positions = labels.map((label) => html.indexOf(label))
 
     expect(html).toContain('class="board-tools" role="toolbar" aria-label="Board tools"')
@@ -74,13 +79,14 @@ describe('Board menu scope', () => {
   })
 
   it('keeps View limited to saved display controls and every layer toggle', () => {
-    const html = render(<ViewMenuPanel onRequestClose={() => {}} />)
+    const html = render(<ViewMenuPanel />)
     const layerCount = Object.keys(useStore.getState().ui.layers).length
     const renderedLayerToggles = html.match(/class="tb-menu-item" aria-pressed=/g) ?? []
 
     expect(html).toContain('role="dialog" aria-label="View controls"')
     expect(html).toContain('aria-label="Theme"')
-    expect(html).toContain('aria-label="Layer preset"')
+    expect(html).not.toContain('aria-label="Layer preset"')
+    expect(html).not.toContain('aria-label="Declutter"')
     expect(html).toContain('aria-label="Basemap"')
     expect(html).toContain('aria-label="Units"')
     expect(renderedLayerToggles).toHaveLength(layerCount)
@@ -113,5 +119,58 @@ describe('Board menu scope', () => {
 
     useStore.getState().undo()
     expect(useStore.getState().scenario.underlay.opacity).toBe(before)
+  })
+})
+
+
+describe('Declutter selection', () => {
+  it('recognizes every exact preset and rejects a custom combination', () => {
+    for (const name of Object.keys(LAYER_PRESETS) as LayerPreset[]) {
+      expect(activeLayerPreset({ ...LAYER_PRESETS[name] })).toBe(name)
+    }
+    expect(activeLayerPreset(DEFAULT_LAYERS)).toBeNull()
+    expect(activeLayerPreset({ ...LAYER_PRESETS.clean, threatWez: true })).toBeNull()
+  })
+
+  it('marks the applied preset without adding scenario history', () => {
+    const past = useStore.getState().past.length
+    const scenario = useStore.getState().scenario
+    useStore.getState().applyLayerPreset('planning')
+    const html = render(<BoardTools />)
+    expect(html).toMatch(/aria-pressed="true" class="active">Planning<\/button>/)
+    expect(useStore.getState().ui.layers).toEqual(LAYER_PRESETS.planning)
+    expect(useStore.getState().past).toHaveLength(past)
+    expect(useStore.getState().scenario).toBe(scenario)
+  })
+})
+
+
+describe('Settings sections', () => {
+  it('opens Scenario by default with the existing scenario forms', () => {
+    const html = render(<SettingsPanel onRequestClose={() => {}} />)
+    expect(html).toContain('role="dialog" aria-modal="true" aria-labelledby="settings-title"')
+    const positions = ['Fire doctrine', 'Environment', 'Requirement inputs'].map((label) => html.indexOf(`aria-label="${label}"`))
+    expect(positions.every((position) => position >= 0)).toBe(true)
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
+    expect(html).toContain('data-role="roe"')
+  })
+
+  it('opens Run directly with the canonical run controls', () => {
+    const html = render(<SettingsPanel initialSection="run" onRequestClose={() => {}} />)
+    for (const control of ['Deterministic', 'Monte Carlo', 'Uncertainty', 'Seed', 'Replicates']) {
+      expect(html).toContain(control)
+    }
+    expect(html).not.toContain('aria-label="Fire doctrine"')
+  })
+
+  it('opens View directly with shared display controls and no preset duplication', () => {
+    const html = render(<SettingsPanel initialSection="view" onRequestClose={() => {}} />)
+    const positions = ['Theme', 'Units', 'Basemap', 'Sensor layers'].map((label) => html.indexOf(`aria-label="${label}"`))
+    expect(positions.every((position) => position >= 0)).toBe(true)
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
+    expect(html).toContain('System')
+    expect(html).toContain('Dark')
+    expect(html).toContain('Light')
+    expect(html).not.toContain('aria-label="Declutter"')
   })
 })
