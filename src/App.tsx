@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './state/store'
 import type { RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
@@ -93,6 +93,113 @@ function selectHasObjectSelection(s: Store): boolean {
 function selectSelectionKey(s: Store): string {
   return s.selection.entityIds.join('|')
 }
+
+/**
+ * The lifecycle tablist (ARIA tabs, roving tabindex). Memoized: `App` re-renders on
+ * every selection change and this chrome reads none of it.
+ */
+const LifecycleNav = memo(function LifecycleNav({
+  boardPhase,
+  runSeq,
+  runPhase,
+  onOpenPhase,
+}: {
+  boardPhase: BoardPhase
+  runSeq: number
+  runPhase: string
+  onOpenPhase: (phase: BoardPhase) => void
+}) {
+  return (
+    <nav className="board-lifecycle" aria-label="Board lifecycle">
+      <div className="board-phases" role="tablist" aria-label="Lifecycle views">
+        {PHASES.map((phase, index) => (
+          <button
+            key={phase.id}
+            id={`board-phase-${phase.id}`}
+            role="tab"
+            aria-selected={boardPhase === phase.id}
+            aria-controls="board-workspace"
+            tabIndex={boardPhase === phase.id ? 0 : -1}
+            onClick={() => onOpenPhase(phase.id)}
+            onKeyDown={(event) => {
+              const to = event.key === 'ArrowRight' ? (index + 1) % PHASES.length
+                : event.key === 'ArrowLeft' ? (index + PHASES.length - 1) % PHASES.length
+                  : event.key === 'Home' ? 0 : event.key === 'End' ? PHASES.length - 1 : -1
+              if (to < 0) return
+              event.preventDefault()
+              onOpenPhase(PHASES[to].id)
+              document.getElementById(`board-phase-${PHASES[to].id}`)?.focus()
+            }}
+          >
+            <span className="num">0{index + 1}</span> {phase.label}
+          </button>
+        ))}
+      </div>
+      <span className="board-run-context"><span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}</span>
+    </nav>
+  )
+})
+
+/** The board resource rail. Memoized: every handler it takes is stable. */
+const ResourceRail = memo(function ResourceRail({
+  libraryOpen,
+  libraryTrigger,
+  onToggleLibrary,
+  onOpenObjects,
+  onOpenCards,
+  onOpenKeys,
+}: {
+  libraryOpen: boolean
+  libraryTrigger: React.RefObject<HTMLButtonElement | null>
+  onToggleLibrary: () => void
+  onOpenObjects: () => void
+  onOpenCards: () => void
+  onOpenKeys: () => void
+}) {
+  return (
+    <nav className="board-resource-rail" aria-label="Board resources">
+      <button ref={libraryTrigger} aria-expanded={libraryOpen} aria-controls="board-library-drawer" onClick={onToggleLibrary} title="Library (L)">
+        <span aria-hidden="true">⊞</span>Library
+      </button>
+      <button onClick={onOpenObjects} title="Board entity register">
+        <span aria-hidden="true">⌖</span>Objects
+      </button>
+      <button onClick={onOpenCards}><span aria-hidden="true">▤</span>Cards</button>
+      <button className="board-keys" onClick={onOpenKeys} title="Command palette (⌘K)"><span aria-hidden="true">⌘</span>Keys</button>
+    </nav>
+  )
+})
+
+/** The right-panel tab bar (ARIA tabs). Memoized for the same reason as `LifecycleNav`. */
+const PanelTabs = memo(function PanelTabs({
+  activeTab,
+  setRightTab,
+}: {
+  activeTab: RightTab
+  setRightTab: (t: RightTab) => void
+}) {
+  return (
+    <div className="tabs" role="tablist" aria-label="Board panel views">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          id={`insp-tab-${t.id}`}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === t.id}
+          aria-controls="insp-tabpanel"
+          tabIndex={activeTab === t.id ? 0 : -1}
+          className={activeTab === t.id ? 'active' : ''}
+          title={t.label}
+          onClick={() => setRightTab(t.id)}
+          onKeyDown={(e) => moveTab(e, t.id, setRightTab)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+})
 
 function isTypingTarget(t: EventTarget | null): boolean {
   return (
@@ -360,12 +467,26 @@ export default function App() {
     }
   }, [])
 
-  function openPhase(phase: BoardPhase) {
+  const openPhase = useCallback((phase: BoardPhase) => {
     setPlacement(null)
     setLibraryOpen(false)
     setBoardPhase(phase)
     setRightTab('analysis')
-  }
+  }, [setRightTab])
+
+  // Stable handlers for the memoized chrome, so a selection change stops at `App`.
+  const clearPlacement = useCallback(() => setPlacement(null), [])
+  const toggleLibrary = useCallback(() => setLibraryOpen((open) => !open), [])
+  const openObjects = useCallback(() => {
+    openPhase('prepare')
+    requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView())
+  }, [openPhase])
+  const openCards = useCallback(() => setRightTab('cards'), [setRightTab])
+  const openKeys = useCallback(() => setPaletteOpen(true), [])
+  const navigateAnalysis = useCallback(() => {
+    setBoardPhase((phase) => (phase === 'prepare' ? 'analyze' : phase))
+    setRightTab('analysis')
+  }, [setRightTab])
 
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
@@ -512,50 +633,22 @@ export default function App() {
   return (
     <div className="app board-app" data-board-phase={boardPhase}>
       <Toolbar />
-      <nav className="board-lifecycle" aria-label="Board lifecycle">
-        <div className="board-phases" role="tablist" aria-label="Lifecycle views">
-          {PHASES.map((phase, index) => (
-            <button
-              key={phase.id}
-              id={`board-phase-${phase.id}`}
-              role="tab"
-              aria-selected={boardPhase === phase.id}
-              aria-controls="board-workspace"
-              tabIndex={boardPhase === phase.id ? 0 : -1}
-              onClick={() => openPhase(phase.id)}
-              onKeyDown={(event) => {
-                const to = event.key === 'ArrowRight' ? (index + 1) % PHASES.length
-                  : event.key === 'ArrowLeft' ? (index + PHASES.length - 1) % PHASES.length
-                    : event.key === 'Home' ? 0 : event.key === 'End' ? PHASES.length - 1 : -1
-                if (to < 0) return
-                event.preventDefault()
-                openPhase(PHASES[to].id)
-                document.getElementById(`board-phase-${PHASES[to].id}`)?.focus()
-              }}
-            >
-              <span className="num">0{index + 1}</span> {phase.label}
-            </button>
-          ))}
-        </div>
-        <span className="board-run-context"><span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}</span>
-      </nav>
+      <LifecycleNav boardPhase={boardPhase} runSeq={runSeq} runPhase={runPhase} onOpenPhase={openPhase} />
       <div className="main" id="board-workspace" role="tabpanel" aria-labelledby={`board-phase-${boardPhase}`}>
 
-        <nav className="board-resource-rail" aria-label="Board resources">
-          <button ref={libraryTrigger} aria-expanded={libraryOpen} aria-controls="board-library-drawer" onClick={() => setLibraryOpen((open) => !open)} title="Library (L)">
-            <span aria-hidden="true">⊞</span>Library
-          </button>
-          <button onClick={() => { openPhase('prepare'); requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView()) }} title="Board entity register">
-            <span aria-hidden="true">⌖</span>Objects
-          </button>
-          <button onClick={() => setRightTab('cards')}><span aria-hidden="true">▤</span>Cards</button>
-          <button className="board-keys" onClick={() => setPaletteOpen(true)} title="Command palette (⌘K)"><span aria-hidden="true">⌘</span>Keys</button>
-        </nav>
+        <ResourceRail
+          libraryOpen={libraryOpen}
+          libraryTrigger={libraryTrigger}
+          onToggleLibrary={toggleLibrary}
+          onOpenObjects={openObjects}
+          onOpenCards={openCards}
+          onOpenKeys={openKeys}
+        />
         <div id="board-library-drawer" className="board-library-drawer" hidden={!libraryOpen}>
           <Palette open={libraryOpen} onClose={closeLibrary} onArmPlacement={armPlacement} onPlacementStart={closeLibrary} />
         </div>
         <div className="center">
-          <BoardTools onSelectTool={() => setPlacement(null)} />
+          <BoardTools onSelectTool={clearPlacement} />
           {placement && <div className="board-placement" role="region" aria-label="Place library item">
             <span>Place <strong>{placement.name}</strong></span>
             <span className="muted">Click the canvas · Escape cancels</span>
@@ -583,29 +676,8 @@ export default function App() {
             onMouseDown={startRightResize}
             onKeyDown={nudgeRightWidth}
           />
-          <div className="tabs" role="tablist" aria-label="Board panel views">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                id={`insp-tab-${t.id}`}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === t.id}
-                aria-controls="insp-tabpanel"
-                tabIndex={activeTab === t.id ? 0 : -1}
-                className={activeTab === t.id ? 'active' : ''}
-                title={t.label}
-                onClick={() => setRightTab(t.id)}
-                onKeyDown={(e) => moveTab(e, t.id, setRightTab)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <AnalysisNavigation onNavigate={() => {
-            if (boardPhase === 'prepare') setBoardPhase('analyze')
-            setRightTab('analysis')
-          }} />
+          <PanelTabs activeTab={activeTab} setRightTab={setRightTab} />
+          <AnalysisNavigation onNavigate={navigateAnalysis} />
           <div
             className="right-panel-body"
             id="insp-tabpanel"

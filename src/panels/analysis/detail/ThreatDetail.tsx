@@ -13,7 +13,8 @@ import { mountHeightOf } from '../../../model/types'
 import { entityPosAt, threatAltitudeFt } from '../../../playback/tracks'
 import { PHASE_STYLE } from '../../../playback/trackState'
 import type { TrackPhase } from '../../../playback/trackState'
-import { buildTrackTimeline } from '../../../playback/trackState'
+import { trackTimelineOf } from '../../../playback/trackState'
+import { sweepAt } from '../../../playback/sweepAt'
 import { useStore } from '../../../state/store'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
@@ -44,12 +45,20 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
   const color = entityInk(entity, model)
   const assessment = assessments.find((a) => a.uasId === entity.id)
 
-  const timeline = useMemo(() => {
-    void runId
-    return buildTrackTimeline(scenario, assessments, report)
-  }, [scenario, runId, assessments, report])
+  // Both caches key on the scenario object, so the canvas and this pane share
+  // one timeline and one sweep per instant.
+  const timeline = trackTimelineOf(scenario, assessments, report)
   const readout = useMemo(
-    () => threatReadoutAt({ scenario, entity, timeline, assessments, tS: t, units }),
+    () =>
+      threatReadoutAt({
+        scenario,
+        entity,
+        timeline,
+        assessments,
+        tS: t,
+        units,
+        sweep: sweepAt(scenario, timeline, t),
+      }),
     [scenario, entity, timeline, assessments, t, units],
   )
   const state = readout.state

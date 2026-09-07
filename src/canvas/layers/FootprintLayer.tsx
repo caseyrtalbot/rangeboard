@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { Arc, Circle, Group, Line, Ring as KonvaRing, Text } from 'react-konva'
 import { useShallow } from 'zustand/react/shallow'
 import type { Entity, Scenario, SensorSpec, Vec2 } from '../../model/types'
@@ -161,16 +161,17 @@ interface RingLabelProps {
   bearing: number
   text: string
   color: string
-  /** camera.scale, pixels per meter. */
-  scale: number
 }
 
 /**
  * Ring caption in the entity label font, at a fixed bearing on the ring. The
  * group counter-scales the stage transform, so the inner units are screen px.
- * A north-west anchor reads right so the text runs away from the ring.
+ * A north-west anchor reads right so the text runs away from the ring. The
+ * label is the only footprint node that reads the zoom, so a wheel step
+ * re-renders the labels and none of the rings.
  */
-function RingLabel({ pos, radiusM, bearing, text, color, scale }: RingLabelProps) {
+function RingLabel({ pos, radiusM, bearing, text, color }: RingLabelProps) {
+  const scale = useStore((s) => s.camera.scale)
   if (!(radiusM > 0) || !(scale > 0)) return null
   const p = destination(pos, bearing, radiusM)
   const right = bearing > 180
@@ -441,12 +442,47 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
   return out
 }
 
-function SensorNode({
+/** Two ring records with equal fields; the band and the dash compare by value. */
+function sameRings(a: EntityRings, b: EntityRings): boolean {
+  if (a.kind !== b.kind || a.entity !== b.entity) return false
+  const x = a as unknown as Record<string, unknown>
+  const y = b as unknown as Record<string, unknown>
+  for (const key of Object.keys(x)) {
+    const u = x[key]
+    const v = y[key]
+    if (u === v) continue
+    if (key === 'band' && u != null && v != null) {
+      const bu = u as EnvelopeBand
+      const bv = v as EnvelopeBand
+      if (bu.innerM === bv.innerM && bu.outerM === bv.outerM) continue
+    }
+    if (key === 'placardDash' && Array.isArray(u) && Array.isArray(v)) {
+      if (u.length === v.length && u.every((n, i) => n === v[i])) continue
+    }
+    return false
+  }
+  return true
+}
+
+/** Fresh records keep the previous object where nothing changed, so a node memo holds across a swap. */
+function stableRings(next: EntityRings[], prev: EntityRings[]): EntityRings[] {
+  if (prev.length === 0) return next
+  const byId = new Map(prev.map((r) => [r.entity.id, r]))
+  let reused = 0
+  const out = next.map((r) => {
+    const old = byId.get(r.entity.id)
+    if (!old || !sameRings(r, old)) return r
+    reused++
+    return old
+  })
+  return reused === next.length && prev.length === next.length ? prev : out
+}
+
+const SensorNode = memo(function SensorNode({
   r,
   dim,
-  scale,
   active,
-}: { r: SensorRings; dim: boolean; scale: number; active: boolean }) {
+}: { r: SensorRings; dim: boolean; active: boolean }) {
   const e = r.entity
   const strokeOpacity = r.grey ? 0.35 : dim ? 0.3 : 0.7
   const hot = active && r.held
@@ -533,7 +569,6 @@ function SensorNode({
           bearing={SENSOR_LABEL_BRG}
           text={r.lowLabel}
           color={r.color}
-          scale={scale}
         />
       )}
       {r.highLabel != null && r.contourHighM != null && (
@@ -543,14 +578,13 @@ function SensorNode({
           bearing={SENSOR_LABEL_BRG}
           text={r.highLabel}
           color={r.color}
-          scale={scale}
         />
       )}
     </Group>
   )
-}
+})
 
-function EffectorNode({ r, dim, scale }: { r: EffectorRings; dim: boolean; scale: number }) {
+const EffectorNode = memo(function EffectorNode({ r, dim }: { r: EffectorRings; dim: boolean }) {
   const e = r.entity
   return (
     <Group listening={false} opacity={r.off ? 0.2 : dim ? 0.35 : 0.8}>
@@ -604,7 +638,6 @@ function EffectorNode({ r, dim, scale }: { r: EffectorRings; dim: boolean; scale
           bearing={EFFECTOR_LABEL_BRG}
           text={r.releaseLabel}
           color={r.color}
-          scale={scale}
         />
       )}
       {r.commitLabel != null && r.commitM != null && (
@@ -614,12 +647,11 @@ function EffectorNode({ r, dim, scale }: { r: EffectorRings; dim: boolean; scale
           bearing={EFFECTOR_LABEL_BRG}
           text={r.commitLabel}
           color={r.color}
-          scale={scale}
         />
       )}
     </Group>
   )
-}
+})
 
 /**
  * A jammer footprint is a flashlight beam, not a weapon arc: a solid-edged
@@ -629,7 +661,7 @@ function EffectorNode({ r, dim, scale }: { r: EffectorRings; dim: boolean; scale
  * so a derated transmitter or a hardened link draws a shorter beam than the
  * placard.
  */
-function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
+const JammerNode = memo(function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
   const e = r.entity
   const rangeM = r.rangeM ?? 0
   const full = r.sectorDeg >= 360
@@ -691,9 +723,9 @@ function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
       )}
     </Group>
   )
-}
+})
 
-function AssetNode({ r, dim }: { r: AssetRings; dim: boolean }) {
+const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: boolean }) {
   const e = r.entity
   return (
     <Group listening={false}>
@@ -709,7 +741,7 @@ function AssetNode({ r, dim }: { r: AssetRings; dim: boolean }) {
       />
     </Group>
   )
-}
+})
 
 /**
  * Sensor rings, effector rings and asset defended areas. Never intercepts
@@ -735,7 +767,6 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
   const basemap = useStore((s) => s.ui.basemap)
   const layers = useStore(useShallow((s) => s.ui.layers))
   const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
-  const scale = useStore((s) => s.camera.scale)
   const selectedUasId = useStore((s) => {
     const hit = s.scenario.entities.find(
       (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
@@ -746,8 +777,19 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
   const view = useMemo(() => ({ units, layers, ringOverrides }), [units, layers, ringOverrides])
   // Ring geometry is scenario work, so it must not run on a playback frame.
   // The sweep reaches this layer as a sensor-id set, which changes at the 10 Hz
-  // publication and is not a key here.
-  const rings = useMemo(() => buildRings(scenario, view, selectedUasId), [scenario, view, selectedUasId])
+  // publication and is not a key here. A scenario swap (an edit, an undo)
+  // rebuilds the records, and every record whose fields did not change keeps
+  // its previous object, so the memoized nodes re-render only for the entity
+  // that changed.
+  const prevRings = useRef<EntityRings[]>([])
+  const rings = useMemo(
+    // eslint-disable-next-line react/refs -- the previous records lend identities; one render stale by design
+    () => stableRings(buildRings(scenario, view, selectedUasId), prevRings.current),
+    [scenario, view, selectedUasId],
+  )
+  useEffect(() => {
+    prevRings.current = rings
+  }, [rings])
 
   return (
     <>
@@ -758,12 +800,11 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
               key={r.entity.id}
               r={r}
               dim={dim}
-              scale={scale}
-              active={r.held && activeSensorIds.has(r.entity.id)}
+                  active={r.held && activeSensorIds.has(r.entity.id)}
             />
           )
         }
-        if (r.kind === 'effector') return <EffectorNode key={r.entity.id} r={r} dim={dim} scale={scale} />
+        if (r.kind === 'effector') return <EffectorNode key={r.entity.id} r={r} dim={dim} />
         if (r.kind === 'jammer') return <JammerNode key={r.entity.id} r={r} dim={dim} />
         return <AssetNode key={r.entity.id} r={r} dim={dim} />
       })}

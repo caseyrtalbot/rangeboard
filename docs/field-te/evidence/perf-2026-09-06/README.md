@@ -107,6 +107,87 @@ items (Layer split, timeline cache, first-play hitch, engine hot loop).
 `parity-after.json` is the same probe on the Wave 1 tree. `cmp` against `parity-before.json`
 reports no difference: the `modelFor` index and the `sweepSensorHits` lookup changed no number.
 
+## After Wave 2
+
+Same harness, same scenario, same viewport, captured 2026-09-06 on the Wave 2 tree (three lanes
+integrated: the Layer split and per-frame memo work, the engine hot loop and the presentation
+variant, the recharts grid fix and the panel memo work). Raw output: `profile-dev-wave2.txt` and
+`profile-prod-wave2.txt`. Script milliseconds per phase.
+
+| Phase | Dev after Wave 1 | Dev after Wave 2 | Prod after Wave 1 | Prod after Wave 2 |
+| --- | ---: | ---: | ---: | ---: |
+| Load to first canvas | 542 | 450 | 364 | 326 |
+| Idle 3 s | 5 | 5 | 6 | 6 |
+| Playback 5 s at 1x | 2162 | 1385 | 1103 | 583 |
+| Playback script share of wall time | 42 percent | 28 percent | 21 percent | 12 percent |
+| First-play long task | 127 | none | 82 | none |
+| Zoom, 30 wheel events | 703 | 450 | 169 | 117 |
+| Pan drag, 40 moves | 91 | 82 | 70 | 69 |
+| moveEntity, 20 edits | 1710 | 1339 | n/a | n/a |
+| Select and clear, 10 cycles | 250 | 204 | n/a | n/a |
+| Right tabs, 12 switches | 145 | 93 | n/a | n/a |
+| Lifecycle phases, 9 switches | 540 | 503 | 245 | 239 |
+| Lifecycle forced layouts, 9 switches | 1091 | 33 | about 1080 | 34 |
+| Library drawer, 6 toggles | 78 | 72 | 13 | 16 |
+| Undo and redo, 10 steps | 358 | 271 | n/a | n/a |
+
+Wave 2 acceptance, dev harness, with the prod number beside it where the prod harness has the phase:
+
+| Phase | After Wave 1 | Target | Measured | Met | Prod |
+| --- | ---: | ---: | ---: | --- | ---: |
+| Playback script share | 42 percent | 15 percent | 28 percent | no | 12 percent |
+| First-play long task | 127 ms | 40 ms | none (no long task in the phase, browser check `firstPlay` empty) | yes | none |
+| Phase switch forced layouts | about 120 per switch | 20 | 3.7 per switch; 15 on the first Analyze mount (browser check) | yes | 3.8 |
+| moveEntity per edit | 85 ms | 40 ms | 67 ms | no | n/a |
+| Select and clear per change | 12.5 ms | 10 ms | 10.2 ms (lane runs on the same tree: 6.2 to 10.5) | no | n/a |
+| Zoom per wheel event | 23 ms | 10 ms | 15 ms | no | 3.9 ms |
+| Undo and redo per step | 36 ms | 15 ms | 27 ms | no | n/a |
+
+Engine share in Node, harness scenario, mean of 20 after 2 warm-ups: `assessAllThreats` 98.4 to
+51.8 ms, `resolveEngagements` 12.4 to 12.8 ms, `engagementPicture` 110.8 to 64.6 ms. The
+first-play hitch is gone because the Play stamp no longer replaces the engine identity
+(`markPresentationVariant`, `engineKeyOf`) and a stamp that already matches replaces nothing. The
+phase-switch layouts were recharts `CartesianGrid` measuring the label of every data row of the
+hidden vertical grid (1071 rows at DT) with `getBoundingClientRect` on the first Analyze mount;
+an explicit empty coordinate generator removes them.
+
+Why four dev targets stay open: as after Wave 1, the largest self-time in every open phase is the
+React 19.2 development JSX runtime, which builds an `Error` and a `console.createTask` per element
+and is absent in production. Playback now creates elements for the ten flying formations only
+(their wrapper Group, member Groups, WEZ ring and callout, about 130 elements and 220 Konva
+attribute sets per frame at 120 frames per second); the at-rest nodes, rings and paths no longer
+render on a frame, and the static Layer draws zero times during playback (Konva draw probe:
+static Layer 0, live Layer 180 over 3 s). Zoom re-renders the 54 counter-scale wrappers, the WEZ
+rings, the grid and the tiles, about 550 elements. Undo and redo split between react-konva
+(26 ms per 10 steps), react-dom (50 ms) and the shared JSX runtime (161 ms). moveEntity is the
+engine (65 ms per picture in Node) plus the same scenario-swap render as undo. The next cut in dev
+needs imperative Konva position updates outside render, which the "derived at render" invariant
+forbids; the prod numbers (playback 12 percent, zoom 3.9 ms per event, no long tasks in any phase)
+are the user-facing ones.
+
+## Parity after Wave 2
+
+The same probe on the integrated Wave 2 tree (`PARITY_TAG=wave2`): `cmp` against
+`parity-before.json` reports no difference, so the hoisted sweep terms, the one-pass scan record,
+the shared policy and the presentation variant changed no number. The identical capture is not
+kept as a third copy.
+
+## Memory after Wave 2
+
+CDP heap usage after a forced collection, harness scenario, 30 `moveEntity` edits (`past` 2 to
+32). Lane measurement at the Wave 1 tree: 30.9 to 56.9 MB, of which 20.4 MB was held by `past`
+through `pictureCache` (about 0.68 MB per picture). After the bound of eight retained pictures and
+the timeline cache keyed on the picture's assessments array: 39.9 to 44.6 MB in the browser check
+(`heapAfterEdits`), 0.16 MB per edit.
+
+## Browser check after Wave 2
+
+`browser-check.mjs.txt` now also records the long tasks of the first Space press (`firstPlay`,
+target 40 ms), the forced layouts of one Prepare to Analyze switch and back (`phaseLayouts`, target
+20), and the heap after 30 `moveEntity` edits (`heapAfterEdits`). Results in
+`browser-check-wave2.json`: every Wave 1 assertion still holds, `firstPlay` saw no long task,
+`phaseLayouts` 15 and 1, heap growth 4.7 MB, no page errors.
+
 ## Browser check after Wave 1
 
 `browser-check.mjs.txt` (run as `browser-check.mjs` against the dev server on port 5377, headless

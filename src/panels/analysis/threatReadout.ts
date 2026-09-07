@@ -5,6 +5,7 @@ import { modelFor, pathSpeed } from '../../model/scenario'
 import type { Entity, Scenario } from '../../model/types'
 import { detectionsAt } from '../../playback/detection'
 import type { ThreatAssessment } from '../../playback/sim'
+import type { Sweep } from '../../playback/sweepAt'
 import { liveTracks, threatAltitudeFt } from '../../playback/tracks'
 import { PHASE_STYLE, trackStatesAt } from '../../playback/trackState'
 import type { TrackFileState, TrackPhase, TrackTimeline } from '../../playback/trackState'
@@ -62,6 +63,12 @@ interface ThreatReadoutInput {
   assessments: ThreatAssessment[]
   tS: number
   units: DisplayUnits
+  /**
+   * The sweep at tS when the caller already holds it (`sweepAt`), so the
+   * 10 Hz readout does not rerun the sensor sweep the canvas just ran. Absent,
+   * the readout sweeps for itself.
+   */
+  sweep?: Pick<Sweep, 'hits' | 'states'>
 }
 
 /** One source for the compact overlay and the full threat telemetry rows. */
@@ -72,15 +79,16 @@ export function threatReadoutAt({
   assessments,
   tS,
   units,
+  sweep,
 }: ThreatReadoutInput): ThreatReadoutView {
-  const state = trackStatesAt(timeline, tS).get(entity.id)
+  const state = (sweep?.states ?? trackStatesAt(timeline, tS)).get(entity.id)
   const assessment = assessments.find((candidate) => candidate.uasId === entity.id)
   const model = modelFor(scenario, entity)
   const uas = model?.uas
   const track = liveTracks(scenario, tS).get(entity.id)
   const position = track?.pos ?? entity.pos
   const headingDeg = Math.round(track?.headingDeg ?? entity.headingDeg)
-  const hits = detectionsAt(scenario, tS).get(entity.id) ?? []
+  const hits = (sweep?.hits ?? detectionsAt(scenario, tS)).get(entity.id) ?? []
 
   // A threat without a path has no timeline row. Match the canvas glyph's
   // render-time detection fallback so its status does not disagree with it.

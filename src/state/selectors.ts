@@ -1,5 +1,5 @@
 import type { FrameSnap, RaidWave, Scenario } from '../model/types'
-import { scenarioDurationS } from '../model/scenario'
+import { engineKeyOf, scenarioDurationS } from '../model/scenario'
 import { DT } from '../playback/clock'
 import type { Store } from './store'
 
@@ -30,12 +30,13 @@ export const selectObservedThroughWholeS = (s: Store): number =>
 
 const durationCache = new WeakMap<Scenario, number>()
 
-/** `scenarioDurationS`, cached by scenario identity. */
+/** `scenarioDurationS`, cached by engine identity (`engineKeyOf`). */
 export function durationOf(scenario: Scenario): number {
-  let d = durationCache.get(scenario)
+  const key = engineKeyOf(scenario)
+  let d = durationCache.get(key)
   if (d == null) {
-    d = scenarioDurationS(scenario)
-    durationCache.set(scenario, d)
+    d = scenarioDurationS(key)
+    durationCache.set(key, d)
   }
   return d
 }

@@ -24,6 +24,7 @@ import { LAYER_PRESETS } from './layers'
 import type { McState, PlaybackState, RunResetReason } from './runState'
 import { freshPlayback, IDLE_MC, mcForScenarioChange, playbackForScenarioChange } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
+import { markPresentationVariant } from '../model/scenario'
 import { buildRaid, raidDraftFor } from './raidBuilder'
 import {
   bumpCardVersion,
@@ -366,7 +367,9 @@ export interface Store {
 function withObservedLens(restored: Scenario, current: Scenario): Scenario {
   const stamp = current.observedPresetId ?? null
   if ((restored.observedPresetId ?? null) === stamp) return restored
-  return { ...restored, observedPresetId: stamp }
+  const stamped = { ...restored, observedPresetId: stamp }
+  markPresentationVariant(stamped, restored)
+  return stamped
 }
 
 /** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
@@ -447,10 +450,16 @@ export const useStore = create<Store>()((set, get) => {
    * Stamp the active lens on the scenario as the lens this run is observed
    * under. It is run evidence the debrief export carries, so it goes through
    * `set`: no undo entry, and no run invalidation (`analysisBasisSignature`
-   * never reads it).
+   * never reads it). A stamp that already matches replaces nothing, and a
+   * new stamp is a presentation variant of the current object, so no
+   * engine-keyed cache misses on the Play click.
    */
-  function observedPatch(st: Store): { scenario: Scenario } {
-    return { scenario: { ...st.scenario, observedPresetId: st.ui.analysis.layout.presetId } }
+  function observedPatch(st: Store): { scenario: Scenario } | Record<string, never> {
+    const presetId = st.ui.analysis.layout.presetId
+    if ((st.scenario.observedPresetId ?? null) === presetId) return {}
+    const scenario = { ...st.scenario, observedPresetId: presetId }
+    markPresentationVariant(scenario, st.scenario)
+    return { scenario }
   }
 
   /** Install an analysis view: eager storage write, ui only, never undo history. */

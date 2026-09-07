@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { Circle, Group, Line, RegularPolygon, Text } from 'react-konva'
 import { useStore } from '../../state/store'
 import type { LiveTrack } from '../../playback/tracks'
 import type { ImpactSeverity, LeakerImpact, ThreatWez } from '../../analysis/impact'
 import { SEVERITY_LABEL, SEVERITY_RANK, threatWezList } from '../../analysis/impact'
+import type { DisplayUnits } from '../../geometry/geo'
 import { formatDistance } from '../../geometry/geo'
 import { DANGER_INK } from '../../ui/ink'
 
@@ -23,10 +24,59 @@ function badgeText(severity: ImpactSeverity, ships: number, kg: number, unknown 
   return parts.join(' · ')
 }
 
-/** Constant-px red warning triangle with '!', optional leaker count and label. */
-function Badge({
+function sameWez(a: ThreatWez, b: ThreatWez): boolean {
+  return (
+    a.uasId === b.uasId &&
+    a.kind === b.kind &&
+    a.radiusM === b.radiusM &&
+    a.hasPath === b.hasPath &&
+    a.count === b.count &&
+    a.planCenter.x === b.planCenter.x &&
+    a.planCenter.y === b.planCenter.y
+  )
+}
+
+/** Fresh zones keep the previous object where nothing changed, so a ring memo holds across a swap. */
+function stableWez(next: ThreatWez[], prev: ThreatWez[]): ThreatWez[] {
+  if (prev.length === 0) return next
+  const byId = new Map(prev.map((w) => [w.uasId, w]))
+  let reused = 0
+  const out = next.map((w) => {
+    const old = byId.get(w.uasId)
+    if (!old || !sameWez(w, old)) return w
+    reused++
+    return old
+  })
+  return reused === next.length && prev.length === next.length ? prev : out
+}
+
+/**
+ * WEZ caption. 'PF' = planning factor (expanded in the Analysis panel's About
+ * section): both the impact radii and the stored standoff ranges are planning
+ * factors, not study-derived lethality data.
+ */
+function wezLabel(
+  wez: ThreatWez,
+  warheadKg: number | null | undefined,
+  units: DisplayUnits,
+): string {
+  if (wez.kind === 'standoff') return `WEZ · standoff ${formatDistance(wez.radiusM, units)} · PF`
+  const parts = [`WEZ · r ${formatDistance(wez.radiusM, units)}`]
+  if (warheadKg != null) parts.push(`${warheadKg} kg`)
+  parts.push('PF')
+  if (wez.count > 1) parts.push(`×${wez.count}`)
+  return parts.join(' · ')
+}
+
+/**
+ * Constant-px red warning triangle with '!', optional leaker count and label.
+ * Memoized on primitives: only a SEVERE badge takes a pulse, so the other
+ * badges re-render on no frame once their fade-in is complete.
+ */
+const Badge = memo(function Badge({
   k,
-  pos,
+  x,
+  y,
   xOffPx,
   opacity,
   severity,
@@ -35,7 +85,8 @@ function Badge({
   pulse,
 }: {
   k: number
-  pos: { x: number; y: number }
+  x: number
+  y: number
   xOffPx: number
   opacity: number
   severity: ImpactSeverity
@@ -44,7 +95,7 @@ function Badge({
   pulse: number | null
 }) {
   return (
-    <Group x={pos.x} y={pos.y} scaleX={1 / k} scaleY={1 / k} opacity={opacity}>
+    <Group x={x} y={y} scaleX={1 / k} scaleY={1 / k} opacity={opacity}>
       <Group x={xOffPx} y={-26}>
         {severity === 'severe' && pulse != null && (
           <Circle radius={15 + 4 * pulse} stroke={DANGER_INK} strokeWidth={2} opacity={0.8 - 0.5 * pulse} />
@@ -75,7 +126,55 @@ function Badge({
       </Group>
     </Group>
   )
-}
+})
+
+/**
+ * One WEZ: the faint fill, the dashed ring, the impact mark and the caption.
+ * Memoized on the zone, its live centre and its caption, so a frame re-renders
+ * only the standoff rings that ride a moving track.
+ */
+const WezRing = memo(function WezRing({ wez, cx, cy, label, k }: {
+  wez: ThreatWez
+  cx: number
+  cy: number
+  label: string
+  k: number
+}) {
+  return (
+    <Group opacity={wez.hasPath ? 1 : 0.5}>
+      <Circle x={cx} y={cy} radius={wez.radiusM} fill={DANGER_INK} opacity={0.07} />
+      <Circle
+        x={cx}
+        y={cy}
+        radius={wez.radiusM}
+        stroke={DANGER_INK}
+        strokeWidth={1.5}
+        dash={WEZ_DASH}
+        strokeScaleEnabled={false}
+        opacity={0.85}
+      />
+      {wez.kind === 'impact' && (
+        <Group x={wez.planCenter.x} y={wez.planCenter.y} scaleX={1 / k} scaleY={1 / k}>
+          <Line points={IMPACT_X_DOWN} stroke={DANGER_INK} strokeWidth={1.5} />
+          <Line points={IMPACT_X_UP} stroke={DANGER_INK} strokeWidth={1.5} />
+        </Group>
+      )}
+      <Group x={cx} y={cy + wez.radiusM} scaleX={1 / k} scaleY={1 / k}>
+        <Text
+          text={label}
+          fontFamily={MONO}
+          fontSize={10}
+          fill={DANGER_INK}
+          x={-110}
+          y={6}
+          width={220}
+          align="center"
+          opacity={0.9}
+        />
+      </Group>
+    </Group>
+  )
+})
 
 /**
  * Threat weapon-engagement zones and leaker I&W badges.
@@ -110,22 +209,31 @@ export function ThreatWezLayer({
   const show = useStore((s) => s.ui.layers.threatWez)
   const units = useStore((s) => s.ui.units)
 
-  const wezList = useMemo(() => threatWezList(scenario), [scenario])
+  // A scenario swap rebuilds the zones; a zone whose fields did not change
+  // keeps its previous object, so its memoized ring re-renders only on a zoom.
+  const prevWez = useRef<ThreatWez[]>([])
+  const wezList = useMemo(
+    // eslint-disable-next-line react/refs -- the previous zones lend identities; one render stale by design
+    () => stableWez(threatWezList(scenario), prevWez.current),
+    [scenario],
+  )
+  useEffect(() => {
+    prevWez.current = wezList
+  }, [wezList])
   const entityById = (id: string | null) =>
     id == null ? undefined : scenario.entities.find((e) => e.id === id)
 
-  function wezLabel(wez: ThreatWez): string {
-    // 'PF' = planning factor (expanded in the Analysis panel's About section):
-    // both the impact radii and the stored standoff ranges are planning
-    // factors, not study-derived lethality data.
-    if (wez.kind === 'standoff') return `WEZ · standoff ${formatDistance(wez.radiusM, units)} · PF`
-    const uas = scenario.library.find((m) => m.id === entityById(wez.uasId)?.specId)?.uas
-    const parts = [`WEZ · r ${formatDistance(wez.radiusM, units)}`]
-    if (uas?.warheadKg != null) parts.push(`${uas.warheadKg} kg`)
-    parts.push('PF')
-    if (wez.count > 1) parts.push(`×${wez.count}`)
-    return parts.join(' · ')
-  }
+  // Captions are scenario and unit work, so they are built once per zone list
+  // and never on a frame.
+  const wezLabels = useMemo(() => {
+    const out = new Map<string, string>()
+    for (const wez of wezList) {
+      const owner = scenario.entities.find((e) => e.id === wez.uasId)
+      const uas = scenario.library.find((m) => m.id === owner?.specId)?.uas
+      out.set(wez.uasId, wezLabel(wez, uas?.warheadKg, units))
+    }
+    return out
+  }, [wezList, scenario, units])
 
   // Planning view: one summary badge per asset over its MODERATE+ leakers.
   const planBadges = useMemo(() => {
@@ -176,38 +284,14 @@ export function ThreatWezLayer({
               ? (tracks.get(wez.uasId)?.pos ?? wez.planCenter)
               : wez.planCenter
           return (
-            <Group key={wez.uasId} opacity={wez.hasPath ? 1 : 0.5}>
-              <Circle x={center.x} y={center.y} radius={wez.radiusM} fill={DANGER_INK} opacity={0.07} />
-              <Circle
-                x={center.x}
-                y={center.y}
-                radius={wez.radiusM}
-                stroke={DANGER_INK}
-                strokeWidth={1.5}
-                dash={WEZ_DASH}
-                strokeScaleEnabled={false}
-                opacity={0.85}
-              />
-              {wez.kind === 'impact' && (
-                <Group x={wez.planCenter.x} y={wez.planCenter.y} scaleX={1 / k} scaleY={1 / k}>
-                  <Line points={IMPACT_X_DOWN} stroke={DANGER_INK} strokeWidth={1.5} />
-                  <Line points={IMPACT_X_UP} stroke={DANGER_INK} strokeWidth={1.5} />
-                </Group>
-              )}
-              <Group x={center.x} y={center.y + wez.radiusM} scaleX={1 / k} scaleY={1 / k}>
-                <Text
-                  text={wezLabel(wez)}
-                  fontFamily={MONO}
-                  fontSize={10}
-                  fill={DANGER_INK}
-                  x={-110}
-                  y={6}
-                  width={220}
-                  align="center"
-                  opacity={0.9}
-                />
-              </Group>
-            </Group>
+            <WezRing
+              key={wez.uasId}
+              wez={wez}
+              cx={center.x}
+              cy={center.y}
+              label={wezLabels.get(wez.uasId) ?? ''}
+              k={k}
+            />
           )
         })}
       {displayTimeS <= 0 &&
@@ -218,7 +302,8 @@ export function ThreatWezLayer({
             <Badge
               key={assetId}
               k={k}
-              pos={asset.pos}
+              x={asset.pos.x}
+              y={asset.pos.y}
               xOffPx={0}
               opacity={1}
               severity={b.severity}
@@ -237,13 +322,15 @@ export function ThreatWezLayer({
           <Badge
             key={i.uasId}
             k={k}
-            pos={asset.pos}
+            x={asset.pos.x}
+            y={asset.pos.y}
             xOffPx={stack * 30}
             opacity={fade}
             severity={i.severity!}
             count={1}
             label={badgeText(i.severity!, i.expectedShipsArriving, i.expectedWarheadKg)}
-            pulse={pulse}
+            // Only a SEVERE badge draws the pulse ring, so only it takes the phase.
+            pulse={i.severity === 'severe' ? pulse : null}
           />
         )
       })}

@@ -43,6 +43,13 @@ const X_AXIS_H = 16
 const LINE_W = 1.6
 const DOT_R = 2.4
 
+/**
+ * The grid draws no vertical lines. `vertical={false}` only hides them: Recharts still runs
+ * its default generator, which measures the label of every data row in the DOM (one forced
+ * layout per row, about a thousand on first mount). A generator with no lines skips that.
+ */
+const NO_VERTICAL_LINES = (): number[] => []
+
 /** One Recharts row: the time plus one key per series and per band. */
 type SeriesRow = Record<string, number | [number, number] | null>
 
@@ -228,7 +235,11 @@ export function TimeSeriesPlot({
       onMouseMove={scrub.onMouseMove}
       className={onScrub ? 'chart-scrub' : undefined}
     >
-      <CartesianGrid stroke={tokens.grid} vertical={false} />
+      <CartesianGrid
+        stroke={tokens.grid}
+        vertical={false}
+        verticalCoordinatesGenerator={NO_VERTICAL_LINES}
+      />
       <XAxis
         dataKey="t"
         type="number"

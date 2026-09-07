@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react'
+import { memo, useCallback, useId, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { BUILTIN_LENSES } from '../../state/analysisLayout'
 import { useStore } from '../../state/store'
@@ -8,8 +8,11 @@ interface AnalysisNavigationProps {
   onNavigate?: () => void
 }
 
-/** Persistent analysis view navigation and the user-owned lens controls. */
-export function AnalysisNavigation({ onNavigate }: AnalysisNavigationProps) {
+/**
+ * Persistent analysis view navigation and the user-owned lens controls. Memoized:
+ * `App` passes one stable `onNavigate`, so its selection renders stop here.
+ */
+export const AnalysisNavigation = memo(function AnalysisNavigation({ onNavigate }: AnalysisNavigationProps) {
   const presetId = useStore((state) => state.ui.analysis.layout.presetId)
   const customize = useStore((state) => state.ui.analysisCustomize)
   const applyLens = useStore((state) => state.applyLens)
@@ -91,4 +94,4 @@ export function AnalysisNavigation({ onNavigate }: AnalysisNavigationProps) {
       </div>
     </nav>
   )
-}
+})

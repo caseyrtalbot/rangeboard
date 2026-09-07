@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "c9ef9bc1f5d1449cf64964fb03218fd58728955a1265163a4fa491b475fe4770",
-      "reviewedAt": "2026-09-06",
-      "note": "Wave 1: App.tsx now subscribes to selection primitives and memoizes its canvas handlers; the setup, persistence and workspace narrative in the README is unchanged and still accurate."
+      "sha256": "a99701b78fb173bcd3a612699d5de9a4bb1bca1a87cff3b83963393880813b28",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 2: App.tsx memoizes its lifecycle nav, resource rail and panel tabs with stable handlers; the setup, persistence and workspace narrative is unchanged and still accurate."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "4db094dc7d80647bbd2d1c53c9601780ed3c1473b680b90f978cc0d21805f48f",
-      "reviewedAt": "2026-09-06",
-      "note": "Wave 1 performance hot fixes across App, store, panels and canvas: checked the Library drawer L and Escape claim, rotation, selection and undo/redo rows against the browser check; no user-facing behavior changed, so the guide stands."
+      "sha256": "35635aedc72e78e457cf8380f336de567784a44d8c7321b63a5e8a9cfc1b2c75",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 2 structural performance: canvas Layer split, shared sweep and timeline caches, engine hot loop, first-play stamp, picture cache bound, recharts grid fix, panel memo work. Checked the laydown, range, play and analyze rows and the undo narrative; no user-facing behavior changed, so the guide stands."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9ec06337d582cc4fa86a7f6cb0450d52b24b0ca834a846ac6eba19d0188729c4",
-      "reviewedAt": "2026-09-06",
-      "note": "Wave 1: added the Konva conventions for constant dash and point arrays, camera.scale subscriptions, rotation preview with one dragend commit, the cursor ref and HudLayer listener, and the App primitive subscriptions with the select and setRightTab no-op guards; the data-flow line now covers rotate."
+      "sha256": "55e11494a216e1b3d747a43b8c1bb19d9b23508b6e20c0fbe9bccb6cc1bc1bc4",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 2: two scene Layers (StaticScene and LiveScene) with the frame clock in the live Layer, the per-publication sweepAt memo and trackTimelineOf cache keyed on engineKeyOf, per-frame element rules, the presentation-variant stamp in the undo model, engagementPicture keyed on engine identity and bounded to eight pictures, prepareSweep in the map, and the recharts CartesianGrid generator rule in the charts bullet."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "b9c1bca2197f5a78e07d96bbef0ab70e88c5bc14c24af841628ac6281589f1b3",
-      "reviewedAt": "2026-09-06",
-      "note": "Reviewed both viewport sizes, persistent navigation, compact readout, readable evidence fields, keyboard disclosures and bounded layout tools."
+      "sha256": "268b190bb9d88ee4d6ef58a67f5a02dd23cabd196f53bb58a16e7a8934f5a151",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 2: TimeSeries gives its CartesianGrid an empty vertical coordinate generator; the vertical lines were already hidden, so no token, color, spacing or type rule changed and the document stands."
     }
   ],
   "historical": [

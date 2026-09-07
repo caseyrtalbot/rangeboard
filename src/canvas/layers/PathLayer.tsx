@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Arrow, Circle, Group, Line, Text } from 'react-konva'
 import type { FlightPath, Vec2 } from '../../model/types'
 import type { UiState } from '../../state/store'
@@ -6,11 +6,9 @@ import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
-import type { LiveTrack } from '../../playback/tracks'
 
 interface Props {
   mouseWorld: Vec2 | null
-  tracks: Map<string, LiveTrack>
 }
 
 /** Fixed dash arrays: an inline literal is re-set on every render. */
@@ -20,16 +18,18 @@ const DRAFT_DASH = [6, 4]
 /**
  * One committed flight path. The flattened point list is memoized on the
  * path's own points, so a playback frame or a zoom leaves the array identity
- * alone and Konva does not re-set it.
+ * alone and Konva does not re-set it. Memoized on the path and its caption
+ * inputs; the zoom is read here, so an unrelated path edit re-renders only
+ * the path that changed.
  */
-function FlightPathShape({ path, color, lengthM, etaS, units, k }: {
+const FlightPathShape = memo(function FlightPathShape({ path, color, lengthM, etaS, units }: {
   path: FlightPath
   color: string
   lengthM: number
   etaS: number
   units: UiState['units']
-  k: number
 }) {
+  const k = useStore((s) => s.camera.scale)
   const flat = useMemo(() => path.points.flatMap((pt) => [pt.x, pt.y]), [path.points])
   const last = path.points[path.points.length - 1]
   return (
@@ -59,7 +59,7 @@ function FlightPathShape({ path, color, lengthM, etaS, units, k }: {
       </Group>
     </Group>
   )
-}
+})
 
 /** The rubber band of a boundary or path draft, from its start to the cursor. */
 function DraftShape({ start, draftPoints, mouseWorld, k }: {
@@ -93,7 +93,13 @@ function DraftShape({ start, draftPoints, mouseWorld, k }: {
 /** Flight paths, in-progress drafts, and calibration markers. */
 export function PathLayer({ mouseWorld }: Props) {
   const scenario = useStore((s) => s.scenario)
-  const ui = useStore((s) => s.ui)
+  // Field subscriptions, not the whole `ui`: an unrelated ui action must not
+  // re-render every path.
+  const tool = useStore((s) => s.ui.tool)
+  const draftPoints = useStore((s) => s.ui.draftPoints)
+  const pathEntityId = useStore((s) => s.ui.pathEntityId)
+  const calibrateA = useStore((s) => s.ui.calibrateA)
+  const calibrateB = useStore((s) => s.ui.calibrateB)
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
@@ -113,24 +119,23 @@ export function PathLayer({ mouseWorld }: Props) {
         lengthM={lengthM}
         etaS={lengthM / pathSpeed(scenario, p)}
         units={units}
-        k={k}
       />
     )
   })
 
   let draft = null
-  if ((ui.tool === 'boundary' || ui.tool === 'path') && (ui.draftPoints.length > 0 || ui.pathEntityId)) {
+  if ((tool === 'boundary' || tool === 'path') && (draftPoints.length > 0 || pathEntityId)) {
     const start =
-      ui.tool === 'path' && ui.pathEntityId
-        ? scenario.entities.find((e) => e.id === ui.pathEntityId)?.pos
+      tool === 'path' && pathEntityId
+        ? scenario.entities.find((e) => e.id === pathEntityId)?.pos
         : undefined
-    draft = <DraftShape start={start} draftPoints={ui.draftPoints} mouseWorld={mouseWorld} k={k} />
+    draft = <DraftShape start={start} draftPoints={draftPoints} mouseWorld={mouseWorld} k={k} />
   }
 
   let calibrate = null
-  if (ui.tool === 'calibrate' && (ui.calibrateA || ui.calibrateB)) {
-    const a = ui.calibrateA
-    const b = ui.calibrateB ?? mouseWorld
+  if (tool === 'calibrate' && (calibrateA || calibrateB)) {
+    const a = calibrateA
+    const b = calibrateB ?? mouseWorld
     calibrate = (
       <Group listening={false}>
         {a && <CalMark p={a} k={k} label="A" />}
@@ -152,7 +157,7 @@ export function PathLayer({ mouseWorld }: Props) {
             </Group>
           </>
         )}
-        {ui.calibrateB && <CalMark p={ui.calibrateB} k={k} label="B" />}
+        {calibrateB && <CalMark p={calibrateB} k={k} label="B" />}
       </Group>
     )
   }

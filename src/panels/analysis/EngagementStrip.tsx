@@ -228,8 +228,9 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
  * Engagement timeline lane strip: detection, classification, window, shot, arrival per threat.
  * Under the board it owns a collapse header and persists its open flag. `embedded` (inside a
  * widget frame, which has its own header) renders it open with no header and no storage.
+ * Memoized: `App` re-renders on every selection change and the strip reads none of it.
  */
-export function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
+export const EngagementStrip = memo(function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
   const scenario = useStore((s) => s.scenario)
   const [openFlag, setOpen] = useState(
     () => !embedded && readSetting(OPEN_KEY) === '1',
@@ -420,4 +421,4 @@ export function EngagementStrip({ embedded = false }: { embedded?: boolean } = {
       )}
     </div>
   )
-}
+})

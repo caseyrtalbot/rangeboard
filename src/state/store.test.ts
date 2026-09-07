@@ -9,6 +9,7 @@ import { IDLE_MC, IDLE_SENSITIVITY } from './runState'
 import { defaultAnalysisView } from './analysisLayout'
 import type { AnalysisViewState } from './analysisLayout'
 import { emptyScenario } from '../model/seed'
+import { engineKeyOf } from '../model/scenario'
 import type { Scenario } from '../model/types'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import {
@@ -420,6 +421,24 @@ describe('run-scoped playback lifecycle', () => {
     useStore.getState().redo()
     expect(useStore.getState().scenario.name).toBe('renamed')
     expect(useStore.getState().scenario.observedPresetId).toBe('sensors')
+  })
+
+  it('a stamp is a presentation variant, and a matching stamp replaces nothing', () => {
+    useStore.getState().applyLens('sensors')
+    const before = useStore.getState().scenario
+    useStore.getState().resetRun('manual')
+    const stamped = useStore.getState().scenario
+    expect(stamped).not.toBe(before)
+    expect(engineKeyOf(stamped)).toBe(engineKeyOf(before))
+    // The first Play under the same lens keeps the object, so no scenario memo misses.
+    useStore.getState().startRun()
+    expect(useStore.getState().scenario).toBe(stamped)
+    useStore.getState().pauseRun()
+    useStore.getState().setScenarioName('edited')
+    const edited = useStore.getState().scenario
+    expect(engineKeyOf(edited)).toBe(edited)
+    useStore.getState().undo()
+    expect(engineKeyOf(useStore.getState().scenario)).toBe(engineKeyOf(before))
   })
 
   it('a fresh scenario carries no observed lens', () => {

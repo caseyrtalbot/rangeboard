@@ -9,11 +9,12 @@ import { selectDurationS } from '../state/selectors'
 import { displayTimeNow } from './frameClock'
 import { liveTracks } from '../playback/tracks'
 import { engagementPicture } from '../analysis/impact'
-import { buildTrackTimeline } from '../playback/trackState'
+import { trackTimelineOf } from '../playback/trackState'
 import { GridLayer } from './layers/GridLayer'
 import { TileLayer } from './layers/TileLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
 import { LiveScene } from './LiveScene'
+import { StaticScene } from './StaticScene'
 import { HudLayer } from './layers/HudLayer'
 import { TrackFileReadout } from './TrackFileReadout'
 import { ContextMenu } from './ContextMenu'
@@ -115,12 +116,10 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
   // per scenario object with AnalysisPanel (module-level WeakMap in impact.ts).
   const picture = useMemo(() => engagementPicture(scenario), [scenario])
   const { assessments, report, impacts } = picture
-  // One prefix-aggregated timeline per sweep. The per-frame queries in
-  // LiveScene are binary searches over it, so no layer ever rebuilds it.
-  const timeline = useMemo(
-    () => buildTrackTimeline(scenario, assessments, report),
-    [scenario, assessments, report],
-  )
+  // One prefix-aggregated timeline per scenario, cached by scenario identity
+  // and shared with the threat pane. The per-frame queries in LiveScene are
+  // binary searches over it, so no layer ever rebuilds it.
+  const timeline = trackTimelineOf(scenario, assessments, report)
 
   function toWorld(pointer: Vec2): Vec2 {
     return { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
@@ -354,6 +353,13 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
         </Layer>
         <Layer listening={false}>
           <GridLayer size={size} />
+        </Layer>
+        {/* Two Konva Layers, two canvases: the static rings repaint only when
+            the scenario, the camera or a sensor hold changes; the live layer
+            repaints per animation frame. Child order across the two keeps
+            today's z-order. */}
+        <Layer>
+          <StaticScene scenario={scenario} timeline={timeline} />
         </Layer>
         <Layer>
           <LiveScene

@@ -12,6 +12,7 @@ import {
   wezKindFor,
   wezRadiusM,
 } from './impact'
+import { markPresentationVariant } from '../model/scenario'
 
 /** UAS model builder; base spec has none of the weapon fields (legacy shape). */
 function uasModel(patch: Partial<UasSpec>, id = 'tst-uas'): SpecModel {
@@ -417,5 +418,21 @@ describe('engagementPicture memoization', () => {
     // mutate() replaces the scenario object; a new object recomputes.
     const clone = JSON.parse(JSON.stringify(scenario)) as Scenario
     expect(engagementPicture(clone)).not.toBe(a)
+  })
+
+  it('reuses the picture of a presentation variant and bounds the retained pictures', () => {
+    const { scenario } = scenarioWith(
+      uasModel({ weaponProfile: 'impact', warheadKg: 40, effectRadiusM: 50 }),
+      { x: 0, y: 0 },
+    )
+    const a = engagementPicture(scenario)
+    const stamped = { ...scenario, observedPresetId: 'sensors' }
+    markPresentationVariant(stamped, scenario)
+    expect(engagementPicture(stamped)).toBe(a)
+    // Nine other scenarios push the first out of the retained set; the most recent stays.
+    const others = Array.from({ length: 9 }, () => ({ ...scenario }))
+    const pictures = others.map((s) => engagementPicture(s))
+    expect(engagementPicture(others[8])).toBe(pictures[8])
+    expect(engagementPicture(scenario)).not.toBe(a)
   })
 })

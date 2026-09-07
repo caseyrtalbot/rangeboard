@@ -1,5 +1,6 @@
 import type { ImpactSeverity, Scenario, SpecModel, Vec2 } from '../model/types'
 import { entityActive } from '../model/types'
+import { engineKeyOf } from '../model/scenario'
 import { defaultEffectRadiusM, defaultWeaponProfile } from '../model/weaponFactors'
 import type { ThreatAssessment } from '../playback/sim'
 import { assessAllThreats } from '../playback/sim'
@@ -242,19 +243,43 @@ export interface EngagementPicture {
 
 /**
  * One shared assessment, attrition and impact computation per scenario, memoized in a
- * WeakMap keyed on the scenario object. Every scenario change goes through mutate(),
- * which replaces the object, so identity is a sound cache key.
+ * WeakMap keyed on the scenario's engine identity (`engineKeyOf`, so a presentation
+ * stamp reuses the picture). Every scenario change goes through mutate(), which
+ * replaces the object, so identity is a sound cache key.
  */
 const pictureCache = new WeakMap<Scenario, EngagementPicture>()
 
+/**
+ * Pictures retained at once. The undo history keeps up to 100 scenarios
+ * alive, and a WeakMap alone would keep every one's picture with it. The
+ * most recently used keys stay cached; an older one is dropped and a deep
+ * undo recomputes that one picture. The current scenario is always the most
+ * recent, so it is never the one evicted.
+ */
+const PICTURE_LIMIT = 8
+const recentKeys: Scenario[] = []
 
+function touchKey(key: Scenario): void {
+  const at = recentKeys.indexOf(key)
+  if (at === recentKeys.length - 1 && at >= 0) return
+  if (at >= 0) recentKeys.splice(at, 1)
+  recentKeys.push(key)
+  if (recentKeys.length > PICTURE_LIMIT) pictureCache.delete(recentKeys.shift()!)
+}
+
+/** The deterministic picture of a scenario, computed once per engine identity. */
 export function engagementPicture(scenario: Scenario): EngagementPicture {
-  const hit = pictureCache.get(scenario)
-  if (hit) return hit
-  const assessments = assessAllThreats(scenario)
-  const report = resolveEngagements(scenario, assessments)
-  const impacts = assessLeakerImpacts(scenario, assessments, report)
+  const key = engineKeyOf(scenario)
+  const hit = pictureCache.get(key)
+  if (hit) {
+    touchKey(key)
+    return hit
+  }
+  const assessments = assessAllThreats(key)
+  const report = resolveEngagements(key, assessments)
+  const impacts = assessLeakerImpacts(key, assessments, report)
   const picture: EngagementPicture = { assessments, report, impacts }
-  pictureCache.set(scenario, picture)
+  pictureCache.set(key, picture)
+  touchKey(key)
   return picture
 }

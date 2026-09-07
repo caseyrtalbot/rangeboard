@@ -559,16 +559,38 @@ const INTEGRATION_MARK: Record<IntegrationConfidence, ProvKind> = {
   inferred: 'inferred',
 }
 
+type IntegrationSummary = ReturnType<typeof integrationSummary>
+
+const integrationCache = new WeakMap<SpecModel[], Map<string | null, IntegrationSummary>>()
+
+/**
+ * `integrationSummary` keyed by library identity and spec id. The section mounts on
+ * every selection, so a per-render memo would recompute it each time.
+ */
+function cachedIntegrationSummary(specId: string | null, library: SpecModel[]): IntegrationSummary {
+  let byId = integrationCache.get(library)
+  if (!byId) {
+    byId = new Map()
+    integrationCache.set(library, byId)
+  }
+  let summary = byId.get(specId)
+  if (summary === undefined) {
+    summary = integrationSummary(specId, library)
+    byId.set(specId, summary)
+  }
+  return summary
+}
+
 /**
  * What this system is known to integrate with (research-sourced), independent
  * of what is currently on the canvas. Answers "what connects to this?" even
  * when nothing compatible is placed yet.
  */
 function IntegrationSection({ entity }: { entity: Entity }) {
-  const scenario = useStore((s) => s.scenario)
+  const library = useStore((s) => s.scenario.library)
   const openConnectSuggestion = useStore((s) => s.openConnectSuggestion)
   const [showAll, setShowAll] = useState(false)
-  const summary = integrationSummary(entity.specId, scenario.library)
+  const summary = cachedIntegrationSummary(entity.specId, library)
   if (!summary) return null
   const shown = showAll ? summary.partners : summary.partners.slice(0, 6)
 

@@ -1,5 +1,5 @@
 import { modelsForEntity } from '../analysis/fidelity'
-import { modelFor } from '../model/scenario'
+import type { SpecModel } from '../model/types'
 import { useStore } from '../state/store'
 import { DetailPane } from './analysis/detail/DetailPane'
 import { DetailOverviewContext } from './analysis/detail/DetailNavigation'
@@ -16,6 +16,42 @@ const SECTIONS: Array<{ id: EntityWorkspaceSection; label: string }> = [
   { id: 'model', label: 'Model basis' },
 ]
 
+/**
+ * The Model basis section. It lists the linked instances, so it is the one part of the
+ * workspace that reads the entity list; it subscribes here so the header and the tabs
+ * do not re-render on an edit to some other entity.
+ */
+function ModelBasis({ entityId, model }: { entityId: string; model: SpecModel }) {
+  const scenario = useStore((s) => s.scenario)
+  const linked = scenario.entities.filter((item) => item.specId === model.id)
+  const tags = modelsForEntity(scenario, entityId)
+  return (
+    <>
+      <div className="inspector-body insp entity-model-scope">
+        <Section label="Shared model">
+          <p>{model.name}</p>
+          <p>Edits to this model affect all {linked.length} linked {linked.length === 1 ? 'instance' : 'instances'}.</p>
+          <ul aria-label="Linked instances">
+            {linked.map((item) => <li key={item.id}>{item.name || 'Unnamed entity'} · {item.id}</li>)}
+          </ul>
+          <p>Deleting this model removes the link from these instances. Their board configuration remains.</p>
+        </Section>
+        <Section label="Model fidelity">
+          {tags.length > 0 ? tags.map((tag) => (
+            <div key={tag.id}>
+              <span className="fid-tag" data-tier={tag.tier} data-validation={tag.validation} title={tag.note}>
+                {tag.label} · {tag.tier} · {tag.validation}
+              </span>
+              <p>{tag.note}</p>
+            </div>
+          )) : <p>No active engine fidelity tags apply to this entity.</p>}
+        </Section>
+      </div>
+      <LibraryEditor key={model.id} modelId={model.id} />
+    </>
+  )
+}
+
 /** One selected Board entity, with navigation outside its shared scroll region. */
 export function EntityWorkspace({
   entityId,
@@ -30,11 +66,11 @@ export function EntityWorkspace({
   onOverview: () => void
   onOpenSettings?: () => void
 }) {
-  const scenario = useStore((s) => s.scenario)
-  const entity = scenario.entities.find((item) => item.id === entityId)
-  const model = entity ? modelFor(scenario, entity) : undefined
-  const linked = model ? scenario.entities.filter((item) => item.specId === model.id) : []
-  const tags = model ? modelsForEntity(scenario, entityId) : []
+  // The entity and the library are stable references between edits to them, so an
+  // edit elsewhere on the board leaves this shell alone.
+  const entity = useStore((s) => s.scenario.entities.find((item) => item.id === entityId))
+  const library = useStore((s) => s.scenario.library)
+  const model = entity?.specId != null ? library.find((m) => m.id === entity.specId) : undefined
   const hasTelemetry = entity && ['sensor', 'effector', 'uas', 'c2'].includes(entity.kind)
 
   return (
@@ -85,29 +121,7 @@ export function EntityWorkspace({
         ) : section === 'configure' ? (
           <Inspector entityId={entity.id} />
         ) : section === 'model' ? model ? (
-          <>
-            <div className="inspector-body insp entity-model-scope">
-              <Section label="Shared model">
-                <p>{model.name}</p>
-                <p>Edits to this model affect all {linked.length} linked {linked.length === 1 ? 'instance' : 'instances'}.</p>
-                <ul aria-label="Linked instances">
-                  {linked.map((item) => <li key={item.id}>{item.name || 'Unnamed entity'} · {item.id}</li>)}
-                </ul>
-                <p>Deleting this model removes the link from these instances. Their board configuration remains.</p>
-              </Section>
-              <Section label="Model fidelity">
-                {tags.length > 0 ? tags.map((tag) => (
-                  <div key={tag.id}>
-                    <span className="fid-tag" data-tier={tag.tier} data-validation={tag.validation} title={tag.note}>
-                      {tag.label} · {tag.tier} · {tag.validation}
-                    </span>
-                    <p>{tag.note}</p>
-                  </div>
-                )) : <p>No active engine fidelity tags apply to this entity.</p>}
-              </Section>
-            </div>
-            <LibraryEditor key={model.id} modelId={model.id} />
-          </>
+          <ModelBasis entityId={entity.id} model={model} />
         ) : (
           <div className="inspector-body insp">
             <EmptyState title="No linked model" body="This entity has no available library model. Choose a model in Configure to inspect and edit its shared specification and sources." />

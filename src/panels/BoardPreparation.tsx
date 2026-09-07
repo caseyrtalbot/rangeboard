@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { engagementPicture } from '../analysis/impact'
 import type { RunValidityFinding } from '../analysis/runValidity'
 import { assessRunValidity } from '../analysis/runValidity'
 import type { Entity } from '../model/types'
+import type { ThreatAssessment } from '../playback/sim'
 import { entityActive, runSettings } from '../model/types'
 import { KIND_NAMES, formatRunLabel } from '../state/labels'
 import { useStore } from '../state/store'
@@ -46,6 +47,77 @@ function PrepareMcPopover({ run }: { run: ReturnType<typeof runSettings> }) {
   const mc = useStore((state) => state.mc)
   return <McPopover run={run} mc={mc} />
 }
+
+/**
+ * One register row. Memoized on the entity and its assessment, so an undo that moves
+ * one entity re-renders one row, not the whole register.
+ */
+const EntityRegisterRow = memo(function EntityRegisterRow({
+  entity,
+  assessment,
+}: {
+  entity: Entity
+  assessment: ThreatAssessment | undefined
+}) {
+  const state = !entityActive(entity)
+    ? 'Disabled'
+    : assessment
+      ? titleCaseStatus(assessment.status)
+      : 'Enabled'
+  return (
+    <button
+      className="board-object prepare-entity"
+      type="button"
+      aria-label={`Inspect ${entity.name}`}
+      onClick={() => openEntityInspector(entity.id)}
+    >
+      <span className="prepare-entity-name">{entity.name}</span>
+      <span className="prepare-entity-meta">
+        {KIND_NAMES[entity.kind]} · {entity.id}
+      </span>
+      <span className="prepare-entity-state">{state}</span>
+    </button>
+  )
+})
+
+/**
+ * The three scenario-input disclosures. Each settings form subscribes on its own, so
+ * this memoized shell keeps a Prepare re-render from re-creating their elements.
+ */
+const PrepareSettings = memo(function PrepareSettings() {
+  return (
+    <div className="prepare-settings">
+      <details id="prepare-environment" className="prepare-setting">
+        <summary>Environment</summary>
+        <div className="prepare-setting-body">
+          <p className="prepare-setting-impact muted small">
+            Scenario · Conditions affect modeled sensor performance and threat reach when
+            effects are enabled.
+          </p>
+          <EnvironmentSettings />
+        </div>
+      </details>
+      <details id="prepare-doctrine" className="prepare-setting">
+        <summary>Fire doctrine</summary>
+        <div className="prepare-setting-body">
+          <p className="prepare-setting-impact muted small">
+            Scenario · ROE and doctrine govern modeled engagement eligibility and timing.
+          </p>
+          <FireDoctrineSettings />
+        </div>
+      </details>
+      <details id="prepare-requirements" className="prepare-setting">
+        <summary>Requirement inputs</summary>
+        <div className="prepare-setting-body">
+          <p className="prepare-setting-impact muted small">
+            Scenario · Operator-defined thresholds; unspecified inputs remain unspecified.
+          </p>
+          <RequirementSettings />
+        </div>
+      </details>
+    </div>
+  )
+})
 
 /** Prepare-stage overview for the current Board scenario and playback run. */
 export function BoardPreparation() {
@@ -97,36 +169,7 @@ export function BoardPreparation() {
       </div>
 
       <Section label="Scenario inputs">
-        <div className="prepare-settings">
-          <details id="prepare-environment" className="prepare-setting">
-            <summary>Environment</summary>
-            <div className="prepare-setting-body">
-              <p className="prepare-setting-impact muted small">
-                Scenario · Conditions affect modeled sensor performance and threat reach when
-                effects are enabled.
-              </p>
-              <EnvironmentSettings />
-            </div>
-          </details>
-          <details id="prepare-doctrine" className="prepare-setting">
-            <summary>Fire doctrine</summary>
-            <div className="prepare-setting-body">
-              <p className="prepare-setting-impact muted small">
-                Scenario · ROE and doctrine govern modeled engagement eligibility and timing.
-              </p>
-              <FireDoctrineSettings />
-            </div>
-          </details>
-          <details id="prepare-requirements" className="prepare-setting">
-            <summary>Requirement inputs</summary>
-            <div className="prepare-setting-body">
-              <p className="prepare-setting-impact muted small">
-                Scenario · Operator-defined thresholds; unspecified inputs remain unspecified.
-              </p>
-              <RequirementSettings />
-            </div>
-          </details>
-        </div>
+        <PrepareSettings />
       </Section>
 
       <Section label="Run validity" note={`${validity.findings.length} findings`}>
@@ -170,29 +213,13 @@ export function BoardPreparation() {
           {scenario.entities.length === 0 ? (
             <p className="muted small">No entities are placed in this scenario.</p>
           ) : (
-            scenario.entities.map((entity) => {
-              const assessment = assessmentByEntity.get(entity.id)
-              const state = !entityActive(entity)
-                ? 'Disabled'
-                : assessment
-                  ? titleCaseStatus(assessment.status)
-                  : 'Enabled'
-              return (
-                <button
-                  className="board-object prepare-entity"
-                  type="button"
-                  key={entity.id}
-                  aria-label={`Inspect ${entity.name}`}
-                  onClick={() => openEntityInspector(entity.id)}
-                >
-                  <span className="prepare-entity-name">{entity.name}</span>
-                  <span className="prepare-entity-meta">
-                    {KIND_NAMES[entity.kind]} · {entity.id}
-                  </span>
-                  <span className="prepare-entity-state">{state}</span>
-                </button>
-              )
-            })
+            scenario.entities.map((entity) => (
+              <EntityRegisterRow
+                key={entity.id}
+                entity={entity}
+                assessment={assessmentByEntity.get(entity.id)}
+              />
+            ))
           )}
         </div>
       </Section>

@@ -8,6 +8,7 @@ import type { ThreatAssessment } from '../playback/sim'
 import { PHASE_STYLE } from '../playback/trackState'
 import type { TrackTimeline } from '../playback/trackState'
 import { threatReadoutAt } from '../panels/analysis/threatReadout'
+import { sweepAt } from '../playback/sweepAt'
 
 interface Props {
   /** Prefix-aggregated timeline, built once in CanvasStage. */
@@ -51,8 +52,19 @@ function ReadoutCard({
 
   const model = modelFor(scenario, entity)
   const color = entityInk(entity, model)
+  // The sweep at simTimeS is the one the canvas just drew from (sweepAt), so
+  // the card reruns no sensor sweep of its own.
   const readout = useMemo(
-    () => threatReadoutAt({ scenario, entity, timeline, assessments, tS: simTimeS, units }),
+    () =>
+      threatReadoutAt({
+        scenario,
+        entity,
+        timeline,
+        assessments,
+        tS: simTimeS,
+        units,
+        sweep: sweepAt(scenario, timeline, simTimeS),
+      }),
     [scenario, entity, timeline, assessments, simTimeS, units],
   )
   const compactRows = [

@@ -1,16 +1,16 @@
-import { useMemo, useRef } from 'react'
+import { memo, useMemo, useRef } from 'react'
 import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import type { Entity } from '../../model/types'
+import type { Entity, SpecModel } from '../../model/types'
 import { entityActive } from '../../model/types'
 import { useStore } from '../../state/store'
 import { modelFor } from '../../model/scenario'
 import { bearingDeg } from '../../geometry/geo'
 import { memberPositions } from '../../playback/tracks'
 import type { LiveTrack } from '../../playback/tracks'
-import type { DetectionHit } from '../../playback/detection'
-import { blinkOn, EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
+import type { Sweep } from '../../playback/sweepAt'
+import { EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
 import { DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
 import type { EffectorLiveState, TrackFileState, TrackPhase } from '../../playback/trackState'
 import {
@@ -26,19 +26,16 @@ import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from 
 
 interface Props {
   tracks: Map<string, LiveTrack>
-  /** Sensor sweep, snapped at the published sim time, keyed by UAS id. */
-  detections: Map<string, DetectionHit[]>
+  /** The sweep, track lifecycle and effector state snapped at the published sim time. */
+  sweep: Sweep
   /** Entities whose labels render as spoke callouts in CalloutLayer instead. */
   spokeIds: Set<string>
-  /** Track lifecycle, snapped at the published sim time, keyed by UAS id. */
-  trackStates: Map<string, TrackFileState>
-  /** Effector glyph treatment, snapped at the published sim time, keyed by effector id. */
-  effectorStates: Map<string, EffectorLiveState>
   /**
-   * The canvas frame clock's display time. Drives every pulse and the effector
-   * blink; a paused run freezes it.
+   * The lit half of the pulse, computed once per frame from the display time.
+   * A node reads this boolean and never the time, so a frame re-renders only
+   * the nodes that moved or pulse.
    */
-  displayTimeS: number
+  blink: boolean
 }
 
 /** Subtle darker edge that reads over any fill color. Shared with the palette. */
@@ -107,6 +104,8 @@ const BRACKETS: number[][] = [-1, 1].flatMap((sx) =>
 
 interface GlyphProps {
   entity: Entity
+  /** Live heading; the entity's own while it is at rest. */
+  headingDeg: number
   color: string
   /** Defeated track: hollow dashed frame under a bold destroyed strike. */
   ghost?: boolean
@@ -183,7 +182,7 @@ function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: str
  *   neutral frame - hollow square with a centre dot: marker.
  * Heading ticks draw under the frame so only the protruding tip shows.
  */
-function Glyph({ entity, color, ghost, filled = true, tickRef }: GlyphProps) {
+function Glyph({ entity, headingDeg, color, ghost, filled = true, tickRef }: GlyphProps) {
   switch (FRAME_FOR[entity.kind]) {
     case 'friend':
       // Guidance treatment: an idle or empty weapon is an outline, a weapon
@@ -196,7 +195,7 @@ function Glyph({ entity, color, ghost, filled = true, tickRef }: GlyphProps) {
               points={HEADING_TICK}
               stroke={color}
               strokeWidth={2}
-              rotation={entity.headingDeg}
+              rotation={headingDeg}
               listening={false}
             />
           )}
@@ -214,7 +213,7 @@ function Glyph({ entity, color, ghost, filled = true, tickRef }: GlyphProps) {
             points={HEADING_TICK}
             stroke={ghost ? GHOST : color}
             strokeWidth={ghost ? 1.6 : 2}
-            rotation={entity.headingDeg}
+            rotation={headingDeg}
             listening={false}
           />
           {ghost ? (
@@ -270,13 +269,11 @@ function handlePoint(headingDeg: number): { x: number; y: number } {
 }
 
 /** Drag handle that points a directional sensor/effector. Child drag does not move the group. */
-function HeadingHandle({ entity, pos, color, tickRef }: {
+function HeadingHandle({ entity, color, tickRef }: {
   entity: Entity
-  pos: { x: number; y: number }
   color: string
   tickRef: React.RefObject<Konva.Line | null>
 }) {
-  const updateEntity = useStore((s) => s.updateEntity)
   const leaderRef = useRef<Konva.Line>(null)
   /** Heading under the pointer, held until the gesture commits it. */
   const draft = useRef<number | null>(null)
@@ -293,7 +290,9 @@ function HeadingHandle({ entity, pos, color, tickRef }: {
       x: (pointer.x - camera.x) / camera.scale,
       y: (pointer.y - camera.y) / camera.scale,
     }
-    return Math.round(bearingDeg(pos, world))
+    // Only a sensor or an effector carries a handle, and neither flies a
+    // path, so the rest position is the glyph position.
+    return Math.round(bearingDeg(entity.pos, world))
   }
 
   return (
@@ -332,148 +331,56 @@ function HeadingHandle({ entity, pos, color, tickRef }: {
           draft.current = null
           e.target.position(handlePoint(deg ?? entity.headingDeg))
           // One mutation, so the gesture is one undo entry.
-          if (deg != null && deg !== entity.headingDeg) updateEntity(entity.id, { headingDeg: deg })
+          if (deg != null && deg !== entity.headingDeg) {
+            useStore.getState().updateEntity(entity.id, { headingDeg: deg })
+          }
         }}
       />
     </Group>
   )
 }
 
-function EntityNode({
-  entity,
-  tracks,
-  detections,
-  spokeIds,
-  trackStates,
-  effectorStates,
-  displayTimeS,
-}: { entity: Entity } & Props) {
-  const scenario = useStore((s) => s.scenario)
+interface NodeProps {
+  entity: Entity
+  /** Live position, meters. */
+  x: number
+  y: number
+  /** Live heading, degrees. */
+  headingDeg: number
+  /** A sensor holds the track at the published time. */
+  detected: boolean
+  /** A holding sensor classified it. */
+  classified: boolean
+  /** Track lifecycle at the published time; absent for a threat without a path. */
+  state: TrackFileState | undefined
+  effectorState: EffectorLiveState
+  /** The pulse phase, true only while this node pulses. */
+  blink: boolean
+  /** The label renders as a spoke callout in CalloutLayer instead. */
+  spoked: boolean
+}
+
+/**
+ * The counter-scale wrapper of one entity: the formation members and the main
+ * group. Only this wrapper reads the zoom, so a wheel step re-renders these
+ * few elements and not the body under them. The handlers read the store at
+ * event time, so a node subscribes to nothing it does not draw.
+ */
+const EntityNode = memo(function EntityNode(props: NodeProps) {
+  const { entity, x, y, headingDeg, state } = props
   // Only the scale is read at render; the handlers take x and y from the store
   // directly, so a pan never re-renders a node.
   const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
-  const connectFromId = useStore((s) => s.ui.connectFromId)
-  const pathEntityId = useStore((s) => s.ui.pathEntityId)
-  const showLabels = useStore((s) => s.ui.layers.labels)
-  const selected = useStore((s) => s.selection.entityIds.includes(entity.id))
-  const cardLinked = useStore((s) => {
-    const cardId = s.selection.cardId
-    if (!cardId) return false
-    const card = s.scenario.testCards.find((c) => c.id === cardId)
-    return card?.linkedEntityIds.includes(entity.id) ?? false
-  })
-  const select = useStore((s) => s.select)
-  const moveEntity = useStore((s) => s.moveEntity)
-  const updateEntity = useStore((s) => s.updateEntity)
-  const beginConnect = useStore((s) => s.beginConnect)
-  const completeConnect = useStore((s) => s.completeConnect)
-  const beginPath = useStore((s) => s.beginPath)
-  const openContextMenu = useStore((s) => s.openContextMenu)
-  const openConnectSuggestion = useStore((s) => s.openConnectSuggestion)
-
-  const tickRef = useRef<Konva.Line>(null)
-  const track = tracks.get(entity.id)
-  const pos = track?.pos ?? entity.pos
-  const headingDeg = track?.headingDeg ?? entity.headingDeg
-  const heading = track ? { ...entity, headingDeg: track.headingDeg } : entity
-  const off = !entityActive(entity)
-  // One library lookup and one ink resolution per entity, not per frame.
-  const model = useMemo(() => modelFor(scenario, entity), [scenario, entity])
+  const model = useStore((s) => modelFor(s.scenario, entity))
   const color = useMemo(() => entityInk(entity, model), [entity, model])
-  const hits = detections.get(entity.id) ?? []
-  const detected = hits.length > 0
-  const classified = hits.some((h) => h.classified)
-
-  const state = trackStates.get(entity.id)
-  // A UAS with no flight path never enters the timeline, so its ring falls
-  // back to the render-time detection sweep.
-  const phase: TrackPhase =
-    entity.kind !== 'uas'
-      ? 'undetected'
-      : (state?.phase ?? (classified ? 'identified' : detected ? 'tracked' : 'undetected'))
-  const ghost = phase === 'ghost'
-  // A defeated track carries the destroyed strike, so it draws no ring.
-  const ringColor = ghost ? null : PHASE_STYLE[phase].color
-  // Effective jamming holds on the track now (see TrackFileState.jammedNow).
-  const jammed = !ghost && (state?.jammedNow ?? false)
-  // An EW-only engagement swaps the target brackets for the jammed diamond;
-  // a track also under kinetic or DE fire keeps its brackets as well.
-  const ewOnly = state != null && state.kineticSalvos + state.deSalvos === 0
-  const bracketed = (phase === 'targeted' || phase === 'engaged') && !(jammed && ewOnly)
-  // Pulse floor is 0.5: a dimmed engaged track must stay legible.
-  const pulse = phase === 'engaged' && !blinkOn(displayTimeS) ? 0.5 : 1
-  const effectorState: EffectorLiveState = effectorStates.get(entity.id) ?? 'idle'
-  const depleted = effectorState === 'depleted'
-  const effectorFilled =
-    effectorState === 'semi-active' ||
-    effectorState === 'beam' ||
-    (effectorState === 'active' && blinkOn(displayTimeS))
-
-  const sectorDeg = useMemo(
-    () =>
-      entity.kind === 'sensor'
-        ? model?.sensor?.sectorDeg
-        : entity.kind === 'effector'
-          ? (model?.effector?.sectorDeg ?? 360)
-          : undefined,
-    [entity, model],
-  )
-  const directional = sectorDeg != null && sectorDeg < 360
-  const members = entity.kind === 'uas' ? memberPositions(entity, pos, headingDeg) : [pos]
-  // Konva hit-tests a stroke-only Circle over its whole disc. The selection
-  // (r16) and card-link (r19) rings are cues, so the hit disc carries their radii.
-  const hitR = cardLinked ? 19 : selected ? 16 : 13
-  const labelDrawn = showLabels && !spokeIds.has(entity.id)
-  // Board labels carry the short designator. Entity.name is untouched, so the
-  // Inspector and the panels keep the full vendor string. Both the designator
-  // and its wrap count are string work, so they are keyed on the entity.
-  const boardName = useMemo(() => boardDesignator(entity.name), [entity])
-  const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
-  const labelLines = labelDrawn ? nameLines : 0
-
-  function handleClick(e: KonvaEventObject<MouseEvent>) {
-    if (tool === 'connect') {
-      e.cancelBubble = true
-      if (!connectFromId) beginConnect(entity.id)
-      else completeConnect(entity.id)
-      return
-    }
-    if (tool === 'path') {
-      // A UAS click starts its path only before drafting. Any other click
-      // during a draft must bubble to the stage and become a waypoint.
-      if (entity.kind === 'uas' && !pathEntityId) {
-        e.cancelBubble = true
-        beginPath(entity.id)
-      }
-      return
-    }
-    // Boundary and calibrate clicks bubble to the stage as draw points.
-    if (tool !== 'select') return
-    // An armed raid draft owns the next canvas click: let it bubble to the
-    // stage so the ingress axis places even when the click lands on an entity
-    // (clicking the target asset is the natural aim gesture).
-    if (useStore.getState().ui.raidDraft) return
-    e.cancelBubble = true
-    select({ entityIds: [entity.id] }, e.evt.shiftKey)
-  }
-
-  function handleContextMenu(e: KonvaEventObject<MouseEvent>) {
-    e.evt.preventDefault()
-    e.cancelBubble = true
-    // Ctrl+left-click also fires contextmenu on macOS; menu is right-button only.
-    if (e.evt.button !== 2) return
-    const pointer = e.target.getStage()?.getPointerPosition()
-    if (!pointer) return
-    const camera = useStore.getState().camera
-    const world = { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
-    select({ entityIds: [entity.id] })
-    openContextMenu(pointer, world, entity.id)
-  }
+  const off = !entityActive(entity)
+  const ghost = state?.phase === 'ghost'
+  const members = entity.kind === 'uas' ? memberPositions(entity, { x, y }, headingDeg) : null
 
   return (
     <>
-      {members.slice(1).map((m, i) => (
+      {members?.slice(1).map((m, i) => (
         <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
           {ghost ? (
             <>
@@ -501,164 +408,362 @@ function EntityNode({
         </Group>
       ))}
       <Group
-        x={pos.x}
-        y={pos.y}
+        x={x}
+        y={y}
         scaleX={1 / k}
         scaleY={1 / k}
         opacity={off ? 0.45 : ghost ? GHOST_OPACITY : 1}
         draggable={tool === 'select'}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
+        onClick={(e) => handleClick(e, entity)}
+        onContextMenu={(e) => handleContextMenu(e, entity)}
         onDragStart={(e) => {
-          if (e.target === e.currentTarget) select({ entityIds: [entity.id] })
+          if (e.target === e.currentTarget) useStore.getState().select({ entityIds: [entity.id] })
         }}
         onDragEnd={(e) => {
           // The heading handle's drag events bubble here; only a drag of the
           // group itself moves the entity.
           if (e.target !== e.currentTarget) return
-          moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })
+          const store = useStore.getState()
+          store.moveEntity(entity.id, { x: e.target.x(), y: e.target.y() })
           // A repositioned blue-force system gets fresh connect offers.
           if (entity.kind !== 'sensor' && entity.kind !== 'effector' && entity.kind !== 'c2') return
           const pointer = e.target.getStage()?.getPointerPosition()
-          if (pointer) openConnectSuggestion(entity.id, pointer)
+          if (pointer) store.openConnectSuggestion(entity.id, pointer)
         }}
       >
-        {/* Invisible hit disc: stroke-only glyphs are otherwise hard to click.
-            It alone sets the grab area, because every ring below is a cue. */}
-        <Circle radius={hitR} fill="#000" opacity={0} />
-        {selected && (
-          <Circle radius={SELECT_R} stroke="#ffffff" strokeWidth={1.3} dash={SELECT_DASH} listening={false} />
-        )}
-        {cardLinked && (
-          <Circle radius={32} stroke={EW_INK} strokeWidth={1.5} dash={CARD_LINK_DASH} listening={false} />
-        )}
-        {connectFromId === entity.id && (
-          <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} listening={false} />
-        )}
-        {bracketed &&
-          BRACKETS.map((points, i) => (
-            <Line
-              key={i}
-              points={points}
-              stroke={ringColor ?? DANGER_INK}
-              strokeWidth={1.6}
-              opacity={pulse}
-              listening={false}
-            />
-          ))}
-        {ringColor && (
-          <Circle radius={RING_R} stroke={ringColor} strokeWidth={1.6} opacity={pulse} listening={false} />
-        )}
-        <Glyph entity={heading} color={color} ghost={ghost} filled={effectorFilled} tickRef={tickRef} />
-        {off && <Line points={OFF_SLASH} stroke={DANGER_INK} strokeWidth={2} listening={false} />}
-        {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
-          <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
-        )}
-        {jammed && (
-          <>
-            <RegularPolygon
-              sides={4}
-              radius={JAM_DIAMOND_R}
-              stroke={JAM_CYAN}
-              strokeWidth={1.6}
-              listening={false}
-            />
-            <Text
-              fontFamily="JetBrains Mono"
-              x={JAM_DIAMOND_R * 0.62 + 3}
-              y={-JAM_DIAMOND_R * 0.62 - 11}
-              text="J"
-              fontSize={10}
-              fill={JAM_CYAN}
-              listening={false}
-            />
-          </>
-        )}
-        {depleted && (
-          <Text
-            fontFamily="JetBrains Mono"
-            x={13}
-            y={-4}
-            text="EMPTY"
-            fontSize={9}
-            fill={DEPLETED}
-            listening={false}
-          />
-        )}
-        {labelDrawn && (
-          <Text fontFamily="JetBrains Mono"
-            x={-60}
-            y={LABEL_ANCHOR_TOP}
-            width={120}
-            text={boardName}
-            fontSize={11}
-            fill={ghost ? GHOST : '#b7bdb2'}
-            align="center"
-            listening={false}
-          />
-        )}
-        {ghost && (
-          <Text
-            fontFamily="JetBrains Mono"
-            x={-60}
-            y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
-            width={120}
-            align="center"
-            text={
-              state?.eliminatedBySoft
-                ? `${PHASE_STYLE.ghost.label} · MISSION KILL`
-                : PHASE_STYLE.ghost.label
-            }
-            fontSize={9}
-            fill={GHOST}
-            listening={false}
-          />
-        )}
-        {selected && directional && tool === 'select' && (
-          <HeadingHandle entity={entity} pos={pos} color={color} tickRef={tickRef} />
-        )}
-        {selected && entity.kind === 'uas' && tool === 'select' && (
-          <Group
-            y={34}
-            onClick={(e) => {
-              e.cancelBubble = true
-              updateEntity(entity.id, { showRange: !entity.showRange })
-            }}
-          >
-            <Rect
-              x={-34}
-              width={68}
-              height={16}
-              cornerRadius={8}
-              fill={entity.showRange ? '#a9b4bd' : '#1d2023'}
-              stroke={entity.showRange ? '#a9b4bd' : '#82887e'}
-              strokeWidth={1}
-            />
-            <Text
-              fontFamily="JetBrains Mono"
-              x={-34}
-              y={4}
-              width={68}
-              align="center"
-              text={entity.showRange ? 'RANGE ON' : 'RANGE OFF'}
-              fontSize={9}
-              fill={entity.showRange ? '#121415' : '#82887e'}
-              listening={false}
-            />
-          </Group>
-        )}
+        <EntityBody
+          entity={entity}
+          headingDeg={headingDeg}
+          detected={props.detected}
+          classified={props.classified}
+          state={state}
+          effectorState={props.effectorState}
+          blink={props.blink}
+          spoked={props.spoked}
+          model={model}
+          color={color}
+          tool={tool}
+        />
       </Group>
     </>
   )
+})
+
+function handleClick(e: KonvaEventObject<MouseEvent>, entity: Entity) {
+  const store = useStore.getState()
+  const { tool, connectFromId, pathEntityId, raidDraft } = store.ui
+  if (tool === 'connect') {
+    e.cancelBubble = true
+    if (!connectFromId) store.beginConnect(entity.id)
+    else store.completeConnect(entity.id)
+    return
+  }
+  if (tool === 'path') {
+    // A UAS click starts its path only before drafting. Any other click
+    // during a draft must bubble to the stage and become a waypoint.
+    if (entity.kind === 'uas' && !pathEntityId) {
+      e.cancelBubble = true
+      store.beginPath(entity.id)
+    }
+    return
+  }
+  // Boundary and calibrate clicks bubble to the stage as draw points.
+  if (tool !== 'select') return
+  // An armed raid draft owns the next canvas click: let it bubble to the
+  // stage so the ingress axis places even when the click lands on an entity
+  // (clicking the target asset is the natural aim gesture).
+  if (raidDraft) return
+  e.cancelBubble = true
+  store.select({ entityIds: [entity.id] }, e.evt.shiftKey)
 }
 
-export function EntityLayer(props: Props) {
-  const entities = useStore((s) => s.scenario.entities)
+function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {
+  e.evt.preventDefault()
+  e.cancelBubble = true
+  // Ctrl+left-click also fires contextmenu on macOS; menu is right-button only.
+  if (e.evt.button !== 2) return
+  const pointer = e.target.getStage()?.getPointerPosition()
+  if (!pointer) return
+  const store = useStore.getState()
+  const camera = store.camera
+  const world = { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
+  store.select({ entityIds: [entity.id] })
+  store.openContextMenu(pointer, world, entity.id)
+}
+
+/**
+ * Everything drawn inside the counter-scaled group, in screen px. Memoized on
+ * per-entity primitives and its own store slices, so a frame re-renders a body
+ * only when its heading, its hold, its track state or its pulse changed, and a
+ * zoom re-renders none of them.
+ */
+const EntityBody = memo(function EntityBody({
+  entity,
+  headingDeg,
+  detected,
+  classified,
+  state,
+  effectorState,
+  blink,
+  spoked,
+  model,
+  color,
+  tool,
+}: Omit<NodeProps, 'x' | 'y'> & { model: SpecModel | undefined; color: string; tool: string }) {
+  const connectFrom = useStore((s) => s.ui.connectFromId === entity.id)
+  const showLabels = useStore((s) => s.ui.layers.labels)
+  const selected = useStore((s) => s.selection.entityIds.includes(entity.id))
+  const cardLinked = useStore((s) => {
+    const cardId = s.selection.cardId
+    if (!cardId) return false
+    const card = s.scenario.testCards.find((c) => c.id === cardId)
+    return card?.linkedEntityIds.includes(entity.id) ?? false
+  })
+
+  const tickRef = useRef<Konva.Line>(null)
+  const off = !entityActive(entity)
+  // A UAS with no flight path never enters the timeline, so its ring falls
+  // back to the render-time detection sweep.
+  const phase: TrackPhase =
+    entity.kind !== 'uas'
+      ? 'undetected'
+      : (state?.phase ?? (classified ? 'identified' : detected ? 'tracked' : 'undetected'))
+  const ghost = phase === 'ghost'
+  // A defeated track carries the destroyed strike, so it draws no ring.
+  const ringColor = ghost ? null : PHASE_STYLE[phase].color
+  // Effective jamming holds on the track now (see TrackFileState.jammedNow).
+  const jammed = !ghost && (state?.jammedNow ?? false)
+  // An EW-only engagement swaps the target brackets for the jammed diamond;
+  // a track also under kinetic or DE fire keeps its brackets as well.
+  const ewOnly = state != null && state.kineticSalvos + state.deSalvos === 0
+  const bracketed = (phase === 'targeted' || phase === 'engaged') && !(jammed && ewOnly)
+  // Pulse floor is 0.5: a dimmed engaged track must stay legible.
+  const pulse = phase === 'engaged' && !blink ? 0.5 : 1
+  const depleted = effectorState === 'depleted'
+  const effectorFilled =
+    effectorState === 'semi-active' ||
+    effectorState === 'beam' ||
+    (effectorState === 'active' && blink)
+
+  const sectorDeg = useMemo(
+    () =>
+      entity.kind === 'sensor'
+        ? model?.sensor?.sectorDeg
+        : entity.kind === 'effector'
+          ? (model?.effector?.sectorDeg ?? 360)
+          : undefined,
+    [entity, model],
+  )
+  const directional = sectorDeg != null && sectorDeg < 360
+  // Konva hit-tests a stroke-only Circle over its whole disc. The selection
+  // (r16) and card-link (r19) rings are cues, so the hit disc carries their radii.
+  const hitR = cardLinked ? 19 : selected ? 16 : 13
+  const labelDrawn = showLabels && !spoked
+  // Board labels carry the short designator. Entity.name is untouched, so the
+  // Inspector and the panels keep the full vendor string. Both the designator
+  // and its wrap count are string work, so they are keyed on the entity.
+  const boardName = useMemo(() => boardDesignator(entity.name), [entity])
+  const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
+  const labelLines = labelDrawn ? nameLines : 0
+
   return (
     <>
-      {entities.map((e) => (
-        <EntityNode key={e.id} entity={e} {...props} />
-      ))}
+      {/* Invisible hit disc: stroke-only glyphs are otherwise hard to click.
+          It alone sets the grab area, because every ring below is a cue. */}
+      <Circle radius={hitR} fill="#000" opacity={0} />
+      {selected && (
+        <Circle radius={SELECT_R} stroke="#ffffff" strokeWidth={1.3} dash={SELECT_DASH} listening={false} />
+      )}
+      {cardLinked && (
+        <Circle radius={32} stroke={EW_INK} strokeWidth={1.5} dash={CARD_LINK_DASH} listening={false} />
+      )}
+      {connectFrom && (
+        <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} listening={false} />
+      )}
+      {bracketed &&
+        BRACKETS.map((points, i) => (
+          <Line
+            key={i}
+            points={points}
+            stroke={ringColor ?? DANGER_INK}
+            strokeWidth={1.6}
+            opacity={pulse}
+            listening={false}
+          />
+        ))}
+      {ringColor && (
+        <Circle radius={RING_R} stroke={ringColor} strokeWidth={1.6} opacity={pulse} listening={false} />
+      )}
+      <Glyph entity={entity} headingDeg={headingDeg} color={color} ghost={ghost} filled={effectorFilled} tickRef={tickRef} />
+      {off && <Line points={OFF_SLASH} stroke={DANGER_INK} strokeWidth={2} listening={false} />}
+      {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
+        <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
+      )}
+      {jammed && (
+        <>
+          <RegularPolygon
+            sides={4}
+            radius={JAM_DIAMOND_R}
+            stroke={JAM_CYAN}
+            strokeWidth={1.6}
+            listening={false}
+          />
+          <Text
+            fontFamily="JetBrains Mono"
+            x={JAM_DIAMOND_R * 0.62 + 3}
+            y={-JAM_DIAMOND_R * 0.62 - 11}
+            text="J"
+            fontSize={10}
+            fill={JAM_CYAN}
+            listening={false}
+          />
+        </>
+      )}
+      {depleted && (
+        <Text
+          fontFamily="JetBrains Mono"
+          x={13}
+          y={-4}
+          text="EMPTY"
+          fontSize={9}
+          fill={DEPLETED}
+          listening={false}
+        />
+      )}
+      {labelDrawn && (
+        <Text fontFamily="JetBrains Mono"
+          x={-60}
+          y={LABEL_ANCHOR_TOP}
+          width={120}
+          text={boardName}
+          fontSize={11}
+          fill={ghost ? GHOST : '#b7bdb2'}
+          align="center"
+          listening={false}
+        />
+      )}
+      {ghost && (
+        <Text
+          fontFamily="JetBrains Mono"
+          x={-60}
+          y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
+          width={120}
+          align="center"
+          text={
+            state?.eliminatedBySoft
+              ? `${PHASE_STYLE.ghost.label} · MISSION KILL`
+              : PHASE_STYLE.ghost.label
+          }
+          fontSize={9}
+          fill={GHOST}
+          listening={false}
+        />
+      )}
+      {selected && directional && tool === 'select' && (
+        <HeadingHandle entity={entity} color={color} tickRef={tickRef} />
+      )}
+      {selected && entity.kind === 'uas' && tool === 'select' && (
+        <Group
+          y={34}
+          onClick={(e) => {
+            e.cancelBubble = true
+            useStore.getState().updateEntity(entity.id, { showRange: !entity.showRange })
+          }}
+        >
+          <Rect
+            x={-34}
+            width={68}
+            height={16}
+            cornerRadius={8}
+            fill={entity.showRange ? '#a9b4bd' : '#1d2023'}
+            stroke={entity.showRange ? '#a9b4bd' : '#82887e'}
+            strokeWidth={1}
+          />
+          <Text
+            fontFamily="JetBrains Mono"
+            x={-34}
+            y={4}
+            width={68}
+            align="center"
+            text={entity.showRange ? 'RANGE ON' : 'RANGE OFF'}
+            fontSize={9}
+            fill={entity.showRange ? '#121415' : '#82887e'}
+            listening={false}
+          />
+        </Group>
+      )}
+    </>
+  )
+})
+
+interface GroupProps {
+  entities: Entity[]
+  /** Live tracks for the entities that fly a path; null for the group at rest. */
+  tracks: Map<string, LiveTrack> | null
+  sweep: Sweep
+  spokeIds: Set<string>
+  blink: boolean
+}
+
+/**
+ * The nodes of one group of entities. The per-frame inputs reach a node as
+ * primitives and shared identities (the live position and heading, its own
+ * hold flags, its own track state object, its effector state, and the pulse
+ * phase only while it pulses), so per-frame React work is proportional to
+ * what moved.
+ */
+const EntityGroup = memo(function EntityGroup(group: GroupProps) {
+  const { entities, tracks, sweep, spokeIds, blink } = group
+  return (
+    <>
+      {entities.map((e) => {
+        const track = tracks?.get(e.id)
+        const hits = sweep.hits.get(e.id)
+        const state = sweep.states.get(e.id)
+        const effectorState = sweep.effectorStates.get(e.id) ?? 'idle'
+        // The pulse reaches only the nodes that draw it, so the 2 Hz flip
+        // re-renders nothing else.
+        const pulses = state?.phase === 'engaged' || effectorState === 'active'
+        return (
+          <EntityNode
+            key={e.id}
+            entity={e}
+            x={track?.pos.x ?? e.pos.x}
+            y={track?.pos.y ?? e.pos.y}
+            headingDeg={track?.headingDeg ?? e.headingDeg}
+            detected={hits != null && hits.length > 0}
+            classified={hits?.some((h) => h.classified) ?? false}
+            state={state}
+            effectorState={effectorState}
+            blink={pulses && blink}
+            spoked={spokeIds.has(e.id)}
+          />
+        )
+      })}
+    </>
+  )
+})
+
+/**
+ * One node per entity, in two groups: the entities at rest, which re-render
+ * only at a publication, and the entities that fly a path, which take the
+ * per-frame tracks. A frame therefore creates elements for the flying
+ * entities alone. The flying group draws above the group at rest.
+ */
+export function EntityLayer({ tracks, sweep, spokeIds, blink }: Props) {
+  const entities = useStore((s) => s.scenario.entities)
+  const paths = useStore((s) => s.scenario.paths)
+  const groups = useMemo(() => {
+    const flying = new Set(paths.map((p) => p.entityId))
+    return {
+      atRest: entities.filter((e) => !flying.has(e.id)),
+      flying: entities.filter((e) => flying.has(e.id)),
+    }
+  }, [entities, paths])
+  return (
+    <>
+      <EntityGroup entities={groups.atRest} tracks={null} sweep={sweep} spokeIds={spokeIds} blink={blink} />
+      <EntityGroup entities={groups.flying} tracks={tracks} sweep={sweep} spokeIds={spokeIds} blink={blink} />
     </>
   )
 }

@@ -75,15 +75,24 @@ if (directional) {
   await page.evaluate(() => window.__store.getState().redo()); await sleep(100)
 }
 
-// 4. Space to play, then pause
+// 4. Space to play, then pause. The first Space is the first play of this page:
+// its long task (the Play click, the first publication) must stay under the target.
 await focusCanvas()
 await page.keyboard.press('Escape')
+await page.evaluate(() => {
+  window.__long = []
+  window.__longPo = new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__long.push(Math.round(e.duration)) })
+  window.__longPo.observe({ type: 'longtask' })
+})
 await page.keyboard.press(' '); await sleep(1200)
 s = await st()
 const playing = s.playback
 await page.keyboard.press(' '); await sleep(200)
+const firstPlayLong = await page.evaluate(() => { window.__longPo.disconnect(); return window.__long })
 s = await st()
 results.space = { whilePlaying: playing, afterPause: s.playback, ok: playing.phase === 'running' && playing.simTimeS > 0 && s.playback.phase === 'paused' }
+const FIRST_PLAY_TARGET_MS = Number(process.env.FIRST_PLAY_TARGET_MS || 40)
+results.firstPlay = { longTasks: firstPlayLong, longMax: firstPlayLong.length ? Math.max(...firstPlayLong) : 0, targetMs: FIRST_PLAY_TARGET_MS, ok: !firstPlayLong.some((d) => d > FIRST_PLAY_TARGET_MS) }
 
 // 5. hover while paused
 await page.mouse.move(sp.x + 200, sp.y + 100)
@@ -116,6 +125,25 @@ await page.keyboard.press('l'); await sleep(250)
 const closed2 = !(await drawerOpen())
 results.library = { open1, focusInDrawer, closed1, focusOnTrigger, open2, closed2, ok: open1 && closed1 && focusOnTrigger && open2 && closed2 }
 
+// 7b. one Prepare to Analyze switch: forced layouts (Chromium LayoutCount delta)
+const cdp = await ctx.newCDPSession(page)
+await cdp.send('Performance.enable')
+const layoutCount = async () => { const { metrics } = await cdp.send('Performance.getMetrics'); return Object.fromEntries(metrics.map((x) => [x.name, x.value])) }
+const phaseNow = () => page.evaluate(() => document.querySelector('.board-app').getAttribute('data-board-phase'))
+if ((await phaseNow()) !== 'prepare') { await page.click('#board-phase-prepare'); await sleep(400) }
+const mA = await layoutCount()
+await page.click('#board-phase-analyze'); await sleep(400)
+const mB = await layoutCount()
+await page.click('#board-phase-prepare'); await sleep(400)
+const mC = await layoutCount()
+const LAYOUT_TARGET = Number(process.env.LAYOUT_TARGET || 20)
+results.phaseLayouts = {
+  prepareToAnalyze: { layouts: mB.LayoutCount - mA.LayoutCount, styleRecalcs: mB.RecalcStyleCount - mA.RecalcStyleCount, layoutMs: Math.round((mB.LayoutDuration - mA.LayoutDuration) * 1000) },
+  analyzeToPrepare: { layouts: mC.LayoutCount - mB.LayoutCount, styleRecalcs: mC.RecalcStyleCount - mB.RecalcStyleCount, layoutMs: Math.round((mC.LayoutDuration - mB.LayoutDuration) * 1000) },
+  target: LAYOUT_TARGET,
+  ok: mB.LayoutCount - mA.LayoutCount <= LAYOUT_TARGET,
+}
+
 // 8. phase switches
 const phases = []
 for (const p of ['execute', 'analyze', 'prepare']) {
@@ -131,6 +159,21 @@ const tabAfterUndo = (await st()).rightTab
 await page.evaluate(() => window.__store.getState().redo()); await sleep(150)
 const tabAfterRedo = (await st()).rightTab
 results.undoTab = { tabAfterUndo, tabAfterRedo, ok: tabAfterUndo === 'cards' && tabAfterRedo === 'cards' }
+
+// 10. heap after 30 moveEntity edits. performance.memory is quantized without
+// precise-memory-info, so the reading is CDP heap usage after a forced collection.
+await cdp.send('HeapProfiler.enable')
+const heapMB = async () => { await cdp.send('HeapProfiler.collectGarbage'); await sleep(200); await cdp.send('HeapProfiler.collectGarbage'); const { usedSize } = await cdp.send('Runtime.getHeapUsage'); return +(usedSize / 1048576).toFixed(1) }
+const heap0 = await heapMB()
+const past0h = (await st()).past
+for (let i = 0; i < 30; i++) {
+  await page.evaluate((i) => { const s = window.__store.getState(); const e = s.scenario.entities.find((e) => e.kind === 'sensor'); s.moveEntity(e.id, { x: e.pos.x + (i % 2 ? 5 : -5), y: e.pos.y }) }, i)
+  await sleep(60)
+}
+await sleep(300)
+const heap1 = await heapMB()
+const past1h = (await st()).past
+results.heapAfterEdits = { heapBeforeMB: heap0, heapAfterMB: heap1, growthMB: +(heap1 - heap0).toFixed(1), perEditMB: +((heap1 - heap0) / 30).toFixed(2), pastBefore: past0h, pastAfter: past1h, ok: past1h === past0h + 30 }
 
 results.pageErrors = errors.slice(0, 10)
 results.allOk = Object.values(results).every((r) => typeof r !== 'object' || Array.isArray(r) || r.ok !== false)

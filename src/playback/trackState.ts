@@ -8,6 +8,7 @@ import { memberPositions } from './tracks'
 import { posAtTime } from '../geometry/geo'
 import { effectivePathDelayS } from './raid'
 import { profileFor } from '../model/integration'
+import { engineKeyOf } from '../model/scenario'
 
 /**
  * Per-track playback state for the board. buildTrackTimeline prefix-aggregates
@@ -385,6 +386,37 @@ function drawEndS(ev: EngagementEvent): number {
   return ev.tEffectS > ev.tS ? ev.tEffectS : ev.tS + BEAM_DISPLAY_S
 }
 
+interface TimelineEntry {
+  scenario: Scenario
+  report: AttritionReport
+  timeline: TrackTimeline
+}
+
+const timelineCache = new WeakMap<ThreatAssessment[], TimelineEntry>()
+
+/**
+ * `buildTrackTimeline`, cached by the picture it derives from. The key is the
+ * assessments array of `engagementPicture(scenario)`, one per engine identity
+ * (`engineKeyOf`), so the timeline lives exactly as long as its picture and
+ * the bounded picture cache bounds the timelines too; a key on the scenario
+ * would pin every evicted picture through the undo history. The entry checks
+ * the scenario and report identities so a fresh picture never reads a stale
+ * timeline. Never pass a spread or cloned scenario.
+ */
+export function trackTimelineOf(
+  scenario: Scenario,
+  assessments: ThreatAssessment[],
+  report: AttritionReport,
+): TrackTimeline {
+  const key = engineKeyOf(scenario)
+  const hit = timelineCache.get(assessments)
+  if (hit && hit.scenario === key && hit.report === report) return hit.timeline
+  const timeline = buildTrackTimeline(key, assessments, report)
+  timelineCache.set(assessments, { scenario: key, report, timeline })
+  return timeline
+}
+
+/** Prefix-aggregate the whole-run forecast. Pure; `trackTimelineOf` is the cached entry. */
 export function buildTrackTimeline(
   scenario: Scenario,
   assessments: ThreatAssessment[],

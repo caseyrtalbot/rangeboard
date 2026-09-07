@@ -2,28 +2,23 @@ import { memo, useEffect, useMemo, useRef } from 'react'
 import type { Scenario, Vec2 } from '../model/types'
 import type { Camera } from '../state/store'
 import { liveTracks } from '../playback/tracks'
-import { detectionsAt } from '../playback/detection'
 import type { LeakerImpact } from '../analysis/impact'
-import { effectorStatesAt, shotsInFlightAt, trackStatesAt } from '../playback/trackState'
+import { blinkOn, shotsInFlightAt } from '../playback/trackState'
 import type { TrackTimeline } from '../playback/trackState'
+import { sweepAt } from '../playback/sweepAt'
 import { useFrameClock } from './frameClock'
 import { boardDesignator, layoutLabels } from './labelLayout'
-import { BoundaryLayer } from './layers/BoundaryLayer'
-import { FootprintLayer } from './layers/FootprintLayer'
+import type { LabelPlacement } from './labelLayout'
 import { ThreatWezLayer } from './layers/ThreatWezLayer'
-import { RangeLayer } from './layers/RangeLayer'
 import { PathLayer } from './layers/PathLayer'
-import { ConnectionLayer } from './layers/ConnectionLayer'
 import { EngagementLayer } from './layers/EngagementLayer'
 import { EntityLayer } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 
-// These four take no time-dependent props and read the store themselves, so a
+// These two take no time-dependent props and read the store themselves, so a
 // per-frame LiveScene render must not re-render them.
-const StaticBoundaryLayer = memo(BoundaryLayer)
-const StaticRangeLayer = memo(RangeLayer)
-const StaticConnectionLayer = memo(ConnectionLayer)
+const StaticPathLayer = memo(PathLayer)
 const StaticSystemHandleLayer = memo(SystemHandleLayer)
 
 interface Props {
@@ -41,17 +36,48 @@ interface Props {
   durationS: number
 }
 
+/** True when two spoke placements put the same leader and text box on screen. */
+function samePlacement(a: LabelPlacement, b: LabelPlacement): boolean {
+  if (a.mode !== b.mode) return false
+  if (a.mode !== 'spoke' || b.mode !== 'spoke') return true
+  if (a.tx !== b.tx || a.ty !== b.ty || a.width !== b.width || a.align !== b.align) return false
+  for (let i = 0; i < 6; i++) if (a.points[i] !== b.points[i]) return false
+  return true
+}
+
+/**
+ * A fresh layout keeps the previous placement object wherever the placement
+ * did not move, and the previous Map when nothing moved, so the callout memo
+ * and the spoke set hold their identities across a frame.
+ */
+function stablePlacements(
+  next: Map<string, LabelPlacement>,
+  prev: Map<string, LabelPlacement> | null,
+): Map<string, LabelPlacement> {
+  if (!prev) return next
+  let reused = 0
+  for (const [id, placement] of next) {
+    const old = prev.get(id)
+    if (!old || !samePlacement(placement, old)) continue
+    next.set(id, old)
+    reused++
+  }
+  return reused === next.size && prev.size === next.size ? prev : next
+}
+
 /**
  * Every time-dependent canvas layer, under one frame clock. This is the only
- * place `useFrameClock` is mounted: it sits inside the Konva `Layer`, so its
- * per-frame state updates commit in the react-konva root and never in
- * react-dom.
+ * place `useFrameClock` is mounted: it sits inside the live Konva `Layer`, so
+ * its per-frame state updates commit in the react-konva root and never in
+ * react-dom. The static rings live on their own Layer (`StaticScene`).
  *
  * Two clocks draw this scene. Interpolated (`displayTimeS`, one value per
  * animation frame): track positions and headings, label placement, shots in
  * flight, and every pulse or blink. Snapped (`simTimeS`, the last published
  * time at 10 Hz): the sensor sweep, track lifecycle and effector glyph state,
- * which are step functions that must not be read between publications.
+ * which are step functions that must not be read between publications. The
+ * snapped values come from `sweepAt`, shared with the static scene, the track
+ * card and the threat pane.
  */
 export function LiveScene(props: Props) {
   const { scenario, camera, size, mouseWorld, impacts, timeline, durationS } = props
@@ -59,18 +85,12 @@ export function LiveScene(props: Props) {
 
   const tracks = useMemo(() => liveTracks(scenario, displayTimeS), [scenario, displayTimeS])
   const shots = useMemo(() => shotsInFlightAt(timeline, displayTimeS), [timeline, displayTimeS])
-  const detections = useMemo(() => detectionsAt(scenario, simTimeS), [scenario, simTimeS])
-  const trackStates = useMemo(() => trackStatesAt(timeline, simTimeS), [timeline, simTimeS])
-  const effectorStates = useMemo(() => effectorStatesAt(timeline, simTimeS), [timeline, simTimeS])
-
-  // Sensors holding a track, for the footprint layer. Derived from the sweep,
-  // so it changes at the publication and not on a frame.
-  const activeSensorIds = useMemo(
-    () => new Set([...detections.values()].flat().map((h) => h.sensorId)),
-    [detections],
-  )
+  const sweep = sweepAt(scenario, timeline, simTimeS)
+  // One pulse phase per frame. The nodes read this boolean, never the time.
+  const blink = blinkOn(displayTimeS)
 
   const prevSpokeIds = useRef<Set<string>>(new Set())
+  const prevPlacements = useRef<Map<string, LabelPlacement> | null>(null)
   // The drawn designator is scenario work; only the screen position of a label
   // moves per frame, so layoutLabels is left with geometry alone.
   const labelText = useMemo(
@@ -78,8 +98,8 @@ export function LiveScene(props: Props) {
     [scenario.entities],
   )
   const labelPlacements = useMemo(
-    () =>
-      layoutLabels(
+    () => {
+      const fresh = layoutLabels(
         labelText.map((e) => {
           const pos = tracks.get(e.id)?.pos ?? e.pos
           return {
@@ -92,7 +112,10 @@ export function LiveScene(props: Props) {
         }),
         // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
         { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
-      ),
+      )
+      // eslint-disable-next-line react/refs -- same one-frame hysteresis as the sticky set
+      return stablePlacements(fresh, prevPlacements.current)
+    },
     [labelText, tracks, camera, size],
   )
   const spokeIds = useMemo(
@@ -101,25 +124,15 @@ export function LiveScene(props: Props) {
   )
   useEffect(() => {
     prevSpokeIds.current = spokeIds
-  }, [spokeIds])
+    prevPlacements.current = labelPlacements
+  }, [spokeIds, labelPlacements])
 
   return (
     <>
-      <StaticBoundaryLayer />
-      <FootprintLayer activeSensorIds={activeSensorIds} />
       <ThreatWezLayer tracks={tracks} impacts={impacts} displayTimeS={displayTimeS} />
-      <StaticRangeLayer />
-      <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
-      <StaticConnectionLayer />
+      <StaticPathLayer mouseWorld={mouseWorld} />
       <EngagementLayer shots={shots} displayTimeS={displayTimeS} />
-      <EntityLayer
-        tracks={tracks}
-        detections={detections}
-        spokeIds={spokeIds}
-        trackStates={trackStates}
-        effectorStates={effectorStates}
-        displayTimeS={displayTimeS}
-      />
+      <EntityLayer tracks={tracks} sweep={sweep} spokeIds={spokeIds} blink={blink} />
       <StaticSystemHandleLayer />
       <CalloutLayer placements={labelPlacements} />
     </>

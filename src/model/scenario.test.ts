@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { emptyScenario } from './seed'
 import type { Entity, FlightPath } from './types'
-import { modelFor, pathSpeed, scenarioDurationS } from './scenario'
+import { engineKeyOf, markPresentationVariant, modelFor, pathSpeed, scenarioDurationS } from './scenario'
 
 const entity: Entity = {
   id: 'r1-uas', kind: 'uas', specId: 'lib-shahed136', name: 'R1 path probe',
@@ -42,4 +42,17 @@ it('keeps the 60 s floor and rounds the longest delayed path horizon up to a who
   expect(scenarioDurationS(s)).toBe(121)
   delete s.raid
   expect(scenarioDurationS(s)).toBe(101)
+})
+
+it('keys a presentation variant on its base, through a chain, and a plain scenario on itself', () => {
+  const base = emptyScenario()
+  expect(engineKeyOf(base)).toBe(base)
+  const stamped = { ...base, observedPresetId: 'sensors' }
+  markPresentationVariant(stamped, base)
+  expect(engineKeyOf(stamped)).toBe(base)
+  const restamped = { ...stamped, observedPresetId: 'threat' }
+  markPresentationVariant(restamped, stamped)
+  expect(engineKeyOf(restamped)).toBe(base)
+  // An edit is a new object with no mark: its own engine identity.
+  expect(engineKeyOf({ ...stamped })).not.toBe(base)
 })

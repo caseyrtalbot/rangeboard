@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../state/store'
 import { defaultFrameName, formatRunLabel } from '../state/labels'
@@ -22,8 +22,9 @@ const SPEEDS = [1, 2, 5, 10, 30]
  * (10 Hz). Each publication advances sim time by the measured wall time at
  * playback speed, so the clock does not drift. The canvas interpolates
  * between publications with its own frame clock (`useFrameClock`).
+ * Memoized with no props: it re-renders on its own selectors only.
  */
-export function TimelineBar() {
+export const TimelineBar = memo(function TimelineBar() {
   const { playing, speedMult, runSeq, completedAtMs } = useStore(useShallow(selectPlaybackFlags))
   const simTimeS = useStore(selectSimTimeS)
   const durationS = useStore(selectDurationS)
@@ -174,4 +175,4 @@ export function TimelineBar() {
       </div>
     </div>
   )
-}
+})

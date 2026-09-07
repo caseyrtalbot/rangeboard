@@ -1,4 +1,4 @@
-import type { Entity, Scenario, SensorSpec, SensorType } from '../model/types'
+import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType } from '../model/types'
 import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, pointInWedge, posAtTime } from '../geometry/geo'
@@ -22,7 +22,7 @@ import {
 import { DT } from './clock'
 import { memberPositions, threatAltitudeFt } from './tracks'
 import type { DetectionHit, ScanSteering } from './detection'
-import { pdTrackCumulativeOf, radarPdProbe, resolvedThresholds, sweepSensorHits } from './detection'
+import { pdTrackCumulativeOf, prepareSweep, resolvedThresholds } from './detection'
 import { connectedEffectorIds, killChainConnected, killChainRoutes } from './killChain'
 
 type ThreatStatus =
@@ -253,6 +253,10 @@ interface ScanState {
    */
   pdSeries: number[] | null
   pdSeriesStartS: number | null
+  /** This radar's observation once it first detects; the same object sensorObservations holds. */
+  observation: SensorObservation | undefined
+  /** This radar's hit at the current step, cleared per step. */
+  hit: DetectionHit | undefined
 }
 
 /** True when this scan radar's next nominal scan is due at or before step t. */
@@ -277,10 +281,31 @@ function recordScan(
   scan.window.push({ detected, pd })
   if (scan.window.length > scan.n) scan.window.shift()
   if (!observation || observation.trackInitAtS != null) return
-  const detections = scan.window.filter((w) => w.detected).length
+  // One pass, summed in window order: the same arithmetic as a filter and a reduce.
+  let detections = 0
+  let sum = 0
+  for (const w of scan.window) {
+    if (w.detected) detections += 1
+    sum += w.pd
+  }
   if (detections < scan.m) return
-  const mean = scan.window.reduce((sum, w) => sum + w.pd, 0) / scan.window.length
+  const mean = sum / scan.window.length
   if (mOfN(mean, scan.m, scan.n) >= pdTrack) observation.trackInitAtS = t
+}
+
+/**
+ * One effector's terms against one threat: the reads of the in-range test
+ * that do not move with the step. `windowGated` is a non-jammer whose
+ * ceiling the threat flies above; it keeps its spec for the proximity
+ * ladder and never opens a window.
+ */
+interface EffectorTerms {
+  eff: Entity
+  spec: EffectorSpec
+  windowGated: boolean
+  reachM: number
+  dAltM: number
+  sectorDeg: number
 }
 
 /**
@@ -345,7 +370,27 @@ export function assessThreat(
   const sensorObservations = new Map<string, SensorObservation>()
   const pdTrack = pdTrackCumulativeOf(scenario)
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
+  const sweep = prepareSweep(scenario, sensors, uas.formation, uasSpec, altitudeFt, draw)
   const delayS = effectivePathDelayS(scenario, path)
+  // In range when any formation member is inside the envelope on slant
+  // range, under the effector ceiling. A jammer's reach is its effective
+  // range against this target, as attrition and the drawn cone use; its
+  // cone test takes no ceiling.
+  const effectorTerms: EffectorTerms[] = []
+  for (const eff of effectors) {
+    const spec = modelFor(scenario, eff)?.effector
+    if (!spec) continue
+    const isJammer = spec.effectorType === 'jammer'
+    effectorTerms.push({
+      eff,
+      spec,
+      windowGated: !isJammer && effectorGeometryGate(spec, altM) !== 'ok',
+      reachM: isJammer ? effectiveJamRangeM(spec, uasSpec) : spec.maxRangeM,
+      dAltM: altM - mountHeightOf(spec),
+      sectorDeg: spec.sectorDeg ?? 360,
+    })
+  }
+  const assetTerms = assets.map((asset) => ({ asset, radiusM: defendedRadiusOf(asset) }))
   // The phase is the run's one draw per (radar, threat), taken before any scan.
   const scanStates = new Map<string, ScanState>()
   for (const sensor of sensors) {
@@ -373,12 +418,14 @@ export function assessThreat(
       hold: 'none',
       pdSeries: null,
       pdSeriesStartS: null,
+      observation: undefined,
+      hit: undefined,
     })
   }
-  const scanSteps = new Set<string>()
-  const scanHits = new Map<string, DetectionHit>()
+  // Scan radars whose next scan is not due this step; every other sensor scans.
+  const idleScans = new Set<string>()
   const steering: ScanSteering = {
-    scanStep: (sensorId) => !scanStates.has(sensorId) || scanSteps.has(sensorId),
+    scanStep: (sensorId) => !idleScans.has(sensorId),
     holding: (sensorId) => scanStates.get(sensorId)?.hold === 'detected',
   }
   const trackSamples: Array<{ tS: number; held: boolean }> = []
@@ -398,36 +445,29 @@ export function assessThreat(
 
   let connectedCache: Set<string> | null = null
   let connectedCacheSize = -1
+  const stepTechs = new Set<SensorType>()
 
   for (let t = delayS; t <= duration; t += DT) {
     const sample = posAtTime(path.points, speed, delayS, t)
     const pos = sample.pos
     const members = memberPositions(uas, pos, sample.headingDeg)
 
-    const stepTechs = new Set<SensorType>()
+    stepTechs.clear()
     let fcClassifiedNow = false
     // A coast is held for continuity only: invisible to stepTechs and the ladder.
     let coastHeld = false
     let stepFirstId: string | null = null
-    scanSteps.clear()
-    scanHits.clear()
-    for (const [sensorId, scan] of scanStates) if (scanDue(scan, t)) scanSteps.add(sensorId)
-    for (const { spec, hit } of sweepSensorHits(
-      scenario,
-      sensors,
-      uas.formation,
-      uasSpec,
-      altitudeFt,
-      members,
-      draw,
-      uasId,
-      t,
-      steering,
-    )) {
+    idleScans.clear()
+    for (const [sensorId, scan] of scanStates) {
+      scan.hit = undefined
+      if (!scanDue(scan, t)) idleScans.add(sensorId)
+    }
+    for (const { spec, hit } of sweep.hits(members, uasId, t, steering)) {
       // A scan radar's hit is a scan result only at its scan step.
-      if (scanStates.has(hit.sensorId)) {
-        if (scanSteps.has(hit.sensorId)) {
-          scanHits.set(hit.sensorId, hit)
+      const scan = scanStates.get(hit.sensorId)
+      if (scan) {
+        if (!idleScans.has(hit.sensorId)) {
+          scan.hit = hit
           if (stepFirstId == null) stepFirstId = hit.sensorId
         }
         continue
@@ -468,12 +508,12 @@ export function assessThreat(
     // miss, so M-of-N degenerates to a count. Pd telemetry runs every step
     // from the first scan.
     for (const [sensorId, scan] of scanStates) {
-      const scanStep = scanSteps.has(sensorId)
-      let observation = sensorObservations.get(sensorId)
-      const hit = scanHits.get(sensorId)
+      const scanStep = !idleScans.has(sensorId)
+      let observation = scan.observation
+      const hit = scan.hit
       let probe: number | null = null
       if (scan.pdModeled && (scan.pdSeries || scanStep)) {
-        probe = radarPdProbe(scan.sensor, scan.spec, scenario, uasSpec, altitudeFt, members) ?? 0
+        probe = sweep.probe(sensorId, members) ?? 0
         if (!scan.pdSeries) {
           scan.pdSeries = []
           scan.pdSeriesStartS = t
@@ -504,6 +544,7 @@ export function assessThreat(
               observation.pdSeriesStartS = scan.pdSeriesStartS!
             }
             sensorObservations.set(sensorId, observation)
+            scan.observation = observation
           }
           scan.consecutiveMisses = 0
           scan.hold = 'detected'
@@ -570,10 +611,9 @@ export function assessThreat(
         connectedCacheSize = detectingSensors.size
       }
       const connected = connectedCache
-      for (const eff of effectors) {
+      for (const { eff, spec } of effectorTerms) {
         if (!connected.has(eff.id)) continue
-        const spec = modelFor(scenario, eff)?.effector
-        if (!spec || spec.maxRangeM <= 0) continue
+        if (spec.maxRangeM <= 0) continue
         const ratio = dist(pos, eff.pos) / spec.maxRangeM
         if (ratio < nearestRatio) nearestRatio = ratio
       }
@@ -591,38 +631,35 @@ export function assessThreat(
     }
 
     // Lead-ship geometry: CPA and the first boundary crossing (arrival).
-    for (const asset of assets) {
+    for (const { asset, radiusM } of assetTerms) {
       const d = dist(pos, asset.pos)
       if (d < closest.distM) closest = { assetId: asset.id, tS: t, distM: d }
-      if (arrivalS == null && d <= defendedRadiusOf(asset)) arrivalS = t
+      if (arrivalS == null && d <= radiusM) arrivalS = t
     }
 
-    // In range when any formation member is inside the envelope on slant
-    // range, under the effector ceiling. A jammer's reach is its effective
-    // range against this target, as attrition and the drawn cone use; its
-    // cone test takes no ceiling.
-    for (const eff of effectors) {
-      const spec = modelFor(scenario, eff)?.effector
-      if (!spec) continue
-      const isJammer = spec.effectorType === 'jammer'
-      if (!isJammer && effectorGeometryGate(spec, altM) !== 'ok') continue
-      const reachM = isJammer ? effectiveJamRangeM(spec, uasSpec) : spec.maxRangeM
-      const dAltM = altM - mountHeightOf(spec)
-      const inRange = members.some((m) => {
+    // Effector windows: the terms are per threat, the member test per step.
+    for (const { eff, spec, windowGated, reachM, dAltM, sectorDeg } of effectorTerms) {
+      if (windowGated) continue
+      let inRange = false
+      for (const m of members) {
         const slant = slantRangeM(dist(eff.pos, m), dAltM)
-        return (
+        if (
           slant >= spec.minRangeM &&
           slant <= reachM &&
-          pointInWedge(eff.pos, eff.headingDeg, spec.sectorDeg ?? 360, m)
-        )
-      })
-      const intervals = effectorInRange.get(eff.id) ?? []
-      const last = intervals[intervals.length - 1]
-      if (inRange) {
-        if (last && Math.abs(last[1] - (t - DT)) < DT / 2) last[1] = t
-        else intervals.push([t, t])
+          pointInWedge(eff.pos, eff.headingDeg, sectorDeg, m)
+        ) {
+          inRange = true
+          break
+        }
+      }
+      if (!inRange) continue
+      // Insertion at the first in-range step keeps the effectorWindows order.
+      let intervals = effectorInRange.get(eff.id)
+      if (!intervals) {
+        intervals = []
         effectorInRange.set(eff.id, intervals)
       }
+      extendIntervals(intervals, t)
     }
 
     if (sample.done) break
@@ -827,7 +864,8 @@ export function assessThreat(
 
 /** assessThreat over every active threat, one policy threaded through. */
 export function assessAllThreats(scenario: Scenario, policy?: DrawPolicy): ThreatAssessment[] {
+  const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   return scenario.entities
     .filter((e) => e.kind === 'uas' && entityActive(e))
-    .map((e) => assessThreat(scenario, e.id, policy))
+    .map((e) => assessThreat(scenario, e.id, draw))
 }

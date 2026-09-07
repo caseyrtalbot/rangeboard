@@ -178,16 +178,27 @@ export function radarPdAt(
   target: UasSpec | undefined,
   slantM: number,
 ): number | null {
+  return radarPdCurve(spec, env, target)?.(slantM) ?? null
+}
+
+/**
+ * radarPdAt with the calibration, the target terms and the environment
+ * factor resolved once: the curve the sweep evaluates per admitted member
+ * per step. Null when the Pd model does not apply.
+ */
+export function radarPdCurve(
+  spec: SensorSpec,
+  env: EnvironmentSpec,
+  target: UasSpec | undefined,
+): ((slantM: number) => number) | null {
   if (!radarPdModeled(spec, target)) return null
   const cap = instrumentedM(spec)
-  if (cap != null && slantM > cap) return 0
-  return pdAtRange(
-    radarCalibration(spec),
-    rcsM2For(target),
-    slantM,
-    sensorEnvFactor('radar', env),
-    swerlingFor(target),
-  )
+  const cal = radarCalibration(spec)
+  const rcsM2 = rcsM2For(target)
+  const envFactor = sensorEnvFactor('radar', env)
+  const swerling = swerlingFor(target)
+  return (slantM) =>
+    cap != null && slantM > cap ? 0 : pdAtRange(cal, rcsM2, slantM, envFactor, swerling)
 }
 
 /** The span, m, at which an EO/IR detect range is quoted: spec value, else the Group 1 planning factor. */
@@ -375,7 +386,7 @@ function ceilingM(maxAltitudeFt: number | null | undefined): number | null {
     : null
 }
 
-type GeometryGate = 'ok' | 'below-horizon' | 'elevation' | 'ceiling'
+export type GeometryGate = 'ok' | 'below-horizon' | 'elevation' | 'ceiling'
 
 /** Elevation gate tolerance at both edges, degrees. PF. */
 const EL_EPS_DEG = 0.001
@@ -397,16 +408,33 @@ export function sensorGeometryGate(
   targetAltM: number,
   groundM: number,
 ): GeometryGate {
+  return sensorGeometryGateAt(spec, sensorHeightM, targetAltM)(groundM)
+}
+
+/**
+ * sensorGeometryGate with the ceiling, the radio horizon and the height
+ * difference resolved once for one sensor against one target altitude: the
+ * gate the sweep tests per member per step.
+ */
+export function sensorGeometryGateAt(
+  spec: SensorSpec,
+  sensorHeightM: number,
+  targetAltM: number,
+): (groundM: number) => GeometryGate {
   const ceiling = ceilingM(spec.maxAltitudeFt)
-  if (ceiling != null && targetAltM > ceiling) return 'ceiling'
-  if (spec.sensorType === 'acoustic') return 'ok'
-  if (groundM > radioHorizonM(sensorHeightM, targetAltM)) return 'below-horizon'
+  if (ceiling != null && targetAltM > ceiling) return () => 'ceiling'
+  if (spec.sensorType === 'acoustic') return () => 'ok'
+  const horizonM = radioHorizonM(sensorHeightM, targetAltM)
   const el = spec.elevationDeg
-  if (el) {
-    const angle = elevationDeg(groundM, targetAltM - sensorHeightM)
-    if (angle < el[0] - EL_EPS_DEG || angle > el[1] + EL_EPS_DEG) return 'elevation'
+  const dAltM = targetAltM - sensorHeightM
+  return (groundM) => {
+    if (groundM > horizonM) return 'below-horizon'
+    if (el) {
+      const angle = elevationDeg(groundM, dAltM)
+      if (angle < el[0] - EL_EPS_DEG || angle > el[1] + EL_EPS_DEG) return 'elevation'
+    }
+    return 'ok'
   }
-  return 'ok'
 }
 
 /** Effector ceiling gate: 'ceiling' when spec.maxAltitudeFt is recorded and the target is above it. */

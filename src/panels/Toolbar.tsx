@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
 import { useStore } from '../state/store'
-import type { Theme } from '../state/store'
+import type { Store, Theme } from '../state/store'
 import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
@@ -11,7 +12,7 @@ import { RangeSetupMenu } from './RangeSetupMenu'
 import { useTeStore } from '../te/state/teStore'
 import type { Workspace } from '../te/state/teStore'
 import { captureFrameToCampaign } from '../te/io/frameCapture'
-import type { BoundaryType, EnvironmentSpec, Roe } from '../model/types'
+import type { BoundaryType, EnvironmentSpec, Roe, Scenario } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
 
@@ -52,6 +53,28 @@ function activeDerates(env: EnvironmentSpec): string[] {
   if ((env.emBackground ?? 'rural') === 'urban') out.push('urban EM')
   if (env.windSpeedMps > 0) out.push(`wind ${env.windSpeedMps} m/s`)
   return out
+}
+
+interface SpawnWarning {
+  count: number
+  hint: string
+}
+
+const spawnWarningCache = new WeakMap<Scenario, SpawnWarning | null>()
+
+/**
+ * One source of truth with the analysis record: the chip reads the same run-validity
+ * finding the requirement gates and the run export read, so the toolbar and the evidence
+ * can never disagree. Derived live, never stored; cached by scenario identity so the
+ * selector costs nothing on a publication that leaves the scenario alone.
+ */
+function selectSpawnWarning(s: Store): SpawnWarning | null {
+  const cached = spawnWarningCache.get(s.scenario)
+  if (cached !== undefined) return cached
+  const finding = assessRunValidity(s.scenario, []).findings.find((f) => f.id === 'spawn-in-ring')
+  const warning = finding ? { count: finding.uasIds.length, hint: finding.message } : null
+  spawnWarningCache.set(s.scenario, warning)
+  return warning
 }
 
 // File actions sit behind one button so the bar holds a single row at 1440px.
@@ -175,8 +198,15 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
   )
 }
 
-export function Toolbar() {
-  const scenario = useStore((s) => s.scenario)
+/**
+ * The top bar. Memoized with no props, so an `App` render never reaches it; it
+ * subscribes to the scenario fields it shows, never to the whole scenario.
+ */
+export const Toolbar = memo(function Toolbar() {
+  const scenarioName = useStore((s) => s.scenario.name)
+  const roe = useStore((s) => s.scenario.roe ?? 'tight')
+  const environment = useStore((s) => s.scenario.environment)
+  const spawnWarning = useStore(useShallow(selectSpawnWarning))
   const threatWez = useStore((s) => s.ui.layers.threatWez)
   const save = useStore((s) => s.save)
   const { setScenarioName } = useStore.getState()
@@ -190,17 +220,7 @@ export function Toolbar() {
     { id: 'ops', label: 'T&E Ops' },
   ]
 
-  const roe = scenario.roe ?? 'tight'
-  const derates = activeDerates(scenario.environment)
-
-  // One source of truth with the analysis record: the chip reads the same
-  // run-validity finding the requirement gates and the run export read, so the
-  // toolbar and the evidence can never disagree. Derived live, never stored.
-  const spawnWarning = useMemo(() => {
-    const finding = assessRunValidity(scenario, []).findings.find((f) => f.id === 'spawn-in-ring')
-    if (!finding) return null
-    return { count: finding.uasIds.length, hint: finding.message }
-  }, [scenario])
+  const derates = activeDerates(environment)
 
   if (workspace === 'ops') {
     return (
@@ -234,7 +254,7 @@ export function Toolbar() {
       />
       <input
         className="scenario-name"
-        value={scenario.name}
+        value={scenarioName}
         onChange={(e) => setScenarioName(e.target.value)}
         aria-label="Scenario name"
         title="Scenario name"
@@ -276,10 +296,10 @@ export function Toolbar() {
       </div>
     </header>
   )
-}
+})
 
-/** Canvas-local Board controls, placed over the canvas by App. */
-export function BoardTools({ onSelectTool }: { onSelectTool?: () => void }) {
+/** Canvas-local Board controls, placed over the canvas by App. Memoized: App passes one stable handler. */
+export const BoardTools = memo(function BoardTools({ onSelectTool }: { onSelectTool?: () => void }) {
   const tool = useStore((s) => s.ui.tool)
   const boundaryType = useStore((s) => s.ui.boundaryType)
   const canUndo = useStore((s) => s.past.length > 0)
@@ -345,4 +365,4 @@ export function BoardTools({ onSelectTool }: { onSelectTool?: () => void }) {
       </div>
     </div>
   )
-}
+})

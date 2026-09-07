@@ -23,7 +23,7 @@ Breaking one of these breaks the app.
   `TimelineBar` owns the requestAnimationFrame loop that publishes `simTimeS` every 100 ms of
   wall time at every speed (10 Hz, `PUBLISH_PERIOD_MS` in `src/canvas/frameClock.ts`); each
   publication advances by the measured wall time at playback speed. The canvas frame clock
-  (`useFrameClock`, mounted in `LiveScene` under the Konva stage) derives its display time
+  (`useFrameClock`, mounted once in `LiveScene` on the live Konva Layer) derives its display time
   from the last published `simTimeS` plus the wall time since that publication at
   `speedMult`, clamped to one period. Any pulse, blink or playhead derives from `simTimeS`
   or that display time; never a timer. Panels subscribe through `src/state/selectors.ts`.
@@ -33,7 +33,10 @@ Breaking one of these breaks the app.
   layout, the `mc` slice) goes through `set` and never pushes history. Undo and redo
   restore through `set`, so a rule added to `mutate` must be added to both. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
-  and redo carry the current stamp over a restored snapshot.
+  and redo carry the current stamp over a restored snapshot. A stamp that already matches
+  replaces nothing. A new stamp is a presentation variant of the current object
+  (`markPresentationVariant` in `src/model/scenario.ts`): every engine-keyed cache reads
+  `engineKeyOf(scenario)`, the base of that chain, so the Play click misses no cache.
 - **Schema:** `Scenario.schemaVersion = 1`. `fillScenario`
   (`src/io/persist.ts`) spreads a save over `emptyScenario()` and deep-fills one level into
   `environment`, `requirements`, `doctrine`, `mcdaWeights`, `underlay`, `raid`. A new
@@ -112,7 +115,9 @@ Breaking one of these breaks the app.
 
 ```text
 src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basisFor),
-               seed.ts (emptyScenario, DEFAULT_SEED), seedLibrary.ts (builtin specs with
+               scenario.ts (modelFor index, pathSpeed, scenarioDurationS, engineKeyOf and
+               markPresentationVariant), seed.ts (emptyScenario, DEFAULT_SEED),
+               seedLibrary.ts (builtin specs with
                provenance rows), integrationData.ts (researched pairings and profiles),
                seedSystems.ts (system presets), seedCards.ts,
                rcsFactors / signatureFactors / weaponFactors (PF tiers)
@@ -126,13 +131,16 @@ src/state/     store.ts: one zustand store (scenario + history + selection + cam
                labels.ts (run, connection, frame and card-version labels), camera.ts
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts
 src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), detection.ts
-               (sensor sweep, detectionsAt, spawn ring check), killChain.ts (kill-chain
+               (prepareSweep: per-sensor terms resolved once per threat; sweepSensorHits,
+               detectionsAt, spawn ring check), killChain.ts (kill-chain
                routes), sim.ts (assessThreat, assessAllThreats), pk.ts (Pk model and
                expenditure channels), intercept.ts (time of flight, intercept, launch
                releases), attritionReport.ts (report types), sweepState.ts (sweep state
                types), attrition.ts (resolveEngagements: fire distribution, expected
                kills, events), trackState.ts
-               (phase at t), tactics.ts (threat tactics), raid.ts, runSession.ts,
+               (phase at t, trackTimelineOf), sweepAt.ts (the per-publication sweep memo:
+               hits, track states, effector states, held sensors), tactics.ts (threat
+               tactics), raid.ts, runSession.ts,
                policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
                McSummary), mc.worker.ts + mcClient.ts (the replicate worker)
 src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
@@ -148,9 +156,12 @@ src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark tha
                the layers, the palette glyphs, the detail panels and trackState share
 src/charts/    recharts kit: types.ts (Series), tokens.ts, timeAxis.ts, ChartFrame,
                TimeSeries, Ladder, Tornado. Props only; never reads the store.
-src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target),
-               TrackFileReadout.tsx, frameClock.ts, layers/ (one Konva layer per
-               concern; footprintStyle.ts is the ring style source)
+src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target, the two scene
+               Layers), StaticScene.tsx (boundaries, footprints, range rings and
+               connections on the static Layer), LiveScene.tsx (the frame clock and every
+               moving layer on the live Layer), TrackFileReadout.tsx, frameClock.ts,
+               layers/ (one component per drawn concern; footprintStyle.ts is the ring
+               style source)
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
                LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/,
@@ -172,7 +183,9 @@ Data flow for a click or drag: Konva event, store action, new scenario, React re
 layers. Drag and rotate in progress are Konva-native previews; the store updates once on
 `dragend`, one undo entry per gesture. Analysis
 reads `engagementPicture(scenario)` (`src/analysis/impact.ts`), a WeakMap cache keyed on
-the scenario object, so the deterministic sweep runs once per scenario change. Engine entry
+the scenario's engine identity (`engineKeyOf`) and bounded to the eight most recently
+used pictures, so the deterministic sweep runs once per scenario change and a deep undo
+recomputes one picture. Engine entry
 points in call order: `assessAllThreats(scenario, policy?)` (`sim.ts`) sweeps detection and
 builds one `ThreatAssessment` per active threat; `resolveEngagements(scenario, assessments,
 policy?)` (`attrition.ts`) distributes fire and returns totals, events and per-effector rows.
@@ -486,7 +499,25 @@ Konva conventions:
 - Each layer reads its own `ui.layers` flag and returns `null`; `CanvasStage` does no
   gating.
 - Everything a layer draws at time t is derived at render from the scenario and
-  `simTimeS`. A layer never stores derived state.
+  `simTimeS`. A layer never stores derived state. A layer may keep the previous render's
+  records in a ref only to lend their identities to the records that did not change
+  (`FootprintLayer` rings, `ThreatWezLayer` zones, `LiveScene` placements), never to skip
+  a derivation.
+- Two scene Layers, in this order: `StaticScene` (boundaries, footprints, range rings,
+  connections) and `LiveScene` (WEZ, paths, engagements, entities, system handles,
+  callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
+  live canvas alone and the dashed rings stay untouched between publications. The frame
+  clock is mounted once, in `LiveScene`; the static scene reads the published `simTimeS`
+  and re-renders only when the held-sensor set changes.
+- The snapped per-publication values (the sensor sweep, track states, effector states,
+  the held-sensor set) come from `sweepAt(scenario, timeline, simTimeS)`
+  (`src/playback/sweepAt.ts`): one computation per instant, shared by the live scene, the
+  static scene, the track card and the threat pane. `threatReadoutAt` takes that sweep so
+  the 10 Hz card reruns no sweep of its own. The timeline comes from `trackTimelineOf`,
+  cached per picture. Both key on `engineKeyOf(scenario)`.
+- A frame creates React elements for what moved. `EntityNode` is memoized on per-entity
+  primitives, the pulse phase is one boolean computed per frame (never `displayTimeS`
+  itself), and the flying entities render in their own group above the at-rest ones.
 - Fixed `dash` and `points` arrays are module constants. Konva compares array props by
   identity, so an inline literal re-sets the attribute and dirties the layer on every
   render. Per-render geometry (shot endpoints, grid lines, a trimmed link) stays inline.
@@ -534,7 +565,10 @@ Design system (`src/index.css`):
 - **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render.
   `tokens.test.ts` checks the five chart slot hues against the sheet. Other
   `TOKEN_FALLBACK` values used in Node/static markup retain earlier palette values;
-  the test does not establish full fallback parity with the current CSS.
+  the test does not establish full fallback parity with the current CSS. A recharts
+  `CartesianGrid` with a hidden axis needs an explicit empty coordinate generator:
+  `vertical={false}` only hides the lines, and the default generator still measures the
+  label of every data row in the DOM, one forced layout per row.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,
   `EmptyState`, `Kbd`, `ShortcutList`, `Actions`, `PfTag`. A read-only property is a
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a
