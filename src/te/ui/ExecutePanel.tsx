@@ -14,12 +14,12 @@ import type {
   TeChecklist,
 } from '../model/types'
 import { useTeStore } from '../state/teStore'
-import { runAccounting, validRunRate } from '../calc/accounting'
 import { coverage } from '../calc/matrix'
 import { templateByKey, templatesForPhase } from '../seed/checklistTemplates'
 import { checklistBlockers } from '../validate'
 import { nowIso } from '../model/empty'
 import { HELP, allPeople } from './help'
+import { AccountingLine } from './AccountingLine'
 import {
   CheckField,
   DecisionGroup,
@@ -46,16 +46,6 @@ import {
 } from './ExecuteBlocks'
 
 type Tab = 'day' | 'run' | 'checklists' | 'adjudication'
-
-function AccountingLine({ campaign }: { campaign: TeCampaign }) {
-  const acc = runAccounting(campaign)
-  const rate = validRunRate(campaign)
-  return (
-    <div className="spec-summary">
-      planned {acc.planned} · attempted {acc.attempted} · valid {acc.valid} · conditional {acc.conditional} · invalid {acc.invalid} · excluded {acc.excluded} · pending {acc.pending} · valid-run rate {rate === null ? 'n/a' : `${Math.round(rate * 100)}%`}
-    </div>
-  )
-}
 
 function DayTab({ campaign, onOpenChecklists }: { campaign: TeCampaign; onOpenChecklists: () => void }) {
   const cov = coverage(campaign)

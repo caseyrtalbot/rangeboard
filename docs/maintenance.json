@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "92aeccf2eb922f782bc05f28ec836c798574ab6ca4ef05e895c5306784d37560",
+      "sha256": "d467fce6c1218eca011e155ab61dff6110cb6b0dc7d2299323a019f8ef8e9567",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed test-only CI follow-up: one full-engine parity matrix receives 15 seconds; product behavior and source entry points remain unchanged."
+      "note": "Reviewed PR 3 merge: the duplicated AccountingLine in AnalyzePanel and ExecutePanel moved to src/te/ui/AccountingLine.tsx with no behavior change; documented entry points are unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "518981bee2561e2cf58e7596338ed83b42b73436e89f486b1c6072fc83af0e61",
+      "sha256": "d5ddba07e0e517efa3eb1198134d40f7f6548887ef87c16216e62098521df868",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed parity-matrix test timeout adjustment; engine computations, exact numerical assertions and invariants are unchanged."
+      "note": "Reviewed PR 3 merge: the duplicated AccountingLine in AnalyzePanel and ExecutePanel moved to src/te/ui/AccountingLine.tsx with no behavior change; documented entry points are unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
