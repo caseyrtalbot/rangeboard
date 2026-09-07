@@ -154,8 +154,10 @@ src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark tha
                Board panels and the T&E kit render; reads index.css classes only, no store.
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
                the layers, the palette glyphs, the detail panels and trackState share
-src/charts/    recharts kit: types.ts (Series), tokens.ts, timeAxis.ts, ChartFrame,
-               TimeSeries, Ladder, Tornado. Props only; never reads the store.
+src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.ts (pure
+               series helpers), TimeSeries (a lazy shell whose fallback holds the plot
+               box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
+               render), Ladder and Tornado (plain SVG). Props only; never reads the store.
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target, the two scene
                Layers), StaticScene.tsx (boundaries, footprints, range rings and
                connections on the static Layer), LiveScene.tsx (the frame clock and every
@@ -174,9 +176,11 @@ src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and
                viewState.ts (readSetting and writeSetting over every settings key),
                storageKeys.ts, recovery.ts
 src/te/        T&E Operations workspace (own store, section 8)
-src/main.tsx   loads the autosave, starts both autosaves, exposes window.__store and
-               window.__teStore in dev
-src/App.tsx    workspace toggle, right panel tabs, keyboard map, resizer
+src/main.tsx   loads the Board autosave, starts both autosave subscriptions, schedules
+               the T&E restore on idle, exposes window.__store and window.__teStore in dev
+src/App.tsx    workspace toggle, right panel tabs, keyboard map, resizer; lazy boundaries
+               for OpsWorkspace (which restores the T&E record first), AnalysisPanel,
+               TestCardsPanel and CommandPalette
 ```
 
 Data flow for a click or drag: Konva event, store action, new scenario, React re-render of
@@ -185,7 +189,13 @@ layers. Drag and rotate in progress are Konva-native previews; the store updates
 reads `engagementPicture(scenario)` (`src/analysis/impact.ts`), a WeakMap cache keyed on
 the scenario's engine identity (`engineKeyOf`) and bounded to the eight most recently
 used pictures, so the deterministic sweep runs once per scenario change and a deep undo
-recomputes one picture. Engine entry
+recomputes one picture. A cache miss assesses the threats incrementally
+(`assessThreatsIncremental`): a threat keeps the last run's assessment object while every
+input it reads is the same object (the scenario fields the sweep reads, the run duration, the
+threat, every asset, effector and C2 node, and every sensor whose technology gate admits the
+target and whose reach touches the flight path plus the formation spread);
+`resolveEngagements` runs fresh every time, and a new read inside `assessThreat` must join
+that input list in the same change. Engine entry
 points in call order: `assessAllThreats(scenario, policy?)` (`sim.ts`) sweeps detection and
 builds one `ThreatAssessment` per active threat; `resolveEngagements(scenario, assessments,
 policy?)` (`attrition.ts`) distributes fire and returns totals, events and per-effector rows.
@@ -501,8 +511,10 @@ Konva conventions:
 - Everything a layer draws at time t is derived at render from the scenario and
   `simTimeS`. A layer never stores derived state. A layer may keep the previous render's
   records in a ref only to lend their identities to the records that did not change
-  (`FootprintLayer` rings, `ThreatWezLayer` zones, `LiveScene` placements), never to skip
-  a derivation.
+  (`FootprintLayer` rings, `ThreatWezLayer` zones, `LiveScene` placements, tracks and spoke
+  ids; `sweepAt` lends hits, track states and effector states the same way), never to skip
+  a derivation. Spoke callout geometry snaps to whole pixels in `labelLayout.ts`, so a
+  sub-pixel centroid drift does not change a placement's identity.
 - Two scene Layers, in this order: `StaticScene` (boundaries, footprints, range rings,
   connections) and `LiveScene` (WEZ, paths, engagements, entities, system handles,
   callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
@@ -582,7 +594,10 @@ Design system (`src/index.css`):
 - Second workspace ("T&E Ops" toggle). Spec sources: `docs/te-plan.md` and the MASTER-*.md
   files in `docs/te-compilation/`.
 - **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`,
-  recovery copy at `rangeboard.te.recovered.<ms>`. Records are versioned and append-only
+  recovery copy at `rangeboard.te.recovered.<ms>`. `startTeAutosave` only subscribes and
+  writes nothing until `restoreTeAutosave` has read the saved record back; the restore runs
+  once, on idle, on the first Ops entry or on a Board frame capture, whichever comes first.
+  Records are versioned and append-only
   (runs never renumber, issued cards freeze, changes create new versions). Never embed
   campaign data in `Scenario`. The store enforces issued/superseded card immutability,
   frozen baselines and generic action guards. Delivery freezes campaign evidence; closure
@@ -600,11 +615,13 @@ Design system (`src/index.css`):
   engine imports `meanInterval`, `quantile`, `wilson` and `betaQuantile` from
   `src/te/calc/stats.ts`; that is the one dependency from the engine on `src/te/`.
 - Seeds in `src/te/seed/` (measure dictionary, templates, vignettes, `buildJiatf401()` demo
-  campaign marked `illustrative`). Print artifacts in `src/te/print/` render into
+  campaign marked `illustrative`). The measure dictionary, the card templates and the threat
+  vignettes load with `applyPreset` (async), not at startup. Print artifacts in `src/te/print/` render into
   `PrintOverlay`; CSV exports in `src/te/io/exportCsv.ts`. Board frame capture
   (`src/te/io/frameCapture.ts`) works only from the Board workspace.
-- Persistence and imports are validated through `io/validateTe.ts`, including embedded
-  Board snapshots and campaign-local references. The store checks internal transitions and
+- Persistence and imports are validated through `io/validateTe.ts`, including campaign-local
+  references. An embedded Board snapshot is stored verbatim at load and validated by
+  `parseConfigSnapshot` when it is opened. The store checks internal transitions and
   evidence history.
 
 ## 9. Standards referenced by model tags

@@ -655,8 +655,8 @@ describe('startFromCampaign', () => {
 })
 
 describe('applyPreset', () => {
-  it('blank records the pick and seeds nothing', () => {
-    useTeStore.getState().applyPreset('blank')
+  it('blank records the pick and seeds nothing', async () => {
+    await useTeStore.getState().applyPreset('blank')
     const c = campaign()
     expect(c.presetKey).toBe('blank')
     expect(c.questions).toHaveLength(0)
@@ -664,8 +664,8 @@ describe('applyPreset', () => {
     expect(c.cards).toHaveLength(0)
   })
 
-  it('sensor characterization seeds structure without fabricated facts', () => {
-    useTeStore.getState().applyPreset('sensor-characterization')
+  it('sensor characterization seeds structure without fabricated facts', async () => {
+    await useTeStore.getState().applyPreset('sensor-characterization')
     const c = campaign()
     expect(c.presetKey).toBe('sensor-characterization')
     expect(c.charter.engagementType).toBe('characterization')
@@ -692,8 +692,8 @@ describe('applyPreset', () => {
     expect(useTeStore.getState().issueCard(card.id).length).toBeGreaterThan(0)
   })
 
-  it('radar comparison seeds two configs and a baseline plus delta matrix', () => {
-    useTeStore.getState().applyPreset('radar-comparison')
+  it('radar comparison seeds two configs and a baseline plus delta matrix', async () => {
+    await useTeStore.getState().applyPreset('radar-comparison')
     const c = campaign()
     expect(c.charter.engagementType).toBe('comparison')
     expect(c.configs).toHaveLength(2)
@@ -704,8 +704,8 @@ describe('applyPreset', () => {
     expect(c.matrix[0].configId).not.toBe(c.matrix[1].configId)
   })
 
-  it('ew resilience seeds a contested condition and an adaptive threat skeleton', () => {
-    useTeStore.getState().applyPreset('ew-resilience')
+  it('ew resilience seeds a contested condition and an adaptive threat skeleton', async () => {
+    await useTeStore.getState().applyPreset('ew-resilience')
     const c = campaign()
     expect(c.conditions).toHaveLength(1)
     expect(c.conditions[0].emEnvironment).toBe('contested')

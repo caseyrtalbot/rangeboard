@@ -68,7 +68,9 @@ the contrast findings for them on paper are in
 
 Two faces. Archivo carries the interface at weights 400 and 500. JetBrains Mono carries
 machine data at 400 and 500. Both are self-hosted woff2 files under `src/assets/fonts` with
-their OFL licences, declared by `@font-face` in `index.css`. `font-variant-numeric:
+their OFL licences, declared by `@font-face` in `index.css`. The JetBrains Mono files are
+subset to Latin plus the non-ASCII code points the source uses, with every layout feature
+kept; the two 400 faces are preloaded from `index.html`. `font-variant-numeric:
 tabular-nums` is set on `:root`.
 
 | Role | Tokens | Size and weight |

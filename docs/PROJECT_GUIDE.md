@@ -78,8 +78,11 @@ before changing lifecycle behavior.
 
 ## Execution and persistence
 
-1. [main.tsx](../src/main.tsx) loads the Board autosave and starts both autosave paths.
-   [App.tsx](../src/App.tsx) switches workspaces and manages common interaction chrome.
+1. [main.tsx](../src/main.tsx) loads the Board autosave synchronously, starts both autosave
+   subscriptions and schedules the T&E restore on idle; the first switch to Ops runs that
+   restore if idle has not. [App.tsx](../src/App.tsx) switches workspaces and manages common
+   interaction chrome. The Ops workspace, the analysis and test-card panels, the command
+   palette and the recharts plot load behind lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; live views and full-run projections consume those results.

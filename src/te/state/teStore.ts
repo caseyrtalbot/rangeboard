@@ -49,9 +49,6 @@ import {
 } from '../validate'
 import { validateShape } from '../../io/runtimeValidation'
 import { validateCampaignShape } from '../io/validateTe'
-import { MEASURE_DICTIONARY, measureFromDict } from '../seed/measureDictionary'
-import { CARD_TEMPLATES } from '../seed/cardTemplates'
-import { THREAT_VIGNETTES } from '../seed/vignettes'
 
 /** Campaign fields that are arrays of records keyed by `id`. */
 type TeListKey = {
@@ -111,7 +108,7 @@ interface TeStore {
    * structure and recommended records only; text placeholders use [brackets]
    * so the card gate catches them. Facts are never fabricated.
    */
-  applyPreset: (presetKey: string) => void
+  applyPreset: (presetKey: string) => Promise<void>
   replaceState: (s: TeState) => void
   patchCampaign: (patch: Partial<TeCampaign>) => void
 
@@ -483,9 +480,16 @@ export const useTeStore = create<TeStore>()((set, get) => {
       return next.id
     },
 
-    applyPreset: (presetKey) => {
-      const st = get()
-      if (!requireCampaign(st)) return
+    applyPreset: async (presetKey) => {
+      // The measure dictionary, the card templates and the threat vignettes are 62 KB of
+      // seed data that only a preset reads. They load with the action, not at startup.
+      const [{ MEASURE_DICTIONARY, measureFromDict }, { CARD_TEMPLATES }, { THREAT_VIGNETTES }] =
+        await Promise.all([
+          import('../seed/measureDictionary'),
+          import('../seed/cardTemplates'),
+          import('../seed/vignettes'),
+        ])
+      if (!requireCampaign(get())) return
       /** Question skeleton. Placeholder wording; the card gate catches [brackets]. */
       const seedQuestion = (
         wording: string,

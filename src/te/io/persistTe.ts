@@ -1,4 +1,5 @@
 import type { TeCampaign, TeState } from '../model/types'
+import type { Scenario } from '../../model/types'
 import { deliveryBlockers } from '../validate'
 import { emptyCampaign, emptyPackage } from '../model/empty'
 import { useTeStore } from '../state/teStore'
@@ -32,12 +33,21 @@ export function fillCampaign(parsed: TeCampaign): TeCampaign {
     const blockers = deliveryBlockers(filled)
     if (blockers.length) invalid('campaign.evidencePackage.deliveredAt', blockers.join(' '))
   }
-  filled.configs.forEach((config, i) => {
-    if (config.scenarioSnapshot !== null) {
-      try { parseAutosave(config.scenarioSnapshot) } catch (error) { invalid(`campaign.configs[${i}].scenarioSnapshot`, (error as Error).message) }
-    }
-  })
   return filled
+}
+
+/**
+ * Parse a configuration's stored Board snapshot. Called when a snapshot is opened,
+ * never at load: validating every snapshot of every configuration on load costs one
+ * full scenario parse, shape check and reference walk each, synchronously, before
+ * first paint. The error carries the same path and reason the load path used.
+ */
+export function parseConfigSnapshot(snapshot: string, path: string): Scenario {
+  try {
+    return parseAutosave(snapshot)
+  } catch (error) {
+    invalid(path, (error as Error).message)
+  }
 }
 
 /**
@@ -83,14 +93,29 @@ export function loadTeAutosave(): TeState | null {
   }
 }
 
+/** Set once the saved record has been read back, so no write can precede the restore. */
+let restored = false
+
+/**
+ * Read the saved T&E record back into the store. Runs at most once. Kept off the
+ * first-paint path: the read parses a second JSON document, validates its shape and
+ * walks every campaign reference. `startTeAutosave` writes nothing until this has run,
+ * so an untouched store can never overwrite a saved record.
+ */
+export function restoreTeAutosave(): void {
+  if (restored) return
+  const saved = loadTeAutosave()
+  if (saved) useTeStore.getState().replaceState(saved)
+  restored = true
+}
+
 /**
  * Subscribe the T&E store to localStorage autosave. Call once at startup.
  * Writes are debounced; a pending write is flushed synchronously when the tab
- * is hidden or unloaded so a close never loses the last edit.
+ * is hidden or unloaded so a close never loses the last edit. Restoring the saved
+ * record is `restoreTeAutosave`, scheduled separately.
  */
 export function startTeAutosave(): void {
-  const saved = loadTeAutosave()
-  if (saved) useTeStore.getState().replaceState(saved)
   let timer: number | undefined
   let pending: TeState | null = null
 
@@ -111,6 +136,7 @@ export function startTeAutosave(): void {
   }
 
   useTeStore.subscribe((state, prev) => {
+    if (!restored) return
     if (state.campaigns === prev.campaigns && state.activeCampaignId === prev.activeCampaignId)
       return
     pending = {

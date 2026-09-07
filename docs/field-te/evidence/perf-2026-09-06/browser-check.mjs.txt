@@ -175,6 +175,75 @@ const heap1 = await heapMB()
 const past1h = (await st()).past
 results.heapAfterEdits = { heapBeforeMB: heap0, heapAfterMB: heap1, growthMB: +(heap1 - heap0).toFixed(1), perEditMB: +((heap1 - heap0) / 30).toFixed(2), pastBefore: past0h, pastAfter: past1h, ok: past1h === past0h + 30 }
 
+// 11. Ops entry and return to Board. The Ops workspace sits behind a lazy
+// boundary: the entry resolves when its root mounts, with no page error.
+const opsRoot = () => page.evaluate(() => !!document.querySelector('.te-workspace, .te-start'))
+const errors11 = errors.length
+await page.evaluate(() => window.__teStore.getState().setWorkspace('ops'))
+await page.waitForFunction(() => document.querySelector('.te-workspace, .te-start'), null, { timeout: 15000 })
+const opsMounted = await opsRoot()
+const teReady = await page.evaluate(() => window.__teStore.getState().ui.workspace === 'ops')
+await page.evaluate(() => window.__teStore.getState().setWorkspace('board'))
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas'), null, { timeout: 15000 })
+const boardBack = await page.evaluate(() => !document.querySelector('.te-workspace, .te-start'))
+results.opsEntry = { opsMounted, teReady, boardBack, errors: errors.length - errors11, ok: opsMounted && teReady && boardBack && errors.length === errors11 }
+
+// 12. chart presence per chart-bearing widget in every lens after the lazy
+// boundary resolves: a recharts surface inside each time-series widget at
+// the saved panel width. The sensitivity widget draws only after a worker
+// run, so its presence is recorded, not its chart.
+await page.click('#board-phase-analyze'); await sleep(300)
+await page.evaluate(() => window.__store.getState().setRightTab('analysis')); await sleep(200)
+const lensIds = ['run-summary', 'sensors', 'effectors', 'iads', 'threat']
+const charts = {}
+for (const id of lensIds) {
+  await page.evaluate((id) => window.__store.getState().applyLens(id), id)
+  const expectSeries = id !== 'iads'
+  let surfaces = 0
+  if (expectSeries) {
+    try {
+      await page.waitForFunction(() => {
+        const ws = [...document.querySelectorAll('section.wg[data-widget-type="time-series"]')]
+        return ws.length > 0 && ws.every((w) => w.querySelector('svg.recharts-surface'))
+      }, null, { timeout: 15000 })
+    } catch {}
+    surfaces = await page.evaluate(() => [...document.querySelectorAll('section.wg[data-widget-type="time-series"]')].filter((w) => w.querySelector('svg.recharts-surface')).length)
+  }
+  const widgets = await page.evaluate(() => [...document.querySelectorAll('section.wg')].map((w) => w.getAttribute('data-widget-type')))
+  const seriesWidgets = widgets.filter((w) => w === 'time-series').length
+  const sensitivityWidgets = widgets.filter((w) => w === 'sensitivity').length
+  const overflow = await page.evaluate(() => [...document.querySelectorAll('section.wg')].some((w) => w.scrollWidth > w.clientWidth + 1))
+  charts[id] = { widgets: widgets.length, seriesWidgets, surfaces, sensitivityWidgets, overflow, ok: (!expectSeries || (seriesWidgets > 0 && surfaces === seriesWidgets)) && !overflow }
+}
+await page.evaluate(() => window.__store.getState().applyLens('run-summary'))
+await page.click('#board-phase-prepare'); await sleep(300)
+results.charts = { ...charts, ok: Object.values(charts).every((c) => c.ok) }
+
+// 13. T&E autosave round trip across a reload. The restore is deferred to
+// idle or to the first Ops entry, so the campaign must be back in the store
+// once Ops mounts after the reload.
+const teName = `Round trip ${Date.now()}`
+await page.evaluate((name) => window.__teStore.getState().createCampaign(name, 'RT'), teName)
+await sleep(900)
+const savedRaw = await page.evaluate(() => localStorage.getItem('rangeboard.te.v1') || '')
+const savedHasCampaign = savedRaw.includes(teName)
+await page.evaluate(() => window.__teStore.getState().setWorkspace('board'))
+await page.reload({ waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store && window.__teStore, null, { timeout: 60000 })
+const beforeOps = await page.evaluate((name) => window.__teStore.getState().campaigns.some((c) => c.name === name), teName)
+await page.evaluate(() => window.__teStore.getState().setWorkspace('ops'))
+await page.waitForFunction(() => document.querySelector('.te-workspace, .te-start'), null, { timeout: 15000 })
+let restored = false
+try {
+  await page.waitForFunction((name) => window.__teStore.getState().campaigns.some((c) => c.name === name), teName, { timeout: 10000 })
+  restored = true
+} catch {}
+const shownInOps = await page.evaluate((name) => document.body.innerText.includes(name), teName)
+const stillSaved = (await page.evaluate(() => localStorage.getItem('rangeboard.te.v1') || '')).includes(teName)
+await page.evaluate(() => window.__teStore.getState().setWorkspace('board'))
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas'), null, { timeout: 15000 })
+results.teRoundTrip = { savedHasCampaign, beforeOps, restored, shownInOps, stillSaved, ok: savedHasCampaign && restored && stillSaved }
+
 results.pageErrors = errors.slice(0, 10)
 results.allOk = Object.values(results).every((r) => typeof r !== 'object' || Array.isArray(r) || r.ok !== false)
 console.log(JSON.stringify(results, null, 1))

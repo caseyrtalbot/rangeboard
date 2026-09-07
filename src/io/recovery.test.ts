@@ -3,7 +3,7 @@ import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { emptyCampaign } from '../te/model/empty'
 import { useTeStore } from '../te/state/teStore'
-import { loadTeAutosave, startTeAutosave } from '../te/io/persistTe'
+import { loadTeAutosave, restoreTeAutosave, startTeAutosave } from '../te/io/persistTe'
 import { loadAutosave, startAutosave } from './persist'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY, TE_RECOVERY_PREFIX } from './storageKeys'
 import { allowAutosave, assertAutosaveAllowed, stashUnreadableSave } from './recovery'
@@ -78,7 +78,7 @@ describe('recovery durability', () => {
     const events = browser()
     let notify!: Parameters<typeof useTeStore.subscribe>[0]
     vi.spyOn(useTeStore, 'subscribe').mockImplementation(callback => { notify = callback; return () => {} })
-    startTeAutosave()
+    restoreTeAutosave(); startTeAutosave()
     const prev = useTeStore.getState(); notify({ ...prev, campaigns: [emptyCampaign('New', 'N')] }, prev)
     events.get('visibilitychange')!()
     expect(data.get(TE_KEY)).toBe(raw); expect(useTeStore.getState().saveError).toContain('preserve')

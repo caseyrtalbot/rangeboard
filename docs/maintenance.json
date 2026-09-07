@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "a99701b78fb173bcd3a612699d5de9a4bb1bca1a87cff3b83963393880813b28",
+      "sha256": "bb8e4446027bddb774cb0e2cb3cd62a320ef0b72cdea0034ac39910a90bc46ef",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 2: App.tsx memoizes its lifecycle nav, resource rail and panel tabs with stable handlers; the setup, persistence and workspace narrative is unchanged and still accurate."
+      "note": "Wave 3: main.tsx schedules the T&E restore on idle and App.tsx adds lazy boundaries; the README's feature summary and commands are unchanged."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "35635aedc72e78e457cf8380f336de567784a44d8c7321b63a5e8a9cfc1b2c75",
+      "sha256": "42ed70968d8fc8bb03fc6b3dd5dfe549daf9241cfef3b0ef27645572842d57fd",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 2 structural performance: canvas Layer split, shared sweep and timeline caches, engine hot loop, first-play stamp, picture cache bound, recharts grid fix, panel memo work. Checked the laydown, range, play and analyze rows and the undo narrative; no user-facing behavior changed, so the guide stands."
+      "note": "Wave 3: main.tsx starts both autosave subscriptions and schedules the T&E restore on idle; the Ops workspace, the analysis and test-card panels, the command palette and the recharts plot load behind lazy boundaries."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "55e11494a216e1b3d747a43b8c1bb19d9b23508b6e20c0fbe9bccb6cc1bc1bc4",
+      "sha256": "09f2124da1f0fc2557cefa1e0769dae09e94256c2f13380326076c01479adc69",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 2: two scene Layers (StaticScene and LiveScene) with the frame clock in the live Layer, the per-publication sweepAt memo and trackTimelineOf cache keyed on engineKeyOf, per-frame element rules, the presentation-variant stamp in the undo model, engagementPicture keyed on engine identity and bounded to eight pictures, prepareSweep in the map, and the recharts CartesianGrid generator rule in the charts bullet."
+      "note": "Wave 3: chart kit split (seriesData, TimeSeries shell over TimeSeriesChart), lazy boundaries in App, T&E restore split and on-demand seed tables in section 8, the per-threat assessment memo in section 4, identity lending for tracks, spoke ids and sweep parts plus pixel-snapped callouts in section 7."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "5b3e82f61fdcb826f963a6be59e10c486142be715bb0b3644d0c35d13f6df661",
-      "reviewedAt": "2026-09-06",
-      "note": "Consolidated commands and test conventions; exercised locked installation, full baseline checks, browser workspaces and real-worker freshness; replaced historical fixture values with recapture instructions. Verified the Node maintenance harness rename to test-docs.mjs and unchanged gate semantics."
+      "sha256": "4a7dc94fe65eab219e8039ce4da17f5925cf0b15e1a700b3cb6bd73d28dcc9dc",
+      "reviewedAt": "2026-09-07",
+      "note": "Wave 3: vite.config.ts gains build.chunkSizeWarningLimit; src/io emits the runtime schema as JSON.parse; src/te/io splits restoreTeAutosave from startTeAutosave and adds parseConfigSnapshot. Commands, fixtures and the parity probe are unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "268b190bb9d88ee4d6ef58a67f5a02dd23cabd196f53bb58a16e7a8934f5a151",
+      "sha256": "f19a7c2a93f627dc9f7992d6f0abad2919beba9ef4ea90bec64ede0a6e2851e4",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 2: TimeSeries gives its CartesianGrid an empty vertical coordinate generator; the vertical lines were already hidden, so no token, color, spacing or type rule changed and the document stands."
+      "note": "Wave 3: JetBrains Mono subset to Latin plus the code points the source uses, 400 faces preloaded; src/charts split into a recharts-free kit plus the lazy TimeSeriesChart, tokens and ChartFrame unchanged."
     }
   ],
   "historical": [

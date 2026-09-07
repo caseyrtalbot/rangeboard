@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyCampaign, emptyCard, emptyConfig, emptyMeasure, emptyQuestion, emptyRun } from '../model/empty'
 import { buildJiatf401 } from '../seed/jiatf401'
 import { emptyScenario } from '../../model/seed'
-import { fillCampaign, parseCampaignData, parseTeAutosave, parseTeStateData } from './persistTe'
+import { fillCampaign, parseCampaignData, parseConfigSnapshot, parseTeAutosave, parseTeStateData } from './persistTe'
 
 function fixture() {
   const c = emptyCampaign('Research', 'R')
@@ -58,12 +58,18 @@ describe('T&E runtime import acceptance', () => {
     expect(loaded.charter.sponsor).toBe('Preserved'); expect(loaded.charter.commitments).toEqual([])
     expect(loaded.frames).toEqual([]); expect(loaded.decision.boundedChoice).toBe('Preserved')
   })
-  it('validates nested serialized Board snapshots', () => {
+  it('keeps a nested Board snapshot at load and validates it at open', () => {
     const c = fixture(); const config = emptyConfig('CFG1'); c.configs = [config]
-    config.scenarioSnapshot = JSON.stringify(emptyScenario())
-    expect(fillCampaign(c).configs[0].scenarioSnapshot).toBe(config.scenarioSnapshot)
-    config.scenarioSnapshot = JSON.stringify({ ...emptyScenario(), entities: null })
-    expect(() => fillCampaign(c)).toThrow('scenarioSnapshot')
+    const path = 'campaign.configs[0].scenarioSnapshot'
+    const good = JSON.stringify(emptyScenario())
+    const bad = JSON.stringify({ ...emptyScenario(), entities: null })
+    config.scenarioSnapshot = good
+    expect(fillCampaign(c).configs[0].scenarioSnapshot).toBe(good)
+    expect(parseConfigSnapshot(good, path).schemaVersion).toBe(1)
+    // The load path stores a malformed snapshot verbatim; open is where it is rejected.
+    config.scenarioSnapshot = bad
+    expect(fillCampaign(c).configs[0].scenarioSnapshot).toBe(bad)
+    expect(() => parseConfigSnapshot(bad, path)).toThrow('scenarioSnapshot')
   })
   it('rejects missing active campaign and duplicate campaigns but supports missing legacy selection', () => {
     const c = fixture()

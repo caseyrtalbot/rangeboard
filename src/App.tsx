@@ -1,29 +1,49 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './state/store'
 import type { RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
 import { useTeStore } from './te/state/teStore'
-import { OpsWorkspace } from './te/ui/OpsWorkspace'
 import { CanvasStage } from './canvas/CanvasStage'
 import { BoardTools, Toolbar } from './panels/Toolbar'
 import { Palette } from './panels/Palette'
 import type { LibraryPlacement } from './panels/Palette'
 import { Inspector } from './panels/Inspector'
-import { LibraryEditor } from './panels/LibraryEditor'
-import { TestCardsPanel } from './panels/TestCardsPanel'
-import { AnalysisPanel } from './panels/AnalysisPanel'
 import { AnalysisNavigation } from './panels/analysis/AnalysisNavigation'
 import { EntityWorkspace } from './panels/EntityWorkspace'
 import type { EntityWorkspaceSection } from './panels/EntityWorkspace'
+import { LibraryEditor } from './panels/LibraryEditor'
 import { BoardPreparation } from './panels/BoardPreparation'
 import type { WidgetProps } from './panels/analysis/widgets/registry'
 import { formatRunLabel } from './state/labels'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
-import { CommandPalette } from './panels/CommandPalette'
 import { toggleAnalysisRun } from './playback/runSession'
 import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
+import { restoreTeAutosave } from './te/io/persistTe'
+import { State } from './ui/kit'
+
+// The T&E workspace and its seed tables load on the first switch to Ops, not at startup.
+// The saved campaigns are restored inside the boundary, so no Ops render reads an
+// unrestored store; main.tsx also schedules the same restore on idle, and it runs once.
+const OpsWorkspace = lazy(() =>
+  import('./te/ui/OpsWorkspace').then((m) => {
+    restoreTeAutosave()
+    return { default: m.OpsWorkspace }
+  }),
+)
+
+// Right-panel tabs and the palette: each opens on demand, so each loads on demand.
+// LibraryEditor stays static: EntityWorkspace renders it inline, so a boundary here
+// moves no bytes and only makes rolldown report an ineffective dynamic import.
+const TestCardsPanel = lazy(() => import('./panels/TestCardsPanel').then((m) => ({ default: m.TestCardsPanel })))
+const AnalysisPanel = lazy(() => import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })))
+const CommandPalette = lazy(() => import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })))
+
+/** One fallback for every panel boundary: the panel body is empty for one frame. */
+function PanelLoading({ label }: { label: string }) {
+  return <State tone="inactive">{label}</State>
+}
 
 const RIGHT_W_KEY = RIGHT_PANEL_WIDTH_KEY
 
@@ -625,7 +645,9 @@ export default function App() {
     return (
       <div className="app">
         <Toolbar />
-        <OpsWorkspace />
+        <Suspense fallback={<PanelLoading label="Loading T&E Ops" />}>
+          <OpsWorkspace />
+        </Suspense>
       </div>
     )
   }
@@ -697,17 +719,27 @@ export default function App() {
                   }}
                 />
               : <Inspector />)}
-            {activeTab === 'cards' && <TestCardsPanel />}
+            {activeTab === 'cards' && (
+              <Suspense fallback={<PanelLoading label="Loading test cards" />}>
+                <TestCardsPanel />
+              </Suspense>
+            )}
             {activeTab === 'library' && <LibraryEditor />}
             {activeTab === 'analysis' && (boardPhase === 'prepare'
               ? <BoardPreparation />
-              : <AnalysisPanel showNavigation={false} showDetail={false} phase={boardPhase} onOpenPreparation={openPreparation} />)}
+              : <Suspense fallback={<PanelLoading label="Loading analysis" />}>
+                  <AnalysisPanel showNavigation={false} showDetail={false} phase={boardPhase} onOpenPreparation={openPreparation} />
+                </Suspense>)}
           </div>
         </aside>
       </div>
       <CalibrateDialog />
       <LocationDialog />
-      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      {paletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette onClose={() => setPaletteOpen(false)} />
+        </Suspense>
+      )}
     </div>
   )
 }

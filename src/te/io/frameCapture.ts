@@ -6,6 +6,7 @@
 
 import type Konva from 'konva'
 import { useTeStore } from '../state/teStore'
+import { restoreTeAutosave } from './persistTe'
 import { useStore } from '../../state/store'
 import { newId } from '../../model/types'
 import { nowIso } from '../model/empty'
@@ -36,6 +37,8 @@ export function downloadBoardFrame(name: string): boolean {
  * Returns the frame id, or null when no stage or campaign is available.
  */
 export function captureFrameToCampaign(name: string): string | null {
+  // A Board-side write into the T&E store: the saved record must be back first.
+  restoreTeAutosave()
   const te = useTeStore.getState()
   if (!stage || !te.activeCampaignId) return null
   const pixelRatio = Math.min(2, 1600 / Math.max(1, stage.width()))

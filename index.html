@@ -5,6 +5,10 @@
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RangeBoard — C-UAS T&E Planning Canvas</title>
+    <!-- The two 400 faces carry the interface and the machine data. Preloading them
+         removes the HTML -> CSS -> font hop before the swap. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/src/assets/fonts/Archivo-Regular.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/src/assets/fonts/JetBrainsMono-Regular.woff2" />
   </head>
   <body>
     <div id="root"></div>

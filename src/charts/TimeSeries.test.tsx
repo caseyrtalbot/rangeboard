@@ -1,9 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import {
-  TimeSeries, formatYTick, lastFiniteIndex, seriesDurationS, seriesRange, seriesRows,
-  snapScrubS,
+  formatYTick, lastFiniteIndex, seriesDurationS, seriesRange, seriesRows, snapScrubS,
 } from './TimeSeries'
+// The drawn chart, not the lazy shell: renderToStaticMarkup resolves no Suspense boundary.
+import { TimeSeries } from './TimeSeriesChart'
 import type { Series } from './types'
 
 const a: Series = {

@@ -188,6 +188,164 @@ target 40 ms), the forced layouts of one Prepare to Analyze switch and back (`ph
 `browser-check-wave2.json`: every Wave 1 assertion still holds, `firstPlay` saw no long task,
 `phaseLayouts` 15 and 1, heap growth 4.7 MB, no page errors.
 
+## After Wave 3
+
+Same harness, same scenario, same viewport, captured 2026-09-06 on the integrated Wave 3 tree:
+the bundle and startup lane (lazy Ops workspace, lazy recharts plot, deferred T&E restore,
+JSON-emitted runtime schema, on-demand T&E seed tables, lazy right-panel tabs and palette, font
+preload and subset) plus the open-target change set of the same session (per-threat assessment
+memo, identity lending for tracks, spoke ids and sweep parts, pixel-snapped callout geometry,
+memo wrappers on the static layers). Raw output: `profile-dev-wave3.txt` and
+`profile-prod-wave3.txt`. Script milliseconds per phase.
+
+| Phase | Dev after Wave 2 | Dev after Wave 3 | Prod after Wave 2 | Prod after Wave 3 |
+| --- | ---: | ---: | ---: | ---: |
+| Load to first canvas | 450 | 419 | 326 | 280 |
+| Load transfer, KB | 19351 (220 files) | 11668 (174 files) | 2333 (5 files) | 1443 (13 files) |
+| Idle 3 s | 5 | 6 | 6 | 5 |
+| Playback 5 s at 1x | 1385 | 842 | 583 | 461 |
+| Playback script share of wall time | 28 percent | 17 percent | 12 percent | 9 percent |
+| First-play long task | none | none | none | none |
+| Zoom, 30 wheel events | 450 | 407 | 117 | 124 |
+| Pan drag, 40 moves | 82 | 76 | 69 | 67 |
+| moveEntity, 20 edits | 1339 (20 long tasks, max 82 ms) | 426 (no long task) | n/a | n/a |
+| Select and clear, 10 cycles | 204 | 210 | n/a | n/a |
+| Right tabs, 12 switches | 93 | 105 | n/a | n/a |
+| Lifecycle phases, 9 switches | 503 | 478 | 239 | 230 |
+| Lifecycle forced layouts, 9 switches | 33 | 31 | 34 | 32 |
+| Library drawer, 6 toggles | 72 | 77 | 16 | 16 |
+| Undo and redo, 10 steps | 271 | 146 | n/a | n/a |
+
+### Bundle after Wave 3
+
+Vite's gzip figure for the entry chunk (`index-*.js`) after each lane item, all at the same
+tree; the baseline is `dc4eaae`.
+
+| After | Entry chunk gzip, kB | Note |
+| --- | ---: | --- |
+| Baseline `dc4eaae` | 606.41 | one JS file, no code splitting, one chunk-size warning |
+| 1 Ops workspace lazy | 493.11 | |
+| 2 recharts plot lazy | 379.85 | |
+| 3 T&E autosave split | 379.89 | startup work, not bytes |
+| 4 runtime schema as `JSON.parse` | 380.23 | construction cost, not bytes |
+| 5 T&E seed tables on demand | 368.13 | |
+| 6 right-panel tabs and palette lazy | 244.43 | shared code splits into preloaded chunks from here |
+| 7 fonts | 244.43 | no JS change |
+| 8 chunk warning limit | 244.39 | |
+| Integrated tree | 245.75 | Ladder and Tornado kept synchronous (plain SVG, no recharts) |
+
+From item 6 the entry chunk alone understates the load: rolldown moves shared code into chunks
+that `index.html` preloads. Final chunk inventory, `gzip -9` bytes in kB, from the built
+`dist/`. Initial (entry plus `modulepreload`): index 242.6, uncertainty 84.1 (seedLibrary and
+integrationData), kit 17.0, persist 9.7, jsx-runtime 4.5, empty 3.7, react-dom 1.4, persistTe
+1.4, types 1.0: 365.2 kB of JS plus 13.6 kB of CSS. Lazy: OpsWorkspace 113.8, TimeSeriesChart
+106.4 (recharts, d3, redux, es-toolkit, decimal.js-light: 349 sources, none left in the entry
+chunk), mc.worker 37.3, cardTemplates 8.7, measureDictionary 6.3, vignettes 4.8, TestCardsPanel
+2.9, AnalysisPanel 2.9, CommandPalette 1.7, aar 0.8. The build emits no warning.
+
+Fonts: both JetBrains Mono faces subset to the Google Latin range plus the 30 non-ASCII code
+points found in `src/**` and `index.html`, with every layout feature kept. Regular 92,164 to
+35,788 bytes, Medium 93,824 to 36,648; the font payload 290,540 to 176,988. Archivo is left
+whole (its scan found symbols outside Latin). The two 400-weight faces are preloaded from
+`index.html`; the built page and the built CSS resolve to the same hashed files.
+
+Not done, with the reason: `INTEGRATION_PROFILES` stays in the initial graph (`profileFor` is
+a synchronous module-level lookup read by the engine and the worker graph; about 17 kB gzip,
+now inside the preloaded uncertainty chunk); `checklistTemplates` stays (`templateByKey` runs
+inside zustand `set` updaters; about 19 KB raw); `LibraryEditor` stays static
+(`EntityWorkspace` imports it, so a boundary in `App` moves no bytes); a stored configuration
+snapshot is kept verbatim at load and `parseConfigSnapshot` validates it at open, which has no
+caller until the Wave 5 "Open on Board" seam.
+
+### Wave 3 acceptance
+
+| Criterion | Target | Measured | Met |
+| --- | --- | --- | --- |
+| Entry chunk gzip | 400 kB or less | 245.75 kB (initial set 365.2 kB plus 13.6 kB CSS) | yes |
+| Build warnings | none | none | yes |
+| Board and Ops load and switch | no page error | browser check `opsEntry`: mounted, returned, 0 errors | yes |
+| Chart in every lens after the boundary resolves | one recharts surface per time-series widget | browser check `charts`: run-summary, sensors, effectors, threat 1 of 1; iads carries no time series | yes |
+| Load to first canvas | dev 450 ms, prod 326 ms or less | dev 419, prod 280 | yes |
+| PROJECT_GUIDE execution section | updated and reviewed | yes | yes |
+
+### Open Wave 2 targets after the change set
+
+The four open dev targets and the borderline fifth were handed to a debugger with one brief:
+find a solution inside the invariants or show that none exists. Dev harness, integrated tree,
+prod beside where the prod harness has the phase.
+
+| Phase | After Wave 2 | Target | After Wave 3 | Met | Prod |
+| --- | ---: | ---: | ---: | --- | ---: |
+| Playback script share | 28 percent | 15 percent | 17 percent | no (dev); prod met | 9 percent |
+| moveEntity per edit | 67 ms | 40 ms | 21 ms, no long task | yes | n/a |
+| Zoom per wheel event | 15 ms | 10 ms | 13.6 ms | no (dev); prod met | 4.1 ms |
+| Undo and redo per step | 27 ms | 15 ms | 14.6 ms | yes | n/a |
+| Select and clear per change | 10.2 ms | 10 ms | 10.5 ms | no (dev) | n/a |
+
+Attribution at the Wave 2 tree, dev, by CPU self-time charged to the nearest `src/` frame and
+by React's own dev `performance.measure` per component render:
+
+- Playback 5 s: JSX dev runtime 507 ms, reconciler 250, Konva 198, app 69. `Callout` and
+  `CalloutLayer` owned 350 of the 507. React logged 39,307 component renders with changed
+  props, 30,294 of them `Callout` (47 per frame), and 131,785 Konva attribute sets (203 per
+  frame). Root cause: a cluster centroid drifts by about 0.0001 px per frame while one member
+  flies, so `layoutLabels` produced new placement objects every frame (12,189 of 12,906
+  placements changed identity over 260 commits) and `stablePlacements`, which compared exact
+  floats, never reused. The spoke geometry now snaps to whole pixels: Callout renders 30,294 to
+  12 per 5 s, attribute sets 131,785 to 9,627. Correction to the Wave 2 text above: playback
+  created about 325 elements and 203 attribute sets per frame, not 130 and 220.
+- moveEntity, 20 edits: engine 841 ms (assessThreat 212, detection 140, dist 100,
+  resolveEngagements 87, geo 50), JSX runtime 272, react-dom 63. In Node, harness scenario:
+  `assessAllThreats` 48.7 ms, `resolveEngagements` 13.8 ms. `engagementPicture` now assesses
+  threats incrementally on a cache miss: a threat keeps the last run's assessment object while
+  every input it reads is the same object (the scenario fields the sweep reads, the run
+  duration, the threat, every asset, effector and C2 node, and every sensor whose technology
+  gate admits the target and whose reach touches the flight path plus the formation spread).
+  On the harness edit every threat reuses, so the engine share per edit is `resolveEngagements`
+  plus the relevance scan: 93 plus 11 ms per 20 edits.
+- Undo and redo, 10 steps: JSX runtime 141 (Callout 55, EntityGroup 19, FootprintLayer 13),
+  react-dom 36, Konva 28. Closed by the same identity lending: tracks, spoke ids and the sweep's
+  hits and effector states keep their objects across an edit that changed none of them, and
+  `EntityGroup` takes the sweep's parts instead of the sweep.
+- Zoom, 30 events: JSX runtime 197, Konva 48, reconciler 32. 157 of the remaining 222 JSX ms
+  are the 51 spoke callouts, whose screen positions change on every zoom step by design (the
+  layer inverts the stage transform); the other counter-scale wrappers cost 24 ms per 30 events.
+- Select and clear: JSX runtime 86 ms, all in the Inspector mount (`App`, `EntityInspector`,
+  `Row`, `Section`; 4,176 DOM fibers mounted per 10 cycles); the Konva side is 190 attribute
+  sets per 20 commits.
+
+What stays open in dev is the development JSX runtime cost of elements that really move on
+each event: one element per moving entity, its Group, body and formation members in playback;
+the spoke callouts on zoom. The next cut needs imperative Konva position and scale updates
+outside render, which the "derived at render" invariant forbids. The prod numbers (playback 9
+percent, zoom 4.1 ms per event, no long task in any phase) are the user-facing ones.
+
+## Parity after Wave 3
+
+The same probe on the integrated Wave 3 tree (`PARITY_TAG=wave3`): `cmp` against
+`parity-before.json` reports no difference. The probe calls `assessAllThreats` directly; the
+incremental path is covered by `src/analysis/impact.test.ts`, which compares
+`engagementPicture` after eleven edit kinds (radar, effector, asset, C2 and threat moves, a
+disabled sensor, environment, requirements, path speed, a dropped connection, ROE) with a fresh
+`assessAllThreats` and expects byte-identical assessments. The identical capture is not kept.
+
+## Memory after Wave 3
+
+Browser check `heapAfterEdits` on the integrated tree: 4.6 MB over 30 `moveEntity` edits,
+0.15 MB per edit (Wave 2: 4.7 MB).
+
+## Browser check after Wave 3
+
+`browser-check.mjs.txt` now also enters the Ops workspace through the T&E store and returns to
+the Board (`opsEntry`: the lazy root mounts, no page error), applies each built-in lens in the
+Analyze phase and asserts one `svg.recharts-surface` inside every time-series widget at the
+saved panel width with no widget overflow (`charts`; the sensitivity widget draws only after a
+worker run, so its presence is recorded), and creates a campaign, reloads, enters Ops and
+expects the campaign back (`teRoundTrip`; the restore is deferred to idle or the first Ops
+entry, and `beforeOps` records that idle had not fired when the canvas appeared). Results in
+`browser-check-wave3.json`: every Wave 2 assertion still holds, `firstPlay` saw no long task,
+`phaseLayouts` 17 and 1, heap growth 4.6 MB, all three new steps pass, no page errors.
+
 ## Browser check after Wave 1
 
 `browser-check.mjs.txt` (run as `browser-check.mjs` against the dev server on port 5377, headless

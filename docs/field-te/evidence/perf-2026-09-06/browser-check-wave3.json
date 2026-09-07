@@ -1,0 +1,169 @@
+{
+ "clickSelect": {
+  "id": "ent-mt5bn8cr-23",
+  "selected": [
+   "ent-mt5bn8cr-23"
+  ],
+  "ok": true
+ },
+ "drag": {
+  "before": {
+   "x": 1239.999999999999,
+   "y": 1960.0000000000011
+  },
+  "after": {
+   "x": 3522.0623803576555,
+   "y": 3329.237428214593
+  },
+  "pastBefore": 0,
+  "pastAfter": 1,
+  "ok": true
+ },
+ "rotate": {
+  "headingBefore": 315,
+  "headingAfter": 15,
+  "posMoved": false,
+  "pos": {
+   "x": 3522.0623803576555,
+   "y": 3329.237428214593
+  },
+  "pastBefore": 1,
+  "pastAfter": 2,
+  "ok": true
+ },
+ "rotateUndo": {
+  "heading": 315,
+  "ok": true
+ },
+ "space": {
+  "whilePlaying": {
+   "phase": "running",
+   "simTimeS": 1.1312000003814697
+  },
+  "afterPause": {
+   "phase": "paused",
+   "simTimeS": 1.1312000003814697
+  },
+  "ok": true
+ },
+ "firstPlay": {
+  "longTasks": [],
+  "longMax": 0,
+  "targetMs": 40,
+  "ok": true
+ },
+ "hover": {
+  "errors": 0,
+  "ok": true
+ },
+ "zoom": {
+  "before": 0.01752800464364649,
+  "after": 0.028229026758639118,
+  "ok": true
+ },
+ "library": {
+  "open1": true,
+  "focusInDrawer": true,
+  "closed1": true,
+  "focusOnTrigger": true,
+  "open2": true,
+  "closed2": true,
+  "ok": true
+ },
+ "phaseLayouts": {
+  "prepareToAnalyze": {
+   "layouts": 17,
+   "styleRecalcs": 39,
+   "layoutMs": 3
+  },
+  "analyzeToPrepare": {
+   "layouts": 1,
+   "styleRecalcs": 22,
+   "layoutMs": 1
+  },
+  "target": 20,
+  "ok": true
+ },
+ "phases": {
+  "phases": [
+   "execute",
+   "analyze",
+   "prepare"
+  ],
+  "ok": true
+ },
+ "undoTab": {
+  "tabAfterUndo": "cards",
+  "tabAfterRedo": "cards",
+  "ok": true
+ },
+ "heapAfterEdits": {
+  "heapBeforeMB": 38,
+  "heapAfterMB": 42.6,
+  "growthMB": 4.6,
+  "perEditMB": 0.15,
+  "pastBefore": 2,
+  "pastAfter": 32,
+  "ok": true
+ },
+ "opsEntry": {
+  "opsMounted": true,
+  "teReady": true,
+  "boardBack": true,
+  "errors": 0,
+  "ok": true
+ },
+ "charts": {
+  "run-summary": {
+   "widgets": 5,
+   "seriesWidgets": 1,
+   "surfaces": 1,
+   "sensitivityWidgets": 0,
+   "overflow": false,
+   "ok": true
+  },
+  "sensors": {
+   "widgets": 4,
+   "seriesWidgets": 1,
+   "surfaces": 1,
+   "sensitivityWidgets": 0,
+   "overflow": false,
+   "ok": true
+  },
+  "effectors": {
+   "widgets": 5,
+   "seriesWidgets": 1,
+   "surfaces": 1,
+   "sensitivityWidgets": 0,
+   "overflow": false,
+   "ok": true
+  },
+  "iads": {
+   "widgets": 6,
+   "seriesWidgets": 0,
+   "surfaces": 0,
+   "sensitivityWidgets": 1,
+   "overflow": false,
+   "ok": true
+  },
+  "threat": {
+   "widgets": 5,
+   "seriesWidgets": 1,
+   "surfaces": 1,
+   "sensitivityWidgets": 1,
+   "overflow": false,
+   "ok": true
+  },
+  "ok": true
+ },
+ "teRoundTrip": {
+  "savedHasCampaign": true,
+  "beforeOps": false,
+  "restored": true,
+  "shownInOps": true,
+  "stillSaved": true,
+  "ok": true
+ },
+ "pageErrors": [],
+ "allOk": true
+}

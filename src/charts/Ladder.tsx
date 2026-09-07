@@ -3,7 +3,7 @@ import { formatTime } from '../geometry/geo'
 import { timeTicks } from './timeAxis'
 import { readTokens, resolveColor } from './tokens'
 import type { LadderRow } from './types'
-import { snapScrubS } from './TimeSeries'
+import { snapScrubS } from './seriesData'
 
 interface LadderProps {
   rows: LadderRow[]
