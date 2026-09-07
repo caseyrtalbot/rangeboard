@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { importUnderlayImage } from '../io/persist'
 import { useStore } from '../state/store'
+import { useToolbarMenuDismiss } from './useToolbarMenuDismiss'
 
 /** Scenario-scoped range geometry and calibrated-image controls. */
 export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) {
@@ -8,27 +9,7 @@ export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) 
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    // Capture phase keeps Escape from also reaching the global canvas shortcut.
-    // The command palette can open over this surface, and then it owns Escape.
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      if (document.querySelector('.cmdk-panel')) return
-      e.stopPropagation()
-      setOpen(false)
-      buttonRef.current?.focus()
-    }
-    window.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey, true)
-    return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('keydown', onKey, true)
-    }
-  }, [open])
+  useToolbarMenuDismiss({ open, wrapRef, buttonRef, setOpen })
 
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>

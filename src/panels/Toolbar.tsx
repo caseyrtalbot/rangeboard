@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
 import { useStore } from '../state/store'
@@ -14,6 +14,7 @@ import { captureFrameToCampaign } from '../te/io/frameCapture'
 import type { BoundaryType, EnvironmentSpec, Roe } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
+import { useToolbarMenuDismiss } from './useToolbarMenuDismiss'
 
 const BOARD_TOOLS = [
   { id: 'select', label: 'Select', hint: 'Move, pan, edit' },
@@ -60,28 +61,7 @@ function OverflowMenu() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    // Capture phase: Escape must close only the menu, never also reach the
-    // global canvas shortcut in App.tsx that clears the tool and the selection.
-    // The command palette can open over the menu, and then it owns Escape.
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      if (document.querySelector('.cmdk-panel')) return
-      e.stopPropagation()
-      setOpen(false)
-      buttonRef.current?.focus()
-    }
-    window.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey, true)
-    return () => {
-      window.removeEventListener('mousedown', onDown)
-      window.removeEventListener('keydown', onKey, true)
-    }
-  }, [open])
+  useToolbarMenuDismiss({ open, wrapRef, buttonRef, setOpen })
 
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>
