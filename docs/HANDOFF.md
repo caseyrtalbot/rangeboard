@@ -17,45 +17,44 @@ every instruction a session needs; the lane reports add detail, not requirements
 | 1 | Performance hot fixes: React shell and canvas/engine micro | Done 2026-09-06; gate, parity and browser check green; the five dev acceptance targets were not met and are carried to Wave 2 | `10aadd3` | same directory: `profile-dev-after.txt`, `profile-prod-after.txt`, `parity-after.json`, `browser-check.mjs.txt`, `browser-check-after.json`, README "After Wave 1" |
 | 2 | Structural performance: Layer split, shared timeline cache, first-play hitch, phase-switch layout thrash, engine hot loop, memory | Done 2026-09-06; gate, parity and browser check green; first-play and phase-switch targets met, four dev targets open for Casey's decision (section 4) | `ae55f0a` | same directory: `profile-dev-wave2.txt`, `profile-prod-wave2.txt`, `browser-check-wave2.json`, `browser-check.mjs.txt` (extended), README "After Wave 2", "Parity after Wave 2", "Memory after Wave 2" |
 | 3 | Bundle and startup: lazy T&E workspace, lazy charts, deferred T&E autosave load, seed data, fonts; plus the open-target change set (per-threat assessment memo, identity lending, pixel-snapped callouts) | Done 2026-09-06; gate, parity and browser check green; every Wave 3 criterion met; moveEntity and undo met in dev, playback, zoom and select closed on the prod numbers (section 2) | `00e25e5`, `442c1b0` | same directory: `profile-dev-wave3.txt`, `profile-prod-wave3.txt`, `browser-check-wave3.json`, `browser-check.mjs.txt` (extended), README "After Wave 3", "Parity after Wave 3", "Memory after Wave 3", "Browser check after Wave 3" |
-| 4 | Correctness, accessibility, deduplication, docs drift, one browser test | Not started | | |
+| 4 | Correctness, accessibility, deduplication, docs drift, one browser test | Done 2026-09-07; gate, browser check and the shell spec green; every acceptance number at or below Wave 3 | `0219d21` | same directory: `profile-dev-wave4.txt`, `profile-prod-wave4.txt`, `browser-check-wave4.json`, `browser-check.mjs.txt` (extended), README "After Wave 4", "Browser check after Wave 4"; the tracked spec `scripts/e2e/board-shell.e2e.mjs` |
 | 5 | Capabilities: error boundary, storage admission and recovery UI, CI browser test and size budget, then scenario library, bundle export, two-way seam, canvas keyboard access | Not started | | |
 
 Base: branch `codex/board-workspace-ui` at `955ad6b`, one commit ahead of `main`. Gate at base:
 typecheck passes, 101 test files and 1414 tests pass, oxlint shows only pre-existing fast-refresh
 warnings, `node scripts/check-docs.mjs` passes.
 
-Head after Wave 3: `442c1b0` plus this handoff update. Gate: 203 test files and 2838 tests pass,
-63 pre-existing oxlint warnings, entry chunk 246 KB gzip, build warning-free. Not merged to
-`main`; the merge needs Casey's word. The replicate test that failed once in Wave 2 now builds
-its laydown with fixed ids.
+Head after Wave 4: `0219d21` plus this handoff update. Gate: 203 test files and 2830 tests pass
+(the eight AnalysisPanel tests that covered the removed selection-detail paths are gone),
+63 pre-existing oxlint warnings, entry chunk 245.75 kB gzip, build warning-free. Not merged to
+`main`; the merge needs Casey's word.
 
-Measured after Wave 3, script milliseconds per phase, same harness and scenario as section 3:
+Measured after Wave 4, script milliseconds per phase, same harness and scenario as section 3:
 
-| Phase | Dev after Wave 2 | Dev after Wave 3 | Prod after Wave 2 | Prod after Wave 3 |
+| Phase | Dev after Wave 3 | Dev after Wave 4 | Prod after Wave 3 | Prod after Wave 4 |
 | --- | ---: | ---: | ---: | ---: |
-| Load to first canvas | 450 | 419 | 326 | 280 |
-| Playback 5 s at 1x | 1385 | 842 | 583 | 461 |
-| Playback script share of wall time | 28 percent | 17 percent | 12 percent | 9 percent |
+| Load to first canvas | 419 | 432 (then 385, 374) | 280 | 271 |
+| Playback 5 s at 1x | 842 | 808 | 461 | 452 |
+| Playback script share of wall time | 17 percent | 16 percent | 9 percent | 9 percent |
 | First-play long task | none | none | none | none |
-| Zoom, 30 wheel events | 450 | 407 | 117 | 124 |
-| Pan drag, 40 moves | 82 | 76 | 69 | 67 |
-| moveEntity, 20 edits | 1339 | 426 | n/a | n/a |
-| Select and clear, 10 cycles | 204 | 210 | n/a | n/a |
-| Right tabs, 12 switches | 93 | 105 | n/a | n/a |
-| Lifecycle phases, 9 switches | 503 | 478 | 239 | 230 |
-| Lifecycle forced layouts, 9 switches | 33 | 31 | 34 | 32 |
-| Library drawer, 6 toggles | 72 | 77 | 16 | 16 |
-| Undo and redo, 10 steps | 271 | 146 | n/a | n/a |
+| Zoom, 30 wheel events | 407 | 398 | 124 | 115 |
+| Pan drag, 40 moves | 76 | 70 | 67 | 67 |
+| moveEntity, 20 edits | 426 | 405 | n/a | n/a |
+| Select and clear, 10 cycles | 210 | 192 | n/a | n/a |
+| Right tabs, 12 switches | 105 | 106 | n/a | n/a |
+| Lifecycle phases, 9 switches | 478 | 455 | 230 | 217 |
+| Library drawer, 6 toggles | 77 | 69 | 16 | 15 |
+| Undo and redo, 10 steps | 146 | 136 | n/a | n/a |
 
-Wave 3 acceptance: entry chunk 245.75 kB gzip (target 400; the preloaded initial set is 365 kB
-of JS plus 14 kB of CSS), build warning-free, Board and Ops load and switch, one recharts
-surface in every time-series widget of every lens, load to first canvas dev 419 and prod 280
-(targets 450 and 326), PROJECT_GUIDE reviewed. Open Wave 2 targets after the debugger's change
-set, dev harness: moveEntity 21 ms per edit with no long task (target 40, met), undo and redo
-14.6 ms per step (target 15, met), playback 17 percent (target 15; prod 9), zoom 13.6 ms per
-event (target 10; prod 4.1), select and clear 10.5 ms per change (target 10; all of it the
-Inspector mount). Fixed-ID parity byte-identical. Memory: 30 edits grow the heap by 4.6 MB.
-The evidence README carries the attribution and the element-count correction for Wave 2.
+Wave 4 acceptance: the four new browser-check assertions pass (`escapeChain`,
+`calibrateStrip`, `debriefOpen`, `lensRoles`) with every Wave 3 assertion still green; the
+shell spec passes 6 of 6 locally; dev playback 16 percent and zoom 13.3 ms per event, prod
+load 271 ms, playback 9 percent and zoom 3.8 ms per event (all at or below Wave 3; the dev
+load's first run after the build read 432, the two runs after it 385 and 374); ENGINEERING_REFERENCE,
+PROJECT_GUIDE, VERIFICATION, WORKFLOW, DESIGN_SYSTEM, README and AGENTS reviewed;
+`npm run check` green; no new lint warnings. No engine, store or playback file changed, so no
+parity capture was taken. The lens buttons stayed rendered in every phase (the documented
+contract) and became a `role="group"` of `aria-pressed` buttons rather than a hidden tablist.
 
 ## 2. Decisions
 
@@ -106,97 +105,92 @@ localStorage; per-frame Konva reconciliation from one shared Layer, inline array
 hover state; whole-`camera` subscriptions on zoom; layout thrash on phase switch; one 2.1 MB chunk
 with no code splitting and synchronous T&E autosave validation before first paint.
 
-## 4. Current task: Wave 4, correctness, accessibility, deduplication
+## 4. Current task: Wave 5, capabilities part one
 
-Owner `opus-high` for items 1 to 5 (mechanical work with a fixed contract), `fable-medium` for
-item 6 and for the review; the orchestrator session integrates and reviews. Line numbers are at
-`442c1b0`. Read first: `AGENTS.md`, `docs/ENGINEERING_REFERENCE.md` sections 3 and 7,
-`docs/PROJECT_GUIDE.md`, `docs/VERIFICATION.md`, the evidence README
-`docs/field-te/evidence/perf-2026-09-06/README.md` ("Browser check after Wave 3"), then
-`.claude/plans/perf-2026-09-06/lane4-correctness.md` if present locally.
+Decision 5 fixes the order: the error boundary, storage admission and recovery UI, then the CI
+browser test and size budget. The later capability items stay in section 5. Owner `fable-medium`
+for items 1 and 2 (judgment on failure states and storage semantics), `opus-high` for item 3;
+the orchestrator session integrates and reviews. Line numbers are at `0219d21`. Read first:
+`AGENTS.md`, `docs/ENGINEERING_REFERENCE.md` sections 3, 7 and 8, `docs/PROJECT_GUIDE.md`,
+`docs/VERIFICATION.md`, the evidence README `docs/field-te/evidence/perf-2026-09-06/README.md`
+("Browser check after Wave 4"), then `.claude/plans/perf-2026-09-06/lane5-capabilities.md` if
+present locally.
 
-Shared rules:
-
-- Scenario changes go through `mutate`, view state through `set`, panels subscribe through
-  selectors. `loadScenario` stays the one load path. Storage keys are never renamed. The worker
-  value-import graph stays independent of stores, React and panels. The Wave 3 lazy boundaries
-  stay where they are; a Board-side write into the T&E store calls `restoreTeAutosave()` first.
-- Two spaces, no semicolons, single quotes, named exports, short rationale comments only where needed.
-- Run the focused tests for each touched file, then `npm run typecheck` and `npm run lint` before
-  reporting. Report: diff summary, checks run with output, anything not done, findings outside scope.
+Shared rules: the Wave 4 shared rules hold unchanged (mutate and set, selectors, one load path,
+storage keys never renamed, worker import graph independent, the Wave 3 lazy boundaries stay,
+`restoreTeAutosave()` before any Board-side T&E write, code style, focused tests then
+`npm run typecheck` and `npm run lint`, report format).
 
 Items:
 
-1. `DebriefRecord.tsx:191`: the `<details>` gets `open` when the run completes; `role="status"`
-   on its summary.
-2. Escape precedence with the Location dialog while a placement is armed: the placement listener
-   at `App.tsx:461-471` runs in the capture phase and the dialog Escape at `App.tsx:590-595` in
-   the bubble phase; the open dialog must win. A "Calibrating, Esc cancels" strip while
-   `tool === 'calibrate'`. Cancel the placement on an entity or system count change instead of
-   any scenario write (`App.tsx:474-476`).
-3. Accessibility: lens tabs render only when the Overview tab shows analysis, or use
-   `role="group"` with `aria-pressed` (`AnalysisNavigation.tsx:56-70`); `role="application"` on
-   the canvas host (`CanvasStage.tsx:288-290`); Range setup, View and File dialogs move focus on
-   open; entity heading `h3`.
-4. One `usePopover(wrapRef, buttonRef)` hook for Toolbar, RangeSetupMenu and ViewMenu (each owns
-   a pointer-outside listener today); one `nextTabIndex(key, index, length)` helper for the four
-   roving tablists (find them by `role="tablist"`: the lifecycle nav in `App.tsx`,
-   `AnalysisNavigation.tsx` and two more); one `THEMES` constant; remove or use `AnalysisPanel`
-   `showNavigation` and `showDetail` (`AnalysisPanel.tsx:30-38`; `App.tsx` passes both false);
-   delete `data-open` (`Palette.tsx:266`) and the dead `autoFocus` (`Palette.tsx:285`).
-5. Docs: correct the ENGINEERING_REFERENCE two-viewport overflow claim and the standalone
-   AnalysisPanel sentence; add the scenario-write placement cancel to PROJECT_GUIDE, or remove
-   it with item 2.
-6. One Playwright spec that loads the firing fixture through `window.__store`, exercises phase
-   switching, placement, selection routing and the Escape chain, and asserts store state. Wire
-   it into CI in Wave 5.
+1. Error boundary. One class component (`src/ui/ErrorBoundary.tsx`; React 19 still needs a class
+   for `getDerivedStateFromError`) that renders the design-system `State` (`src/ui/kit.tsx:95`)
+   with an Export action (the existing `exportScenario` from `src/io/persist.ts` for the Board,
+   the T&E export for Ops) and a Reload action. Wrap each `WidgetFrame` child
+   (`src/panels/analysis/widgets/WidgetFrame.tsx:11`), each print view (`src/te/print/PrintOverlay.tsx:9`
+   and the print surfaces in `src/te/ui/ProductsPanel.tsx` and `CardsPanel.tsx`) and each workspace
+   root (the Board tree and the `OpsWorkspace` boundary in `src/App.tsx:637-650`). Autosave stays
+   outside React: `startAutosave` and `startTeAutosave` in `src/main.tsx` keep running when a
+   subtree fails. A caught error must not clear the scenario or the T&E record.
+2. Storage admission and recovery UI. T&E frames (`captureFrameToCampaign`,
+   `src/te/io/frameCapture.ts:39`) and config snapshots (`src/te/state/teStore.ts:605`) are
+   admitted against `MAX_IMAGE_CODE_UNITS` (`src/io/runtimeValidation.ts:29`) the way the underlay
+   image is (`src/io/persist.ts:419`); an oversize capture is refused with a `State` notice, not an
+   `alert` (`src/panels/Toolbar.tsx:163`, `src/panels/analysis/DebriefRecord.tsx:65`). A storage
+   readout (bytes used per live key and per recovery key, from `src/io/storageKeys.ts`) and a
+   Storage section that lists, downloads and deletes the `rangeboard.scenario.recovered.*` and
+   `rangeboard.te.recovered.*` copies. Replace `notifyRecovery` (`src/io/recovery.ts:34-40`) with
+   that section's notice; the recovery copy itself, its key and the autosave pause rules stay.
+3. CI. `.github/workflows/quality.yml` runs the Wave 4 spec after `npm run check`: install the
+   Playwright Chromium (`npx playwright install --with-deps chromium`), start the dev server on a
+   fixed port in the background, wait for it, run `npm run test:e2e`, stop it. Add a bundle size
+   budget step: fail when the built entry chunk exceeds 260 kB gzip or the preloaded initial set
+   exceeds 400 kB (read the numbers from `dist/` with `gzip -9`; the Wave 3 README section
+   "Bundle after Wave 3" holds the method).
 
 ### Integration (orchestrator)
 
 1. `npm run check`; the build must stay warning-free.
-2. Browser check: extend `browser-check.mjs.txt` with the Escape chain (placement armed, then
-   the Location dialog open), the calibrate strip, the debrief `open` on run completion and the
-   lens tab roles.
-3. Harness: rerun load, playback and zoom in dev and prod as section 6 says; no regression from
-   the accessibility changes.
-4. Docs: `docs/ENGINEERING_REFERENCE.md` section 7 and `docs/PROJECT_GUIDE.md`;
+2. Browser check: extend `browser-check.mjs.txt` with a thrown widget render (force one widget to
+   throw through a dev-only hook or a malformed layout param) that leaves the rest of the panel
+   and the autosave alive, an oversize frame capture refused, and the Storage section listing a
+   planted recovery key.
+3. Harness: rerun load, playback and zoom in dev and prod; no regression from the boundaries.
+4. Docs: `docs/ENGINEERING_REFERENCE.md` sections 3, 7 and 8, `docs/PROJECT_GUIDE.md`,
+   `docs/VERIFICATION.md` and `docs/WORKFLOW.md` (CI now runs a browser check);
    `npm run docs:review` with a concrete note per document.
 5. Commit on the branch when gate and browser check are green:
-   `fix: correctness and accessibility pass, dedupe the popover and roving-tab helpers (Wave 4)`.
+   `feat: error boundaries, storage admission and recovery UI, CI browser test and size budget (Wave 5)`.
    Do not push.
-6. Update this file: ledger row, the new current task (Wave 5).
+6. Update this file: ledger row, the new current task (section 5 item 1 onward).
    `npm run docs:review -- docs/HANDOFF.md --note "..."`. Ask Casey before any merge or push.
 
-### Wave 4 acceptance
+### Wave 5 acceptance
 
-Every new browser-check assertion passes; the Playwright spec passes locally; harness load,
-playback and zoom at or below the Wave 3 numbers (dev 419 ms, 17 percent, 13.6 ms per event;
-prod 280 ms, 9 percent, 4.1 ms); ENGINEERING_REFERENCE and PROJECT_GUIDE reviewed.
-`npm run check` green. No new lint warnings.
+A widget that throws leaves the other widgets, the canvas and both autosaves running; the
+boundary offers Export and Reload. An oversize frame or snapshot is refused before it reaches
+storage and the user sees why. The Storage section lists, downloads and deletes recovery copies,
+and no `alert` remains on the recovery path. CI runs the spec and the size budget and is green.
+Harness load, playback and zoom at or below the Wave 4 numbers (dev 385 ms, 16 percent, 13.3 ms
+per event; prod 271 ms, 9 percent, 3.8 ms). `npm run check` green. No new lint warnings.
 
 ## 5. Remaining waves
 
-Each wave is one session. Update section 1 and section 4 at its end.
+Each wave is one session. Update section 1 and section 4 at its end. Wave 5 part one (section 4)
+comes first; these follow, in order, one or more per wave:
 
-### Wave 5. Capabilities, in order
-
-1. Error boundary around each `WidgetFrame` child, each print view and each workspace root, rendering the
-   design-system `State` with Export and Reload actions. Autosave stays outside React.
-2. Storage admission for T&E frames and snapshots (reuse `MAX_IMAGE_CODE_UNITS`), a storage readout, and a
-   Storage section that lists, downloads and deletes recovery copies. Replace the recovery `alert`.
-3. CI: run the Wave 4 Playwright spec and a bundle size budget in `.github/workflows/quality.yml`.
-4. Named scenario library: an index key plus one body key per scenario, an active pointer, a Toolbar
+1. Named scenario library: an index key plus one body key per scenario, an active pointer, a Toolbar
    switcher. `loadScenario` stays the one load path. Never rename existing keys.
-5. Bundle export (`rangeboardBundle: 1`: scenario, library, runs, campaigns) and run import as a
+2. Bundle export (`rangeboardBundle: 1`: scenario, library, runs, campaigns) and run import as a
    read-only record.
-6. Two-way seam: "Open on Board" for a stored config snapshot; a distinct prediction record beside a
+3. Two-way seam: "Open on Board" for a stored config snapshot; a distinct prediction record beside a
    measure, labeled as a modeled estimate, never an observation.
-7. Canvas keyboard access: Prepare register covers paths, boundaries, connections and waves; arrow-key
-   nudge through `mutate`; a `?` shortcut overlay reusing `ShortcutList`.
-8. Decide `mcdaWeights` and `scorecards`: build a scorecard widget, or document both as legacy and stop
-   validating them.
-9. Named restore points and run compare on top of item 4.
-10. File System Access save to a working file.
+4. Canvas keyboard access: Prepare register covers paths, boundaries, connections and waves;
+   arrow-key nudge through `mutate`; a `?` shortcut overlay reusing `ShortcutList`.
+5. Decide `mcdaWeights` and `scorecards`: build a scorecard widget, or document both as legacy and
+   stop validating them.
+6. Named restore points and run compare on top of item 1.
+7. File System Access save to a working file.
 
 ## 6. Verification protocol for every wave
 
@@ -262,6 +256,19 @@ Each wave is one session. Update section 1 and section 4 at its end.
   `HeapProfiler.collectGarbage`.
 - A recharts `CartesianGrid` with `vertical={false}` still measures the label of every data row
   with `getBoundingClientRect` on first mount unless it gets an empty coordinate generator.
+- A tracked Playwright file must not match Vitest's default include (`*.test.*`, `*.spec.*`), or
+  `npm test` imports it and fails; `scripts/e2e/board-shell.e2e.mjs` runs under `node --test`.
+- `DebriefRecord` mounts only when the run is complete and the Monte Carlo summary is `done`, so
+  a check that completes a run through `completeRun` must wait on the worker (about 500 ms; the
+  spec allows 10 s) before it reads the record.
+- `usePopover` moves focus into the dropdown on open. A menu item that opens a dialog must not
+  assume the trigger still holds focus; the bubble-phase Escape in `App.tsx` refocuses the Range
+  setup trigger by its `aria-controls`.
+- The placement capture listener returns when `ui.locationDialogOpen` is set, so the dialog's
+  Escape handler runs first. A new dialog that can open over an armed placement needs the same
+  guard, or the placement swallows its Escape.
+- The first dev harness run after `npm run build` loads slower (432 ms against 385 and 374 on the
+  next two runs); read the later runs for the load number.
 
 ## 8. How to update this file
 

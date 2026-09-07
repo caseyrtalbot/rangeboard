@@ -96,9 +96,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "81822f30ef479e23bb8a3e1c79ba6925bfc728ea50f589e1863807706a6c9f46",
+      "sha256": "324d0971ff69ba71f17b2381a634d38058f6e5d8a0fa65ed84a459c56832ec5a",
       "reviewedAt": "2026-09-07",
-      "note": "Wave 3 recorded: ledger row with 00e25e5 and 442c1b0, the dev and prod after-tables, the acceptance and open-target outcome, decision 6 on the dev targets, Wave 4 set as the current task with anchors at 442c1b0, six new traps."
+      "note": "Wave 4 recorded: ledger row with 0219d21, the dev and prod after-tables, the acceptance outcome, Wave 5 part one (error boundary, storage admission and recovery UI, CI browser test and size budget) set as the current task with anchors at 0219d21, the later capability items renumbered in section 5, six new traps."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
