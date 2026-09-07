@@ -27,7 +27,7 @@ import type { LeakerImpact } from './impact'
  * Compact outcome label from the expected-value numbers. 'not-engaged' means no salvo
  * of any expenditure channel reached the threat; a DE or HPM engagement spends deSalvos only.
  */
-export function aarOutcome(att: ThreatAttrition | undefined): AarOutcome {
+function aarOutcome(att: ThreatAttrition | undefined): AarOutcome {
   if (!att || (att.shotsFired === 0 && att.deSalvos === 0 && att.jamSalvos === 0)) {
     return 'not-engaged'
   }

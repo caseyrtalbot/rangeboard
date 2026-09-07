@@ -14,7 +14,7 @@ import type { UasSpec } from './types'
  * inclusive upper bound, except the first tier which is strictly under 2 kg
  * (so a 2 kg warhead joins the 2-10 kg tier, and 25 kg stays in 10-25 kg).
  */
-export const EFFECT_RADIUS_PLANNING_M: Array<{ maxKg: number; radiusM: number }> = [
+const EFFECT_RADIUS_PLANNING_M: Array<{ maxKg: number; radiusM: number }> = [
   { maxKg: 2, radiusM: 15 }, // under 2 kg: grenade-class FPV / drop munitions
   { maxKg: 10, radiusM: 30 }, // 2-10 kg: FPV / loitering-munition class
   { maxKg: 25, radiusM: 50 }, // 10-25 kg: mid-class OWA fills
@@ -31,8 +31,7 @@ export function defaultEffectRadiusM(warheadKg: number | null | undefined): numb
     const tier = EFFECT_RADIUS_PLANNING_M[i]
     if (i === 0 ? warheadKg < tier.maxKg : warheadKg <= tier.maxKg) return tier.radiusM
   }
-  // Unreachable: the last tier bound is Infinity.
-  return EFFECT_RADIUS_PLANNING_M[EFFECT_RADIUS_PLANNING_M.length - 1].radiusM
+  return null
 }
 
 /**

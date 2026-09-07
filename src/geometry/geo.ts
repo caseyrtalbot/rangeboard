@@ -142,7 +142,7 @@ interface PathSample {
 }
 
 /** Position after traveling distM along the waypoint list. Clamps at both ends. */
-export function posAlongPath(points: Vec2[], distM: number): PathSample {
+function posAlongPath(points: Vec2[], distM: number): PathSample {
   if (points.length === 0) return { pos: { x: 0, y: 0 }, headingDeg: 0, distM: 0, done: true }
   if (points.length === 1) return { pos: points[0], headingDeg: 0, distM: 0, done: true }
   let remaining = Math.max(0, distM)

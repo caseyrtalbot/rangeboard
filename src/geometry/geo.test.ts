@@ -11,7 +11,6 @@ import {
   pathLength,
   pointInSector,
   pointInWedge,
-  posAlongPath,
   posAtTime,
   rotatePoint,
   wedgePoints,
@@ -93,7 +92,7 @@ describe('paths', () => {
   })
 
   it('interpolates along segments', () => {
-    const s = posAlongPath(square, 150)
+    const s = posAtTime(square, 1, 0, 150)
     expect(s.pos.x).toBeCloseTo(100)
     expect(s.pos.y).toBeCloseTo(50)
     expect(s.headingDeg).toBeCloseTo(180)
@@ -101,7 +100,7 @@ describe('paths', () => {
   })
 
   it('clamps at the end', () => {
-    const s = posAlongPath(square, 500)
+    const s = posAtTime(square, 1, 0, 500)
     expect(s.pos).toEqual({ x: 100, y: 100 })
     expect(s.done).toBe(true)
   })

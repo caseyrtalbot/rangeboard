@@ -6,11 +6,9 @@ import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
-import type { LiveTrack } from '../../playback/tracks'
 
 interface Props {
   mouseWorld: Vec2 | null
-  tracks: Map<string, LiveTrack>
 }
 
 /** Fixed dash arrays: an inline literal is re-set on every render. */

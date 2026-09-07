@@ -9,9 +9,10 @@ import { assessAllThreats } from './sim'
 import { stepIndex } from './clock'
 import { sweepSensorHits } from './detection'
 import type { DrawPolicy } from './policy'
-import { deterministicPolicy, DRAW_KIND, monteCarloPolicy } from './policy'
+import { deterministicPolicy, monteCarloPolicy } from './policy'
 
 const T = DEFAULT_REQUIREMENT_THRESHOLDS
+const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5 } as const
 
 describe('deterministicPolicy', () => {
   it('detects at the pdDetect threshold and not below it', () => {

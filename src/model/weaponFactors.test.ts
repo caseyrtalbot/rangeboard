@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { UasSpec } from './types'
-import {
-  EFFECT_RADIUS_PLANNING_M,
-  defaultEffectRadiusM,
-  defaultWeaponProfile,
-} from './weaponFactors'
+import { defaultEffectRadiusM, defaultWeaponProfile } from './weaponFactors'
 
 function uas(partial: Partial<UasSpec>): UasSpec {
   return {
@@ -19,20 +15,6 @@ function uas(partial: Partial<UasSpec>): UasSpec {
     ...partial,
   }
 }
-
-describe('EFFECT_RADIUS_PLANNING_M', () => {
-  it('tiers ascend in both bound and radius and end open', () => {
-    for (let i = 1; i < EFFECT_RADIUS_PLANNING_M.length; i++) {
-      expect(EFFECT_RADIUS_PLANNING_M[i].maxKg).toBeGreaterThan(
-        EFFECT_RADIUS_PLANNING_M[i - 1].maxKg,
-      )
-      expect(EFFECT_RADIUS_PLANNING_M[i].radiusM).toBeGreaterThan(
-        EFFECT_RADIUS_PLANNING_M[i - 1].radiusM,
-      )
-    }
-    expect(EFFECT_RADIUS_PLANNING_M[EFFECT_RADIUS_PLANNING_M.length - 1].maxKg).toBe(Infinity)
-  })
-})
 
 describe('defaultEffectRadiusM', () => {
   it('maps warhead-mass classes to planning tiers', () => {

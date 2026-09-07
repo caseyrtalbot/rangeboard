@@ -184,44 +184,6 @@ export function DateField({
   )
 }
 
-/** Text input with a datalist of known people; free text stays allowed. */
-export function PersonField({
-  label,
-  value,
-  onChange,
-  people,
-  help,
-  placeholder,
-  disabled,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  people: string[]
-  help?: string
-  placeholder?: string
-  disabled?: boolean
-}) {
-  const listId = useId()
-  const names = [...new Set(people.map((p) => p.trim()).filter((p) => p !== ''))]
-  return (
-    <Field label={label} help={help}>
-      <input
-        value={value}
-        list={listId}
-        placeholder={placeholder}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      <datalist id={listId}>
-        {names.map((n) => (
-          <option key={n} value={n} />
-        ))}
-      </datalist>
-    </Field>
-  )
-}
-
 /**
  * Text input (or textarea when rows is set) with typed suggestions.
  * Inputs get a datalist; textareas show click-to-insert chips (max 6).

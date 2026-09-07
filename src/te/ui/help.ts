@@ -9,7 +9,7 @@ import type { TeCampaign } from '../model/types'
 
 /**
  * Every distinct name typed into a person-bearing string field anywhere in
- * the campaign. Trimmed, deduped, sorted. Feeds PersonField candidate pools.
+ * the campaign. Trimmed, deduped, sorted. Feeds person-picker candidate pools.
  */
 export function allPeople(campaign: TeCampaign): string[] {
   const out = new Set<string>()

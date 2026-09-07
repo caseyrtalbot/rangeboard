@@ -109,7 +109,7 @@ export function LiveScene(props: Props) {
       <FootprintLayer activeSensorIds={activeSensorIds} />
       <ThreatWezLayer tracks={tracks} impacts={impacts} displayTimeS={displayTimeS} />
       <StaticRangeLayer />
-      <PathLayer mouseWorld={mouseWorld} tracks={tracks} />
+      <PathLayer mouseWorld={mouseWorld} />
       <StaticConnectionLayer />
       <EngagementLayer shots={shots} displayTimeS={displayTimeS} />
       <EntityLayer
