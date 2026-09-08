@@ -17,6 +17,7 @@ import { EntityWorkspace } from './panels/EntityWorkspace'
 import type { EntityWorkspaceSection } from './panels/EntityWorkspace'
 import { LibraryEditor } from './panels/LibraryEditor'
 import { BoardPreparation } from './panels/BoardPreparation'
+import type { AnalysisScreen } from './panels/analysis/screens/navigation'
 import type { WidgetProps } from './panels/analysis/widgets/registry'
 import { formatRunLabel } from './state/labels'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
@@ -423,6 +424,9 @@ export default function App() {
   const [placement, setPlacement] = useState<LibraryPlacement | null>(null)
   const libraryTrigger = useRef<HTMLButtonElement>(null)
   const boardPhase = useStore(selectBoardPhase)
+  const [prepareScreen, setPrepareScreen] = useState<AnalysisScreen>('fragility')
+  const [analyzeScreen, setAnalyzeScreen] = useState<AnalysisScreen>('outcome')
+  const analysisScreen = boardPhase === 'prepare' ? prepareScreen : boardPhase === 'execute' ? 'now' : analyzeScreen
   const setBoardPhase = useStore((s) => s.setBoardPhase)
 
   useEffect(() => {
@@ -566,19 +570,22 @@ export default function App() {
   const toggleLibrary = useCallback(() => setLibraryOpen((open) => !open), [])
   const openObjects = useCallback(() => {
     openPhase('prepare')
+    setPrepareScreen('inputs')
     requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView())
   }, [openPhase])
   const openCards = useCallback(() => setRightTab('cards'), [setRightTab])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
-  const navigateAnalysis = useCallback(() => {
-    if (useStore.getState().ui.boardPhase === 'prepare') setBoardPhase('analyze')
+  const navigateAnalysis = useCallback((screen: AnalysisScreen) => {
+    if (screen === 'fragility' || screen === 'inputs') setPrepareScreen(screen)
+    if (screen === 'outcome' || screen === 'compare') setAnalyzeScreen(screen)
     setRightTab('analysis')
-  }, [setBoardPhase, setRightTab])
+  }, [setRightTab])
 
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
   }, [hasObjectSelection, setRightTab])
   const openPreparation = useCallback<NonNullable<WidgetProps['onOpenPreparation']>>((section) => {
+    setPrepareScreen('inputs')
     setBoardPhase('prepare')
     setPlacement(null)
     setLibraryOpen(false)
@@ -761,7 +768,7 @@ export default function App() {
             onKeyDown={nudgeRightWidth}
           />
           <PanelTabs activeTab={activeTab} setRightTab={setRightTab} />
-          <AnalysisNavigation onNavigate={navigateAnalysis} />
+          <AnalysisNavigation phase={boardPhase} screen={analysisScreen} onNavigate={navigateAnalysis} />
           <div
             className="right-panel-body"
             id="insp-tabpanel"
@@ -787,11 +794,11 @@ export default function App() {
               </Suspense>
             )}
             {activeTab === 'library' && <LibraryEditor />}
-            {activeTab === 'analysis' && (boardPhase === 'prepare'
+            {activeTab === 'analysis' && (analysisScreen === 'inputs'
               ? <BoardPreparation />
               : <Suspense fallback={<PanelLoading label="Loading analysis" />}>
-                  <AnalysisPanel phase={boardPhase} onOpenPreparation={openPreparation} />
-                </Suspense>)}
+                <AnalysisPanel phase={boardPhase} screen={analysisScreen} />
+              </Suspense>)}
           </div>
         </aside>
       </div>

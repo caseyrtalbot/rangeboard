@@ -1,44 +1,35 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { BUILTIN_LENSES, defaultAnalysisView } from '../../state/analysisLayout'
+import { describe, expect, it } from 'vitest'
+import { BUILTIN_LENSES } from '../../state/analysisLayout'
 import { useStore } from '../../state/store'
 import { AnalysisNavigation } from './AnalysisNavigation'
-
-function render(): string {
-  Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<AnalysisNavigation />)
-}
+import { PHASE_SCREENS } from './screens/navigation'
+import type { BoardPhase } from '../../state/runState'
 
 describe('AnalysisNavigation', () => {
-  beforeEach(() => {
-    useStore.setState((state) => ({
-      ui: { ...state.ui, analysis: defaultAnalysisView(), analysisCustomize: false },
-    }))
+  it.each(['prepare', 'execute', 'analyze'] as BoardPhase[])('shows only the screens for %s', phase => {
+    const options = PHASE_SCREENS[phase]
+    for (const selected of options) {
+      const html = renderToStaticMarkup(<AnalysisNavigation phase={phase} screen={selected.v} onNavigate={() => {}} />)
+      expect(html).toContain('aria-label="Analysis screens"')
+      expect(html.match(/<button /g)).toHaveLength(options.length)
+      expect(html.match(/aria-pressed="true"/g)).toHaveLength(1)
+      expect(html).toContain(`class="active">${selected.label}</button>`)
+      for (const option of options) expect(html).toContain(`>${option.label}</button>`)
+      expect(html).not.toContain('Layout')
+      expect(html).not.toContain('Analysis lenses')
+      for (const lens of BUILTIN_LENSES) expect(html).not.toContain(`>${lens.label}</button>`)
+    }
   })
 
-  it('keeps the five built-in lenses in one roving group', () => {
-    const html = render()
-
-    expect(html).toContain('role="group"')
-    expect(html.match(/aria-pressed=/g)?.length).toBe(BUILTIN_LENSES.length)
-    expect(html.match(/tabindex="0"/g)?.length).toBe(1)
-    expect(html.match(/tabindex="-1"/g)?.length).toBe(BUILTIN_LENSES.length - 1)
-    for (const preset of BUILTIN_LENSES) expect(html).toContain(`>${preset.label}</button>`)
-  })
-
-  it('exposes Layout as a dialog trigger outside the built-in group', () => {
-    const html = render()
-    const groupEnd = html.indexOf('</div>')
-    const layout = html.indexOf('aria-haspopup="dialog"')
-
-    expect(layout).toBeGreaterThan(groupEnd)
-    expect(html).toContain('aria-expanded="false"')
-    expect(html).toMatch(/aria-controls="[^"]+-analysis-layout"/)
-  })
-
-  it('keeps layout editing state visible when the popover is closed', () => {
+  it('keeps saved lens actions usable without exposing their controls', () => {
+    useStore.getState().applyLens(BUILTIN_LENSES[1].id)
     useStore.getState().setAnalysisCustomize(true)
-
-    expect(render()).toContain('>Layout · editing</button>')
+    const before = useStore.getState().ui
+    const html = renderToStaticMarkup(<AnalysisNavigation phase="prepare" screen="inputs" onNavigate={() => {}} />)
+    expect(html).not.toContain('Layout')
+    expect(useStore.getState().ui).toBe(before)
+    expect(before.analysis.layout.presetId).toBe(BUILTIN_LENSES[1].id)
+    expect(before.analysisCustomize).toBe(true)
   })
 })
