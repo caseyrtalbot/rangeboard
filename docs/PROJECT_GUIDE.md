@@ -93,7 +93,7 @@ to the matching Prepare section; view and layout changes preserve the result bas
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON | [LibraryEditor](../src/panels/LibraryEditor.tsx), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |
 | Play a scenario | Sampled trial preparation, retained Replay, New run, speed, cursor and observation-bounded track/engagement display | [TimelineBar](../src/panels/TimelineBar.tsx), [trialSelectors](../src/state/trialSelectors.ts), [useTrialResult](../src/state/useTrialResult.ts), [trialTrackState](../src/playback/trialTrackState.ts), [trialSweepAt](../src/playback/trialSweepAt.ts), [frameClock](../src/canvas/frameClock.ts) |
 | Analyze a configuration | Trial results and telemetry; separately labeled deterministic forecast, Monte Carlo, aleatory/total uncertainty, sensitivity, requirements and validity | [AnalysisPanel](../src/panels/AnalysisPanel.tsx), [trialResult](../src/analysis/trialResult.ts), [trialSeries](../src/analysis/trialSeries.ts), [ForecastSettings](../src/panels/analysis/ForecastSettings.tsx), [mcRun](../src/playback/mcRun.ts) |
-| Retain work | Autosave, scenario/library/run JSON, saved Board frames, basic test cards and run logs | [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [TestCardsPanel](../src/panels/TestCardsPanel.tsx) |
+| Retain work | Autosave, scenario/library/run JSON, saved Board frames, basic test cards and run logs | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [TestCardsPanel](../src/panels/TestCardsPanel.tsx) |
 
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
 never advances observation or stamps a run start or analysis basis.
@@ -133,10 +133,11 @@ before changing lifecycle behavior.
 
 ## Execution and persistence
 
-1. [main.tsx](../src/main.tsx) loads the Board autosave synchronously, starts both autosave
-   subscriptions and schedules the T&E restore on idle; the first switch to Ops runs that
-   restore if idle has not. [App.tsx](../src/App.tsx) switches workspaces and manages common
-   interaction chrome. The Ops workspace, the analysis and test-card panels, the command
+1. [main.tsx](../src/main.tsx) restores the Board autosave synchronously, starts both
+   autosave subscriptions and schedules the T&E restore on idle; the first switch to Ops
+   runs that restore if idle has not. Both subscriptions are one
+   [autosave lifecycle](../src/io/autosave.ts) with a Board adapter and a T&E adapter.
+   [App.tsx](../src/App.tsx) switches workspaces and manages common interaction chrome. The Ops workspace, the analysis and test-card panels, the command
    palette and the recharts plot load behind lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds

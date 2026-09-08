@@ -3,7 +3,8 @@ import type { Scenario } from '../../model/types'
 import { deliveryBlockers } from '../validate'
 import { emptyCampaign, emptyPackage } from '../model/empty'
 import { useTeStore } from '../state/teStore'
-import { allowAutosave, assertAutosaveAllowed, blockAutosave, notifyRecovery, recoverUnreadableSave } from '../../io/recovery'
+import type { AutosaveAdapter } from '../../io/autosave'
+import { createAutosave } from '../../io/autosave'
 import { idsOf, invalid, objectAt, reference, validateShape } from '../../io/runtimeValidation'
 import { validateCampaignReferences, validateCampaignShape } from './validateTe'
 import { parseAutosave } from '../../io/persist'
@@ -73,28 +74,42 @@ export function parseCampaignData(value: unknown): TeCampaign {
   return fillCampaign(root.campaign)
 }
 
-/** Protect the live record even if browser-storage access or recovery fails. */
-export function loadTeAutosave(): TeState | null {
-  let raw: string | null
-  try { raw = localStorage.getItem(TE_KEY) } catch {
-    blockAutosave(TE_KEY, 'Autosave paused: existing browser storage could not be read. Export current work and reload when storage is available.')
+/**
+ * The T&E half of the autosave lifecycle in `io/autosave.ts`: the T&E key, the
+ * T&E parser, the campaigns and active-id selection, adoption through
+ * `replaceState` and the ISO save status. The restore is deferred, so the
+ * lifecycle writes nothing until `restoreTeAutosave` has read the record back.
+ */
+export const teAutosaveAdapter: AutosaveAdapter<TeState> = {
+  key: TE_KEY,
+  recoveryPrefix: TE_RECOVERY_PREFIX,
+  label: 'T&E campaigns',
+  parse: parseTeAutosave,
+  adopt: (state) => useTeStore.getState().replaceState(state),
+  deferred: true,
+  subscribe: (changed) =>
+    useTeStore.subscribe((state, prev) => {
+      if (state.campaigns === prev.campaigns && state.activeCampaignId === prev.activeCampaignId)
+        return
+      changed({
+        schemaVersion: 1,
+        campaigns: state.campaigns,
+        activeCampaignId: state.activeCampaignId,
+      })
+    }),
+  reportSaved: () => useTeStore.getState().setSaveState(new Date().toISOString(), null),
+  reportPaused: (message) => {
     const store = useTeStore.getState()
-    store.setSaveState(store.lastSavedAt, 'Autosave paused: browser storage could not be read. Export current work and reload when storage is available.')
-    return null
-  }
-  if (raw === null) { allowAutosave(TE_KEY); return null }
-  try {
-    const state = parseTeAutosave(raw)
-    allowAutosave(TE_KEY)
-    return state
-  } catch (error) {
-    notifyRecovery('T&E campaigns', recoverUnreadableSave(raw, TE_KEY, TE_RECOVERY_PREFIX), (error as Error).message)
-    return null
-  }
+    store.setSaveState(store.lastSavedAt, message)
+  },
+  reportWriteFailure: (error) => {
+    const store = useTeStore.getState()
+    const reason = error instanceof Error ? error.message.replace(/\.$/, '') : 'storage unavailable'
+    store.setSaveState(store.lastSavedAt, `Not saved: ${reason}. Export the campaign.`)
+  },
 }
 
-/** Set once the saved record has been read back, so no write can precede the restore. */
-let restored = false
+const teAutosave = createAutosave(teAutosaveAdapter)
 
 /**
  * Read the saved T&E record back into the store. Runs at most once. Kept off the
@@ -103,10 +118,7 @@ let restored = false
  * so an untouched store can never overwrite a saved record.
  */
 export function restoreTeAutosave(): void {
-  if (restored) return
-  const saved = loadTeAutosave()
-  if (saved) useTeStore.getState().replaceState(saved)
-  restored = true
+  teAutosave.restore()
 }
 
 /**
@@ -116,41 +128,7 @@ export function restoreTeAutosave(): void {
  * record is `restoreTeAutosave`, scheduled separately.
  */
 export function startTeAutosave(): void {
-  let timer: number | undefined
-  let pending: TeState | null = null
-
-  function flush(): void {
-    window.clearTimeout(timer)
-    timer = undefined
-    const s = pending
-    pending = null
-    if (!s) return
-    const store = useTeStore.getState()
-    try {
-      assertAutosaveAllowed(TE_KEY)
-      localStorage.setItem(TE_KEY, JSON.stringify(s))
-      store.setSaveState(new Date().toISOString(), null)
-    } catch (error) {
-      store.setSaveState(store.lastSavedAt, `Not saved: ${error instanceof Error ? error.message.replace(/\.$/, '') : 'storage unavailable'}. Export the campaign.`)
-    }
-  }
-
-  useTeStore.subscribe((state, prev) => {
-    if (!restored) return
-    if (state.campaigns === prev.campaigns && state.activeCampaignId === prev.activeCampaignId)
-      return
-    pending = {
-      schemaVersion: 1,
-      campaigns: state.campaigns,
-      activeCampaignId: state.activeCampaignId,
-    }
-    window.clearTimeout(timer)
-    timer = window.setTimeout(flush, 500)
-  })
-  window.addEventListener('pagehide', flush)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flush()
-  })
+  teAutosave.observe()
 }
 
 

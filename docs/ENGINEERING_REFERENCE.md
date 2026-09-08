@@ -73,7 +73,9 @@ Breaking one of these breaks the app.
   is not size-capped. `loadScenario` is the one load path; `replaceScenario` clears
   history, selection, drafts and the tool, and prunes per-entity view state.
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
-  instead. The scenario and T&E autosaves have their own read and error paths. Every other
+  instead. The scenario and T&E autosaves have their own read and error paths; both run
+  through the one lifecycle in `src/io/autosave.ts`, and their adapters keep the keys,
+  the records and the save status separate. Every other
   settings key (view, layers, rings, run sequence, analysis layout, units, panel widths,
   collapse flags) is read and written through `readSetting` and `writeSetting` in
   `src/io/viewState.ts`, the one guarded localStorage path for settings. The camera write
@@ -237,7 +239,12 @@ src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over s
                analysis/detail/, analysis/ForecastSettings.tsx for forecast/MC controls),
                TimelineBar (owns the rAF loop), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
-src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and library
+src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
+               restore, observe, flush and stop, and owns the read, the recovery, the
+               write gate, the 500 ms debounce, the pagehide and visibilitychange flush;
+               an AutosaveAdapter supplies key, parser, record selection, adoption and
+               save status), persist.ts (scenarioAutosaveAdapter and the Board autosave
+               entry points, fillScenario, adoptSeedProvenance, JSON and library
                import/export, runExportObject), runResultGroups.ts (per-group basis/units
                and separately typed TrialResultGroup),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
@@ -245,8 +252,9 @@ src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and
                viewState.ts (readSetting and writeSetting over every settings key),
                storageKeys.ts, recovery.ts
 src/te/        T&E Operations workspace (own store, section 8)
-src/main.tsx   loads the Board autosave, starts both autosave subscriptions, schedules
-               the T&E restore on idle, exposes window.__store and window.__teStore in dev
+src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
+               both autosave subscriptions, schedules the T&E restore on idle,
+               exposes window.__store and window.__teStore in dev
 src/App.tsx    workspace toggle, right panel tabs, keyboard map, resizer; lazy boundaries
                for OpsWorkspace (which restores the T&E record first), AnalysisPanel,
                TestCardsPanel and CommandPalette
@@ -723,9 +731,13 @@ Design system (`src/index.css`):
 - Second workspace ("T&E Ops" toggle). Spec sources: `docs/te-plan.md` and the MASTER-*.md
   files in `docs/te-compilation/`.
 - **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`,
-  recovery copy at `rangeboard.te.recovered.<ms>`. `startTeAutosave` only subscribes and
-  writes nothing until `restoreTeAutosave` has read the saved record back; the restore runs
-  once, on idle, on the first Ops entry or on a Board frame capture, whichever comes first.
+  recovery copy at `rangeboard.te.recovered.<ms>`. `teAutosaveAdapter` in
+  `src/te/io/persistTe.ts` is the T&E half of the shared lifecycle (`src/io/autosave.ts`):
+  the T&E key and parser, the campaigns and active-id selection, adoption through
+  `replaceState` and an ISO save stamp. It is the deferred adapter, so `startTeAutosave`
+  only subscribes and writes nothing until `restoreTeAutosave` has read the saved record
+  back; the restore runs once per lifecycle instance, on idle, on the first Ops entry or
+  on a Board frame capture, whichever comes first.
   Records are versioned and append-only
   (runs never renumber, issued cards freeze, changes create new versions). Never embed
   campaign data in `Scenario`. The store enforces issued/superseded card immutability,

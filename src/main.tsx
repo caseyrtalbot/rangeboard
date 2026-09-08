@@ -1,14 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
-import { loadAutosave, startAutosave } from './io/persist'
+import { restoreAutosave, startAutosave } from './io/persist'
 import { restoreTeAutosave, startTeAutosave } from './te/io/persistTe'
 import { useStore } from './state/store'
 import { useTeStore } from './te/state/teStore'
 import './index.css'
 
-const saved = loadAutosave()
-if (saved) useStore.getState().loadScenario(saved)
+restoreAutosave()
 
 startAutosave()
 startTeAutosave()

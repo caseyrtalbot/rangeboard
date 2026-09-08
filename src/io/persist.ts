@@ -25,7 +25,8 @@ import { analysisBasisSignature } from '../state/analysisBasis'
 import { runResultGroups } from './runResultGroups'
 import type { RunResultGroups } from './runResultGroups'
 import type { TrialResultView } from '../analysis/trialResult'
-import { allowAutosave, assertAutosaveAllowed, blockAutosave, notifyRecovery, recoverUnreadableSave } from './recovery'
+import type { AutosaveAdapter } from './autosave'
+import { createAutosave } from './autosave'
 import { parseLibraryData, validateScenarioReferences, validateScenarioShape } from './validateScenario'
 import { MAX_IMAGE_CODE_UNITS, validateImage } from './runtimeValidation'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
@@ -143,26 +144,44 @@ export function parseScenarioData(value: unknown): Scenario {
   return fillScenario(value)
 }
 
-/** Read failure and failed recovery both prevent subsequent autosave overwrite. */
-export function loadAutosave(): Scenario | null {
-  let raw: string | null
-  try {
-    raw = localStorage.getItem(SCENARIO_KEY)
-  } catch {
-    blockAutosave(SCENARIO_KEY, 'Autosave paused: existing browser storage could not be read. Export current work and reload when storage is available.')
+/**
+ * The Board half of the autosave lifecycle in `io/autosave.ts`: the scenario
+ * key, the scenario parser, the scenario selection, adoption through
+ * `loadScenario` and the Board's epoch-millisecond save status.
+ */
+export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
+  key: SCENARIO_KEY,
+  recoveryPrefix: SCENARIO_RECOVERY_PREFIX,
+  label: 'scenario',
+  parse: parseAutosave,
+  adopt: (scenario) => useStore.getState().loadScenario(scenario),
+  subscribe: (changed) =>
+    useStore.subscribe((state, prev) => {
+      if (state.scenario === prev.scenario) return
+      changed(state.scenario)
+    }),
+  reportSaved: () => useStore.getState().setSaveState(Date.now(), null),
+  reportPaused: (message) => {
     const store = useStore.getState()
-    store.setSaveState(store.save.lastAutosaveAt, 'Autosave paused: browser storage could not be read. Export current work and reload when storage is available.')
-    return null
-  }
-  if (raw === null) { allowAutosave(SCENARIO_KEY); return null }
-  try {
-    const scenario = parseAutosave(raw)
-    allowAutosave(SCENARIO_KEY)
-    return scenario
-  } catch (error) {
-    notifyRecovery('scenario', recoverUnreadableSave(raw, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX), (error as Error).message)
-    return null
-  }
+    store.setSaveState(store.save.lastAutosaveAt, message)
+  },
+  reportWriteFailure: (error) => {
+    const store = useStore.getState()
+    const reason = error instanceof Error ? error.message || error.name : 'storage error'
+    store.setSaveState(store.save.lastAutosaveAt, `Not saved: ${reason}. Export the scenario.`)
+  },
+}
+
+const scenarioAutosave = createAutosave(scenarioAutosaveAdapter)
+
+/** Read the saved scenario. Read failure and failed recovery both prevent a later overwrite. */
+export function loadAutosave(): Scenario | null {
+  return scenarioAutosave.read()
+}
+
+/** Read the saved scenario back into the store at startup. Runs at most once. */
+export function restoreAutosave(): void {
+  scenarioAutosave.restore()
 }
 
 /**
@@ -171,38 +190,7 @@ export function loadAutosave(): Scenario | null {
  * hidden or unloaded so a close never loses the last edit.
  */
 export function startAutosave(): void {
-  let timer: number | undefined
-  let pending: Scenario | null = null
-
-  function flush(): void {
-    window.clearTimeout(timer)
-    timer = undefined
-    const scenario = pending
-    pending = null
-    if (!scenario) return
-    const store = useStore.getState()
-    try {
-      assertAutosaveAllowed(SCENARIO_KEY)
-      localStorage.setItem(SCENARIO_KEY, JSON.stringify(scenario))
-      store.setSaveState(Date.now(), null)
-    } catch (err) {
-      // Storage full (large underlay image) or storage unavailable. The Saved
-      // pill must not keep showing a time that is no longer true.
-      const reason = err instanceof Error ? err.message || err.name : 'storage error'
-      store.setSaveState(store.save.lastAutosaveAt, `Not saved: ${reason}. Export the scenario.`)
-    }
-  }
-
-  useStore.subscribe((state, prev) => {
-    if (state.scenario === prev.scenario) return
-    pending = state.scenario
-    window.clearTimeout(timer)
-    timer = window.setTimeout(flush, 500)
-  })
-  window.addEventListener('pagehide', flush)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flush()
-  })
+  scenarioAutosave.observe()
 }
 
 function downloadJson(data: unknown, filename: string): void {
