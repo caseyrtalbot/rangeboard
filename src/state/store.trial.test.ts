@@ -7,23 +7,14 @@ import { runTrial } from '../playback/trial'
 import type { TrialRequest, TrialWorkerMessage } from '../playback/trialMessages'
 import { resetAnalysisRun, toggleAnalysisRun } from '../playback/runSession'
 import { parseScenarioData } from '../io/persist'
+import { ControlledWorker } from '../playback/controlledWorker'
 import firing from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 
-class ControlledWorker {
-  static instances: ControlledWorker[] = []
-  onmessage: ((event: { data: unknown }) => void) | null = null
-  onerror: ((event: { message: string }) => void) | null = null
-  terminated = false
-  request!: TrialRequest
-  constructor() { ControlledWorker.instances.push(this) }
-  postMessage(request: TrialRequest) { this.request = request }
-  terminate() { this.terminated = true }
-  send(message: unknown) { this.onmessage?.({ data: message }) }
-}
 const scenario = () => parseScenarioData(structuredClone(firing))
-const latest = () => ControlledWorker.instances.at(-1)!
+const latest = () => ControlledWorker.latest()
+const requestOf = (worker: ControlledWorker) => worker.request as TrialRequest
 function done(worker = latest()): TrialWorkerMessage {
-  const { requestToken, runId, basisSignature, scenario, manifest } = worker.request
+  const { requestToken, runId, basisSignature, scenario, manifest } = requestOf(worker)
   return { type: 'trial-done', requestToken, runId, basisSignature, result: runTrial(scenario, manifest) }
 }
 function finish() { latest().send(done()) }
@@ -34,8 +25,7 @@ function edit() {
 
 describe('sampled trial preparation and playback lifecycle', () => {
   beforeEach(() => {
-    vi.stubGlobal('Worker', ControlledWorker)
-    ControlledWorker.instances = []
+    ControlledWorker.install()
     useStore.getState().replaceScenario(scenario())
   })
   afterEach(() => {
@@ -135,8 +125,8 @@ describe('sampled trial preparation and playback lifecycle', () => {
     const oldMessage = done(old)
     useStore.getState().prepareTrial()
     expect(old.terminated).toBe(true)
-    expect(latest().request.requestToken).not.toBe(old.request.requestToken)
-    expect(latest().request.manifest).toBe(old.request.manifest)
+    expect(requestOf(latest()).requestToken).not.toBe(requestOf(old).requestToken)
+    expect(requestOf(latest()).manifest).toBe(requestOf(old).manifest)
     const current = useStore.getState().trial
     old.send(oldMessage)
     useStore.getState().trialMessage(oldMessage)
@@ -247,9 +237,9 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(useStore.getState().playback.observedThroughS).toBe(0)
     expect(useStore.getState().playback.startedAtMs).toBeNull()
     useStore.getState().startTrialRun()
-    expect(latest().request.manifest).toBe(worker.request.manifest)
-    expect(latest().request.scenario).toBe(worker.request.scenario)
-    expect(latest().request.requestToken).not.toBe(worker.request.requestToken)
+    expect(requestOf(latest()).manifest).toBe(requestOf(worker).manifest)
+    expect(requestOf(latest()).scenario).toBe(requestOf(worker).scenario)
+    expect(requestOf(latest()).requestToken).not.toBe(requestOf(worker).requestToken)
     finish()
     expect(useStore.getState().playback.playing).toBe(true)
   })
@@ -266,13 +256,13 @@ describe('sampled trial preparation and playback lifecycle', () => {
     useStore.getState().completeRun(500)
     expect(useStore.getState().playback).toMatchObject({ playing: false, startedAtMs: null, completedAtMs: null, observedThroughS: 0 })
     toggleAnalysisRun()
-    expect(latest().request.manifest).toBe(worker.request.manifest)
+    expect(requestOf(latest()).manifest).toBe(requestOf(worker).manifest)
     finish()
     expect(useStore.getState().playback.playing).toBe(true)
   })
 
   it('synchronous construction failure and missing Worker leave an actionable error', () => {
-    vi.stubGlobal('Worker', class { constructor() { throw new Error('constructor failed') } })
+    ControlledWorker.constructionError = 'constructor failed'
     useStore.getState().startTrialRun()
     expect(useStore.getState().trial).toMatchObject({ status: 'error', error: 'constructor failed' })
     vi.stubGlobal('Worker', undefined)

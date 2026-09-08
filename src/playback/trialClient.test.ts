@@ -4,24 +4,7 @@ import { cancelMcRun, cancelSensitivity, startMcRun, startSensitivity } from './
 import { cancelTrial, startTrial } from './trialClient'
 import type { TrialRequest } from './trialMessages'
 import { createTrialManifest } from './trialTypes'
-
-class ControlledWorker {
-  static instances: ControlledWorker[] = []
-  static constructionError = false
-  static postError = false
-  onmessage: ((event: { data: unknown }) => void) | null = null
-  onerror: ((event: { message: string }) => void) | null = null
-  onmessageerror: (() => void) | null = null
-  terminate = vi.fn()
-  postMessage = vi.fn(() => {
-    if (ControlledWorker.postError) throw new Error('Cannot clone request')
-  })
-  constructor() {
-    if (ControlledWorker.constructionError) throw new Error('Worker blocked')
-    ControlledWorker.instances.push(this)
-  }
-  send(data: unknown) { this.onmessage?.({ data }) }
-}
+import { ControlledWorker } from './controlledWorker'
 
 function request(requestToken = 'attempt-1'): TrialRequest {
   const scenario = emptyScenario()
@@ -40,15 +23,12 @@ function done(req: TrialRequest) {
 
 function start(req = request(), callback = vi.fn()) {
   expect(startTrial(req, callback)).toBe(true)
-  return { req, callback, worker: ControlledWorker.instances.at(-1)! }
+  return { req, callback, worker: ControlledWorker.latest() }
 }
 
 describe('single-trial worker ownership', () => {
   beforeEach(() => {
-    vi.stubGlobal('Worker', ControlledWorker)
-    ControlledWorker.instances = []
-    ControlledWorker.constructionError = false
-    ControlledWorker.postError = false
+    ControlledWorker.install()
   })
   afterEach(() => {
     cancelTrial()
@@ -155,16 +135,16 @@ describe('single-trial worker ownership', () => {
   })
 
   it.each(['construction', 'post'])('reports %s failures without throwing or retaining a worker', (kind) => {
-    ControlledWorker.constructionError = kind === 'construction'
-    ControlledWorker.postError = kind === 'post'
+    ControlledWorker.constructionError = kind === 'construction' ? 'Worker blocked' : null
+    ControlledWorker.postError = kind === 'post' ? 'Cannot clone request' : null
     const callback = vi.fn()
     expect(startTrial(request(), callback)).toBe(true)
     expect(callback).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'trial-error' }))
     if (kind === 'post') expect(ControlledWorker.instances[0].terminate).toHaveBeenCalledOnce()
     cancelTrial()
     expect(callback).toHaveBeenCalledOnce()
-    ControlledWorker.constructionError = false
-    ControlledWorker.postError = false
+    ControlledWorker.constructionError = null
+    ControlledWorker.postError = null
     const fresh = start()
     fresh.worker.send(done(fresh.req))
     expect(fresh.callback).toHaveBeenCalledOnce()
@@ -201,14 +181,18 @@ describe('single-trial worker ownership', () => {
     expect(freshMc.terminate).not.toHaveBeenCalled()
     expect(freshSens.terminate).not.toHaveBeenCalled()
     freshMc.send({ type: 'done', runId: 'run', summary: {} })
-    freshSens.send({ type: 'sens-done', runId: 'run', summary: {} })
     expect(mcCallback).toHaveBeenCalledOnce()
-    expect(sensCallback).toHaveBeenCalledOnce()
+    // A completed run releases its own worker; the other slots are untouched.
+    expect(freshMc.terminate).toHaveBeenCalledOnce()
+    expect(freshSens.terminate).not.toHaveBeenCalled()
     const third = start()
     cancelTrial()
     expect(third.worker.terminate).toHaveBeenCalledOnce()
-    expect(freshMc.terminate).not.toHaveBeenCalled()
+    expect(freshMc.terminate).toHaveBeenCalledOnce()
     expect(freshSens.terminate).not.toHaveBeenCalled()
+    freshSens.send({ type: 'sens-done', runId: 'run', summary: {} })
+    expect(sensCallback).toHaveBeenCalledOnce()
+    expect(freshSens.terminate).toHaveBeenCalledOnce()
   })
 
   it('does not accumulate live workers across 30 new preparations', () => {

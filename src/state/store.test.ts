@@ -26,6 +26,7 @@ import {
 } from '../io/viewState'
 import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
+import { ControlledWorker } from '../playback/controlledWorker'
 
 
 /** Supply a real retained result for clock tests; async worker ownership lives in store.trial.test. */
@@ -1386,7 +1387,11 @@ describe('applyFrame', () => {
 })
 
 describe('monte carlo slice', () => {
-  beforeEach(reset)
+  beforeEach(() => {
+    ControlledWorker.install()
+    reset()
+  })
+  afterEach(() => vi.unstubAllGlobals())
 
   const ZERO_STAT = {
     mean: 0, sd: 0, se: 0, lo: 0, hi: 0, conf: 0.95, interval: 't' as const,
@@ -1415,11 +1420,11 @@ describe('monte carlo slice', () => {
     }
   }
 
-  /** Model a running worker in node, then deliver its completion. */
+  /** Start a run on the controlled worker, then deliver its completion. */
   function primeDone(replicates = 4): McSummary {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     useStore.getState().runMonteCarlo()
-    useStore.setState((st) => ({ mc: { ...st.mc, status: 'running' } }))
+    expect(useStore.getState().mc.status).toBe('running')
     const runId = useStore.getState().mc.runId as string
     const summary = fakeSummary(replicates)
     useStore.getState().mcMessage({ type: 'done', runId, summary })
@@ -1495,6 +1500,7 @@ describe('monte carlo slice', () => {
   })
 
   it('runMonteCarlo reports the missing Worker as an error', () => {
+    vi.stubGlobal('Worker', undefined)
     useStore.getState().patchScenario({ runMode: 'monte-carlo', replicates: 20 })
     useStore.getState().runMonteCarlo()
     const st = useStore.getState()
@@ -1543,7 +1549,11 @@ describe('monte carlo slice', () => {
 })
 
 describe('sensitivity slice', () => {
-  beforeEach(reset)
+  beforeEach(() => {
+    ControlledWorker.install()
+    reset()
+  })
+  afterEach(() => vi.unstubAllGlobals())
 
   function fakeSensitivity(): SensitivitySummary {
     return {
@@ -1567,13 +1577,11 @@ describe('sensitivity slice', () => {
     }
   }
 
-  /** Model a running sensitivity worker in node, then progress and completion. */
+  /** Start a sensitivity run on the controlled worker, then progress and completion. */
   function primeSensitivity(): SensitivitySummary {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     useStore.getState().runSensitivity()
-    useStore.setState((st) => ({
-      mc: { ...st.mc, sensitivity: { ...st.mc.sensitivity, status: 'running' } },
-    }))
+    expect(useStore.getState().mc.sensitivity.status).toBe('running')
     const runId = useStore.getState().mc.sensitivity.runId as string
     const summary = fakeSensitivity()
     useStore.getState().sensitivityMessage({ type: 'sens-progress', runId, done: 1, total: 2 })
@@ -1583,14 +1591,10 @@ describe('sensitivity slice', () => {
 
   /** A finished replicate run beside the sensitivity run; the summary itself is not read. */
   function markMcDone(): void {
-    useStore.setState((st) => ({
-      mc: {
-        ...st.mc,
-        runId: st.playback.runId,
-        status: 'done',
-        basisSignature: analysisBasisSignature(st.scenario),
-      },
-    }))
+    useStore.getState().runMonteCarlo()
+    const runId = useStore.getState().playback.runId
+    ControlledWorker.latest().send({ type: 'done', runId, summary: { replicates: 1 } })
+    expect(useStore.getState().mc.status).toBe('done')
   }
 
   it('counts fields on progress and fills the summary on done', () => {
@@ -1608,6 +1612,7 @@ describe('sensitivity slice', () => {
   })
 
   it('reports the missing Worker as an error and starts with no field count', () => {
+    vi.stubGlobal('Worker', undefined)
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     useStore.getState().runSensitivity()
     const st = useStore.getState()

@@ -12,20 +12,11 @@ import { useStore } from './store'
 import { analysisBasisSignature } from './analysisBasis'
 import { currentSensitivity, currentSummary } from '../panels/analysis/widgets/mc'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
-import { CANCEL_GRACE_MS } from '../playback/mcClient'
+import { runTrial } from '../playback/trial'
+import type { TrialManifest } from '../playback/trialTypes'
+import { CANCEL_GRACE_MS } from '../playback/workerSlot'
+import { ControlledWorker } from '../playback/controlledWorker'
 import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
-
-// Capture callbacks so even a queued event from a terminated worker can be delivered.
-class ControlledWorker {
-  static instances: ControlledWorker[] = []
-  onmessage: ((e: { data: unknown }) => void) | null = null
-  onerror: ((e: { message: string }) => void) | null = null
-  terminated = false
-  postMessage = vi.fn()
-  terminate() { this.terminated = true }
-  constructor() { ControlledWorker.instances.push(this) }
-  send(data: unknown) { this.onmessage?.({ data }) }
-}
 
 function scenario(): Scenario {
   return { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', replicates: 1 }
@@ -85,8 +76,7 @@ const edits: [string, () => void][] = [
 
 describe('complete analysis basis and request ownership', () => {
   beforeEach(() => {
-    vi.stubGlobal('Worker', ControlledWorker)
-    ControlledWorker.instances = []
+    ControlledWorker.install()
     useStore.getState().replaceScenario(scenario())
   })
   afterEach(() => {
@@ -191,7 +181,8 @@ describe('complete analysis basis and request ownership', () => {
     expect(useStore.getState().mc.progress).toBe(7)
     expect(useStore.getState().mc.summary?.stopped.rule).toBe('cancelled')
     vi.advanceTimersByTime(CANCEL_GRACE_MS + 1)
-    expect(work.mc.terminated).toBe(false)
+    // The summary released the worker; the grace timer then had nothing to stop.
+    expect(work.mc.terminated).toBe(true)
     expect(useStore.getState().mc.status).toBe('done')
     expect(work.sens.terminated).toBe(true)
     expect(useStore.getState().mc.sensitivity.status).toBe('error')
@@ -200,6 +191,44 @@ describe('complete analysis basis and request ownership', () => {
     useStore.getState().cancelMonteCarlo()
     expect(work.mc.postMessage).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
+  })
+
+  it.each(['mc', 'sensitivity'] as const)('a synchronous construction error ends the %s request in an error state', (kind) => {
+    ControlledWorker.constructionError = 'Worker blocked'
+    if (kind === 'mc') useStore.getState().runMonteCarlo()
+    else useStore.getState().runSensitivity()
+    const { mc, playback, scenario: current } = useStore.getState()
+    const run = kind === 'mc' ? mc : mc.sensitivity
+    expect(run).toMatchObject({ status: 'error', error: 'Worker blocked', runId: playback.runId,
+      basisSignature: analysisBasisSignature(current) })
+    expect(ControlledWorker.instances).toHaveLength(0)
+    ControlledWorker.constructionError = null
+    if (kind === 'mc') useStore.getState().runMonteCarlo()
+    else useStore.getState().runSensitivity()
+    expect(run === (kind === 'mc' ? useStore.getState().mc : useStore.getState().mc.sensitivity)).toBe(false)
+    expect((kind === 'mc' ? useStore.getState().mc : useStore.getState().mc.sensitivity).status).toBe('running')
+  })
+
+  it('a replicate run and a trial requested together each own their slot and finish in either order', () => {
+    useStore.getState().runMonteCarlo()
+    useStore.getState().prepareTrial()
+    const [mc, trial] = ControlledWorker.instances
+    const runId = useStore.getState().playback.runId
+    expect(useStore.getState().mc).toMatchObject({ status: 'running', runId })
+    expect(useStore.getState().trial).toMatchObject({ status: 'preparing', manifest: { runId } })
+    expect(useStore.getState().playback.playing).toBe(false)
+    expect(mc.terminated).toBe(false)
+    const request = trial.request as { requestToken: string; basisSignature: string; scenario: Scenario; manifest: TrialManifest }
+    trial.send({ type: 'trial-done', requestToken: request.requestToken, runId, basisSignature: request.basisSignature,
+      result: runTrial(request.scenario, request.manifest) })
+    expect(useStore.getState().trial.status).toBe('ready')
+    expect(useStore.getState().mc.status).toBe('running')
+    expect(mc.terminated).toBe(false)
+    mc.send({ type: 'done', runId, summary: mcSummary })
+    expect(useStore.getState().mc.status).toBe('done')
+    expect(useStore.getState().trial.status).toBe('ready')
+    expect(mc.terminated).toBe(true)
+    expect(trial.terminated).toBe(true)
   })
 
   it('playback resets on input changes but retains its sequence and ignores metadata edits', () => {
