@@ -17,7 +17,13 @@ import { MEASURE_DICTIONARY, type MeasureDictEntry } from '../seed/measureDictio
 import { useTeStore } from '../state/teStore'
 import { useStore } from '../../state/store'
 import { formatSpeed } from '../../geometry/geo'
-import { attemptInflation, sampleSizeProportion } from '../calc/stats'
+import {
+  baselineOffered,
+  planCells,
+  planSampleSize,
+  requiredRepetitions,
+  sampleSizeCellPatch,
+} from '../model/matrixPlan'
 import { MATRIX_METHODS } from '../seed/constants'
 import {
   EntityPicker,
@@ -694,8 +700,8 @@ export function SampleSizeApply({ campaign }: { campaign: TeCampaign }) {
   const [h, setH] = useState<number | null>(0.1)
   const [vf, setVf] = useState<number | null>(0.8)
   const [mid, setMid] = useState<string | null>(null)
-  const n = p != null && p > 0 && p < 1 && h != null && h > 0 ? sampleSizeProportion(p, h) : null
-  const attempts = n != null && vf != null && vf > 0 && vf <= 1 ? attemptInflation(n, vf) : null
+  const solution = planSampleSize({ p, halfWidth: h, validFraction: vf })
+  const { validNeeded: n, attempts } = solution
   const cell = campaign.matrix.find((x) => x.id === selectedCell)
   return (
     <div className="subsection">
@@ -735,11 +741,9 @@ export function SampleSizeApply({ campaign }: { campaign: TeCampaign }) {
             disabled={n == null || cell == null}
             title={cell == null ? 'Select a matrix cell first.' : undefined}
             onClick={() => {
-              if (n == null || cell == null) return
-              patchItem('matrix', cell.id, {
-                minValidEvidence: n,
-                plannedReps: attempts ?? Math.max(cell.plannedReps, n),
-              })
+              if (cell == null) return
+              const patch = sampleSizeCellPatch(cell, solution)
+              if (patch) patchItem('matrix', cell.id, patch)
             }}
           >
             Set selected cell minimums
@@ -753,9 +757,10 @@ export function SampleSizeApply({ campaign }: { campaign: TeCampaign }) {
 /**
  * Guided add-cells flow. The method drives the build; links inherit
  * from context; one cell lands per picked condition. Per-cell edit remains.
+ * `planCells` owns the build rules; this panel previews the plan and adopts it.
  */
 export function AddCellsFlow({ campaign }: { campaign: TeCampaign }) {
-  const { addMatrixCell, patchItem, selectRecord } = useTeStore.getState()
+  const { addMatrixCells, selectRecord } = useTeStore.getState()
   const selectedQ = useTeStore((s) => s.ui.selected.questions ?? null)
   const [method, setMethod] = useState<string>(MATRIX_METHODS[1])
   const [qid, setQid] = useState<string | null>(null)
@@ -774,37 +779,30 @@ export function AddCellsFlow({ campaign }: { campaign: TeCampaign }) {
   const hyps = campaign.hypotheses.filter((x) => x.questionId === effQid)
   const config = campaign.configs.find((x) => x.id === cfgId) ?? campaign.configs[0]
   const threat = campaign.threats.find((x) => x.id === thrId) ?? campaign.threats[0]
-  const qMeasures = campaign.measures.filter((m) => m.questionId === effQid)
-  const defaultReps = Math.max(1, ...qMeasures.map((m) => m.requiredRepetitions ?? 1))
+  const defaultReps = requiredRepetitions(campaign, effQid)
   const effReps = reps ?? defaultReps
-  const comparison =
-    method.toLowerCase().includes('comparison') || campaign.charter.engagementType === 'comparison'
-  const hasBaseline = campaign.matrix.some((x) => x.method.toLowerCase().includes('baseline'))
-  const canBuild = effQid != null && config != null && threat != null && condIds.length > 0
+  const offerBaseline = baselineOffered(campaign, method)
+  const plan = useMemo(
+    () =>
+      planCells(
+        campaign,
+        {
+          questionId: effQid,
+          hypothesisId: hid,
+          configId: config?.id ?? null,
+          threatId: threat?.id ?? null,
+          conditionIds: condIds,
+        },
+        { method, plannedReps: reps, addBaseline },
+      ),
+    [campaign, effQid, hid, config?.id, threat?.id, condIds, method, reps, addBaseline],
+  )
+  const canBuild = plan.cells.length > 0
 
   const build = () => {
-    if (!canBuild || !config || !threat) return
-    let lastId: string | null = null
-    const base = {
-      questionId: effQid ?? '',
-      hypothesisId: hid,
-      configId: config.id,
-      threatId: threat.id,
-      measureIds: qMeasures.map((m) => m.id),
-      plannedReps: effReps,
-      minValidEvidence: Math.min(effReps, defaultReps),
-    }
-    const conds = [...condIds]
-    if (comparison && addBaseline && !hasBaseline && conds.length > 0) {
-      const id = addMatrixCell()
-      patchItem('matrix', id, { ...base, conditionId: conds[0], method: 'baseline comparison' })
-      lastId = id
-    }
-    for (const conditionId of conds) {
-      const id = addMatrixCell()
-      patchItem('matrix', id, { ...base, conditionId, method })
-      lastId = id
-    }
+    if (!canBuild) return
+    const ids = addMatrixCells(plan)
+    const lastId = ids.at(-1)
     if (lastId) selectRecord('matrix', lastId)
     setCondIds([])
   }
@@ -863,7 +861,7 @@ export function AddCellsFlow({ campaign }: { campaign: TeCampaign }) {
           onChange={(v) => setReps(v)}
           help="Defaults to the largest required repetitions among the question's measures."
         />
-        {comparison && !hasBaseline && (
+        {offerBaseline && (
           <label className="check-row">
             <input type="checkbox" checked={addBaseline} onChange={(e) => setAddBaseline(e.target.checked)} />
             Add a baseline row first
@@ -871,11 +869,20 @@ export function AddCellsFlow({ campaign }: { campaign: TeCampaign }) {
         )}
       </div>
       <button type="button" disabled={!canBuild} onClick={build}>
-        Add {condIds.length || ''} cell{condIds.length === 1 ? '' : 's'}
+        Add {plan.cells.length || ''} cell{plan.cells.length === 1 ? '' : 's'}
       </button>
-      {!canBuild && (
-        <p className="muted small">Pick a question, a configuration, a threat, and at least one condition.</p>
+      {canBuild && (
+        <p className="muted small">
+          {plan.cells.length} cell{plan.cells.length === 1 ? '' : 's'}
+          {plan.baseline ? ', baseline row first' : ''};{' '}
+          {plan.cells.reduce((n, c) => n + c.plannedReps, 0)} planned runs.
+        </p>
       )}
+      {plan.warnings.map((w) => (
+        <p key={w} className="muted small">
+          {w}
+        </p>
+      ))}
     </div>
   )
 }
