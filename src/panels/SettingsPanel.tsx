@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { runSettings } from '../model/types'
-import { useStore } from '../state/store'
-import { McPopover } from './analysis/LiveStrip'
+import { ForecastSettings } from './analysis/ForecastSettings'
 import { FireDoctrineSettings } from './analysis/widgets/FireDoctrineWidget'
 import { EnvironmentSettings } from './analysis/widgets/EnvironmentWidget'
 import { RequirementSettings } from './analysis/widgets/RequirementGatesWidget'
@@ -11,15 +9,9 @@ export type SettingsSection = 'scenario' | 'run' | 'view'
 
 const SECTIONS: { id: SettingsSection; label: string }[] = [
   { id: 'scenario', label: 'Scenario' },
-  { id: 'run', label: 'Run' },
+  { id: 'run', label: 'Forecast and analysis' },
   { id: 'view', label: 'View' },
 ]
-
-function RunSettings() {
-  const scenario = useStore((s) => s.scenario)
-  const mc = useStore((s) => s.mc)
-  return <McPopover run={runSettings(scenario)} mc={mc} />
-}
 
 /** Mounted per opening; navigation is local and never enters scenario history. */
 export function SettingsPanel({
@@ -90,10 +82,9 @@ export function SettingsPanel({
             </>
           )}
           {section === 'run' && (
-            <section className="settings-block prepare-setting-body" aria-label="Run configuration">
-              <h3>Run</h3>
-              <p>Mode, uncertainty, seed and replicates define the run.</p>
-              <RunSettings />
+            <section className="settings-block prepare-setting-body" aria-label="Forecast and analysis">
+              <h3>Forecast and analysis</h3>
+              <ForecastSettings />
             </section>
           )}
           {section === 'view' && (

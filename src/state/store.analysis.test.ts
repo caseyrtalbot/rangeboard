@@ -204,6 +204,7 @@ describe('complete analysis basis and request ownership', () => {
 
   it('playback resets on input changes but retains its sequence and ignores metadata edits', () => {
     const st = useStore.getState()
+    st.runMonteCarlo()
     st.startRun()
     const before = useStore.getState().playback
     useStore.getState().setScenarioName('Evidence title')

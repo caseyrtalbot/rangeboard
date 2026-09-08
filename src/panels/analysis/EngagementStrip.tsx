@@ -1,15 +1,17 @@
 import { memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../state/store'
 import { scenarioDurationS } from '../../model/scenario'
-import { selectExecutionHorizon, selectSimTimeS } from '../../state/selectors'
+import { selectSimTimeS } from '../../state/selectors'
 import type { ExecutionHorizon } from '../../analysis/horizon'
 import { reached } from '../../analysis/horizon'
-import type { ImpactSeverity, Scenario } from '../../model/types'
-import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'
+import type { ImpactSeverity } from '../../model/types'
+import { SEVERITY_RANK, severityFor } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
 import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
 import { readSetting, writeSetting } from '../../io/viewState'
 import { tickStepS } from '../../charts/timeAxis'
+import type { TrialResultView } from '../../analysis/trialResult'
+import { useTrialResult, trialViewOf, trialStateText } from './widgets/controls'
 import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
 
 const OPEN_KEY = ENGSTRIP_OPEN_KEY
@@ -69,13 +71,17 @@ function maxS(vals: Array<number | null>): number | null {
 }
 
 /** One lane per threat with a flight path, in assessment order. */
-function threatLanes(scenario: Scenario): Lane[] {
-  const { assessments, report, impacts } = engagementPicture(scenario)
+function threatLanes(view: TrialResultView): Lane[] {
+  const { scenario, assessments, attrition: report } = view
   const out: Lane[] = []
   for (const a of assessments) {
     if (a.status === 'no-path') continue
     const att = report.threats.find((t) => t.uasId === a.uasId)
-    const imp = impacts.find((i) => i.uasId === a.uasId)
+    const entity = scenario.entities.find(e => e.id === a.uasId)
+    const removed = report.events.filter(e => e.uasId === a.uasId && e.killDelta === 1 &&
+      a.arrivalS != null && e.tEffectS <= a.arrivalS).length
+    const arrivals = a.arrivalS != null && view.hasActiveAsset ? (entity?.formation?.count ?? 1) - removed : 0
+    const warheadKg = scenario.library.find(model => model.id === entity?.specId)?.uas?.warheadKg ?? 0
     out.push({
       key: a.uasId,
       label: scenario.entities.find((e) => e.id === a.uasId)?.name ?? a.uasId,
@@ -87,7 +93,7 @@ function threatLanes(scenario: Scenario): Lane[] {
       winS: a.windowS,
       shotS: att?.firstShotS ?? null,
       arrS: a.arrivalS,
-      severity: imp?.severity ?? null,
+      severity: severityFor(arrivals > 0, arrivals, arrivals * warheadKg),
     })
   }
   return out
@@ -239,7 +245,7 @@ function LaneMarks({ lane, i, x, durationS, endS }: { lane: Lane; i: number; x: 
 }
 
 /**
- * The playhead subscribes separately so full-run lanes stay memoized during playback.
+ * The playhead subscribes separately from the sampled lanes.
  * A linear transition over one publication period carries it
  * between publications without a subscription change.
  */
@@ -262,7 +268,9 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
  */
 export const EngagementStrip = memo(function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
   const scenario = useStore((s) => s.scenario)
-  const horizon = useStore(selectExecutionHorizon)
+  const trial = useTrialResult()
+  const view = trialViewOf(trial)
+  const horizon = useMemo<ExecutionHorizon>(() => ({ scoped: true, horizonS: view ? trial.horizon : -1 }), [view, trial.horizon])
   const clipId = useId()
   const [openFlag, setOpen] = useState(
     () => !embedded && readSetting(OPEN_KEY) === '1',
@@ -276,8 +284,8 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
   const dragRef = useRef(false)
 
   const { lanes, durationS } = useMemo(
-    () => ({ lanes: threatLanes(scenario), durationS: scenarioDurationS(scenario) }),
-    [scenario],
+    () => ({ lanes: view ? threatLanes(view) : [], durationS: view?.durationS ?? scenarioDurationS(scenario) }),
+    [scenario, view],
   )
   const scopedLanes = useMemo(
     () => horizon.scoped ? lanes.map((lane) => censorLane(lane, horizon)) : lanes,
@@ -293,7 +301,7 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
     ro.observe(el)
     setW(el.clientWidth)
     return () => ro.disconnect()
-  }, [open])
+  }, [open, view])
 
   const x = useMemo(() => {
     return (t: number) => Math.round((Math.min(durationS, Math.max(0, t)) / durationS) * w)
@@ -326,8 +334,6 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
     for (let t = step; t < durationS; t += step) if (x(t) <= w - 30) out.push(t)
     return out
   }, [durationS, w, x])
-
-  if (lanes.length === 0) return null
 
   function toggleOpen() {
     const next = !open
@@ -398,7 +404,8 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
         )}
       </div>
       )}
-      {open && (
+      {!view && <p className="muted small" role="status">{trialStateText(trial.selection)}</p>}
+      {open && view && (
         <div className="engstrip-scroll">
           <div className="engstrip-axis">
             <div className="engstrip-axis-gutter" style={{ width: GUTTER_W }} />

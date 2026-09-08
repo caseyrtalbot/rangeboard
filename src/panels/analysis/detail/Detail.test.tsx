@@ -1,13 +1,26 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { engagementPicture } from '../../../analysis/impact'
-import { scanLoadSeries } from '../../../analysis/series'
-import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
+import { trialResultOf } from '../../../analysis/trialResult'
+import { trialSeriesOf } from '../../../analysis/trialSeries'
+import { runTrial } from '../../../playback/trial'
+import { createTrialManifest } from '../../../playback/trialTypes'
+import { analysisBasisSignature } from '../../../state/analysisBasis'
+import { IDLE_TRIAL } from '../../../state/runState'
+import { installTrial, observeTrial, unstartTrial } from '../widgets/trialTestState'
+import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { formatTime } from '../../../geometry/geo'
 import { emptyScenario } from '../../../model/seed'
 import type { Connection, Entity, EntityKind } from '../../../model/types'
 import { useStore } from '../../../state/store'
 import { DetailPane } from './DetailPane'
+
+function captureTrial() {
+  const { scenario, playback } = useStore.getState()
+  const manifest = createTrialManifest(scenario, playback.runId, analysisBasisSignature(scenario))
+  const result = runTrial(scenario, manifest)
+  useStore.setState({ trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result } })
+  return trialResultOf(scenario, manifest, result)
+}
 
 function entityOf(kind: EntityKind): Entity {
   const entity = useStore.getState().scenario.entities.find((e) => e.kind === kind)
@@ -68,6 +81,16 @@ describe('DetailPane', () => {
       { id: 'con-2', fromId: c2.id, toId: effector.id, label: '', latencyS: 3 },
     ]
     store.patchScenario({ connections })
+    // Fixed draw identities keep sampled assertions repeatable.
+    const scenario = useStore.getState().scenario
+    const ids = new Map(scenario.entities.map(e => [e.id, e.kind]))
+    store.patchScenario({ entities: scenario.entities.map(e => ({ ...e, id: ids.get(e.id)! })),
+      paths: scenario.paths.map(p => ({ ...p, entityId: ids.get(p.entityId)! })),
+      connections: scenario.connections.map(c => ({ ...c, fromId: ids.get(c.fromId)!, toId: ids.get(c.toId)! })) })
+    useStore.setState({ playback: { ...useStore.getState().playback, runId: 'detail-fixed-trial' } })
+    captureTrial()
+    store.startRun()
+    store.pauseRun()
   })
 
   it.each(['asset', 'marker'] as const)('renders nothing for a %s and for an unknown id', (kind) => {
@@ -101,10 +124,10 @@ describe('DetailPane', () => {
       ['slant', 'Slant range per track'],
       ['ladder', 'Track ladder'],
       ['load', 'Load and hold'],
-      ['gates', 'Gates by threat'],
+      ['gates', 'Sensor state by threat'],
     ])
     expect(bodyRows(section(html, 'gates'))).toBe(1)
-    expect(section(html, 'load')).toContain('Tracks per scan')
+    expect(section(html, 'load')).toContain('Held track files')
     // The models behind this sensor, tier and validation status on each chip.
     expect(html).toContain('class="fid-tags"')
     expect(html).toContain('data-tier="physics" data-validation="analytic"')
@@ -156,49 +179,41 @@ describe('DetailPane', () => {
       'Salvos',
       'Effects',
       'Residual',
-      'CPA (full path)',
-      'Arrival (full path)',
+      'Reached arrival',
       'Altitude (constant)',
       'Slant range',
       'Bearing',
-      'Engage status (full run)',
-      'Warning (full path)',
-      'First detect (full path)',
+      'Engage status',
+      'Warning',
+      'First detect',
       'RCS',
       'Swerling',
     ]) {
       expect(file).toContain(`<span class="rl">${label}</span>`)
     }
-    expect(file.match(/<div class="row">/g)?.length).toBe(20)
-    expect(file).toContain('T+0:00 cursor · full-path/full-run fields marked')
+    expect(file.match(/<div class="row">/g)?.length).toBe(19)
+    expect(file).toContain('T+0:00 observed')
     expect(file).toContain('Group 1 · quad')
     expect(file).toContain('GPS and RF mixed')
-    expect(file).toContain('E[k] 0.00')
-    expect(file).toContain('1.00 of 1 ships')
-    expect(file).toContain('no defended asset placed')
+    expect(file).toContain('0 landed · 0 hard kill · 0 mission kill')
+    expect(file).toContain('1 active · 0 hard kill · 0 mission kill · 1 members')
+    expect(section(html, 'planned-path')).toContain('no defended asset placed')
     expectNoControls(html)
   })
 
-  it('names the missing fire-control source when a typed route blocks the Coyote', () => {
-    // The beforeEach links are untyped, so the route does not bind the gate.
-    const uas = entityOf('uas')
-    const before = section(render(uas.id), 'file')
-    expect(before).not.toContain('no fire-control source')
-    // Typed links (a confidence is what types a hop) make Giraffe 1X to FAAD C2
-    // to Coyote a fully typed route with no fire-control sensor: no-fc-uplink.
+  it('does not substitute a full-run route diagnosis for reached trial status', () => {
     const store = useStore.getState()
-    store.patchScenario({
-      connections: store.scenario.connections.map((c) => ({ ...c, confidence: 'documented' as const })),
-    })
-    const file = section(render(uas.id), 'file')
-    expect(file).toContain('<span class="rl">Engage status (full run)</span>')
-    expect(file).toContain('no fire-control source on the route')
-    expect(file).toContain('needs a fire-control track from')
-    expect(file).toContain('KuRFS')
+    store.patchScenario({ connections: store.scenario.connections.map(c => ({ ...c, confidence: 'documented' as const })) })
+    captureTrial()
+    const file = section(render(entityOf('uas').id), 'file')
+    expect(file).toContain('Engage status</span><span class="rv num">—')
+    expect(file).not.toContain('no fire-control source')
+    expect(file).not.toContain('full run')
   })
 
   it('renders the system pane with the hop through this node', () => {
     const c2 = entityOf('c2')
+    observeTrial(30, 30)
     const html = render(c2.id)
     expect(html).toContain('data-detail="system"')
     expect(html).toContain('command and control')
@@ -244,26 +259,30 @@ describe('DetailPane', () => {
     'shows untouched %s telemetry at EMPTY_HORIZON before first Play', (kind) => {
       const store = useStore.getState()
       store.setBoardPhase('execute')
+      unstartTrial()
       const html = render(entityOf(kind).id)
+      expect(html).toContain('Simulated trial · ready')
       expect(html).not.toContain('EXPECTED DEFEAT')
       if (kind === 'uas') {
         const file = section(html, 'file')
         expect(file).not.toMatch(/T\+\d/)
         expect(file).toContain('0 sensors')
-        expect(file).toContain('0 landed · E[k] 0.00')
+        expect(file).toContain('0 landed · 0 hard kill · 0 mission kill')
         expect(file).toContain('0 kinetic · 0 DE · 0 EW · 0 inbound')
-        expect(file).not.toContain('1.00 of 1 ships')
+        expect(file).toContain('Residual</span><span class="rv num">—')
+        expect(file).not.toMatch(/[1-9] (active|hard kill|mission kill|landed)/)
         expect(section(html, 'phase')).not.toContain('chart-legend')
       } else if (kind === 'sensor') {
-        expect(section(html, 'load')).toContain('Tracks per scan</span><span class="rv num">0')
+        expect(section(html, 'load')).toContain('Held track files</span><span class="rv num">—')
         expect(section(html, 'load')).toContain('Hold clock (union)</span><span class="rv num">—')
         expect(section(html, 'ladder')).toContain('No track observed.')
         expect(section(html, 'slant')).toContain('No track observed.')
       } else if (kind === 'effector') {
         for (const label of ['Kinetic shots', 'DE salvos', 'Jam salvos']) {
-          expect(section(html, 'capacity')).toContain(`${label}</span><span class="rv num">0`)
+          expect(section(html, 'capacity')).toContain(`${label}</span><span class="rv num">—`)
         }
-        expect(section(html, 'doctrine')).toContain('title="Forecast available in Analyze">—')
+        expect(section(html, 'doctrine')).toContain('No threats with flight paths.')
+        expect(section(html, 'doctrine')).not.toMatch(/\d+:\d{2}/)
         expect(section(html, 'release')).toContain('No salvo assigned.')
       } else {
         expect(section(html, 'hops')).toContain('No route through this node.')
@@ -276,7 +295,7 @@ describe('DetailPane', () => {
   it('reveals the preparation and flight legend only when each interval is reached', () => {
     const store = useStore.getState()
     const effector = entityOf('effector')
-    const event = engagementPicture(store.scenario).report.events[0]
+    const event = useStore.getState().trial.result!.report.events[0]
     expect(event.tReleaseS).toBeGreaterThan(event.tS)
     expect(event.tEffectS).toBeGreaterThan(event.tReleaseS!)
     store.setBoardPhase('execute')
@@ -294,10 +313,10 @@ describe('DetailPane', () => {
     expect(section(render(effector.id), 'release')).toContain('· flight')
   })
 
-  it('counts capacity by reached effect and sensor load/hold at observation time', () => {
+  it('counts capacity by reached assignment and sampled sensor load/hold at observation time', () => {
     const store = useStore.getState()
-    const { scenario } = store
-    const { assessments, report } = engagementPicture(scenario)
+    const view = captureTrial()
+    const report = view.attrition
     const effector = entityOf('effector')
     const sensor = entityOf('sensor')
     expect(report.events.length).toBeGreaterThan(0)
@@ -306,13 +325,13 @@ describe('DetailPane', () => {
     store.advanceRun(30)
     store.pauseRun()
     store.scrubTo(100)
-    const events = report.events.filter((event) => event.effectorId === effector.id && event.tEffectS <= 30)
+    const events = report.events.filter((event) => event.effectorId === effector.id && event.tS <= 30)
     const capacity = section(render(effector.id), 'capacity')
     expect(capacity).toContain(`Kinetic shots</span><span class="rv num">${events.filter((event) => event.channelClass === 'kinetic').length}`)
-    const component = systemTelemetryAt(scenario, assessments, report, 30, new Map())
+    const component = trialSystemTelemetryAt(view, 30)
       .flatMap((group) => group.components).find((candidate) => candidate.entityId === sensor.id)!
     const load = section(render(sensor.id), 'load')
-    expect(load).toContain(`Tracks per scan</span><span class="rv num">${scanLoadSeries(scenario, sensor.id).values[60]}`)
+    expect(load).toContain(`Held track files</span><span class="rv num">${trialSeriesOf(view, 30).sensors[sensor.id].find(s => s.id === 'scanLoad')!.values[60]}`)
     expect(load).toContain(`Hold clock (union)</span><span class="rv num">${formatTime(component.holdSeconds)}`)
   })
 
@@ -331,8 +350,9 @@ describe('DetailPane', () => {
     const sensor = entityOf('sensor')
     const c2 = entityOf('c2')
     store.patchScenario({ entities: store.scenario.entities.map((entity) => entity.id === sensor.id
-      ? { ...entity, pos: { x: 0, y: 3000 } } : entity) })
-    const { assessments } = engagementPicture(useStore.getState().scenario)
+      ? { ...entity, pos: { x: 0, y: 3000 } } : entity),
+      paths: store.scenario.paths.map(path => ({ ...path, startDelayS: 60 })) })
+    const { assessments } = captureTrial()
     expect(assessments[0].sensorObservations?.[0].firstDetectS).toBeGreaterThan(30)
     store.setBoardPhase('execute')
     store.startRun()
@@ -346,8 +366,25 @@ describe('DetailPane', () => {
     expect(section(render(entityOf('uas').id), 'file')).not.toContain('T+2:')
     expect(section(render(entityOf('uas').id), 'pd')).toContain('No radar Pd model observed this track.')
     store.setBoardPhase('analyze')
+    expect(section(render(sensor.id), 'ladder')).toContain('No track observed.')
+    expect(section(render(c2.id), 'hops')).toContain('No route through this node.')
+    observeTrial(200, 200)
     expect(section(render(sensor.id), 'ladder')).not.toContain('No track observed.')
     expect(bodyRows(section(render(c2.id), 'hops'))).toBe(1)
   })
 
+})
+
+it('shows realized mixed-member effects at the observed boundary, never forecast E[k]', () => {
+  installTrial(3)
+  const html = render('swarm')
+  const file = section(html, 'file')
+  expect(file).toContain('T+0:03 observed')
+  expect(file).toContain('3 landed · 1 hard kill · 1 mission kill')
+  expect(file).toContain('3 active · 1 hard kill · 1 mission kill · 5 members')
+  expect(file).not.toMatch(/E\[k\]|Expected|expected/)
+  observeTrial(1.99)
+  const before = section(render('swarm'), 'file')
+  expect(before).toContain('0 hard kill · 0 mission kill')
+  expect(before).toContain('5 active')
 })

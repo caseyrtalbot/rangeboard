@@ -1,12 +1,14 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
 import type { Scenario, Vec2 } from '../model/types'
 import type { Camera } from '../state/store'
-import { liveTracks } from '../playback/tracks'
+import { liveTracks, memberPositions } from '../playback/tracks'
 import type { LiveTrack } from '../playback/tracks'
-import type { LeakerImpact } from '../analysis/impact'
-import { blinkOn, shotsInFlightAt } from '../playback/trackState'
-import type { TrackTimeline } from '../playback/trackState'
-import { sweepAt } from '../playback/sweepAt'
+import type { TrialResultView } from '../analysis/trialResult'
+import { trialTrackStatesAt } from '../playback/trialTrackState'
+import type { TrialMemberState } from '../playback/trialTrackState'
+import { trialSweepAt } from '../playback/trialSweepAt'
+import { trialTelemetryAt } from '../panels/analysis/threatReadout'
+import { blinkOn, shotsInFlightAt, trialShotTimelineOf } from '../playback/trackState'
 import { useFrameClock } from './frameClock'
 import { boardDesignator, layoutLabels } from './labelLayout'
 import type { LabelPlacement } from './labelLayout'
@@ -29,10 +31,9 @@ interface Props {
   size: { w: number; h: number }
   /** Cursor in world meters. Feeds the draft path rubber band. */
   mouseWorld: Vec2 | null
-  /** Whole-run leaker impacts, shared with the analysis panel. */
-  impacts: LeakerImpact[]
-  /** Prefix-aggregated timeline. The queries below are binary searches over it. */
-  timeline: TrackTimeline
+  trial: TrialResultView | null
+  /** Null before a trial observation; distinct from a reached T0. */
+  horizonS: number | null
   /** Run duration, seconds. Clamps the frame clock. */
   durationS: number
 }
@@ -104,33 +105,45 @@ function stableIds(next: Set<string>, prev: Set<string>): Set<string> {
   return prev
 }
 
-/**
- * Every time-dependent canvas layer, under one frame clock. This is the only
- * place `useFrameClock` is mounted: it sits inside the live Konva `Layer`, so
- * its per-frame state updates commit in the react-konva root and never in
- * react-dom. The static rings live on their own Layer (`StaticScene`).
- *
- * Two clocks draw this scene. Interpolated (`displayTimeS`, one value per
- * animation frame): track positions and headings, label placement, shots in
- * flight, and every pulse or blink. Snapped (`simTimeS`, the last published
- * time at 10 Hz): the sensor sweep, track lifecycle and effector glyph state,
- * which are step functions that must not be read between publications. The
- * snapped values come from `sweepAt`, shared with the static scene, the track
- * card and the threat pane.
- */
-export function LiveScene(props: Props) {
-  const { scenario, camera, size, mouseWorld, impacts, timeline, durationS } = props
-  const { simTimeS, displayTimeS } = useFrameClock(durationS)
+/** Shared rendered geometry for glyphs, labels, telemetry leaders and marquee. */
+// oxlint-disable-next-line react/only-export-components
+export function renderedTrialGeometry(scenario: Scenario, trial: TrialResultView | null, horizonS: number | null, geometryTimeS: number) {
+  const tracks = liveTracks(scenario, geometryTimeS)
+  const members = new Map<string, TrialMemberState[]>()
+  if (trial && horizonS != null) {
+    for (const state of trialTrackStatesAt(trial, horizonS)) {
+      const track = tracks.get(state.entity.id)
+      const positions = memberPositions(state.entity, track?.pos ?? state.entity.pos, track?.headingDeg ?? state.entity.headingDeg)
+      const rendered = state.members.map(member => member.outcome === 'hard-kill' ? member : {
+        ...member, position: positions[member.memberIdx], heading: track?.headingDeg ?? state.entity.headingDeg,
+      })
+      members.set(state.entity.id, rendered)
+      const anchor = rendered.find(member => member.memberIdx === 0)
+      if (anchor) tracks.set(state.entity.id, {
+        entityId: state.entity.id, pos: anchor.position, headingDeg: anchor.heading,
+        flying: anchor.outcome !== 'hard-kill' && (track?.flying ?? false), done: track?.done ?? false,
+      })
+    }
+  }
+  return { tracks, members }
+}
 
+/** Geometry can preview ahead; every outcome query uses the bounded horizon. */
+export function LiveScene(props: Props) {
+  const { scenario, camera, size, mouseWorld, trial, horizonS, durationS } = props
+  const { displayTimeS } = useFrameClock(durationS)
+  const outcomeTimeS = horizonS == null ? null : Math.min(displayTimeS, horizonS)
+  const geometry = useMemo(() => renderedTrialGeometry(scenario, trial, outcomeTimeS, displayTimeS), [scenario, trial, outcomeTimeS, displayTimeS])
   const prevTracks = useRef<Map<string, LiveTrack> | null>(null)
   const tracks = useMemo(
-    // eslint-disable-next-line react/refs -- the previous tracks lend identities; one render stale by design
-    () => stableTracks(liveTracks(scenario, displayTimeS), prevTracks.current),
-    [scenario, displayTimeS],
+    // eslint-disable-next-line react/refs -- previous frame lends unchanged track identities
+    () => stableTracks(geometry.tracks, prevTracks.current), [geometry.tracks],
   )
-  const shots = useMemo(() => shotsInFlightAt(timeline, displayTimeS), [timeline, displayTimeS])
-  const sweep = sweepAt(scenario, timeline, simTimeS)
-  // One pulse phase per frame. The nodes read this boolean, never the time.
+  const shots = useMemo(() => trial && outcomeTimeS != null
+    ? shotsInFlightAt(trialShotTimelineOf(trial.scenario, trial.attrition), outcomeTimeS) : [], [trial, outcomeTimeS])
+  const sweep = trial && outcomeTimeS != null ? trialSweepAt(trial, outcomeTimeS) : null
+  const states = useMemo(() => new Map(trial && outcomeTimeS != null
+    ? trial.assessments.map(a => [a.uasId, trialTelemetryAt(trial, a.uasId, outcomeTimeS, sweep ?? undefined)]) : []), [trial, outcomeTimeS, sweep])
   const blink = blinkOn(displayTimeS)
 
   const prevSpokeIds = useRef<Set<string>>(new Set())
@@ -182,10 +195,10 @@ export function LiveScene(props: Props) {
 
   return (
     <>
-      <ThreatWezLayer tracks={tracks} impacts={impacts} displayTimeS={displayTimeS} />
+      <ThreatWezLayer tracks={tracks} trial={trial} horizonS={outcomeTimeS} displayTimeS={displayTimeS} />
       <StaticPathLayer mouseWorld={mouseWorld} />
-      <EngagementLayer shots={shots} displayTimeS={displayTimeS} />
-      <EntityLayer tracks={tracks} sweep={sweep} spokeIds={spokeIds} blink={blink} />
+      <EngagementLayer shots={shots} displayTimeS={outcomeTimeS ?? 0} />
+      <EntityLayer tracks={tracks} members={geometry.members} states={states} sweep={sweep} spokeIds={spokeIds} blink={blink} />
       <StaticSystemHandleLayer />
       <CalloutLayer placements={labelPlacements} />
     </>

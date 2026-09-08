@@ -1,8 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { EMPTY_HORIZON, FULL_RUN } from '../../analysis/horizon'
-import { parseAutosave } from '../../io/persist'
-import fixture from '../../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import { installTrial, observeTrial, unstartTrial } from './widgets/trialTestState'
+import { trialAssessment } from '../../playback/__fixtures__/trialFixture'
+import { createTrialManifest } from '../../playback/trialTypes'
+import { analysisBasisSignature } from '../../state/analysisBasis'
 import { useStore } from '../../state/store'
 import { selectExecutionHorizon } from '../../state/selectors'
 import { censorLane, EngagementStrip } from './EngagementStrip'
@@ -49,13 +51,15 @@ describe('censorLane', () => {
 
 describe('EngagementStrip execution scope', () => {
   beforeEach(() => {
-    useStore.getState().replaceScenario(parseAutosave(JSON.stringify(fixture))!)
+    installTrial(3)
     useStore.getState().setBoardPhase('execute')
   })
 
-  it('keeps names without outcome marks before Play', () => {
+  it('renders an empty strip with trial state text before Play', () => {
+    unstartTrial()
     const html = render()
-    expect(html).toContain('DJI Mavic 3 (G1 quad) 1')
+    expect(html).toContain('Simulated trial · ready')
+    expect(html).not.toContain('engstrip-name-text')
     expect(html).toContain('aria-label="No outcomes observed yet"')
     expect(html).not.toContain('shape-rendering=')
     expect(html).not.toContain('<path')
@@ -64,23 +68,55 @@ describe('EngagementStrip execution scope', () => {
   })
 
   it('caps the accessible scope and arrival marks while scrubbing forward', () => {
-    useStore.getState().advanceRun(30)
-    useStore.getState().pauseRun()
-    useStore.getState().scrubTo(500)
+    observeTrial(3, 50)
     const html = render()
-    expect(html).toContain('aria-label="Outcomes through T+0:30"')
+    expect(html).toContain('aria-label="Outcomes through T+0:03"')
     expect(html).not.toContain('<path')
     expect(html).toContain('clip-path=')
-    expect(render(false)).toContain('aria-label="Outcomes through T+0:30"')
+    expect(render(false)).toContain('aria-label="Outcomes through T+0:03"')
   })
 
-  it('preserves full-run marks in Prepare and Analyze', () => {
+  it('bounds trial marks in Prepare and Analyze and reveals arrivals only when reached', () => {
     useStore.getState().setBoardPhase('prepare')
     const prepare = render()
     useStore.getState().setBoardPhase('analyze')
     expect(render()).toBe(prepare)
-    expect(prepare).toContain('<path')
-    expect(prepare).not.toContain('clip-path=')
+    expect(prepare).not.toContain('<path')
+    expect(prepare).toContain('clip-path=')
+    observeTrial(5)
+    expect(render()).toContain('<path')
+    observeTrial(5, 0)
+    expect(render()).not.toContain('<path')
+  })
+
+  it.each(['preparing', 'error'] as const)('renders no forecast lanes when %s', status => {
+    const trial = useStore.getState().trial
+    useStore.setState({ trial: { ...trial, status, error: status === 'error' ? 'Trial preparation failed' : null } })
+    const html = render()
+    expect(html).toContain(status === 'preparing' ? 'Preparing trial' : 'Trial preparation failed')
+    expect(html).not.toContain('engstrip-name-text')
+    expect(html).not.toContain('shape-rendering=')
+  })
+
+  it('censors members before grouping so an observed arrival survives unreached group arrivals', () => {
+    const fixture = installTrial(3)
+    const ids = Array.from({ length: 15 }, (_, i) => `raid-${i}`)
+    const base = fixture.scenario.entities.find(entity => entity.id === 'flyby')!
+    const scenario = { ...fixture.scenario,
+      entities: [...fixture.scenario.entities.filter(entity => entity.kind !== 'uas'),
+        ...ids.map((id, i) => ({ ...base, id, name: `Raid ${i + 1}` }))],
+      paths: ids.map(id => ({ ...fixture.scenario.paths[0], id: `path-${id}`, entityId: id })),
+    }
+    const manifest = createTrialManifest(scenario, fixture.manifest.runId, analysisBasisSignature(scenario))
+    const assessments = ids.map((id, i) => trialAssessment(id, { arrivalS: i === 0 ? 2 : 10 }))
+    const result = { ...fixture.result, manifest, assessments, observations: [], jamDecisions: [],
+      report: { ...fixture.result.report, events: [], threats: ids.map(id => ({ ...fixture.result.report.threats[0], uasId: id, shipCount: 1, firstShotS: null })) },
+    }
+    useStore.setState({ scenario, trial: { ...useStore.getState().trial, scenario, manifest, result } })
+    const html = render()
+    expect(html).toContain('Raid ×15')
+    expect(html.match(/<path /g)).toHaveLength(1)
+    expect(html).toContain('fill="var(--danger)"')
   })
 
   it('passes scope to the widget frame meta', () => {
@@ -89,6 +125,6 @@ describe('EngagementStrip execution scope', () => {
     const scoped = renderToStaticMarkup(<EngagementLanesWidget {...props} horizon={selectExecutionHorizon(useStore.getState())} />)
     expect(scoped).not.toContain('planning envelope · per threat')
     const full = renderToStaticMarkup(<EngagementLanesWidget {...props} horizon={FULL_RUN} />)
-    expect(full).toContain('planning envelope · per threat')
+    expect(full).toContain('Simulated trial · T+0:03 observed')
   })
 })

@@ -1,27 +1,17 @@
-import { reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import { modelsForEntity } from '../../../analysis/fidelity'
-import { FT_TO_M } from '../../../analysis/sensorEnv'
-import { phaseLadderRow, threatSeries, trackMarks, withBands } from '../../../analysis/series'
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
-import type { ChartMark, Series } from '../../../charts/types'
+import type { ChartMark } from '../../../charts/types'
 import { bearingDeg } from '../../../geometry/geo'
-import { slantRangeM } from '../../../geometry/slant'
 import { rcsM2For, swerlingFor } from '../../../model/rcsFactors'
 import type { Entity } from '../../../model/types'
-import { mountHeightOf } from '../../../model/types'
-import { entityPosAt, threatAltitudeFt } from '../../../playback/tracks'
 import { PHASE_STYLE } from '../../../playback/trackState'
 import type { TrackPhase } from '../../../playback/trackState'
-import { trackTimelineOf } from '../../../playback/trackState'
-import { sweepAt } from '../../../playback/sweepAt'
-import { useStore } from '../../../state/store'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { threatReadoutAt } from '../threatReadout'
 import { SURVIVAL_LABELS } from '../widgets/labels'
-import { bandNote, currentSummary } from '../widgets/mc'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -37,78 +27,29 @@ import {
 /** The threat pane: the track file at t, the phase ladder, Pd by sensor and survival. */
 export function ThreatDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, runId, setSimTime, units, assessments, report, t, durationS, horizon, tObs, untouched } = run
-  const mc = useStore((s) => s.mc)
-  const summary = currentSummary(mc, runId)
+  const { scenario, setSimTime, units, view, sweep, report, t, durationS, horizon, tObs, untouched } = run
   const model = modelFor(scenario, entity)
   const uasSpec = model?.uas
   const color = entityInk(entity, model)
 
-  // Both caches key on the scenario object, so the canvas and this pane share
-  // one timeline and one sweep per instant.
-  const timeline = trackTimelineOf(scenario, assessments, report)
-  const readout = useMemo(
-    () =>
-      threatReadoutAt({
-        scenario,
-        entity,
-        timeline,
-        assessments,
-        tS: tObs,
-        horizon,
-        units,
-        sweep: untouched ? undefined : sweepAt(scenario, timeline, tObs),
-      }),
-    [scenario, entity, timeline, assessments, tObs, units, horizon, untouched],
-  )
+  const readout = useMemo(() => threatReadoutAt({ scenario, entity, trial: view,
+    horizonS: untouched ? null : tObs, tS: tObs, horizon, units, trialSweep: sweep }),
+  [scenario, entity, view, tObs, horizon, units, sweep, untouched])
   const state = readout.state
 
-  const series = useMemo(() => {
-    void runId
-    return threatSeries(scenario, entity.id)
-  }, [scenario, runId, entity.id])
-  const phaseRow = useMemo(() => {
-    void runId
-    return phaseLadderRow(scenario, entity.id)
-  }, [scenario, runId, entity.id])
-  const barePhaseRows = useMemo(() => [bareSpans(phaseRow)], [phaseRow])
-  const pd = useMemo(() => {
-    const observations = assessments.find((a) => a.uasId === entity.id)?.sensorObservations ?? []
-    return series.filter((series) => series.id.startsWith('pd.') && (!horizon.scoped ||
-      observations.some((observation) => observation.sensorId === series.id.slice(3) && observation.firstDetectS <= tObs)))
-  }, [series, assessments, entity.id, horizon.scoped, tObs])
-  const residual = series.find((s) => s.id === 'residual')
-  const shipCount = report.threats.find((x) => x.uasId === entity.id)?.shipCount ?? 1
-  const survival = useMemo<Series | null>(
-    () =>
-      residual
-        ? withBands([{ ...residual, label: SURVIVAL_LABELS.survives }], summary, entity.id)[0]
-        : null,
-    [residual, summary, entity.id],
-  )
-  const survivalMarks = useMemo<ChartMark[]>(() => {
-    void runId
-    const marks: ChartMark[] = []
-    const effect = report.events
-      .filter((ev) => ev.uasId === entity.id && ev.killDelta > 0)
-      .sort((x, y) => x.tEffectS - y.tEffectS)[0]
-    if (effect) marks.push({ tS: effect.tEffectS, label: 'FX', color: 'danger' })
-    for (const mark of trackMarks(scenario, entity.id)) {
-      if (mark.label === 'ARR' || mark.label === 'CPA') marks.push(mark)
-    }
-    return horizon.scoped ? marks.filter((mark) => reached(mark.tS, horizon)) : marks
-  }, [scenario, runId, report, entity.id, horizon])
+  const series = run.series?.threats[entity.id] ?? []
+  const phaseRow = run.series?.phase.find(row => row.id === entity.id)
+  const barePhaseRows = phaseRow ? [bareSpans(phaseRow)] : []
+  const pd = series.filter(s => s.id.startsWith('pd.') && s.values.some(Number.isFinite))
+  const residual = series.find(s => s.id === 'residual')
+  const shipCount = Math.max(1, entity.formation?.count ?? 1)
+  const survival = residual ? { ...residual, label: SURVIVAL_LABELS.survives } : null
+  const survivalMarks: ChartMark[] = (run.series?.marks[entity.id] ?? []).filter(mark => mark.label === 'ARR' || mark.label === 'CPA')
+  const effect = report?.events.find(e => e.uasId === entity.id && e.killDelta === 1 && e.tEffectS <= tObs)
+  if (effect) survivalMarks.push({ tS: effect.tEffectS, label: 'FX', color: 'danger' })
 
-  // The phase legend lists only the phases the row shows, by the label the builder wrote.
-  const phaseLegend: LegendEntry[] = (Object.keys(PHASE_STYLE) as TrackPhase[])
-    .filter((phase) => {
-      const style = PHASE_STYLE[phase]
-      return style.color != null && phaseRow.spans.some((span) => span.label === style.label && (!horizon.scoped || span.startS <= tObs))
-    })
-    .map((phase) => ({
-      label: PHASE_STYLE[phase].label.toLowerCase(),
-      color: PHASE_STYLE[phase].color ?? color,
-    }))
+  const phaseLegend: LegendEntry[] = [...new Map((phaseRow?.spans ?? []).map(span => [span.label,
+    { label: span.label ?? 'Track-file phase', color: span.color ?? color }] as const)).values()]
 
   const fileRows = useMemo<DetailRow[]>(() => {
     const holdIds = state?.holdingSensorIds ?? []
@@ -116,12 +57,9 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     let slantText = DASH
     let bearingText = DASH
     if (sensor) {
-      const pos = entityPosAt(scenario, entity, tObs)
-      const groundM = Math.hypot(pos.x - sensor.pos.x, pos.y - sensor.pos.y)
-      const altM = threatAltitudeFt(scenario, entity) * FT_TO_M
-      const hM = mountHeightOf(modelFor(scenario, sensor)?.sensor ?? {})
-      slantText = (slantRangeM(groundM, altM - hM) / 1000).toFixed(1)
-      bearingText = `${Math.round(bearingDeg(sensor.pos, pos))}`
+      const measured = state?.sensors.find(s => s.sensorId === sensor.id)
+      slantText = measured?.slantRangeM != null ? (measured.slantRangeM / 1000).toFixed(1) : DASH
+      bearingText = `${Math.round(bearingDeg(sensor.pos, readout.position))}`
     }
     const rows: DetailRow[] = readout.rows.map((row) => ({
       label: row.label,
@@ -159,7 +97,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       )
     }
     return rows
-  }, [scenario, entity, model, uasSpec, state, tObs, readout, horizon.scoped])
+  }, [scenario, entity, model, uasSpec, state, readout, horizon.scoped])
 
   const phase: TrackPhase = readout.phase
   const style = PHASE_STYLE[phase]
@@ -172,6 +110,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="threat">
+      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}
@@ -192,14 +131,14 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
           <Rows rows={readout.planningRows} />
         </DetailSection>
       ) : null}
-      <DetailSection id="phase" title="Phase" meta="planning envelope">
+      <DetailSection id="phase" title="Phase" meta="Simulated trial">
         <Ladder rows={barePhaseRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />
         {phaseLegend.length > 0 ? <Legend entries={phaseLegend} /> : null}
       </DetailSection>
       <DetailSection
         id="pd"
         title="Pd by sensor"
-        meta={pd.length > 0 ? `${pd.length} sensor${pd.length === 1 ? '' : 's'} · planning envelope` : null}
+        meta={pd.length > 0 ? `${pd.length} sensor${pd.length === 1 ? '' : 's'} · sampled measurements` : null}
       >
         {pd.length > 0 ? (
           <TimeSeries series={pd} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
@@ -210,16 +149,15 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="survival"
         title="Survival"
-        meta={survival && summary ? `MC mean · ${bandNote(summary.replicates)}` : summary ? 'MC estimate unavailable' : 'planning envelope'}
+        meta="Simulated trial counts"
       >
-        <p className="muted small">Event markers use the planning envelope.</p>
         {survival ? (
           <TimeSeries
             series={[survival]}
             tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined}
             onScrub={setSimTime}
             yDomain={[0, shipCount]}
-            yLabel="ships"
+            yLabel="members"
             marks={survivalMarks}
           />
         ) : (

@@ -1,16 +1,20 @@
 import { FULL_RUN, reached, type ExecutionHorizon } from '../../analysis/horizon'
-import { profileFor } from '../../model/integration'
-import { trackQualityAt } from '../../analysis/threatAggregation'
+import { trackQualityAt, expectedDeadTimes } from '../../analysis/threatAggregation'
 import type { DisplayUnits } from '../../geometry/geo'
 import { formatAxis, formatDistance, formatSpeed, formatTime } from '../../geometry/geo'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import type { Entity, Scenario } from '../../model/types'
-import { detectionsAt } from '../../playback/detection'
 import type { ThreatAssessment } from '../../playback/sim'
 import type { Sweep } from '../../playback/sweepAt'
-import { liveTracks, threatAltitudeFt } from '../../playback/tracks'
-import { PHASE_STYLE, trackStatesAt } from '../../playback/trackState'
-import type { TrackFileState, TrackPhase, TrackTimeline } from '../../playback/trackState'
+import { threatAltitudeFt } from '../../playback/tracks'
+import { PHASE_STYLE } from '../../playback/trackState'
+import type { TrackPhase, TrackTimeline } from '../../playback/trackState'
+import type { TrialResultView } from '../../analysis/trialResult'
+import { trialMemberStatesAt } from '../../playback/trialTrackState'
+import type { TrialMemberState } from '../../playback/trialTrackState'
+import { trialSweepAt } from '../../playback/trialSweepAt'
+import type { TrialSweep, TrialSensorState } from '../../playback/trialSweepAt'
+import { engagementReleaseS } from '../../playback/engagementTiming'
 
 const DASH = '—'
 const NA = 'not available'
@@ -53,29 +57,103 @@ export interface ThreatReadoutView {
   engageText: string
   firstDetectText: string
   warningText: string
-  state: TrackFileState | undefined
+  state: TrialTelemetryState | undefined
   phase: TrackPhase
   pillLabel: string
   ghostLine: string | null
   position: { x: number; y: number }
+  anchorPosition: { x: number; y: number }
   altitudeText: string
   cursorText: string
   sourceHorizon: string
 }
 
+export interface TrialTelemetryState {
+  phase: TrackPhase
+  holdingSensorIds: string[]
+  coasting: boolean
+  sensors: TrialSensorState[]
+  classification: 'unknown' | 'suspected' | 'hostile'
+  targetedNow: boolean
+  firstSalvoAtS: number | null
+  kineticSalvos: number
+  deSalvos: number
+  jamSalvos: number
+  incomingSalvos: number
+  effectsLanded: number
+  activeCount: number
+  hardKillCount: number
+  missionKillCount: number
+  shipCount: number
+  jammedNow: boolean
+  members: TrialMemberState[]
+}
+
+const telemetryCache = new WeakMap<TrialSweep, Map<string, TrialTelemetryState>>()
+const eligibilityCache = new WeakMap<TrialResultView, Map<string, number>>()
+
+/** Only retained facts reached at this horizon; never runs a forecast sweep. */
+export function trialTelemetryAt(view: TrialResultView, uasId: string, horizonS: number, supplied?: TrialSweep): TrialTelemetryState {
+  const t = Math.min(Math.max(0, horizonS), view.observedThroughS)
+  const sweep = supplied?.timeS === t ? supplied : trialSweepAt(view, t)
+  const cached = telemetryCache.get(sweep)?.get(uasId)
+  if (cached) return cached
+  let cutoffs = eligibilityCache.get(view)
+  if (!cutoffs) {
+    cutoffs = expectedDeadTimes(view.attrition)
+    eligibilityCache.set(view, cutoffs)
+  }
+  const members = trialMemberStatesAt(view, uasId, t)
+  const assessment = view.assessments.find(a => a.uasId === uasId)
+  const sensors = sweep.sensors.filter(s => s.threatId === uasId && s.stateAtTime !== 'not-held')
+  const holdingSensorIds = sensors.map(s => s.sensorId)
+  const coasting = sensors.length > 0 && sensors.every(s => s.stateAtTime === 'coasting')
+  const cls = assessment?.classificationAtS
+  const hasReached = (time: number | null | undefined) => time != null && time <= t
+  const classification = hasReached(cls?.hostileAtS) ? 'hostile' : hasReached(cls?.suspectedAtS) ? 'suspected' : 'unknown'
+  const events = view.attrition.events.filter(e => e.uasId === uasId && e.tS <= t)
+  const activeCount = members.filter(m => m.outcome === 'active').length
+  const hardKillCount = members.filter(m => m.outcome === 'hard-kill').length
+  const missionKillCount = members.filter(m => m.outcome === 'mission-kill').length
+  const targetedNow = t < (cutoffs.get(uasId) ?? Infinity) && activeCount > 0 && assessment?.windowS != null && t >= assessment.windowS[0] && t <= assessment.windowS[1]
+  const phase: TrackPhase = members.length > 0 && hardKillCount === members.length ? 'ghost'
+    : events.length > 0 ? 'engaged' : targetedNow ? 'targeted'
+      : sensors.length > 0 ? classification === 'hostile' ? 'identified' : 'tracked'
+        : hasReached(assessment?.firstDetectS) ? 'searching' : 'undetected'
+  const state: TrialTelemetryState = {
+    phase, holdingSensorIds, coasting, sensors, classification, targetedNow,
+    firstSalvoAtS: events.length ? Math.min(...events.map(e => e.tS)) : null,
+    kineticSalvos: events.filter(e => e.channelClass === 'kinetic').length,
+    deSalvos: events.filter(e => e.channelClass === 'directed-energy').length,
+    jamSalvos: events.filter(e => e.channelClass === 'ew').length,
+    incomingSalvos: events.filter(e => {
+      const release = engagementReleaseS(e, view.scenario)
+      return e.channelClass === 'kinetic' && release != null && release <= t && t < e.tEffectS
+    }).length,
+    effectsLanded: events.filter(e => e.tEffectS <= t).length,
+    activeCount, hardKillCount, missionKillCount, shipCount: members.length,
+    jammedNow: members.some(m => m.jamState?.jammed), members,
+  }
+  const byId = telemetryCache.get(sweep) ?? new Map<string, TrialTelemetryState>()
+  byId.set(uasId, state)
+  telemetryCache.set(sweep, byId)
+  return state
+}
+
 interface ThreatReadoutInput {
   scenario: Scenario
   entity: Entity
-  timeline: TrackTimeline
-  assessments: ThreatAssessment[]
+  trial?: TrialResultView | null
+  /** Null means no reached outcome, including a prepared trial before Play. */
+  horizonS?: number | null
+  anchor?: { position: { x: number; y: number } }
   tS: number
   units: DisplayUnits
   horizon?: ExecutionHorizon
-  /**
-   * The sweep at tS when the caller already holds it (`sweepAt`), so the
-   * 10 Hz readout does not rerun the sensor sweep the canvas just ran. Absent,
-   * the readout sweeps for itself.
-   */
+  trialSweep?: TrialSweep
+  /** Transitional caller inputs; deliberately unused until those callers migrate. */
+  timeline?: TrackTimeline
+  assessments?: ThreatAssessment[]
   sweep?: Pick<Sweep, 'hits' | 'states'>
 }
 
@@ -83,50 +161,45 @@ interface ThreatReadoutInput {
 export function threatReadoutAt({
   scenario,
   entity,
-  timeline,
-  assessments,
+  trial,
+  horizonS,
+  anchor,
   tS,
   units,
-  sweep,
+  trialSweep,
   horizon = FULL_RUN,
 }: ThreatReadoutInput): ThreatReadoutView {
-  const tObs = horizon.scoped ? Math.min(tS, horizon.horizonS) : tS
+  const cap = horizon.scoped ? Math.min(tS, horizon.horizonS) : tS
+  const tObs = trial && horizonS !== null ? Math.min(cap, horizonS ?? cap, trial.observedThroughS) : -Infinity
   const untouched = tObs === -Infinity
-  const observationHorizon = horizon.scoped ? { scoped: true, horizonS: tObs } : horizon
-  // A supplied sweep is reusable only at the censored observation time.
-  const currentSweep = tObs === tS && !untouched ? sweep : undefined
-  const state = untouched ? undefined : (currentSweep?.states ?? trackStatesAt(timeline, tObs)).get(entity.id)
-  const assessment = assessments.find((candidate) => candidate.uasId === entity.id)
+  const observationHorizon = { scoped: true, horizonS: tObs }
+  const assessment = trial?.assessments.find(candidate => candidate.uasId === entity.id)
+  const state = trial && assessment && !untouched ? trialTelemetryAt(trial, entity.id, tObs, trialSweep) : undefined
   const model = modelFor(scenario, entity)
   const uas = model?.uas
-  const track = untouched ? undefined : liveTracks(scenario, tObs).get(entity.id)
-  const position = track?.pos ?? entity.pos
-  const headingDeg = Math.round(track?.headingDeg ?? entity.headingDeg)
-  const hits = untouched ? [] : (currentSweep?.hits ?? detectionsAt(scenario, tObs)).get(entity.id) ?? []
-
-  // A threat without a path has no timeline row. Match the canvas glyph's
-  // render-time detection fallback so its status does not disagree with it.
-  const phase: TrackPhase =
-    state?.phase ??
-    (hits.some((hit) => hit.classified) ? 'identified' : hits.length > 0 ? 'tracked' : 'undetected')
-  const pillLabel =
-    state?.coasting && (phase === 'tracked' || phase === 'identified')
-      ? 'COAST'
-      : phase === 'ghost'
-        ? 'EXPECTED DEFEAT'
-        : PHASE_STYLE[phase].label
+  const member = state?.members.find(m => m.memberIdx === 0)
+  const position = member?.position ?? entity.pos
+  const anchorPosition = anchor?.position ?? position
+  const headingDeg = Math.round(member?.heading ?? entity.headingDeg)
+  const phase: TrackPhase = state?.phase ?? 'undetected'
+  const pillLabel = state?.coasting && (phase === 'tracked' || phase === 'identified') ? 'COAST'
+    : phase === 'ghost' ? 'HARD KILL'
+      : state && state.shipCount > 0 && state.missionKillCount === state.shipCount ? 'MISSION KILL' : PHASE_STYLE[phase].label
 
   const path = scenario.paths.find((candidate) => candidate.entityId === entity.id)
-  const speedMps = path ? pathSpeed(scenario, path) : (uas?.cruiseSpeedMps ?? null)
-  const holdIds = state?.holdingSensorIds ?? hits.map((hit) => hit.sensorId)
+  const speedMps = member?.outcome === 'hard-kill' ? 0 : path ? pathSpeed(scenario, path) : (uas?.cruiseSpeedMps ?? null)
+  const holdIds = state?.holdingSensorIds ?? []
   const holdNames = holdIds
-    .map((id) => scenario.entities.find((candidate) => candidate.id === id)?.name)
-    .filter((name): name is string => name != null)
+    .map(id => {
+      const name = scenario.entities.find(candidate => candidate.id === id)?.name ?? id
+      const sensor = state?.sensors.find(sensor => sensor.sensorId === id)
+      const mode = sensor?.stateAtTime === 'coasting' ? 'coast' : sensor?.stateAtTime === 'measured' ? 'measured' : 'held'
+      return `${name} (${mode}${sensor?.lastMeasurementTimeS != null ? ` · last T+${formatTime(sensor.lastMeasurementTimeS)}` : ''})`
+    })
   const continuity = assessment && !untouched ? trackQualityAt(assessment, tObs)?.continuity : undefined
-  const jam = state?.jammedFraction ?? 0
   const altitudeText = `${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`
 
-  const hasAsset = scenario.entities.some((candidate) => candidate.kind === 'asset')
+  const hasAsset = trial?.hasActiveAsset ?? scenario.entities.some((candidate) => candidate.kind === 'asset' && candidate.enabled !== false)
   const cpaAsset = assessment?.cpaAssetId
     ? scenario.entities.find((candidate) => candidate.id === assessment.cpaAssetId)
     : undefined
@@ -138,7 +211,7 @@ export function threatReadoutAt({
       : hasAsset
         ? NA
         : NO_ASSET
-  const arrival = horizon.scoped ? assessment : state
+  const arrival = assessment
   const arrivalText = !arrival
     ? NA
     : arrival.arrivalS != null
@@ -194,13 +267,7 @@ export function threatReadoutAt({
     {
       id: 'ew',
       label: 'EW',
-      value: state
-        ? state.jammedNow
-          ? `JAMMED${jam >= 0.005 ? ` · degrade ${jam.toFixed(2)}` : ''}`
-          : jam >= 0.005
-            ? `jam degrade ${jam.toFixed(2)}`
-            : 'no jam effect'
-        : NA,
+      value: state ? state.jammedNow ? 'JAMMED' : 'no sampled jam effect' : NA,
       horizon: 'cursor',
     },
     {
@@ -214,13 +281,13 @@ export function threatReadoutAt({
     {
       id: 'effects',
       label: 'Effects',
-      value: state ? `${state.effectsLanded} landed · E[k] ${state.expectedKills.toFixed(2)}` : NA,
+      value: state ? `${state.effectsLanded} landed · ${state.hardKillCount} hard kill · ${state.missionKillCount} mission kill` : NA,
       horizon: 'cursor',
     },
     {
       id: 'residual',
       label: 'Residual',
-      value: state ? `${state.residual.toFixed(2)} of ${state.shipCount} ships` : NA,
+      value: state ? `${state.activeCount} active · ${state.hardKillCount} hard kill · ${state.missionKillCount} mission kill · ${state.shipCount} members` : NA,
       horizon: 'cursor',
     },
     { id: 'cpa', label: 'CPA (full path)', value: cpaText, horizon: 'full-path' },
@@ -237,47 +304,30 @@ export function threatReadoutAt({
     },
   ]
 
-  const ghostLine =
-    state?.eliminated && state.eliminatedAtS != null && (!horizon.scoped || reached(state.eliminatedAtS, observationHorizon))
-      ? `Expected residual below cutoff at T+${formatTime(state.eliminatedAtS)} (${
-          state.eliminatedBySoft ? 'mission-kill effects' : 'hard-kill effects'
-        }). Motion continues along the planned path.`
-      : null
+  const ghostLine = state && state.hardKillCount + state.missionKillCount > 0
+    ? `${state.hardKillCount} hard-killed members frozen at effect positions · ${state.missionKillCount} mission-killed members follow the planned path.`
+    : null
 
-  const planningRows = horizon.scoped
-    ? rows.filter((row) => row.horizon === 'full-path').map((row) => ({
-        ...row, label: row.id === 'arrival' ? 'Planned arrival' : 'Planned CPA',
-      }))
-    : []
-  const telemetryRows = horizon.scoped ? rows.filter((row) => row.horizon !== 'full-path') : rows
+  const planningRows = rows.filter(row => row.horizon === 'full-path').map(row => ({
+    ...row, label: row.id === 'arrival' ? 'Planned arrival' : 'Planned CPA',
+  }))
+  const telemetryRows = rows.filter(row => row.horizon !== 'full-path')
+  telemetryRows.push({ id: 'arrival', label: 'Reached arrival', horizon: 'cursor',
+    value: state && assessment?.arrivalS != null && reached(assessment.arrivalS, observationHorizon)
+      ? `T+${formatTime(assessment.arrivalS)} · ${state.members.filter(m => m.leakageCredit).length} undefeated members` : DASH })
   if (untouched) {
     for (const row of telemetryRows) {
       if (row.horizon !== 'cursor') continue
       row.value = row.id === 'hold' ? '0 sensors'
         : row.id === 'salvos' ? '0 kinetic · 0 DE · 0 EW · 0 inbound'
-          : row.id === 'effects' ? '0 landed · E[k] 0.00' : DASH
+          : row.id === 'effects' ? '0 landed · 0 hard kill · 0 mission kill' : DASH
     }
   }
   const firstSensor = scenario.entities.find((candidate) => candidate.id === assessment?.firstDetectSensorId)
-  const firstDetectText = assessment?.firstDetectS != null && (!horizon.scoped || reached(assessment.firstDetectS, observationHorizon))
+  const firstDetectText = assessment?.firstDetectS != null && reached(assessment.firstDetectS, observationHorizon)
     ? `${firstSensor?.name ?? DASH} · T+${formatTime(assessment.firstDetectS)}` : DASH
-  const warningText = assessment?.warningS != null && (!horizon.scoped || (
-    reached(assessment.firstDetectS, observationHorizon) && reached(assessment.arrivalS, observationHorizon)
-  )) ? formatTime(assessment.warningS) : DASH
-  // Full-run failure reasons depend on future windows; Execute names only current state.
-  const engageText = horizon.scoped
-    ? untouched ? DASH : state?.firstSalvoAtS != null ? 'engaged' : state?.targetedNow ? 'targeted' : DASH
-    : !assessment ? DASH : assessment.status === 'no-fc-uplink'
-      ? `no fire-control source on the route · ${scenario.entities
-          .filter((candidate) => candidate.kind === 'effector')
-          .flatMap((candidate) => {
-            const profile = profileFor(candidate.specId)
-            if (profile?.guidance !== 'fc-uplink' || !profile.fcSources?.length) return []
-            const names = profile.fcSources
-              .map((id) => scenario.library.find((model) => model.id === id)?.name ?? id).join(' or ')
-            return [`${candidate.name} needs a fire-control track from ${names}`]
-          }).join(' · ')}`
-      : assessment.status.replaceAll('-', ' ')
+  const warningText = hasAsset && assessment?.warningS != null && (reached(assessment.firstDetectS, observationHorizon) && reached(assessment.arrivalS, observationHorizon)) ? formatTime(assessment.warningS) : DASH
+  const engageText = untouched ? DASH : state?.firstSalvoAtS != null ? 'engaged' : state?.targetedNow ? 'targeted' : DASH
 
   return {
     rows: telemetryRows,
@@ -290,8 +340,9 @@ export function threatReadoutAt({
     pillLabel,
     ghostLine,
     position,
+    anchorPosition,
     altitudeText,
     cursorText: untouched ? DASH : `T+${formatTime(tObs)}`,
-    sourceHorizon: 'PLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTED',
+    sourceHorizon: untouched ? 'CONFIGURATION · TRIAL NOT OBSERVED' : `SIMULATED TRIAL · THROUGH T+${formatTime(tObs)} · ALT CONSTANT`,
   }
 }

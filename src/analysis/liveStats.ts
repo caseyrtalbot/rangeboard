@@ -1,3 +1,4 @@
+import type { TrialResultView } from './trialResult'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attritionReport'
 import { expectedDeadTimes } from './threatAggregation'
@@ -254,4 +255,37 @@ export function liveKpisAt(tl: LiveTimeline, tS: number): LiveKpis {
     arrivedTracks: countAtMost(tl.arrivalTS, tS),
     leakerShips: prefixAt(tl.arrivalLeakerPrefix, countAtMost(tl.arrivalTS, tS)),
   }
+}
+
+/** Realized trial values retain the saved KPI keys; labels must use this basis. */
+export interface TrialKpis extends LiveKpis {
+  basis: 'simulated-trial'
+  observedThroughS: number
+  kills: number
+  reportedLeakers: number | null
+}
+
+const trialTimelines = new WeakMap<TrialResultView, LiveTimeline>()
+
+export function trialKpisAt(view: TrialResultView, horizonS: number): TrialKpis {
+  let timeline = trialTimelines.get(view)
+  if (!timeline) {
+    timeline = buildLiveTimeline(view.assessments, view.attrition)
+    // Raw observation cannot borrow a not-yet-reached effect through the engine's EPS.
+    const counts = new Map(view.attrition.threats.map(row => [row.uasId, row.shipCount]))
+    const arrivals = view.assessments.filter(a => a.status !== 'no-path' && a.arrivalS != null)
+      .sort((a, b) => a.arrivalS! - b.arrivalS!)
+    let leakers = 0
+    timeline.arrivalLeakerPrefix = arrivals.map(a => {
+      const removed = view.attrition.events.filter(e => e.uasId === a.uasId && e.tEffectS <= a.arrivalS!)
+        .reduce((sum, e) => sum + e.killDelta, 0)
+      leakers += (counts.get(a.uasId) ?? 1) - removed
+      return leakers
+    })
+    trialTimelines.set(view, timeline)
+  }
+  const observedThroughS = Math.min(Number.isNaN(horizonS) ? 0 : Math.max(0, horizonS), view.observedThroughS)
+  const kpis = liveKpisAt(timeline, observedThroughS)
+  return { ...kpis, basis: 'simulated-trial', observedThroughS, kills: kpis.expectedKills,
+    reportedLeakers: view.hasActiveAsset ? kpis.leakerShips : null }
 }

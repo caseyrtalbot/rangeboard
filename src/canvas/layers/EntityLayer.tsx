@@ -10,10 +10,12 @@ import { modelFor } from '../../model/scenario'
 import { bearingDeg } from '../../geometry/geo'
 import { memberPositions } from '../../playback/tracks'
 import type { LiveTrack } from '../../playback/tracks'
-import type { Sweep } from '../../playback/sweepAt'
+import type { TrialSweep } from '../../playback/trialSweepAt'
+import type { TrialMemberState } from '../../playback/trialTrackState'
+import type { TrialTelemetryState } from '../../panels/analysis/threatReadout'
 import { EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
 import { DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
-import type { EffectorLiveState, TrackFileState, TrackPhase } from '../../playback/trackState'
+import type { EffectorLiveState, TrackPhase } from '../../playback/trackState'
 import {
   FRAME_EDGE,
   FRAME_FOR,
@@ -28,7 +30,9 @@ import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from 
 interface Props {
   tracks: Map<string, LiveTrack>
   /** The sweep, track lifecycle and effector state snapped at the published sim time. */
-  sweep: Sweep
+  sweep: TrialSweep | null
+  states: Map<string, TrialTelemetryState>
+  members: Map<string, TrialMemberState[]>
   /** Entities whose labels render as spoke callouts in CalloutLayer instead. */
   spokeIds: Set<string>
   /**
@@ -83,6 +87,7 @@ const TAG_GAP = 6
  */
 /** Heading tick: straight up from the glyph centre, screen px. */
 const HEADING_TICK = [0, 0, 0, -16]
+const MEMBER_HEADING_TICK = [0, 0, 0, -11]
 /** Inactive-entity slash, the opposite diagonal to the destroyed strike. */
 const OFF_SLASH = [-11, 11, 11, -11]
 /** Destroyed strike at the main glyph and at a formation member. */
@@ -348,12 +353,11 @@ interface NodeProps {
   y: number
   /** Live heading, degrees. */
   headingDeg: number
-  /** A sensor holds the track at the published time. */
-  detected: boolean
-  /** A holding sensor classified it. */
-  classified: boolean
-  /** Track lifecycle at the published time; absent for a threat without a path. */
-  state: TrackFileState | undefined
+  /** Sampled group telemetry; absent before observation. */
+  state: TrialTelemetryState | undefined
+  trialMembers?: TrialMemberState[]
+  memberOutcome?: TrialMemberState['outcome']
+  memberJammed?: boolean
   effectorState: EffectorLiveState
   /** The pulse phase, true only while this node pulses. */
   blink: boolean
@@ -381,6 +385,7 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
 
   const main = (
     <Group
+      name={entity.kind === 'uas' ? `member:${entity.id}:0` : entity.id}
       x={x}
       y={y}
       scaleX={1 / k}
@@ -407,8 +412,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
       <EntityBody
         entity={entity}
         headingDeg={headingDeg}
-        detected={props.detected}
-        classified={props.classified}
+        memberOutcome={props.trialMembers?.[0]?.outcome}
+        memberJammed={props.trialMembers?.[0]?.jamState?.jammed ?? false}
         state={state}
         effectorState={props.effectorState}
         blink={props.blink}
@@ -424,9 +429,11 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
 
   return (
     <>
-      {members.slice(1).map((m, i) => (
-        <Group key={i} x={m.x} y={m.y} scaleX={1 / k} scaleY={1 / k} listening={false} opacity={off ? 0.3 : 0.75}>
-          {ghost ? (
+      {(props.trialMembers ?? members.map((position, memberIdx) => ({ memberIdx, position, heading: headingDeg, jamState: null, outcome: 'active' as const }))).slice(1).map((m) => (
+        <Group key={`${entity.id}:${m.memberIdx}`} name={`member:${entity.id}:${m.memberIdx}`} x={m.position.x} y={m.position.y} scaleX={1 / k} scaleY={1 / k}
+          onClick={(e) => handleClick(e, entity)} onContextMenu={(e) => handleContextMenu(e, entity)} opacity={off ? 0.3 : 0.85}>
+          <Line points={MEMBER_HEADING_TICK} rotation={m.heading} stroke={m.outcome === 'hard-kill' ? GHOST : color} strokeWidth={1} listening={false} />
+          {m.outcome === 'hard-kill' ? (
             <>
               <RegularPolygon
                 sides={4}
@@ -441,14 +448,16 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
             <RegularPolygon
               sides={4}
               radius={7}
-              fill={color}
-              stroke={EDGE}
+              fill={m.outcome === 'mission-kill' ? undefined : color}
+              stroke={m.outcome === 'mission-kill' ? JAM_CYAN : EDGE}
               strokeWidth={1}
               // The member group carries an opacity, so a fill+stroke shape
               // under it would take Konva's stage-sized buffer canvas path.
               perfectDrawEnabled={false}
             />
           )}
+          {m.jamState?.jammed && m.outcome !== 'hard-kill' && <Text text="J" x={-13} y={-5} fontSize={11} fill={JAM_CYAN} listening={false} />}
+          {m.outcome === 'mission-kill' && <Text text="MK" x={8} y={-5} fontSize={9} fill={JAM_CYAN} />}
         </Group>
       ))}
       {main}
@@ -507,8 +516,8 @@ function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {
 const EntityBody = memo(function EntityBody({
   entity,
   headingDeg,
-  detected,
-  classified,
+  memberOutcome,
+  memberJammed,
   state,
   effectorState,
   blink,
@@ -529,17 +538,13 @@ const EntityBody = memo(function EntityBody({
 
   const tickRef = useRef<Konva.Line>(null)
   const off = !entityActive(entity)
-  // A UAS with no flight path never enters the timeline, so its ring falls
-  // back to the render-time detection sweep.
-  const phase: TrackPhase =
-    entity.kind !== 'uas'
-      ? 'undetected'
-      : (state?.phase ?? (classified ? 'identified' : detected ? 'tracked' : 'undetected'))
-  const ghost = phase === 'ghost'
+  const phase: TrackPhase = entity.kind === 'uas' ? state?.phase ?? 'undetected' : 'undetected'
+  const ghost = memberOutcome === 'hard-kill'
+  const missionKill = memberOutcome === 'mission-kill'
   // A defeated track carries the destroyed strike, so it draws no ring.
   const ringColor = ghost ? null : PHASE_STYLE[phase].color
-  // Effective jamming holds on the track now (see TrackFileState.jammedNow).
-  const jammed = !ghost && (state?.jammedNow ?? false)
+  // A retained successful jam decision, independent of channel activity.
+  const jammed = !ghost && (memberJammed ?? false)
   // An EW-only engagement swaps the target brackets for the jammed diamond;
   // a track also under kinetic or DE fire keeps its brackets as well.
   const ewOnly = state != null && state.kineticSalvos + state.deSalvos === 0
@@ -601,10 +606,11 @@ const EntityBody = memo(function EntityBody({
       {ringColor && (
         <Circle radius={RING_R} stroke={ringColor} strokeWidth={1.6} opacity={pulse} listening={false} />
       )}
-      <Glyph entity={entity} headingDeg={headingDeg} color={color} ghost={ghost} filled={effectorFilled} tickRef={tickRef} />
+      <Glyph entity={entity} headingDeg={headingDeg} color={missionKill ? JAM_CYAN : color} ghost={ghost} filled={effectorFilled} tickRef={tickRef} />
+      {missionKill && <Text text="MISSION KILL" x={18} y={-3} fontSize={9} fill={JAM_CYAN} listening={false} />}
       {off && <Line points={OFF_SLASH} stroke={DANGER_INK} strokeWidth={2} listening={false} />}
       {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
-        <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={-16} text={`x${entity.formation!.count}`} fontSize={10} fill={ghost ? GHOST : color} listening={false} />
+        <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={state ? -28 : -16} width={140} text={state ? `${state.activeCount} active\n${state.hardKillCount} hard kill\n${state.missionKillCount} mission kill` : `x${entity.formation!.count}`} fontSize={11} fill={ghost ? GHOST : color} listening={false} />
       )}
       {jammed && (
         <>
@@ -655,7 +661,7 @@ const EntityBody = memo(function EntityBody({
           width={120}
           text={boardName}
           fontSize={11}
-          fill={ghost ? GHOST : '#b7bdb2'}
+          fill='#b7bdb2'
           align="center"
           listening={false}
         />
@@ -667,11 +673,7 @@ const EntityBody = memo(function EntityBody({
           y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
           width={120}
           align="center"
-          text={
-            state?.eliminatedBySoft
-              ? `${PHASE_STYLE.ghost.label} · MISSION KILL`
-              : PHASE_STYLE.ghost.label
-          }
+          text="HARD KILL"
           fontSize={9}
           fill={GHOST}
           listening={false}
@@ -718,13 +720,9 @@ interface GroupProps {
   entities: Entity[]
   /** Live tracks for the entities that fly a path; null for the group at rest. */
   tracks: Map<string, LiveTrack> | null
-  /**
-   * The sweep's parts, not the sweep: `sweepAt` keeps each map's identity
-   * while its contents hold, so a group re-renders only for a change it draws.
-   */
-  hits: Sweep['hits']
-  states: Sweep['states']
-  effectorStates: Sweep['effectorStates']
+  states: Map<string, TrialTelemetryState>
+  members: Map<string, TrialMemberState[]>
+  effectorStates: Map<string, EffectorLiveState>
   spokeIds: Set<string>
   blink: boolean
 }
@@ -742,7 +740,6 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
     <>
       {entities.map((e) => {
         const track = tracks?.get(e.id)
-        const hits = group.hits.get(e.id)
         const state = states.get(e.id)
         const effectorState = effectorStates.get(e.id) ?? 'idle'
         // The pulse reaches only the nodes that draw it, so the 2 Hz flip
@@ -750,13 +747,12 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
         const pulses = state?.phase === 'engaged' || effectorState === 'active'
         return (
           <EntityNode
-            key={e.id}
+            key={`${e.id}:0`}
             entity={e}
             x={track?.pos.x ?? e.pos.x}
             y={track?.pos.y ?? e.pos.y}
             headingDeg={track?.headingDeg ?? e.headingDeg}
-            detected={hits != null && hits.length > 0}
-            classified={hits?.some((h) => h.classified) ?? false}
+            trialMembers={group.members.get(e.id)}
             state={state}
             effectorState={effectorState}
             blink={pulses && blink}
@@ -774,7 +770,9 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
  * per-frame tracks. A frame therefore creates elements for the flying
  * entities alone. The flying group draws above the group at rest.
  */
-export function EntityLayer({ tracks, sweep, spokeIds, blink }: Props) {
+const EMPTY_EFFECTORS = new Map<string, EffectorLiveState>()
+
+export function EntityLayer({ tracks, members, states, sweep, spokeIds, blink }: Props) {
   const entities = useStore((s) => s.scenario.entities)
   const paths = useStore((s) => s.scenario.paths)
   const groups = useMemo(() => {
@@ -788,19 +786,19 @@ export function EntityLayer({ tracks, sweep, spokeIds, blink }: Props) {
     <>
       <EntityGroup
         entities={groups.atRest}
-        tracks={null}
-        hits={sweep.hits}
-        states={sweep.states}
-        effectorStates={sweep.effectorStates}
+        tracks={tracks}
+        members={members}
+        states={states}
+        effectorStates={sweep?.effectorStates ?? EMPTY_EFFECTORS}
         spokeIds={spokeIds}
         blink={blink}
       />
       <EntityGroup
         entities={groups.flying}
         tracks={tracks}
-        hits={sweep.hits}
-        states={sweep.states}
-        effectorStates={sweep.effectorStates}
+        members={members}
+        states={states}
+        effectorStates={sweep?.effectorStates ?? EMPTY_EFFECTORS}
         spokeIds={spokeIds}
         blink={blink}
       />

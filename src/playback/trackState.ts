@@ -425,6 +425,17 @@ export function trackTimelineOf(
   return timeline
 }
 
+/** Shot-only trial timeline: reuse physical timing without preparing forecast ghosts. */
+export function trialShotTimelineOf(scenario: Scenario, report: AttritionReport): TrackTimeline {
+  const hit = trialShotCache.get(report)
+  if (hit?.scenario === scenario) return hit.timeline
+  const timeline = buildTrackTimeline(scenario, [], report)
+  trialShotCache.set(report, { scenario, timeline })
+  return timeline
+}
+
+const trialShotCache = new WeakMap<AttritionReport, { scenario: Scenario; timeline: TrackTimeline }>()
+
 /** Prefix-aggregate the whole-run forecast. Pure; `trackTimelineOf` is the cached entry. */
 export function buildTrackTimeline(
   scenario: Scenario,

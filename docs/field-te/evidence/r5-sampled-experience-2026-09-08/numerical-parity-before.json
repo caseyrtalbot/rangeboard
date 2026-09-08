@@ -1,0 +1,20 @@
+{
+  "head": "838f5bb017117478f2b696d82934b7bfe17d54bb",
+  "node": "v22.23.1",
+  "files": [
+    {
+      "path": "docs/field-te/evidence/r5-sampled-experience-2026-09-08/numerical-before.json",
+      "bytes": 1683876,
+      "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6"
+    },
+    {
+      "path": "docs/field-te/evidence/r4-trial-lifecycle-2026-09-07/numerical-after.json",
+      "bytes": 1683876,
+      "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6"
+    }
+  ],
+  "comparison": "byte-for-byte; no fields excluded",
+  "cmpExitCode": 0,
+  "cmpOutput": "",
+  "identical": true
+}

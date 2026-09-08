@@ -1,0 +1,87 @@
+
+> rangeboard@0.0.0 check:bundle
+> node scripts/check-bundle.mjs
+
+{
+  "entryFile": "assets/index-B3y2GSJc.js",
+  "entryBytes": 246173,
+  "initialBytes": 392313,
+  "preloadBytes": 88204,
+  "allBytes": 480517,
+  "files": [
+    {
+      "file": "assets/index-B3y2GSJc.js",
+      "gzipBytes": 246173
+    },
+    {
+      "file": "assets/jsx-runtime-B-hcVAMW.js",
+      "gzipBytes": 3275
+    },
+    {
+      "file": "assets/react-dom-sF8Euvcq.js",
+      "gzipBytes": 1341
+    },
+    {
+      "file": "assets/types-0llxno5L.js",
+      "gzipBytes": 1006
+    },
+    {
+      "file": "assets/horizon-FBZqanty.js",
+      "gzipBytes": 1412
+    },
+    {
+      "file": "assets/storageKeys-CmLUB5Br.js",
+      "gzipBytes": 426
+    },
+    {
+      "file": "assets/intercept-BJUY2NM8.js",
+      "gzipBytes": 88899
+    },
+    {
+      "file": "assets/empty-DwOrOnY1.js",
+      "gzipBytes": 3691
+    },
+    {
+      "file": "assets/teStore-oM7u1sIn.js",
+      "gzipBytes": 16768
+    },
+    {
+      "file": "assets/recovery-DlmfAnPL.js",
+      "gzipBytes": 543
+    },
+    {
+      "file": "assets/persist-C2e3I36G.js",
+      "gzipBytes": 11779
+    },
+    {
+      "file": "assets/persistTe-DC1ADLHZ.js",
+      "gzipBytes": 1376
+    },
+    {
+      "file": "assets/tokens-DcoBi8EV.js",
+      "gzipBytes": 608
+    },
+    {
+      "file": "assets/kit-CVvT5uhx.js",
+      "gzipBytes": 551
+    },
+    {
+      "file": "assets/ErrorBoundary-DoRRSD88.js",
+      "gzipBytes": 566
+    },
+    {
+      "file": "assets/index-CLVhvwCA.css",
+      "gzipBytes": 13899
+    },
+    {
+      "file": "assets/Archivo-Regular-CpqDCVrH.woff2",
+      "gzipBytes": 52383
+    },
+    {
+      "file": "assets/JetBrainsMono-Regular-DhGaPbHz.woff2",
+      "gzipBytes": 35821
+    }
+  ]
+}
+Bundle budget passed: entry <= 260 kB; initial JavaScript + CSS <= 400 kB (gzip -9).
+BUNDLE_EXIT 0

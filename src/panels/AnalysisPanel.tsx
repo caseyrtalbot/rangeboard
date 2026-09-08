@@ -2,12 +2,22 @@ import { FORECAST_IN_ANALYZE } from '../analysis/horizon'
 import { WidgetFrame } from './analysis/widgets/WidgetFrame'
 import { Fragment, memo, useMemo } from 'react'
 import { buildAarSummary } from '../analysis/aar'
-import { engagementPicture } from '../analysis/impact'
+import { trialResultOf } from '../analysis/trialResult'
+import { formatTime } from '../geometry/geo'
+import { useForecastEngagement, useTrialResult, trialStateText } from './analysis/widgets/controls'
+import { currentSummary, bandMean, countSub, statMean, timeStatSub } from './analysis/widgets/mc'
+import { OutcomeSummary } from './analysis/OutcomeSummary'
+import { AboutProjection } from './analysis/widgets/ProjectionWidget'
+import { AnalysisSection } from './analysis/AnalysisSection'
+import { ThreatPicture } from './analysis/ThreatPicture'
+import { threatPictureAt } from '../analysis/threatAggregation'
+import { residualSectionHeadline } from './headlines'
+import { runSettings } from '../model/types'
 import type { WidgetInstance, WidgetType } from '../state/analysisLayout'
 import { BUILTIN_LENSES, WIDGET_TYPES } from '../state/analysisLayout'
 import { useStore } from '../state/store'
 import { selectDurationS, selectExecutionHorizon, selectRunComplete } from '../state/selectors'
-import { DebriefRecord } from './analysis/DebriefRecord'
+import { DebriefRecord, TrialOutcomeSummary } from './analysis/DebriefRecord'
 import { LiveStrip } from './analysis/LiveStrip'
 import { WIDGETS } from './analysis/widgets/registry'
 import type { WidgetProps } from './analysis/widgets/registry'
@@ -43,10 +53,17 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
   const presetId = useStore((state) => state.ui.analysis.layout.presetId)
   const customize = useStore((state) => state.ui.analysisCustomize)
   const durationS = useStore(selectDurationS)
-  const { assessments, report, impacts } = useMemo(() => {
-    void runId
-    return engagementPicture(scenario)
-  }, [scenario, runId])
+  const { assessments, report, impacts } = useForecastEngagement(scenario, runId)
+  const projectionGroups = useMemo(
+    () => threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map()),
+    [scenario, assessments, report],
+  )
+  const trial = useTrialResult()
+  const observedThroughS = useStore(state => state.playback.observedThroughS)
+  const mcState = useStore(state => state.mc)
+  const mc = currentSummary(mcState, runId)
+  const trialView = trial.selection.status === 'ready' && trial.snapshot
+    ? trialResultOf(trial.selection.scenario, trial.selection.result.manifest, trial.selection.result) : null
   // The AAR summary feeds the debrief record alone, so it is built only once
   // the run completes.
   const aar = useMemo(
@@ -82,13 +99,27 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
     }
     return (
       <Fragment key={instance.id}>
+        {phase === 'analyze' && !groupSummary && ['projection', 'requirement-gates', 'run-validity'].includes(instance.type) && (
+          <p className="analysis-scope">Forecast · deterministic planning envelope</p>
+        )}
         {instance.type === 'time-series' && !groupSummary && !horizon.scoped && (
-          <p className="analysis-scope">Full-run time series · playback cursor marker</p>
+          <p className="analysis-scope">Trial time series · cursor and observed horizon</p>
         )}
         <ErrorBoundary label={WIDGETS[instance.type].label} onExport={() => exportScenario(useStore.getState().scenario)}>
           {forecast ? (
             <WidgetFrame {...props} type={instance.type} title={entry.label}>
               <p className="muted">{FORECAST_IN_ANALYZE}</p>
+            </WidgetFrame>
+          ) : phase === 'analyze' && instance.type === 'projection' ? (
+            <WidgetFrame {...props} type="projection" title="Forecast · full-run projection" meta="deterministic planning envelope" headerExtra={<AboutProjection />}>
+              {threats.length === 0 ? <p className="muted small">No threats with flight paths.</p> : (
+                <>
+                  <OutcomeSummary scenario={scenario} assessments={assessments} report={report} />
+                  <AnalysisSection title="Projected threat outcome · planning envelope" headline={residualSectionHeadline(report.totals)}>
+                    <ThreatPicture groups={projectionGroups} mode="projected" />
+                  </AnalysisSection>
+                </>
+              )}
             </WidgetFrame>
           ) : <Widget {...props} />}
         </ErrorBoundary>
@@ -98,7 +129,15 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
 
   return (
     <div className="inspector-body analysis-panel">
-      <LiveStrip onOpenSettings={onOpenPreparation ? () => onOpenPreparation('run') : undefined} />
+      {phase === 'execute' ? (
+        <LiveStrip onOpenSettings={onOpenPreparation ? () => onOpenPreparation('run') : undefined} />
+      ) : (
+        <section className="analysis-primary" aria-label="Trial results">
+          <h3>Trial results</h3>
+          {trialView ? <TrialOutcomeSummary view={trialView} horizonS={observedThroughS} /> :
+            <p className="muted small">{trialStateText(trial.selection)}</p>}
+        </section>
+      )}
 
       {entityIds.length >= 2 && (
         <p className="muted analysis-empty">
@@ -119,30 +158,51 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
 
       {groupSummary ? (
         <>
-          <div className="analysis-primary" aria-label="Full-run results">
-            <p className="analysis-scope">Full-run results · entire configured duration</p>
-            {widgets.filter((instance) => instance.type === 'run-validity').map(renderWidget)}
-            {widgets.filter((instance) => instance.type === 'projection').map(renderWidget)}
-            <details className="analysis-disclosure analysis-fullrun-series">
-              <summary>Full-run time series · cursor marker</summary>
-              {widgets.filter((instance) => instance.type === 'time-series').map(renderWidget)}
-            </details>
-          </div>
           <details className="analysis-disclosure analysis-cursor-supplement">
-            <summary>Cursor-scoped supplemental data</summary>
+            <summary>Trial cursor telemetry</summary>
             <p className="analysis-scope">Playback cursor and observed horizon · preview positions remain distinct from observed playback.</p>
-            {widgets.filter((instance) => instance.type === 'kpi-tiles' || instance.type === 'threat-picture').map(renderWidget)}
+            {widgets.filter(instance => ['kpi-tiles', 'time-series', 'threat-picture'].includes(instance.type)).map(renderWidget)}
           </details>
+          <section aria-label="Forecast">
+            <h3>Forecast</h3>
+            {widgets.filter(instance => instance.type === 'run-validity').map(renderWidget)}
+            {widgets.filter(instance => instance.type === 'projection').map(renderWidget)}
+          </section>
         </>
       ) : (
         <>
           <p className="analysis-scope">
             {phase === 'execute'
               ? 'Execution view · outcomes through the observed horizon. Forecast widgets open in Analyze.'
-              : 'Analysis view · each widget retains its labeled cursor or full-run scope.'}
+              : 'Analysis view · trial cursor telemetry and separately labeled forecasts.'}
           </p>
           {widgets.map(renderWidget)}
         </>
+      )}
+
+      {phase === 'analyze' && (
+        <details className="analysis-disclosure" aria-label="Monte Carlo">
+          <summary>Monte Carlo</summary>
+          {mc ? (
+            <>
+              <p className="analysis-scope">{runSettings(scenario).uncertainty === 'total' ? 'Total uncertainty' : 'Aleatory uncertainty'} · {mc.replicates} replicates · {formatTime(mc.durationS)} · seed {mc.seed}</p>
+              {(['kills', ...(report.totals.reportedLeakers == null ? [] : ['leakers'])] as Array<'kills' | 'leakers'>).map(key => (
+                <p key={key}>
+                  {key === 'kills' ? 'Mean kills' : 'Mean leakers'} · {bandMean(mc[key], mc[key].mean.length - 1, mc.replicates) ?? '—'}
+                  <small> · {countSub(mc[key], mc[key].mean.length - 1, mc.replicates)}</small>
+                </p>
+              ))}
+              <p>Mean first detect · {statMean(mc.firstDetectS) == null ? '—' : formatTime(statMean(mc.firstDetectS)!)}
+                <small> · {timeStatSub(mc.firstDetectS, 'detected')}</small>
+              </p>
+              {report.totals.reportedLeakers != null && (
+                <p>Mean minimum warning · {statMean(mc.minWarningS) == null ? '—' : formatTime(statMean(mc.minWarningS)!)}
+                  <small> · {timeStatSub(mc.minWarningS, 'warning')}</small>
+                </p>
+              )}
+            </>
+          ) : <p className="muted small">No current ensemble result.</p>}
+        </details>
       )}
 
       {complete && aar && (!horizon.scoped || horizon.horizonS >= durationS) && (

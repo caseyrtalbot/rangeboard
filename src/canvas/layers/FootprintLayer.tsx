@@ -46,7 +46,7 @@ import {
 } from './footprintStyle'
 
 interface Props {
-  /** Sensors holding a track at the published sim time. Computed once in LiveScene. */
+  /** Measured or held sensors at the trial horizon; coast alone does not light a ring. */
   activeSensorIds: Set<string>
 }
 
@@ -486,7 +486,7 @@ const SensorNode = memo(function SensorNode({
 }: { r: SensorRings; dim: boolean; active: boolean }) {
   const e = r.entity
   const strokeOpacity = r.grey ? 0.35 : dim ? 0.3 : 0.7
-  const hot = active && r.held
+  const hot = active
   // The highlight rides the ring that answers "from how far do I see it": the
   // lower Pd contour when it draws, else the placard ring.
   const hotContour = hot && r.contourLowM != null
@@ -773,7 +773,7 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
               key={r.entity.id}
               r={r}
               dim={dim}
-                  active={r.held && activeSensorIds.has(r.entity.id)}
+              active={activeSensorIds.has(r.entity.id)}
             />
           )
         }

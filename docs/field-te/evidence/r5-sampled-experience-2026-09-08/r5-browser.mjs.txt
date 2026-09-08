@@ -1,0 +1,804 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createHash } from 'node:crypto'
+import { execFileSync, fork } from 'node:child_process'
+
+const repo = '/Users/caseytalbot/Projects/rangeboard'
+const [fixture = '/private/tmp/r5-before-capture/scenario.json', url = 'http://localhost:5461',
+  outDir = '/private/tmp/r5-browser/out'] = process.argv.slice(2)
+const names = ['ready-state', 'play-default', 'rapid-double-start', 'horizon-agreement',
+  'sampled-vs-deterministic', 'completion-and-replay', 'new-run', 'mixed-formation',
+  'edit-invalidation', 'error-no-fallback', 'thirty-runs', 'perf-play', 'export', 'keyboard', 'screenshots']
+const result = { date: new Date().toISOString(), commit: null, fixtureSha256: null, chromium: null,
+  checks: [], pageErrors: [], consoleErrors: [], consoleWarnings: [], status: 'captured' }
+
+// A separate supervisor can stop a blocked browser/evaluate and still retain JSON.
+// The worker checkpoints over IPC; the supervisor never opens a browser or a port.
+if (process.env.R5_BROWSER_WORKER !== '1') {
+  fs.mkdirSync(outDir, { recursive: true })
+  const reportPath = path.join(outDir, 'r5-browser.json')
+  const save = () => fs.writeFileSync(reportPath, JSON.stringify(result, null, 2) + '\n')
+  let child
+  let finished = false
+  let watchdog
+  const finish = reason => {
+    if (finished) return
+    finished = true
+    clearTimeout(watchdog)
+    // Each missing check receives its own failed prerequisite attempt; never claim
+    // browser assertions ran when startup, a crash, or the outer watchdog blocked them.
+    for (const name of names) {
+      if (!result.checks.some(c => c.name === name)) {
+        try { throw new Error(reason || 'Worker ended without a check result') }
+        catch (error) { result.checks.push({ name, pass: false, detail: `Prerequisite attempt failed: ${error.message}` }) }
+      }
+    }
+    if (reason && result.checks.every(c => c.pass)) {
+      result.checks.at(-1).pass = false
+      result.checks.at(-1).detail += `; harness failure: ${reason}`
+    }
+    result.checks.sort((a, b) => names.indexOf(a.name) - names.indexOf(b.name))
+    save()
+    // Kill only this harness's detached process group, including its Chromium.
+    if (child?.pid) { try { process.kill(-child.pid, 'SIGKILL') } catch {} }
+    console.log(JSON.stringify({ output: reportPath, checks: result.checks.length,
+      failed: result.checks.filter(c => !c.pass).map(c => c.name), status: result.status }))
+    process.exit(result.checks.some(c => !c.pass) ? 1 : 0)
+  }
+  try {
+    assert.equal(new URL(url).origin, 'http://localhost:5461', 'Only http://localhost:5461 is authorized')
+    result.commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8', timeout: 3000 }).trim()
+    result.fixtureSha256 = createHash('sha256').update(fs.readFileSync(fixture)).digest('hex')
+    save()
+    child = fork(fileURLToPath(import.meta.url), [fixture, url, outDir], {
+      detached: true, env: { ...process.env, R5_BROWSER_WORKER: '1' }, stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+    })
+    child.on('message', message => {
+      if (message.kind === 'report') { Object.assign(result, message.result); save() }
+      if (message.kind === 'done') finish()
+    })
+    child.on('error', error => finish(error.message))
+    child.on('exit', (code, signal) => finish(`Worker exited ${code ?? signal}`))
+    watchdog = setTimeout(() => finish('230 s wall-clock limit exceeded'), 230000)
+  } catch (error) { finish(error.stack || String(error)) }
+} else {
+  await runBrowser()
+}
+
+async function runBrowser() {
+  const overallEnd = Date.now() + 210000
+  const publish = () => process.send?.({ kind: 'report', result })
+  let browser
+  let context
+  let page
+  let setupError
+  let poisoned = false
+  let checkEnd = overallEnd
+  const timeout = (max = 5000) => Math.max(1, Math.min(max, checkEnd - Date.now(), overallEnd - Date.now()))
+  const wait = (fn, arg = null, max = 5000) => page.waitForFunction(fn, arg, { timeout: timeout(max), polling: 25 })
+  const settle = async () => {
+    await page.evaluate(() => { window.__settled = false; requestAnimationFrame(() => requestAnimationFrame(() => { window.__settled = true })) })
+    await wait(() => window.__settled, null, 1500)
+  }
+  const snap = () => page.evaluate(() => {
+    const s = window.__store.getState()
+    return { playback: s.playback, trial: { status: s.trial.status, requestToken: s.trial.requestToken,
+      manifest: s.trial.manifest, error: s.trial.error }, workers: window.__workerAudit }
+  })
+  const waitReady = async () => {
+    await wait(() => ['ready', 'error', 'cancelled'].includes(window.__store.getState().trial.status), null, 7000)
+    const s = await snap()
+    assert.equal(s.trial.status, 'ready', s.trial.error || 'Trial failed to prepare')
+    return s
+  }
+  const reset = () => page.evaluate(() => {
+    window.__pauseAt130?.(); window.__pauseAt130 = null
+    window.__lifecycleOff?.(); window.__lifecycleOff = null
+    window.__perfObserver?.disconnect()
+    window.__api.session.resetAnalysisRun('manual')
+  })
+  const pause = () => page.evaluate(() => window.__store.getState().pauseRun())
+  const play = (speed = 1) => page.evaluate(speed => {
+    const s = window.__store.getState()
+    s.setSpeedMult(speed)
+    s.startTrialRun()
+  }, speed)
+  const complete = async () => {
+    const s = await snap()
+    if (s.playback.phase !== 'complete') { await play(1000); await waitReady() }
+    await wait(() => window.__store.getState().playback.phase === 'complete', null, 7000)
+    return snap()
+  }
+  const fresh = async (speed = 1) => { await reset(); await play(speed); return waitReady() }
+  const serialized = () => page.evaluate(() => {
+    const s = window.__store.getState()
+    return { result: JSON.stringify(s.trial.result), manifest: JSON.stringify(s.trial.manifest),
+      ledger: JSON.stringify(s.trial.result?.report.events), runId: s.playback.runId,
+      completedAtMs: s.playback.completedAtMs, observedThroughS: s.playback.observedThroughS }
+  })
+  const overview = async () => {
+    await page.evaluate(() => {
+      const s = window.__store.getState()
+      s.clearSelection(); s.setRightTab('analysis'); s.setBoardPhase('execute')
+      s.applyLens('run-summary'); s.addAnalysisWidget('event-ledger')
+    })
+    await page.locator('[data-widget-type="kpi-tiles"]').waitFor({ state: 'visible', timeout: timeout() })
+  }
+  const at130 = async () => {
+    await reset()
+    await page.evaluate(() => {
+      const s = window.__store.getState()
+      if (window.__api.selectors.selectDurationS(s) <= 130) throw new Error('Fixture duration must exceed 130 seconds')
+      window.__pauseAt130?.()
+      let reached = false
+      window.__pauseAt130 = window.__store.subscribe(st => {
+        if (reached || st.playback.simTimeS < 130) return
+        reached = true
+        window.__pauseAt130()
+        st.pauseRun(); window.__store.getState().scrubTo(130); window.__store.getState().pauseRun()
+      })
+      s.setSpeedMult(1000); s.startTrialRun()
+    })
+    await waitReady()
+    await wait(() => { const p = window.__store.getState().playback; return !p.playing && p.simTimeS === 130 }, null, 7000)
+    await settle()
+  }
+  const check = async (name, budget, body) => {
+    checkEnd = Math.min(Date.now() + budget, overallEnd)
+    let timer
+    try {
+      if (setupError) throw setupError
+      if (poisoned) throw new Error('Browser closed after an earlier check timeout; prerequisite unavailable')
+      if (Date.now() >= overallEnd) throw new Error('210 s browser-work budget exhausted')
+      const detail = await Promise.race([Promise.resolve().then(body), new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          poisoned = true
+          void context?.close().catch(() => {})
+          reject(new Error(`${name} exceeded its ${budget} ms / remaining global budget; browser closed`))
+        }, timeout(budget))
+      })])
+      result.checks.push({ name, pass: true, detail: typeof detail === 'string' ? detail : JSON.stringify(detail) })
+    } catch (error) {
+      result.checks.push({ name, pass: false, detail: error.stack || String(error) })
+    } finally {
+      clearTimeout(timer)
+      publish()
+    }
+  }
+
+  try {
+    assert.equal(new URL(url).origin, 'http://localhost:5461')
+    result.commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8', timeout: 3000 }).trim()
+    const bytes = fs.readFileSync(fixture)
+    result.fixtureSha256 = createHash('sha256').update(bytes).digest('hex')
+    const raw = bytes.toString('utf8')
+    JSON.parse(raw)
+    const { chromium } = await import('/Users/caseytalbot/Projects/rangeboard/node_modules/playwright/index.mjs')
+    browser = await chromium.launch({ headless: true, timeout: 10000 })
+    result.chromium = browser.version()
+    context = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+    context.setDefaultTimeout(5000)
+    context.setDefaultNavigationTimeout(10000)
+    await context.route('**/*', route => {
+      const target = new URL(route.request().url())
+      return target.port === '5174' ? route.abort('blockedbyclient') : route.continue()
+    })
+    await context.addInitScript(raw => {
+      localStorage.setItem('rangeboard.scenario.v1', raw)
+      localStorage.setItem('rangeboard.rightpanel.width', '320')
+      const NativeWorker = window.Worker
+      window.__workerAudit = { created: 0, history: [] }
+      window.Worker = class extends NativeWorker {
+        constructor(workerUrl, options) {
+          super(workerUrl, options)
+          this.auditId = ++window.__workerAudit.created
+          window.__workerAudit.history.push({ id: this.auditId, url: String(workerUrl),
+            trial: /trial\.worker\./.test(String(workerUrl)), createdAt: performance.now(), terminatedAt: null, requests: [] })
+        }
+        postMessage(message, transfer) {
+          const record = window.__workerAudit.history.find(r => r.id === this.auditId)
+          if (message?.type === 'prepare-trial') {
+            record.trial = true
+            record.requests.push({ requestToken: message.requestToken, runId: message.runId })
+          }
+          return transfer === undefined ? super.postMessage(message) : super.postMessage(message, transfer)
+        }
+        terminate() {
+          window.__workerAudit.history.find(r => r.id === this.auditId).terminatedAt ??= performance.now()
+          return super.terminate()
+        }
+      }
+    }, raw)
+    page = await context.newPage()
+    page.on('pageerror', error => { result.pageErrors.push(error.stack || error.message); publish() })
+    page.on('console', message => {
+      if (message.type() === 'error') result.consoleErrors.push(message.text())
+      if (message.type() === 'warning') result.consoleWarnings.push(message.text())
+      if (['error', 'warning'].includes(message.type())) publish()
+    })
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 })
+    await wait(() => window.__store && window.Konva?.stages?.length && document.querySelector('.konvajs-content canvas'), null, 10000)
+    await page.evaluate(async () => {
+      const [session, selectors, trialSelectors, trialResult, sweep, track, readout, geo, stats, labels, detection] = await Promise.all([
+        import('/src/playback/runSession.ts'), import('/src/state/selectors.ts'), import('/src/state/trialSelectors.ts'),
+        import('/src/analysis/trialResult.ts'), import('/src/playback/trialSweepAt.ts'), import('/src/playback/trialTrackState.ts'),
+        import('/src/panels/analysis/threatReadout.ts'), import('/src/geometry/geo.ts'), import('/src/analysis/liveStats.ts'),
+        import('/src/panels/analysis/widgets/labels.ts'), import('/src/playback/detection.ts'),
+      ])
+      window.__api = { session, selectors, trialSelectors, trialResult, sweep, track, readout, geo, stats, labels, detection }
+      window.__view = () => {
+        const s = window.__store.getState()
+        const selection = trialSelectors.selectTrialSelection(s)
+        if (selection.status !== 'ready') throw new Error(`Expected valid retained trial; got ${selection.status}`)
+        return trialResult.trialResultOf(selection.scenario, s.trial.manifest, selection.result)
+      }
+      window.__stage = () => window.Konva.stages.find(stage => stage.container()?.isConnected)
+      // Read committed DOM React props only for the full chart domain, which tick
+      // labels alone cannot prove. No hook or store state is modified.
+      window.__chartEvidence = root => {
+        const found = []
+        const effects = []
+        for (const node of root.querySelectorAll('.recharts-wrapper')) {
+          const key = Object.keys(node).find(k => k.startsWith('__reactFiber$'))
+          if (!key) throw new Error('React DOM chart inspection seam unavailable')
+          let fiber = node[key]
+          while (fiber?.return) fiber = fiber.return
+          let committedHost
+          const locate = f => {
+            if (!f) return
+            if (f.stateNode === node) committedHost = f
+            for (let c = f.child; c; c = c.sibling) locate(c)
+          }
+          locate(fiber?.stateNode?.current ?? fiber)
+          let plot = committedHost
+          while (plot && plot.type?.name !== 'TimeSeriesPlot') plot = plot.return
+          if (!plot) throw new Error('Committed TimeSeriesPlot inspection seam unavailable')
+          const visit = f => {
+            const p = f.memoizedProps
+            if (p?.dataKey === 't' && Array.isArray(p.domain)) found.push(p.domain)
+            if (p?.label?.value === 'FX' && Number.isFinite(p.x)) effects.push(p.x)
+            for (let c = f.child; c; c = c.sibling) visit(c)
+          }
+          visit(plot)
+        }
+        return { domains: [...new Map(found.map(d => [JSON.stringify(d), d])).values()], effects: [...new Set(effects)] }
+      }
+    })
+    await overview()
+    await settle()
+  } catch (error) { setupError = error }
+
+  const trialWorkers = s => s.workers.history.filter(w => w.trial)
+  const liveWorkers = s => trialWorkers(s).filter(w => w.terminatedAt == null)
+
+  await check('ready-state', 8000, async () => {
+    const s = await snap()
+    assert.equal(s.trial.status, 'idle')
+    assert.equal(s.playback.startedAtMs, null)
+    assert.equal(s.playback.playing, false)
+    assert.match(await page.locator('.live-strip').innerText({ timeout: timeout() }), /Simulated trial · ready/)
+    const drawn = await page.evaluate(() => {
+      const stage = window.__stage()
+      if (!stage) throw new Error('No live Konva stage')
+      return { outcomes: stage.find('Text').filter(n => /^(HARD KILL|MISSION KILL|MK|J)$/.test(n.text())).map(n => n.text()),
+        shots: stage.find('Line').filter(n => n.closed() && JSON.stringify(n.points()) === JSON.stringify([0, -8, 6, 6, -6, 6])).length,
+        beams: stage.find('Line').filter(n => JSON.stringify(n.dash()) === '[2,4]' && n.strokeWidth() === 1.4).length }
+    })
+    assert.deepEqual(drawn, { outcomes: [], shots: 0, beams: 0 })
+    assert.equal(await page.locator('.engstrip-svg > g > g path, .engstrip-svg > g > g rect[height="8"]').count(), 0)
+    return { status: s.trial.status, drawn, panelWidth: await page.locator('.right-panel').evaluate(e => e.clientWidth) }
+  })
+
+  await check('play-default', 10000, async () => {
+    await reset()
+    const immediate = await page.evaluate(() => {
+      const before = window.__workerAudit.history.filter(w => w.trial).length
+      window.__lifecycle = []
+      window.__lifecycleOff?.()
+      window.__lifecycleOff = window.__store.subscribe(s => window.__lifecycle.push({
+        status: s.trial.status, playing: s.playback.playing, cursor: s.playback.simTimeS, started: s.playback.startedAtMs,
+      }))
+      window.__store.getState().setSpeedMult(1)
+      window.__api.session.toggleAnalysisRun()
+      const s = window.__store.getState()
+      return { before, status: s.trial.status, playing: s.playback.playing, cursor: s.playback.simTimeS, started: s.playback.startedAtMs }
+    })
+    assert.equal(immediate.status, 'preparing')
+    assert.equal(immediate.playing, false)
+    assert.equal(immediate.cursor, 0)
+    assert.equal(immediate.started, null)
+    await waitReady()
+    await wait(() => window.__store.getState().playback.simTimeS > 0)
+    await pause()
+    const transitions = await page.evaluate(() => { window.__lifecycleOff(); return window.__lifecycle })
+    assert.ok(transitions.some(t => t.status === 'ready' && t.playing))
+    assert.ok(transitions.every(t => (!t.playing && t.cursor === 0 && t.started == null) || t.status === 'ready'))
+    assert.equal(trialWorkers(await snap()).length - immediate.before, 1)
+    return { immediate, transitions }
+  })
+
+  await check('rapid-double-start', 10000, async () => {
+    await reset()
+    const audit = await page.evaluate(() => {
+      const s = window.__store.getState()
+      const before = window.__workerAudit.history.filter(w => w.trial).length
+      s.setSpeedMult(1); s.startTrialRun()
+      const first = window.__store.getState().trial.requestToken
+      s.startTrialRun()
+      const second = window.__store.getState().trial.requestToken
+      return { before, first, second, status: window.__store.getState().trial.status,
+        workers: window.__workerAudit.history.filter(w => w.trial).slice(before) }
+    })
+    assert.equal(audit.status, 'preparing')
+    assert.ok(audit.first)
+    assert.equal(audit.first, audit.second)
+    assert.equal(audit.workers.length, 1)
+    assert.deepEqual(audit.workers[0].requests.map(r => r.requestToken), [audit.first])
+    await waitReady(); await pause()
+    assert.equal((await snap()).trial.requestToken, audit.first)
+    assert.equal(trialWorkers(await snap()).length - audit.before, 1)
+    return audit
+  })
+
+  await check('horizon-agreement', 24000, async () => {
+    await overview(); await at130()
+    const strip = page.locator('.center > .engstrip')
+    if (!(await strip.locator('.engstrip-plot').count())) await strip.locator('.engstrip-head').click({ timeout: timeout() })
+    await settle()
+    const expected = await page.evaluate(() => {
+      const s = window.__store.getState(), a = window.__api, view = window.__view()
+      const horizon = a.trialSelectors.selectTrialHorizon(s, s.playback.simTimeS)
+      const tracks = view.assessments.filter(t => t.status !== 'no-path')
+      const k = a.stats.trialKpisAt(view, horizon)
+      const n = a.trialResult.trialSnapshotAt(view, horizon).counts.totalTracks
+      const tracking = new Set(a.sweep.trialSweepAt(view, horizon).sensors.filter(x => x.stateAtTime !== 'not-held').map(x => x.threatId)).size
+      const tiles = { detect: `${k.detected}/${n}`, trackNow: `${tracking}/${n}`, idClass: `${k.classified}/${n}`,
+        engaged: `${k.engaged}/${n}`, killEk: String(k.kills), leakEn: String(k.reportedLeakers ?? '—') }
+      const lanes = tracks.map(t => {
+        const shot = view.attrition.threats.find(x => x.uasId === t.uasId)?.firstShotS ?? null
+        const time = v => v != null && v <= horizon ? a.geo.formatTime(v) : '—'
+        return { name: view.scenario.entities.find(e => e.id === t.uasId)?.name ?? t.uasId, shot, arrival: t.arrivalS,
+          tip: [`det ${time(t.firstDetectS)}`, `hostile ${time(t.classificationAtS.hostileAtS)}`,
+            `win ${t.windowS && t.windowS[0] <= horizon ? `${time(t.windowS[0])}–${a.geo.formatTime(Math.min(t.windowS[1], horizon))}` : '—'}`,
+            `shot ${time(shot)}`, `arr ${time(t.arrivalS)}`].join(' · ') }
+      })
+      const events = view.attrition.events.filter(e => e.tS <= horizon).map(e => ({
+        assignment: e.tS, effect: e.tEffectS,
+        time: `${a.geo.formatTime(e.tS)} → ${e.tEffectS <= horizon ? a.geo.formatTime(e.tEffectS) : '—'}`,
+        value: `P ${e.tEffectS <= horizon ? `${(e.pk * 100).toFixed(1)}%` : '—'}Removed ${e.tEffectS <= horizon ? e.killDelta.toFixed(0) : '—'}`,
+      }))
+      return { horizon, observedThroughS: s.playback.observedThroughS, durationS: view.durationS,
+        lanes, events, kpis: k, tiles: Object.entries(tiles).map(([key, value]) => ({ label: a.labels.TRIAL_KPI_LABELS[key].label, value })),
+        selectedId: tracks[0]?.uasId }
+    })
+    assert.equal(expected.horizon, 130)
+    assert.ok(expected.selectedId, 'Fixture must contain a threat with a path')
+    // Expand grouped tracks before counting; aggregate rows are additional headings.
+    for (const chevron of await strip.locator('.engstrip-name.group .chevron:not(.open)').all()) await chevron.click({ timeout: timeout() })
+    const laneNames = await strip.locator('.engstrip-name:not(.group) .engstrip-name-text').allTextContents()
+    assert.deepEqual(laneNames, expected.lanes.map(l => l.name))
+    const markCounts = await strip.locator('.engstrip-svg > g > g').evaluateAll(nodes => nodes.map(n => ({
+      shots: n.querySelectorAll('rect[height="8"]').length, arrivals: n.querySelectorAll('path').length,
+    })))
+    const leafRows = await strip.locator('.engstrip-name').evaluateAll(nodes => nodes.map((n, i) => n.classList.contains('group') ? -1 : i).filter(i => i >= 0))
+    assert.deepEqual(leafRows.map(i => markCounts[i]), expected.lanes.map(l => ({
+      shots: l.shot != null && l.shot <= expected.horizon ? 1 : 0, arrivals: l.arrival != null && l.arrival <= expected.horizon ? 1 : 0,
+    })))
+    const tips = []
+    for (const [i, row] of leafRows.entries()) {
+      await strip.locator('.engstrip-name').nth(row).scrollIntoViewIfNeeded({ timeout: timeout() })
+      const box = await strip.locator('.engstrip-plot').boundingBox({ timeout: timeout() })
+      assert.ok(box)
+      await page.mouse.move(box.x + Math.min(20, box.width / 2), box.y + row * 16 + 8)
+      await strip.locator('.engstrip-tip').waitFor({ state: 'visible', timeout: timeout() })
+      await wait(expectedTip => document.querySelector('.center > .engstrip .engstrip-tip')?.textContent === expectedTip,
+        `${expected.lanes[i].name} ${expected.lanes[i].tip}`)
+      tips.push(await strip.locator('.engstrip-tip').innerText({ timeout: timeout() }))
+    }
+    await page.mouse.move(10, 10)
+    const tiles = await page.locator('[data-widget-type="kpi-tiles"] .tile').evaluateAll(nodes => nodes.map(n => ({
+      label: n.querySelector('.tl').textContent, value: n.querySelector('.tv').textContent,
+    })))
+    assert.deepEqual(tiles, expected.tiles)
+    const ledger = page.locator('[data-widget-type="event-ledger"]')
+    for (let i = 0; i < Math.ceil(expected.events.length / 20); i++) {
+      if (await ledger.locator('.load-more').count()) await ledger.locator('.load-more').click({ timeout: timeout() })
+    }
+    const rows = await ledger.locator('.event-row').evaluateAll(nodes => nodes.map(n => ({
+      time: n.querySelector('.event-time').textContent, value: n.querySelector('.event-effect').textContent,
+    })))
+    assert.deepEqual(rows, expected.events.map(({ time, value }) => ({ time, value })))
+    await page.locator('[data-widget-type="time-series"] .recharts-wrapper').first().waitFor({ state: 'visible', timeout: timeout() })
+    const chart = await page.evaluate(() => window.__chartEvidence(document.querySelector('[data-widget-type="time-series"]')))
+    const domains = chart.domains
+    assert.ok(domains.length, 'Missing numeric rendered time-series axis domain')
+    assert.ok(domains.every(d => d.length === 2 && d.every(Number.isFinite) && d[0] >= 0 && d[1] <= expected.horizon), JSON.stringify(domains))
+    await page.evaluate(id => { const s = window.__store.getState(); s.setLayer('trackTelemetry', true); s.select({ entityIds: [id] }) }, expected.selectedId)
+    await page.locator('#entity-section-telemetry').click({ timeout: timeout() })
+    await page.locator('[data-detail="threat"] [data-section="file"] .rows').waitFor({ state: 'visible', timeout: timeout() })
+    await settle()
+    const readout = await page.evaluate(id => {
+      const s = window.__store.getState(), a = window.__api, view = window.__view()
+      const h = a.trialSelectors.selectTrialHorizon(s, s.playback.simTimeS)
+      return a.readout.threatReadoutAt({ scenario: view.scenario, entity: view.scenario.entities.find(e => e.id === id),
+        trial: view, horizonS: h, tS: h, horizon: { scoped: true, horizonS: h }, units: s.ui.units })
+    }, expected.selectedId)
+    const selected = await page.locator('[data-detail="threat"] [data-section="file"] .row').evaluateAll(nodes => nodes.map(n => ({
+      label: n.querySelector('.rl').textContent, value: n.querySelector('.rv').textContent,
+    })))
+    for (const row of readout.rows.filter(r => r.horizon === 'cursor')) assert.equal(selected.find(r => r.label === row.label)?.value, row.value, row.label)
+    assert.equal(await page.locator('.readout.compact .ro-phase').innerText({ timeout: timeout() }), readout.pillLabel)
+    assert.ok(readout.state.members.every(m => m.reachedEffectTimeS == null || m.reachedEffectTimeS <= expected.horizon))
+    // Inspect effect-specific DOM metadata everywhere, without confusing planned
+    // arrival/CPA or the transport duration with a realized effect timestamp.
+    const exposed = await page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => e.checkVisibility()).flatMap(e => {
+      const texts = [e.getAttribute('title'), e.getAttribute('aria-label'),
+        e.children.length === 0 ? e.textContent : null].filter(Boolean)
+      const explicit = e.getAttribute('data-teffect-s')
+      return [...(explicit == null ? [] : [Number(explicit)]),
+        ...texts.flatMap(text => [...text.matchAll(/tEffectS\s*[:=]\s*(\d+(?:\.\d+)?)/g)].map(m => Number(m[1])))]
+    }))
+    assert.ok(exposed.every(t => t <= expected.horizon), JSON.stringify(exposed))
+    await page.locator('[data-detail="threat"] .recharts-wrapper').first().waitFor({ state: 'visible', timeout: timeout() })
+    const detailChart = await page.evaluate(() => window.__chartEvidence(document.querySelector('[data-detail="threat"]')))
+    const detailDomains = detailChart.domains
+    assert.ok(detailDomains.length && detailDomains.every(d => Number.isFinite(d[1]) && d[1] <= expected.horizon), JSON.stringify(detailDomains))
+    assert.ok([...chart.effects, ...detailChart.effects].every(t => t <= expected.horizon))
+    return { ...expected, lanesRendered: laneNames.length, markCounts, tips, kpiValuesRealized: tiles.filter(t => t.value !== '—').length,
+      tiles, ledgerRows: rows.length, maskedFutureEffects: expected.events.filter(e => e.effect > expected.horizon).length,
+      axisDomains: domains, detailDomains, selected, exposedEffectTimes: [...exposed, ...chart.effects, ...detailChart.effects] }
+  })
+
+  await check('sampled-vs-deterministic', 10000, async () => {
+    const s = await snap()
+    if (s.trial.status !== 'ready' || s.playback.simTimeS !== 130) await at130()
+    await page.evaluate(() => {
+      const s = window.__store.getState()
+      s.clearSelection()
+      for (const e of s.scenario.entities.filter(e => e.kind === 'sensor')) {
+        for (const key of ['sensorEnvelope', 'sensorPdContours', 'classifyRings']) s.setRingOverride(e.id, key, false)
+        s.setRingOverride(e.id, 'sensorPlacard', true)
+      }
+    })
+    await settle()
+    const capture = await page.evaluate(async () => {
+      const { effectiveDetectRangeM } = await import('/src/analysis/sensorEnv.ts')
+      const s = window.__store.getState(), a = window.__api, view = window.__view()
+      const horizon = a.trialSelectors.selectTrialHorizon(s, s.playback.simTimeS)
+      const sampled = [...new Set(a.sweep.trialSweepAt(view, horizon).sensors
+        .filter(x => ['measured', 'held-between-scans'].includes(x.stateAtTime)).map(x => x.sensorId))].sort()
+      const deterministic = [...new Set([...a.detection.detectionsAt(s.scenario, horizon).values()].flat().map(x => x.sensorId))].sort()
+      // StaticScene is the fourth canvas layer. Ring strokes use world coordinates;
+      // sector wedges start at their sensor position and full circles carry x/y.
+      const layer = window.__stage().getLayers()[3]
+      const nodes = layer.find(n => n.getAttr('strokeScaleEnabled') === false && n.getAttr('stroke') &&
+        (n.getClassName() === 'Circle' || (n.getClassName() === 'Line' && n.getAttr('closed'))))
+      const sensors = s.scenario.entities.filter(e => e.kind === 'sensor' && e.enabled !== false)
+      const rings = sensors.map(e => {
+        const spec = s.scenario.library.find(m => m.id === e.specId)?.sensor
+        if (!spec) throw new Error(`Missing sensor specification for ${e.id}`)
+        const radius = effectiveDetectRangeM(spec, s.scenario.environment)
+        const matches = nodes.filter(n => n.getClassName() === 'Circle'
+          ? n.x() === e.pos.x && n.y() === e.pos.y && Math.abs(n.radius() - radius) < 1e-6
+          : n.points().length > 20 && n.points()[0] === e.pos.x && n.points()[1] === e.pos.y &&
+            Math.abs(Math.hypot(n.points()[2] - e.pos.x, n.points()[3] - e.pos.y) - radius) < 1e-6)
+        if (matches.length !== 1) throw new Error(`Expected one placard stroke for ${e.id}; found ${matches.length}`)
+        return { id: e.id, strokeWidth: matches[0].strokeWidth(), active: matches[0].strokeWidth() === 2 }
+      })
+      return { horizon, sampled, deterministic, rendered: rings.filter(r => r.active).map(r => r.id).sort(), rings }
+    })
+    assert.ok(capture.rings.length, 'No rendered sensor rings')
+    assert.deepEqual(capture.rendered, capture.sampled)
+    return { ...capture, differsFromDeterministic: JSON.stringify(capture.sampled) !== JSON.stringify(capture.deterministic) }
+  })
+
+  await check('completion-and-replay', 14000, async () => {
+    await complete()
+    const before = await serialized()
+    fs.writeFileSync(path.join(outDir, 'retained-trial.json'), JSON.stringify({ result: JSON.parse(before.result), manifest: JSON.parse(before.manifest) }, null, 2) + '\n')
+    const immediate = await page.evaluate(() => {
+      const s = window.__store.getState(); s.setSpeedMult(1); s.startTrialRun()
+      return s === window.__store.getState() ? null : window.__store.getState().playback
+    })
+    assert.equal(immediate.simTimeS, 0)
+    assert.equal(immediate.playing, true)
+    for (const speed of [1, 5]) {
+      await play(speed)
+      const cursor = (await snap()).playback.simTimeS
+      await wait(t => window.__store.getState().playback.simTimeS > t, cursor, 2500)
+      await pause()
+      assert.deepEqual(await serialized(), before, `Retained completion changed at ${speed}x`)
+    }
+    assert.equal(liveWorkers(await snap()).length, 0)
+    return { cursorAtReplayStart: immediate.simTimeS, completedAtMs: before.completedAtMs,
+      observedThroughS: before.observedThroughS, resultSha256: createHash('sha256').update(before.result).digest('hex'),
+      manifestLedgerAndResultByteEqual: true, speeds: [1, 5] }
+  })
+
+  await check('new-run', 10000, async () => {
+    const old = await snap()
+    await reset()
+    const clean = await snap()
+    assert.equal(clean.trial.manifest, null)
+    assert.equal(clean.trial.status, 'idle')
+    assert.notEqual(clean.playback.runId, old.playback.runId)
+    await play(); await waitReady(); await pause()
+    const next = await snap()
+    assert.equal(next.trial.manifest.runId, clean.playback.runId)
+    assert.notEqual(next.trial.manifest.runId, old.trial.manifest?.runId)
+    return { previous: old.trial.manifest, cleanRunId: clean.playback.runId, next: next.trial.manifest }
+  })
+
+  await check('mixed-formation', 12000, async () => {
+    const formationIds = await page.evaluate(() => window.__store.getState().scenario.entities
+      .filter(e => e.kind === 'uas' && (e.formation?.count ?? 1) > 1).map(e => e.id))
+    if (!formationIds.length) return 'no formation in fixture'
+    await complete()
+    const pair = await page.evaluate(ids => {
+      const view = window.__view(), a = window.__api
+      for (const id of ids) for (const event of view.attrition.events.filter(e => e.uasId === id && e.killDelta === 1 && !e.softShot)) {
+        const t1 = event.tEffectS + 0.05, t2 = Math.min(view.durationS, t1 + 1)
+        if (t2 <= t1) continue
+        const one = a.track.trialMemberStatesAt(view, id, t1), two = a.track.trialMemberStatesAt(view, id, t2)
+        const killed = one.find(m => m.memberIdx === event.shipIdx)
+        const survivor = one.find(m => m.outcome === 'active' && two[m.memberIdx]?.outcome === 'active' &&
+          JSON.stringify(m.position) !== JSON.stringify(two[m.memberIdx].position))
+        if (killed?.outcome === 'hard-kill' && survivor) return { id, t1, t2, killed: killed.memberIdx, survivor: survivor.memberIdx, one, two }
+      }
+      throw new Error('Formation exists, but this retained draw has no observable hard-kill / moving-survivor interval')
+    }, formationIds)
+    const positions = []
+    for (const t of [pair.t1, pair.t2]) {
+      await page.evaluate(t => window.__store.getState().scrubTo(t), t); await settle()
+      positions.push(await page.evaluate(pair => {
+        const stage = window.__stage()
+        return [pair.killed, pair.survivor].map(i => {
+          const nodes = stage.find(n => n.name() === `member:${pair.id}:${i}`)
+          if (nodes.length !== 1) throw new Error(`Missing rendered member ${pair.id}:${i}`)
+          return { x: nodes[0].x(), y: nodes[0].y() }
+        })
+      }, pair))
+    }
+    assert.deepEqual(positions[0][0], positions[1][0])
+    assert.notDeepEqual(positions[0][1], positions[1][1])
+    for (const [i, members] of [pair.one, pair.two].entries()) {
+      assert.deepEqual(positions[i], [members[pair.killed].position, members[pair.survivor].position])
+    }
+    return { ...pair, renderedPositions: positions }
+  })
+
+  await check('edit-invalidation', 12000, async () => {
+    await fresh(); await pause()
+    const edit = await page.evaluate(async () => {
+      const { analysisBasisSignature } = await import('/src/state/analysisBasis.ts')
+      const s = window.__store.getState(), sensor = s.scenario.entities.find(e => e.kind === 'sensor')
+      if (!sensor) throw new Error('Fixture has no sensor')
+      const basis = analysisBasisSignature(s.scenario), runId = s.playback.runId
+      s.moveEntity(sensor.id, { x: sensor.pos.x + 10, y: sensor.pos.y })
+      const changed = window.__store.getState()
+      const invalidated = { status: changed.trial.status, manifest: changed.trial.manifest, result: changed.trial.result,
+        runId: changed.playback.runId, basis: analysisBasisSignature(changed.scenario) }
+      changed.undo()
+      const restored = window.__store.getState()
+      return { basis, runId, invalidated, restored: { basis: analysisBasisSignature(restored.scenario),
+        status: restored.trial.status, manifest: restored.trial.manifest, result: restored.trial.result } }
+    })
+    assert.equal(edit.invalidated.status, 'idle')
+    assert.equal(edit.invalidated.manifest, null); assert.equal(edit.invalidated.result, null)
+    assert.notEqual(edit.invalidated.runId, edit.runId); assert.notEqual(edit.invalidated.basis, edit.basis)
+    assert.equal(edit.restored.basis, edit.basis)
+    assert.equal(edit.restored.status, 'idle'); assert.equal(edit.restored.manifest, null); assert.equal(edit.restored.result, null)
+    await play(); await waitReady(); await pause()
+    const retained = await serialized()
+    await page.evaluate(() => { const s = window.__store.getState(); s.patchScenario({ name: `${s.scenario.name} · presentation check` }) })
+    assert.deepEqual(await serialized(), retained)
+    assert.equal((await snap()).trial.status, 'ready')
+    return { ...edit, presentationRetained: true }
+  })
+
+  await check('error-no-fallback', 9000, async () => {
+    await overview(); await reset()
+    const injected = await page.evaluate(() => {
+      const s = window.__store.getState(); s.startTrialRun()
+      const t = window.__store.getState().trial
+      const message = { type: 'trial-error', requestToken: t.requestToken, runId: t.manifest.runId,
+        basisSignature: t.manifest.basisSignature, message: 'R5 injected trial failure' }
+      s.trialMessage(message)
+      return message
+    })
+    await wait(() => window.__store.getState().trial.status === 'error')
+    await settle()
+    const s = await snap()
+    assert.equal(s.playback.playing, false)
+    assert.equal(s.playback.startedAtMs, null)
+    const kpi = page.locator('[data-widget-type="kpi-tiles"]')
+    assert.equal(await kpi.locator('.tile, .tv').count(), 0)
+    assert.match(await kpi.innerText({ timeout: timeout() }), /R5 injected trial failure/)
+    await page.locator('.timeline button.play[aria-label="Retry"]').waitFor({ state: 'visible', timeout: timeout() })
+    // Direct injection bypasses the worker client's finish/terminate path. Reset
+    // after inspection cancels that real worker; do not count it as a production leak.
+    await reset()
+    assert.equal(liveWorkers(await snap()).length, 0)
+    return { injected, status: s.trial.status, playing: s.playback.playing, forecastTiles: 0, retry: true }
+  })
+
+  await check('thirty-runs', 65000, async () => {
+    const ids = [], timings = []
+    for (let i = 0; i < 30; i++) {
+      await reset()
+      const before = trialWorkers(await snap()).length
+      const start = performance.now()
+      await play(1000)
+      const ready = await waitReady()
+      timings.push(performance.now() - start)
+      ids.push(ready.trial.manifest.runId)
+      await complete()
+      const end = await snap()
+      assert.equal(trialWorkers(end).length - before, 1, `Run ${i + 1} worker count`)
+      assert.equal(liveWorkers(end).length, 0, `Run ${i + 1} live workers`)
+    }
+    assert.equal(new Set(ids).size, 30)
+    return { runs: 30, uniqueManifestIds: new Set(ids).size, ids, liveTrialWorkers: liveWorkers(await snap()).length,
+      preparationRoundTripMs: { samples: timings, mean: timings.reduce((a, b) => a + b, 0) / timings.length, max: Math.max(...timings) } }
+  })
+
+  await check('perf-play', 19000, async () => {
+    await overview(); await complete()
+    const retained = await serialized(), samples = []
+    for (const speed of [1, 5]) {
+      await page.evaluate(speed => {
+        const s = window.__store.getState()
+        if (window.__api.selectors.selectDurationS(s) <= speed * 6) throw new Error('Fixture too short for five seconds of uninterrupted playback')
+        s.pauseRun(); s.scrubTo(0); s.setSpeedMult(speed)
+        if (!PerformanceObserver.supportedEntryTypes.includes('longtask')) throw new Error('Long Task API unavailable')
+        window.__longtasks = []
+        window.__perfObserver?.disconnect()
+        window.__perfObserver = new PerformanceObserver(list => window.__longtasks.push(...list.getEntries().map(e => ({ start: e.startTime, duration: e.duration }))))
+        window.__perfObserver.observe({ type: 'longtask', buffered: false })
+        window.__perfStart = performance.now()
+        s.startTrialRun()
+      }, speed)
+      await wait(() => performance.now() - window.__perfStart >= 5000, null, 6500)
+      const sample = await page.evaluate(speed => {
+        const s = window.__store.getState()
+        const end = performance.now(), elapsedMs = end - window.__perfStart
+        const playing = s.playback.playing, cursor = s.playback.simTimeS
+        s.pauseRun()
+        window.__longtasks.push(...window.__perfObserver.takeRecords().map(e => ({ start: e.startTime, duration: e.duration })))
+        window.__perfObserver.disconnect()
+        const tasks = window.__longtasks.filter(e => e.start >= window.__perfStart && e.start < end)
+        return { speed, elapsedMs, playing, cursor, count: tasks.length, maxMs: Math.max(0, ...tasks.map(e => e.duration)), tasks }
+      }, speed)
+      assert.ok(sample.playing && sample.elapsedMs >= 5000)
+      assert.ok(Math.abs(sample.cursor - sample.elapsedMs / 1000 * speed) < Math.max(1, speed * 0.6), JSON.stringify(sample))
+      assert.deepEqual(await serialized(), retained)
+      samples.push(sample)
+    }
+    return { samples, longTaskFloorMs: 50, interpretation: 'Capture only; zero entries does not prove tasks below 50 ms or a frame-time target.' }
+  })
+
+  await check('export', 24000, async () => {
+    // Real ensembles, bounded to four replicates; no fabricated summaries. This
+    // explicit browser-only input change gets its own clean completed trial.
+    await page.evaluate(() => window.__store.getState().patchScenario({ runMode: 'monte-carlo', replicates: 4 }))
+    await fresh(1000); await complete()
+    await page.evaluate(() => { const s = window.__store.getState(); s.runMonteCarlo(); s.runSensitivity() })
+    await wait(() => { const s = window.__store.getState(); return s.mc.status === 'done' && s.mc.sensitivity.status === 'done' }, null, 16000)
+    const capture = await page.evaluate(async () => {
+      const [{ runExportObject }, { engagementPicture }, { buildAarSummary }, { formatRunLabel }, mc] = await Promise.all([
+        import('/src/io/persist.ts'), import('/src/analysis/impact.ts'), import('/src/analysis/aar.ts'),
+        import('/src/state/labels.ts'), import('/src/panels/analysis/widgets/mc.ts'),
+      ])
+      const s = window.__store.getState(), p = s.playback, view = window.__view()
+      if (!window.__api.selectors.selectRunComplete(s)) throw new Error('Export requires completed observation')
+      const { assessments, report, impacts } = engagementPicture(s.scenario)
+      const run = { id: p.runId, label: formatRunLabel(p.runSeq), sequence: p.runSeq,
+        startedAt: new Date(p.startedAtMs).toISOString(), completedAt: new Date(p.completedAtMs).toISOString(),
+        durationS: window.__api.selectors.selectDurationS(s), observedThroughS: p.observedThroughS }
+      const out = runExportObject(s.scenario, run, assessments, report, buildAarSummary(s.scenario, assessments, report, impacts),
+        mc.currentSummary(s.mc, p.runId), mc.currentSensitivity(s.mc, p.runId), view)
+      return { out, manifest: s.trial.manifest, events: s.trial.result.report.events }
+    })
+    fs.writeFileSync(path.join(outDir, 'export.json'), JSON.stringify(capture.out, null, 2) + '\n')
+    const groups = capture.out.resultGroups
+    assert.ok(groups.trial)
+    assert.deepEqual(groups.trial.manifest, capture.manifest)
+    assert.deepEqual(groups.trial.attrition.events, capture.events)
+    assert.ok(Object.keys(groups.trial.counts).length > 0)
+    assert.ok(Object.values(groups.trial.counts).every(v => Number.isInteger(v) && v >= 0))
+    assert.ok(groups.trial.attrition.events.every(e => [e.killDelta, e.shipIdx].every(Number.isInteger)))
+    assert.equal(groups.trial.measures.buildRevision, 'Build revision unavailable')
+    for (const key of ['assessments', 'attrition', 'requirements', 'summary', 'mcSummary', 'sensitivity']) assert.ok(groups[key], `Missing ${key}`)
+    return { file: 'export.json', groups: Object.keys(groups), counts: groups.trial.counts,
+      events: capture.events.length, manifest: capture.manifest, ensembleReplicates: 4, byteEqualManifestAndEvents: true }
+  })
+
+  await check('keyboard', 10000, async () => {
+    await overview()
+    if ((await snap()).trial.status !== 'ready') { await fresh(); await pause() }
+    await page.evaluate(() => { const s = window.__store.getState(); s.pauseRun(); s.scrubTo(0); s.setSpeedMult(1); document.activeElement?.blur() })
+    await settle()
+    const live = page.locator('.live-strip [aria-live="polite"]')
+    const before = await live.innerText({ timeout: timeout() })
+    await page.keyboard.press('Space')
+    await wait(() => window.__store.getState().playback.playing)
+    await wait(() => window.__store.getState().playback.simTimeS >= 1, null, 2500)
+    const running = await live.innerText({ timeout: timeout() })
+    assert.notEqual(running, before)
+    await page.keyboard.press('Space')
+    await wait(() => !window.__store.getState().playback.playing)
+    // Arrow keys belong to the native scrub range, not the global key handler.
+    await page.locator('.timeline input.scrub').focus({ timeout: timeout() })
+    const left = (await snap()).playback.simTimeS
+    await page.keyboard.press('ArrowRight')
+    await wait(t => window.__store.getState().playback.simTimeS > t, left)
+    const right = (await snap()).playback.simTimeS
+    await page.keyboard.press('ArrowLeft')
+    await wait(t => window.__store.getState().playback.simTimeS < t, right)
+    await settle()
+    const after = await live.innerText({ timeout: timeout() })
+    assert.match(after, /Paused|Replay/)
+    assert.notEqual(after, before)
+    return { before, running, after, beforeArrow: left, afterRight: right, afterLeft: (await snap()).playback.simTimeS }
+  })
+
+  await check('screenshots', 24000, async () => {
+    const captures = []
+    const screenshot = async name => {
+      await page.mouse.move(10, 10)
+      await settle()
+      await page.screenshot({ path: path.join(outDir, name), fullPage: true, animations: 'disabled', timeout: timeout(5000) })
+      captures.push({ name, viewport: page.viewportSize(), playback: (await snap()).playback })
+    }
+    // Restore the original fixture through the production parser before evidence.
+    await page.evaluate(async raw => {
+      const { parseAutosave } = await import('/src/io/persist.ts')
+      window.__store.getState().loadScenario(parseAutosave(raw), { fit: 'always' })
+    }, fs.readFileSync(fixture, 'utf8'))
+    await page.setViewportSize({ width: 1400, height: 900 })
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await overview(); await reset(); await settle()
+    assert.match(await page.locator('.live-strip').innerText({ timeout: timeout() }), /Simulated trial · ready/)
+    await screenshot('execute-ready.png')
+    await at130(); await screenshot('execute-paused.png')
+    await complete(); await screenshot('execute-complete.png')
+    await page.locator('#board-phase-analyze').click({ timeout: timeout() })
+    await page.locator('.trial-summary').first().waitFor({ state: 'visible', timeout: timeout() })
+    await screenshot('analyze-complete.png')
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await overview(); await reset()
+    await wait(() => matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      document.querySelector('.live-strip')?.textContent.includes('Simulated trial · ready'))
+    await settle()
+    assert.equal((await snap()).trial.status, 'idle')
+    await screenshot('compact-ready.png')
+    const readyOverflow = await page.locator('.right-panel').evaluate(e => ({ scrollWidth: e.scrollWidth, clientWidth: e.clientWidth }))
+    assert.ok(readyOverflow.scrollWidth <= readyOverflow.clientWidth, JSON.stringify(readyOverflow))
+    await play(1000); await waitReady(); await complete(); await screenshot('compact-complete.png')
+    const completeOverflow = await page.locator('.right-panel').evaluate(e => ({ scrollWidth: e.scrollWidth, clientWidth: e.clientWidth }))
+    assert.ok(completeOverflow.scrollWidth <= completeOverflow.clientWidth, JSON.stringify(completeOverflow))
+    assert.deepEqual(result.pageErrors, [], 'Unexpected page errors (collected throughout)')
+    assert.deepEqual(result.consoleErrors, [], 'Unexpected console errors (collected throughout)')
+    return { captures, readyOverflow, completeOverflow, consoleWarnings: result.consoleWarnings.length }
+  })
+
+  // Publish before shutdown too: a stuck browser close cannot erase the checks.
+  publish()
+  try {
+    await Promise.race([context?.close(), new Promise(resolve => setTimeout(resolve, 1000))])
+    await Promise.race([browser?.close(), new Promise(resolve => setTimeout(resolve, 1000))])
+  } catch (error) {
+    const last = result.checks.at(-1)
+    last.pass = false; last.detail += `; shutdown: ${String(error)}`
+  }
+  if (result.pageErrors.length || result.consoleErrors.length) {
+    const last = result.checks.at(-1)
+    last.pass = false
+    last.detail += '; page/console error arrays are nonempty (including shutdown)'
+  }
+  publish()
+  process.send?.({ kind: 'done' })
+}

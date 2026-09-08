@@ -8,6 +8,10 @@ import { useStore } from '../state/store'
 import { selectDurationS } from '../state/selectors'
 import { engagementPicture } from '../analysis/impact'
 import { OutcomeSummary } from './analysis/OutcomeSummary'
+import { installTrial, observeTrial } from './analysis/widgets/trialTestState'
+import { runReplicates } from '../playback/mcRun'
+import { DEFAULT_KPI_TILES } from '../state/analysisLayout'
+import { TRIAL_KPI_LABELS } from './analysis/widgets/labels'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading panel needs the two in step.
@@ -48,14 +52,16 @@ describe('AnalysisPanel lenses', () => {
     expect(widgetTypes(render())).toEqual(RUN_SUMMARY)
   })
 
-  it('leads Analyze with full-run validity and outcomes without editing the saved layout or run', () => {
+  it('leads Analyze with trial results, separate Forecast and Monte Carlo without editing the saved layout or run', () => {
     const state = useStore.getState()
     const html = render({ phase: 'analyze' })
-    expect(widgetTypes(html)).toEqual(['run-validity', 'projection', 'time-series', 'kpi-tiles', 'threat-picture'])
-    expect(html).toContain('Full-run results · entire configured duration')
-    expect(html).toContain('<summary>Cursor-scoped supplemental data</summary>')
+    expect(widgetTypes(html)).toEqual(['kpi-tiles', 'time-series', 'threat-picture', 'run-validity', 'projection'])
+    expect(html).toContain('aria-label="Trial results"')
+    expect(html).toContain('aria-label="Forecast"')
+    expect(html).toContain('<summary>Monte Carlo</summary>')
+    expect(html).toContain('<summary>Trial cursor telemetry</summary>')
     expect(html.indexOf('data-widget-type="run-validity"')).toBeLessThan(html.indexOf('class="outcome-summary"'))
-    expect(html.indexOf('class="outcome-summary"')).toBeLessThan(html.indexOf('Cursor-scoped supplemental data'))
+    expect(html.indexOf('aria-label="Trial results"')).toBeLessThan(html.indexOf('aria-label="Forecast"'))
     expect(html).toContain('First detect')
     expect(html).toContain('First effect')
     expect(html).toContain('Min warning')
@@ -67,6 +73,26 @@ describe('AnalysisPanel lenses', () => {
     expect(useStore.getState().playback).toBe(state.playback)
     expect(useStore.getState().scenario).toBe(state.scenario)
     expect(useStore.getState().mc).toBe(state.mc)
+  })
+
+  it('keeps ensemble means and intervals in Monte Carlo while Forecast stays deterministic', () => {
+    const { scenario } = installTrial(3)
+    const summary = runReplicates({ ...scenario, replicates: 2 })
+    const mc = { ...summary, kills: { ...summary.kills, mean: summary.kills.mean.map(() => 123) } }
+    const state = useStore.getState()
+    useStore.setState({ mc: { ...state.mc, status: 'done', runId: state.playback.runId, summary: mc } })
+    const html = render({ phase: 'analyze' })
+    const forecast = html.slice(html.indexOf('aria-label="Forecast"'), html.indexOf('aria-label="Monte Carlo"'))
+    const picture = engagementPicture(scenario)
+    expect(forecast).toContain(renderToStaticMarkup(<OutcomeSummary scenario={scenario} assessments={picture.assessments} report={picture.report} />))
+    expect(forecast).not.toContain('MC mean')
+    const ensemble = html.slice(html.indexOf('aria-label="Monte Carlo"'))
+    expect(ensemble).toContain('Mean kills · 123')
+    expect(ensemble).toContain('95% mean CI')
+    expect(ensemble).toContain('95% Wilson')
+    expect(ensemble).toContain('n=2')
+    useStore.setState({ mc: { ...useStore.getState().mc, status: 'stale' } })
+    expect(render({ phase: 'analyze' })).toContain('No current ensemble result.')
   })
 
   it('preserves custom widget order and user presets in Analyze', () => {
@@ -84,6 +110,7 @@ describe('AnalysisPanel lenses', () => {
   })
 
   it('keeps completed products compact without duplicating the outcome or full validity', () => {
+    installTrial()
     const state = useStore.getState()
     const durationS = selectDurationS(state)
     useStore.setState({ playback: {
@@ -96,22 +123,22 @@ describe('AnalysisPanel lenses', () => {
     expect(html).toContain('Export debrief JSON')
     expect(html).toContain('Capture final PNG')
     expect(html).toContain('New clean run')
-    expect(html).toContain('Full-run system and component record')
-    expect(html).toContain('Full-run threat record')
-    expect(html).toContain('Full-run engagement event ledger')
+    expect(html).toContain('Trial system and component record')
+    expect(html).toContain('Trial threat record')
+    expect(html).toContain('Trial engagement event ledger')
     expect(html).not.toContain('class="run-validity validity-')
 
     useStore.getState().applyLens('sensors')
     const sensors = render({ phase: 'analyze' })
     expect(sensors).not.toContain('class="outcome-summary"')
     expect(sensors).toContain('class="run-validity validity-')
-    expect(sensors).toContain('Full-run system and component record')
+    expect(sensors).toContain('Trial system and component record')
   })
 
   it('routes production input controls to Prepare while standalone editing remains available', () => {
     useStore.getState().applyLens('effectors')
     const html = render({ phase: 'analyze', onOpenPreparation: () => {} })
-    expect(html).toContain('Edit run settings in Prepare')
+    expect(html).toContain('Edit fire doctrine in Prepare')
     expect(html).not.toContain('data-role="roe"')
     expect(render()).toContain('data-role="roe"')
   })
@@ -128,15 +155,39 @@ describe('AnalysisPanel lenses', () => {
     expect(projection).not.toContain('class="tg')
   })
 
-  it('renders the six default KPI tiles', () => {
-    const html = render()
-    expect(html).toContain('Detect')
-    expect(html).toContain('Track now')
-    expect(html).toContain('ID / class')
-    expect(html).toContain('Engaged')
-    // The two expectation tiles carry a bracketed symbol; the case is the widget's.
-    expect(html).toMatch(/Expected (kills|neutralization)/)
-    expect(html).toMatch(/Leak E\[n\]/i)
+  it('mounts the default KPI widget with idle text before Play and all six realized tiles when ready', () => {
+    const before = useStore.getState().ui.analysis.layout.widgets.find(widget => widget.type === 'kpi-tiles')!
+    const idle = widgetHtml(render(), 'kpi-tiles')
+    expect(idle).toContain('Simulated trial · ready')
+    expect(idle).not.toContain('class="tile"')
+    expect(DEFAULT_KPI_TILES).toHaveLength(6)
+    installTrial(5)
+    const html = widgetHtml(render(), 'kpi-tiles')
+    expect(html.match(/class="tile"/g)).toHaveLength(6)
+    for (const key of DEFAULT_KPI_TILES) expect(html).toContain(TRIAL_KPI_LABELS[key].label)
+    expect(html).toContain('Detect</span><span class="tv">1<small>/3</small>')
+    expect(html).toContain('Engaged</span><span class="tv">2<small>/3</small>')
+    expect(html).toContain('Pre-arrival defeats</span><span class="tv">3</span>')
+    expect(html).toContain('Arrived undefeated</span><span class="tv bad">3</span>')
+    expect(html).not.toMatch(/Expected|E\[k\]|E\[n\]/)
+    expect(useStore.getState().ui.analysis.layout.widgets.find(widget => widget.type === 'kpi-tiles')).toBe(before)
+  })
+
+  it('uses achieved observation for the Analyze summary even when cursor telemetry is rewound', () => {
+    const { view } = installTrial(3)
+    observeTrial(3, 0)
+    const html = render({ phase: 'analyze' })
+    const summary = html.slice(html.indexOf('class="trial-summary"'), html.indexOf('Trial cursor telemetry'))
+    expect(summary).toContain('T+0:03 observed')
+    expect(summary).toContain('Pre-arrival hard kills</span><strong>2</strong>')
+    expect(summary).toContain('Late hard kills</span><strong>0</strong>')
+    expect(summary).toContain('Arrived undefeated</span><strong>0</strong>')
+    observeTrial(view.durationS, 0)
+    useStore.setState({ playback: { ...useStore.getState().playback, completedAtMs: 2 } })
+    const completed = render({ phase: 'analyze' })
+    expect(completed).toContain('Simulated trial · complete')
+    expect(completed).toContain('Late hard kills</span><strong>1</strong>')
+    expect(completed).toContain('Late mission kills</span><strong>1</strong>')
   })
 
   it('puts the ROE control in the fire-doctrine widget of the effectors lens', () => {
@@ -274,6 +325,7 @@ describe('Execute analysis visibility', () => {
   })
 
   it('mounts completed evidence only when the Execute cursor reaches the full duration', () => {
+    installTrial()
     const st = useStore.getState()
     const durationS = selectDurationS(st)
     st.completeRun(durationS)

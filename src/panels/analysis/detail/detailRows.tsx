@@ -1,57 +1,39 @@
-import type { ExecutionHorizon } from '../../../analysis/horizon'
 import type { LadderRow } from '../../../charts/types'
 import { useMemo, type ReactNode } from 'react'
-import type { ComponentTelemetry } from '../../../analysis/systemTelemetry'
-import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
+import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { readTokens, resolveColor } from '../../../charts/tokens'
-import type { DisplayUnits } from '../../../geometry/geo'
-import type { Scenario } from '../../../model/types'
-import type { AttritionReport } from '../../../playback/attritionReport'
-import type { ThreatAssessment } from '../../../playback/sim'
+import { scenarioDurationS } from '../../../model/scenario'
+import { trialSweepAt } from '../../../playback/trialSweepAt'
 import { useStore } from '../../../state/store'
-import { useEngagement, useRunCursor } from '../widgets/controls'
+import { useTrialResult, trialViewOf, trialStateText } from '../widgets/controls'
 
 /** The value glyph for a missing or undefined figure. */
 export const DASH = '—'
 
-/** The store reads and the engagement picture every pane shares. */
-interface DetailRun {
-  scenario: Scenario
-  runId: string
-  setSimTime: (t: number) => void
-  units: DisplayUnits
-  assessments: ThreatAssessment[]
-  report: AttritionReport
-  /** The one quantized cursor time. */
-  t: number
-  durationS: number
-  horizon: ExecutionHorizon
-  tObs: number
-  untouched: boolean
+/** Shared trial selection and bounded observation for every detail pane. */
+export function useDetailRun() {
+  const currentScenario = useStore(s => s.scenario)
+  const runId = useStore(s => s.playback.runId)
+  const setSimTime = useStore(s => s.setSimTime)
+  const units = useStore(s => s.ui.units)
+  const trial = useTrialResult()
+  const view = trialViewOf(trial)
+  const scenario = view?.scenario ?? currentScenario
+  const tObs = view ? trial.horizon : -Infinity
+  const horizon = useMemo(() => ({ scoped: true, horizonS: tObs }), [tObs])
+  const sweep = useMemo(() => view ? trialSweepAt(view, tObs) : undefined, [view, tObs])
+  return { scenario, runId, setSimTime, units, view, sweep, series: trial.series,
+    assessments: view?.assessments ?? [], report: view?.attrition,
+    t: view ? tObs : 0, tObs, horizon, durationS: view?.durationS ?? scenarioDurationS(scenario),
+    untouched: !view, stateText: trialStateText(trial.selection, trial.snapshot?.observedThroughS) }
 }
 
-/** The store selectors, the engagement picture and the run cursor of one pane. */
-export function useDetailRun(): DetailRun {
-  const scenario = useStore((s) => s.scenario)
-  const runId = useStore((s) => s.playback.runId)
-  const setSimTime = useStore((s) => s.setSimTime)
-  const units = useStore((s) => s.ui.units)
-  const { assessments, report } = useEngagement(scenario, runId)
-  const { t, durationS, horizon } = useRunCursor(scenario)
-  const tObs = horizon.scoped ? Math.min(t, horizon.horizonS) : t
-  const untouched = tObs === -Infinity
-  return { scenario, runId, setSimTime, units, assessments, report, t, durationS, horizon, tObs, untouched }
-}
-
-/** This entity's component telemetry at t, or undefined when it is in no group. */
-export function useComponentAt(run: DetailRun, entityId: string): ComponentTelemetry | undefined {
-  const { scenario, runId, assessments, report, tObs } = run
-  return useMemo(() => {
-    void runId
-    return systemTelemetryAt(scenario, assessments, report, tObs, new Map())
-      .flatMap((group) => group.components)
-      .find((component) => component.entityId === entityId)
-  }, [scenario, runId, assessments, report, tObs, entityId])
+/** This entity's sampled component telemetry, absent before Play. */
+export function useComponentAt(run: ReturnType<typeof useDetailRun>, entityId: string) {
+  const { view, tObs } = run
+  return useMemo(() => view ? trialSystemTelemetryAt(view, tObs)
+    .flatMap(group => group.components).find(component => component.entityId === entityId) : undefined,
+  [view, tObs, entityId])
 }
 
 /** One label and value line of a `.rows` block. */

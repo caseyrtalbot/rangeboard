@@ -1,9 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
-import fixture from '../../../playback/__fixtures__/detection-outside-rings.json'
 import { EMPTY_HORIZON, FULL_RUN, type ExecutionHorizon } from '../../../analysis/horizon'
-import { parseAutosave } from '../../../io/persist'
 import { useStore } from '../../../state/store'
+import { installTrial, observeTrial, unstartTrial } from './trialTestState'
 import { SystemStatusWidget } from './SystemStatusWidget'
 
 function render(horizon: ExecutionHorizon) {
@@ -11,35 +10,31 @@ function render(horizon: ExecutionHorizon) {
   return renderToStaticMarkup(<SystemStatusWidget horizon={horizon} id="systems" params={{}} collapsed={false} customize={false} index={0} count={1} />)
 }
 
-describe('SystemStatusWidget visibility', () => {
-  beforeEach(() => {
-    const scenario = parseAutosave(JSON.stringify(fixture))
-    scenario.paths.forEach((path) => { path.startDelayS += 20 })
-    useStore.getState().replaceScenario(scenario)
-    useStore.getState().advanceRun(1)
-    useStore.getState().pauseRun()
-    useStore.getState().scrubTo(2000)
-  })
+describe('SystemStatusWidget trial visibility', () => {
+  beforeEach(() => { installTrial(3) })
 
-  it('retains cursor telemetry, salvos and effect details when unscoped', () => {
+  it('shows retained telemetry, assigned salvos and integer effect counts', () => {
     const html = render(FULL_RUN)
     expect(html).toContain('system-telemetry-head')
-    expect(html).toMatch(/[1-9]\d* salvos/)
-    expect(html).toMatch(/[1-9]\d* effects/)
+    expect(html).toContain('2 effects · 2 trial defeats')
     expect(html).toContain('online')
+    expect(html).toContain('T+0:03 observed')
+    expect(html).not.toMatch(/E\[k\]|expected|planning envelope/)
   })
 
-  it('clamps group summaries and hover detail before the first detection or assignment', () => {
-    const html = render({ scoped: true, horizonS: 1 })
-    expect(html).toContain('0 tracks · 0 salvos')
-    expect(html).toContain('0 now · 0 seen')
-    expect(html).toContain('0 salvos · 0 effects · E[k] 0.00')
-    expect(html).not.toMatch(/[1-9]\d* (salvos|effects|seen|tracks)/)
+  it('withholds an assigned effect until its exact boundary', () => {
+    observeTrial(1.99)
+    const pending = render(FULL_RUN)
+    expect(pending).toContain('0 effects · 0 trial defeats')
+    expect(pending).not.toMatch(/[1-9] effects/)
+    observeTrial(2)
+    expect(render(FULL_RUN)).toContain('2 effects · 2 trial defeats')
   })
 
-  it('shows an empty system list for EMPTY_HORIZON', () => {
+  it('shows no system outcomes at EMPTY_HORIZON before Play', () => {
+    unstartTrial()
     const html = render(EMPTY_HORIZON)
-    expect(html).toContain('No system telemetry yet.')
+    expect(html).toContain('Simulated trial · ready')
     expect(html).not.toContain('system-telemetry-head')
     expect(html).not.toContain('component-telemetry-row')
   })

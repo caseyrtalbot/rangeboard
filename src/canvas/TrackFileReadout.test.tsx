@@ -1,82 +1,68 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { engagementPicture } from '../analysis/impact'
-import { emptyScenario } from '../model/seed'
-import { buildTrackTimeline, PHASE_STYLE } from '../playback/trackState'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mixedTrial } from '../playback/__fixtures__/trialFixture'
+import type { TrialResultView } from '../analysis/trialResult'
 import { useStore } from '../state/store'
 import { TrackFileReadout } from './TrackFileReadout'
 
-function render(): string {
-  const scenario = useStore.getState().scenario
-  const { assessments, report } = engagementPicture(scenario)
-  const timeline = buildTrackTimeline(scenario, assessments, report)
+vi.mock('react-konva', () => ({}))
+let trial: TrialResultView
+
+function render(horizonS: number | null = 3): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(
-    <TrackFileReadout timeline={timeline} assessments={assessments} size={{ w: 1200, h: 800 }} />,
-  )
+  return renderToStaticMarkup(<TrackFileReadout trial={trial} horizonS={horizonS} size={{ w: 1200, h: 800 }} />)
 }
 
 describe('TrackFileReadout', () => {
   beforeEach(() => {
-    const store = useStore.getState()
-    store.replaceScenario(emptyScenario())
-    store.addEntityFromModel('lib-mavic3', { x: 0, y: -3000 })
-    const threat = useStore.getState().scenario.entities.find((entity) => entity.kind === 'uas')!
-    useStore.getState().beginPath(threat.id)
-    useStore.getState().addDraftPoint({ x: 0, y: -100 })
-    useStore.getState().finishPath()
-    useStore.getState().select({ entityIds: [threat.id] })
+    const fixture = mixedTrial()
+    trial = fixture.view
+    useStore.getState().replaceScenario(fixture.scenario)
+    useStore.getState().select({ entityIds: ['swarm'] })
+    useStore.getState().setBoardPhase('prepare')
+    useStore.getState().setSimTime(3)
   })
 
-  it('keeps only current essentials in the compact canvas card', () => {
+  it('keeps current essentials, integer group counts and the Details action', () => {
     const html = render()
-
     expect(html).toContain('class="readout compact"')
-    expect(html).toContain('DJI Mavic 3 (G1 quad) 1')
     expect(html.match(/class="ro-k"/g)?.length).toBe(3)
-    expect(html).toContain('<div class="ro-k">CURSOR</div>')
-    expect(html).toContain('<div class="ro-k">SPEED / HDG</div>')
-    expect(html).toContain('<div class="ro-k">ALT</div>')
-    expect(html).not.toContain('<div class="ro-k">PLATFORM</div>')
-    expect(html).not.toContain('<div class="ro-k">ARRIVAL</div>')
-  })
-
-  it('states the cursor source and retains the Details action', () => {
-    const html = render()
-
-    expect(html).toContain('PLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTED')
-    expect(html).toContain('title="Details in Analysis"')
+    expect(html).toContain('CURSOR')
+    expect(html).toContain('SPEED / HDG')
+    expect(html).toContain('ALT')
+    expect(html).toContain('3 active · 1 hard kill · 1 mission kill · 5 members')
+    expect(html).toContain('SIMULATED TRIAL · THROUGH T+0:03')
     expect(html).toContain('>Details</button>')
+    expect(html).not.toContain('E[k]')
   })
 
-  it('renders the expected-defeat label with the existing ghost color', () => {
-    const scenario = useStore.getState().scenario
-    const threat = scenario.entities.find((entity) => entity.kind === 'uas')!
-    const { assessments, report } = engagementPicture(scenario)
-    const timeline = buildTrackTimeline(scenario, assessments, {
-      ...report,
-      events: [{
-        tS: 5,
-        tEffectS: 10,
-        effectorId: 'fixture-effector',
-        uasId: threat.id,
-        shipIdx: 0,
-        channel: 'kill',
-        softShot: false,
-        effectorType: 'interceptor',
-        channelClass: 'kinetic',
-        lateEffect: false,
-        pk: 0.999,
-        killDelta: 0.999,
-      }],
-    })
-    useStore.getState().setSimTime(10)
-    Object.assign(useStore.getInitialState(), useStore.getState())
-    const html = renderToStaticMarkup(
-      <TrackFileReadout timeline={timeline} assessments={assessments} size={{ w: 1200, h: 800 }} />,
-    )
+  it('uses a frozen member-zero leader position and hard-kill speed', () => {
+    // A fresh retained ledger allows an explicit killed lead-member fixture.
+    const fixture = mixedTrial()
+    fixture.result.report.events[2].shipIdx = 0
+    trial = fixture.view
+    useStore.getState().replaceScenario(fixture.scenario)
+    useStore.getState().select({ entityIds: ['swarm'] })
+    useStore.getState().setSimTime(40)
+    useStore.setState({ camera: { x: 0, y: 0, scale: 1 } })
+    const html = render(3)
+    expect(html).toContain('x1="20" y1="0"')
+    expect(html).toContain('0 kt')
+    expect(html).toContain('3 active')
+  })
 
-    expect(html).toContain(`style="color:${PHASE_STYLE.ghost.color};border-color:${PHASE_STYLE.ghost.color}">EXPECTED DEFEAT</span>`)
-    expect(html).not.toContain('DEFEATED')
+
+  it('uses the shared raw horizon in Execute without rounding a reached scan backward', () => {
+    useStore.getState().setBoardPhase('execute')
+    useStore.setState({ playback: { ...useStore.getState().playback, startedAtMs: 1, simTimeS: 1.1, observedThroughS: 1.1 } })
+    expect(render(1.1)).toContain('>TRACKED</span>')
+  })
+
+  it('retains the configuration card without outcomes before observation', () => {
+    const html = render(null)
+    expect(html).toContain('CONFIGURATION · TRIAL NOT OBSERVED')
+    expect(html).not.toContain('active ·')
+    expect(html).not.toContain('HARD KILL')
+    expect(html).not.toContain('SIMULATED TRIAL')
   })
 })

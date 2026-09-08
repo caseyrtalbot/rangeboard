@@ -1,4 +1,8 @@
 import type { ExecutionHorizon } from '../../../analysis/horizon'
+import type { TrialSelection } from '../../../state/trialSelectors'
+import { trialResultOf } from '../../../analysis/trialResult'
+import { formatTime } from '../../../geometry/geo'
+import { useTrialResult } from '../../../state/useTrialResult'
 import { useMemo } from 'react'
 import type { Scenario } from '../../../model/types'
 import type { EngagementPicture } from '../../../analysis/impact'
@@ -38,7 +42,7 @@ export function RoleSeg<T extends string>({
   )
 }
 
-/** The sim time quantized to the DT grid. The one time hook every widget reads. */
+/** The forecast cursor quantized to the DT grid. */
 export function useSimTimeStep(): number {
   return useStore(selectSimTimeStep)
 }
@@ -47,7 +51,7 @@ export function useSimTimeStep(): number {
  * Refresh the view memo when scenario or run identity changes. The deterministic
  * engine cache is keyed by engine inputs and remains reusable across clean runs.
  */
-export function useEngagement(scenario: Scenario, runId: string): EngagementPicture {
+export function useForecastEngagement(scenario: Scenario, runId: string): EngagementPicture {
   return useMemo(() => {
     void runId
     return engagementPicture(scenario)
@@ -59,7 +63,7 @@ export function useExecutionHorizon(): ExecutionHorizon {
   return useStore(selectExecutionHorizon)
 }
 
-/** The clamped cursor and the run phase every live widget reads. */
+/** The clamped cursor and phase for forecast and transitional consumers. */
 export function useRunCursor(scenario: Scenario): {
   t: number
   horizon: ExecutionHorizon
@@ -73,4 +77,20 @@ export function useRunCursor(scenario: Scenario): {
   const phase = useStore((s) => s.playback.phase)
   const durationS = durationOf(scenario)
   return { horizon, t: Math.min(tS, durationS), durationS, phase, untouched: phase === 'ready' }
+}
+
+export { useTrialResult }
+
+/** Only a started, available trial can supply outcomes to a consumer. */
+export function trialViewOf(trial: ReturnType<typeof useTrialResult>) {
+  const { selection, snapshot } = trial
+  return selection.status === 'ready' && snapshot
+    ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
+    : undefined
+}
+
+export function trialStateText(selection: TrialSelection, horizonS?: number): string {
+  if (selection.status === 'preparing') return 'Preparing trial'
+  if (selection.status === 'error') return selection.message
+  return horizonS == null ? 'Simulated trial · ready' : `Simulated trial · T+${formatTime(horizonS)} observed`
 }

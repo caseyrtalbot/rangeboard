@@ -38,6 +38,10 @@ Breaking one of these breaks the app.
   quantized cursor and observed time. `useExecutionHorizon` and `useRunCursor.horizon`
   expose that scope; scrubbing can narrow it but never advances observation. Changing
   navigation alone never changes scenario, history or playback.
+  Sampled consumers use `trialSelectors.ts`: `selectTrialSelection` validates the retained
+  run and basis, and `selectTrialHorizon` bounds the raw cursor by observed time and the
+  retained result in every phase. `useTrialResult.ts` exposes no snapshot before Play.
+  `selectExecutionHorizon` remains the scope for explicit forecast consumers.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
   clears `future`. Only scenario changes are undoable. A scenario-touching action goes
   through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis
@@ -104,7 +108,7 @@ Breaking one of these breaks the app.
   object key order is ignored and array order is preserved. See the input matrix in
   `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
-- **Internal trial infrastructure (R4):** `trial.ts` runs nominal parameters through
+- **Sampled Play:** `trial.ts` runs nominal parameters with aleatory draws through
   `monteCarloPolicy` → `assessAllThreats` → `resolveEngagements`. Its complete assessments
   and event/attrition ledger remain separate from the deterministic picture and MC summaries.
   Optional sweep capture retains actual scan attempts, admitted member detections and misses,
@@ -119,13 +123,26 @@ Breaking one of these breaks the app.
   replacement or cancellation. Client and store require the current request token, run id,
   basis and matching manifest; terminal deliveries cannot revive a request.
   `prepareTrial` captures a detached scenario and prepares without starting the clock.
-  Internal `startTrialRun` waits for that result before playing. Pause, scrub and frame
+  Ordinary Play calls `startTrialRun` and waits for that result before playing. Repeated
+  Play reuses the pending preparation. Pause, scrub and frame
   navigation cancel a pending automatic start. Material edits, undo/redo, load and reset
   clear the trial using `analysisBasisSignature`; presentation edits preserve it.
   Trial Replay retains the ledger, identity, original completion and achieved observation;
-  New run replaces identity and clears both trial and observation. Nothing is autosaved or
-  archived. These actions are opt-in infrastructure: ordinary UI Play and all visible
-  consumers keep their existing forecast behavior until R5 migrates them together.
+  New run replaces identity and clears both trial and observation; the next Play redraws.
+  No trial is autosaved or archived in application storage. `analysis/trialResult.ts`
+  validates and adapts the captured result; `trialSeries.ts`, `playback/trialTrackState.ts`
+  and `trialSweepAt.ts` derive charts, member outcomes and sensor/effector telemetry from
+  that one ledger and observation history. Execute outcomes stop at the lesser of cursor
+  and observed horizon; unavailable trials never substitute a forecast.
+  `useForecastEngagement` retains the deterministic `engagementPicture` path. Forecast
+  and Monte Carlo are separately labeled, numerically unchanged analyses; their controls
+  live in `panels/analysis/ForecastSettings.tsx` under **Forecast and analysis**.
+  Completed-run export adds `TrialResultGroup` under `resultGroups.trial`, with captured
+  scenario, manifest, ledger, observations, jam decisions, members and integer counts.
+  Its basis is `simulated-trial`, with no ensemble confidence interval or independently
+  instrumented T&E claim. Missing build provenance reads **Build revision unavailable**.
+  `persist.ts` checks run identity and completion; `runResultGroups.ts` revalidates the
+  captured basis and result. Existing forecast/MC groups retain their own semantics.
 - **Worker budget and cancel:** `replicateLoop` and `sensitivityLoop` (`mcRun.ts`)
   are generators that yield a `Checkpoint` after every replicate; `runReplicates` and
   `runSensitivity` drive them synchronously and unchanged. The worker drives them
@@ -168,7 +185,9 @@ src/state/     store.ts: one zustand store (scenario + history + selection + cam
                MC/trial state shapes and their scenario-change reducers), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
-               (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts
+               (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
+               trialSelectors.ts (retained run/basis selection and raw observation horizon),
+               useTrialResult.ts (shared trial snapshot and series hook)
 src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), detection.ts
                (prepareSweep: per-sensor terms resolved once per threat; sweepSensorHits,
                detectionsAt, spawn ring check), killChain.ts (kill-chain
@@ -184,14 +203,16 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                McSummary), mc.worker.ts + mcClient.ts (the replicate worker), trial.ts
                (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
-               (independent internal preparation worker)
+               (independent preparation worker), trialTrackState.ts (retained member
+               outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector state)
 src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), series.ts (chart
                series on the DT grid), runValidity.ts, requirements.ts, uncertainty.ts
                (sampling), parameterBasis.ts (pure spread resolution and enumeration),
                fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
-               threatAggregation.ts, range.ts
+               threatAggregation.ts, range.ts, trialResult.ts (validated trial view and
+               integer counts), trialSeries.ts (observation-bounded trial chart adapters)
 src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that both the
                Board panels and the T&E kit render; reads index.css classes only, no store.
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
@@ -213,10 +234,12 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target, the 
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
                LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/,
-               analysis/detail/), TimelineBar (owns the rAF loop), CommandPalette,
+               analysis/detail/, analysis/ForecastSettings.tsx for forecast/MC controls),
+               TimelineBar (owns the rAF loop), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
 src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and library
-               import/export, runExportObject), runResultGroups.ts (per-group basis/units),
+               import/export, runExportObject), runResultGroups.ts (per-group basis/units
+               and separately typed TrialResultGroup),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
                runtimeValidation.ts + validateScenario.ts (runtime semantics),
                viewState.ts (readSetting and writeSetting over every settings key),
@@ -460,14 +483,15 @@ Each fact below has exactly one definition. Read it there; never add a second co
   lenses never persisted. `Scenario.observedPresetId` is written on reset and first
   play only and stays out of the basis signature. `SURVIVAL_LABELS` and `KPI_LABELS`
   (`widgets/labels.ts`) are the one name table (Leakers, Survives, Survival limit; the
-  effect gate is relabeled at render); `useSimTimeStep` (`widgets/controls.tsx`) is the one
-  quantized time in the panels.
+  effect gate is relabeled at render); `useSimTimeStep` (`widgets/controls.tsx`) supplies
+  quantized forecast time; `useTrialResult` supplies trial cursor telemetry.
   `AnalysisNavigation` keeps all five destinations outside the content scroller;
   `AnalysisLayoutControls` owns view-only preset/add/edit/save controls. WidgetFrame and
   AnalysisSection use keyboard-operable disclosure buttons with named content regions.
-  Analyze groups the unmodified Run summary at render time only; customized widgets keep
-  their stored order and parameters. Full-run time series remain distinct from cursor
-  statistics. DebriefRecord retains completion guards, current-result readers and exports
+  Analyze presents Trial results through observed time, with Trial cursor telemetry,
+  Forecast and Monte Carlo separately labeled; customized widgets keep their stored order
+  and parameters. Trial series remain cursor/observation-bounded in Analyze too.
+  DebriefRecord retains completion guards, current-result readers and exports
   behind Evidence products, without rendering a second OutcomeSummary. Execute replaces
   projection, requirement-gates and sensitivity bodies with “Forecast available in Analyze”
   using the same instance controls without changing saved layouts. Registry horizon metadata
@@ -477,7 +501,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   full-run evidence while scrubbing. Cursor widgets sample within the execution horizon;
   event counts include reached assignments, while effect times, Pk and kill deltas wait for
   the effect. EngagementStrip clips windows and censors lane marks, tooltips and labels.
-  Environment, doctrine, thresholds and the mode chip route Board scenario edits to Prepare.
+  Environment, doctrine and thresholds route Board scenario edits to Prepare. Forecast/MC
+  controls live under Forecast and analysis in Prepare and Settings.
 - **Selection detail** (`src/panels/EntityWorkspace.tsx`): the Board shell routes one
   selected entity into Telemetry, Configure and Model basis. `DetailPane` is the one
   telemetry kind-to-pane map (sensor, effector, uas, c2); Inspector owns configuration
@@ -485,19 +510,18 @@ Each fact below has exactly one definition. Read it there; never add a second co
   the preset id. Multi-selection, boundaries, connections and raid drafts retain the
   existing Inspector. AnalysisPanel renders the widget stack alone; the Board shell owns
   selection detail.
-  Full-run series and ladder builders memo on scenario/run identity; scoped adapters and
-  now-readouts consume the quantized execution horizon. `threatReadoutAt`
-  (`panels/analysis/threatReadout.ts`) shares the existing
-  telemetry readers between the compact canvas card and complete threat detail. Detail
-  readers use `tObs`, the cursor clamped to the execution horizon, and hide unreached
+  Trial series and ladder adapters memo on the retained result and observation horizon.
+  `trialTelemetryAt` and `threatReadoutAt` (`panels/analysis/threatReadout.ts`) share
+  retained telemetry between the compact canvas card and complete threat detail. Detail
+  readers clamp the cursor to the trial observation horizon and hide unreached
   outcomes. Execute moves full-path fields into a Planned path block labeled Planned
-  arrival and Planned CPA; Prepare and Analyze retain full-path scope. The ghost phase
-  reads `EXPECTED DEFEAT` at the readout,
-  never a realized kill; `expectedCount` (`headlines.ts`) is the one expected-count formatter
-  and the engine's null `reportedLeakers` is the one no-asset signal for display. Model source disclosures preserve all provenance fields.
+  arrival and Planned CPA; Prepare and Analyze retain full-path scope. Forecast
+  expected-defeat semantics remain separate from sampled hard/mission kills.
+  `expectedCount` (`headlines.ts`) formats forecast counts, and null `reportedLeakers`
+  remains the no-asset signal for display. Model source disclosures preserve all provenance fields.
   `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL`
   (`SystemStatus.tsx`) the one component-state word.
-- **Chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) =>
+- **Forecast chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) =>
   Series[]`, `LadderRow[]` or `ChartMark[]`, a series sampled from t = 0 at DT to
   `scenarioDurationS`, NaN where undefined, one `engagementPicture` call per builder.
   `trackSlots` assigns the five chart hues by first detection and never reassigns under a
@@ -508,6 +532,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   span when no legend is shown.
   Ladder clips spans and their labels at the horizon. Tornado shows the Analyze forecast
   placeholder for a scoped horizon. Builders and full-run numerical results stay intact.
+  `src/analysis/trialSeries.ts` separately builds `simulated-trial` step series and ladders
+  from retained observations and events. Samples, marks and spans end at the trial horizon;
+  `useTrialResult` supplies the same bounded series to execution widgets and detail panes.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `Scenario.deletedSeedIds` keeps the seed merge from
@@ -618,13 +645,11 @@ Konva conventions:
   live canvas alone and the dashed rings stay untouched between publications. The frame
   clock is mounted once, in `LiveScene`; the static scene reads the published `simTimeS`
   and re-renders only when the held-sensor set changes.
-- The snapped per-publication values (the sensor sweep, track states, effector states,
-  the held-sensor set) come from `sweepAt(scenario, timeline, simTimeS)`
-  (`src/playback/sweepAt.ts`): one computation per instant, shared by the live scene, the
-  static scene, the track card and the threat pane. `threatReadoutAt` reuses that sweep
-  only when its time matches `tObs`; a forward scrub reads telemetry at the execution
-  horizon instead. The timeline comes from `trackTimelineOf`,
-  cached per picture. Both key on `engineKeyOf(scenario)`.
+- Sampled sensor/effector state and held-sensor rings use `trialSweepAt`; member outcomes
+  and geometry use `trialTrackState`. `CanvasStage` passes the retained trial and horizon
+  to `LiveScene`; `StaticScene`, the track card and detail panes read the same observations.
+  A forward preview never exposes later outcomes. Forecast `sweepAt` and `trackTimelineOf`
+  remain separate adapters keyed on `engineKeyOf(scenario)`.
 - A frame creates React elements for what moved. `EntityNode` is memoized on per-entity
   primitives, the pulse phase is one boolean computed per frame (never `displayTimeS`
   itself), and the flying entities render in their own group above the at-rest ones.

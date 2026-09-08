@@ -4,7 +4,7 @@ import type { RunValidityFinding } from '../../../analysis/runValidity'
 import { assessRunValidity } from '../../../analysis/runValidity'
 import type { Entity, RunValidity } from '../../../model/types'
 import { useStore } from '../../../state/store'
-import { useEngagement } from './controls'
+import { useForecastEngagement } from './controls'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 import { State } from '../../../ui/kit'
@@ -81,7 +81,7 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
-  const { assessments } = useEngagement(scenario, runId)
+  const { assessments } = useForecastEngagement(scenario, runId)
   const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
   const tags = useMemo(() => modelsUsed(scenario), [scenario])
   const text = VALIDITY_TEXT[validity.validity]

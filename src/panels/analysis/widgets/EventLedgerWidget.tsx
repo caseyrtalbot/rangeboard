@@ -3,9 +3,8 @@ import { useState } from 'react'
 import { formatTime } from '../../../geometry/geo'
 import type { Scenario } from '../../../model/types'
 import type { AttritionReport } from '../../../playback/attritionReport'
-import { useStore } from '../../../state/store'
 import { CHANNEL_LABEL, CHANNEL_SHORT } from '../../headlines'
-import { useEngagement, useRunCursor } from './controls'
+import { useTrialResult, trialStateText } from './controls'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -21,11 +20,13 @@ export function EventLedgerList({
   report,
   upToS,
   horizon = FULL_RUN,
+  basis = 'forecast',
 }: {
   scenario: Scenario
   report: AttritionReport
   upToS?: number
   horizon?: ExecutionHorizon
+  basis?: 'forecast' | 'trial'
 }) {
   const [visible, setVisible] = useState(EVENT_PAGE)
   const name = (id: string) => scenario.entities.find((entity) => entity.id === id)?.name ?? id
@@ -57,7 +58,7 @@ export function EventLedgerList({
           </span>
           <span className="event-effect">
             P {horizon.scoped && !reached(event.tEffectS, horizon) ? '—' : `${(event.pk * 100).toFixed(1)}%`}
-            <small>ΔE[k] {horizon.scoped && !reached(event.tEffectS, horizon) ? '—' : event.killDelta.toFixed(3)}</small>
+            <small>{basis === 'trial' ? 'Removed' : 'ΔE[k]'} {horizon.scoped && !reached(event.tEffectS, horizon) ? '—' : basis === 'trial' ? event.killDelta.toFixed(0) : event.killDelta.toFixed(3)}</small>
           </span>
         </div>
       ))}
@@ -73,32 +74,29 @@ export function EventLedgerList({
 /** Events assigned by the cursor time. Nothing before the first play. */
 export function EventLedgerWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   void params
-  const scenario = useStore((s) => s.scenario)
-  const runId = useStore((s) => s.playback.runId)
-  const { assessments, report } = useEngagement(scenario, runId)
-  const { t, untouched } = useRunCursor(scenario)
-  const upToS = untouched ? -Infinity : horizon.scoped ? Math.min(t, horizon.horizonS) : t
-  const shown = report.events.filter((event) => event.tS <= upToS).length
-  const threats = assessments.filter((a) => a.status !== 'no-path').length
+  const trial = useTrialResult()
+  const { selection, snapshot } = trial
+  const stateText = trialStateText(selection, snapshot?.observedThroughS)
+  const report = selection.status === 'ready' && snapshot ? selection.result.report : null
+  const shown = report?.events.filter((event) => event.tS <= trial.horizon).length ?? 0
+  const trialHorizon = { scoped: true, horizonS: trial.horizon }
 
   return (
     <WidgetFrame
       id={id}
       horizon={horizon}
       type="event-ledger"
-      title="Event ledger"
-      meta={`planning envelope · ${shown} of ${horizon.scoped ? shown : report.events.length}`}
+      title="Trial event ledger"
+      meta={report ? `${stateText} · ${shown} events` : stateText}
       metaWithinHorizon
       collapsed={collapsed}
       customize={customize}
       index={index}
       count={count}
     >
-      {threats === 0 ? (
-        <p className="muted small">No threats with flight paths.</p>
-      ) : (
-        <EventLedgerList scenario={scenario} report={report} upToS={upToS} horizon={horizon} />
-      )}
+      {report && selection.status === 'ready' ? (
+        <EventLedgerList scenario={selection.scenario} report={report} horizon={trialHorizon} basis="trial" />
+      ) : <p className="muted small">{stateText}</p>}
     </WidgetFrame>
   )
 }

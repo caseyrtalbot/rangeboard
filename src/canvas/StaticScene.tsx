@@ -1,9 +1,7 @@
 import { memo } from 'react'
-import type { Scenario } from '../model/types'
-import { useStore } from '../state/store'
-import { selectSimTimeS } from '../state/selectors'
-import type { TrackTimeline } from '../playback/trackState'
-import { sweepAt } from '../playback/sweepAt'
+import type { TrialResultView } from '../analysis/trialResult'
+import type { TrialSweep } from '../playback/trialSweepAt'
+import { trialSweepAt } from '../playback/trialSweepAt'
 import { BoundaryLayer } from './layers/BoundaryLayer'
 import { FootprintLayer } from './layers/FootprintLayer'
 import { RangeLayer } from './layers/RangeLayer'
@@ -16,25 +14,31 @@ const StaticRangeLayer = memo(RangeLayer)
 const StaticConnectionLayer = memo(ConnectionLayer)
 
 interface Props {
-  scenario: Scenario
-  /** Prefix-aggregated timeline, shared with LiveScene through `trackTimelineOf`. */
-  timeline: TrackTimeline
+  trial: TrialResultView | null
+  horizonS: number | null
 }
 
-/**
- * The layers whose geometry does not move with the frame clock, on their own
- * Konva Layer (one canvas): boundaries, footprints, range rings and
- * connections. A moving glyph repaints the live canvas alone, and the dashed
- * rings here stay untouched between publications.
- *
- * The one time-dependent input is the held-sensor set for FootprintLayer. It
- * derives from the published `simTimeS` through the shared sweep memo, and
- * `sweepAt` keeps the Set identity while its contents are unchanged, so the
- * footprints re-render only when a sensor gains or loses a hold.
- */
-export const StaticScene = memo(function StaticScene({ scenario, timeline }: Props) {
-  const simTimeS = useStore(selectSimTimeS)
-  const activeSensorIds = sweepAt(scenario, timeline, simTimeS).activeSensorIds
+const EMPTY_SENSORS = new Set<string>()
+const recentActiveSets: Set<string>[] = [EMPTY_SENSORS]
+const activeSets = new WeakMap<TrialSweep, Set<string>>()
+// oxlint-disable-next-line react/only-export-components
+export function trialActiveSensorIds(sweep: TrialSweep | null): Set<string> {
+  if (!sweep) return EMPTY_SENSORS
+  const cached = activeSets.get(sweep)
+  if (cached) return cached
+  const ids = new Set(sweep.sensors.filter(s => s.stateAtTime === 'measured' || s.stateAtTime === 'held-between-scans').map(s => s.sensorId))
+  const stable = recentActiveSets.find(previous => previous.size === ids.size && [...ids].every(id => previous.has(id))) ?? ids
+  if (stable === ids) {
+    recentActiveSets.unshift(ids)
+    if (recentActiveSets.length > 4) recentActiveSets.pop()
+  }
+  activeSets.set(sweep, stable)
+  return stable
+}
+
+/** Configured ring geometry is unchanged; only sampled activity varies. */
+export const StaticScene = memo(function StaticScene({ trial, horizonS }: Props) {
+  const activeSensorIds = trialActiveSensorIds(trial && horizonS != null ? trialSweepAt(trial, horizonS) : null)
   return (
     <>
       <StaticBoundaryLayer />

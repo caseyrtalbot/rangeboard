@@ -1,3 +1,6 @@
+import { createTrialManifest } from '../playback/trialTypes'
+import { runTrial } from '../playback/trial'
+import { IDLE_TRIAL } from './runState'
 import { selectEffectiveLayers } from './selectors'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './store'
@@ -23,6 +26,16 @@ import {
 } from '../io/viewState'
 import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { useTeStore } from '../te/state/teStore'
+
+
+/** Supply a real retained result for clock tests; async worker ownership lives in store.trial.test. */
+function prepareReadyTrial() {
+  const st = useStore.getState()
+  if (st.trial.status === 'ready') return
+  const scenario = structuredClone(st.scenario)
+  const manifest = createTrialManifest(scenario, st.playback.runId, analysisBasisSignature(scenario))
+  useStore.setState({ trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result: runTrial(scenario, manifest) } })
+}
 
 function reset() {
   useStore.setState((st) => ({ ui: { ...st.ui, boardPhase: 'prepare', executeLayers: null } }))
@@ -299,6 +312,7 @@ describe('run-scoped playback lifecycle', () => {
 
   it('separates observed playback from scrubbed preview time', () => {
     const st = useStore.getState()
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(12.5)
     st.pauseRun()
@@ -312,6 +326,7 @@ describe('run-scoped playback lifecycle', () => {
 
     // Resume clamps back to the observed horizon; the preview gap is never
     // silently accepted as observed run data.
+    prepareReadyTrial()
     useStore.getState().startRun()
     p = useStore.getState().playback
     expect(p.phase).toBe('running')
@@ -328,6 +343,7 @@ describe('run-scoped playback lifecycle', () => {
 
   it('seals a completed run only after playback advances through the duration', () => {
     const st = useStore.getState()
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(60)
     st.completeRun(60)
@@ -343,6 +359,7 @@ describe('run-scoped playback lifecycle', () => {
   it('gives a clean reset a new id and clears every run-scoped field', () => {
     const st = useStore.getState()
     const before = st.playback
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(18)
     useStore.getState().resetRun('manual')
@@ -359,6 +376,7 @@ describe('run-scoped playback lifecycle', () => {
 
   it('invalidates an active run when an analysis input changes', () => {
     const st = useStore.getState()
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(8)
     const before = useStore.getState().playback
@@ -382,12 +400,14 @@ describe('run-scoped playback lifecycle', () => {
 
   it('stamps the lens on the first play and keeps it for the rest of the run', () => {
     useStore.getState().applyLens('effectors')
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(useStore.getState().scenario.observedPresetId).toBe('effectors')
     // A lens switch mid-run is a view change; the run keeps the lens it began under.
     useStore.getState().applyLens('threat')
     expect(useStore.getState().scenario.observedPresetId).toBe('effectors')
     useStore.getState().pauseRun()
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(useStore.getState().scenario.observedPresetId).toBe('effectors')
     expect(useStore.getState().past).toHaveLength(0)
@@ -395,6 +415,7 @@ describe('run-scoped playback lifecycle', () => {
 
   it('advanceRun stamps the lens only on the first step of an unstarted run', () => {
     useStore.getState().applyLens('iads')
+    prepareReadyTrial()
     useStore.getState().advanceRun(3)
     expect(useStore.getState().scenario.observedPresetId).toBe('iads')
     useStore.getState().applyLens('threat')
@@ -415,6 +436,7 @@ describe('run-scoped playback lifecycle', () => {
   it('undo of an earlier edit keeps the lens the run was started under', () => {
     useStore.getState().setScenarioName('renamed')
     useStore.getState().applyLens('sensors')
+    prepareReadyTrial()
     useStore.getState().startRun()
     useStore.getState().pauseRun()
     useStore.getState().undo()
@@ -433,6 +455,7 @@ describe('run-scoped playback lifecycle', () => {
     expect(stamped).not.toBe(before)
     expect(engineKeyOf(stamped)).toBe(engineKeyOf(before))
     // The first Play under the same lens keeps the object, so no scenario memo misses.
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(useStore.getState().scenario).toBe(stamped)
     useStore.getState().pauseRun()
@@ -449,6 +472,7 @@ describe('run-scoped playback lifecycle', () => {
 
   it('does not invalidate a completed run when saving a presentation frame', () => {
     const st = useStore.getState()
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(60)
     st.completeRun(60)
@@ -1304,6 +1328,7 @@ describe('run sequence persistence', () => {
     useStore.getState().resetRun('manual')
     expect(useStore.getState().playback.runSeq).toBe(seq + 1)
     expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 1))
+    prepareReadyTrial()
     useStore.getState().startRun()
     useStore.getState().advanceRun(5)
     useStore.getState().updateEnvironment({ windSpeedMps: 9 })
@@ -1316,9 +1341,11 @@ describe('run sequence persistence', () => {
   it('the first start of a run reserves the next number for the next startup', () => {
     const store = stubStorage()
     const seq = useStore.getState().playback.runSeq
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 1))
     useStore.getState().pauseRun()
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(store.get(RUNSEQ_KEY)).toBe(String(seq + 1))
   })
@@ -1341,6 +1368,7 @@ describe('applyFrame', () => {
     expect(p.playing).toBe(false)
     expect(p.startedAtMs).toBeNull()
     expect(p.basisSignature).toBeNull()
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(useStore.getState().playback.simTimeS).toBe(0)
     expect(useStore.getState().playback.phase).toBe('running')
@@ -1477,15 +1505,18 @@ describe('monte carlo slice', () => {
     expect(st.mc.basisSignature).toBe(analysisBasisSignature(st.scenario))
   })
 
-  it('startRun launches the replicates under monte-carlo mode only', () => {
+  it('startRun leaves replicates idle in either saved forecast mode', () => {
+    prepareReadyTrial()
     useStore.getState().startRun()
     expect(useStore.getState().mc.status).toBe('idle')
     useStore.getState().resetRun('manual')
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    prepareReadyTrial()
     useStore.getState().startRun()
     const st = useStore.getState()
-    expect(st.mc.status).toBe('error')
-    expect(st.mc.runId).toBe(st.playback.runId)
+    expect(st.mc.status).toBe('idle')
+    expect(st.mc.runId).toBeNull()
+    expect(st.playback.playing).toBe(true)
   })
 
   it('the slice stays out of the scenario and the history', () => {
@@ -1781,6 +1812,7 @@ describe('Execute phase view state', () => {
     st.saveFrame('future')
     const id = useStore.getState().scenario.frames[0].id
     st.scrubTo(0)
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(5)
     const before = useStore.getState().playback

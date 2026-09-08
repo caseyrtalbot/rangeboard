@@ -1,0 +1,241 @@
+R5 sampled experience browser harness — 2026-09-08
+
+Delivery status
+The retained script is r5-browser.mjs.txt, following the R4 .txt convention.
+Authored against the current working tree, including uncommitted R5 source.
+Only static source inspection and Node syntax parsing were performed. The script
+has NOT been executed; no browser, npm script, Vitest, or build was run. Runtime
+success, screenshot appearance, and actual elapsed time remain unverified.
+
+Run against an already-running development server
+The server must expose the current source at http://localhost:5461. This harness
+does not start or stop a server, install dependencies, or use port 5174. Use Node
+with the repository's existing Playwright and installed Chromium. The output
+directory must be writable. Do not set the internal R5_BROWSER_WORKER variable.
+
+  mkdir -p /private/tmp/r5-browser
+  cp /Users/caseytalbot/Projects/rangeboard/docs/field-te/evidence/r5-sampled-experience-2026-09-08/r5-browser.mjs.txt /private/tmp/r5-browser/r5-browser.mjs
+  node /private/tmp/r5-browser/r5-browser.mjs
+
+Optional positional arguments, in order:
+
+  node /private/tmp/r5-browser/r5-browser.mjs /private/tmp/r5-before-capture/scenario.json http://localhost:5461 /private/tmp/r5-browser/out
+
+These are also the defaults. The URL's origin must equal http://localhost:5461;
+other origins fail before launch. Browser requests to port 5174 are blocked.
+Headless Chromium is imported from the absolute repository path specified in the
+brief. A fresh browser context receives the exact fixture text in localStorage
+under rangeboard.scenario.v1 and the string '320' under rangeboard.rightpanel.width
+before application initialization. Existing browser profiles are not used.
+
+Runtime files
+All artifacts go under the chosen out directory, created recursively at runtime:
+r5-browser.json, retained-trial.json, export.json, execute-ready.png,
+execute-paused.png, execute-complete.png, analyze-complete.png, compact-ready.png,
+and compact-complete.png. A failed check may prevent its optional artifact.
+
+r5-browser.json always uses status 'captured'; this is NOT a pass verdict. Inspect
+all 15 named checks and the exit code. Any failed check exits 1. Page errors and
+console errors fail the final check, including errors arriving during shutdown.
+Console warnings are retained for interpretation without automatically failing.
+The top-level commit is git rev-parse HEAD, not proof of clean-tree provenance.
+fixtureSha256 hashes the original fixture bytes, not the later in-memory export
+configuration. The Chromium field records browser.version().
+
+Execution bounds and failure handling
+Each check has its own try/catch and reports {name, pass, detail}. Assertion
+failures do not stop later checks. Explicit wait timeouts are capped by each
+check's remaining budget; an outer per-check timer also bounds evaluate/imports
+and browser operations without native timeout options. A check timeout closes
+the context to stop abandoned operations; subsequent checks still attempt their
+prerequisites and report that the browser is unavailable. Startup failures are
+likewise reported individually for all 15 checks, never represented as executed
+browser assertions.
+
+Browser work has a 210-second budget. A separate Node supervisor checkpoints IPC
+reports and enforces a 230-second worker wall-clock limit, below four minutes
+including its bounded git lookup. It can stop a stuck evaluate/browser process,
+write failed prerequisite entries for missing checks, and kill only its own
+detached child process group. Both normal cleanup waits are bounded to one second.
+The deadline is an execution ceiling, not a promise that every assertion will
+finish successfully on a slow machine. No server process is killed.
+
+Checks and source/selector references
+References are repository-relative file:line locations inspected while writing.
+They may move as the concurrent R5 implementation changes.
+
+1. ready-state: Requires idle trial, unstarted/stopped transport, and visible
+   'Simulated trial · ready'. Inspects actual Konva Text/Line nodes for outcome
+   glyphs, traveling rounds, and beams, plus strip outcome marks. window.__store
+   is exposed by src/main.tsx:23; live text/aria-live is
+   src/panels/analysis/LiveStrip.tsx:17 and :27. Canvas outcome glyphs are in
+   src/canvas/layers/EntityLayer.tsx:542 and :669; shot shapes are in
+   src/canvas/layers/EngagementLayer.tsx:26 and :46.
+
+2. play-default: Calls toggleAnalysisRun, captures synchronous preparation and
+   store transitions, and requires zero cursor/no start stamp until ready. The
+   first clock advance must occur with a ready trial and exactly one new trial
+   worker. The helper is src/playback/runSession.ts:10, not a store method;
+   preparation/start/acceptance are src/state/store.ts:1527, :1560, :1599.
+
+3. rapid-double-start: Calls startTrialRun twice in one browser task. Requires
+   preparing state, the same nonempty request token, one worker, and one posted
+   prepare-trial request, both immediately and after readiness. Worker ownership
+   and termination are src/playback/trialClient.ts:19 and :34; request identity
+   is src/playback/trialMessages.ts:5. Audit filters by worker URL/request type,
+   so MC and sensitivity workers do not inflate trial counts.
+
+4. horizon-agreement: Plays at 1000x, subscribes to the first published cursor
+   >=130, pauses and scrubs to exactly 130 without changing achieved observation.
+   Records actual observation overshoot. Dynamically imports and uses
+   src/state/trialSelectors.ts:18 and :52, src/analysis/trialResult.ts:83 and :195,
+   and src/analysis/liveStats.ts:270. Requires a path-bearing threat and duration
+   >130. Expands grouped strip rows, compares leaf lane names and reached shot/
+   arrival marks, and hovers every leaf to compare its censored tooltip. Strip
+   lanes/censorship/marks are src/panels/analysis/EngagementStrip.tsx:46, :74, :181;
+   DOM selectors are .center > .engstrip, .engstrip-name, .engstrip-svg, .engstrip-tip.
+   Compares all six default .tile .tl/.tv values with realized trial KPIs and
+   exhausts .load-more before comparing every ledger row's time/effect values.
+   Tile rendering: src/panels/analysis/widgets/KpiTilesWidget.tsx:74 and :119.
+   Ledger assignment filter/masking: EventLedgerWidget.tsx:32, :46, :59 in the
+   same directory. Selects a UAS via select({entityIds}), opens
+   #entity-section-telemetry, and checks every cursor row in
+   [data-detail="threat"] [data-section="file"] plus the compact phase pill.
+   Readout resolver: src/panels/analysis/threatReadout.ts:161;
+   detail DOM: src/panels/analysis/detail/ThreatDetail.tsx:112;
+   row DOM: src/panels/analysis/detail/detailRows.tsx:53;
+   compact DOM: src/canvas/TrackFileReadout.tsx:89.
+   Checks exact numeric chart domains, rendered FX reference times, explicit
+   effect-time DOM metadata, and reached member effect timestamps against 130.
+   Domain/mark rendering: src/charts/TimeSeriesChart.tsx:124, :159, :232.
+   Missing lanes, tiles, rows, readout, or chart inspection seams cannot silently
+   satisfy an equality through empty arrays. An empty expected ledger is valid
+   and recorded; a zero masked-future count means that masking case was not
+   exercised by this draw at T+130.
+
+5. sampled-vs-deterministic: At the same paused horizon, compares the actual
+   highlighted Konva placard-ring sensor IDs with measured/held-between-scans
+   IDs from src/playback/trialSweepAt.ts:90. Records whether they differ from
+   src/playback/detection.ts:373. Ring activation is
+   src/canvas/StaticScene.tsx:25; rendering is
+   src/canvas/layers/FootprintLayer.tsx:482 and :763. The harness temporarily
+   exposes placards and disables other sensor ring types using
+   src/state/store.ts:1406, then identifies strokes by sensor position and exact
+   reference radius; active stroke width is 2 (:71), idle is 1
+   (src/canvas/layers/footprintStyle.ts:92). Ambiguous/missing geometry fails.
+   StaticScene is the fourth Konva layer (src/canvas/CanvasStage.tsx:364).
+
+6. completion-and-replay: Completes via actual 1000x transport, writes retained
+   result/manifest, then checks synchronous Replay cursor=0. Result, manifest,
+   and ledger JSON strings remain byte-equal at 1x, 5x, and pause; run identity,
+   completedAtMs, and observedThroughS remain unchanged. No worker stays live.
+   Replay semantics: src/state/store.ts:1560; completion: :1481.
+
+7. new-run: resetAnalysisRun('manual') clears the manifest and changes runId;
+   subsequent Play creates a manifest for the new identity. Reset helper:
+   src/playback/runSession.ts:5; state reset: src/state/store.ts:1511;
+   manifest identity: src/playback/trialTypes.ts:25.
+
+8. mixed-formation: With a formation, searches the retained completed draw for
+   a hard-killed member and a survivor moving over the same later interval.
+   Scrubs to two later cursors and compares actual named Konva member positions
+   with src/playback/trialTrackState.ts:161. The killed position must be identical
+   and the survivor must move. Node names: src/canvas/layers/EntityLayer.tsx:388
+   and :433. Without any formation, passes with exactly 'no formation in fixture'.
+   A formation with no suitable sampled interval fails as unexercised, rather
+   than fabricating a kill or claiming success. The default inspected fixture
+   has no formation.
+
+9. edit-invalidation: Moves a sensor while trial status is ready, requires empty
+   trial/new run/different basis, then undo must restore the original basis with
+   no stale trial. A new ready trial survives a scenario-name presentation edit.
+   Store actions: src/state/store.ts:630, :527, :1054; basis resolver:
+   src/state/analysisBasis.ts:35. The ready trial is paused, not trial-idle.
+
+10. error-no-fallback: Injects trial-error synchronously during preparation with
+    current requestToken, runId, and basisSignature. Requires error, stopped and
+    unstarted playback, zero KPI .tile/.tv counters, injected message, and visible
+    .timeline button.play[aria-label="Retry"]. Acceptance: src/state/store.ts:1599;
+    Retry label: src/panels/TimelineBar.tsx:31. Injection bypasses the client's
+    normal finish callback, so a reset cleans up that real worker afterward.
+
+11. thirty-runs: Thirty sequential reset+Play+actual 1000x completions. Requires
+    30 unique manifest.runId values, one worker per run, and zero live trial
+    workers after each completion. Preparation timings measure browser round
+    trip from Play dispatch to ready acknowledgement, including transport and
+    polling overhead; samples, mean, and max are recorded. Reset/start:
+    src/state/store.ts:1511 and :1560; clock: src/panels/TimelineBar.tsx:48.
+
+12. perf-play: Observes longtask entries over at least five actual wall seconds
+    of uninterrupted 1x playback and another five at 5x. Records elapsed time,
+    cursor advance, entry count/max, and raw entries. Uses replay from zero to
+    avoid exhausting the scenario; result/manifest/completion remain unchanged.
+    No scrub/advanceRun/completeRun is used to fake either timed interval.
+    Publication cadence: src/canvas/frameClock.ts:9 and :17;
+    transport loop: src/panels/TimelineBar.tsx:48.
+
+13. export: Creates a clean completed trial with browser-only runMode=monte-carlo
+    and replicates=4, then runs real MC and sensitivity workers for that identity.
+    Calls src/io/persist.ts:289 with the same argument construction as
+    src/panels/analysis/DebriefRecord.tsx:52 and :80: run metadata, deterministic
+    engagementPicture/assessments/report/AAR, current MC, current sensitivity,
+    and validated retained trial view. No ensemble summaries are fabricated.
+    Current-result selectors: src/panels/analysis/widgets/mc.ts:13 and :18.
+    Asserts trial manifest/events equality, nonnegative integer counts, integer
+    killDelta/shipIdx, and 'Build revision unavailable'. Export group construction:
+    src/io/runResultGroups.ts:37. Forecast group keys are assessments, attrition,
+    requirements, summary; ensemble keys are mcSummary and sensitivity. There
+    are no literal 'forecast' or 'mc' group keys. Writes export.json before
+    assertions so a malformed package can be inspected.
+
+14. keyboard: Blurs controls, uses real Space keypresses to start/pause, and
+    requires the polite live text to change. Focuses .timeline input.scrub and
+    uses ArrowRight/ArrowLeft to move the cursor. Arrows are native range-control
+    behavior, not a global scrub shortcut. Space: src/App.tsx:631;
+    native scrub range: src/panels/TimelineBar.tsx:106;
+    live region: src/panels/analysis/LiveStrip.tsx:27.
+
+15. screenshots: Restores the original fixture through parseAutosave/loadScenario
+    before capturing 1400x900 Execute ready/paused/complete and Analyze complete.
+    At 1280x800 sets reducedMotion='reduce', waits for settled ready text, then
+    captures ready/complete and checks .right-panel scrollWidth<=clientWidth in
+    both states. Lifecycle tab selectors are #board-phase-execute and
+    #board-phase-analyze; selected store phase is setBoardPhase
+    (src/state/store.ts:1383). Completed summary: DebriefRecord.tsx:239.
+
+Interpretation and inspection seams
+Engagement lanes represent threat tracks with paths, not formation members and
+not events. Above 14 tracks the UI groups related names; the harness expands
+groups and counts leaf lanes separately from aggregate headings. Shot marks
+represent each track's first assignment. Arrival diamonds are reached arrivals,
+not successful-effect counts.
+
+Ledger rows appear at assignment time tS. A row can legitimately exist while
+tEffectS is still future. Its effect time, P, and Removed value must remain an
+em dash until the shared horizon reaches tEffectS. Planned arrival/CPA, the
+transport duration, and the engagement strip's full planning axis are not future
+effect leakage. Time-series outcome axes are separately required to end no later
+than the horizon. Selector/readout comparisons verify consumer agreement, not
+independent numerical validation of the sampled engine.
+
+Measured/held-between-scans sensors light rings; coasting sensors can remain in
+the held-track KPI/readout but do not light rings. Equality with deterministic
+detections at one instant is allowed and explicitly recorded. No difference is
+manufactured by changing seeds or retrying until a desired sampled outcome.
+
+Long Task observations have a 50 ms floor. A zero count does not establish a
+sub-50-ms maximum, smooth frame rate, or a performance threshold. perf-play is
+a bounded capture with transport assertions, not a fabricated performance gate.
+
+The script uses the existing window.Konva instance, never imports a second copy.
+Chart domains/FX marks are read from the committed React tree for actual mounted
+TimeSeriesPlot components because axis tick labels alone cannot prove the domain
+endpoint. These are development inspection seams; their absence is a failure.
+This is not pixel-based interpretation of every shape. Screenshots are saved for
+human visual review, and the script does not claim they were visually approved.
+
+The fresh context standardizes Run summary plus an event-ledger widget, exposes
+track telemetry, and uses sensor ring overrides for inspection. These changes
+are browser presentation state only. Export alone changes run settings as noted;
+screenshot capture restores the original fixture. Nothing changes the fixture
+file, source files, another browser profile, or any running server.

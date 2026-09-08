@@ -130,10 +130,12 @@ test('Escape chain: the Location dialog closes first, then the placement, then c
 test('debrief record opens on run completion with a status summary', async (t) => {
   const { page, errors } = await open(t)
   await page.click('#board-phase-analyze')
+  // Sampled Play prepares a trial first; completion needs the matching ready trial.
+  await page.evaluate(() => window.__store.getState().startRun())
+  await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
   await page.evaluate(async () => {
     const s = window.__store.getState()
     const { durationOf } = await import('/src/state/selectors.ts')
-    s.startRun()
     s.completeRun(durationOf(s.scenario))
   })
   await waitFor(page, () => document.querySelector('details.evidence-products'))

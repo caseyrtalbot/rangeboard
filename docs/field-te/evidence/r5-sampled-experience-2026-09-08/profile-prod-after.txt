@@ -1,0 +1,149 @@
+hasStore false
+browser 151.0.7922.34
+recoveryKeys []
+{"label":"prod","loadMs":182,"domContentLoaded":95,"loadEvent":95,"resources":19,"scriptResources":15,"transferKB":1486,"domNodes":1341,"heapMB":9.5}
+{"phase":"idle 3s","wallMs":3001,"ms":3033,"frames":361,"fps":119,"over33":1,"over100":0,"maxFrame":33,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":5,"layoutMs":0,"styleMs":0,"taskMs":82,"layouts":0,"styleRecalcs":10,"domNodes":2186,"heapMB":7.2}
+  profile total 3034 ms; special: (idle)=2962 (program)=67 requestAnimationFrame=4 tick=2
+  files: 
+  fns:
+    
+{"phase":"playback x1 5s (Space key)","wallMs":5048,"ms":5058,"frames":607,"fps":120,"over33":0,"over100":0,"maxFrame":9,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":183,"layoutMs":5,"styleMs":1,"taskMs":444,"layouts":54,"styleRecalcs":12,"domNodes":2193,"heapMB":10.6}
+  profile total 5062 ms; special: (idle)=4642 (program)=240 (garbage collector)=13 fillText=5 save=5 restore=3
+  files: 113ms /assets/index-DlG9DneI.js | 13ms /assets/intercept-BJUY2NM8.js | 5ms /assets/persist-C2e3I36G.js | 3ms /assets/jsx-runtime-B-hcVAMW.js | 2ms /assets/horizon-FBZqanty.js
+  fns:
+    7ms (anonymous) /assets/index-DlG9DneI.js:42
+    7ms setAttr /assets/index-DlG9DneI.js:23
+    4ms measureSize /assets/index-DlG9DneI.js:23
+    4ms (anonymous) /assets/intercept-BJUY2NM8.js:1
+    4ms (anonymous) /assets/index-DlG9DneI.js:23
+    3ms e.<computed> /assets/index-DlG9DneI.js:23
+    3ms drawScene /assets/index-DlG9DneI.js:23
+    3ms T /assets/index-DlG9DneI.js:2
+    3ms _sceneFunc /assets/index-DlG9DneI.js:23
+    3ms os /assets/index-DlG9DneI.js:23
+    3ms setHeight /assets/index-DlG9DneI.js:23
+    3ms fr /assets/intercept-BJUY2NM8.js:1
+    2ms (anonymous) /assets/persist-C2e3I36G.js:1
+    2ms stateAtTime /assets/persist-C2e3I36G.js:1
+    2ms rl /assets/index-DlG9DneI.js:42
+    2ms off /assets/index-DlG9DneI.js:23
+    2ms Tc /assets/index-DlG9DneI.js:42
+    1ms (anonymous) /assets/index-DlG9DneI.js:43
+    1ms multiply /assets/index-DlG9DneI.js:23
+    1ms pm /assets/index-DlG9DneI.js:42
+    1ms r /assets/jsx-runtime-B-hcVAMW.js:1
+    1ms Yf /assets/index-DlG9DneI.js:42
+    1ms At /assets/index-DlG9DneI.js:31
+    1ms (anonymous) /assets/index-DlG9DneI.js:31
+    1ms au /assets/index-DlG9DneI.js:42
+{"phase":"zoom wheel x30","wallMs":1742,"ms":1758,"frames":211,"fps":120,"over33":0,"over100":0,"maxFrame":9,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":47,"layoutMs":2,"styleMs":1,"taskMs":125,"layouts":30,"styleRecalcs":30,"domNodes":2193,"heapMB":12.8}
+  profile total 1758 ms; special: (idle)=1642 (program)=73 save=1 restore=1 clearRect=1 (garbage collector)=1
+  files: 35ms /assets/index-DlG9DneI.js | 2ms /assets/intercept-BJUY2NM8.js | 1ms /assets/horizon-FBZqanty.js | 0ms /assets/jsx-runtime-B-hcVAMW.js
+  fns:
+    2ms T /assets/index-DlG9DneI.js:2
+    2ms (anonymous) /assets/index-DlG9DneI.js:42
+    2ms Tc /assets/index-DlG9DneI.js:42
+    1ms e.<computed> /assets/index-DlG9DneI.js:23
+    1ms (anonymous) /assets/index-DlG9DneI.js:23
+    1ms fr /assets/intercept-BJUY2NM8.js:1
+    1ms fire /assets/index-DlG9DneI.js:23
+    1ms rl /assets/index-DlG9DneI.js:42
+    1ms on /assets/index-DlG9DneI.js:23
+    1ms _getCache /assets/index-DlG9DneI.js:23
+    1ms _getAbsoluteTransform /assets/index-DlG9DneI.js:23
+    1ms off /assets/index-DlG9DneI.js:23
+    1ms drawScene /assets/index-DlG9DneI.js:23
+    1ms e /assets/index-DlG9DneI.js:23
+    1ms setAttr /assets/index-DlG9DneI.js:23
+    1ms getImageData /assets/index-DlG9DneI.js:23
+    1ms qe /assets/index-DlG9DneI.js:31
+    1ms ui /assets/index-DlG9DneI.js:9
+    1ms _ /assets/index-DlG9DneI.js:31
+    1ms xo /assets/index-DlG9DneI.js:9
+    1ms Uh /assets/index-DlG9DneI.js:42
+    0ms _getTransform /assets/index-DlG9DneI.js:23
+    0ms (anonymous) /assets/index-DlG9DneI.js:31
+    0ms _fire /assets/index-DlG9DneI.js:23
+    0ms _calculate /assets/index-DlG9DneI.js:23
+{"phase":"pan drag 40 moves","wallMs":1011,"ms":1033,"frames":123,"fps":119,"over33":0,"over100":0,"maxFrame":17,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":23,"layoutMs":0,"styleMs":0,"taskMs":114,"layouts":2,"styleRecalcs":0,"domNodes":2193,"heapMB":16.2}
+  profile total 1035 ms; special: (idle)=926 (program)=81 save=2 (anonymous)=1 window.__cleanupDrag=1 evaluate=1
+  files: 17ms /assets/index-DlG9DneI.js | 1ms /assets/intercept-BJUY2NM8.js
+  fns:
+    3ms setAttr /assets/index-DlG9DneI.js:23
+    1ms _clearSelfAndDescendantCache /assets/index-DlG9DneI.js:23
+    1ms (anonymous) /assets/index-DlG9DneI.js:23
+    1ms fire /assets/index-DlG9DneI.js:23
+    1ms _getProtoListeners /assets/index-DlG9DneI.js:23
+    1ms _fire /assets/index-DlG9DneI.js:23
+    1ms _sceneFunc /assets/index-DlG9DneI.js:23
+    1ms (anonymous) /assets/index-DlG9DneI.js:9
+    1ms _pointermove /assets/index-DlG9DneI.js:23
+    1ms measureSize /assets/index-DlG9DneI.js:23
+    1ms drawScene /assets/index-DlG9DneI.js:23
+    1ms drawHit /assets/index-DlG9DneI.js:23
+    0ms _getCache /assets/index-DlG9DneI.js:23
+    0ms e.<computed> /assets/index-DlG9DneI.js:23
+    0ms strokeShape /assets/index-DlG9DneI.js:23
+    0ms _setDragPosition /assets/index-DlG9DneI.js:23
+    0ms _getFirstPointerId /assets/index-DlG9DneI.js:23
+    0ms draw /assets/index-DlG9DneI.js:23
+    0ms dn /assets/index-DlG9DneI.js:9
+    0ms _fireChangeEvent /assets/index-DlG9DneI.js:23
+    0ms n /assets/intercept-BJUY2NM8.js:1
+    0ms _getContentPosition /assets/index-DlG9DneI.js:23
+    0ms fr /assets/intercept-BJUY2NM8.js:1
+    0ms _clearTransform /assets/index-DlG9DneI.js:23
+    0ms _useBufferCanvas /assets/index-DlG9DneI.js:23
+{"phase":"lifecycle phases x3 cycles","wallMs":2082,"ms":2116,"frames":252,"fps":119.1,"over33":0,"over100":0,"maxFrame":17,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":101,"layoutMs":11,"styleMs":18,"taskMs":277,"layouts":28,"styleRecalcs":207,"domNodes":2751,"heapMB":15.1}
+  profile total 2106 ms; special: (idle)=1843 (program)=125 (garbage collector)=16 getBoundingClientRect=14 query=3 setAttribute=2
+  files: 46ms /assets/TimeSeriesChart-BpebQS3m.js | 40ms /assets/index-DlG9DneI.js | 3ms /assets/jsx-runtime-B-hcVAMW.js | 1ms /assets/intercept-BJUY2NM8.js | 1ms /assets/teStore-oM7u1sIn.js | 0ms /assets/AnalysisPanel-R6oQKU0e.js | 0ms /assets/tokens-DcoBi8EV.js | 0ms /assets/persist-C2e3I36G.js | 0ms /assets/react-dom-sF8Euvcq.js
+  fns:
+    4ms (anonymous) /assets/TimeSeriesChart-BpebQS3m.js:1
+    4ms (anonymous) /assets/TimeSeriesChart-BpebQS3m.js:51
+    3ms o /assets/TimeSeriesChart-BpebQS3m.js:1
+    3ms (anonymous) /assets/TimeSeriesChart-BpebQS3m.js:2
+    2ms xo /assets/index-DlG9DneI.js:9
+    2ms Rc /assets/index-DlG9DneI.js:9
+    2ms (anonymous) /assets/index-DlG9DneI.js:42
+    2ms Id /assets/index-DlG9DneI.js:10
+    1ms wi /assets/TimeSeriesChart-BpebQS3m.js:2
+    1ms zi /assets/TimeSeriesChart-BpebQS3m.js:2
+    1ms bo /assets/index-DlG9DneI.js:9
+    1ms o /assets/TimeSeriesChart-BpebQS3m.js:2
+    1ms T /assets/index-DlG9DneI.js:2
+    1ms _pointerleave /assets/index-DlG9DneI.js:23
+    1ms Ta /assets/TimeSeriesChart-BpebQS3m.js:2
+    1ms (anonymous) /assets/index-DlG9DneI.js:9
+    1ms br /assets/TimeSeriesChart-BpebQS3m.js:1
+    1ms iA /assets/TimeSeriesChart-BpebQS3m.js:50
+    1ms (anonymous) /assets/index-DlG9DneI.js:43
+    1ms e.createElement /assets/jsx-runtime-B-hcVAMW.js:1
+    1ms (anonymous) /assets/TimeSeriesChart-BpebQS3m.js:53
+    1ms _l /assets/index-DlG9DneI.js:9
+    1ms Ld /assets/index-DlG9DneI.js:10
+    1ms on /assets/index-DlG9DneI.js:23
+    1ms b /assets/index-DlG9DneI.js:9
+{"phase":"library drawer open/close x3","wallMs":1540,"ms":1567,"frames":187,"fps":119.4,"over33":0,"over100":0,"maxFrame":17,"longDurationsMs":[],"longTasks":0,"longMs":0,"longMax":0,"sets":0,"scenarioChanges":0,"scriptMs":10,"layoutMs":3,"styleMs":2,"taskMs":76,"layouts":9,"styleRecalcs":11,"domNodes":2752,"heapMB":16.5}
+  profile total 1567 ms; special: (idle)=1500 (program)=56 focus=3 removeChild=1 requestAnimationFrame=0 postMessage=0
+  files: 6ms /assets/index-DlG9DneI.js
+  fns:
+    1ms Ir /assets/index-DlG9DneI.js:9
+    1ms (anonymous) /assets/index-DlG9DneI.js:42
+    1ms Jc /assets/index-DlG9DneI.js:9
+    1ms Ld /assets/index-DlG9DneI.js:10
+    1ms u_ /assets/index-DlG9DneI.js:42
+    0ms N /assets/index-DlG9DneI.js:9
+    0ms yt /assets/index-DlG9DneI.js:9
+    0ms (anonymous) /assets/index-DlG9DneI.js:9
+    0ms fr /assets/index-DlG9DneI.js:9
+    0ms t /assets/index-DlG9DneI.js:9
+    0ms m /assets/index-DlG9DneI.js:9
+    0ms Rc /assets/index-DlG9DneI.js:9
+    0ms ir /assets/index-DlG9DneI.js:9
+    0ms Wt /assets/index-DlG9DneI.js:9
+    0ms r /assets/index-DlG9DneI.js:9
+    0ms n /assets/index-DlG9DneI.js:9
+    0ms dn /assets/index-DlG9DneI.js:9
+    0ms Pd /assets/index-DlG9DneI.js:10
+    0ms il /assets/index-DlG9DneI.js:9
+page errors/warnings: []

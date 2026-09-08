@@ -2,7 +2,6 @@ import { FORECAST_IN_ANALYZE, reached } from '../../../analysis/horizon'
 import { useMemo, type ReactNode } from 'react'
 import { bdaSFor, commitPkFor, launchPolicyLabel } from '../../../analysis/doctrineFactors'
 import { modelsForEntity } from '../../../analysis/fidelity'
-import { effectorSeries, releaseLadderRows, salvoMarks } from '../../../analysis/series'
 import { boardDesignator } from '../../../canvas/labelLayout'
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
@@ -30,35 +29,19 @@ import {
 /** The effector pane: Pk per track, the magazine, release to effect, doctrine and capacity. */
 export function EffectorDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, runId, setSimTime, assessments, report, t, durationS, horizon } = run
+  const { scenario, setSimTime, assessments, report, t, durationS, horizon } = run
   const model = modelFor(scenario, entity)
   const spec = model?.effector
   const doctrine = effectiveDoctrine(scenario)
   const component = useComponentAt(run, entity.id)
   const color = entityInk(entity, model)
 
-  const series = useMemo(() => {
-    void runId
-    return effectorSeries(scenario, entity.id)
-  }, [scenario, runId, entity.id])
-  const marks = useMemo(() => {
-    void runId
-    return salvoMarks(scenario, entity.id).filter((mark) => !horizon.scoped || reached(mark.tS, horizon))
-  }, [scenario, runId, entity.id, horizon])
-  const releaseRows = useMemo(() => {
-    void runId
-    // The gutter is 84 px (Ladder GUTTER_W): the board designator, as the canvas labels draw it.
-    return releaseLadderRows(scenario, entity.id).filter((row) =>
-      !horizon.scoped || row.spans.some((span) => reached(span.startS, horizon)),
-    ).map((row) => ({
-      ...row,
-      label: boardDesignator(row.label),
-    }))
-  }, [scenario, runId, entity.id, horizon])
-  const bareReleaseRows = useMemo(() => releaseRows.map(bareSpans), [releaseRows])
-  const pk = useMemo(() => series.filter((s) => s.id.startsWith('pk.') && (!horizon.scoped ||
-    report.events.some((event) => event.effectorId === entity.id && event.uasId === s.id.slice(3) && reached(event.tEffectS, horizon)))),
-  [series, report, entity.id, horizon])
+  const series = run.series?.effectors[entity.id] ?? []
+  const marks = run.series?.marks[entity.id] ?? []
+  const releaseRows = (run.series?.engagementLadder ?? []).filter(row => JSON.parse(row.id)[0] === entity.id)
+    .map(row => ({ ...row, label: boardDesignator(row.label) }))
+  const bareReleaseRows = releaseRows.map(bareSpans)
+  const pk = series.filter(s => s.id.startsWith('pk.') && s.values.some(Number.isFinite))
   const rounds = series.find((s) => s.id === 'rounds')
   const salvos = series.find((s) => s.id === 'salvos')
   const magazineSize = spec?.magazineSize
@@ -86,13 +69,13 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
     }),
   )).values()]
 
-  const landed = report.events.filter((event) => event.effectorId === entity.id && reached(event.tEffectS, horizon))
-  const attrition = horizon.scoped ? {
-    shotsFired: landed.filter((event) => event.channelClass === 'kinetic').length,
-    deSalvos: landed.filter((event) => event.channelClass === 'directed-energy').length,
-    jamSalvos: landed.filter((event) => event.channelClass === 'ew').length,
-    expectedRoundsRemaining: magazineSize == null ? null : Math.max(0, magazineSize - landed.length),
-  } : report.effectors.find((e) => e.effectorId === entity.id)
+  const assigned = report?.events.filter(event => event.effectorId === entity.id && reached(event.tS, horizon)) ?? []
+  const attrition = run.untouched ? undefined : {
+    shotsFired: assigned.filter(event => event.channelClass === 'kinetic').length,
+    deSalvos: assigned.filter(event => event.channelClass === 'directed-energy').length,
+    jamSalvos: assigned.filter(event => event.channelClass === 'ew').length,
+    roundsRemaining: component?.capacityRemaining,
+  }
   const capacityRows: DetailRow[] = [
     { label: 'Kinetic shots', value: attrition ? `${attrition.shotsFired}` : DASH },
     { label: 'DE salvos', value: attrition ? `${attrition.deSalvos}` : DASH },
@@ -101,8 +84,8 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
       ? {
           label: 'Rounds remaining',
           value:
-            attrition?.expectedRoundsRemaining != null
-              ? `${attrition.expectedRoundsRemaining}`
+            attrition?.roundsRemaining != null
+              ? `${attrition.roundsRemaining}`
               : DASH,
           unit: ` of ${magazineSize}`,
         }
@@ -142,7 +125,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="effector">
-      <p className="muted small">Planning envelope · deterministic readouts and charts.</p>
+      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}
@@ -190,7 +173,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
           <p className="muted small">No threats with flight paths.</p>
         )}
       </DetailSection>
-      <DetailSection id="capacity" title="Capacity" meta={horizon.scoped ? 'effects reached' : 'full run'}>
+      <DetailSection id="capacity" title="Capacity" meta="Trial assignments reached">
         <Rows rows={capacityRows} />
       </DetailSection>
     </div>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { KPI_KEYS } from '../../../state/analysisLayout'
-import { forecastKillLabel, KPI_LABELS, SURVIVAL_LABELS } from './labels'
+import { forecastKillLabel, KPI_LABELS, TRIAL_KPI_LABELS, SURVIVAL_LABELS } from './labels'
 
 describe('analysis widget labels', () => {
   it('names every KPI key with a label and a hint', () => {
@@ -15,6 +15,9 @@ describe('analysis widget labels', () => {
     expect(forecastKillLabel(true)).toBe('Expected kills')
     expect(forecastKillLabel(false)).toBe('Expected neutralization')
     expect(KPI_LABELS.lateEk.label).toBe('Expected late kills')
+    expect(TRIAL_KPI_LABELS.lateEk.label).toBe('Late defeats')
+    expect(TRIAL_KPI_LABELS.killEk.label).toBe('Pre-arrival defeats')
+    expect(TRIAL_KPI_LABELS.leakEn.label).toBe('Arrived undefeated')
   })
 
   it('carries the three survival names', () => {

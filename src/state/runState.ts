@@ -33,7 +33,7 @@ export interface PlaybackState {
   resetReason: RunResetReason
 }
 
-/** Internal R4 infrastructure. No UI selects this result until R5 integration. */
+/** Captured sampled trial shared by execution consumers; never persisted. */
 export interface TrialState {
   status: 'idle' | 'preparing' | 'ready' | 'cancelled' | 'error'
   requestToken: string | null
