@@ -1,14 +1,6 @@
 import { useState } from 'react'
-import type {
-  EoBand,
-  IrSignature,
-  Provenance,
-  RangeBasis,
-  SensorRole,
-  SpecModel,
-  SwerlingCase,
-  UasSpec,
-} from '../model/types'
+import type { Provenance, SensorRole, SpecModel, UasSpec } from '../model/types'
+import type { SpecEditField, SpecEditValue } from '../model/specEdit'
 import {
   basisFor,
   JAM_BAND_LABEL,
@@ -189,7 +181,7 @@ function MountHeight({
 }: {
   model: SpecModel
   heightM: number | null | undefined
-  onChange: (m: number | null) => void
+  onChange: (raw: string) => void
   note: string
 }) {
   const basis = heightM == null ? 'pf' : basisFor(model, 'mountHeightM')
@@ -202,7 +194,7 @@ function MountHeight({
           step={0.5}
           placeholder={String(MOUNT_HEIGHT_M)}
           value={heightM ?? ''}
-          onChange={(e) => onChange(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
+          onChange={(e) => onChange(e.target.value)}
         />
       </Field>
       <p className="muted small">
@@ -418,7 +410,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
   const units = useStore((s) => s.ui.units)
   const libraryId = useStore((s) => s.selection.libraryId)
   const [copiedModel, setCopiedModel] = useState<{ id: string; sourceId: string } | null>(null)
-  const { updateModel, duplicateModel, deleteModel, resetModelToSeed, select, setRightTab } =
+  const { updateModel, editModel, duplicateModel, deleteModel, resetModelToSeed, select, setRightTab } =
     useStore.getState()
 
   const model = scenario.library.find((m) => m.id === (modelId ?? libraryId))
@@ -439,6 +431,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
   }
 
   const patch = (p: Partial<SpecModel>) => updateModel(model.id, p)
+  /** One named spec field; `editSpecField` owns the rule for that field. */
+  const edit = (field: SpecEditField, value: SpecEditValue) => editModel(model.id, field, value)
   const sensor = model.sensor
   const uas = model.uas
   const effector = model.effector
@@ -470,9 +464,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Field label="Type">
             <select
               value={sensor.sensorType}
-              onChange={(e) =>
-                patch({ sensor: { ...sensor, sensorType: e.target.value as typeof sensor.sensorType } })
-              }
+              onChange={(e) => edit('sensor.sensorType', e.target.value)}
             >
               <option value="radar">radar</option>
               <option value="eo-ir">eo/ir</option>
@@ -483,10 +475,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Field label="Role (sets default range when unknown)">
             <select
               value={sensor.role ?? ''}
-              onChange={(e) => {
-                const role = (e.target.value || undefined) as SensorRole | undefined
-                patch({ sensor: { ...sensor, role } })
-              }}
+              onChange={(e) => edit('sensor.role', e.target.value)}
             >
               <option value="">unset</option>
               {SENSOR_ROLES.map((r) => (
@@ -502,7 +491,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             step={100}
             min={0}
             list="detect-range-options"
-            onChange={(n) => patch({ sensor: { ...sensor, detectRangeM: Math.max(0, n) } })}
+            onChange={(n) => edit('sensor.detectRangeM', n)}
           />
           <Options
             id="detect-range-options"
@@ -511,9 +500,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           {sensor.role && (
             <button
               className="mini"
-              onClick={() =>
-                patch({ sensor: { ...sensor, detectRangeM: SENSOR_ROLE_DEFAULT_RANGE_M[sensor.role!] } })
-              }
+              onClick={() => edit('sensor.detectRangeM', SENSOR_ROLE_DEFAULT_RANGE_M[sensor.role!])}
             >
               Use role default range
             </button>
@@ -523,14 +510,12 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             value={sensor.classifyRangeM ?? 0}
             step={100}
             min={0}
-            onChange={(n) => patch({ sensor: { ...sensor, classifyRangeM: n > 0 ? n : null } })}
+            onChange={(n) => edit('sensor.classifyRangeM', n)}
           />
           <Field label="Range basis">
             <select
               value={sensor.rangeBasis ?? 'sourced'}
-              onChange={(e) =>
-                patch({ sensor: { ...sensor, rangeBasis: e.target.value as RangeBasis } })
-              }
+              onChange={(e) => edit('sensor.rangeBasis', e.target.value)}
             >
               <option value="sourced">sourced figure, target-scaled</option>
               <option value="planning">planning figure, not target-scaled</option>
@@ -543,7 +528,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           </p>
           <SectorField
             value={sensor.sectorDeg}
-            onChange={(n) => patch({ sensor: { ...sensor, sectorDeg: Math.min(360, Math.max(5, n)) } })}
+            onChange={(n) => edit('sensor.sectorDeg', n)}
           />
           <div className="field-row">
             <Num
@@ -551,25 +536,21 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               value={sensor.elevationDeg?.[0] ?? 0}
               min={-10}
               max={90}
-              onChange={(n) =>
-                patch({ sensor: { ...sensor, elevationDeg: [n, sensor.elevationDeg?.[1] ?? 90] } })
-              }
+              onChange={(n) => edit('sensor.elevationMinDeg', n)}
             />
             <Num
               label="Elev max (deg)"
               value={sensor.elevationDeg?.[1] ?? 90}
               min={0}
               max={90}
-              onChange={(n) =>
-                patch({ sensor: { ...sensor, elevationDeg: [sensor.elevationDeg?.[0] ?? 0, n] } })
-              }
+              onChange={(n) => edit('sensor.elevationMaxDeg', n)}
             />
           </div>
           <Num
             label="Alt ceiling (ft, 0 = unknown)"
             value={sensor.maxAltitudeFt ?? 0}
             step={500}
-            onChange={(n) => patch({ sensor: { ...sensor, maxAltitudeFt: n > 0 ? n : null } })}
+            onChange={(n) => edit('sensor.maxAltitudeFt', n)}
           />
           <p className="muted small">
             The geometry gate reads the elevation limits and the altitude ceiling. A threat
@@ -578,23 +559,21 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <MountHeight
             model={model}
             heightM={sensor.mountHeightM}
-            onChange={(m) => patch({ sensor: { ...sensor, mountHeightM: m } })}
+            onChange={(raw) => edit('sensor.mountHeightM', raw)}
             note="Height of the antenna phase centre above ground. The engine measures the slant range and the radio horizon from it."
           />
           <Num
             label="Track split distance (m, 0 = always splits)"
             value={sensor.resolutionM ?? 0}
             step={10}
-            onChange={(n) => patch({ sensor: { ...sensor, resolutionM: n > 0 ? n : null } })}
+            onChange={(n) => edit('sensor.resolutionM', n)}
           />
           <Num
             label="Maximum reported range (m, 0 = no cap)"
             value={sensor.instrumentedRangeM ?? 0}
             step={1000}
             min={0}
-            onChange={(n) =>
-              patch({ sensor: { ...sensor, instrumentedRangeM: n > 0 ? n : null } })
-            }
+            onChange={(n) => edit('sensor.instrumentedRangeM', n)}
           />
           <p className="muted small">
             A radar's instrumented range, or the top of a vendor's stated detection band. The
@@ -607,7 +586,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 value={sensor.refRcsM2 ?? 0}
                 step={0.01}
                 min={0}
-                onChange={(n) => patch({ sensor: { ...sensor, refRcsM2: n > 0 ? n : null } })}
+                onChange={(n) => edit('sensor.refRcsM2', n)}
               />
               <p className="muted small">
                 The detect range is quoted against the reference RCS. Against another threat the
@@ -622,21 +601,12 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                   step={0.05}
                   min={0}
                   max={0.99}
-                  onChange={(n) =>
-                    patch({ sensor: { ...sensor, placardPd: n > 0 ? Math.min(0.99, n) : null } })
-                  }
+                  onChange={(n) => edit('sensor.placardPd', n)}
                 />
                 <Field label="Placard Pfa">
                   <select
                     value={sensor.pfa == null ? '' : sensor.pfa.toExponential(0).replace('+', '')}
-                    onChange={(e) =>
-                      patch({
-                        sensor: {
-                          ...sensor,
-                          pfa: e.target.value === '' ? null : Number(e.target.value),
-                        },
-                      })
-                    }
+                    onChange={(e) => edit('sensor.pfa', e.target.value)}
                   >
                     <option value="">{`planning factor ${PLACARD_PFA.toExponential(0)}`}</option>
                     {PFA_CHOICES.map((p) => (
@@ -657,7 +627,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 value={sensor.updateRateS ?? 0}
                 step={0.1}
                 min={0}
-                onChange={(n) => patch({ sensor: { ...sensor, updateRateS: n > 0 ? n : null } })}
+                onChange={(n) => edit('sensor.updateRateS', n)}
               />
               <div className="field-row">
                 <Num
@@ -665,30 +635,14 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                   value={sensor.trackInitM ?? 0}
                   step={1}
                   min={0}
-                  onChange={(n) => {
-                    // M of N: N follows M up so the pair in use stays valid.
-                    const trackInitM = n > 0 ? n : undefined
-                    const trackInitN =
-                      trackInitM != null && (sensor.trackInitN ?? TRACK_INIT_N) < trackInitM
-                        ? trackInitM
-                        : sensor.trackInitN
-                    patch({ sensor: { ...sensor, trackInitM, trackInitN } })
-                  }}
+                  onChange={(n) => edit('sensor.trackInitM', n)}
                 />
                 <Num
                   label={`Initiation N (0 = PF ${TRACK_INIT_N})`}
                   value={sensor.trackInitN ?? 0}
                   step={1}
                   min={0}
-                  onChange={(n) => {
-                    // M follows N down so the pair in use stays valid.
-                    const trackInitN = n > 0 ? n : undefined
-                    const trackInitM =
-                      trackInitN != null && (sensor.trackInitM ?? TRACK_INIT_M) > trackInitN
-                        ? trackInitN
-                        : sensor.trackInitM
-                    patch({ sensor: { ...sensor, trackInitM, trackInitN } })
-                  }}
+                  onChange={(n) => edit('sensor.trackInitN', n)}
                 />
               </div>
               <Num
@@ -696,9 +650,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 value={sensor.trackDropMisses ?? 0}
                 step={1}
                 min={0}
-                onChange={(n) =>
-                  patch({ sensor: { ...sensor, trackDropMisses: n > 0 ? n : undefined } })
-                }
+                onChange={(n) => edit('sensor.trackDropMisses', n)}
               />
               <p className="muted small">
                 With a scan period the radar initiates a track by M of N scans and coasts through
@@ -712,9 +664,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 <Field label="Band">
                   <select
                     value={sensor.eoBand ?? 'dual'}
-                    onChange={(e) =>
-                      patch({ sensor: { ...sensor, eoBand: e.target.value as EoBand } })
-                    }
+                    onChange={(e) => edit('sensor.eoBand', e.target.value)}
                   >
                     <option value="dual">dual (visible by day, thermal at night)</option>
                     <option value="visible">visible only</option>
@@ -726,7 +676,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                   value={sensor.refSpanM ?? 0}
                   step={0.1}
                   min={0}
-                  onChange={(n) => patch({ sensor: { ...sensor, refSpanM: n > 0 ? n : null } })}
+                  onChange={(n) => edit('sensor.refSpanM', n)}
                 />
               </div>
               <p className="muted small">
@@ -745,9 +695,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 value={sensor.refAcousticDb ?? 0}
                 step={1}
                 min={0}
-                onChange={(n) =>
-                  patch({ sensor: { ...sensor, refAcousticDb: n > 0 ? n : null } })
-                }
+                onChange={(n) => edit('sensor.refAcousticDb', n)}
               />
               <p className="muted small">
                 The detect range is quoted against a source of the reference level. A louder threat
@@ -768,15 +716,14 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                         <input
                           type="checkbox"
                           checked={on}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...bands, b]
-                              : bands.filter((x) => x !== b)
-                            // An empty band set would read back as "every band"
-                            // (the legacy default), so the last band stays on.
-                            if (next.length === 0) return
-                            patch({ sensor: { ...sensor, rfBands: next } })
-                          }}
+                          onChange={(e) =>
+                            // An empty set is rejected by the reducer: it would
+                            // read back as "every band" (the legacy default).
+                            edit(
+                              'sensor.rfBands',
+                              e.target.checked ? [...bands, b] : bands.filter((x) => x !== b),
+                            )
+                          }
                         />
                         {JAM_BAND_LABEL[b]}
                       </label>
@@ -789,7 +736,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 value={sensor.urbanRangeM ?? 0}
                 step={100}
                 min={0}
-                onChange={(n) => patch({ sensor: { ...sensor, urbanRangeM: n > 0 ? n : null } })}
+                onChange={(n) => edit('sensor.urbanRangeM', n)}
               />
               <p className="muted small">
                 A passive receiver hears a threat only when one of its emitting link bands is inside
@@ -807,11 +754,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Field label="Type">
             <select
               value={effector.effectorType}
-              onChange={(e) =>
-                patch({
-                  effector: { ...effector, effectorType: e.target.value as typeof effector.effectorType },
-                })
-              }
+              onChange={(e) => edit('effector.effectorType', e.target.value)}
             >
               <option value="interceptor">interceptor</option>
               <option value="jammer">jammer</option>
@@ -825,25 +768,25 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             label="Min range (m)"
             value={effector.minRangeM}
             step={100}
-            onChange={(n) => patch({ effector: { ...effector, minRangeM: n } })}
+            onChange={(n) => edit('effector.minRangeM', n)}
           />
           <Num
             label="Max range (m)"
             value={effector.maxRangeM}
             step={100}
-            onChange={(n) => patch({ effector: { ...effector, maxRangeM: n } })}
+            onChange={(n) => edit('effector.maxRangeM', n)}
           />
           <Num
             label="Engage time (s)"
             value={effector.engageTimeS}
-            onChange={(n) => patch({ effector: { ...effector, engageTimeS: n } })}
+            onChange={(n) => edit('effector.engageTimeS', n)}
           />
           <Num
             label="Flyout speed (m/s)"
             value={effector.flyoutSpeedMps ?? 0}
             step={10}
             min={0}
-            onChange={(n) => patch({ effector: { ...effector, flyoutSpeedMps: n > 0 ? n : null } })}
+            onChange={(n) => edit('effector.flyoutSpeedMps', n)}
           />
           <p className="muted small">
             Average interceptor or round speed to the target. The engine adds the time of flight
@@ -851,15 +794,13 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           </p>
           <SectorField
             value={effector.sectorDeg ?? 360}
-            onChange={(n) =>
-              patch({ effector: { ...effector, sectorDeg: Math.min(360, Math.max(5, n)) } })
-            }
+            onChange={(n) => edit('effector.sectorDeg', n)}
           />
           <Num
             label="Alt ceiling (ft, 0 = unknown)"
             value={effector.maxAltitudeFt ?? 0}
             step={500}
-            onChange={(n) => patch({ effector: { ...effector, maxAltitudeFt: n > 0 ? n : null } })}
+            onChange={(n) => edit('effector.maxAltitudeFt', n)}
           />
           <p className="muted small">
             The geometry gate reads the altitude ceiling. A threat above it has no engagement
@@ -868,7 +809,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <MountHeight
             model={model}
             heightM={effector.mountHeightM}
-            onChange={(m) => patch({ effector: { ...effector, mountHeightM: m } })}
+            onChange={(raw) => edit('effector.mountHeightM', raw)}
             note="Height of the launcher or the emitter above ground. The engine measures the slant range from it."
           />
           {effector.effectorType === 'jammer' && (
@@ -884,15 +825,14 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                         <input
                           type="checkbox"
                           checked={on}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...bands, b]
-                              : bands.filter((x) => x !== b)
-                            // An empty band set would read back as "every band"
-                            // (the legacy default), so the last band stays on.
-                            if (next.length === 0) return
-                            patch({ effector: { ...effector, jamBands: next } })
-                          }}
+                          onChange={(e) =>
+                            // An empty set is rejected by the reducer: it would
+                            // read back as "every band" (the legacy default).
+                            edit(
+                              'effector.jamBands',
+                              e.target.checked ? [...bands, b] : bands.filter((x) => x !== b),
+                            )
+                          }
                         />
                         {JAM_BAND_LABEL[b]}
                       </label>
@@ -906,16 +846,14 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                   value={effector.eirpW ?? 0}
                   step={10}
                   min={0}
-                  onChange={(n) => patch({ effector: { ...effector, eirpW: n > 0 ? n : undefined } })}
+                  onChange={(n) => edit('effector.eirpW', n)}
                 />
                 <Num
                   label="Rated EIRP (W)"
                   value={effector.ratedEirpW ?? 0}
                   step={10}
                   min={0}
-                  onChange={(n) =>
-                    patch({ effector: { ...effector, ratedEirpW: n > 0 ? n : undefined } })
-                  }
+                  onChange={(n) => edit('effector.ratedEirpW', n)}
                 />
               </div>
               <p className="muted small">
@@ -936,7 +874,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             <Field label="Group">
               <select
                 value={uas.group}
-                onChange={(e) => patch({ uas: { ...uas, group: Number(e.target.value) as typeof uas.group } })}
+                onChange={(e) => edit('uas.group', e.target.value)}
               >
                 {[1, 2, 3, 4, 5].map((g) => (
                   <option key={g} value={g}>
@@ -948,9 +886,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             <Field label="Airframe">
               <select
                 value={uas.airframe}
-                onChange={(e) =>
-                  patch({ uas: { ...uas, airframe: e.target.value as typeof uas.airframe } })
-                }
+                onChange={(e) => edit('uas.airframe', e.target.value)}
               >
                 <option value="quad">quad</option>
                 <option value="fixed-wing">fixed-wing</option>
@@ -963,15 +899,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Field label="Fluctuation model">
             <select
               value={uas.swerling == null ? '' : String(uas.swerling)}
-              onChange={(e) =>
-                patch({
-                  uas: {
-                    ...uas,
-                    swerling:
-                      e.target.value === '' ? null : (Number(e.target.value) as SwerlingCase),
-                  },
-                })
-              }
+              onChange={(e) => edit('uas.swerling', e.target.value)}
             >
               <option value="">by airframe, planning factor (multirotor Swerling 1, fixed wing Swerling 3)</option>
               <option value="0">Swerling 0 (steady)</option>
@@ -984,7 +912,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             value={uas.rcsM2 ?? 0}
             step={0.01}
             min={0}
-            onChange={(n) => patch({ uas: { ...uas, rcsM2: n > 0 ? n : null } })}
+            onChange={(n) => edit('uas.rcsM2', n)}
           />
           <p className="muted small">
             Planning factor, not signature data. Group tier when 0:{' '}
@@ -998,27 +926,20 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               value={uas.spanM ?? 0}
               step={0.1}
               min={0}
-              onChange={(n) => patch({ uas: { ...uas, spanM: n > 0 ? n : null } })}
+              onChange={(n) => edit('uas.spanM', n)}
             />
             <Num
               label="Acoustic level (dB at 1 m, 0 = group PF)"
               value={uas.acousticDb ?? 0}
               step={1}
               min={0}
-              onChange={(n) => patch({ uas: { ...uas, acousticDb: n > 0 ? n : null } })}
+              onChange={(n) => edit('uas.acousticDb', n)}
             />
           </div>
           <Field label="IR signature">
             <select
               value={uas.irSignature ?? ''}
-              onChange={(e) =>
-                patch({
-                  uas: {
-                    ...uas,
-                    irSignature: (e.target.value || undefined) as IrSignature | undefined,
-                  },
-                })
-              }
+              onChange={(e) => edit('uas.irSignature', e.target.value)}
             >
               <option value="">by airframe (electric low, engine high)</option>
               {(['low', 'medium', 'high'] as const).map((k) => (
@@ -1041,24 +962,24 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             <Num
               label="Cruise (m/s)"
               value={uas.cruiseSpeedMps}
-              onChange={(n) => patch({ uas: { ...uas, cruiseSpeedMps: n } })}
+              onChange={(n) => edit('uas.cruiseSpeedMps', n)}
             />
             <Num
               label="Max (m/s)"
               value={uas.maxSpeedMps}
-              onChange={(n) => patch({ uas: { ...uas, maxSpeedMps: n } })}
+              onChange={(n) => edit('uas.maxSpeedMps', n)}
             />
           </div>
           <div className="field-row">
             <Num
               label="Endurance (min)"
               value={uas.enduranceMin}
-              onChange={(n) => patch({ uas: { ...uas, enduranceMin: n } })}
+              onChange={(n) => edit('uas.enduranceMin', n)}
             />
             <Field label="Nav mode">
               <select
                 value={uas.navMode}
-                onChange={(e) => patch({ uas: { ...uas, navMode: e.target.value as typeof uas.navMode } })}
+                onChange={(e) => edit('uas.navMode', e.target.value)}
               >
                 <option value="gps">gps</option>
                 <option value="inertial">inertial</option>
@@ -1074,13 +995,13 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               label="Alt floor (ft)"
               value={uas.altBandFt[0]}
               step={100}
-              onChange={(n) => patch({ uas: { ...uas, altBandFt: [n, uas.altBandFt[1]] } })}
+              onChange={(n) => edit('uas.altFloorFt', n)}
             />
             <Num
               label="Alt ceiling (ft)"
               value={uas.altBandFt[1]}
               step={100}
-              onChange={(n) => patch({ uas: { ...uas, altBandFt: [uas.altBandFt[0], n] } })}
+              onChange={(n) => edit('uas.altCeilingFt', n)}
             />
           </div>
           <p className="muted small">
@@ -1093,13 +1014,13 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               label="Control link (m, 0 = autonomous)"
               value={uas.controlLinkRangeM ?? 0}
               step={500}
-              onChange={(n) => patch({ uas: { ...uas, controlLinkRangeM: n > 0 ? n : null } })}
+              onChange={(n) => edit('uas.controlLinkRangeM', n)}
             />
             <Num
               label="Mission radius (m)"
               value={uas.operatingRadiusM ?? 0}
               step={1000}
-              onChange={(n) => patch({ uas: { ...uas, operatingRadiusM: n > 0 ? n : null } })}
+              onChange={(n) => edit('uas.operatingRadiusM', n)}
             />
           </div>
           <div className="field-row">
@@ -1107,19 +1028,12 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               label="Combat radius (m, 0 = unknown)"
               value={uas.combatRadiusM ?? 0}
               step={1000}
-              onChange={(n) => patch({ uas: { ...uas, combatRadiusM: n > 0 ? n : null } })}
+              onChange={(n) => edit('uas.combatRadiusM', n)}
             />
             <Field label="Employment">
               <select
                 value={uas.oneWay == null ? '' : uas.oneWay ? 'one-way' : 'rth'}
-                onChange={(e) =>
-                  patch({
-                    uas: {
-                      ...uas,
-                      oneWay: e.target.value === '' ? undefined : e.target.value === 'one-way',
-                    },
-                  })
-                }
+                onChange={(e) => edit('uas.oneWay', e.target.value)}
               >
                 <option value="">by airframe</option>
                 <option value="one-way">one-way</option>
@@ -1130,14 +1044,14 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Field label="Range note (observed mods)">
             <input
               value={uas.rangeNote ?? ''}
-              onChange={(e) => patch({ uas: { ...uas, rangeNote: e.target.value } })}
+              onChange={(e) => edit('uas.rangeNote', e.target.value)}
             />
           </Field>
           <Field label="Emissions">
             <input
               list="emissions-options"
               value={uas.emissionsNote}
-              onChange={(e) => patch({ uas: { ...uas, emissionsNote: e.target.value } })}
+              onChange={(e) => edit('uas.emissionsNote', e.target.value)}
             />
           </Field>
           <Options
@@ -1158,7 +1072,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             <input
               list="designator-options"
               value={tp.designator}
-              onChange={(e) => patch({ threatProfile: { ...tp, designator: e.target.value } })}
+              onChange={(e) => edit('threatProfile.designator', e.target.value)}
             />
           </Field>
           <Options
@@ -1172,9 +1086,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <button
             className="mini"
             title="Generate the next free THR-G<group>-<code>-<seq> designator"
-            onClick={() =>
-              patch({ threatProfile: { ...tp, designator: autoDesignator(model, scenario.library) } })
-            }
+            onClick={() => edit('threatProfile.designator', autoDesignator(model, scenario.library))}
           >
             Auto
           </button>
@@ -1182,7 +1094,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             <input
               list="route-intent-options"
               value={tp.routeIntent}
-              onChange={(e) => patch({ threatProfile: { ...tp, routeIntent: e.target.value } })}
+              onChange={(e) => edit('threatProfile.routeIntent', e.target.value)}
             />
           </Field>
           <Options
@@ -1198,18 +1110,18 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               label="Altitude (ft)"
               value={tp.altitudeFt}
               step={100}
-              onChange={(n) => patch({ threatProfile: { ...tp, altitudeFt: n } })}
+              onChange={(n) => edit('threatProfile.altitudeFt', n)}
             />
             <Num
               label="Speed (m/s)"
               value={tp.speedMps}
-              onChange={(n) => patch({ threatProfile: { ...tp, speedMps: n } })}
+              onChange={(n) => edit('threatProfile.speedMps', n)}
             />
           </div>
           {uas && tp.speedMps !== uas.cruiseSpeedMps && (
             <button
               className="mini"
-              onClick={() => patch({ threatProfile: { ...tp, speedMps: uas.cruiseSpeedMps } })}
+              onClick={() => edit('threatProfile.speedMps', uas.cruiseSpeedMps)}
             >
               Use cruise speed ({uas.cruiseSpeedMps} m/s)
             </button>
@@ -1217,7 +1129,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Num
             label="Count"
             value={tp.count}
-            onChange={(n) => patch({ threatProfile: { ...tp, count: Math.max(1, n) } })}
+            onChange={(n) => edit('threatProfile.count', n)}
           />
         </div>
       )}

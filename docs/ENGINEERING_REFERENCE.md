@@ -413,9 +413,20 @@ Each fact below has exactly one definition. Read it there; never add a second co
   also carry the url of the trial count behind that spread (the Stinger and Leonidas `pk`
   rows). `adoptSeedProvenance` (`src/io/persist.ts`), called from `fillScenario`, copies
   seed rows onto a saved builtin only for fields the user has not edited, and `updateModel`
-  drops the row of a spec field it changes (`dropEditedProvenance`); an edited field takes
-  no row and stays PF. "Reset to seed" (`resetModelToSeed`, undoable) puts a builtin back
-  to its seed.
+  and `editModel` drop the row of a spec field they change (`dropEditedProvenance`); an
+  edited field takes no row and stays PF. "Reset to seed" (`resetModelToSeed`, undoable)
+  puts a builtin back to its seed.
+- **Specification field edits** (`src/model/specEdit.ts`): `editSpecField(model, field,
+  value)` holds the rule of every edited spec field. It owns the value that clears back to
+  the planning factor, the clamps, the M-of-N coupling (N follows M up, M follows N down),
+  the elevation and altitude-band tuples, and the mount-height parse. A field name is a
+  section key: `sensor.`, `effector.`, `uas.` or `threatProfile.`, plus the synthetic tuple
+  ends `elevationMinDeg`, `elevationMaxDeg`, `altFloorFt` and `altCeilingFt`. The function
+  is pure and returns the model itself when the section is absent or the value is rejected
+  (an empty band set). The store action `editModel(id, field, value)` applies it through
+  `mutate`: one edit is one undo step, and a rejected edit writes nothing. LibraryEditor and
+  Inspector pass the raw control value and carry no field rules. `updateModel` stays the
+  whole-patch action for the model name, description, color and provenance rows.
 - **Parameter uncertainty** (`src/analysis/parameterBasis.ts`, re-exported by
   `uncertainty.ts`): `spreadFor(model, field)` is
   the one spread resolver: the row's spread, else `PF_SPREAD` by field, else null; a row
