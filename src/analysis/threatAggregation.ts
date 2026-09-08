@@ -1,3 +1,6 @@
+import type { TrialResultView } from './trialResult'
+import { trialTrackStatesAt } from '../playback/trialTrackState'
+import { trialSweepAt } from '../playback/trialSweepAt'
 import type { Scenario } from '../model/types'
 import type { AttritionReport } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
@@ -347,4 +350,74 @@ export function threatPictureAt(
     group.residualPct = group.ships > 0 ? (group.expectedResidual / group.ships) * 100 : 0
   }
   return [...groups.values()]
+}
+
+export interface TrialThreatRow extends Omit<ThreatOperationalRow, 'status' | 'expectedKills' | 'expectedResidual'> {
+  basis: 'simulated-trial'
+  /** Final assessment disposition is unavailable until the selected horizon completes. */
+  status: ThreatAssessment['status'] | null
+  kills: number
+  survivors: number
+  hardKillCount: number
+  missionKillCount: number
+  arrivedCount: number
+}
+
+export interface TrialThreatGroup extends Omit<ThreatOperationalGroup, 'members' | 'expectedKills' | 'expectedResidual'> {
+  basis: 'simulated-trial'
+  observedThroughS: number
+  kills: number
+  survivors: number
+  members: TrialThreatRow[]
+}
+
+/** Forecast grouping and target eligibility stay intact; trial outcome rows use members. */
+export function trialThreatPictureAt(view: TrialResultView, horizonS: number): TrialThreatGroup[] {
+  const sweep = trialSweepAt(view, horizonS)
+  const t = sweep.timeS
+  const reached = (value: number | null | undefined) => value != null && value <= t ? value : null
+  const assessments = view.assessments.map(a => ({
+    ...a,
+    firstDetectS: reached(a.firstDetectS),
+    arrivalS: reached(a.arrivalS),
+    classificationAtS: { unknownAtS: reached(a.classificationAtS.unknownAtS),
+      suspectedAtS: reached(a.classificationAtS.suspectedAtS), hostileAtS: reached(a.classificationAtS.hostileAtS) },
+    windowS: a.windowS && a.windowS[0] <= t ? [a.windowS[0], Math.min(t, a.windowS[1])] as [number, number] : null,
+  }))
+  const tracks = new Map(trialTrackStatesAt(view, t).map(track => [track.entity.id, track]))
+  const groups = threatPictureAt(view.scenario, assessments, view.attrition, t, sweep.hits)
+  return groups.map(group => {
+    const { expectedKills: _kills, expectedResidual: _residual, members, ...base } = group
+    const rows = members.map((row): TrialThreatRow => {
+      const { expectedKills: _rowKills, expectedResidual: _rowResidual, ...rest } = row
+      const track = tracks.get(row.uasId)!
+      const a = view.assessments.find(a => a.uasId === row.uasId)!
+      const firstShot = view.attrition.threats.find(a => a.uasId === row.uasId)?.firstShotS
+      const decision = firstShot ?? a.windowS?.[0] ?? a.arrivalS
+      const trackedAtDecision = decision != null && decision <= t && (a.sensorObservations ?? []).some(o =>
+        o.intervals.some(([start, end]) => start <= decision && decision <= end))
+      return {
+        ...rest, basis: 'simulated-trial', status: t >= view.durationS ? row.status : null,
+        kills: track.hardKillCount + track.missionKillCount, survivors: track.activeCount,
+        hardKillCount: track.hardKillCount, missionKillCount: track.missionKillCount, arrivedCount: track.arrivedCount,
+        effectMet: track.activeCount === 0, trackedAtDecision,
+        effectObserved: view.attrition.events.some(e => e.uasId === row.uasId && e.tEffectS <= t),
+        salvos: view.attrition.events.filter(e => e.uasId === row.uasId && e.tS <= t).length,
+        engaged: view.attrition.events.some(e => e.uasId === row.uasId && e.tS <= t),
+        targetableNow: row.targetableNow && a.windowS != null && a.windowS[0] <= t && t <= a.windowS[1],
+        trackNow: sweep.sensors.some(s => s.threatId === row.uasId && s.stateAtTime !== 'not-held'),
+        firstDetectS: reached(row.firstDetectS), hostileAtS: reached(row.hostileAtS), firstShotS: reached(row.firstShotS),
+        firstEffectS: reached(row.firstEffectS), firstJamEffectS: reached(row.firstJamEffectS), arrivalS: reached(row.arrivalS),
+        residualPct: track.members.length ? track.activeCount / track.members.length * 100 : 0,
+      }
+    })
+    const kills = rows.reduce((sum, row) => sum + row.kills, 0)
+    const survivors = rows.reduce((sum, row) => sum + row.survivors, 0)
+    return { ...base, basis: 'simulated-trial', observedThroughS: t, members: rows, kills, survivors,
+      effectMet: rows.filter(row => row.effectMet).length, trackNow: rows.filter(row => row.trackNow).length,
+      engaged: rows.filter(row => row.engaged).length, salvos: rows.reduce((sum, row) => sum + row.salvos, 0),
+      targetableNow: rows.filter(row => row.targetableNow).length,
+      trackedAtDecision: rows.filter(row => row.trackedAtDecision).length,
+      residualPct: base.ships ? survivors / base.ships * 100 : 0 }
+  })
 }

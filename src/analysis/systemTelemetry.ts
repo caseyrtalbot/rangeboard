@@ -1,3 +1,6 @@
+import type { TrialResultView } from './trialResult'
+import type { TrialSensorState } from '../playback/trialSweepAt'
+import { trialSweepAt } from '../playback/trialSweepAt'
 import type { Entity, Scenario } from '../model/types'
 import { defaultSensorRole, entityActive } from '../model/types'
 import { profileFor } from '../model/integration'
@@ -409,4 +412,41 @@ export function systemTelemetryAt(
     })
   }
   return result
+}
+
+export interface TrialComponentTelemetry extends Omit<ComponentTelemetry, 'expectedKills'> {
+  basis: 'simulated-trial'
+  observedThroughS: number
+  kills: number
+  measuredTracks: number
+  heldBetweenScans: number
+  coastingTracks: number
+  sensorStates: TrialSensorState[]
+}
+
+export interface TrialSystemTelemetry extends Omit<SystemTelemetryGroup, 'expectedKills' | 'components'> {
+  basis: 'simulated-trial'
+  observedThroughS: number
+  kills: number
+  components: TrialComponentTelemetry[]
+}
+
+export function trialSystemTelemetryAt(view: TrialResultView, horizonS: number): TrialSystemTelemetry[] {
+  const sweep = trialSweepAt(view, horizonS)
+  // Exact retained interval starts, with forecast capacity/accounting arithmetic unchanged.
+  const assessments = view.assessments.map(a => ({ ...a, effectorWindows: a.effectorWindows.map(w => ({
+    ...w, intervals: w.intervals.filter(([start, end]) => start <= sweep.timeS && sweep.timeS <= end),
+  })) }))
+  return systemTelemetryAt(view.scenario, assessments, view.attrition, sweep.timeS, sweep.hits).map(group => {
+    const { expectedKills, components, ...base } = group
+    return { ...base, basis: 'simulated-trial', observedThroughS: sweep.timeS, kills: expectedKills,
+      components: components.map(component => {
+        const { expectedKills, ...rest } = component
+        const sensorStates = sweep.sensors.filter(s => s.sensorId === component.entityId)
+        return { ...rest, basis: 'simulated-trial', observedThroughS: sweep.timeS, kills: expectedKills, sensorStates,
+          measuredTracks: sensorStates.filter(s => s.stateAtTime === 'measured').length,
+          heldBetweenScans: sensorStates.filter(s => s.stateAtTime === 'held-between-scans').length,
+          coastingTracks: sensorStates.filter(s => s.stateAtTime === 'coasting').length }
+      }) }
+  })
 }

@@ -1,145 +1,63 @@
-import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../../model/seed'
-import type { McState } from '../../state/runState'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../../state/store'
-import { IDLE_MC } from '../../state/runState'
-import { runSettings } from '../../model/types'
-import { LiveStrip, McPopover } from './LiveStrip'
+import { IDLE_TRIAL } from '../../state/runState'
+import { installTrial, observeTrial, unstartTrial } from './widgets/trialTestState'
+import * as forecast from '../../analysis/impact'
+import { LiveStrip } from './LiveStrip'
 
-// zustand 5 gives react-dom/server the store's initial state, not the live one,
-// so every static render of a store-reading panel needs the two in step.
-function render(): string {
+function render() {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<LiveStrip />)
 }
+afterEach(() => vi.restoreAllMocks())
 
-function setMc(patch: Partial<McState>): void {
-  useStore.setState({ mc: { ...IDLE_MC, runId: useStore.getState().playback.runId, ...patch } })
-}
-
-/** The popover rendered on its own; the strip keeps it closed in static markup. */
-function renderPopover(): string {
-  Object.assign(useStore.getInitialState(), useStore.getState())
-  const st = useStore.getState()
-  return renderToStaticMarkup(<McPopover run={runSettings(st.scenario)} mc={st.mc} />)
-}
-
-/** The run button of the popover. */
-function runButton(html: string): string {
-  return html.match(/<button class="mc-run"[^>]*>[^<]*<\/button>/)?.[0] ?? ''
-}
-
-/** The chip element: the one button with a `chip` class. */
-function chip(html: string): string {
-  return html.match(/<button class="chip[^"]*"[^>]*>[^<]*<\/button>/)?.[0] ?? ''
-}
-
-describe('LiveStrip mode chip', () => {
-  beforeEach(() => {
-    const st = useStore.getState()
-    st.replaceScenario(emptyScenario())
-    st.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
-    st.addEntityFromModel('lib-mavic3', { x: 0, y: -3000 })
-    const uas = useStore.getState().scenario.entities.find((e) => e.kind === 'uas')!
-    useStore.getState().beginPath(uas.id)
-    useStore.getState().addDraftPoint({ x: 0, y: -100 })
-    useStore.getState().finishPath()
-    useStore.setState({ mc: IDLE_MC })
-  })
-
-  it('shows DET as a closed popover button under the deterministic mode', () => {
-    const el = chip(render())
-    expect(el).toContain('class="chip det"')
-    expect(el).toContain('>DET<')
-    expect(el).toContain('aria-expanded="false"')
-    expect(render()).toContain('<span class="chip-meta">envelope · Pd threshold</span>')
-    expect(render()).not.toContain('mc-pop')
-  })
-
-  it('shows the replicate count and the seed while idle under Monte Carlo', () => {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
-    const el = chip(render())
-    expect(el).toContain('class="chip mc"')
-    expect(el).toContain('MC 100 · seed 4821')
-    expect(el).toContain('Not run yet')
-    expect(render()).toContain('<span class="chip-meta">estimate · 100 replicates</span>')
-  })
-
-  it('shows the progress while running', () => {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
-    setMc({ status: 'running', progress: 40, total: 100 })
-    const el = chip(render())
-    expect(el).toContain('class="chip mc"')
-    expect(el).toContain('MC 100 · 40/100')
-  })
-
-  it('names the total uncertainty in the chip, its title and the meta', () => {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo', uncertainty: 'total' })
-    const el = chip(render())
-    expect(el).toContain('MC 100 · total · seed 4821')
-    expect(el).toContain('Monte Carlo, 100 replicates, seed 4821, total uncertainty')
-    expect(render()).toContain(
-      '<span class="chip-meta">estimate · 100 replicates · total</span>',
-    )
-  })
-
-  it('warns when the configuration changed since the replicates ran', () => {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
-    setMc({ status: 'stale', progress: 100, total: 100 })
-    const el = chip(render())
-    expect(el).toContain('class="chip mc warn"')
-    expect(el).toContain('MC 100 · stale')
-  })
-
-  it('retains an unscoped forward preview time', () => {
-    useStore.getState().setBoardPhase('analyze')
-    useStore.getState().advanceRun(1)
-    useStore.getState().scrubTo(60)
+describe('LiveStrip trial lifecycle', () => {
+  it.each(['idle', 'preparing', 'error', 'cancelled', 'ready'] as const)('retains the %s header without requiring threats or computing a forecast', status => {
+    installTrial()
+    unstartTrial()
+    const trial = useStore.getState().trial
+    useStore.setState({ trial: status === 'idle' ? IDLE_TRIAL : { ...trial, status, error: status === 'error' ? 'Preparation failed' : null } })
+    const spy = vi.spyOn(forecast, 'engagementPicture')
     const html = render()
-    expect(html).toContain('T+1:00')
-    expect(html).toContain('>Preview<')
+    expect(html).toContain('aria-live="polite"')
+    expect(html).not.toContain('DET')
+    expect(html).not.toContain('mc-pop')
+    const text = status === 'preparing' ? 'Preparing trial' : status === 'error' ? 'Preparation failed' : status === 'ready' ? 'Trial ready' : 'Simulated trial · ready'
+    expect(html).toContain(text)
+    if (status === 'preparing') expect(html).toContain('>Cancel<')
+    if (status === 'error' || status === 'cancelled') expect(html).toContain('>Retry<')
+    expect(spy).not.toHaveBeenCalled()
   })
 
-  it('caps Execute time text after forward and backward scrubs', () => {
-    useStore.getState().setBoardPhase('execute')
-    useStore.getState().advanceRun(1)
-    useStore.getState().scrubTo(60)
-    const html = render()
-    expect(html).toContain('T+0:01')
-    expect(html).not.toContain('1:00')
-    useStore.getState().advanceRun(60)
-    useStore.getState().scrubTo(1)
-    expect(render()).toContain('observed through 0:01')
-    expect(render()).not.toContain('1:00')
-  })
-
-  it('shows an empty Execute clock before Play', () => {
-    useStore.getState().setBoardPhase('execute')
-    const html = render()
-    expect(html).toContain('T+0:00')
-    expect(html).toContain('>Ready<')
-    expect(html).toContain('no prior-run telemetry')
-  })
-
-})
-
-describe('McPopover run button', () => {
-  beforeEach(() => {
+  it('shows preparation errors even on an empty scenario', () => {
     useStore.getState().replaceScenario(emptyScenario())
-    useStore.setState({ mc: IDLE_MC })
+    useStore.getState().startTrialRun()
+    const html = render()
+    expect(html).toContain('Web Worker unavailable')
+    expect(html).toContain('>Retry</button>')
   })
 
-  it('offers a run while idle and a stop while a run is live', () => {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
-    expect(runButton(renderPopover())).toContain('>Run replicates<')
-    setMc({ status: 'running', progress: 40, total: 100 })
-    const live = runButton(renderPopover())
-    expect(live).toContain('>Stop<')
-    expect(live).not.toContain('disabled')
+  it('distinguishes visible prefix, achieved observation and replay across phases', () => {
+    installTrial()
+    observeTrial(60, 1)
+    useStore.setState(({ playback }) => ({ playback: { ...playback, completedAtMs: 1, phase: 'paused' } }))
+    for (const phase of ['execute', 'analyze'] as const) {
+      useStore.getState().setBoardPhase(phase)
+      const html = render()
+      expect(html).toContain('Simulated trial · Replay')
+      expect(html).toContain('Visible prefix through 0:01')
+      expect(html).toContain('achieved observation through 1:00')
+      expect(html).toContain('full trial observed')
+    }
   })
 
-  it('stays disabled under the deterministic mode', () => {
-    expect(runButton(renderPopover())).toContain('disabled')
+  it('offers separate Replay and New run controls at completion', () => {
+    installTrial()
+    useStore.setState(({ playback }) => ({ playback: { ...playback, completedAtMs: 1, phase: 'complete' } }))
+    const html = render()
+    expect(html).toContain('>Replay</button>')
+    expect(html).toContain('aria-label="New run"')
   })
 })

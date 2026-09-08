@@ -1,355 +1,51 @@
-import { reached } from '../../analysis/horizon'
-import { useMemo, useState } from 'react'
-import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { formatRunLabel } from '../../state/labels'
-import {
-  selectDurationS,
-  selectObservedThroughStep,
-  selectObservedThroughWholeS,
-} from '../../state/selectors'
-import { engagementPicture } from '../../analysis/impact'
-import { buildLiveTimeline } from '../../analysis/liveStats'
+import { selectObservedThroughWholeS } from '../../state/selectors'
+import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
 import { formatTime } from '../../geometry/geo'
-import type { RunMode, UncertaintyMode } from '../../model/types'
-import { runSettings } from '../../model/types'
-import type { StopRule } from '../../playback/mcRun'
 import { resetAnalysisRun } from '../../playback/runSession'
-import { Field } from '../../ui/kit'
-import { RoleSeg, useExecutionHorizon, useSimTimeStep } from './widgets/controls'
 
-const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
-  { v: 'deterministic', label: 'Deterministic' },
-  { v: 'monte-carlo', label: 'Monte Carlo' },
-]
-
-/** Aleatory: the draw noise only. Total: one parameter sample per replicate too. */
-const UNCERTAINTY_OPTIONS: Array<{ v: UncertaintyMode; label: string }> = [
-  { v: 'aleatory', label: 'Aleatory' },
-  { v: 'total', label: 'Total' },
-]
-
-/** Replicate count bounds of the popover input. */
-const MIN_REPLICATES = 1
-const MAX_REPLICATES = 10000
-
-/** Seed bounds: the draw key reads the seed as a 32-bit unsigned integer (hashU01). */
-const MIN_SEED = 0
-const MAX_SEED = 4294967295
-
-/** What kind of number the run produces: an envelope point, or a replicate estimate. */
-function chipMeta(run: ReturnType<typeof runSettings>, mc: McState): string {
-  if (run.runMode === 'deterministic') return 'envelope · Pd threshold'
-  const done = mc.status === 'done' ? mc.summary : null
-  const base = `estimate · ${done?.replicates ?? run.replicates} replicates`
-  return run.uncertainty === 'total' ? `${base} · total` : base
-}
-
-/** The mode chip: class, text, title and the basis meta beside it. */
-function chipOf(
-  run: ReturnType<typeof runSettings>,
-  mc: McState,
-): { cls: string; text: string; title: string; meta: string } {
-  return { ...modeChip(run, mc), meta: chipMeta(run, mc) }
-}
-
-/** Chip title phrase per early stop rule. */
-const STOP_BY: Record<StopRule, string> = {
-  replicates: 'the replicate count',
-  halfWidth: 'the half-width rule on the end-of-run leaker mean',
-  budget: 'the execution budget',
-  cancelled: 'a cancel',
-}
-
-/** Class, text and title per run mode and replicate state. */
-function modeChip(
-  run: ReturnType<typeof runSettings>,
-  mc: McState,
-): { cls: string; text: string; title: string } {
-  if (run.runMode === 'deterministic') {
-    return { cls: 'chip det', text: 'DET', title: 'Deterministic expected-value run' }
-  }
-  const total = run.uncertainty === 'total'
-  const head = total ? `MC ${run.replicates} · total` : `MC ${run.replicates}`
-  const seeded = `${head} · seed ${run.seed}`
-  const basis = `Monte Carlo, ${run.replicates} replicates, seed ${run.seed}${
-    total ? ', total uncertainty' : ''
-  }`
-  switch (mc.status) {
-    case 'running':
-      return {
-        cls: 'chip mc',
-        text: `${head} · ${mc.progress}/${mc.total}`,
-        title: 'Running replicates',
-      }
-    case 'done': {
-      const summary = mc.summary
-      const early = summary != null && summary.stopped.rule !== 'replicates'
-      return {
-        cls: 'chip mc',
-        text: early ? `MC ${summary.replicates} of ${run.replicates} · seed ${run.seed}` : seeded,
-        title: early
-          ? `${basis}, stopped at ${summary.replicates} by ${STOP_BY[summary.stopped.rule]}, ${Math.round(
-              summary.elapsedMs,
-            )} ms`
-          : `${basis}, ${Math.round(summary?.elapsedMs ?? 0)} ms`,
-      }
-    }
-    case 'stale':
-      return {
-        cls: 'chip mc warn',
-        text: `${head} · stale`,
-        title: 'Configuration changed since the replicates ran',
-      }
-    case 'error':
-      return { cls: 'chip mc', text: seeded, title: mc.error ?? `${basis}. Not run yet.` }
-    default:
-      return { cls: 'chip mc', text: seeded, title: `${basis}. Not run yet.` }
-  }
-}
-
-/**
- * An integer input that commits on blur or Enter, so typing a seed digit by
- * digit is one scenario edit, not one undo entry and one run reset per key.
- * The `key` remounts the uncontrolled input when the committed value changes.
- */
-function IntInput({
-  value,
-  min,
-  max,
-  onCommit,
-}: {
-  value: number
-  min?: number
-  max?: number
-  onCommit: (v: number) => void
-}) {
-  const commit = (raw: string) => {
-    const n = Math.round(Number(raw))
-    if (raw === '' || !Number.isFinite(n)) return
-    const clamped = Math.max(min ?? -Infinity, Math.min(max ?? Infinity, n))
-    if (clamped !== value) onCommit(clamped)
-  }
-  return (
-    <input
-      key={value}
-      type="number"
-      step={1}
-      min={min}
-      max={max}
-      defaultValue={value}
-      onBlur={(event) => commit(event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') commit((event.target as HTMLInputElement).value)
-      }}
-    />
-  )
-}
-
-/**
- * A decimal input that commits on blur or Enter, as `IntInput`. An empty
- * field commits null; a value at or under zero is ignored.
- */
-function DecimalInput({
-  value,
-  onCommit,
-}: {
-  value: number | null
-  onCommit: (v: number | null) => void
-}) {
-  const commit = (raw: string) => {
-    if (raw.trim() === '') {
-      if (value != null) onCommit(null)
-      return
-    }
-    const n = Number(raw)
-    if (!Number.isFinite(n) || n <= 0) return
-    if (n !== value) onCommit(n)
-  }
-  return (
-    <input
-      key={value ?? 'none'}
-      type="number"
-      step="any"
-      min={0}
-      defaultValue={value ?? ''}
-      placeholder="none"
-      onBlur={(event) => commit(event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') commit((event.target as HTMLInputElement).value)
-      }}
-    />
-  )
-}
-
-/**
- * The run mode popover: mode, uncertainty mode, seed, replicate count, target
- * half-width and the run button. Every control writes a scenario fact.
- */
-export function McPopover({ run, mc }: { run: ReturnType<typeof runSettings>; mc: McState }) {
-  const patchScenario = useStore((s) => s.patchScenario)
-  const deterministic = run.runMode === 'deterministic'
-  const running = mc.status === 'running'
-  return (
-    <div className="mc-pop">
-      <RoleSeg
-        value={run.runMode}
-        options={MODE_OPTIONS}
-        onChange={(v) => patchScenario({ runMode: v })}
-        dataRole="run-mode"
-      />
-      <Field label="Uncertainty">
-        <RoleSeg
-          value={run.uncertainty}
-          options={UNCERTAINTY_OPTIONS}
-          onChange={(v) => patchScenario({ uncertainty: v })}
-          dataRole="uncertainty"
-        />
-      </Field>
-      <Field label="Seed">
-        <IntInput
-          value={run.seed}
-          min={MIN_SEED}
-          max={MAX_SEED}
-          onCommit={(seed) => patchScenario({ seed })}
-        />
-      </Field>
-      <Field label="Replicates">
-        <IntInput
-          value={run.replicates}
-          min={MIN_REPLICATES}
-          max={MAX_REPLICATES}
-          onCommit={(replicates) => patchScenario({ replicates })}
-        />
-      </Field>
-      <Field label="Target half-width">
-        <DecimalInput
-          value={run.targetHalfWidth}
-          onCommit={(targetHalfWidth) => patchScenario({ targetHalfWidth })}
-        />
-      </Field>
-      <button
-        className="mc-run"
-        disabled={deterministic}
-        onClick={() =>
-          running ? useStore.getState().cancelMonteCarlo() : useStore.getState().runMonteCarlo()
-        }
-      >
-        {running ? 'Stop' : 'Run replicates'}
-      </button>
-    </div>
-  )
-}
-
-/**
- * Run header: run id, cursor time, phase, mode chip and the clean reset.
- * Only rAF playback advances the observed horizon; dragging either timeline
- * creates a clearly labeled preview/replay and can never complete a run or
- * promote future events into live telemetry. The cursor and the preview flag
- * read the DT grid and the horizon text reads whole seconds, so the strip
- * re-renders at most 2 Hz during a run, not per publication.
- */
+/** Execution identity and bounded visibility, without forecast preparation work. */
 export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = {}) {
-  const scenario = useStore((s) => s.scenario)
+  const selection = useStore(selectTrialSelection)
   const phase = useStore((s) => s.playback.phase)
-  const runId = useStore((s) => s.playback.runId)
   const runSeq = useStore((s) => s.playback.runSeq)
-  const observedStepS = useStore(selectObservedThroughStep)
-  const observedThroughS = useStore(selectObservedThroughWholeS)
-  const completedAtMs = useStore((s) => s.playback.completedAtMs)
-  const resetReason = useStore((s) => s.playback.resetReason)
-  const mc = useStore((s) => s.mc)
-  const qt = useSimTimeStep()
-  const horizon = useExecutionHorizon()
-  const [open, setOpen] = useState(false)
-
-  // Run identity refreshes this view memo; unchanged engine inputs reuse the forecast cache.
-  const tl = useMemo(() => {
-    void runId
-    const { assessments, report } = engagementPicture(scenario)
-    return buildLiveTimeline(assessments, report)
-  }, [scenario, runId])
-  const durationS = useStore(selectDurationS)
-
-  if (tl.trackCount === 0) return null
-
-  const t = Math.min(qt, durationS, horizon.scoped ? horizon.horizonS : Infinity)
-  const visibleObservedS = horizon.scoped ? Math.max(0, Math.min(observedThroughS, t)) : observedThroughS
-  const untouched = phase === 'ready' || (horizon.scoped && !reached(0, horizon))
-  const preview =
-    !horizon.scoped && phase === 'review' && completedAtMs == null && t > observedStepS + 0.25
-  const tag = untouched
-    ? 'Ready'
-    : phase === 'running'
-      ? 'Live'
-      : phase === 'paused'
-        ? 'Paused'
-        : phase === 'complete'
-          ? 'Complete'
-          : preview
-            ? 'Preview'
-            : 'Replay'
-  const state = untouched
-    ? resetReason === 'configuration-changed'
-      ? 'buffer clean · configuration changed'
-      : 'buffer clean · no prior-run telemetry'
-    : phase === 'running'
-      ? `observed through ${formatTime(visibleObservedS)}`
-      : preview
-        ? `cursor only · observed through ${formatTime(visibleObservedS)}`
-        : completedAtMs != null && (!horizon.scoped || reached(durationS, horizon))
-          ? 'full run observed'
-          : `observed through ${formatTime(visibleObservedS)}`
-
-  const run = runSettings(scenario)
-  const chip = chipOf(run, mc)
-
-  function cleanReset() {
-    // Event-time read of the raw horizon: a run paused inside its first second
-    // has live telemetry the whole-second text does not show yet.
-    if (
-      completedAtMs == null &&
-      useStore.getState().playback.observedThroughS > 0 &&
-      !window.confirm('Discard this in-progress run and start with a clean telemetry buffer?')
-    ) {
-      return
-    }
-    resetAnalysisRun('manual')
-  }
+  const started = useStore((s) => s.playback.startedAtMs != null)
+  const completed = useStore((s) => s.playback.completedAtMs != null)
+  const observed = useStore(selectObservedThroughWholeS)
+  const horizon = useStore((s) => Math.floor(selectTrialHorizon(s, s.playback.simTimeS)))
+  const { pauseRun, cancelTrialPreparation, startTrialRun } = useStore.getState()
+  const preparing = selection.status === 'preparing'
+  const error = selection.status === 'error'
+  const tag = preparing ? 'Preparing trial' : error ? 'Trial error' :
+    selection.status !== 'ready' ? 'Simulated trial · ready' : !started ? 'Trial ready' :
+      phase === 'complete' ? 'Complete' : completed ? 'Replay' :
+        phase === 'running' ? 'Running' : phase === 'paused' ? 'Paused' : 'Replay'
 
   return (
-    <div
-      className={`live-strip run-${tag.toLowerCase()}`}
-      aria-live="polite"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape' && open) setOpen(false)
-      }}
-    >
-      <div className="live-head">
-        <span className="live-tag">{tag}</span>
-        <span className="live-time">
-          {formatRunLabel(runSeq)} · {untouched ? 'T+0:00' : `T+${formatTime(t)}`}
+    <div className={`live-strip run-${completed && phase !== 'complete' ? 'replay' : phase}`}>
+      <div className="live-head" role="status" aria-live="polite">
+        <span className="live-tag">{started && selection.status === 'ready' ? `Simulated trial · ${tag}` : tag}</span>
+        <span className="live-time" title={selection.runId}>
+          {formatRunLabel(runSeq)} · T+{formatTime(horizon)}
         </span>
-        <button
-          className={chip.cls}
-          title={chip.title}
-          aria-expanded={onOpenSettings ? undefined : open}
-          aria-label={onOpenSettings ? `${chip.text} · Edit run settings in Prepare` : undefined}
-          onClick={() => onOpenSettings ? onOpenSettings() : setOpen((v) => !v)}
-        >
-          {chip.text}
-        </button>
-        <span className="chip-meta">{chip.meta}</span>
-        <span className="live-state">{state}</span>
-        <button
-          className="mini run-reset"
-          onClick={cleanReset}
-          title="New run id; empty observed horizon; recompute analysis"
-        >
-          Clean reset
-        </button>
+        <span className="muted small">
+          {error ? selection.message : started && selection.status === 'ready'
+            ? `Visible prefix through ${formatTime(horizon)} · achieved observation through ${formatTime(observed)}${completed ? ' · full trial observed' : ''}`
+            : selection.status === 'cancelled' ? 'Preparation cancelled' : 'No outcomes observed yet'}
+        </span>
       </div>
-      {open ? <McPopover run={run} mc={mc} /> : null}
+      <div className="live-head">
+        {preparing && <>
+          <button className="mini" onClick={pauseRun} aria-label="Pause trial preparation start">Pause</button>
+          <button className="mini" onClick={cancelTrialPreparation}>Cancel</button>
+        </>}
+        {(error || selection.status === 'cancelled') && <button className="mini" onClick={startTrialRun}>Retry</button>}
+        {phase === 'complete' && <button className="mini" onClick={startTrialRun}>Replay</button>}
+        <button className="mini run-reset" onClick={() => resetAnalysisRun('manual')}
+          title="New run" aria-label="New run">New run</button>
+        {onOpenSettings && <button className="mini" onClick={onOpenSettings}>Forecast and analysis</button>}
+      </div>
     </div>
   )
 }

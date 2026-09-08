@@ -9,7 +9,7 @@ import { KIND_NAMES, formatRunLabel } from '../state/labels'
 import { useStore } from '../state/store'
 import { State } from '../ui/kit'
 import { Actions, ObjectHeader, Row, Section } from './inspector/kit'
-import { McPopover } from './analysis/LiveStrip'
+import { ForecastSettings } from './analysis/ForecastSettings'
 import { EnvironmentSettings } from './analysis/widgets/EnvironmentWidget'
 import { FireDoctrineSettings } from './analysis/widgets/FireDoctrineWidget'
 import { RequirementSettings } from './analysis/widgets/RequirementGatesWidget'
@@ -37,15 +37,6 @@ function findingEntityScope(finding: RunValidityFinding, entities: Entity[]): st
       return name ? `${name} · ${id}` : id
     })
     .join(', ')
-}
-
-/**
- * The MC slice publishes every ten replicates. Only the popover reads it, so it
- * subscribes here and the Prepare panel does not re-render during a run.
- */
-function PrepareMcPopover({ run }: { run: ReturnType<typeof runSettings> }) {
-  const mc = useStore((state) => state.mc)
-  return <McPopover run={run} mc={mc} />
 }
 
 /**
@@ -161,14 +152,14 @@ export function BoardPreparation() {
 
       <div id="prepare-run" tabIndex={-1}>
         <Section
-          label="Run configuration"
+          label="Forecast and analysis"
           note={run.runMode === 'deterministic' ? 'Envelope' : 'Estimate'}
         >
           <p className="prepare-setting-impact muted small">
-            Scenario and run · Mode, seed and uncertainty settings define the run.
+            Forecast mode, seed and uncertainty settings.
             Analysis-affecting changes reset playback and mark estimates stale.
           </p>
-          <PrepareMcPopover run={run} />
+          <ForecastSettings />
         </Section>
       </div>
 

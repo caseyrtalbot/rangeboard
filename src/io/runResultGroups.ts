@@ -5,6 +5,93 @@ import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import type { RunValidityAssessment } from '../analysis/runValidity'
 import { assessRunValidity } from '../analysis/runValidity'
 import { engagementReleaseS } from '../playback/engagementTiming'
+import type { TrialCounts, TrialResultView, TrialSummary } from '../analysis/trialResult'
+import { trialResultOf, trialSnapshotAt } from '../analysis/trialResult'
+import type { TrialMemberState } from '../playback/trialTrackState'
+import { trialTrackStatesAt } from '../playback/trialTrackState'
+import type { TrialManifest, TrialJamDecision } from '../playback/trialTypes'
+import type { SensorScanObservation } from '../playback/detection'
+import { analysisBasisSignature } from '../state/analysisBasis'
+
+export interface TrialResultGroup {
+  basis: 'simulated-trial'
+  parameterBasis: 'nominal-aleatory'
+  independentlyInstrumented: false
+  confidenceInterval: null
+  horizon: { kind: 'completed-trial'; durationS: number; observedThroughS: number }
+  population: { trackCount: number; memberCount: number; excludedNoPathIds: string[] }
+  scenario: Scenario
+  manifest: TrialManifest
+  assessments: ThreatAssessment[]
+  attrition: AttritionReport
+  observations: SensorScanObservation[]
+  jamDecisions: TrialJamDecision[]
+  counts: TrialCounts
+  members: TrialMemberState[]
+  summary: TrialSummary
+  validity: RunValidityAssessment
+  measures: Record<string, string | number | boolean | null>
+}
+
+/** Export captured facts, revalidating at the boundary rather than trusting cached views. */
+export function buildTrialResultGroup(trial: TrialResultView): TrialResultGroup {
+  if (trial.manifest.basisSignature !== analysisBasisSignature(trial.scenario)) {
+    throw new Error('Trial basis signature does not match its captured scenario')
+  }
+  const view = trialResultOf(trial.scenario, trial.manifest, {
+    ...trial.result, observedThroughS: trial.observedThroughS, validity: trial.validity,
+  })
+  const snapshot = trialSnapshotAt(view, view.durationS)
+  if (trial.durationS !== view.durationS || snapshot.horizon.kind !== 'completed-trial' || snapshot.summary?.status !== 'ready') {
+    throw new Error('Cannot export an incomplete trial')
+  }
+  const members = trialTrackStatesAt(view, view.durationS).flatMap(track => track.members)
+  const counts = snapshot.counts
+  if (Object.values(counts).some(value => !Number.isInteger(value) || value < 0)) {
+    throw new Error('Invalid trial counts')
+  }
+  const validity = view.validity ?? assessRunValidity({
+    ...view.scenario, runMode: 'monte-carlo', uncertainty: 'aleatory',
+  }, view.assessments)
+  const tracks = view.assessments.filter(a => a.status !== 'no-path')
+  const warnings = tracks.map(a => a.warningS).filter((t): t is number => t != null && Number.isFinite(t))
+  const heldTracks = tracks.filter(a => (a.sensorObservations ?? []).some(sensor =>
+    sensor.intervals.some(([start, end]) => start <= view.durationS && end > start))).length
+  return {
+    basis: 'simulated-trial', parameterBasis: 'nominal-aleatory',
+    independentlyInstrumented: false, confidenceInterval: null,
+    horizon: { ...snapshot.horizon, kind: 'completed-trial' },
+    population: {
+      trackCount: counts.totalTracks, memberCount: members.length,
+      excludedNoPathIds: view.assessments.filter(a => a.status === 'no-path').map(a => a.uasId),
+    },
+    scenario: view.scenario, manifest: view.manifest, assessments: view.assessments,
+    attrition: view.attrition, observations: view.observations, jamDecisions: view.jamDecisions,
+    counts, members, summary: { ...snapshot.summary, validity }, validity,
+    measures: {
+      realization: 'One simulation realization; no ensemble confidence interval or independently observed T&E claim',
+      buildRevision: view.manifest.buildRevision ?? 'Build revision unavailable',
+      'events.tS': 'assignment/accounting time in seconds from T0',
+      'events.tReleaseS': 'physical release time in seconds from T0',
+      'events.tEffectS': 'modeled effect time in seconds from T0',
+      'events.shipIdx': 'actual zero-based member index within the threat',
+      'observations.members.drawIndex': 'draw rank, not member identity; memberIdx identifies the actual member',
+      memberDenominator: members.length,
+      trackDenominator: counts.totalTracks,
+      population: 'Member counts include no-path members; track metrics exclude excludedNoPathIds',
+      heldTracks,
+      heldTracksDefinition: 'tracks with any retained held interval by the completed horizon; not current holds',
+      noModelsArrival: 'members without a modeled arrival, including defeated and no-path members; not a disjoint outcome partition',
+      activeAtHorizon: 'members without a reached hard or soft defeat, including arrivals and no-path members',
+      lateEffects: 'Late hard and soft effects never subtract previously realized leakage',
+      reportedLeakers: view.hasActiveAsset ? counts.arrivedUndefeated : null,
+      protection: view.hasActiveAsset && tracks.length > 0 ? counts.arrivedUndefeated === 0 : null,
+      protectionDefinition: 'no realized undefeated arrivals through the completed horizon; not a requirement verdict',
+      warningS: view.hasActiveAsset && warnings.length > 0 ? Math.min(...warnings) : null,
+      warningDefinition: 'minimum finite sampled track warning in seconds; null when unavailable',
+    },
+  }
+}
 
 interface ResultGroup {
   basis: 'planning-envelope' | 'monte-carlo-estimate' | 'paired-one-at-a-time'
@@ -21,6 +108,7 @@ export interface RunResultGroups {
   summary: ResultGroup
   mcSummary?: ResultGroup
   sensitivity?: ResultGroup
+  trial?: TrialResultGroup
 }
 
 /** Describe existing outputs without changing their values or statistical algorithms. */
@@ -30,7 +118,11 @@ export function runResultGroups(
   report: AttritionReport,
   mc: McSummary | null,
   sensitivity: SensitivitySummary | null,
+  trial: TrialResultView | null = null,
 ): RunResultGroups {
+  if (trial && trial.manifest.basisSignature !== analysisBasisSignature(scenario)) {
+    throw new Error('Trial basis signature does not match the export package')
+  }
   const envelope = assessRunValidity({ ...scenario, runMode: 'deterministic' }, assessments)
   const estimate = assessRunValidity({ ...scenario, runMode: 'monte-carlo' }, assessments)
   const group = (measures: ResultGroup['measures']): ResultGroup => ({
@@ -134,5 +226,6 @@ export function runResultGroups(
       replicates: sensitivity.replicates,
     },
   }
+  if (trial) groups.trial = buildTrialResultGroup(trial)
   return groups
 }

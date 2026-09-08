@@ -1,11 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import fixture from '../../../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 import { EMPTY_HORIZON, FULL_RUN, type ExecutionHorizon } from '../../../analysis/horizon'
 import type { TimeSeriesProps } from '../../../charts/TimeSeries'
-import { parseAutosave } from '../../../io/persist'
 import { useStore } from '../../../state/store'
 import { TimeSeriesWidget } from './TimeSeriesWidget'
+import { installTrial, observeTrial, unstartTrial } from './trialTestState'
 
 const chart = vi.hoisted(() => vi.fn<(props: TimeSeriesProps) => void>())
 // Chart censoring belongs to the chart contract; this boundary must pass the horizon.
@@ -21,45 +20,50 @@ function render(horizon: ExecutionHorizon, params: Record<string, unknown> = { s
   return renderToStaticMarkup(<TimeSeriesWidget horizon={horizon} id="series" params={params} collapsed={false} customize={false} index={0} count={1} />)
 }
 
-describe('TimeSeriesWidget visibility', () => {
-  beforeEach(() => {
-    useStore.getState().replaceScenario(parseAutosave(JSON.stringify(fixture)))
-    useStore.getState().advanceRun(1)
-    useStore.getState().pauseRun()
-    useStore.getState().scrubTo(250)
-    chart.mockClear()
-  })
+describe('TimeSeriesWidget trial visibility', () => {
+  beforeEach(() => { installTrial(1.99); chart.mockClear() })
 
-  it('retains unscoped series labels and the earliest arrival marker', () => {
+  it('maps the saved expected-kills id to realized pre-arrival defeats in Analyze', () => {
     const html = render(FULL_RUN)
-    expect(html).toContain('Expected kills')
-    expect(html).toContain('ARR')
-    expect(html).toContain('0.5 s · basis per series')
-    expect(chart.mock.calls[0][0].horizonS).toBeUndefined()
+    expect(html).toContain('Pre-arrival defeats')
+    expect(html).toContain('observed')
+    expect(html).not.toContain('Expected')
+    const props = chart.mock.calls[0][0]
+    expect(props.series[0]).toMatchObject({ id: 'kpi.expectedKills', basis: 'simulated-trial', label: 'Pre-arrival defeats', values: [0, 0, 0, 0] })
+    expect(props.horizonS).toBe(1.99)
   })
 
-  it.each([{}, { preset: 'sensors' }, { preset: 'effectors' }, { preset: 'threat' }])('caps every chart for %j before future outcomes', (params) => {
-    const html = render({ scoped: true, horizonS: 1 }, params)
+  it.each([{}, { preset: 'sensors' }, { preset: 'effectors' }, { preset: 'threat' }])('bounds every chart and series for %j without bands', params => {
+    render(FULL_RUN, params)
     expect(chart).toHaveBeenCalled()
     for (const [props] of chart.mock.calls) {
-      expect(props.horizonS).toBe(1)
-      expect(props.tS).toBe(1)
-      expect(props.marks?.some((mark) => mark.tS > 1)).not.toBe(true)
+      expect(props.horizonS).toBe(1.99)
+      expect(props.tS).toBe(1.99)
+      expect(props.marks?.some(mark => mark.tS > 1.99)).not.toBe(true)
+      for (const series of props.series) {
+        expect(series.values).toHaveLength(4)
+        expect(series).toMatchObject({ basis: 'simulated-trial' })
+        expect(series).not.toHaveProperty('band80')
+        expect(series).not.toHaveProperty('band95')
+        expect(series.label).not.toMatch(/Expected|E\[/)
+      }
     }
-    expect(html).not.toContain('ARR')
   })
 
-  it('passes EMPTY_HORIZON to every chart and drops event marks', () => {
+  it('keeps EMPTY_HORIZON free of charts and outcomes before first Play', () => {
+    unstartTrial()
     const html = render(EMPTY_HORIZON)
-    expect(chart.mock.calls[0][0].horizonS).toBe(-Infinity)
-    expect(chart.mock.calls[0][0].marks).toEqual([])
+    expect(chart).not.toHaveBeenCalled()
+    expect(html).toContain('Simulated trial · ready')
     expect(html).not.toContain('ARR')
   })
 
-  it('never presents forecast arrival as an event even after its time, and preserves params', () => {
+  it('reveals only a reached trial arrival and preserves params', () => {
     const params = { seriesIds: ['kpi.expectedKills'], unknown: 'saved' }
     const before = structuredClone(params)
-    expect(render({ scoped: true, horizonS: 1000 }, params)).not.toContain('ARR')
+    expect(render(FULL_RUN, params)).not.toContain('ARR')
+    observeTrial(5)
+    expect(render(FULL_RUN, params)).toContain('ARR')
     expect(params).toEqual(before)
   })
 })

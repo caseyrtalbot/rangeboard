@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "7d2d31c0b529dafdcebd97fdec436d6f3e953ee1b5e4ceb6517f1bf3fb55df58",
+      "sha256": "75121baf78bec5d73be4f8f327cf58939296019bfeb570c5319394473d3bd991",
       "reviewedAt": "2026-09-08",
-      "note": "Indexed the preserved performance handoff as historical and updated the current continuation-status description."
+      "note": "Added the direct R5 sampled experience evidence link next to R4; reviewed index placement."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1b966a4069726fc2cd802034000c8c568132c314f8def85f6a0a0b8b9707000b",
+      "sha256": "8b3cd2895d0d027911910ec624e97f04fad910d2a83df4825512ad6fcfa518ed",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed unused detail barrel, asset and implementation-only exports; feature entry points and staged R4 boundaries remain accurate."
+      "note": "Reviewed sampled Play default, Replay/New run, observed-horizon Execute, labeled Forecast and Monte Carlo sections, trial export group and the new trial module entry points after R5."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "f5ed7f2ba2b97404b24625505de368da38f3d17f80f27b5a20279cc1caf684cb",
+      "sha256": "01ad797c528eb410a0242fac3ae94ac0b113c685f59f9f5384e4b5d621ffce61",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed private helper exports, reset cache comments and doctrine-off timing copy; numerical behavior, cache invariants and release timing contracts are unchanged."
+      "note": "Reviewed trial adapters, selectors, store transport and export group after R5; updated invariants and module list."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "ca46a65a7a7962f85bc51b064d590b373a2e1c8b6084dc6b5a689c521aeb2971",
+      "sha256": "b9b8415f0f0f88b8cff0717723c6eccff16f5c5534d06b55fed53a4bebd605f3",
       "reviewedAt": "2026-09-08",
-      "note": "Documented current-source test discovery under src and retained separate documentation, bundle and browser checks."
+      "note": "Reviewed fixed-ID parity harness reuse for R5, the Board shell spec trial-readiness wait, trial adapter and export tests, and the retained R5 browser harness location."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -89,16 +89,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "d7387ca01c46b59b5964047000c97f4bc46b084ca1ee75e419b7ce505d4e7a8a",
+      "sha256": "71315964fe11fb5895267dc6c25555253016d1e7fdf0a2d9afa0d9b1f244d207",
       "reviewedAt": "2026-09-08",
-      "note": "Documented scoped tests and current continuation boundaries; archived handoffs do not select future work."
+      "note": "Reviewed the Board shell spec trial-readiness wait; documented CI sequence and separate browser-check command remain accurate without prose changes."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "d8b7cfee105795d73c93b563c008726b9e7ebe26c23937ea19e860b279290cbf",
+      "sha256": "90ee43233cf5a8e50b6cd49a46a11860c10268db97146e21091b90b09e62cf94",
       "reviewedAt": "2026-09-08",
-      "note": "Replaced obsolete Wave 6 tasking with verified R0-R4 publication status and explicit unstarted R5 and named-library boundaries; preserved the previous handoff byte for byte as dated history."
+      "note": "Recorded R5 completion and evidence link; replaced the unstarted-R5 boundary with the recorded follow-ups."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

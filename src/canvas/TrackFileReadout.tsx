@@ -2,19 +2,17 @@ import { Fragment, useMemo } from 'react'
 import { useStore } from '../state/store'
 import { modelFor } from '../model/scenario'
 import { entityInk } from '../ui/ink'
-import { selectEffectiveLayers, selectExecutionHorizon, selectSimTimeS } from '../state/selectors'
+import { selectEffectiveLayers } from '../state/selectors'
 import type { Entity, Scenario } from '../model/types'
-import type { ThreatAssessment } from '../playback/sim'
+import type { TrialResultView } from '../analysis/trialResult'
+import { renderedTrialGeometry } from './LiveScene'
 import { PHASE_STYLE } from '../playback/trackState'
-import type { TrackTimeline } from '../playback/trackState'
 import { threatReadoutAt } from '../panels/analysis/threatReadout'
-import { sweepAt } from '../playback/sweepAt'
+import { trialSweepAt } from '../playback/trialSweepAt'
 
 interface Props {
-  /** Prefix-aggregated timeline, built once in CanvasStage. */
-  timeline: TrackTimeline
-  /** Whole-run threat sweep, shared with the analysis panel. */
-  assessments: ThreatAssessment[]
+  trial: TrialResultView | null
+  horizonS: number | null
   /** Canvas host size, screen px. The leader line draws in that frame. */
   size: { w: number; h: number }
   onOpenDetail?: () => void
@@ -39,37 +37,29 @@ const CARD_ANCHOR_Y = DOCK + 22
 function ReadoutCard({
   entity,
   scenario,
-  timeline,
-  assessments,
+  trial,
+  horizonS,
   size,
   onOpenDetail,
 }: { entity: Entity; scenario: Scenario } & Props) {
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
-  const simTimeS = useStore(selectSimTimeS)
-  const horizon = useStore(selectExecutionHorizon)
-  const tObs = horizon.scoped ? Math.min(simTimeS, horizon.horizonS) : simTimeS
+  const simTimeS = useStore(s => s.playback.simTimeS)
+  const tObs = horizonS == null ? -Infinity : Math.min(horizonS, simTimeS)
+  const horizon = useMemo(() => ({ scoped: true, horizonS: tObs }), [tObs])
   const select = useStore((s) => s.select)
   const setRightTab = useStore((s) => s.setRightTab)
 
   const model = modelFor(scenario, entity)
   const color = entityInk(entity, model)
-  // The sweep at simTimeS is the one the canvas just drew from (sweepAt), so
-  // the card reruns no sensor sweep of its own.
-  const readout = useMemo(
-    () =>
-      threatReadoutAt({
-        scenario,
-        entity,
-        timeline,
-        assessments,
-        tS: tObs,
-        horizon,
-        units,
-        sweep: tObs === -Infinity ? undefined : sweepAt(scenario, timeline, tObs),
-      }),
-    [scenario, entity, timeline, assessments, tObs, horizon, units],
-  )
+  const readout = useMemo(() => {
+    const anchor = renderedTrialGeometry(scenario, trial, horizonS == null ? null : tObs, simTimeS).tracks.get(entity.id)
+    return threatReadoutAt({
+      scenario, entity, trial, horizonS, tS: tObs, horizon, units,
+      anchor: anchor ? { position: anchor.pos } : undefined,
+      trialSweep: trial && tObs !== -Infinity ? trialSweepAt(trial, tObs) : undefined,
+    })
+  }, [scenario, entity, trial, horizonS, simTimeS, tObs, horizon, units])
   const compactRows = [
     { label: 'CURSOR', value: readout.cursorText },
     {
@@ -79,8 +69,8 @@ function ReadoutCard({
     { label: 'ALT', value: readout.altitudeText },
   ]
   const pill = PHASE_STYLE[readout.phase]
-  const sx = readout.position.x * camera.scale + camera.x
-  const sy = readout.position.y * camera.scale + camera.y
+  const sx = readout.anchorPosition.x * camera.scale + camera.x
+  const sy = readout.anchorPosition.y * camera.scale + camera.y
 
   return (
     <div className="ro-host">
@@ -114,6 +104,7 @@ function ReadoutCard({
             </Fragment>
           ))}
         </div>
+        {readout.state && <div className="ro-v">{readout.rows.find(row => row.id === 'residual')?.value}</div>}
         <div className="ro-foot">
           <span>{readout.sourceHorizon}</span>
           <button
@@ -141,7 +132,7 @@ function ReadoutCard({
  * the selection and the scenario, so nothing time-dependent mounts until one
  * UAS is selected and the telemetry layer is on.
  */
-export function TrackFileReadout({ timeline, assessments, size, onOpenDetail }: Props) {
+export function TrackFileReadout({ trial, horizonS, size, onOpenDetail }: Props) {
   const scenario = useStore((s) => s.scenario)
   const show = useStore((s) => selectEffectiveLayers(s).trackTelemetry)
   const selectedIds = useStore((s) => s.selection.entityIds)
@@ -154,8 +145,8 @@ export function TrackFileReadout({ timeline, assessments, size, onOpenDetail }: 
     <ReadoutCard
       entity={entity}
       scenario={scenario}
-      timeline={timeline}
-      assessments={assessments}
+      trial={trial}
+      horizonS={horizonS}
       size={size}
       onOpenDetail={onOpenDetail}
     />

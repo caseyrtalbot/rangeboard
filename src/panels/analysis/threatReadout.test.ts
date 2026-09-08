@@ -1,18 +1,89 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { EMPTY_HORIZON, FULL_RUN } from '../../analysis/horizon'
-import { detectionsAt } from '../../playback/detection'
-import { trackStatesAt } from '../../playback/trackState'
 import { engagementPicture } from '../../analysis/impact'
 import { threatPictureAt } from '../../analysis/threatAggregation'
 import { emptyScenario } from '../../model/seed'
 import { buildTrackTimeline } from '../../playback/trackState'
 import { useStore } from '../../state/store'
 import { ThreatPicture } from './ThreatPicture'
-import { threatReadoutAt } from './threatReadout'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { EMPTY_HORIZON } from '../../analysis/horizon'
+import { mixedTrial } from '../../playback/__fixtures__/trialFixture'
+import { trialSweepAt } from '../../playback/trialSweepAt'
+import { threatReadoutAt, trialTelemetryAt } from './threatReadout'
 
-function fixture(softShot = false, killDelta = 0.999) {
+vi.mock('../../playback/detection', async importOriginal => ({
+  ...await importOriginal<typeof import('../../playback/detection')>(),
+  detectionsAt: () => { throw new Error('No deterministic detection fallback') },
+}))
+
+function fixture() {
+  const { scenario, view } = mixedTrial()
+  return { scenario, trial: view, entity: scenario.entities[0], units: 'metric' as const }
+}
+
+describe('trial threat readout', () => {
+  it('shows integer member outcomes without ghosting surviving formation members', () => {
+    const input = fixture()
+    const readout = threatReadoutAt({ ...input, tS: 3 })
+    expect(readout.phase).not.toBe('ghost')
+    expect(readout.rows.find(row => row.id === 'residual')?.value).toBe('3 active · 1 hard kill · 1 mission kill · 5 members')
+    expect(readout.rows.find(row => row.id === 'effects')?.value).toBe('3 landed · 1 hard kill · 1 mission kill')
+    expect(readout.ghostLine).toContain('1 hard-killed members frozen')
+    expect(JSON.stringify(readout)).not.toContain('E[k]')
+  })
+
+  it('rejects a future sweep and caps effects, classification, arrivals and warning at R2 horizon', () => {
+    const input = fixture()
+    input.trial.assessments[0].warningS = 3.9
+    const readout = threatReadoutAt({ ...input, tS: 50, horizonS: 50, horizon: { scoped: true, horizonS: 1 },
+      trialSweep: trialSweepAt(input.trial, 50) })
+    expect(readout.state?.effectsLanded).toBe(0)
+    expect(readout.state?.holdingSensorIds).toEqual([])
+    expect(readout.state?.classification).toBe('unknown')
+    expect(readout.firstDetectText).toBe('—')
+    expect(readout.warningText).toBe('—')
+    expect(readout.rows.find(row => row.id === 'arrival')?.value).toBe('—')
+    expect(readout.cursorText).toBe('T+0:01')
+    expect(readout.planningRows.map(row => row.label)).toEqual(['Planned CPA', 'Planned arrival'])
+    const reached = threatReadoutAt({ ...input, tS: 5 })
+    expect(reached.firstDetectText).toContain('radar')
+    expect(reached.warningText).toBe('0:03')
+    expect(reached.rows.find(row => row.id === 'arrival')?.value).toContain('3 undefeated members')
+  })
+
+  it('does not reconstruct a pathless detection or use legacy caller inputs', () => {
+    const input = fixture()
+    const readout = threatReadoutAt({ ...input, trial: null, tS: 50, assessments: input.trial.assessments })
+    expect(readout.state).toBeUndefined()
+    expect(readout.phase).toBe('undetected')
+    expect(readout.warningText).toBe('—')
+    const parked = threatReadoutAt({ ...input, entity: input.scenario.entities[2], tS: 50 })
+    expect(parked.state?.holdingSensorIds).toEqual([])
+    expect(parked.phase).toBe('undetected')
+    expect(parked.state?.shipCount).toBe(2)
+  })
+
+  it.each([null, 0])('preserves the untouched R2 gate with horizonS=%s', horizonS => {
+    const readout = threatReadoutAt({ ...fixture(), horizonS, tS: 100, horizon: EMPTY_HORIZON })
+    expect(readout.state).toBeUndefined()
+    expect(readout.cursorText).toBe('—')
+    expect(readout.firstDetectText).toBe('—')
+    expect(readout.rows.find(row => row.id === 'hold')?.value).toBe('0 sensors')
+  })
+
+  it('keeps an EW channel separate from sampled jam and counts only released incoming rounds', () => {
+    const { trial } = fixture()
+    expect(trialTelemetryAt(trial, 'swarm', 1.3).incomingSalvos).toBe(0)
+    expect(trialTelemetryAt(trial, 'swarm', 1.3).jammedNow).toBe(false)
+    expect(trialTelemetryAt(trial, 'swarm', 1.5).jammedNow).toBe(true)
+    expect(trialTelemetryAt(trial, 'swarm', 1.8).incomingSalvos).toBe(1)
+    expect(trialTelemetryAt(trial, 'swarm', 2).incomingSalvos).toBe(0)
+    expect(trialTelemetryAt(trial, 'swarm', 3.1).coasting).toBe(true)
+  })
+})
+
+function forecastFixture(softShot = false, killDelta = 0.999) {
   const scenario = useStore.getState().scenario
   const entity = scenario.entities.find((candidate) => candidate.kind === 'uas')!
   const { assessments, report: baseReport } = engagementPicture(scenario)
@@ -37,7 +108,7 @@ function fixture(softShot = false, killDelta = 0.999) {
   return { scenario, entity, assessments, report, timeline }
 }
 
-describe('threat outcome wording', () => {
+describe('forecast threat-picture wording (retained)', () => {
   beforeEach(() => {
     useStore.getState().replaceScenario(emptyScenario())
     useStore.getState().addEntityFromModel('lib-mavic3', { x: 0, y: -3000 })
@@ -47,43 +118,10 @@ describe('threat outcome wording', () => {
     useStore.getState().finishPath()
   })
 
-  it.each([
-    [false, 'hard-kill effects'],
-    [true, 'mission-kill effects'],
-  ] as const)('qualifies ghost outcomes with softShot=%s', (softShot, effects) => {
-    const input = fixture(softShot)
-    const readout = threatReadoutAt({ ...input, tS: 10, units: 'metric' })
-
-    expect(readout.phase).toBe('ghost')
-    expect(readout.pillLabel).toBe('EXPECTED DEFEAT')
-    expect(readout.ghostLine).toBe(
-      `Expected residual below cutoff at T+0:10 (${effects}). Motion continues along the planned path.`,
-    )
-    expect(readout.state?.expectedKills).toBe(0.999)
-    expect(readout.state?.residual).toBeCloseTo(0.001)
-    expect(readout.state?.eliminatedBySoft).toBe(softShot)
-    expect(readout.rows.find((row) => row.id === 'effects')?.value).toBe('1 landed · E[k] 1.00')
-    expect(readout.rows.find((row) => row.id === 'residual')?.value).toBe('0.00 of 1 ships')
-
-    const before = threatReadoutAt({ ...input, tS: 9.5, units: 'metric' })
-    expect(before.pillLabel).toBe('ENGAGED')
-    expect(before.ghostLine).toBeNull()
-  })
-
-  it('preserves fractional outcomes below the ghost cutoff without claiming a realized kill', () => {
-    const readout = threatReadoutAt({ ...fixture(false, 0.952), tS: 10, units: 'metric' })
-
-    expect(readout.pillLabel).toBe('EXPECTED DEFEAT')
-    expect(readout.ghostLine).toContain('Expected residual below cutoff')
-    expect(readout.state?.expectedKills).toBe(0.952)
-    expect(readout.rows.find((row) => row.id === 'effects')?.value).toBe('1 landed · E[k] 0.95')
-    expect(readout.rows.find((row) => row.id === 'residual')?.value).toBe('0.05 of 1 ships')
-  })
-
   it.each(['live', 'projected', 'debrief'] as const)(
     'renders expected defeat and unchanged group quantities in %s mode',
     (mode) => {
-      const { scenario, assessments, report } = fixture()
+      const { scenario, assessments, report } = forecastFixture()
       const groups = threatPictureAt(scenario, assessments, report, 10, new Map())
       const html = renderToStaticMarkup(createElement(ThreatPicture, { groups, mode, membersOpen: true }))
 
@@ -97,7 +135,7 @@ describe('threat outcome wording', () => {
   )
 
   it('labels partial live effects as expected', () => {
-    const { scenario, assessments, report } = fixture(false, 0.75)
+    const { scenario, assessments, report } = forecastFixture(false, 0.75)
     const groups = threatPictureAt(scenario, assessments, report, 10, new Map())
     const html = renderToStaticMarkup(createElement(ThreatPicture, {
       groups, mode: 'live', membersOpen: true,
@@ -107,62 +145,6 @@ describe('threat outcome wording', () => {
     expect(html).not.toContain('EFFECT OBS')
     expect(html).not.toContain('EXPECTED DEFEAT')
     expect(html).toContain('title="0.75 expected kills · 0.25 expected surviving ships · 1 salvos"')
-  })
-
-  it('ignores a future supplied sweep and hides unreached defeat at a 30-second horizon', () => {
-    const input = fixture()
-    const report = { ...input.report, events: input.report.events.map((event) => ({ ...event, tS: 35, tEffectS: 40 })) }
-    const timeline = buildTrackTimeline(input.scenario, input.assessments, report)
-    const readout = threatReadoutAt({
-      ...input, timeline, tS: 100, units: 'metric', horizon: { scoped: true, horizonS: 30 },
-      sweep: { states: trackStatesAt(timeline, 100), hits: detectionsAt(input.scenario, 100) },
-    })
-    expect(readout.pillLabel).not.toBe('EXPECTED DEFEAT')
-    expect(readout.ghostLine).toBeNull()
-    expect(readout.state?.effectsLanded).toBe(0)
-    expect(readout.cursorText).toBe('T+0:30')
-    expect(readout.rows.some((row) => row.horizon === 'full-path')).toBe(false)
-    expect(readout.planningRows.map((row) => row.label)).toEqual(['Planned CPA', 'Planned arrival'])
-    const reached = threatReadoutAt({ ...input, timeline, tS: 100, units: 'metric', horizon: { scoped: true, horizonS: 40 } })
-    expect(reached.pillLabel).toBe('EXPECTED DEFEAT')
-    expect(reached.ghostLine).toContain('T+0:40')
-  })
-
-  it('shows untouched telemetry even when a T0 sensor fallback would detect a pathless threat', () => {
-    useStore.getState().addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
-    const input = fixture()
-    const scenario = { ...input.scenario, paths: [] }
-    expect(detectionsAt(scenario, 0).get(input.entity.id)?.length).toBeGreaterThan(0)
-    const readout = threatReadoutAt({ ...input, scenario, tS: 100, units: 'metric', horizon: EMPTY_HORIZON })
-    expect(readout.state).toBeUndefined()
-    expect(readout.phase).toBe('undetected')
-    expect(readout.ghostLine).toBeNull()
-    expect(readout.cursorText).toBe('—')
-    expect(readout.engageText).toBe('—')
-    expect(readout.warningText).toBe('—')
-    expect(readout.firstDetectText).toBe('—')
-    for (const id of ['position', 'classification', 'ew', 'residual']) {
-      expect(readout.rows.find((row) => row.id === id)?.value).toBe('—')
-    }
-    expect(readout.rows.find((row) => row.id === 'hold')?.value).toBe('0 sensors')
-  })
-
-  it('preserves the full-run default and censors first detection and warning independently', () => {
-    const input = fixture()
-    const assessments = input.assessments.map((assessment) => ({
-      ...assessment, firstDetectS: 35, arrivalS: 80, warningS: 45,
-    }))
-    const resolve = (horizonS: number) => threatReadoutAt({
-      ...input, assessments, tS: 100, units: 'metric', horizon: { scoped: true, horizonS },
-    })
-    expect(resolve(30).firstDetectText).toBe('—')
-    expect(resolve(35).firstDetectText).toContain('T+0:35')
-    expect(resolve(35).warningText).toBe('—')
-    expect(resolve(80).warningText).toBe('0:45')
-    const defaults = threatReadoutAt({ ...input, tS: 100, units: 'metric' })
-    expect(threatReadoutAt({ ...input, tS: 100, units: 'metric', horizon: FULL_RUN })).toEqual(defaults)
-    expect(defaults.planningRows).toEqual([])
-    expect(defaults.rows.find((row) => row.id === 'arrival')?.label).toBe('Arrival (full path)')
   })
 
 })

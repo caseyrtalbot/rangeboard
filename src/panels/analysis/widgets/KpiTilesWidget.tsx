@@ -1,33 +1,14 @@
-import { FORECAST_IN_ANALYZE, reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
-import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../../analysis/liveStats'
-import { expectedCount } from '../../headlines'
-import { DT } from '../../../playback/clock'
+import { trialKpisAt } from '../../../analysis/liveStats'
 import { formatTime } from '../../../geometry/geo'
-import type { BandSeries, McSummary } from '../../../playback/mcRun'
-import { detectionsAt } from '../../../playback/detection'
+import { trialSweepAt } from '../../../playback/trialSweepAt'
 import type { KpiKey } from '../../../state/analysisLayout'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
-import { useEngagement, useRunCursor } from './controls'
-import { forecastKillLabel, KPI_LABELS } from './labels'
-import { bandMean, bandStep, countSub, currentSummary, formatCount, statMean, timeStatSub } from './mc'
+import { useTrialResult, trialViewOf, trialStateText } from './controls'
+import { TRIAL_KPI_LABELS as KPI_LABELS } from './labels'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
-
-const ZERO_KPIS: LiveKpis = {
-  detected: 0,
-  classified: 0,
-  targetable: 0,
-  engaged: 0,
-  kineticShots: 0,
-  deSalvos: 0,
-  jamSalvos: 0,
-  expectedKills: 0,
-  lateKills: 0,
-  arrivedTracks: 0,
-  leakerShips: 0,
-}
 
 interface Tile {
   key: KpiKey
@@ -64,25 +45,7 @@ function timeTile(
     : { key, value: '—', sub: 'not yet' }
 }
 
-/** The replicate mean at the cursor step and its half-width sub over `reps` replicates. */
-function bandAt(band: BandSeries, t: number, reps: number): { mean: number; sub: string } {
-  const i = bandStep(t, band.mean.length)
-  return { mean: bandMean(band, i, reps) ?? NaN, sub: countSub(band, i, reps) }
-}
-
-/** A count tile over n: the replicate mean with its band sub. */
-function bandCountTile(key: KpiKey, band: BandSeries, t: number, n: number, reps: number): Tile {
-  const at = bandAt(band, t, reps)
-  return { key, value: <>{Number.isFinite(at.mean) ? formatCount(at.mean) : '—'}<small>/{n}</small></>, sub: at.sub }
-}
-
-/** Full-run conditional time statistics have no cursor-conditioned replicate counterpart. */
-function estimateTimeTile(key: KpiKey, stat: McSummary['firstDetectS'], quantity: 'detected' | 'warning'): Tile {
-  const mean = statMean(stat)
-  return { key, value: mean == null ? '—' : formatTime(mean), sub: `full-run · ${timeStatSub(stat, quantity)}` }
-}
-
-function KpiParams({ id, tiles, hasActiveAsset }: { id: string; tiles: KpiKey[]; hasActiveAsset: boolean }) {
+function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
   const setParams = useStore((s) => s.setAnalysisWidgetParams)
   return (
     <div className="params">
@@ -99,7 +62,7 @@ function KpiParams({ id, tiles, hasActiveAsset }: { id: string; tiles: KpiKey[];
                 if (next.length > 0) setParams(id, { tiles: next })
               }}
             />
-            {key === 'killEk' ? forecastKillLabel(hasActiveAsset) : KPI_LABELS[key].label}
+            {KPI_LABELS[key].label}
           </label>
         )
       })}
@@ -109,129 +72,54 @@ function KpiParams({ id, tiles, hasActiveAsset }: { id: string; tiles: KpiKey[];
 
 /** KPI tiles at the cursor time: the run header's counters, one tile per chosen key. */
 export function KpiTilesWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
-  const scenario = useStore((s) => s.scenario)
-  const runId = useStore((s) => s.playback.runId)
-  const mc = useStore((s) => s.mc)
-  const { assessments, report } = useEngagement(scenario, runId)
-  // The engine reports leakers as null when no asset defends: reuse that as the asset signal.
-  const hasActiveAsset = report.totals.reportedLeakers != null
-  const { t: cursorT, untouched: ready, durationS } = useRunCursor(scenario)
-  const t = horizon.scoped ? Math.min(cursorT, horizon.horizonS) : cursorT
-  const untouched = ready || (horizon.scoped && !reached(0, horizon))
-  const bandT = horizon.scoped ? Math.floor(t / DT) * DT : t
-  const fullRun = !horizon.scoped || reached(durationS, horizon)
-  // Nothing is observed before the first play: the replicate means wait too.
-  const forecast = currentSummary(mc, runId)
-  const summary = untouched ? null : forecast
+  const trial = useTrialResult()
+  const view = trialViewOf(trial)
+  const t = trial.horizon
   const tiles = useMemo(() => tilesOf(params), [params])
-  const tl = useMemo(() => buildLiveTimeline(assessments, report), [assessments, report])
-  const threats = useMemo(
-    () => assessments.filter((a) => a.status !== 'no-path'),
-    [assessments],
-  )
-  const wantsTracking = tiles.includes('trackNow')
-  const tracking = useMemo(() => {
-    if (untouched || !wantsTracking) return 0
-    const hits = detectionsAt(scenario, t)
-    return tl.trackIds.filter((uasId) => hits.has(uasId)).length
-  }, [scenario, t, untouched, wantsTracking, tl])
-  const k = untouched ? ZERO_KPIS : liveKpisAt(tl, t)
-  const n = tl.trackCount
-  const cursor = untouched ? -1 : t
-
-  const firstDetect = minOf(threats.map((a) => a.firstDetectS))
-  const firstEffect = minOf(
-    report.events.filter((ev) => ev.killDelta > 0).map((ev) => ev.tEffectS),
-  )
-  const warningHolder = threats.reduce<{ warningS: number; arrivalS: number } | null>(
-    (best, a) =>
-      a.warningS != null && a.arrivalS != null && (best == null || a.warningS < best.warningS)
-        ? { warningS: a.warningS, arrivalS: a.arrivalS }
-        : best,
-    null,
-  )
-  const leakCls = k.leakerShips >= 1 ? 'bad' : k.leakerShips > 0.05 ? 'warn' : ''
+  const stateText = trialStateText(trial.selection, trial.snapshot?.observedThroughS)
+  const k = view ? trialKpisAt(view, t) : null
+  const n = trial.snapshot?.counts.totalTracks ?? 0
+  const tracking = view ? new Set(trialSweepAt(view, t).sensors.filter(s => s.stateAtTime !== 'not-held').map(s => s.threatId)).size : 0
+  const threats = view?.assessments.filter(a => a.status !== 'no-path') ?? []
+  const firstDetect = minOf(threats.map(a => a.firstDetectS))
+  const firstEffect = minOf(view?.attrition.events.filter(e => e.killDelta === 1).map(e => e.tEffectS) ?? [])
+  const warning = threats.filter(a => a.arrivalS != null && a.arrivalS <= t && a.warningS != null)
+    .sort((a, b) => a.warningS! - b.warningS!)[0]
 
   const tile = (key: KpiKey): Tile => {
+    if (!k) return { key, value: '—' }
     switch (key) {
-      case 'detect':
-        if (summary) return bandCountTile(key, summary.detected, bandT, n, summary.replicates)
-        return { key, value: <>{k.detected}<small>/{n}</small></> }
-      case 'trackNow':
-        if (summary) return bandCountTile(key, summary.tracked, bandT, n, summary.replicates)
-        return { key, value: <>{tracking}<small>/{n}</small></> }
-      case 'idClass':
-        return { key, value: <>{k.classified}<small>/{n}</small></> }
-      case 'targetNow':
-        return { key, value: <>{k.targetable}<small>/{n}</small></> }
-      case 'engaged':
-        if (summary) return bandCountTile(key, summary.engaged, bandT, n, summary.replicates)
-        return { key, value: <>{k.engaged}<small>/{n}</small></> }
-      case 'salvos':
-        return {
-          key,
-          value: (
-            <>
-              {k.kineticShots}
-              {k.deSalvos > 0 && <small className="de"> · {k.deSalvos}d</small>}
-              {k.jamSalvos > 0 && <small className="ew"> · {k.jamSalvos}j</small>}
-            </>
-          ),
-        }
-      case 'killEk': {
-        if (!summary) return { key, value: expectedCount(k.expectedKills) }
-        const at = bandAt(summary.kills, bandT, summary.replicates)
-        return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub }
-      }
-      case 'lateEk':
-        return { key, value: expectedCount(k.lateKills) }
-      case 'leakEn': {
-        if (report.totals.reportedLeakers == null) {
-          return { key, value: '—', sub: 'no defended asset' }
-        }
-        if (!summary) return { key, value: k.leakerShips.toFixed(1), cls: leakCls }
-        const at = bandAt(summary.leakers, bandT, summary.replicates)
-        const cls = at.mean >= 1 ? 'bad' : at.mean > 0.05 ? 'warn' : ''
-        return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub, cls }
-      }
-      case 'firstDetect': {
-        if (forecast && !fullRun) return { key, value: '—', title: FORECAST_IN_ANALYZE }
-        if (!summary) return timeTile(key, firstDetect, firstDetect, cursor)
-        return estimateTimeTile(key, summary.firstDetectS, 'detected')
-      }
-      case 'firstEffect':
-        return timeTile(key, firstEffect, firstEffect, cursor)
-      case 'detectToEffect': {
-        const both = firstDetect != null && firstEffect != null
-        const value = both ? firstEffect - firstDetect : null
-        const reachedAt = both ? Math.max(firstDetect, firstEffect) : null
-        return timeTile(key, value, reachedAt, cursor)
-      }
-      case 'minWarning': {
-        if (forecast && !fullRun) return { key, value: '—', title: FORECAST_IN_ANALYZE }
-        if (!hasActiveAsset) return { key, value: '—', sub: 'no defended asset placed' }
-        const arrivalS = warningHolder?.arrivalS ?? null
-        if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
-        return estimateTimeTile(key, summary.minWarningS, 'warning')
-      }
+      case 'detect': return { key, value: <>{k.detected}<small>/{n}</small></> }
+      case 'trackNow': return { key, value: <>{tracking}<small>/{n}</small></> }
+      case 'idClass': return { key, value: <>{k.classified}<small>/{n}</small></> }
+      case 'targetNow': return { key, value: <>{k.targetable}<small>/{n}</small></> }
+      case 'engaged': return { key, value: <>{k.engaged}<small>/{n}</small></> }
+      case 'salvos': return { key, value: <>{k.kineticShots}{k.deSalvos > 0 && <small className="de"> · {k.deSalvos}d</small>}{k.jamSalvos > 0 && <small className="ew"> · {k.jamSalvos}j</small>}</> }
+      case 'killEk': return { key, value: k.kills }
+      case 'lateEk': return { key, value: k.lateKills }
+      case 'leakEn': return { key, value: k.reportedLeakers ?? '—', sub: k.reportedLeakers == null ? 'no defended asset' : undefined, cls: (k.reportedLeakers ?? 0) > 0 ? 'bad' : undefined }
+      case 'firstDetect': return timeTile(key, firstDetect, firstDetect, t)
+      case 'firstEffect': return timeTile(key, firstEffect, firstEffect, t)
+      case 'detectToEffect': return timeTile(key, firstDetect != null && firstEffect != null ? firstEffect - firstDetect : null, firstDetect != null && firstEffect != null ? Math.max(firstDetect, firstEffect) : null, t)
+      case 'minWarning': return view?.hasActiveAsset ? timeTile(key, warning?.warningS ?? null, warning?.arrivalS ?? null, t) : { key, value: '—', sub: 'no defended asset placed' }
     }
   }
 
   const body = customize ? (
-    <KpiParams id={id} tiles={tiles} hasActiveAsset={hasActiveAsset} />
+    <KpiParams id={id} tiles={tiles} />
+  ) : !view ? (
+    <p className="muted small">{stateText}</p>
   ) : threats.length === 0 ? (
     <p className="muted small">No threats with flight paths.</p>
   ) : (
     <div className={`tiles ${tiles.length <= 4 ? 'c2' : 'c3'}`}>
       {tiles.map((key) => {
         const item = tile(key)
-        const estimated = summary && ['detect', 'trackNow', 'engaged', 'killEk', 'leakEn', 'firstDetect', 'minWarning'].includes(key)
-        if (!estimated) item.sub = `planning envelope${item.sub ? ` · ${item.sub}` : ''}`
         return (
-          <div className="tile" key={key} title={item.title ?? (key === 'killEk' && !hasActiveAsset ? 'Expected neutralization mass at the cursor time; no defended asset placed.' : KPI_LABELS[key].hint)}>
-            <span className="tl">{key === 'killEk' ? forecastKillLabel(hasActiveAsset) : KPI_LABELS[key].label}</span>
+          <div className="tile" key={key} title={KPI_LABELS[key].hint}>
+            <span className="tl">{KPI_LABELS[key].label}</span>
             <span className={`tv${item.cls ? ` ${item.cls}` : ''}`}>{item.value}</span>
-            {item.sub ? <span className="ts">{item.sub}</span> : null}
+            <span className="ts">{['firstDetect', 'firstEffect', 'detectToEffect', 'minWarning'].includes(key) ? 'trial milestone' : 'trial count'}{item.sub ? ` · ${item.sub}` : ''}</span>
           </div>
         )
       })}
@@ -244,9 +132,8 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count,
       horizon={horizon}
       type="kpi-tiles"
       title="KPI tiles"
-      meta={`${tiles.length} of ${KPI_KEYS.length}${
-        summary ? ` · ${summary.replicates} replicates · basis per tile` : ' · planning envelope'
-      }`}
+      metaWithinHorizon
+      meta={stateText}
       collapsed={collapsed}
       customize={customize}
       index={index}

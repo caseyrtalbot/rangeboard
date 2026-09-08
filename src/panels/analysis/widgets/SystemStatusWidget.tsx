@@ -1,12 +1,9 @@
-import { reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
-import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
-import type { SystemTelemetryGroup } from '../../../analysis/systemTelemetry'
-import { detectionsAt } from '../../../playback/detection'
+import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
+import type { TrialSystemTelemetry } from '../../../analysis/systemTelemetry'
 import type { SystemStatusKind } from '../../../state/analysisLayout'
-import { useStore } from '../../../state/store'
 import { SystemStatus } from '../SystemStatus'
-import { useEngagement, useRunCursor } from './controls'
+import { useTrialResult, trialViewOf, trialStateText } from './controls'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -17,9 +14,9 @@ function kindOf(params: Record<string, unknown>): SystemStatusKind {
 }
 
 /** Keep the components of one kind, recount, and drop a group left empty. */
-function filterGroups(groups: SystemTelemetryGroup[], kind: SystemStatusKind): SystemTelemetryGroup[] {
+function filterGroups(groups: TrialSystemTelemetry[], kind: SystemStatusKind): TrialSystemTelemetry[] {
   if (kind === 'all') return groups
-  const out: SystemTelemetryGroup[] = []
+  const out: TrialSystemTelemetry[] = []
   for (const group of groups) {
     const components = group.components.filter((c) => c.kind === kind)
     if (components.length === 0) continue
@@ -35,28 +32,11 @@ function filterGroups(groups: SystemTelemetryGroup[], kind: SystemStatusKind): S
 
 /** Component telemetry at the cursor time, filtered to sensors, effectors, or every kind. */
 export function SystemStatusWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
-  const scenario = useStore((s) => s.scenario)
-  const runId = useStore((s) => s.playback.runId)
-  const { assessments, report } = useEngagement(scenario, runId)
-  const { t, untouched } = useRunCursor(scenario)
+  const trial = useTrialResult()
+  const view = trialViewOf(trial)
   const kind = kindOf(params)
-  const empty = horizon.scoped && !reached(0, horizon)
-  const tS = untouched || empty ? null : horizon.scoped ? Math.min(t, horizon.horizonS) : t
-  const runTrackIds = useMemo(
-    () => new Set(assessments.filter((a) => a.status !== 'no-path').map((a) => a.uasId)),
-    [assessments],
-  )
-  const hits = useMemo(
-    () =>
-      tS == null
-        ? new Map()
-        : new Map([...detectionsAt(scenario, tS)].filter(([uasId]) => runTrackIds.has(uasId))),
-    [scenario, tS, runTrackIds],
-  )
-  const systems = useMemo(
-    () => systemTelemetryAt(scenario, assessments, report, tS ?? Number.NEGATIVE_INFINITY, hits),
-    [scenario, assessments, report, tS, hits],
-  )
+  const systems = useMemo(() => view ? trialSystemTelemetryAt(view, trial.horizon) : [], [view, trial.horizon])
+  const stateText = trialStateText(trial.selection, trial.snapshot?.observedThroughS)
   const filtered = useMemo(() => filterGroups(systems, kind), [systems, kind])
   const online = filtered.reduce((sum, group) => sum + group.activeComponents, 0)
   const components = filtered.reduce((sum, group) => sum + group.componentCount, 0)
@@ -74,13 +54,13 @@ export function SystemStatusWidget({ id, params, collapsed, customize, index, co
       type="system-status"
       title={title}
       metaWithinHorizon
-      meta={`planning envelope · ${online}/${components} online`}
+      meta={view ? `${stateText} · ${online}/${components} online` : stateText}
       collapsed={collapsed}
       customize={customize}
       index={index}
       count={count}
     >
-      <SystemStatus groups={filtered} horizon={horizon} sampledAtS={tS ?? -Infinity} />
+      {view ? <SystemStatus groups={filtered} horizon={{ scoped: true, horizonS: trial.horizon }} sampledAtS={trial.horizon} /> : <p className="muted small">{stateText}</p>}
     </WidgetFrame>
   )
 }

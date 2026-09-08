@@ -1,3 +1,4 @@
+import { selectTrialSelection } from './trialSelectors'
 import { create } from 'zustand'
 import type {
   BasemapMode,
@@ -197,7 +198,7 @@ export interface Store {
   playback: PlaybackState
   /** Monte Carlo run state. View state: never persisted, never in history. */
   mc: McState
-  /** Opt-in trial infrastructure, never persisted or consumed by the R4 UI. */
+  /** Captured simulated trial shared by playback and execution views; never persisted. */
   trial: TrialState
   save: SaveState
 
@@ -1444,41 +1445,7 @@ export const useStore = create<Store>()((set, get) => {
     setSimTime: (t) => get().scrubTo(t),
     setSpeedMult: (m) => set((st) => ({ playback: { ...st.playback, speedMult: m } })),
 
-    startRun: () => {
-      if (get().trial.manifest != null) {
-        get().startTrialRun()
-        return
-      }
-      set((st) => {
-        if (st.playback.completedAtMs != null) return st
-        // A preview beyond the observed horizon is never silently promoted
-        // to live data. Resume from the last actually observed instant.
-        const simTimeS = Math.min(st.playback.simTimeS, st.playback.observedThroughS)
-        const first = st.playback.startedAtMs == null
-        if (first) writeRunSeq(st.playback.runSeq + 1)
-        return {
-          ...(first ? observedPatch(st) : {}),
-          playback: {
-            ...st.playback,
-            playing: true,
-            simTimeS,
-            phase: 'running',
-            startedAtMs: st.playback.startedAtMs ?? Date.now(),
-            basisSignature:
-              st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
-          },
-        }
-      })
-      // The replicates belong to the run that just started, so the launch
-      // follows the playback update. A current summary is reused, not redrawn.
-      const st = get()
-      if (runSettings(st.scenario).runMode !== 'monte-carlo') return
-      const current =
-        (st.mc.status === 'running' || st.mc.status === 'done') &&
-        st.mc.runId === st.playback.runId &&
-        st.mc.basisSignature === analysisBasisSignature(st.scenario)
-      if (!current) st.runMonteCarlo()
-    },
+    startRun: () => get().startTrialRun(),
 
     pauseRun: () =>
       set((st) => ({
@@ -1492,7 +1459,7 @@ export const useStore = create<Store>()((set, get) => {
 
     advanceRun: (t) =>
       set((st) => {
-        if (st.trial.manifest != null && st.trial.status !== 'ready') return st
+        if (selectTrialSelection(st).status !== 'ready') return st
         const simTimeS = Math.max(0, t)
         const first = st.playback.startedAtMs == null
         if (first) writeRunSeq(st.playback.runSeq + 1)
@@ -1512,7 +1479,7 @@ export const useStore = create<Store>()((set, get) => {
       }),
 
     completeRun: (durationS) =>
-      set((st) => st.trial.manifest != null && st.trial.status !== 'ready' ? st : ({
+      set((st) => selectTrialSelection(st).status !== 'ready' ? st : ({
         playback: {
           ...st.playback,
           playing: false,
@@ -1559,7 +1526,7 @@ export const useStore = create<Store>()((set, get) => {
 
     prepareTrial: () => {
       let st = get()
-      // Opting in after forecast playback starts needs a clean observation record.
+      // Repair an observation record without a retained trial before preparation.
       if (st.trial.manifest == null && st.playback.startedAtMs != null) {
         st.resetRun()
         st = get()
@@ -1603,6 +1570,7 @@ export const useStore = create<Store>()((set, get) => {
         }
         return
       }
+      if (selectTrialSelection(st).status !== 'ready') return
       const first = st.playback.startedAtMs == null
       if (first) writeRunSeq(st.playback.runSeq + 1)
       set({
@@ -1649,11 +1617,16 @@ export const useStore = create<Store>()((set, get) => {
             ...trial, status: 'error', error: 'Trial manifest mismatch', startWhenReady: false,
           } }
         }
-        startWhenReady = trial.startWhenReady
-        return { trial: {
+        const ready: TrialState = {
           ...trial, status: 'ready', error: null, startWhenReady: false,
           result: { ...message.result, manifest },
-        } }
+        }
+        // Validate the shared adapter once before exposing a ready trial or starting its clock.
+        if (selectTrialSelection({ ...st, trial: ready }).status !== 'ready') {
+          return { trial: { ...trial, status: 'error', error: 'Invalid trial result', startWhenReady: false } }
+        }
+        startWhenReady = trial.startWhenReady
+        return { trial: ready }
       })
       if (startWhenReady) get().startTrialRun()
     },

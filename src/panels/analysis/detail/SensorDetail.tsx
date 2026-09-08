@@ -1,4 +1,3 @@
-import { reached } from '../../../analysis/horizon'
 import { useMemo, type ReactNode } from 'react'
 import {
   SCAN_S,
@@ -10,30 +9,17 @@ import {
 } from '../../../analysis/doctrineFactors'
 import { modelsForEntity } from '../../../analysis/fidelity'
 import {
-  FT_TO_M,
   radarCalibration,
-  radarPdAt,
   refRcsM2For,
-  sensorGeometryGate,
-  sensorHoldGate,
   targetScaled,
 } from '../../../analysis/sensorEnv'
-import {
-  scanLoadSeries,
-  sensorSeries,
-  TRACK_LADDER_STYLE,
-  trackLadderRows,
-} from '../../../analysis/series'
 import { boardDesignator } from '../../../canvas/labelLayout'
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
 import type { Series } from '../../../charts/types'
 import { formatTime } from '../../../geometry/geo'
-import { elevationDeg, slantRangeM } from '../../../geometry/slant'
 import type { Entity } from '../../../model/types'
 import { defaultSensorRole, effectiveDoctrine, mountHeightOf } from '../../../model/types'
-import { DT } from '../../../playback/clock'
-import { entityPosAt, threatAltitudeFt } from '../../../playback/tracks'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { pfaText } from '../../inspector/kit'
@@ -52,46 +38,20 @@ import {
   useDetailRun,
 } from './detailRows'
 
-const LADDER_KINDS = ['search', 'init', 'track', 'coast', 'drop'] as const
-
 /** The sensor pane: Pd and slant per track, the track ladder, load, and the gates by threat. */
 export function SensorDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, runId, setSimTime, assessments, t, durationS, horizon, tObs, untouched } = run
+  const { scenario, setSimTime, assessments, t, durationS, horizon, untouched } = run
   const model = modelFor(scenario, entity)
   const spec = model?.sensor
   const doctrine = effectiveDoctrine(scenario)
   const component = useComponentAt(run, entity.id)
   const color = entityInk(entity, model)
 
-  const observedIds = useMemo(() => new Set(assessments.filter((assessment) =>
-    assessment.sensorObservations?.some((observation) => observation.sensorId === entity.id &&
-      (!horizon.scoped || observation.firstDetectS <= tObs)),
-  ).map((assessment) => assessment.uasId)), [assessments, entity.id, horizon.scoped, tObs])
-
-  const fullSeries = useMemo(() => {
-    void runId
-    return sensorSeries(scenario, entity.id)
-  }, [scenario, runId, entity.id])
-  const series = useMemo(() => fullSeries.filter((series) =>
-    !horizon.scoped || observedIds.has(series.id.slice(series.id.indexOf('.') + 1)),
-  ), [fullSeries, horizon.scoped, observedIds])
-  const fullLadderRows = useMemo(() => {
-    void runId
-    // The gutter is 84 px (Ladder GUTTER_W): the board designator, as the canvas labels draw it.
-    return trackLadderRows(scenario, entity.id).map((row) => ({
-      ...row,
-      label: boardDesignator(row.label),
-    }))
-  }, [scenario, runId, entity.id])
-  const ladderRows = useMemo(() => fullLadderRows.filter((row) =>
-    !horizon.scoped || observedIds.has(row.id),
-  ), [fullLadderRows, horizon.scoped, observedIds])
-  const bareLadderRows = useMemo(() => ladderRows.map(bareSpans), [ladderRows])
-  const load = useMemo(() => {
-    void runId
-    return scanLoadSeries(scenario, entity.id)
-  }, [scenario, runId, entity.id])
+  const fullSeries = run.series?.sensors[entity.id] ?? []
+  const series = fullSeries.filter(s => s.values.some(Number.isFinite))
+  const ladderRows = (run.series?.sensorLadders[entity.id] ?? []).map(row => ({ ...row, label: boardDesignator(row.label) }))
+  const bareLadderRows = ladderRows.map(bareSpans)
   const pd = useMemo(() => series.filter((s) => s.id.startsWith('pd.')), [series])
   const slant = useMemo<Series[]>(
     () =>
@@ -102,30 +62,13 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   )
 
   const threats = useMemo(() => assessments.filter((a) => a.status !== 'no-path'), [assessments])
-  const gateRows = useMemo<ReactNode[][]>(() => {
-    if (!spec) return []
-    const hM = mountHeightOf(spec)
-    return threats.flatMap((a) => {
-      const uas = scenario.entities.find((e) => e.id === a.uasId)
-      if (!uas) return []
-      if (untouched) return [[uas.name, DASH, DASH, DASH]]
-      const uasSpec = modelFor(scenario, uas)?.uas
-      const pos = entityPosAt(scenario, uas, tObs)
-      const groundM = Math.hypot(pos.x - entity.pos.x, pos.y - entity.pos.y)
-      const altM = threatAltitudeFt(scenario, uas) * FT_TO_M
-      const geometry = sensorGeometryGate(spec, hM, altM, groundM)
-      const el = elevationDeg(groundM, altM - hM).toFixed(1)
-      const pdNow = radarPdAt(spec, scenario.environment, uasSpec, slantRangeM(groundM, altM - hM))
-      return [
-        [
-          uas.name,
-          sensorHoldGate(spec, uasSpec),
-          `${geometry} · ${el}°`,
-          pdNow == null ? DASH : pdNow.toFixed(2),
-        ],
-      ]
-    })
-  }, [scenario, spec, threats, tObs, untouched, entity.pos])
+  const gateRows: ReactNode[][] = threats.map(a => {
+    const sample = run.sweep?.sensors.find(s => s.sensorId === entity.id && s.threatId === a.uasId)
+    return [scenario.entities.find(e => e.id === a.uasId)?.name ?? a.uasId,
+      sample?.stateAtTime ?? DASH,
+      sample?.lastMeasurementTimeS != null ? `T+${formatTime(sample.lastMeasurementTimeS)}` : DASH,
+      sample?.pd != null ? sample.pd.toFixed(2) : DASH]
+  })
 
   const pill = component
     ? { word: STATE_LABEL[component.state], tone: stateTone(component.state) }
@@ -138,7 +81,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   if (!spec) {
     return (
       <div className="detail" data-detail="sensor">
-        <p className="muted small">Planning envelope · deterministic readouts and charts.</p>
+        <p className="muted small">{run.stateText}</p>
         <DetailHeader
           entity={entity}
           color={color}
@@ -159,25 +102,18 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const scan = scanRate != null || rolePeriod != null
   const initM = trackInitMFor(spec)
   const initN = trackInitNFor(spec)
-  // Legend words are lower case; the builder's labels are title case.
-  const legend: LegendEntry[] = LADDER_KINDS.filter((kind) => !horizon.scoped || ladderRows.some((row) =>
-    row.spans.some((span) => span.label === TRACK_LADDER_STYLE[kind].label && reached(span.startS, horizon)),
-  )).map((kind) => {
-    const word = TRACK_LADDER_STYLE[kind].label.toLowerCase()
-    return {
-      label: kind === 'init' && scan ? `${word} ${initM} of ${initN}` : word,
-      color: TRACK_LADDER_STYLE[kind].color,
-    }
-  })
+  const legend: LegendEntry[] = [...new Map(ladderRows.flatMap(row => row.spans.map(span => [span.label,
+    { label: span.label ?? 'Held track file', color: span.color ?? 'warn' }] as const))).values()]
   const ladderMeta = scan
     ? `M ${initM} · N ${initN} · drop ${trackDropMissesFor(spec)}`
     : `hold ${trackInitSFor(spec, doctrine)} s`
 
-  const loadNow = untouched ? 0 : load.values[Math.min(load.values.length - 1, (horizon.scoped ? Math.floor(tObs / DT) : Math.round(tObs / DT)))] ?? 0
+  const loadNow = component?.tracksNow
+
   const el = spec.elevationDeg
   const instrumented = spec.instrumentedRangeM
   const loadRows: DetailRow[] = [
-    { label: 'Tracks per scan', value: `${loadNow}` },
+    { label: 'Held track files', value: loadNow != null ? `${loadNow}` : DASH },
     scanRate != null
       ? {
           label: 'Scan period',
@@ -229,7 +165,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="sensor">
-      <p className="muted small">Planning envelope · deterministic readouts and charts.</p>
+      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}
@@ -272,9 +208,9 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       <DetailSection id="load" title="Load and hold">
         <Rows rows={loadRows} />
       </DetailSection>
-      <DetailSection id="gates" title="Gates by threat" meta="slant · elevation · horizon">
+      <DetailSection id="gates" title="Sensor state by threat" meta="Retained sensor measurements">
         {gateRows.length > 0 ? (
-          <DetailTable head={['Threat', 'Hold', 'Geometry', 'Pd now']} rows={gateRows} />
+          <DetailTable head={['Threat', 'State', 'Last measured', 'Pd']} rows={gateRows} />
         ) : (
           <p className="muted small">No threats with flight paths.</p>
         )}

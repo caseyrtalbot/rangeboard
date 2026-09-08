@@ -26,6 +26,9 @@ describe('BoardPreparation', () => {
 
     expect(html).toContain('inspector-body board-preparation')
     expect(html).toContain('Scenario and run scope')
+    expect(html).toContain('Forecast and analysis')
+    expect(html).toContain('Run replicates')
+    expect(html).toContain('nominal parameters with aleatory draws')
     expect(html).toContain('RUN-0001')
     expect(html).toContain(useStore.getState().playback.runId)
     expect(html).toContain('<summary>Environment</summary>')

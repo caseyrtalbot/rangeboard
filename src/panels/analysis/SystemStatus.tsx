@@ -2,8 +2,11 @@ import { FORECAST_IN_ANALYZE, FULL_RUN, reached, type ExecutionHorizon } from '.
 import { useState } from 'react'
 import { State } from '../../ui/kit'
 import type { StateTone } from '../../ui/kit'
-import type { ComponentTelemetry, SystemTelemetryGroup } from '../../analysis/systemTelemetry'
+import type { ComponentTelemetry, SystemTelemetryGroup, TrialComponentTelemetry, TrialSystemTelemetry } from '../../analysis/systemTelemetry'
 import { formatTime } from '../../geometry/geo'
+
+type Component = ComponentTelemetry | TrialComponentTelemetry
+type Group = SystemTelemetryGroup | TrialSystemTelemetry
 
 /** Pill word per component state. The one name table; the detail header reads it too. */
 export const STATE_LABEL: Record<ComponentTelemetry['state'], string> = {
@@ -30,7 +33,7 @@ function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
-function componentDetail(component: ComponentTelemetry): string {
+function componentDetail(component: Component): string {
   // holdSeconds is the clock reading: the elapsed seconds this sensor held at
   // least one track. trackSeconds is INTEGRATED sensor loading and can exceed
   // the run length, so it is labeled track-seconds and never given to a clock
@@ -40,7 +43,7 @@ function componentDetail(component: ComponentTelemetry): string {
       ? `${component.tracksNow} now · ${component.tracksSeen} seen · ${component.classifications} classified · ${formatTime(component.holdSeconds)} hold · ${Math.round(component.trackSeconds)} track-s`
       : component.kind === 'c2'
         ? `${component.tracksNow} now · ${component.tracksSeen} routed · ${plural(component.downstreamEffectors, 'effector')}`
-        : `${plural(component.targetsNow, 'target')} · ${plural(component.salvosAssigned, 'salvo')} · ${plural(component.effectsLanded, 'effect')} · E[k] ${component.expectedKills.toFixed(2)}`
+        : `${plural(component.targetsNow, 'target')} · ${plural(component.salvosAssigned, 'salvo')} · ${plural(component.effectsLanded, 'effect')} · ${'basis' in component ? `${component.kills} trial defeats` : `E[k] ${component.expectedKills.toFixed(2)}`}`
   const capacity =
     component.kind !== 'effector'
       ? null
@@ -50,7 +53,7 @@ function componentDetail(component: ComponentTelemetry): string {
   return `${component.purpose} · ${detail}${capacity ? ` · ${capacity}` : ''}`
 }
 
-function ComponentRow({ component }: { component: ComponentTelemetry }) {
+function ComponentRow({ component }: { component: Component }) {
   const summary =
     component.kind === 'sensor'
       ? `${component.tracksNow} now · ${component.tracksSeen} seen${component.holdSeconds > 0 ? ` · hold ${formatTime(component.holdSeconds)}` : ''}`
@@ -71,7 +74,7 @@ function ComponentRow({ component }: { component: ComponentTelemetry }) {
   )
 }
 
-function SystemCard({ group, defaultOpen }: { group: SystemTelemetryGroup; defaultOpen: boolean }) {
+function SystemCard({ group, defaultOpen }: { group: Group; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="system-telemetry-card">
@@ -117,7 +120,7 @@ export function SystemStatus({
   horizon = FULL_RUN,
   sampledAtS,
 }: {
-  groups: SystemTelemetryGroup[]
+  groups: Group[]
   expanded?: boolean
   endOfRun?: boolean
   horizon?: ExecutionHorizon

@@ -3,23 +3,24 @@ import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
-import { detectionsAt } from '../../playback/detection'
+import { trialResultOf, trialSnapshotAt, type TrialResultView } from '../../analysis/trialResult'
+import { selectTrialSelection } from '../../state/trialSelectors'
+import { selectRunComplete } from '../../state/selectors'
+import { useTrialResult, trialStateText } from './widgets/controls'
 import { buildRequirementGateReport } from '../../analysis/requirements'
 import type { RunValidityAssessment } from '../../analysis/runValidity'
 import { assessRunValidity } from '../../analysis/runValidity'
-import { systemTelemetryAt } from '../../analysis/systemTelemetry'
-import { threatPictureAt } from '../../analysis/threatAggregation'
+import { trialSystemTelemetryAt } from '../../analysis/systemTelemetry'
+import { trialThreatPictureAt } from '../../analysis/threatAggregation'
 import { useStore } from '../../state/store'
 import { formatRunLabel } from '../../state/labels'
 import { formatTime } from '../../geometry/geo'
 import { exportRunRecord } from '../../io/persist'
 import { downloadBoardFrame } from '../../te/io/frameCapture'
 import { resetAnalysisRun } from '../../playback/runSession'
-import { residualSectionHeadline, totalSalvos } from '../headlines'
 import { RequirementGates } from './RequirementGates'
 import { SystemStatus } from './SystemStatus'
 import { ThreatPicture } from './ThreatPicture'
-import { EventLedgerList } from './widgets/EventLedgerWidget'
 import { currentSensitivity, currentSummary } from './widgets/mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './widgets/RunValidityWidget'
 import { State } from '../../ui/kit'
@@ -76,9 +77,15 @@ function RunActions({
     <div className="debrief-actions">
       <button
         className="primary"
-        onClick={() =>
-          exportRunRecord(scenario, runMeta, assessments, report, aar, mc, sensitivity)
-        }
+        onClick={() => {
+          const state = useStore.getState()
+          const selection = selectTrialSelection(state)
+          const view = selection.status === 'ready' && selection.runId === runId && state.scenario === scenario &&
+            state.playback.startedAtMs != null && selectRunComplete(state)
+            ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : null
+          const trial = view && view.observedThroughS >= view.durationS ? view : null
+          exportRunRecord(scenario, runMeta, assessments, report, aar, mc, sensitivity, trial)
+        }}
       >
         Export debrief JSON
       </button>
@@ -143,6 +150,7 @@ export function DebriefRecord({
   const observedThroughS = useStore((state) => state.playback.observedThroughS)
   const runSeq = useStore((state) => state.playback.runSeq)
   const runId = useStore((state) => state.playback.runId)
+  const currentScenario = useStore(state => state.scenario)
   const mcState = useStore((state) => state.mc)
   const mc = currentSummary(mcState, runId)
   const sensitivity = currentSensitivity(mcState, runId)
@@ -151,22 +159,13 @@ export function DebriefRecord({
     startedAtMs != null &&
     durationS > 0 &&
     observedThroughS >= durationS
-  const runTrackIds = useMemo(
-    () => new Set(assessments.filter((assessment) => assessment.status !== 'no-path').map((assessment) => assessment.uasId)),
-    [assessments],
-  )
-  const hits = useMemo(
-    () =>
-      complete
-        ? new Map(
-            [...detectionsAt(scenario, durationS)].filter(([uasId]) => runTrackIds.has(uasId)),
-          )
-        : new Map(),
-    [complete, scenario, durationS, runTrackIds],
-  )
-  // One sweep for the whole record: the banner, the gate populations, and
-  // the gate caveats all read this single assessment, so they cannot disagree
-  // and the spawn-in-ring scan runs once instead of once per consumer.
+  const trial = useTrialResult()
+  const selection = trial.selection
+  const view = complete && selection.status === 'ready' && selection.runId === runId &&
+    scenario === currentScenario
+    ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : null
+  const completedTrial = view && view.observedThroughS >= view.durationS ? view : null
+  // Forecast validity and gates share an assessment; neither adjudicates the trial.
   const validity = useMemo(
     () => assessRunValidity(scenario, assessments),
     [scenario, assessments],
@@ -176,46 +175,47 @@ export function DebriefRecord({
     [scenario, assessments, report, validity],
   )
   const systems = useMemo(
-    () => systemTelemetryAt(scenario, assessments, report, durationS, hits),
-    [scenario, assessments, report, durationS, hits],
+    () => completedTrial ? trialSystemTelemetryAt(completedTrial, completedTrial.durationS) : [],
+    [completedTrial],
   )
   const threats = useMemo(
-    () => threatPictureAt(scenario, assessments, report, durationS, hits),
-    [scenario, assessments, report, durationS, hits],
+    () => completedTrial ? trialThreatPictureAt(completedTrial, completedTrial.durationS) : [],
+    [completedTrial],
   )
   if (!complete || completedAtMs == null || startedAtMs == null) return null
-  const trackCount = threats.reduce((sum, group) => sum + group.tracks, 0)
   const componentCount = systems.reduce((sum, group) => sum + group.componentCount, 0)
-  const requirementLabel =
-    requirements.overall === 'pass'
-      ? 'ALL GATES MET'
-      : requirements.overall === 'fail'
-        ? 'REQUIREMENTS NOT MET'
-        : 'REQUIREMENTS NOT RUN'
   return (
     <details className="debrief-record evidence-products" open>
       <summary className="debrief-header" role="status">
         <strong>Evidence products</strong>
         <span>{formatRunLabel(runSeq)} · COMPLETE</span>
-        <State tone={VALIDITY_TEXT[validity.validity].tone}>
-          {VALIDITY_TEXT[validity.validity].pill}
-        </State>
       </summary>
-      <div className="debrief-header">
-        <span className="debrief-kicker">Full-run requirement record</span>
-        <State tone={requirements.overall === 'pass' ? 'nominal' : 'critical'}>
-          {requirementLabel}
-        </State>
-      </div>
-      <div className="debrief-meta">
-        full run · planning envelope · {formatTime(durationS)} observed · {trackCount} tracks · {componentCount} components · {report.events.length} events
-      </div>
-      {showValidity && (
-        <details className="analysis-disclosure">
-          <summary>Full-run validity · {VALIDITY_TEXT[validity.validity].pill}</summary>
-          <RunValidityBanner assessment={validity} />
-        </details>
-      )}
+      {completedTrial ? (
+        <section aria-label="Completed simulated trial record">
+          <p className="debrief-kicker">Completed simulated trial record</p>
+          <TrialOutcomeSummary view={completedTrial} horizonS={completedTrial.durationS} />
+          <details className="analysis-disclosure">
+            <summary>Trial manifest</summary>
+            <dl style={{ overflowWrap: 'anywhere' }}>
+              {Object.entries(completedTrial.manifest).map(([key, value]) => (
+                <div key={key}><dt>{key}</dt><dd>{value ?? 'Build revision unavailable'}</dd></div>
+              ))}
+            </dl>
+          </details>
+          <details className="analysis-disclosure">
+            <summary>Trial system and component record · {componentCount} components</summary>
+            <SystemStatus groups={systems} expanded endOfRun />
+          </details>
+          <details className="analysis-disclosure">
+            <summary>Trial threat record</summary>
+            <ThreatPicture groups={threats} mode="debrief" />
+          </details>
+          <details className="analysis-disclosure">
+            <summary>Trial engagement event ledger · {completedTrial.attrition.events.length} events</summary>
+            <TrialEventLedger view={completedTrial} />
+          </details>
+        </section>
+      ) : <p className="muted small">{trialStateText(selection)} · completed trial record unavailable</p>}
       <RunActions
         scenario={scenario}
         assessments={assessments}
@@ -225,26 +225,73 @@ export function DebriefRecord({
         mc={mc}
         sensitivity={sensitivity}
       />
-      <details className="analysis-disclosure">
-        <summary>Full-run requirement record · {requirements.met}/{requirements.required} met</summary>
+      <details className="analysis-disclosure" aria-label="Forecast requirements">
+        <summary>Forecast · requirement record · {requirements.met}/{requirements.required} met</summary>
+        <p className="muted small">Deterministic planning envelope · these gates do not adjudicate the simulated trial.</p>
+        {showValidity && <RunValidityBanner assessment={validity} />}
         <RequirementGates report={requirements} />
       </details>
-      <details className="analysis-disclosure">
-        <summary>Full-run system and component record · {componentCount} components · {totalSalvos(report.totals)} salvos</summary>
-        <SystemStatus groups={systems} expanded endOfRun />
-      </details>
-      <details className="analysis-disclosure">
-        <summary>Full-run threat record · {`${trackCount} tracks · ${residualSectionHeadline(report.totals)}${
-          report.totals.expectedLateKills > 0.005
-            ? ` · ${report.totals.expectedLateKills.toFixed(2)} late E[k]`
-            : ''
-        }`}</summary>
-        <ThreatPicture groups={threats} mode="debrief" />
-      </details>
-      <details className="analysis-disclosure">
-        <summary>Full-run engagement event ledger · {report.events.length} events</summary>
-        <EventLedgerList scenario={scenario} report={report} />
-      </details>
     </details>
+  )
+}
+
+/** Achieved observation for Analyze; the completed record supplies the final horizon. */
+export function TrialOutcomeSummary({ view, horizonS }: { view: TrialResultView; horizonS: number }) {
+  const snapshot = trialSnapshotAt(view, horizonS)
+  const t = snapshot.observedThroughS
+  const counts = snapshot.counts
+  const first = (values: Array<number | null>) => {
+    const reached = values.filter((value): value is number => value != null && value <= t)
+    return reached.length ? formatTime(Math.min(...reached)) : '—'
+  }
+  const warnings = view.assessments.filter(a => a.arrivalS != null && a.arrivalS <= t && a.warningS != null)
+  const metrics: Array<[string, string | number]> = [
+    ['Pre-arrival hard kills', counts.preArrivalHardKills],
+    ['Pre-arrival mission kills', counts.preArrivalSoftKills],
+    ['Late hard kills', counts.lateHardKills],
+    ['Late mission kills', counts.lateSoftKills],
+    ['Arrived undefeated', snapshot.reportedLeakers ?? '—'],
+    ['Active at horizon', counts.activeAtHorizon],
+    ['First detect', first(view.assessments.map(a => a.firstDetectS))],
+    ['First effect', first(view.attrition.events.filter(e => e.killDelta === 1).map(e => e.tEffectS))],
+    ['Min warning', view.hasActiveAsset && warnings.length ? formatTime(Math.min(...warnings.map(a => a.warningS!))) : '—'],
+  ]
+  return (
+    <div className="trial-summary">
+      <p className="analysis-scope">Simulated trial · {snapshot.summary ? 'complete' : 'bounded observation'} · T+{formatTime(t)} observed</p>
+      <div className="outcome-grid">
+        {metrics.map(([label, value]) => (
+          <div className="outcome-metric" key={label}>
+            <span>{label}</span><strong>{value}</strong>
+            <small>{value === '—' ? 'unavailable or not reached' : typeof value === 'number' ? 'trial count' : 'reached trial milestone'}</small>
+          </div>
+        ))}
+      </div>
+      {!view.hasActiveAsset && <p className="muted small">No defended asset · arrival and warning measures unavailable.</p>}
+    </div>
+  )
+}
+
+function TrialEventLedger({ view }: { view: TrialResultView }) {
+  const [visible, setVisible] = useState(20)
+  const name = (id: string) => view.scenario.entities.find(entity => entity.id === id)?.name ?? id
+  return (
+    <div className="event-ledger">
+      {view.attrition.events.slice(0, visible).map((event, index) => {
+        const jam = event.channel === 'jam' ? view.jamDecisions.find(decision => decision.effectorId === event.effectorId &&
+          decision.uasId === event.uasId && decision.tEffectS === event.tEffectS) : null
+        return (
+          <div className="event-row" key={index}>
+            <span className="event-time">{formatTime(event.tS)} → {formatTime(event.tEffectS)}</span>
+            <span className="event-route"><strong>{name(event.effectorId)}</strong><small>{name(event.uasId)} · ship {event.shipIdx + 1}</small></span>
+            <span className="event-effect">{event.killDelta} {event.softShot ? 'mission kills' : 'hard kills'}
+              <small>{jam ? `Jam ${jam.outcome === 1 ? 'succeeded' : 'failed'}` : event.lateEffect ? 'late effect' : 'pre-arrival effect'}</small>
+            </span>
+          </div>
+        )
+      })}
+      {view.attrition.events.length === 0 && <p className="muted small">No engagement events recorded.</p>}
+      {visible < view.attrition.events.length && <button onClick={() => setVisible(count => count + 20)}>Show next events</button>}
+    </div>
   )
 }

@@ -3,9 +3,14 @@ import { State } from '../../ui/kit'
 import type {
   ThreatOperationalGroup,
   ThreatOperationalRow,
+  TrialThreatGroup,
+  TrialThreatRow,
 } from '../../analysis/threatAggregation'
 import { formatTime } from '../../geometry/geo'
 import { SURVIVAL_LABELS } from './widgets/labels'
+
+type Group = ThreatOperationalGroup | TrialThreatGroup
+type Row = ThreatOperationalRow | TrialThreatRow
 
 const PAGE_SIZE = 12
 
@@ -69,20 +74,20 @@ function survivesPct(residualPct: number): string {
   return pct >= 100 ? '100' : pct.toFixed(1)
 }
 
-function memberTimeline(row: ThreatOperationalRow, mode: Mode): string {
+function memberTimeline(row: Row, mode: Mode): string {
   const visible = (reached: boolean, value: number | null) =>
     value != null && (mode !== 'live' || reached) ? formatTime(value) : '—'
   return [
     `D ${visible(row.detected, row.firstDetectS)}`,
     `ID ${visible(row.identified, row.hostileAtS)}`,
     `ENG ${visible(row.engaged, row.firstShotS)}`,
-    `Expected FX ${visible(row.effectObserved, row.firstEffectS)}`,
+    `${'basis' in row ? 'FX' : 'Expected FX'} ${visible(row.effectObserved, row.firstEffectS)}`,
   ].join(' · ')
 }
 
-function liveState(row: ThreatOperationalRow): string {
-  if (row.effectMet) return 'EXPECTED DEFEAT'
-  if (row.effectObserved) return 'EXPECTED EFFECT'
+function liveState(row: Row): string {
+  if (row.effectMet) return 'basis' in row ? 'DEFEATED' : 'EXPECTED DEFEAT'
+  if (row.effectObserved) return 'basis' in row ? 'EFFECT REACHED' : 'EXPECTED EFFECT'
   if (row.engaged) return 'ENGAGED'
   if (row.targetableNow) return 'TARGET'
   if (row.identified) return 'HOSTILE'
@@ -91,7 +96,7 @@ function liveState(row: ThreatOperationalRow): string {
   return 'UNSEEN'
 }
 
-function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) {
+function ThreatMember({ row, mode }: { row: Row; mode: Mode }) {
   const continuity =
     row.trackContinuity == null
       ? 'track —'
@@ -105,10 +110,10 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) 
           {mode === 'live'
             ? liveState(row)
             : row.effectMet
-              ? 'EXPECTED DEFEAT'
+              ? ('basis' in row ? 'DEFEATED' : 'EXPECTED DEFEAT')
               : row.engaged
                 ? 'ENGAGED'
-                : row.status.replaceAll('-', ' ').toUpperCase()}
+                : (row.status ?? 'unseen').replaceAll('-', ' ').toUpperCase()}
         </State>
       </div>
       <Ladder
@@ -127,7 +132,7 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) 
       <div className="threat-data-detail">
         {mode === 'live' ? `${continuity} · ` : ''}
         {memberTimeline(row, mode)} · {row.salvos} salvos · {SURVIVAL_LABELS.survives}{' '}
-        {survivesPct(row.residualPct)}%
+        {'basis' in row ? `${row.survivors}/${row.shipCount} members` : `${survivesPct(row.residualPct)}%`}
       </div>
     </div>
   )
@@ -138,12 +143,14 @@ function ThreatGroupCard({
   mode,
   membersOpen,
 }: {
-  group: ThreatOperationalGroup
+  group: Group
   mode: Mode
   membersOpen: boolean
 }) {
   const [open, setOpen] = useState(membersOpen)
   const [visible, setVisible] = useState(PAGE_SIZE)
+  const kills = 'basis' in group ? group.kills : group.expectedKills
+  const survivors = 'basis' in group ? group.survivors : group.expectedResidual
   const trackGate = mode === 'live' ? group.trackNow : group.trackedAtDecision
   return (
     <div className="threat-data-group tg">
@@ -169,14 +176,14 @@ function ThreatGroupCard({
       />
       <div
         className="tg-f"
-        title={`${group.expectedKills.toFixed(2)} expected kills · ${group.expectedResidual.toFixed(2)} expected surviving ships · ${group.salvos} salvos`}
+        title={'basis' in group ? `${kills} trial defeats · ${survivors} active members · ${group.salvos} salvos` : `${kills.toFixed(2)} expected kills · ${survivors.toFixed(2)} expected surviving ships · ${group.salvos} salvos`}
       >
         <span className="bar">
-          <i className="defeat" style={{ flex: Math.max(group.expectedKills, 0.001) }} />
-          <i className="residual" style={{ flex: Math.max(group.expectedResidual, 0.001) }} />
+          <i className="defeat" style={{ flex: Math.max(kills, 0.001) }} />
+          <i className="residual" style={{ flex: Math.max(survivors, 0.001) }} />
         </span>
         <span className="tg-s">
-          {SURVIVAL_LABELS.survives} <b className="num">{survivesPct(group.residualPct)}%</b>
+          {SURVIVAL_LABELS.survives} <b className="num">{'basis' in group ? `${survivors}/${group.ships} members` : `${survivesPct(group.residualPct)}%`}</b>
         </span>
       </div>
       {open && (
@@ -205,7 +212,7 @@ export function ThreatPicture({
   mode,
   membersOpen = false,
 }: {
-  groups: ThreatOperationalGroup[]
+  groups: Group[]
   mode: Mode
   membersOpen?: boolean
 }) {
@@ -213,7 +220,7 @@ export function ThreatPicture({
   if (tracks === 0) return <p className="muted small">No threats with flight paths.</p>
   return (
     <div className="threat-picture">
-      <p className="muted small">Expected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.</p>
+      <p className="muted small">{groups.some(group => 'basis' in group) ? 'Simulated trial counts · reached member outcomes, including late effects.' : 'Expected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.'}</p>
       {tracks > PAGE_SIZE && (
         <div className="scale-note">
           <strong>{tracks} tracks retained</strong>

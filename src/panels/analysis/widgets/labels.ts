@@ -58,3 +58,12 @@ export const KPI_LABELS: Record<KpiKey, { label: string; hint: string }> = {
 export function forecastKillLabel(hasActiveAsset: boolean): string {
   return hasActiveAsset ? KPI_LABELS.killEk.label : 'Expected neutralization'
 }
+
+/** Saved keys shared with forecasts have separate sampled-outcome labels. */
+export const TRIAL_KPI_LABELS: typeof KPI_LABELS = {
+  ...KPI_LABELS,
+  killEk: { label: 'Pre-arrival defeats', hint: 'Trial members defeated at or before arrival.' },
+  lateEk: { label: 'Late defeats', hint: 'Trial members defeated after arrival.' },
+  leakEn: { label: 'Arrived undefeated', hint: 'Trial members that arrived undefeated. Late defeats never reduce this count.' },
+  firstEffect: { label: 'First effect', hint: 'The first effect that removed a trial member.' },
+}

@@ -48,15 +48,25 @@ telemetry pane distinguishes assignment, release and effect marks and preparatio
 spans. Exported events retain assignment accounting in `tS` and add `tReleaseS`; legacy
 launch timing stays unavailable when the captured effector delay cannot resolve it.
 
+Play prepares one sampled trial in its own worker slot, using nominal parameters,
+aleatory draws and a frozen manifest, then starts playback when that trial is ready.
+Execute surfaces share its retained ledger and observations. Replay keeps the run identity,
+ledger, completion and achieved observation; New run clears them and redraws on the next Play.
+Trial preparation and errors show their state without substituting forecast outcomes.
+
+Forecast and Monte Carlo remain separate, explicitly labeled analyses with unchanged
+numerical paths. Forecast uses the deterministic `engagementPicture`.
+Forecast/MC settings live under **Forecast and analysis** in Prepare and Settings.
 Forecast counts read as expected values: Expected kills with two decimals below ten,
 Expected neutralization when no defended asset exists, and an expected-defeat pill for a
 track below the residual cutoff. No surface labels a forecast as a realized kill.
 
-Analyze presents the untouched Run summary with full-run validity and outcome first,
-then separately disclosed full-run time series and cursor data. Execute retains the
-cursor-oriented stack. Its shared execution horizon is empty before the first Play, then
-the lesser of the quantized cursor and observed horizon. Scrubbing and saved-frame
-navigation never advance observation. Prepare and Analyze retain full-run scope.
+Analyze presents Trial results through the observed horizon, with Trial cursor telemetry,
+Forecast and Monte Carlo separately labeled. Execute retains the cursor-oriented stack.
+Trial outcomes are unavailable before the first Play, then bounded by the lesser of the
+cursor and observed horizon, capped by the retained result. Scrubbing and saved-frame
+navigation never advance observation. Explicit forecasts retain full-run scope in
+Prepare and Analyze; trial cursor telemetry remains observation-bounded in every phase.
 Charts, engagement strips and lanes, WEZ impact badges, selected-object details and
 widgets censor outcomes at that horizon, including tooltips and accessibility text.
 Chart accessibility text identifies the shown horizon separately from a forward preview playhead.
@@ -66,7 +76,12 @@ collapse, order and customization without changing saved layouts. Completed Evid
 products mount in Execute only at the full-duration horizon. Each view labels its scope;
 custom widget order and parameters remain as saved. Completed-run Evidence products
 retain export, final-frame capture, reset and full-run records without repeating the
-outcome summary. The persistent Layout control manages saved layouts, widgets and editing mode. Scenario-input readouts route
+trial outcome summary. Completed-run JSON adds a separately typed `trial` result group
+with the captured scenario, frozen manifest, ledger, observations, jam decisions and integer
+counts. It identifies one simulated realization, carries no ensemble confidence interval,
+and discloses **Build revision unavailable** when no revision was captured. Existing
+forecast and MC groups keep their own basis and quantity semantics.
+The persistent Layout control manages saved layouts, widgets and editing mode. Scenario-input readouts route
 to the matching Prepare section; view and layout changes preserve the result basis.
 
 | Activity | Implemented features | Source entry points |
@@ -76,8 +91,8 @@ to the matching Prepare section; view and layout changes preserve the result bas
 | Represent an architecture | Sensor/C2/effector links, integration profiles, suggested pairings, typed routes and fire-control eligibility | [integration](../src/model/integration.ts), [killChain](../src/playback/killChain.ts) |
 | Represent a threat | Paths, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON | [LibraryEditor](../src/panels/LibraryEditor.tsx), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |
-| Play a scenario | Run identity, play/pause/reset, speed, cursor, observation horizon and derived track/engagement display | [TimelineBar](../src/panels/TimelineBar.tsx), [runState](../src/state/runState.ts), [frameClock](../src/canvas/frameClock.ts) |
-| Analyze a configuration | Deterministic envelope, Monte Carlo, aleatory/total uncertainty, sensitivity, requirements, validity, timelines, event ledgers and analysis lenses | [AnalysisPanel](../src/panels/AnalysisPanel.tsx), [analysis UI](../src/panels/analysis/), [mcRun](../src/playback/mcRun.ts) |
+| Play a scenario | Sampled trial preparation, retained Replay, New run, speed, cursor and observation-bounded track/engagement display | [TimelineBar](../src/panels/TimelineBar.tsx), [trialSelectors](../src/state/trialSelectors.ts), [useTrialResult](../src/state/useTrialResult.ts), [trialTrackState](../src/playback/trialTrackState.ts), [trialSweepAt](../src/playback/trialSweepAt.ts), [frameClock](../src/canvas/frameClock.ts) |
+| Analyze a configuration | Trial results and telemetry; separately labeled deterministic forecast, Monte Carlo, aleatory/total uncertainty, sensitivity, requirements and validity | [AnalysisPanel](../src/panels/AnalysisPanel.tsx), [trialResult](../src/analysis/trialResult.ts), [trialSeries](../src/analysis/trialSeries.ts), [ForecastSettings](../src/panels/analysis/ForecastSettings.tsx), [mcRun](../src/playback/mcRun.ts) |
 | Retain work | Autosave, scenario/library/run JSON, saved Board frames, basic test cards and run logs | [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [TestCardsPanel](../src/panels/TestCardsPanel.tsx) |
 
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
@@ -125,12 +140,13 @@ before changing lifecycle behavior.
    palette and the recharts plot load behind lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
-   engagement resolution; live views and full-run projections consume those results.
-3. Monte Carlo and sensitivity use separate worker slots. Internal trial preparation has
+   engagement resolution; explicit forecasts consume those results.
+3. Monte Carlo and sensitivity use separate worker slots. Sampled Play preparation has
    a third slot and retains one nominal/aleatory ledger, sampled observations and frozen
    manifest. Results require the current slot, request, run and analysis basis. Trial
-   infrastructure is opt-in; ordinary Play and visible results remain on their existing
-   forecast path until the coordinated R5 integration. No trial is autosaved or archived.
+   selectors and adapters supply the canvas, telemetry, charts and completed-run export
+   from that retained result. Play waits for trial readiness, independently of MC and
+   sensitivity. No trial is autosaved or archived in application storage.
 4. Runtime validation precedes default filling and adoption. Recovery preserves unreadable
    saves and suppresses autosave when preservation fails.
 5. T&E can retain Board snapshots and images. The Board engine's only T&E dependency is
@@ -149,6 +165,7 @@ File size alone does not define a safe slice.
 | Boundary | Read together | Evidence to preserve |
 | --- | --- | --- |
 | Board actions/history | `state/store.ts`, `runState.ts`, `analysisBasis.ts`, `store*.test.ts` | Edits, undo/redo, load/reset, stale callbacks and cancellation |
+| Sampled playback | `state/trialSelectors.ts`, `useTrialResult.ts`, `analysis/trialResult.ts`, `trialSeries.ts`, `playback/trialTrackState.ts`, `trialSweepAt.ts` | One retained draw, member identity, observation bounds and export agreement |
 | Numerical engine | `playback/sim.ts`, `attrition.ts`, `mcRun.ts`, `policy.ts`, `analysis/` | Fixed IDs/seeds; deterministic, both MC modes and sensitivity parity |
 | Workers | [workerGraph.test.ts](../src/playback/workerGraph.test.ts), `mcClient.ts`, `mc.worker.ts` | Isolated dependencies; real-worker completion/cancellation |
 | Save shapes | `model/types.ts`, `te/model/types.ts`, `io/`, `te/io/` | Schema descriptors, legacy defaults, rejection and recovery |

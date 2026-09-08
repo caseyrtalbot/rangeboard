@@ -25,7 +25,10 @@ const SPEEDS = [1, 2, 5, 10, 30]
  * Memoized with no props: it re-renders on its own selectors only.
  */
 export const TimelineBar = memo(function TimelineBar() {
-  const { playing, speedMult, runSeq, completedAtMs } = useStore(useShallow(selectPlaybackFlags))
+  const { playing, speedMult, runSeq } = useStore(useShallow(selectPlaybackFlags))
+  const phase = useStore((s) => s.playback.phase)
+  const trialStatus = useStore((s) => s.trial.status)
+  const playLabel = playing ? 'Pause' : phase === 'complete' ? 'Replay' : trialStatus === 'error' || trialStatus === 'cancelled' ? 'Retry' : 'Play'
   const simTimeS = useStore(selectSimTimeS)
   const durationS = useStore(selectDurationS)
   const frames = useStore(selectFrames)
@@ -80,14 +83,21 @@ export const TimelineBar = memo(function TimelineBar() {
     <div className="timeline">
       <button
         className="play"
+        style={{ width: 'auto', minWidth: 36 }}
         onClick={toggleAnalysisRun}
-        title={completedAtMs != null ? 'Start a new clean run' : 'Play / pause run'}
+        title={playLabel}
+        aria-label={playLabel}
       >
-        {playing ? '❚❚' : '▶'}
+        {playing ? '❚❚' : phase === 'complete' ? 'Replay' : trialStatus === 'error' || trialStatus === 'cancelled' ? 'Retry' : '▶'}
       </button>
-      <button onClick={() => resetAnalysisRun('manual')} title="New run id; clear all live telemetry and return to T0">
-        ⏮ Reset run
+      <button onClick={() => resetAnalysisRun('manual')} title="New run" aria-label="New run">
+        New run
       </button>
+      {trialStatus === 'preparing' && <span className="live-head">
+        <span role="status">Preparing trial</span>
+        <button onClick={() => useStore.getState().pauseRun()} aria-label="Pause trial preparation start">Pause</button>
+        <button onClick={() => useStore.getState().cancelTrialPreparation()}>Cancel</button>
+      </span>}
       <span className="time-readout">
         {formatRunLabel(runSeq)} · T+{formatTime(simTimeS)} / {formatTime(durationS)}
       </span>

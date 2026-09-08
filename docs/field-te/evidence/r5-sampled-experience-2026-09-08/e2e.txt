@@ -1,0 +1,51 @@
+
+> rangeboard@0.0.0 test:e2e
+> node --test scripts/e2e/board-shell.e2e.mjs
+
+TAP version 13
+# Subtest: phase switching sets the phase, the analysis tab and aria-selected
+ok 1 - phase switching sets the phase, the analysis tab and aria-selected
+  ---
+  duration_ms: 532.113291
+  type: 'test'
+  ...
+# Subtest: selection routing opens the entity workspace and Overview returns to analysis
+ok 2 - selection routing opens the entity workspace and Overview returns to analysis
+  ---
+  duration_ms: 574.109958
+  type: 'test'
+  ...
+# Subtest: placement: L opens the drawer, Place arms, Place at center adds one entity
+ok 3 - placement: L opens the drawer, Place arms, Place at center adds one entity
+  ---
+  duration_ms: 508.358875
+  type: 'test'
+  ...
+# Subtest: Escape chain: the Location dialog closes first, then the placement, then calibrate
+ok 4 - Escape chain: the Location dialog closes first, then the placement, then calibrate
+  ---
+  duration_ms: 556.352417
+  type: 'test'
+  ...
+# Subtest: debrief record opens on run completion with a status summary
+ok 5 - debrief record opens on run completion with a status summary
+  ---
+  duration_ms: 497.319875
+  type: 'test'
+  ...
+# Subtest: lens buttons are a pressed group with one roving tab stop
+ok 6 - lens buttons are a pressed group with one roving tab stop
+  ---
+  duration_ms: 386.183667
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3251.153708
+E2E_EXIT 0

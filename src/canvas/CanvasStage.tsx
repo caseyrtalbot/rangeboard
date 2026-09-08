@@ -7,13 +7,14 @@ import type { Vec2 } from '../model/types'
 import { useStore } from '../state/store'
 import { selectDurationS } from '../state/selectors'
 import { displayTimeNow } from './frameClock'
-import { liveTracks } from '../playback/tracks'
-import { engagementPicture } from '../analysis/impact'
-import { trackTimelineOf } from '../playback/trackState'
+import { memberPositions } from '../playback/tracks'
+import { trialResultOf } from '../analysis/trialResult'
+import { useTrialResult } from '../state/useTrialResult'
+import { selectTrialHorizon } from '../state/trialSelectors'
 import { GridLayer } from './layers/GridLayer'
 import { TileLayer } from './layers/TileLayer'
 import { UnderlayLayer } from './layers/UnderlayLayer'
-import { LiveScene } from './LiveScene'
+import { LiveScene, renderedTrialGeometry } from './LiveScene'
 import { StaticScene } from './StaticScene'
 import { HudLayer } from './layers/HudLayer'
 import { TrackFileReadout } from './TrackFileReadout'
@@ -112,14 +113,11 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
     }
   }, [])
 
-  // Attrition is time-independent; engagementPicture shares one computation
-  // per scenario object with AnalysisPanel (module-level WeakMap in impact.ts).
-  const picture = useMemo(() => engagementPicture(scenario), [scenario])
-  const { assessments, report, impacts } = picture
-  // One prefix-aggregated timeline per scenario, cached by scenario identity
-  // and shared with the threat pane. The per-frame queries in LiveScene are
-  // binary searches over it, so no layer ever rebuilds it.
-  const timeline = trackTimelineOf(scenario, assessments, report)
+  const { selection: trialSelection, horizon } = useTrialResult()
+  const started = useStore(s => s.playback.startedAtMs != null)
+  const trial = useMemo(() => trialSelection.status === 'ready'
+    ? trialResultOf(trialSelection.scenario, trialSelection.result.manifest, trialSelection.result) : null, [trialSelection])
+  const horizonS = trial && started ? horizon : null
 
   function toWorld(pointer: Vec2): Vec2 {
     return { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
@@ -195,13 +193,17 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
     const x1 = Math.max(m.a.x, m.b.x)
     const y0 = Math.min(m.a.y, m.b.y)
     const y1 = Math.max(m.a.y, m.b.y)
-    // The stage holds no time subscription, so read the canvas display time
-    // once here: a box select tests the positions the user just saw.
-    const tracks = liveTracks(scenario, displayTimeNow())
+    // Read the frame clock once so a box tests the rendered member positions.
+    const displayTimeS = displayTimeNow()
+    const current = useStore.getState()
+    const outcomeTimeS = trial && current.playback.startedAtMs != null ? selectTrialHorizon(current, displayTimeS) : null
+    const { tracks, members } = renderedTrialGeometry(scenario, trial, outcomeTimeS, displayTimeS)
     const ids = scenario.entities
       .filter((en) => {
-        const p = tracks.get(en.id)?.pos ?? en.pos
-        return p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1
+        const track = tracks.get(en.id)
+        const positions = members.get(en.id)?.map(member => member.position) ?? (en.kind === 'uas'
+          ? memberPositions(en, track?.pos ?? en.pos, track?.headingDeg ?? en.headingDeg) : [track?.pos ?? en.pos])
+        return positions.some(p => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
       })
       .map((en) => en.id)
     select({ entityIds: ids }, m.additive)
@@ -360,7 +362,7 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
             repaints per animation frame. Child order across the two keeps
             today's z-order. */}
         <Layer>
-          <StaticScene scenario={scenario} timeline={timeline} />
+          <StaticScene trial={trial} horizonS={horizonS} />
         </Layer>
         <Layer>
           <LiveScene
@@ -368,8 +370,8 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
             camera={camera}
             size={size}
             mouseWorld={mouseWorld}
-            impacts={impacts}
-            timeline={timeline}
+            trial={trial}
+            horizonS={horizonS}
             durationS={durationS}
           />
           {marquee && (
@@ -394,7 +396,7 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
         </div>
       )}
       <HudLayer stageRef={stageRef} />
-      <TrackFileReadout onOpenDetail={onOpenDetail} timeline={timeline} assessments={assessments} size={size} />
+      <TrackFileReadout onOpenDetail={onOpenDetail} trial={trial} horizonS={horizonS} size={size} />
       <ContextMenu />
       <ConnectSuggestPopup />
       {onPlace && (

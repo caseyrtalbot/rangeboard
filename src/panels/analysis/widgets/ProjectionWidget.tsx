@@ -11,7 +11,7 @@ import { AnalysisSection } from '../AnalysisSection'
 import { Info } from '../Info'
 import { OutcomeSummary } from '../OutcomeSummary'
 import { ThreatPicture } from '../ThreatPicture'
-import { useEngagement } from './controls'
+import { useForecastEngagement } from './controls'
 import { currentSummary } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
@@ -56,7 +56,7 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
   const runId = useStore((s) => s.playback.runId)
   const mc = useStore((s) => s.mc)
   const summary = currentSummary(mc, runId)
-  const { assessments, report } = useEngagement(scenario, runId)
+  const { assessments, report } = useForecastEngagement(scenario, runId)
   const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
   const projectionGroups = useMemo(
     () => threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map()),
@@ -69,7 +69,7 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
       id={id}
       horizon={horizon}
       type="projection"
-      title="Full-run projection"
+      title="Forecast · full-run projection"
       meta="full run · not live · conditional"
       headerExtra={!horizon.scoped && (
         <span className="projection-header-extra">

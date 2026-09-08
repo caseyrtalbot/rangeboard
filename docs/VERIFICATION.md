@@ -47,6 +47,17 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   seed and settings: deterministic, aleatory MC, total MC and sensitivity. Compare after
   the change with the same harness. Select applicable preserved fixtures under
   [evidence](field-te/evidence/); old numerical captures describe their original commits.
+- R5 reuses the retained R4 fixed-ID numerical harness, preserved as
+  [numerical-capture.ts.txt](field-te/evidence/r5-sampled-experience-2026-09-08/numerical-capture.ts.txt).
+  It captures assessments, deterministic attrition, aleatory MC, total MC and sensitivity
+  for the firing and detection-outside-rings fixtures with four replicates. Keep fixture
+  IDs, seed and settings fixed and compare complete serialized captures. Its relative
+  imports require a scratch test under `src/playback/`; redirect the output for a new
+  capture and remove the scratch test afterward. Preserve dated baseline files.
+- Trial adapter checks colocate with `analysis/trialResult.ts`, `trialSeries.ts`,
+  `playback/trialTrackState.ts`, `trialSweepAt.ts`, `state/trialSelectors.ts` and
+  `useTrialResult.ts`. Store transport tests are in `state/store.trial.test.ts`;
+  `io/trialExport.test.ts` covers the separately typed completed-trial export.
 - Scratch checks that import TypeScript run as Vitest files under `src/`; remove them
   when finished. Node imports in those files follow the existing `@ts-expect-error`
   convention because the app tsconfig omits Node types. `vite-node` is not installed.
@@ -58,12 +69,13 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - Dev builds expose `window.__store` (the Board zustand hook) and `window.__teStore`.
   Drive real store actions through them. Read the action interfaces in
   `src/state/store.ts` and `src/te/state/teStore.ts` before you build a harness.
-- R4 trial infrastructure is internal: `prepareTrial` prepares without playing;
-  `startTrialRun` explicitly opts in and waits for preparation. Check real-worker equality
+- Sampled Play calls `startTrialRun` and waits for preparation; `prepareTrial` prepares
+  without playing. Check real-worker equality
   against `runTrial(trial.scenario, trial.manifest)`, cancellation and coexistence with
   MC/sensitivity, and retained identity/completion/observation on Replay. Ordinary Play
-  must leave `trial` idle. These checks do not establish R5 sampled display agreement;
-  canvas, telemetry and exports still use their existing sources.
+  prepares one retained trial; New run clears it and redraws on the next Play. Check that
+  canvas, telemetry and charts agree with its ledger through the lesser of cursor and
+  observation, and that completed exports retain the same manifest and ledger.
 - Inspect state with `window.__store.getState()` and `window.__teStore.getState()`; read a
   fresh snapshot after a mutation. Exercise real worker actions; never inject a success
   message to verify worker integration.
@@ -84,7 +96,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
   in the page, then checks phase switching, selection routing, placement, the Escape chain,
-  the debrief record and the lens roles against store state. Start the dev server first.
+  the debrief record and the lens roles against store state. The debrief check calls
+  `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
+  completion requires a matching ready trial. Start the dev server first.
   CI runs it separately after `npm run check` and `npm run check:bundle`, installing Chromium
   and managing its own fixed-port Vite process. Locally the browser and built-bundle checks
   remain separate commands; bundle-accounting unit tests are included in `check`.
@@ -108,6 +122,13 @@ loads. Capture page errors. Check right-panel overflow and text size against the
 
 These scripts are evidence of a dated run. Adapt and inspect them against current source.
 
+- The [R5 browser harness](field-te/evidence/r5-sampled-experience-2026-09-08/r5-browser.mjs.txt)
+  checks sampled Play preparation, shared telemetry and canvas outcomes, horizon
+  censoring, Replay identity, New run, member geometry, edit invalidation, error/retry,
+  repeated worker cleanup, speed changes and completed-trial export groups. It also
+  checks the 320 px panel at 1400 by 900 and the compact 1280 by 800 view. The preserved
+  harness restricts its dev-server origin to `http://localhost:5461`; inspect its setup
+  before reuse. Its assertions do not establish a passing run without captured output.
 - The [wave browser harness](field-te/evidence/wave-c2-c3-e1-2026-09-05/wave-results.js.txt)
   loads the [typed firing fixture](field-te/evidence/onboarding-2026-09-04/firing-scenario.json)
   through `parseAutosave` and `loadScenario` and verifies real-worker results, freshness,

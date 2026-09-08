@@ -24,6 +24,7 @@ import { useStore } from '../state/store'
 import { analysisBasisSignature } from '../state/analysisBasis'
 import { runResultGroups } from './runResultGroups'
 import type { RunResultGroups } from './runResultGroups'
+import type { TrialResultView } from '../analysis/trialResult'
 import { allowAutosave, assertAutosaveAllowed, blockAutosave, notifyRecovery, recoverUnreadableSave } from './recovery'
 import { parseLibraryData, validateScenarioReferences, validateScenarioShape } from './validateScenario'
 import { MAX_IMAGE_CODE_UNITS, validateImage } from './runtimeValidation'
@@ -242,7 +243,7 @@ interface RunExport {
   /** Existing dataBasis describes only its named groups, not the whole mixed package. */
   packageBasis: {
     semantics: 'planning-envelope' | 'mixed-result-groups'
-    dataBasisAppliesTo: Array<keyof RunResultGroups>
+    dataBasisAppliesTo: Array<Exclude<keyof RunResultGroups, 'trial'>>
   }
   /** Configuration equality only: not a cryptographic or source-revision hash. */
   configuration: { analysisBasisSignature: string; identityKind: 'configuration-equality' }
@@ -293,7 +294,15 @@ export function runExportObject(
   summary: AarSummary,
   mc: McSummary | null = null,
   sensitivity: SensitivitySummary | null = null,
+  trial: TrialResultView | null = null,
 ): RunExport {
+  if (trial) {
+    if (trial.manifest.runId !== run.id) throw new Error('Trial run id does not match the export package')
+    if (!run.completedAt || !Number.isFinite(run.durationS) || !Number.isFinite(run.observedThroughS) ||
+      run.durationS !== trial.durationS || run.observedThroughS < run.durationS) {
+      throw new Error('Cannot export an incomplete trial run')
+    }
+  }
   // A package with no replicate summary carries deterministic numbers, so its
   // validity and its model list read the envelope even under a Monte Carlo
   // run setting; the scenario itself is exported unchanged.
@@ -305,14 +314,14 @@ export function runExportObject(
   const out: RunExport = {
     rangeboardRun: 1,
     packageBasis: {
-      semantics: mc || sensitivity ? 'mixed-result-groups' : 'planning-envelope',
+      semantics: mc || sensitivity || trial ? 'mixed-result-groups' : 'planning-envelope',
       dataBasisAppliesTo: mc ? ['mcSummary'] : ['assessments', 'attrition', 'requirements', 'summary'],
     },
     configuration: {
       analysisBasisSignature: analysisBasisSignature(scenario),
       identityKind: 'configuration-equality',
     },
-    resultGroups: runResultGroups(scenario, assessments, attrition, mc, sensitivity),
+    resultGroups: runResultGroups(scenario, assessments, attrition, mc, sensitivity, trial),
     dataBasis: mc
       ? {
           kind: 'monte-carlo',
@@ -359,9 +368,10 @@ export function exportRunRecord(
   summary: AarSummary,
   mc: McSummary | null = null,
   sensitivity: SensitivitySummary | null = null,
+  trial: TrialResultView | null = null,
 ): void {
   downloadJson(
-    runExportObject(scenario, run, assessments, attrition, summary, mc, sensitivity),
+    runExportObject(scenario, run, assessments, attrition, summary, mc, sensitivity, trial),
     `${safeName(scenario.name)}.${run.label.toLowerCase()}.run.json`,
   )
 }

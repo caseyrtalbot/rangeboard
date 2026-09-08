@@ -59,7 +59,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
   const timingRows = useMemo<ReactNode[][]>(() => {
     void runId
     return threats.map((a) => {
-      const effect = report.events
+      const effect = report?.events
         .filter((ev) => ev.uasId === a.uasId && ev.killDelta > 0)
         .sort((x, y) => x.tEffectS - y.tEffectS)[0]
       const detect = !horizon.scoped || reached(a.firstDetectS, horizon) ? a.firstDetectS : null
@@ -94,7 +94,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="system">
-      <p className="muted small">Readouts and charts show the deterministic planning envelope.</p>
+      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}

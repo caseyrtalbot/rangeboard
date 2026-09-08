@@ -10,7 +10,7 @@ import { AnalysisSection } from '../AnalysisSection'
 import { RequirementGates } from '../RequirementGates'
 import { Rows } from '../detail/detailRows'
 import { Field } from '../../../ui/kit'
-import { useEngagement } from './controls'
+import { useForecastEngagement } from './controls'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
 
@@ -208,7 +208,7 @@ export function RequirementGatesWidget({
 }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
-  const { assessments, report } = useEngagement(scenario, runId)
+  const { assessments, report } = useForecastEngagement(scenario, runId)
   const ids = gateIdsOf(params)
   const idsKey = ids.join(',')
   const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
@@ -227,7 +227,7 @@ export function RequirementGatesWidget({
       id={id}
       horizon={horizon}
       type="requirement-gates"
-      title="Requirement gates"
+      title="Forecast · requirement gates"
       meta={`${shown.met}/${shown.required} met · planning envelope`}
       collapsed={collapsed}
       customize={customize}

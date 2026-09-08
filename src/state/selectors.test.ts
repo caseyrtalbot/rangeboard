@@ -1,3 +1,7 @@
+import { analysisBasisSignature } from './analysisBasis'
+import { createTrialManifest } from '../playback/trialTypes'
+import { runTrial } from '../playback/trial'
+import { IDLE_TRIAL } from './runState'
 import { EMPTY_HORIZON, FULL_RUN } from '../analysis/horizon'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
@@ -15,6 +19,16 @@ import {
 } from './selectors'
 import { useStore } from './store'
 
+
+/** Supply a real retained result for clock tests; async worker ownership lives in store.trial.test. */
+function prepareReadyTrial() {
+  const st = useStore.getState()
+  if (st.trial.status === 'ready') return
+  const scenario = structuredClone(st.scenario)
+  const manifest = createTrialManifest(scenario, st.playback.runId, analysisBasisSignature(scenario))
+  useStore.setState({ trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result: runTrial(scenario, manifest) } })
+}
+
 function reset() {
   useStore.getState().replaceScenario(emptyScenario())
 }
@@ -24,6 +38,7 @@ describe('playback selectors', () => {
 
   it('quantizes both clocks to the DT grid', () => {
     const st = useStore.getState()
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(12.3)
     st.pauseRun()
@@ -44,6 +59,7 @@ describe('playback selectors', () => {
     const st = useStore.getState()
     const d = selectDurationS(st)
     expect(selectRunComplete(st)).toBe(false)
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(d)
     expect(selectRunComplete(useStore.getState())).toBe(false)
@@ -87,6 +103,7 @@ describe('execution horizon selector', () => {
   it('caps the quantized cursor by observation and keeps identity for unchanged values', () => {
     const st = useStore.getState()
     st.setBoardPhase('execute')
+    prepareReadyTrial()
     st.startRun()
     st.advanceRun(12.3)
     st.pauseRun()

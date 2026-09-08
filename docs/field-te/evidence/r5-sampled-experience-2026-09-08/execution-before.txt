@@ -1,0 +1,38 @@
+HEAD: 838f5bb017117478f2b696d82934b7bfe17d54bb
+Node: v22.23.1
+Initial git status --short: empty
+
+npx vitest run --dir src src/playback/__scratch_r5_capture.test.ts
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  07:56:37
+   Duration  1.35s (transform 223ms, setup 0ms, import 275ms, tests 1.01s, environment 0ms)
+Exit code: 0. Scratch test deleted before npm test/build completion.
+
+npm run dev -- --port 5461 --strictPort
+  VITE v8.2.1 ready in 76 ms
+  Local: http://localhost:5461/
+Owned exec session 75733 stopped with Ctrl-C; exit 130.
+
+npm run build
+Exit code: 0; full output in build-before.txt.
+
+npm run preview -- --port 5462 --strictPort
+error when starting preview server:
+Error: listen EPERM: operation not permitted ::1:5462
+code: EPERM; errno: -1; syscall: listen; address: ::1; port: 5462
+Exit code: 1. No preview server started.
+
+node /private/tmp/r5-before-capture/profile.mjs /private/tmp/r5-before-capture/scenario.json http://localhost:5461 dev
+Exit code: 1; output: profile-dev-before.txt
+node /private/tmp/r5-before-capture/browser-before.mjs
+Exit code: 1; output: browser-before.json and browser-attempt-before.txt
+node /private/tmp/r5-before-capture/profile.mjs /private/tmp/r5-before-capture/scenario.json http://localhost:5462 prod
+Exit code: 1; output: profile-prod-before.txt
+All Chromium attempts failed before page creation: MachPortRendezvousServer Permission denied (1100).
+
+Orchestrator retry outside the Codex sandbox (same scripts, same fixture):
+npm run dev -- --port 5461 --strictPort  (owned, stopped afterwards)
+node profile.mjs scenario.json http://localhost:5461 dev > profile-dev-before.txt  exit 0
+node browser-before.mjs  -> browser-before.json status captured, 5 screenshots, 0 page errors
+SERVE_DIR=dist SERVE_PORT=5462 node profile.mjs scenario.json http://127.0.0.1:5462 prod > profile-prod-before.txt  exit 0
