@@ -236,6 +236,10 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target, the 
                Layers), StaticScene.tsx (boundaries, footprints, range rings and
                connections on the static Layer), LiveScene.tsx (the frame clock and every
                moving layer on the live Layer), TrackFileReadout.tsx, frameClock.ts,
+               ringModel.ts (store-free, Konva-free: prepareRingModel resolves every ring
+               record from Scenario, RingView and the selected threat, and hitAt finds the
+               ring edge under a world point over the same records), useRingModel.ts (the
+               store-bound hook FootprintLayer and HudLayer share),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
                style source)
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
@@ -645,9 +649,11 @@ Konva conventions:
 - Everything a layer draws at time t is derived at render from the scenario and
   `simTimeS`, with outcome badges limited by the execution horizon. A layer never stores derived state. A layer may keep the previous render's
   records in a ref only to lend their identities to the records that did not change
-  (`FootprintLayer` rings, `ThreatWezLayer` zones, `LiveScene` placements, tracks and spoke
+  (`useRingModel` rings, `ThreatWezLayer` zones, `LiveScene` placements, tracks and spoke
   ids; `sweepAt` lends hits, track states and effector states the same way), never to skip
-  a derivation. Spoke callout geometry snaps to whole pixels in `labelLayout.ts`, so a
+  a derivation. Rings are one prepared model (`ringModel.ts`): `FootprintLayer` draws its
+  records and `HudLayer` hit-tests it; neither derives ring geometry, and the HUD never
+  imports a drawing file. Spoke callout geometry snaps to whole pixels in `labelLayout.ts`, so a
   sub-pixel centroid drift does not change a placement's identity.
 - Two scene Layers, in this order: `StaticScene` (boundaries, footprints, range rings,
   connections) and `LiveScene` (WEZ, paths, engagements, entities, system handles,

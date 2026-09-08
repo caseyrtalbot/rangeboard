@@ -3,8 +3,7 @@ import type Konva from 'konva'
 import type { Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
 import { formatAxis, formatDistance, gridStepM } from '../../geometry/geo'
-import { useEntityRings } from './FootprintLayer'
-import { hitRing } from './ringHit'
+import { useRingModel } from '../useRingModel'
 
 interface Props {
   /** The Konva stage this overlay reads its cursor from. */
@@ -14,7 +13,7 @@ interface Props {
 /** DOM overlay: scale bar, cursor readout, ring hints and active-tool hint. */
 export function HudLayer({ stageRef }: Props) {
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
-  const rings = useEntityRings()
+  const ringModel = useRingModel()
   const camera = useStore((s) => s.camera)
   const scale = camera.scale
   const [dismissed, setDismissed] = useState(false)
@@ -64,7 +63,7 @@ export function HudLayer({ stageRef }: Props) {
 
   // Recheck stationary pointers when visibility, selection or the camera changes.
   const ringHit = mouseWorld && !dismissed && scale > 0
-    ? hitRing(rings, mouseWorld, 6 / scale)
+    ? ringModel.hitAt(mouseWorld, 6 / scale)
     : null
 
   const units = useStore((s) => s.ui.units)
