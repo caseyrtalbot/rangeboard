@@ -2,7 +2,7 @@ import { EMPTY_HORIZON, FULL_RUN, type ExecutionHorizon } from '../../../analysi
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Scenario } from '../../../model/types'
-import { sampleCount } from '../../../analysis/series'
+import { sampleCount } from '../../../analysis/projection'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'

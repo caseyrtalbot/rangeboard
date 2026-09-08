@@ -23,12 +23,22 @@ import { pathLength } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import type { Entity, Scenario, SpecModel } from '../model/types'
 import { entityActive, mountHeightOf } from '../model/types'
-import type { AttritionReport, EngagementEvent } from '../playback/attritionReport'
+import type { EngagementEvent } from '../playback/attritionReport'
 import { effectivePathDelayS } from '../playback/raid'
 import type { SensorObservation, ThreatAssessment } from '../playback/sim'
 import type { BandSeries, McSummary } from '../playback/mcRun'
 import { DT } from '../playback/clock'
 import { engagementIsKinetic, engagementReleaseS } from '../playback/engagementTiming'
+import {
+  heldOnGrid,
+  heldTracksOnGrid,
+  holdFrom,
+  meanHeldPdOnGrid,
+  nanGrid,
+  pdOnGrid,
+  residualOnGrid,
+  sampleCount,
+} from './projection'
 import { entityPosAt, threatAltitudeFt } from '../playback/tracks'
 import { buildTrackTimeline, PHASE_STYLE, trackStatesAt } from '../playback/trackState'
 import type { TrackPhase } from '../playback/trackState'
@@ -39,52 +49,11 @@ import type { LiveKpis } from './liveStats'
 import { FT_TO_M } from './sensorEnv'
 import { threatPictureAt } from './threatAggregation'
 
-/** Grid-snap tolerance: an event time a rounding error before a step still lands on it. */
-const EPS = 1e-9
 
 /** Phase index by `PHASE_STYLE` key order: undetected 0 through ghost 6. */
 const PHASE_INDEX: Record<TrackPhase, number> = Object.fromEntries(
   Object.keys(PHASE_STYLE).map((k, i) => [k, i]),
 ) as Record<TrackPhase, number>
-
-/** Sample count on the DT grid from t = 0 through scenarioDurationS: ceil(duration / DT) + 1. */
-export function sampleCount(scenario: Scenario): number {
-  return Math.ceil(scenarioDurationS(scenario) / DT) + 1
-}
-
-/**
- * Ships alive per step: the ship count, stepping down by killDelta at each
- * kill event's effect time. The threat pane's residual and the Monte Carlo
- * per-threat band read this one rule.
- */
-export function residualOnGrid(report: AttritionReport, uasId: string, n: number): number[] {
-  const shipCount = report.threats.find((x) => x.uasId === uasId)?.shipCount ?? 1
-  const residual = new Array<number>(n).fill(shipCount)
-  const effects = report.events
-    .filter((ev) => ev.uasId === uasId && ev.killDelta > 0)
-    .sort((x, y) => x.tEffectS - y.tEffectS)
-  let landed = 0
-  for (const ev of effects) {
-    landed += ev.killDelta
-    holdFrom(residual, ev.tEffectS, shipCount - landed)
-  }
-  return residual
-}
-
-/** A fresh grid of NaN. */
-function grid(n: number): number[] {
-  return new Array<number>(n).fill(Number.NaN)
-}
-
-/** First grid index whose time is at or after tS; 0 for a negative time. */
-function stepIndex(tS: number): number {
-  return Math.max(0, Math.ceil(tS / DT - EPS))
-}
-
-/** Hold `value` from the step at or after tS to the end of the grid. */
-function holdFrom(values: number[], tS: number, value: number): void {
-  for (let i = stepIndex(tS); i < values.length; i += 1) values[i] = value
-}
 
 /** Entity display name, else its id. */
 function nameOf(scenario: Scenario, id: string): string {
@@ -165,7 +134,7 @@ export function kpiSeries(scenario: Scenario): Series[] {
   const { assessments, report } = engagementPicture(scenario)
   const tl = buildLiveTimeline(assessments, report)
   const n = sampleCount(scenario)
-  const values = KPI_SPECS.map(() => grid(n))
+  const values = KPI_SPECS.map(() => nanGrid(n))
   for (let i = 0; i < n; i += 1) {
     const k = liveKpisAt(tl, i * DT)
     KPI_SPECS.forEach((spec, j) => {
@@ -183,35 +152,6 @@ export function kpiSeries(scenario: Scenario): Series[] {
 }
 
 /**
- * Single-scan Pd on the t = 0 grid. `pdSeries[k]` sits at
- * `pdSeriesStartS + k * DT` (the first scan taken; `firstDetectS` for a radar
- * with no scan model); NaN before that step and after the series ends.
- * The sweep grid starts at the path delay, so an off-grid delay puts every
- * observation time between two t = 0 steps; `stepIndex` is the one rule that
- * places it, shared with the hold flag so both series land on the same step.
- */
-function pdOnGrid(obs: SensorObservation, n: number): number[] | null {
-  if (!obs.pdSeries) return null
-  const values = grid(n)
-  const offset = stepIndex(obs.pdSeriesStartS ?? obs.firstDetectS)
-  obs.pdSeries.forEach((pd, k) => {
-    const i = offset + k
-    if (i >= 0 && i < n) values[i] = pd
-  })
-  return values
-}
-
-/** 0/1 hold flag per step: 1 inside any of the observation's inclusive intervals. */
-export function heldOnGrid(obs: SensorObservation, n: number): number[] {
-  const values = new Array<number>(n).fill(0)
-  for (const [startS, endS] of obs.intervals) {
-    const last = Math.min(n - 1, Math.floor(endS / DT + EPS))
-    for (let i = stepIndex(startS); i <= last; i += 1) values[i] = 1
-  }
-  return values
-}
-
-/**
  * Slant range from a phase center to a track at each step, meters. NaN for
  * a track with no path. Before its path delay `entityPosAt` places the
  * track at the path start, so the series is finite from t = 0.
@@ -223,7 +163,7 @@ function slantOnGrid(
   fromHeightM: number,
   n: number,
 ): number[] {
-  const values = grid(n)
+  const values = nanGrid(n)
   if (!scenario.paths.some((p) => p.entityId === uas.id)) return values
   const dAltM = threatAltitudeFt(scenario, uas) * FT_TO_M - fromHeightM
   for (let i = 0; i < n; i += 1) {
@@ -309,7 +249,7 @@ export function effectorSeries(scenario: Scenario, effectorId: string): Series[]
     else byTrack.set(ev.uasId, [ev])
   }
   for (const [uasId, list] of byTrack) {
-    const values = grid(n)
+    const values = nanGrid(n)
     // Events arrive in assignment order, so each hold overwrites the last.
     for (const ev of list) holdFrom(values, ev.tS, ev.pk)
     out.push({
@@ -393,7 +333,7 @@ export function threatSeries(scenario: Scenario, uasId: string): Series[] {
   })
 
   const tl = buildTrackTimeline(scenario, assessments, report)
-  const phase = grid(n)
+  const phase = nanGrid(n)
   for (let i = 0; i < n; i += 1) {
     const state = trackStatesAt(tl, i * DT).get(uasId)
     if (state) phase[i] = PHASE_INDEX[state.phase]
@@ -542,91 +482,41 @@ export function trackLadderRows(scenario: Scenario, sensorId: string): LadderRow
 
 /**
  * Tracks this sensor holds per step: `scanLoad` (`step`, tracks, chart-1),
- * the count of this sensor's observations whose `held.<uasId>` flag is 1.
- * Zeros, never NaN, when the sensor observed nothing or the id is unknown.
+ * the count of tracks whose hold flag for this one sensor is 1
+ * (`heldTracksOnGrid` over the sensor alone). Zeros, never NaN, when the
+ * sensor observed nothing or the id is unknown.
  */
 export function scanLoadSeries(scenario: Scenario, sensorId: string): Series {
-  const values = new Array<number>(sampleCount(scenario)).fill(0)
-  for (const s of sensorSeries(scenario, sensorId)) {
-    if (!s.id.startsWith('held.')) continue
-    s.values.forEach((v, i) => {
-      if (v === 1) values[i] += 1
-    })
-  }
+  const { assessments } = engagementPicture(scenario)
   return {
     id: 'scanLoad',
     label: 'Tracks held',
     unit: 'tracks',
-    values,
+    values: heldTracksOnGrid(assessments, new Set([sensorId]), sampleCount(scenario)),
     color: 'chart-1',
     kind: 'step',
   }
 }
 
-const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v)
-
-/**
- * One pass over `sensorSeries` of every active sensor.
- *
- * Tracks held: at step i, the count of tracks whose `held.<uasId>` flag is 1
- * for at least one enabled sensor. Mean Pd: at step i, over those held
- * tracks, take per track the largest finite `pd.<uasId>` among the sensors
- * holding it, then the mean over tracks; NaN when no held track has a
- * finite Pd at that step.
- */
-function heldPass(scenario: Scenario): { tracks: number[]; meanPd: number[] } {
-  const n = sampleCount(scenario)
-  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
-  const held = new Map<string, number[][]>()
-  const pd = new Map<string, number[][]>()
-  for (const sensor of sensors) {
-    for (const s of sensorSeries(scenario, sensor.id)) {
-      const dot = s.id.indexOf('.')
-      const kind = s.id.slice(0, dot)
-      const uasId = s.id.slice(dot + 1)
-      const target = kind === 'held' ? held : kind === 'pd' ? pd : null
-      if (!target || !uasId) continue
-      const list = target.get(uasId) ?? []
-      list.push(s.values)
-      target.set(uasId, list)
-    }
-  }
-  const tracks = new Array<number>(n).fill(0)
-  const meanPd = grid(n)
-  for (let i = 0; i < n; i += 1) {
-    let count = 0
-    let pdSum = 0
-    let pdCount = 0
-    for (const [uasId, flags] of held) {
-      if (!flags.some((f) => f[i] === 1)) continue
-      count += 1
-      let best = Number.NaN
-      for (const values of pd.get(uasId) ?? []) {
-        const v = values[i]
-        if (finite(v) && (!finite(best) || v > best)) best = v
-      }
-      if (finite(best)) {
-        pdSum += best
-        pdCount += 1
-      }
-    }
-    tracks[i] = count
-    if (pdCount > 0) meanPd[i] = pdSum / pdCount
-  }
-  return { tracks, meanPd }
+/** The active sensors whose observations the held-track quantities read. */
+function enabledSensorIds(scenario: Scenario): Set<string> {
+  return new Set(
+    scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e)).map((e) => e.id),
+  )
 }
 
 /**
  * `tracksHeld` (`step`, tracks, chart-1): at step i, the count of tracks
- * whose `held.<uasId>` flag is 1 for at least one enabled sensor.
+ * held by at least one enabled sensor (`heldTracksOnGrid`, the rule the
+ * Monte Carlo `tracked` band shares).
  */
 export function heldTracksSeries(scenario: Scenario): Series {
-  const { tracks } = heldPass(scenario)
+  const { assessments } = engagementPicture(scenario)
   return {
     id: 'tracksHeld',
     label: 'Tracks held',
     unit: 'tracks',
-    values: tracks,
+    values: heldTracksOnGrid(assessments, enabledSensorIds(scenario), sampleCount(scenario)),
     color: 'chart-1',
     kind: 'step',
   }
@@ -634,16 +524,17 @@ export function heldTracksSeries(scenario: Scenario): Series {
 
 /**
  * `meanPd` (`line`, Pd, chart-4): at step i, over the held tracks, take per
- * track the largest finite `pd.<uasId>` among the sensors holding it, then
- * the mean over tracks; NaN when no held track has a finite Pd at that step.
+ * track the largest finite single-scan Pd among the enabled sensors that
+ * observed it, then the mean over tracks; NaN when no held track has a
+ * finite Pd at that step (`meanHeldPdOnGrid`).
  */
 export function meanHeldPdSeries(scenario: Scenario): Series {
-  const { meanPd } = heldPass(scenario)
+  const { assessments } = engagementPicture(scenario)
   return {
     id: 'meanPd',
     label: 'Mean Pd of held tracks',
     unit: 'Pd',
-    values: meanPd,
+    values: meanHeldPdOnGrid(assessments, enabledSensorIds(scenario), sampleCount(scenario)),
     color: 'chart-4',
     kind: 'line',
   }
@@ -673,6 +564,8 @@ export function salvosInFlightSeries(scenario: Scenario): Series {
   }
 }
 
+const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v)
+
 /**
  * One `step` series per threat group (`threatPictureAt` over the whole run):
  * `group.<groupId>`, the element-wise sum of its members' residual ships,
@@ -683,12 +576,12 @@ export function groupResidualSeries(scenario: Scenario): Series[] {
   const n = sampleCount(scenario)
   const groups = threatPictureAt(scenario, assessments, report, Number.POSITIVE_INFINITY, new Map())
   return groups.map((group, index) => {
-    const values = grid(n)
+    const values = nanGrid(n)
     for (const member of group.members) {
-      const residual = threatSeries(scenario, member.uasId).find((s) => s.id === 'residual')
-      if (!residual) continue
+      if (!assessments.some((a) => a.uasId === member.uasId)) continue
+      const residual = residualOnGrid(report, member.uasId, n)
       for (let i = 0; i < n; i += 1) {
-        const v = residual.values[i]
+        const v = residual[i]
         if (!finite(v)) continue
         values[i] = finite(values[i]) ? values[i] + v : v
       }

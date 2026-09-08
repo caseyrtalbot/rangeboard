@@ -19,7 +19,6 @@ import {
   releaseLadderRows,
   salvoMarks,
   salvosInFlightSeries,
-  sampleCount,
   scanLoadSeries,
   sensorSeries,
   threatSeries,
@@ -29,6 +28,7 @@ import {
   trackSlots,
   withBands,
 } from './series'
+import { sampleCount } from './projection'
 import type { BandSeries, McSummary, Stat } from '../playback/mcRun'
 
 /** Planning-basis radar: no RCS scaling and no Pd model, so detection is the range test. */

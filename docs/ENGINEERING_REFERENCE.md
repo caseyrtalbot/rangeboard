@@ -247,7 +247,8 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                hits, track states, effector states, held sensors), tactics.ts (threat
                tactics), raid.ts, runSession.ts (thin adapter: toggle and reset commands),
                policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
-               McSummary), workerSlot.ts (the one worker slot: start, cancel, dispose),
+               McSummary; reduces analysis/projection.ts quantities into bands and
+               imports no chart file), workerSlot.ts (the one worker slot: start, cancel, dispose),
                mc.worker.ts + mcClient.ts (the replicate and sensitivity protocol adapters),
                trial.ts (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
@@ -256,8 +257,11 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector state)
 src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts
-               (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), series.ts (chart
-               series on the DT grid), runValidity.ts, requirements.ts, uncertainty.ts
+               (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), projection.ts
+               (pure named quantities on the DT grid: sampleCount, hold and residual
+               rules, held-track union and count, mean held Pd; no chart ids),
+               series.ts (chart Series, labels, colors and ids over projection.ts),
+               runValidity.ts, requirements.ts, uncertainty.ts
                (sampling), parameterBasis.ts (pure spread resolution and enumeration),
                fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
                threatAggregation.ts, range.ts, trialResult.ts (validated trial view and
