@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "63dd150c93155a3d8158cea79b83bbe0a25d1f008d6af5234143eaf2428ba11b",
+      "sha256": "9947ed9581bae258f071699acd79149991ac7ecd2ad6048b555298b6fafcdfc7",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed package test scope and unchanged app entry points; setup and verification links remain accurate."
+      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "8b3cd2895d0d027911910ec624e97f04fad910d2a83df4825512ad6fcfa518ed",
+      "sha256": "77d8b20117815423cc2a7914ac0819e69e20af0d12655bd932411c21438aab93",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed sampled Play default, Replay/New run, observed-horizon Execute, labeled Forecast and Monte Carlo sections, trial export group and the new trial module entry points after R5."
+      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "01ad797c528eb410a0242fac3ae94ac0b113c685f59f9f5384e4b5d621ffce61",
+      "sha256": "09ee9feebee845778b3da7bf675ebf08c15abe6caec4d869c594eb41e395cd9c",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed trial adapters, selectors, store transport and export group after R5; updated invariants and module list."
+      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b9b8415f0f0f88b8cff0717723c6eccff16f5c5534d06b55fed53a4bebd605f3",
+      "sha256": "85b02ee96495091f1de88db13ce82ecea0112d10138dde38487e43f5f8b6c60f",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed fixed-ID parity harness reuse for R5, the Board shell spec trial-readiness wait, trial adapter and export tests, and the retained R5 browser harness location."
+      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
     },
     {
       "document": "docs/WORKFLOW.md",

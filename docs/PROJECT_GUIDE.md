@@ -168,7 +168,7 @@ File size alone does not define a safe slice.
 | Board actions/history | `state/store.ts`, `scenarioInstall.ts`, `runState.ts`, `analysisBasis.ts`, `store*.test.ts` | Edits, undo/redo, load/reset, stale callbacks and cancellation |
 | Sampled playback | `state/trialSelectors.ts`, `useTrialResult.ts`, `analysis/trialResult.ts`, `trialSeries.ts`, `playback/trialTrackState.ts`, `trialSweepAt.ts` | One retained draw, member identity, observation bounds and export agreement |
 | Numerical engine | `playback/sim.ts`, `attrition.ts`, `mcRun.ts`, `policy.ts`, `analysis/` | Fixed IDs/seeds; deterministic, both MC modes and sensitivity parity |
-| Workers | [workerGraph.test.ts](../src/playback/workerGraph.test.ts), `mcClient.ts`, `mc.worker.ts` | Isolated dependencies; real-worker completion/cancellation |
+| Workers | [workerGraph.test.ts](../src/playback/workerGraph.test.ts), [workerSlot.test.ts](../src/playback/workerSlot.test.ts), `mcClient.ts`, `mc.worker.ts` | Isolated dependencies; real-worker completion/cancellation |
 | Save shapes | `model/types.ts`, `te/model/types.ts`, `io/`, `te/io/` | Schema descriptors, legacy defaults, rejection and recovery |
 | T&E lifecycle | `te/state/teStore.ts`, `te/validate.ts`, `te/calc/` | Freeze guards, admissible evidence, observations and traceability |
 | Rendering | `canvas/`, `panels/`, `charts/`, `ui/`, `te/ui/`, `index.css` | Clock horizons, tokens, panel width, chart rendering and overflow |
