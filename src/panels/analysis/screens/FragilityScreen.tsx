@@ -112,6 +112,7 @@ export function FragilityScreen() {
   const startSensitivity = useStore(s => s.runSensitivity)
   const basis = useEnsembleBasis()
   const summary = currentSummary(mc, runId)
+  const baseline = useStore(s => s.baseline)
   const sweep = currentSweep(mc, runId)
   const sensitivity = currentSensitivity(mc, runId)
   const rate = useReplicateRate(summary, sweep)
@@ -147,7 +148,8 @@ export function FragilityScreen() {
     <div style={wrap}>
       {summary && runButton}
       {mc.status === 'running' && <><span role="status">{mc.progress} of {mc.total} replicates</span><button type="button" onClick={() => useStore.getState().cancelMonteCarlo()}>Cancel Monte Carlo</button></>}
-      <button type="button" disabled title="Baseline pinning is not available yet">Pin as baseline</button>
+      <button type="button" disabled={!summary || mc.status !== 'done'} title={baseline ? `Replaces the pinned baseline · ${baseline.label}` : 'Pin this laydown and ensemble for Compare'}
+        onClick={() => useStore.getState().pinBaseline()}>Pin as baseline</button>
       <span className="muted small">{enabled ? 'Run settings are in the Inputs tab.' : 'Choose Monte Carlo mode in the Inputs tab to run analyses.'}</span>
     </div>
     {mc.error && <p role="alert">{mc.error}</p>}

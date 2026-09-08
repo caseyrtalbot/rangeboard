@@ -95,7 +95,7 @@ describe('FragilityScreen', () => {
     useStore.setState({ mc: IDLE_MC })
   })
 
-  it('offers one no-ensemble line, run actions and a disabled baseline', () => {
+  it('offers one no-ensemble line, run actions and a disabled pin without an ensemble', () => {
     const start = vi.fn()
     useStore.setState({ runMonteCarlo: start })
     const html = render()
@@ -103,7 +103,7 @@ describe('FragilityScreen', () => {
     expect(html.match(/>Run Monte Carlo</g)).toHaveLength(1)
     expect(html).not.toContain('class="tile"')
     expect(html).toContain('no rate yet')
-    expect(html).toContain('disabled="" title="Baseline pinning is not available yet">Pin as baseline')
+    expect(html).toContain('disabled="" title="Pin this laydown and ensemble for Compare">Pin as baseline')
     interaction.buttons.get('Run Monte Carlo')!.onClick()
     expect(start).toHaveBeenCalledOnce()
     expect(html).toContain('Run sensitivity')
