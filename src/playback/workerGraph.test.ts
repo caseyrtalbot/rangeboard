@@ -52,6 +52,19 @@ it('keeps store runtime imports outside trial execution and existing numerical r
   }
 })
 
+it.each(['src/state/store.ts', 'src/state/scenarioInstall.ts'])(
+  'reaches the worker adapters from %s only through analysisRequests',
+  (file) => {
+    const { outputText } = ts.transpileModule(readFileSync(file, 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ESNext },
+      fileName: file,
+    })
+    for (const dep of ts.preProcessFile(outputText).importedFiles) {
+      expect(dep.fileName, file).not.toMatch(/\/(mcClient|trialClient)$/)
+    }
+  },
+)
+
 it('keeps view-state persistence free of runtime store imports', () => {
   const modules = valueGraph('src/io/viewState.ts')
   expect([...modules.keys()].map(file => relative('.', file))).not.toContain('src/state/store.ts')

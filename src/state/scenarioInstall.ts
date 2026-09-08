@@ -1,7 +1,6 @@
 import type { Scenario } from '../model/types'
 import { markPresentationVariant } from '../model/scenario'
-import { cancelMcRun, cancelSensitivity } from '../playback/mcClient'
-import { cancelTrial } from '../playback/trialClient'
+import { cancelAnalysis } from './analysisRequests'
 import type { RingOverrides } from './rings'
 import { pruneRingOverrides } from './rings'
 import type { McState, PlaybackState, TrialState } from './runState'
@@ -98,9 +97,9 @@ export function installScenario(st: ScenarioSlices, install: ScenarioInstall): S
       })
     }
     case 'replace': {
-      cancelMcRun()
-      cancelSensitivity()
-      cancelTrial()
+      cancelAnalysis('mc')
+      cancelAnalysis('sensitivity')
+      cancelAnalysis('trial')
       return {
         scenario: install.next,
         past: [],
@@ -191,8 +190,8 @@ function mcForScenarioChange(mc: McState, next: Scenario): McState {
   const mcStale = live(mc.status) && mc.basisSignature !== signature
   const sensStale = live(mc.sensitivity.status) && mc.sensitivity.basisSignature !== signature
   if (!mcStale && !sensStale) return mc
-  if (mcStale) cancelMcRun()
-  if (sensStale) cancelSensitivity()
+  if (mcStale) cancelAnalysis('mc')
+  if (sensStale) cancelAnalysis('sensitivity')
   return {
     ...mc,
     status: mcStale ? 'stale' : mc.status,
@@ -205,6 +204,6 @@ function trialForScenarioChange(trial: TrialState, next: Scenario): TrialState {
   if (trial.manifest == null || trial.manifest.basisSignature === analysisBasisSignature(next)) {
     return trial
   }
-  cancelTrial()
+  cancelAnalysis('trial')
   return IDLE_TRIAL
 }

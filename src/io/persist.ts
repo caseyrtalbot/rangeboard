@@ -129,11 +129,6 @@ export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
 
 const scenarioAutosave = createAutosave(scenarioAutosaveAdapter)
 
-/** Read the saved scenario. Read failure and failed recovery both prevent a later overwrite. */
-export function loadAutosave(): Scenario | null {
-  return scenarioAutosave.read()
-}
-
 /** Read the saved scenario back into the store at startup. Runs at most once. */
 export function restoreAutosave(): void {
   scenarioAutosave.restore()

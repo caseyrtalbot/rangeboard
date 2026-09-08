@@ -1,8 +1,15 @@
 import type { Scenario } from '../model/types'
 import { newId, runSettings } from '../model/types'
 import type { McSensitivityMessage, McWorkerMessage } from '../playback/mcRun'
-import { startMcRun, startSensitivity } from '../playback/mcClient'
-import { startTrial } from '../playback/trialClient'
+import {
+  cancelMcRun,
+  cancelSensitivity,
+  requestMcCancel,
+  requestSensitivityCancel,
+  startMcRun,
+  startSensitivity,
+} from '../playback/mcClient'
+import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { createTrialManifest } from '../playback/trialTypes'
 import type { AnalysisRunState, McState, PlaybackState, TrialState } from './runState'
@@ -14,8 +21,9 @@ import { selectTrialSelection } from './trialSelectors'
  * what a request is: its identity (run id, analysis basis, and for a trial the
  * request token and manifest), the startup order (pending state is published
  * before the worker starts, so a synchronous startup error lands as a terminal
- * error on that state), and which messages a request still accepts. Callers
- * request an analysis; the envelope and the slot are decided here and below.
+ * error on that state), which messages a request still accepts, and how a
+ * request ends early. Callers request, accept and cancel through this module;
+ * the envelope, the slot and the adapters are decided here and below.
  */
 export type AnalysisKind = 'mc' | 'sensitivity' | 'trial'
 
@@ -67,6 +75,33 @@ export function requestAnalysis(
     case 'trial':
       return launch(trialLaunch(st), publish, sinks.trial)
   }
+}
+
+/**
+ * End one kind's request now: the adapter terminates its worker, and queued
+ * callbacks from it are dropped by slot ownership. Use this where the request
+ * no longer describes the current board (load, reset, a stale basis) or where
+ * the caller has already published the ended state itself.
+ */
+export function cancelAnalysis(kind: AnalysisKind): void {
+  switch (kind) {
+    case 'mc':
+      return cancelMcRun()
+    case 'sensitivity':
+      return cancelSensitivity()
+    case 'trial':
+      return cancelTrial()
+  }
+}
+
+/**
+ * Ask a running replicate or sensitivity run to stop at its next checkpoint,
+ * so its `done` message still carries the replicates already finished. A worker
+ * silent past the grace period is terminated. A trial has no graceful stop;
+ * cancel it through `cancelAnalysis`.
+ */
+export function requestCancel(kind: 'mc' | 'sensitivity', runId: string): boolean {
+  return kind === 'mc' ? requestMcCancel(runId) : requestSensitivityCancel(runId)
 }
 
 function launch<M>(

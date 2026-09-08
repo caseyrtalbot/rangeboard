@@ -13,10 +13,11 @@ import type { McSummary, SensitivitySummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {
   fillScenario,
-  loadAutosave,
   runExportObject,
+  scenarioAutosaveAdapter,
   scenarioHasWork,
 } from './persist'
+import { createAutosave } from './autosave'
 
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 import { getRecoveryNotices } from './recovery'
@@ -646,6 +647,15 @@ function stubStorage(raw: string | null): Map<string, string> {
   return store
 }
 
+/**
+ * Read the scenario save through the shared autosave lifecycle, without
+ * adopting it into the store: the Board adapter supplies the key, the parser
+ * and the recovery prefix.
+ */
+function readSave(): Scenario | null {
+  return createAutosave(scenarioAutosaveAdapter).read()
+}
+
 describe('autosave recovery', () => {
   afterEach(() => vi.unstubAllGlobals())
 
@@ -657,7 +667,7 @@ describe('autosave recovery', () => {
     const store = stubStorage('{not json')
     const alert = vi.fn()
     vi.stubGlobal('window', { alert })
-    expect(loadAutosave()).toBeNull()
+    expect(readSave()).toBeNull()
     const keys = recoveryKeys(store)
     expect(keys).toHaveLength(1)
     expect(store.get(keys[0])).toBe('{not json')
@@ -669,7 +679,7 @@ describe('autosave recovery', () => {
   it('copies a save with another schema version to a recovery key', () => {
     const raw = JSON.stringify({ ...emptyScenario(), schemaVersion: 2 })
     const store = stubStorage(raw)
-    expect(loadAutosave()).toBeNull()
+    expect(readSave()).toBeNull()
     const keys = recoveryKeys(store)
     expect(keys).toHaveLength(1)
     expect(store.get(keys[0])).toBe(raw)
@@ -677,13 +687,13 @@ describe('autosave recovery', () => {
 
   it('loads a valid save without writing a recovery key', () => {
     const store = stubStorage(JSON.stringify({ ...emptyScenario(), name: 'kept' }))
-    expect(loadAutosave()?.name).toBe('kept')
+    expect(readSave()?.name).toBe('kept')
     expect(recoveryKeys(store)).toHaveLength(0)
   })
 
   it('returns null and writes nothing when no save exists', () => {
     const store = stubStorage(null)
-    expect(loadAutosave()).toBeNull()
+    expect(readSave()).toBeNull()
     expect(store.size).toBe(0)
   })
 })
@@ -717,7 +727,7 @@ describe('seed provenance reaches an existing save', () => {
 
   it('loads that save without writing a recovery key', () => {
     const store = stubStorage(JSON.stringify(saveWithoutGiraffeRows()))
-    const loaded = loadAutosave()
+    const loaded = readSave()
     const giraffe = loaded?.library.find((m) => m.id === 'lib-giraffe1x')
     expect(giraffe?.provenance?.some((r) => r.field === 'updateRateS')).toBe(true)
     expect([...store.keys()].filter((k) => k.startsWith(SCENARIO_RECOVERY_PREFIX))).toHaveLength(0)
