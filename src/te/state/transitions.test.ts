@@ -352,6 +352,31 @@ describe('C4 remaining transition boundaries', () => {
     expect(campaign().checklists.find(c => c.id === id)).toEqual(complete)
   })
 
+  it('leaves the campaign unchanged when a checklist completion is refused', () => {
+    const id = store().startChecklist(CHECKLIST_TEMPLATES[0])
+    const before = campaign()
+    const refused = store().completeChecklist(id, '2026-09-08T12:00:00.000Z')
+    expect(refused.ok).toBe(false)
+    expect(refused.ok === false && refused.blockers.length).toBeGreaterThan(0)
+    expect(campaign()).toEqual(before)
+    const items = before.checklists.find(c => c.id === id)!.items
+    items.forEach((item, i) => {
+      store().setChecklistAnswer(id, i, { field: 'checked', checked: true }, '2026-09-08T12:00:00.000Z')
+      store().setChecklistAnswer(id, i, { field: 'completer', completer: 'Integration lead' })
+      if (item.type !== 'check') store().setChecklistAnswer(id, i, { field: 'value', value: 'Recorded' })
+    })
+    const answered = campaign().checklists.find(c => c.id === id)!
+    expect(answered.items[0]).toMatchObject({ state: 'checked', at: '2026-09-08T12:00:00.000Z' })
+    expect(store().completeChecklist(id, '2026-09-08T12:00:00.000Z').ok).toBe(false)
+    store().patchItem('checklists', id, { outcome: 'go' })
+    expect(store().completeChecklist(id, '2026-09-08T12:00:00.000Z')).toEqual({ ok: true })
+    expect(campaign().checklists.find(c => c.id === id)?.completedAt).toBe('2026-09-08T12:00:00.000Z')
+    const complete = campaign()
+    store().setChecklistAnswer(id, 0, { field: 'checked', checked: false })
+    expect(store().completeChecklist(id).ok).toBe(false)
+    expect(campaign()).toEqual(complete)
+  })
+
   it('permits append-only drift notes without altering the frozen baseline', () => {
     const config = campaign().configs[0]
     const next = [...config.driftLog, { time: '2026-09-05', note: 'Observed drift, baseline unchanged' }]

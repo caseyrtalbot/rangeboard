@@ -23,6 +23,8 @@ import type {
   TeState,
 } from '../model/types'
 import type { TypeCode } from '../model/ids'
+import type { ChecklistAnswer, ChecklistCompletion } from '../model/checklist'
+import { answerChecklistItem, checklistCompletionBlockers } from '../model/checklist'
 import { bumpMajor, bumpMinor, nextId } from '../model/ids'
 import {
   emptyAnomaly,
@@ -196,6 +198,15 @@ interface TeStore {
   addDeviation: (runId: string) => string | null
   addAnomaly: (runId: string | null) => string
   startChecklist: (template: ChecklistTemplate, runId?: string | null) => string
+  /** One checklist control answer. The store stamps the time and defaults the completer. */
+  setChecklistAnswer: (
+    checklistId: string,
+    itemIndex: number,
+    answer: ChecklistAnswer,
+    at?: string,
+  ) => void
+  /** Completion is refused with its blockers; a refused completion changes nothing. */
+  completeChecklist: (checklistId: string, at?: string) => ChecklistCompletion
   recordGoNoGo: (
     scope: GoNoGoScope,
     decision: GoNoGo,
@@ -1074,6 +1085,29 @@ export const useTeStore = create<TeStore>()((set, get) => {
         }
         return push(camp, 'checklists', inst)
       }),
+
+    setChecklistAnswer: (checklistId, itemIndex, answer, at = nowIso()) => {
+      mutate((c) => {
+        const inst = c.checklists.find((x) => x.id === checklistId)
+        const next = inst ? answerChecklistItem(inst, itemIndex, answer, at) : null
+        if (!next) return c
+        return { ...c, checklists: c.checklists.map((x) => (x.id === checklistId ? next : x)) }
+      })
+    },
+
+    completeChecklist: (checklistId, at = nowIso()) => {
+      const inst = requireCampaign(get())?.checklists.find((x) => x.id === checklistId)
+      if (!inst) return { ok: false, blockers: ['Checklist not found.'] }
+      const blockers = checklistCompletionBlockers(inst)
+      if (blockers.length > 0) return { ok: false, blockers }
+      const done = mutate((camp) => ({
+        ...camp,
+        checklists: camp.checklists.map((x) =>
+          x.id === checklistId ? { ...x, completedAt: at } : x,
+        ),
+      }))
+      return done ? { ok: true } : { ok: false, blockers: ['The campaign is delivered or closed.'] }
+    },
 
     recordGoNoGo: (scope, decision, approvers, note = '') =>
       allocate('GNG', (camp, id) =>
