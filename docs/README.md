@@ -78,6 +78,7 @@ Proposals preserve design decisions for review; implementation requires separate
 - [R0 numerical baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/numerical-baseline.md)
 - [R0 consumer matrix, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/consumer-matrix.md)
 - [R0 browser and performance baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/browser-perf-baseline.md)
+- [R1 honest readouts and setup, 2026-09-07](field-te/evidence/r1-honest-readouts-2026-09-07/README.md)
 
 Other evidence formats, including fixtures, screenshots, raw sources and numerical JSON,
 live under [field-te/evidence](field-te/evidence/).

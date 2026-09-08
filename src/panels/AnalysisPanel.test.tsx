@@ -135,7 +135,7 @@ describe('AnalysisPanel lenses', () => {
     expect(html).toContain('ID / class')
     expect(html).toContain('Engaged')
     // The two expectation tiles carry a bracketed symbol; the case is the widget's.
-    expect(html).toMatch(/Kill E\[k\]/i)
+    expect(html).toMatch(/Expected (kills|neutralization)/)
     expect(html).toMatch(/Leak E\[n\]/i)
   })
 

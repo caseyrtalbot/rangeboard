@@ -15,6 +15,8 @@ The Board shell provides Prepare, Execute and Analyze lifecycle views. These are
 navigation choices: changing a view preserves the playback cursor, observed horizon and
 analysis basis. Prepare composes the existing run inputs, validity findings and a
 keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPreparation.tsx).
+Setup findings that cost a measurement appear first, with a Select button for a threat
+that starts inside detection coverage; model caveats stay inside the disclosure.
 The five built-in [analysis destinations](../src/panels/analysis/AnalysisNavigation.tsx)
 remain outside the scrolling panel, including while an object is selected. Test cards,
 selected-object configuration and the model library remain available in the panel tabs.
@@ -35,6 +37,10 @@ selection. Model basis names all linked instances and reuses the model editor; d
 leaves the selected instance linked to its original model until explicitly changed.
 The compact canvas readout links to full Telemetry, which retains the complete track-file
 fields and distinguishes cursor, constant and full-path quantities.
+
+Forecast counts read as expected values: Expected kills with two decimals below ten,
+Expected neutralization when no defended asset exists, and an expected-defeat pill for a
+track below the residual cutoff. No surface labels a forecast as a realized kill.
 
 Analyze presents the untouched Run summary with full-run validity and outcome first,
 then separately disclosed full-run time series and cursor data. Execute retains the

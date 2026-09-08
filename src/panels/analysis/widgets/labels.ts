@@ -32,19 +32,19 @@ export const KPI_LABELS: Record<KpiKey, { label: string; hint: string }> = {
     hint: 'Salvos by cost: kinetic rounds, then d for directed-energy bursts, then j for EW salvos.',
   },
   killEk: {
-    label: 'Kill E[k]',
+    label: 'Expected kills',
     hint: 'Expected kill mass that landed at or before the threat reached the defended asset.',
   },
   lateEk: {
-    label: 'Late E[k]',
-    hint: 'Expected kill mass that landed after the threat was over the asset. Not a defeat.',
+    label: 'Expected late kills',
+    hint: 'Expected kill mass that landed after the threat was over the asset. Does not protect the asset.',
   },
   leakEn: {
     label: 'Leak E[n]',
-    hint: 'Expected ship mass that reached the defended asset. A late kill never reduces it.',
+    hint: 'Expected ship mass that reached the defended asset. Expected late kills never reduce it.',
   },
   firstDetect: { label: 'First detect', hint: 'The earliest first detection over every track.' },
-  firstEffect: { label: 'First effect', hint: 'The first effect that removed kill mass.' },
+  firstEffect: { label: 'First effect', hint: 'The first effect that removed expected kill mass.' },
   detectToEffect: {
     label: 'Detect to effect',
     hint: 'The time from the first detection to the first effect.',
@@ -53,4 +53,8 @@ export const KPI_LABELS: Record<KpiKey, { label: string; hint: string }> = {
     label: 'Min warning',
     hint: 'The shortest warning time: arrival minus first detection, over every track.',
   },
+}
+
+export function forecastKillLabel(hasActiveAsset: boolean): string {
+  return hasActiveAsset ? KPI_LABELS.killEk.label : 'Expected neutralization'
 }

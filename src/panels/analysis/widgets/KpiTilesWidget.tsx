@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../../analysis/liveStats'
+import { expectedCount } from '../../headlines'
 import { formatTime } from '../../../geometry/geo'
 import type { BandSeries, McSummary } from '../../../playback/mcRun'
 import { detectionsAt } from '../../../playback/detection'
@@ -7,7 +8,7 @@ import type { KpiKey } from '../../../state/analysisLayout'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
 import { useEngagement, useRunCursor } from './controls'
-import { KPI_LABELS } from './labels'
+import { forecastKillLabel, KPI_LABELS } from './labels'
 import { bandMean, bandStep, countSub, currentSummary, formatCount, statMean, timeStatSub } from './mc'
 import type { WidgetProps } from './registry'
 import { WidgetFrame } from './WidgetFrame'
@@ -78,7 +79,7 @@ function estimateTimeTile(key: KpiKey, stat: McSummary['firstDetectS'], quantity
   return { key, value: mean == null ? '—' : formatTime(mean), sub: `full-run · ${timeStatSub(stat, quantity)}` }
 }
 
-function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
+function KpiParams({ id, tiles, hasActiveAsset }: { id: string; tiles: KpiKey[]; hasActiveAsset: boolean }) {
   const setParams = useStore((s) => s.setAnalysisWidgetParams)
   return (
     <div className="params">
@@ -95,7 +96,7 @@ function KpiParams({ id, tiles }: { id: string; tiles: KpiKey[] }) {
                 if (next.length > 0) setParams(id, { tiles: next })
               }}
             />
-            {KPI_LABELS[key].label}
+            {key === 'killEk' ? forecastKillLabel(hasActiveAsset) : KPI_LABELS[key].label}
           </label>
         )
       })}
@@ -109,6 +110,8 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
   const runId = useStore((s) => s.playback.runId)
   const mc = useStore((s) => s.mc)
   const { assessments, report } = useEngagement(scenario, runId)
+  // The engine reports leakers as null when no asset defends: reuse that as the asset signal.
+  const hasActiveAsset = report.totals.reportedLeakers != null
   const { t, untouched } = useRunCursor(scenario)
   // Nothing is observed before the first play: the replicate means wait too.
   const summary = untouched ? null : currentSummary(mc, runId)
@@ -168,12 +171,12 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
           ),
         }
       case 'killEk': {
-        if (!summary) return { key, value: k.expectedKills.toFixed(1) }
+        if (!summary) return { key, value: expectedCount(k.expectedKills) }
         const at = bandAt(summary.kills, t, summary.replicates)
         return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub }
       }
       case 'lateEk':
-        return { key, value: k.lateKills.toFixed(1) }
+        return { key, value: expectedCount(k.lateKills) }
       case 'leakEn': {
         if (report.totals.reportedLeakers == null) {
           return { key, value: '—', sub: 'no defended asset' }
@@ -196,6 +199,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         return timeTile(key, value, reachedAt, cursor)
       }
       case 'minWarning': {
+        if (!hasActiveAsset) return { key, value: '—', sub: 'no defended asset placed' }
         const arrivalS = warningHolder?.arrivalS ?? null
         if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
         return estimateTimeTile(key, summary.minWarningS, 'warning')
@@ -204,7 +208,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
   }
 
   const body = customize ? (
-    <KpiParams id={id} tiles={tiles} />
+    <KpiParams id={id} tiles={tiles} hasActiveAsset={hasActiveAsset} />
   ) : threats.length === 0 ? (
     <p className="muted small">No threats with flight paths.</p>
   ) : (
@@ -214,8 +218,8 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         const estimated = summary && ['detect', 'trackNow', 'engaged', 'killEk', 'leakEn', 'firstDetect', 'minWarning'].includes(key)
         if (!estimated) item.sub = `planning envelope${item.sub ? ` · ${item.sub}` : ''}`
         return (
-          <div className="tile" key={key} title={KPI_LABELS[key].hint}>
-            <span className="tl">{KPI_LABELS[key].label}</span>
+          <div className="tile" key={key} title={key === 'killEk' && !hasActiveAsset ? 'Expected neutralization mass at the cursor time; no defended asset placed.' : KPI_LABELS[key].hint}>
+            <span className="tl">{key === 'killEk' ? forecastKillLabel(hasActiveAsset) : KPI_LABELS[key].label}</span>
             <span className={`tv${item.cls ? ` ${item.cls}` : ''}`}>{item.value}</span>
             {item.sub ? <span className="ts">{item.sub}</span> : null}
           </div>

@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "cc96e79c8917232aa7cb9109e8698191e021f3e662cf59068f2d1f7a9a02a9e0",
-      "reviewedAt": "2026-09-07",
-      "note": "Added the four R0 playback realism baseline records (directory README, numerical baseline, consumer matrix, browser and performance baseline) under Captured checks; every other index row is unchanged and still resolves."
+      "sha256": "7b760e908f17f71de4cdcdbce53d40b5b9207c02a1c76608d192f98caacc09b5",
+      "reviewedAt": "2026-09-08",
+      "note": "Added the R1 honest readouts record under Captured checks after the four R0 rows; every other index row is unchanged and still resolves."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "a5329bf691af8adae3f7efca9cbe4fb13e0a6eb0f4f461423a17b840d38cc587",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. Updated the Describe-the-range feature row."
+      "sha256": "089844a3f9a76c6038b399b737344c3bbee6cd8c9ec7ab8a3a64cbe90a54be50",
+      "reviewedAt": "2026-09-08",
+      "note": "R1 honest readouts: Prepare lists consequential findings first with threat selection; forecast counts read as expected values with the no-asset neutralization label."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c252ca43a25982123c129028cc4351a3d06e7ce0cc601888485ce4efddd6568e",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. No invariant changed; ring hit test stays a DOM overlay with listening=false rings."
+      "sha256": "ab8709fbd2d4afbe6ccb7e1d9900f2ff561945b3f736db93b8c28215299e413b",
+      "reviewedAt": "2026-09-08",
+      "note": "R1 honest readouts: finding text names the lost measurement, FindingThreatActions selection, EXPECTED DEFEAT ghost label, expectedCount formatter and the null reportedLeakers no-asset signal."
     },
     {
       "document": "docs/VERIFICATION.md",

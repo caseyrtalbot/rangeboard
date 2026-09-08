@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../../../model/seed'
 import type { Entity, Scenario } from '../../../model/types'
+import * as liveStats from '../../../analysis/liveStats'
 import { sampleCount } from '../../../analysis/series'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
@@ -127,7 +128,7 @@ describe('KpiTilesWidget', () => {
 
   it('renders the six default tiles by label when params name no tile', () => {
     const html = render({})
-    for (const key of DEFAULT_KPI_TILES) expect(html).toContain(KPI_LABELS[key].label)
+    for (const key of DEFAULT_KPI_TILES) expect(html).toContain(key === 'killEk' ? 'Expected neutralization' : KPI_LABELS[key].label)
     expect(html).toContain('tiles c3')
     expect(html).toContain(`${DEFAULT_KPI_TILES.length} of ${KPI_KEYS.length}`)
     expect(html).not.toContain(KPI_LABELS.minWarning.label)
@@ -149,7 +150,7 @@ describe('KpiTilesWidget', () => {
   it('shows the checkbox grid over every key in customize mode', () => {
     const html = render({}, true)
     expect(html).toContain('class="params"')
-    for (const key of KPI_KEYS) expect(html).toContain(KPI_LABELS[key].label)
+    for (const key of KPI_KEYS) expect(html).toContain(key === 'killEk' ? 'Expected neutralization' : KPI_LABELS[key].label)
     expect(html).not.toContain('tiles c3')
   })
 
@@ -237,12 +238,49 @@ describe('KpiTilesWidget', () => {
   })
 
   it('shows a full-run MC warning even when the envelope has no detected arrival', () => {
+    const scenario = warningScenario()
+    scenario.entities = scenario.entities.filter((entity) => entity.kind !== 'sensor')
+    useStore.getState().replaceScenario(scenario)
     useStore.getState().advanceRun(1)
     useStore.getState().pauseRun()
     setMc('done')
     const html = render({ tiles: ['minWarning'] })
     expect(html).toContain('full-run · MC conditional mean')
     expect(html).not.toContain('not yet')
+  })
+
+  it('keeps 0.952 expected pre-arrival and late counts fractional', () => {
+    useStore.getState().replaceScenario(warningScenario())
+    useStore.getState().advanceRun(1)
+    useStore.getState().pauseRun()
+    const actual = liveStats.liveKpisAt
+    const spy = vi.spyOn(liveStats, 'liveKpisAt').mockImplementationOnce((timeline, t) => ({
+      ...actual(timeline, t), expectedKills: 0.952, lateKills: 0.952,
+    }))
+    try {
+      const html = render({ tiles: ['killEk', 'lateEk'] })
+      expect(html.match(/class="tv">0.95</g)).toHaveLength(2)
+      expect(html).toContain('Expected kills')
+      expect(html).toContain('Expected late kills')
+      expect(html).toContain('planning envelope')
+      expect(html).not.toContain('>1.0<')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('keeps no-asset labels and unavailable metrics with no asset placed', () => {
+    const scenario = threatScenario()
+    useStore.getState().replaceScenario(scenario)
+    useStore.getState().advanceRun(130)
+    useStore.getState().pauseRun()
+    setMc('done')
+    const html = render({ tiles: ['killEk', 'leakEn', 'minWarning'] })
+    expect(html).toContain('Expected neutralization')
+    expect(html).not.toContain('>Expected kills<')
+    expect(html.match(/class="tv">—</g)).toHaveLength(2)
+    expect(html).toContain('no defended asset placed')
+    expect(html).not.toContain('0.0%')
   })
 
   it('says so when no threat has a flight path', () => {

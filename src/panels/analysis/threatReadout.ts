@@ -98,7 +98,9 @@ export function threatReadoutAt({
   const pillLabel =
     state?.coasting && (phase === 'tracked' || phase === 'identified')
       ? 'COAST'
-      : PHASE_STYLE[phase].label
+      : phase === 'ghost'
+        ? 'EXPECTED DEFEAT'
+        : PHASE_STYLE[phase].label
 
   const path = scenario.paths.find((candidate) => candidate.entityId === entity.id)
   const speedMps = path ? pathSpeed(scenario, path) : (uas?.cruiseSpeedMps ?? null)
@@ -222,9 +224,9 @@ export function threatReadoutAt({
 
   const ghostLine =
     state?.eliminated && state.eliminatedAtS != null
-      ? `${PHASE_STYLE.ghost.label} track at T+${formatTime(state.eliminatedAtS)} by ${
-          state.eliminatedBySoft ? 'mission kill' : 'hard kill'
-        }. It keeps flying its last course.`
+      ? `Expected residual below cutoff at T+${formatTime(state.eliminatedAtS)} (${
+          state.eliminatedBySoft ? 'mission-kill effects' : 'hard-kill effects'
+        }). Motion continues along the planned path.`
       : null
 
   return {

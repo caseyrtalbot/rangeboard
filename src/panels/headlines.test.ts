@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   aarHeadline,
+  expectedCount,
   environmentHeadline,
   expenditureBreakdown,
   expenditureParts,
@@ -120,15 +121,21 @@ describe('residualHeadline', () => {
   })
 })
 
+describe('expectedCount', () => {
+  it.each([[0, '0.00'], [0.952, '0.95'], [9.12, '9.12'], [10, '10.0'], [12.34, '12.3']])('formats %s as %s', (value, text) => {
+    expect(expectedCount(Number(value))).toBe(text)
+  })
+})
+
 describe('aarHeadline', () => {
-  it('formats defeats and undefeated ships to one decimal', () => {
+  it('labels fractional forecast counts as expected', () => {
     // AarSummary.expectedLeakers carries UNDEFEATED ships, including ships
     // that never crossed a boundary, so the word is never "leakers".
     expect(aarHeadline({ expectedKills: 3.24, expectedLeakers: 0.76 })).toBe(
-      '3.2 defeated · 0.8 undefeated',
+      '3.24 expected kills · 0.76 expected survivors',
     )
     expect(aarHeadline({ expectedKills: 0, expectedLeakers: 0 })).toBe(
-      '0.0 defeated · 0.0 undefeated',
+      '0.00 expected kills · 0.00 expected survivors',
     )
   })
 })

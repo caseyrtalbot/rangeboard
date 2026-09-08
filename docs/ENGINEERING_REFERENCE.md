@@ -392,6 +392,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `none`. Derived live, never stored. `valid` depends on the models and conditions used.
   Requirement gates always evaluate the deterministic planning envelope using complete
   envelope findings, even in MC mode; a mean CI is not probability of meeting a gate.
+  Finding text names the lost measurement; `FindingThreatActions` renders selection from
+  the finding's `uasIds` and never edits the laydown.
   Run exports retain deterministic payloads and declare `resultGroups` basis, horizon,
   validity and quantity semantics, plus configuration equality identity. `packageBasis`
   scopes the legacy `dataBasis` field to its named groups. Sensitivity endpoints are
@@ -435,7 +437,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   Series and ladder rows memo on `[scenario, runId]`, so only the now-readouts read
   quantized time. `threatReadoutAt` (`panels/analysis/threatReadout.ts`) shares the existing
   telemetry readers between the compact canvas card and complete threat detail; full-path
-  fields remain explicitly scoped. Model source disclosures preserve all provenance fields.
+  fields remain explicitly scoped. The ghost phase reads `EXPECTED DEFEAT` at the readout,
+  never a realized kill; `expectedCount` (`headlines.ts`) is the one expected-count formatter
+  and the engine's null `reportedLeakers` is the one no-asset signal for display. Model source disclosures preserve all provenance fields.
   `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL`
   (`SystemStatus.tsx`) the one component-state word.
 - **Chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) =>

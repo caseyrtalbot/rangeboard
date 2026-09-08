@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { modelsUsed } from '../../../analysis/fidelity'
 import type { RunValidityFinding } from '../../../analysis/runValidity'
 import { assessRunValidity } from '../../../analysis/runValidity'
-import type { RunValidity } from '../../../model/types'
+import type { Entity, RunValidity } from '../../../model/types'
 import { useStore } from '../../../state/store'
 import { useEngagement } from './controls'
 import type { WidgetProps } from './registry'
@@ -48,6 +48,32 @@ function metaOf(findings: RunValidityFinding[]): string {
     limiting > 0 ? `${limiting} limiting` : null,
   ].filter((p): p is string => p != null)
   return parts.length > 0 ? parts.join(' · ') : 'no findings'
+}
+
+/** Selection exposes the existing threat editor without changing the laydown. */
+export function FindingThreatActions({ finding, entities }: {
+  finding: RunValidityFinding
+  entities: Entity[]
+}) {
+  if (finding.id !== 'spawn-in-ring') return null
+  return (
+    <div>
+      {finding.uasIds.map((id) => (
+        <button
+          className="mini"
+          type="button"
+          key={id}
+          onClick={() => {
+            const store = useStore.getState()
+            store.select({ entityIds: [id] })
+            store.setRightTab('inspect')
+          }}
+        >
+          Select {entities.find((entity) => entity.id === id)?.name ?? id}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 /** Run validity: the status pill, its reading, and every finding with its severity. */
@@ -97,6 +123,7 @@ export function RunValidityWidget({ id, params, collapsed, customize, index, cou
             </State>
             <div>
               <p>{finding.message}</p>
+              <FindingThreatActions finding={finding} entities={scenario.entities} />
               <p>Gates: {finding.gates.join(', ')}.</p>
               {finding.uasIds.length > 0 && (
                 <p>Tracks: {finding.uasIds.map((id) => scenario.entities.find((entity) => entity.id === id)?.name ?? id).join(', ')}.</p>
