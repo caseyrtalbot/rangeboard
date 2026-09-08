@@ -19,12 +19,13 @@ import type {
 } from '../model/types'
 import { dropEditedProvenance, newId, runSettings } from '../model/types'
 import type { RingKey, RingOverrides } from './rings'
-import { pruneRingOverrides } from './rings'
 import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
 import { LAYER_PRESETS } from './layers'
 import { selectEffectiveLayers } from './selectors'
 import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } from './runState'
-import { freshPlayback, IDLE_MC, IDLE_TRIAL, mcForScenarioChange, playbackForScenarioChange, trialForScenarioChange } from './runState'
+import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
+import type { ScenarioInstall, Selection } from './scenarioInstall'
+import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
 import { analysisBasisSignature } from './analysisBasis'
 import { createTrialManifest } from '../playback/trialTypes'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
@@ -95,23 +96,7 @@ export interface Camera {
   scale: number
 }
 
-export interface Selection {
-  entityIds: string[]
-  boundaryId: string | null
-  connectionId: string | null
-  libraryId: string | null
-  cardId: string | null
-}
-
-const EMPTY_SELECTION: Selection = {
-  entityIds: [],
-  boundaryId: null,
-  connectionId: null,
-  libraryId: null,
-  cardId: null,
-}
-
-const HISTORY_LIMIT = 100
+export type { Selection }
 
 /**
  * Armed tactic-builder state. UI only, never part of the scenario and never
@@ -377,19 +362,6 @@ export interface Store {
   cancelSensitivityRun: () => void
 }
 
-
-/**
- * The observed lens belongs to the run, not to the edit history: a snapshot
- * restored by undo or redo keeps the stamp the current scenario carries.
- */
-function withObservedLens(restored: Scenario, current: Scenario): Scenario {
-  const stamp = current.observedPresetId ?? null
-  if ((restored.observedPresetId ?? null) === stamp) return restored
-  const stamped = { ...restored, observedPresetId: stamp }
-  markPresentationVariant(stamped, restored)
-  return stamped
-}
-
 /** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
 function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined): string[] {
   const have = s.deletedSeedIds ?? []
@@ -407,20 +379,6 @@ function sameSelection(a: Selection, b: Selection): boolean {
     a.entityIds.length === b.entityIds.length &&
     a.entityIds.every((id, i) => id === b.entityIds[i])
   )
-}
-
-/** Drop selection ids that the scenario no longer holds. */
-function pruneSelection(sel: Selection, s: Scenario): Selection {
-  const entityIds = sel.entityIds.filter((id) => s.entities.some((e) => e.id === id))
-  const keep = <T extends { id: string }>(id: string | null, list: T[]) =>
-    id != null && list.some((x) => x.id === id) ? id : null
-  return {
-    entityIds,
-    boundaryId: keep(sel.boundaryId, s.boundaries),
-    connectionId: keep(sel.connectionId, s.connections),
-    libraryId: keep(sel.libraryId, s.library),
-    cardId: keep(sel.cardId, s.testCards),
-  }
 }
 
 /** Every in-progress interaction field, as `cancelDraft` clears them. */
@@ -450,19 +408,33 @@ const CLEARED_DRAFT: Pick<
 }
 
 export const useStore = create<Store>()((set, get) => {
+  /**
+   * Make a Scenario current through `installScenario`, the one place that
+   * decides what every scenario-governed slice does per operation. The store
+   * adds only its `ui` response: the pruned ring overrides are written eagerly,
+   * a restored snapshot invalidates any open connect offer, and a replacement
+   * cancels every in-progress interaction.
+   */
+  function install(op: ScenarioInstall) {
+    const st = get()
+    const { scenario, past, future, selection, playback, mc, trial, ui } = st
+    const slices = { scenario, past, future, selection, playback, mc, trial, ringOverrides: ui.ringOverrides }
+    const next = installScenario(slices, op)
+    if (next === slices) return
+    const { ringOverrides, ...rest } = next
+    if (ringOverrides !== ui.ringOverrides) writeRingOverrides(ringOverrides)
+    const nextUi =
+      op.op === 'replace' ? { ...ui, ...CLEARED_DRAFT, tool: 'select' as const, ringOverrides }
+      : op.op === 'edit' ? (ringOverrides === ui.ringOverrides ? ui : { ...ui, ringOverrides })
+      : ui.connectSuggestion || ringOverrides !== ui.ringOverrides
+        ? { ...ui, connectSuggestion: null, ringOverrides }
+        : ui
+    set({ ...rest, ui: nextUi })
+  }
+
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
-    const { scenario, past, playback, mc, trial } = get()
-    const next = fn(scenario)
-    if (next === scenario) return
-    set({
-      scenario: next,
-      past: [...past.slice(-HISTORY_LIMIT + 1), scenario],
-      future: [],
-      playback: playbackForScenarioChange(playback, next),
-      mc: mcForScenarioChange(mc, next),
-      trial: trialForScenarioChange(trial, next),
-    })
+    install({ op: 'edit', next: fn(get().scenario) })
   }
 
   /**
@@ -524,57 +496,11 @@ export const useStore = create<Store>()((set, get) => {
     trial: IDLE_TRIAL,
     save: { lastAutosaveAt: null, error: null },
 
-    undo: () => {
-      const { past, future, scenario, ui, playback, selection, mc, trial } = get()
-      if (past.length === 0) return
-      const restored = withObservedLens(past[past.length - 1], scenario)
-      set({
-        scenario: restored,
-        past: past.slice(0, -1),
-        future: [scenario, ...future],
-        selection: pruneSelection(selection, restored),
-        playback: playbackForScenarioChange(playback, restored),
-        mc: mcForScenarioChange(mc, restored),
-        trial: trialForScenarioChange(trial, restored),
-        // A restored scenario invalidates any open connect offer.
-        ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
-      })
-    },
+    undo: () => install({ op: 'undo' }),
 
-    redo: () => {
-      const { past, future, scenario, ui, playback, selection, mc, trial } = get()
-      if (future.length === 0) return
-      const restored = withObservedLens(future[0], scenario)
-      set({
-        scenario: restored,
-        past: [...past, scenario],
-        future: future.slice(1),
-        selection: pruneSelection(selection, restored),
-        playback: playbackForScenarioChange(playback, restored),
-        mc: mcForScenarioChange(mc, restored),
-        trial: trialForScenarioChange(trial, restored),
-        ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
-      })
-    },
+    redo: () => install({ op: 'redo' }),
 
-    replaceScenario: (s) => {
-      const current = get().ui.ringOverrides
-      const ringOverrides = pruneRingOverrides(current, s)
-      if (ringOverrides !== current) writeRingOverrides(ringOverrides)
-      cancelMcRun()
-      cancelSensitivity()
-      cancelTrial()
-      set((st) => ({
-        scenario: s,
-        past: [],
-        future: [],
-        selection: EMPTY_SELECTION,
-        playback: freshPlayback(st.playback.runSeq, st.playback.speedMult, 'scenario-loaded'),
-        mc: IDLE_MC,
-        trial: IDLE_TRIAL,
-        ui: { ...st.ui, ...CLEARED_DRAFT, tool: 'select', ringOverrides },
-      }))
-    },
+    replaceScenario: (s) => install({ op: 'replace', next: s }),
 
     loadScenario: (s, opts) => {
       get().replaceScenario(s)
@@ -680,12 +606,6 @@ export const useStore = create<Store>()((set, get) => {
           }))
         return next
       })
-      const { ui, scenario } = get()
-      const ringOverrides = pruneRingOverrides(ui.ringOverrides, scenario)
-      if (ringOverrides !== ui.ringOverrides) {
-        writeRingOverrides(ringOverrides)
-        set((st) => ({ ui: { ...st.ui, ringOverrides } }))
-      }
     },
 
     beginConnect: (fromId) => set((st) => ({ ui: { ...st.ui, connectFromId: fromId } })),

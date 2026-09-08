@@ -164,7 +164,7 @@ File size alone does not define a safe slice.
 
 | Boundary | Read together | Evidence to preserve |
 | --- | --- | --- |
-| Board actions/history | `state/store.ts`, `runState.ts`, `analysisBasis.ts`, `store*.test.ts` | Edits, undo/redo, load/reset, stale callbacks and cancellation |
+| Board actions/history | `state/store.ts`, `scenarioInstall.ts`, `runState.ts`, `analysisBasis.ts`, `store*.test.ts` | Edits, undo/redo, load/reset, stale callbacks and cancellation |
 | Sampled playback | `state/trialSelectors.ts`, `useTrialResult.ts`, `analysis/trialResult.ts`, `trialSeries.ts`, `playback/trialTrackState.ts`, `trialSweepAt.ts` | One retained draw, member identity, observation bounds and export agreement |
 | Numerical engine | `playback/sim.ts`, `attrition.ts`, `mcRun.ts`, `policy.ts`, `analysis/` | Fixed IDs/seeds; deterministic, both MC modes and sensitivity parity |
 | Workers | [workerGraph.test.ts](../src/playback/workerGraph.test.ts), `mcClient.ts`, `mc.worker.ts` | Isolated dependencies; real-worker completion/cancellation |
