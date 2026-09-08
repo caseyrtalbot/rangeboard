@@ -743,6 +743,23 @@ Design system (`src/index.css`):
 - `src/te/calc/` is pure TypeScript, fixture-tested from MASTER-CALCULATIONS.md. The Board
   engine imports `meanInterval`, `quantile`, `wilson` and `betaQuantile` from
   `src/te/calc/stats.ts`; that is the one dependency from the engine on `src/te/`.
+- **Finding evidence** (`src/te/calc/findingEvidence.ts`): `findingComputations` scopes
+  `computeMeasure` to the finding's linked runs, so the inclusion policy in `validate.ts`
+  decides what counts. `derivedRunLinks` and `derivedRunConfig` take actual run records
+  over the card plan. `evidenceDerivation` renders the eight evidence fields with units,
+  denominators and intervals; `evidenceFills` proposes text only for empty fields.
+  `findingLinkUpdate` builds one patch from a link change: the links, unambiguous chained
+  records, run-derived defaults and fills. The store action `setFindingLinks` applies that
+  patch as one update. Strength and dispositions are suggestions the user accepts in the
+  UI; derivation never writes a judgment.
+- **Evidence package** (`src/te/calc/package.ts`): `generatedSection` and the manual
+  section templates live here, not in the UI. `resolveSection` is the one precedence
+  rule: delivered text, else edited text, else generated text, else stored text.
+  `previewPackage` feeds the Deliver panel and `PackagePrint`; `resolvedPackage` is the
+  "Save generated text" write. `deliverPackage(campaign, at)` resolves every section,
+  runs `deliveryBlockers` on the resolved text and returns one frozen campaign update or
+  the blockers; `markPackageDelivered` applies that update in one `mutate`, so delivery
+  no longer depends on what the panel saved first.
 - Seeds in `src/te/seed/` (measure dictionary, templates, vignettes, `buildJiatf401()` demo
   campaign marked `illustrative`). The measure dictionary, the card templates and the threat
   vignettes load with `applyPreset` (async), not at startup. Print artifacts in `src/te/print/` render into

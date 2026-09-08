@@ -49,6 +49,9 @@ import {
 } from '../validate'
 import { MAX_IMAGE_CODE_UNITS, validateImage, validateShape } from '../../io/runtimeValidation'
 import { validateCampaignShape } from '../io/validateTe'
+import { deliverPackage } from '../calc/package'
+import { findingLinkUpdate } from '../calc/findingEvidence'
+import type { FindingLinks } from '../calc/findingEvidence'
 
 /** Campaign fields that are arrays of records keyed by `id`. */
 type TeListKey = {
@@ -189,6 +192,9 @@ interface TeStore {
   addDebrief: (kind: DebriefKind, runId?: string | null) => string
 
   // Delivery
+  /** One update: the links plus the empty-field fills they derive (calc/findingEvidence). */
+  setFindingLinks: (findingId: string, links: FindingLinks) => void
+  /** Resolves section text, freezes it and validates in one step (calc/package). */
   markPackageDelivered: () => void
 }
 
@@ -1165,13 +1171,18 @@ export const useTeStore = create<TeStore>()((set, get) => {
         }),
       ),
 
+    setFindingLinks: (findingId, links) => {
+      const c = requireCampaign(get())
+      const f = c?.findings.find((x) => x.id === findingId)
+      if (!c || !f) return
+      get().patchItem('findings', findingId, findingLinkUpdate(c, f, links))
+    },
+
     markPackageDelivered: () =>
-      mutate((c) => deliveryBlockers(c).length > 0 ? c :
-        advance(
-          { ...c, evidencePackage: { ...c.evidencePackage, deliveredAt: nowIso() } },
-          'decision-ready',
-        ),
-      ),
+      mutate((c) => {
+        const proposal = deliverPackage(c, nowIso())
+        return proposal.campaign ? advance(proposal.campaign, 'decision-ready') : c
+      }),
   }
 })
 

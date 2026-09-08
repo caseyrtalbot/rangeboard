@@ -1,9 +1,11 @@
 /**
  * Decision evidence package (MASTER-FORMS). Title
- * block, acceptance statuses, then each stored section as preformatted text.
+ * block, acceptance statuses, then each section's resolved text (frozen once
+ * delivered) as preformatted text.
  */
 
 import { runEvidenceLabel } from '../validate'
+import { previewPackage } from '../calc/package'
 import type { TeCampaign } from '../model/types'
 import { PRow, PSection } from './PrintOverlay'
 
@@ -40,9 +42,9 @@ export function PackagePrint({ campaign }: { campaign: TeCampaign }) {
           })}
         </div>)}
       </PSection>
-      {pkg.sections.map((s) => (
+      {previewPackage(campaign).map((s) => (
         <PSection key={s.n} n={s.n} title={s.title}>
-          <div className="p-value">{s.content || 'Not completed.'}</div>
+          <div className="p-value">{s.text || 'Not completed.'}</div>
         </PSection>
       ))}
     </article>
