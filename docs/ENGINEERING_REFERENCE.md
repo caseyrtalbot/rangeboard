@@ -225,8 +225,9 @@ src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.
                series helpers), TimeSeries (a lazy shell whose fallback holds the plot
                box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
                render), Ladder and Tornado (plain SVG). Props only; never reads the store.
-src/canvas/    CanvasStage.tsx (stage, pan/zoom, tool routing, drop target, the two scene
-               Layers), StaticScene.tsx (boundaries, footprints, range rings and
+src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Layers),
+               interactionRouter.ts (store-free intent routing: Escape order, click
+               precedence, drop, placement), StaticScene.tsx (boundaries, footprints, range rings and
                connections on the static Layer), LiveScene.tsx (the frame clock and every
                moving layer on the live Layer), TrackFileReadout.tsx, frameClock.ts,
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
@@ -714,7 +715,20 @@ Design system (`src/index.css`):
   while typing in inputs and inside the T&E workspace. Escape order: the command palette,
   then an open dialog (Location, Calibrate), then a toolbar dropdown or the Layout
   surface, then an armed placement or the open drawer, then the canvas draft and the
-  selection. The lens buttons in `AnalysisNavigation.tsx` are a `role="group"` of
+  selection.
+- Interaction routing (`src/canvas/interactionRouter.ts`): `routeInteraction(intent,
+  state)` is the one owner of that Escape order and of click precedence. `App.tsx`
+  (Escape, arming a placement, a tool change), `CanvasStage.tsx` (stage clicks, drops,
+  the placement target) and `layers/EntityLayer.tsx` (entity clicks) build a plain
+  `InteractionState` snapshot from the store, the DOM surfaces and their own state, and
+  dispatch the returned action; none of them orders the rules itself. `continue` hands
+  the event to the next owner (`usePopover`, the palette, the stage under an entity).
+  Stage click precedence: a marquee-paired click is dropped, then an armed placement,
+  then the raid draft, then the draw tools (an in-place double-click's second click is
+  no vertex), then a plain select click on empty canvas clears the selection. An entity
+  click is owned by connect and select; path owns only the UAS that starts a draft;
+  boundary, calibrate and a raid draft bubble it to the stage. The matrix is
+  table-tested in `interactionRouter.test.ts`. The lens buttons in `AnalysisNavigation.tsx` are a `role="group"` of
   `aria-pressed` buttons with one roving tab stop, since they stay rendered in every
   phase and tab; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 

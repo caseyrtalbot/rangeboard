@@ -20,6 +20,8 @@ import { HudLayer } from './layers/HudLayer'
 import { TrackFileReadout } from './TrackFileReadout'
 import { ContextMenu } from './ContextMenu'
 import { ConnectSuggestPopup } from './ConnectSuggestPopup'
+import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
+import type { Action } from './interactionRouter'
 
 const MIN_SCALE = 0.0005
 const MAX_SCALE = 20
@@ -218,36 +220,36 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
     return () => window.removeEventListener('mouseup', finishMarquee)
   })
 
-  function handleClick(e: KonvaEventObject<MouseEvent>) {
-    if (suppressClick.current) {
-      suppressClick.current = false
-      return
+  /** Dispatches a routed stage click, drop or placement action at one point. */
+  function dispatch(action: Action, world: Vec2, screen?: Vec2) {
+    switch (action.type) {
+      case 'place': onPlace?.(world, screen); return
+      case 'commit-raid': commitRaid(world); return
+      case 'add-draft-point': addDraftPoint(world); return
+      case 'set-calibrate-point': setCalibratePoint(world); return
+      case 'clear-selection': clearSelection(); return
+      case 'add-entity-from-model': addEntityFromModel(action.modelId, world, screen); return
+      case 'add-system-from-preset': addSystemFromPreset(action.systemId, world); return
+      default: return
     }
+  }
+
+  function handleClick(e: KonvaEventObject<MouseEvent>) {
+    // The marquee's paired click is stale; the flag is one-shot either way.
+    const clickSuppressed = suppressClick.current
+    suppressClick.current = false
     const onEmpty = e.target === stageRef.current
     const world = pointerWorld()
     if (!world) return
     const pointer = stageRef.current?.getPointerPosition()
-    if (pointer) {
+    if (pointer && !clickSuppressed) {
       lastClicks.current = [...lastClicks.current.slice(-1), { ...pointer, t: performance.now() }]
     }
-    // The armed raid draft owns the next canvas click: it places the ingress
-    // axis and commits the raid. This branch must stay ahead of the draw
-    // tools or the click would land as a stray vertex.
-    if (raidDraft) {
-      commitRaid(world)
-      return
-    }
-    if (tool === 'boundary' || tool === 'path') {
-      // The 2nd click of an in-place double-click is not a new vertex; the
-      // dblclick handler finishes the shape instead.
-      if (!isInPlacePair()) addDraftPoint(world)
-      return
-    }
-    if (tool === 'calibrate') {
-      setCalibratePoint(world)
-      return
-    }
-    if (onEmpty && tool === 'select') clearSelection()
+    // Precedence (raid draft ahead of the draw tools, the in-place pair's
+    // second click, select-only deselect) lives in the router.
+    const action = routeInteraction({ kind: 'click-stage', onEmpty, inPlacePair: isInPlacePair() },
+      { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: onPlace != null, clickSuppressed })
+    dispatch(action, world, pointer ?? undefined)
   }
 
   function handleDblClick() {
@@ -311,11 +313,11 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
         if (!containerRef.current) return
         const rect = containerRef.current.getBoundingClientRect()
         const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-        const world = toWorld(screen)
         const modelId = e.dataTransfer.getData('text/rangeboard-model')
         const systemId = e.dataTransfer.getData('text/rangeboard-system')
-        if (modelId) addEntityFromModel(modelId, world, screen)
-        else if (systemId) addSystemFromPreset(systemId, world)
+        const action = routeInteraction({ kind: 'drop', modelId, systemId },
+          { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: onPlace != null })
+        dispatch(action, toWorld(screen), screen)
       }}
     >
       <Stage
@@ -408,7 +410,9 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
             const screen = event.detail === 0
               ? { x: rect.width / 2, y: rect.height / 2 }
               : { x: event.clientX - rect.left, y: event.clientY - rect.top }
-            onPlace(toWorld(screen), screen)
+            const action = routeInteraction({ kind: 'click-stage', onEmpty: true, inPlacePair: false },
+              { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: true })
+            dispatch(action, toWorld(screen), screen)
           }}
         />
       )}
