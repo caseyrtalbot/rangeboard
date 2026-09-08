@@ -26,6 +26,7 @@ import {
   FUNCTION_LETTER,
 } from '../../panels/Glyph'
 import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from '../labelLayout'
+import { IDLE_INTERACTION, routeInteraction } from '../interactionRouter'
 
 interface Props {
   tracks: Map<string, LiveTrack>
@@ -468,29 +469,19 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
 function handleClick(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   const store = useStore.getState()
   const { tool, connectFromId, pathEntityId, raidDraft } = store.ui
-  if (tool === 'connect') {
-    e.cancelBubble = true
-    if (!connectFromId) store.beginConnect(entity.id)
-    else store.completeConnect(entity.id)
-    return
-  }
-  if (tool === 'path') {
-    // A UAS click starts its path only before drafting. Any other click
-    // during a draft must bubble to the stage and become a waypoint.
-    if (entity.kind === 'uas' && !pathEntityId) {
-      e.cancelBubble = true
-      store.beginPath(entity.id)
-    }
-    return
-  }
-  // Boundary and calibrate clicks bubble to the stage as draw points.
-  if (tool !== 'select') return
-  // An armed raid draft owns the next canvas click: let it bubble to the
-  // stage so the ingress axis places even when the click lands on an entity
-  // (clicking the target asset is the natural aim gesture).
-  if (raidDraft) return
+  // Which tool owns an entity click, and when it bubbles to the stage as a
+  // draw point or raid axis, is decided in the router.
+  const action = routeInteraction({ kind: 'click-entity', entityKind: entity.kind, shiftKey: e.evt.shiftKey },
+    { ...IDLE_INTERACTION, tool, connectFrom: connectFromId != null, pathStarted: pathEntityId != null, raidDraft: raidDraft != null })
+  if (action.type === 'continue') return
   e.cancelBubble = true
-  store.select({ entityIds: [entity.id] }, e.evt.shiftKey)
+  switch (action.type) {
+    case 'begin-connect': store.beginConnect(entity.id); return
+    case 'complete-connect': store.completeConnect(entity.id); return
+    case 'begin-path': store.beginPath(entity.id); return
+    case 'select-entity': store.select({ entityIds: [entity.id] }, action.additive); return
+    default: return
+  }
 }
 
 function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {

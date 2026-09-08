@@ -6,6 +6,8 @@ import type { RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
 import { useTeStore } from './te/state/teStore'
 import { CanvasStage } from './canvas/CanvasStage'
+import { IDLE_INTERACTION, routeInteraction } from './canvas/interactionRouter'
+import type { Action, InteractionState } from './canvas/interactionRouter'
 import { BoardTools, Toolbar } from './panels/Toolbar'
 import { Palette } from './panels/Palette'
 import type { LibraryPlacement } from './panels/Palette'
@@ -209,6 +211,30 @@ const PanelTabs = memo(function PanelTabs({
     </div>
   )
 })
+
+function focusRangeSetup() {
+  document.querySelector<HTMLButtonElement>('[aria-controls="range-setup-menu-panel"]')?.focus()
+}
+
+/** The Escape snapshot: shell state from App, surfaces from the DOM, drafts from the store. */
+function escapeState(libraryOpen: boolean, placementArmed: boolean, target: EventTarget | null): InteractionState {
+  const ui = useStore.getState().ui
+  return {
+    ...IDLE_INTERACTION,
+    paletteOpen: !!document.querySelector('.cmdk-panel, .analysis-layout-popover'),
+    settingsOpen: !!document.querySelector('#settings-panel[open]'),
+    roeMenuOpen: !!document.querySelector('#roe-menu-panel'),
+    locationDialogOpen: ui.locationDialogOpen,
+    libraryOpen,
+    placementArmed,
+    tool: ui.tool,
+    calibratePlaced: !!(ui.calibrateA && ui.calibrateB),
+    raidDraft: ui.raidDraft != null,
+    connectFrom: ui.connectFromId != null,
+    pathStarted: ui.pathEntityId != null,
+    typing: isTypingTarget(target),
+  }
+}
 
 function isTypingTarget(t: EventTarget | null): boolean {
   return (
@@ -430,10 +456,12 @@ export default function App() {
   }, [])
 
   const armPlacement = useCallback((next: LibraryPlacement) => {
-    useStore.getState().cancelDraft()
-    useStore.getState().closeContextMenu()
-    useStore.getState().dismissConnectSuggestion()
-    useStore.getState().setTool('select')
+    if (routeInteraction({ kind: 'arm-placement' }, IDLE_INTERACTION).type !== 'arm-placement') return
+    const store = useStore.getState()
+    store.cancelDraft()
+    store.closeContextMenu()
+    store.dismissConnectSuggestion()
+    store.setTool('select')
     setPlacement(next)
     setLibraryOpen(false)
     requestAnimationFrame(() => document.getElementById('place-at-center')?.focus())
@@ -456,20 +484,55 @@ export default function App() {
     placeAt({ x: (screen.x - camera.x) / camera.scale, y: (screen.y - camera.y) / camera.scale }, screen)
   }
 
+  // The bubble-phase keyboard map has no deps, so it reads the drawer and
+  // placement state through this ref.
+  const shell = useRef({ libraryOpen: false, placementArmed: false })
+  shell.current = { libraryOpen, placementArmed: placement != null }
+
+  // One dispatcher for every Escape action the router returns; the two
+  // listeners below only decide which phase acts.
+  const dispatchEscape = useCallback((action: Action) => {
+    const st = useStore.getState()
+    switch (action.type) {
+      case 'close-location-dialog':
+        st.setLocationDialogOpen(false)
+        focusRangeSetup()
+        return
+      case 'cancel-placement':
+        setLibraryOpen(false)
+        setPlacement(null)
+        libraryTrigger.current?.focus()
+        return
+      case 'cancel-calibration':
+        st.cancelDraft()
+        st.setTool('select')
+        focusRangeSetup()
+        return
+      case 'clear-board':
+        st.closeContextMenu()
+        st.cancelDraft()
+        st.setTool('select')
+        st.clearSelection()
+        return
+      default:
+        return
+    }
+  }, [])
+
   useEffect(() => {
     if (!libraryOpen && !placement) return
+    // Capture phase, so the placement cancels ahead of the canvas shortcut.
+    // Any other Escape action stays with the bubble-phase keyboard map.
     function onEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || document.querySelector('.cmdk-panel, .analysis-layout-popover')) return
-      // An open dialog owns Escape: it closes first and the placement stays armed.
-      if (useStore.getState().ui.locationDialogOpen || document.querySelector('#settings-panel[open], #roe-menu-panel')) return
+      if (event.key !== 'Escape') return
+      const action = routeInteraction({ kind: 'escape' }, escapeState(libraryOpen, placement != null, event.target))
+      if (action.type !== 'cancel-placement') return
       event.stopPropagation()
-      setLibraryOpen(false)
-      setPlacement(null)
-      libraryTrigger.current?.focus()
+      dispatchEscape(action)
     }
     window.addEventListener('keydown', onEscape, true)
     return () => window.removeEventListener('keydown', onEscape, true)
-  }, [libraryOpen, placement])
+  }, [libraryOpen, placement, dispatchEscape])
 
   useEffect(() => {
     const stopBoard = useStore.subscribe((state, previous) => {
@@ -497,7 +560,9 @@ export default function App() {
   }, [setBoardPhase, setRightTab])
 
   // Stable handlers for the memoized chrome, so a selection change stops at `App`.
-  const clearPlacement = useCallback(() => setPlacement(null), [])
+  const clearPlacement = useCallback(() => {
+    if (routeInteraction({ kind: 'tool-change' }, IDLE_INTERACTION).type === 'clear-placement') setPlacement(null)
+  }, [])
   const toggleLibrary = useCallback(() => setLibraryOpen((open) => !open), [])
   const openObjects = useCallback(() => {
     openPhase('prepare')
@@ -590,15 +655,9 @@ export default function App() {
       }
       const st = useStore.getState()
       if (useTeStore.getState().ui.workspace === 'ops') return
-      if (e.key === 'Escape' && st.ui.locationDialogOpen) {
-        st.setLocationDialogOpen(false)
-        document.querySelector<HTMLButtonElement>('[aria-controls="range-setup-menu-panel"]')?.focus()
-        return
-      }
-      if (e.key === 'Escape' && st.ui.calibrateA && st.ui.calibrateB) {
-        st.cancelDraft()
-        st.setTool('select')
-        document.querySelector<HTMLButtonElement>('[aria-controls="range-setup-menu-panel"]')?.focus()
+      if (e.key === 'Escape') {
+        const { libraryOpen, placementArmed } = shell.current
+        dispatchEscape(routeInteraction({ kind: 'escape' }, escapeState(libraryOpen, placementArmed, e.target)))
         return
       }
       if (isTypingTarget(e.target)) return
@@ -621,13 +680,6 @@ export default function App() {
         st.deleteSelection()
         return
       }
-      if (e.key === 'Escape') {
-        st.closeContextMenu()
-        st.cancelDraft()
-        st.setTool('select')
-        st.clearSelection()
-        return
-      }
       // Native controls keep their keyboard activation; Space elsewhere controls playback.
       if (e.target instanceof HTMLElement && e.target.closest('button, summary, [role=tab]')) return
       if (e.key === 'Enter') {
@@ -642,7 +694,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [dispatchEscape])
 
   if (workspace === 'ops') {
     return (
