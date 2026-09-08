@@ -24,6 +24,8 @@ import type {
 } from '../model/types'
 import type { TypeCode } from '../model/ids'
 import { bumpMajor, bumpMinor, nextId } from '../model/ids'
+import type { MatrixPlan } from '../model/matrixPlan'
+import { plannedCell } from '../model/matrixPlan'
 import {
   emptyAnomaly,
   emptyCampaign,
@@ -143,6 +145,11 @@ interface TeStore {
   addConfig: () => string
   addFactor: () => string
   addMatrixCell: () => string
+  /**
+   * Adopts a planned batch of matrix cells in one update. Ids allocate in plan
+   * order; the batch is all or nothing. Returns the new cell ids.
+   */
+  addMatrixCells: (plan: MatrixPlan) => string[]
   addCard: (patch?: Partial<TeCard>) => string
   addFinding: () => string
   addChange: () => string
@@ -592,19 +599,25 @@ export const useTeStore = create<TeStore>()((set, get) => {
           get().patchItem('configs', cfgA, { name: '[radar A]' })
           const cfgB = get().addConfig()
           get().patchItem('configs', cfgB, { name: '[radar B]' })
-          const baseline = get().addMatrixCell()
-          get().patchItem('matrix', baseline, {
+          // Baseline row first, then the delta row, in one matrix update.
+          const baseline = plannedCell({
             questionId: q,
             configId: cfgA,
             method: 'baseline comparison',
             measureIds: [...ms.values()],
           })
-          const delta = get().addMatrixCell()
-          get().patchItem('matrix', delta, {
-            questionId: q,
-            configId: cfgB,
-            method: 'comparison',
-            measureIds: [...ms.values()],
+          get().addMatrixCells({
+            cells: [
+              baseline,
+              plannedCell({
+                questionId: q,
+                configId: cfgB,
+                method: 'comparison',
+                measureIds: [...ms.values()],
+              }),
+            ],
+            baseline,
+            warnings: [],
           })
           break
         }
@@ -846,6 +859,34 @@ export const useTeStore = create<TeStore>()((set, get) => {
     addFactor: () => allocate('FAC', (c, id) => push(c, 'factors', emptyFactor(id))),
 
     addMatrixCell: () => allocate('MTX', (c, id) => push(c, 'matrix', emptyMatrixCell(id))),
+
+    addMatrixCells: (plan) => {
+      // One update for the whole batch: a plan of 1000 cells validates once, not
+      // once per cell, and a rejected batch leaves the matrix untouched.
+      let added: string[] = []
+      const accepted = mutate((c) => {
+        if (plan.cells.length === 0) return c
+        const used = new Set(Object.values(c).flatMap(value => Array.isArray(value)
+          ? value.flatMap(r => r && typeof r === 'object' && 'id' in r
+            ? [r.id, ...('cardCode' in r ? [r.cardCode] : [])] : []) : []))
+        const ids: string[] = []
+        let seq = c.seq
+        const cells: TeCampaign['matrix'] = []
+        for (const cell of plan.cells) {
+          let allocation = nextId(seq, c.code, 'MTX')
+          while (used.has(allocation.id) && Number.isSafeInteger(allocation.seq.MTX))
+            allocation = nextId(allocation.seq, c.code, 'MTX')
+          if (!Number.isSafeInteger(allocation.seq.MTX)) return c
+          used.add(allocation.id)
+          ids.push(allocation.id)
+          seq = allocation.seq
+          cells.push({ ...structuredClone(plannedCell(cell)), id: allocation.id })
+        }
+        added = ids
+        return { ...c, seq, matrix: [...c.matrix, ...cells] }
+      })
+      return accepted ? added : []
+    },
 
     addCard: (patch) => {
       let internalId = ''

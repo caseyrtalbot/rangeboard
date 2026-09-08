@@ -733,6 +733,14 @@ Design system (`src/index.css`):
   remains available. The [record rules](field-te/C4_COMPLETION.md#record-rules) list them.
 - IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the
   record. Cards use `id` (per version) plus `cardCode` (shared across versions).
+- **Matrix planning is pure and adopted in one update:** `src/te/model/matrixPlan.ts`
+  holds the build rules, the sample-size rules (`planSampleSize`, `sampleSizeCellPatch`,
+  `requiredRepetitions`) and the drop-order rules (`dropOrderRanking`,
+  `appendedDropOrder`). `planCells(campaign, factors, options)` returns the cells, the
+  baseline row and warnings; it carries no ids and drops links the campaign does not
+  hold, so adoption cannot fail reference validation. `DesignBuilders.tsx` previews that
+  plan and `addMatrixCells` adopts the whole batch in one store update, so a 1000-cell
+  build validates once and lands all or nothing. Only the store allocates `MTX` ids.
 - Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
   traceability no finalized finding. Qualification, acknowledged design review, issue and
   delivery enforce blockers in the store. Delivery finalizes findings; prefilled approver
