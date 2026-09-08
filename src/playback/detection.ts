@@ -39,6 +39,32 @@ export interface DetectionHit {
   pd: number | null
 }
 
+/** One actual scan attempt. Only geometry-admitted members have decisions; empty
+ * lists retain out-of-view and gated scans, including sensors that never detect.
+ * memberIdx is the formation position index; drawIndex is the existing nearest-first
+ * admitted rank. They are deliberately distinct, preserving the historical draw keys.
+ */
+export interface SensorScanObservation {
+  uasId: string
+  sensorId: string
+  sensorType: SensorType
+  tS: number
+  gate: SensorHoldGate
+  cued: boolean
+  resolved: boolean
+  members: Array<{
+    memberIdx: number
+    drawIndex: number
+    slantM: number
+    pd: number | null
+    detected: boolean
+    classified: boolean
+  }>
+}
+
+/** Opt-in current-trial capture; default and ensemble paths allocate no history. */
+export type SensorObservationSink = (observation: SensorScanObservation) => void
+
 /** The test's thresholds with the defaults filled: the one resolution the draw policy reads. */
 export function resolvedThresholds(scenario: Scenario): RequirementThresholds {
   return { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
@@ -71,6 +97,7 @@ interface SensorTerms {
   sensorHeightM: number
   seenMembers: Vec2[] | null
   seen: number[]
+  seenIndices: number[] | null
 }
 
 /**
@@ -84,16 +111,24 @@ function admittedSlantsM(term: SensorTerms, altM: number, members: Vec2[]): numb
   const { sensor, spec } = term
   const dAltM = altM - term.sensorHeightM
   const seen: number[] = []
-  for (const m of members) {
+  const indexed = term.seenIndices ? [] as Array<{ slantM: number; memberIdx: number }> : null
+  for (let memberIdx = 0; memberIdx < members.length; memberIdx += 1) {
+    const m = members[memberIdx]
     const groundM = dist(sensor.pos, m)
     if (term.geometryGate(groundM) !== 'ok') continue
     // A full circle admits every bearing, as pointInWedge answers without the test.
     if (!(spec.sectorDeg >= 360) && !pointInWedge(sensor.pos, sensor.headingDeg, spec.sectorDeg, m)) {
       continue
     }
-    seen.push(slantRangeM(groundM, dAltM))
+    const slantM = slantRangeM(groundM, dAltM)
+    seen.push(slantM)
+    indexed?.push({ slantM, memberIdx })
   }
   if (seen.length > 1) seen.sort((a, b) => a - b)
+  if (indexed) {
+    indexed.sort((a, b) => a.slantM - b.slantM)
+    term.seenIndices = indexed.map((member) => member.memberIdx)
+  }
   term.seenMembers = members
   term.seen = seen
   return seen
@@ -117,8 +152,12 @@ function sensorHit(
   uasId: string,
   tS: number,
   scanStep: boolean,
+  observation?: SensorScanObservation,
 ): DetectionHit | null {
   const gate = term.gate
+  const f = formation
+  const resolved = !(f && f.count > 1 && term.spec.resolutionM != null && f.spacingM < term.spec.resolutionM)
+  if (observation) observation.resolved = resolved
   if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
   // Between scans a scan radar has no hit of its own; the carried hold is the only cue.
   if (!scanStep) return null
@@ -128,17 +167,30 @@ function sensorHit(
   if (seen.length === 0) return null
   let detected: number[]
   if (pdAt) {
-    detected = seen.filter((slant, i) => policy.detect(pdAt(slant), sensor.id, uasId, tS, i))
+    detected = seen.filter((slant, i) => {
+      const pd = pdAt(slant)
+      const detected = policy.detect(pd, sensor.id, uasId, tS, i)
+      observation?.members.push({
+        memberIdx: term.seenIndices![i], drawIndex: i, slantM: slant, pd, detected,
+        classified: detected && term.classifyR != null && slant <= term.classifyR,
+      })
+      return detected
+    })
   } else {
     const detectR = term.detectR
     if (!(detectR > 0)) return null
-    detected = seen.filter((slant) => slant <= detectR)
+    detected = seen.filter((slant, i) => {
+      const detected = slant <= detectR
+      observation?.members.push({
+        memberIdx: term.seenIndices![i], drawIndex: i, slantM: slant, pd: null, detected,
+        classified: detected && term.classifyR != null && slant <= term.classifyR,
+      })
+      return detected
+    })
   }
   if (detected.length === 0) return null
   const classifyR = term.classifyR
   const classified = classifyR != null && detected.some((slant) => slant <= classifyR)
-  const f = formation
-  const resolved = !(f && f.count > 1 && spec.resolutionM != null && f.spacingM < spec.resolutionM)
   const slantM = detected[0]
   return {
     sensorId: sensor.id,
@@ -200,6 +252,7 @@ export function prepareSweep(
   uasSpec: UasSpec | undefined,
   altitudeFt: number,
   policy?: DrawPolicy,
+  capture?: SensorObservationSink,
 ): SensorSweep {
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const env = scenario.environment
@@ -224,6 +277,7 @@ export function prepareSweep(
       sensorHeightM,
       seenMembers: null,
       seen: [],
+      seenIndices: capture ? [] : null,
     }
     ;(term.cueSensor ? cuedPass : search).push(term)
     byId.set(sensor.id, term)
@@ -236,7 +290,12 @@ export function prepareSweep(
       for (const pass of passes) {
         for (const term of pass) {
           const scanStep = scan ? scan.scanStep(term.sensor.id) : true
-          const hit = sensorHit(term, formation, altM, members, cued, draw, uasId, tS, scanStep)
+          const observation: SensorScanObservation | undefined = capture && scanStep ? {
+            uasId, sensorId: term.sensor.id, sensorType: term.spec.sensorType, tS,
+            gate: term.gate, cued, resolved: true, members: [],
+          } : undefined
+          const hit = sensorHit(term, formation, altM, members, cued, draw, uasId, tS, scanStep, observation)
+          if (observation) capture!(observation)
           if (hit) {
             out.push({ spec: term.spec, hit })
             cued = true

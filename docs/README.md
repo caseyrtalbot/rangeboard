@@ -81,6 +81,7 @@ Proposals preserve design decisions for review; implementation requires separate
 - [R1 honest readouts and setup, 2026-09-07](field-te/evidence/r1-honest-readouts-2026-09-07/README.md)
 - [R2 execution scope and layers, 2026-09-07](field-te/evidence/r2-execution-scope-2026-09-07/README.md)
 - [R3 physical launch timing, 2026-09-07](field-te/evidence/r3-physical-launch-2026-09-07/README.md)
+- [R4 trial engine and lifecycle, 2026-09-07](field-te/evidence/r4-trial-lifecycle-2026-09-07/README.md)
 
 Other evidence formats, including fixtures, screenshots, raw sources and numerical JSON,
 live under [field-te/evidence](field-te/evidence/).

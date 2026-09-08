@@ -1,0 +1,9 @@
+{
+  "node": "22.23.1",
+  "baselineCommit": "2512d9cb4a4b5627507196e37c65466a49fc2867",
+  "beforeAfterByteEqual": true,
+  "equalToR3Node22": true,
+  "omittedFields": [],
+  "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6",
+  "bytes": 1683876
+}

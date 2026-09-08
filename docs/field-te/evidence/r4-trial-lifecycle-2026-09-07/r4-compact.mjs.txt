@@ -1,0 +1,24 @@
+import { chromium } from '/Users/caseytalbot/Projects/rangeboard/node_modules/playwright/index.mjs'
+import fs from 'node:fs'
+import assert from 'node:assert/strict'
+const repo = '/Users/caseytalbot/Projects/rangeboard'
+const browser = await chromium.launch({ headless: true })
+const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' })
+await context.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await context.newPage()
+await page.goto('http://localhost:5454')
+await page.waitForFunction(() => window.__store && document.querySelector('.konvajs-content canvas'))
+await page.evaluate(async raw => {
+ const { parseAutosave } = await import('/src/io/persist.ts')
+ window.__store.getState().loadScenario(parseAutosave(raw), { fit: 'always' })
+}, fs.readFileSync(`${repo}/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`, 'utf8'))
+await page.click('#board-phase-execute')
+await page.waitForFunction(() => document.querySelector('#board-phase-execute')?.getAttribute('aria-selected') === 'true' && document.querySelector('.right-panel')?.textContent.includes('No outcomes observed yet'))
+await page.screenshot({ path: `${repo}/docs/field-te/evidence/r4-trial-lifecycle-2026-09-07/browser/ordinary-ready-compact-settled.png`, fullPage: true })
+const state = await page.evaluate(() => ({ phase: window.__store.getState().ui.boardPhase, trial: window.__store.getState().trial.status, text: document.querySelector('.right-panel').textContent, scrollWidth: document.querySelector('.right-panel').scrollWidth, clientWidth: document.querySelector('.right-panel').clientWidth }))
+assert.equal(state.phase, 'execute')
+assert.equal(state.trial, 'idle')
+assert.ok(state.scrollWidth <= state.clientWidth)
+fs.writeFileSync(`${repo}/docs/field-te/evidence/r4-trial-lifecycle-2026-09-07/browser/compact-settled.json`, JSON.stringify(state, null, 2))
+await browser.close()
+console.log('Settled compact Execute screenshot passed')

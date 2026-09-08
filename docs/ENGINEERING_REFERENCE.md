@@ -41,7 +41,7 @@ Breaking one of these breaks the app.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
   clears `future`. Only scenario changes are undoable. A scenario-touching action goes
   through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis
-  layout, the `mc` slice) goes through `set` and never pushes history. Undo and redo
+  layout, the `mc` and `trial` slices) goes through `set` and never pushes history. Undo and redo
   restore through `set`, so a rule added to `mutate` must be added to both. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
   and redo carry the current stamp over a restored snapshot. A stamp that already matches
@@ -84,7 +84,8 @@ Breaking one of these breaks the app.
   dependency. Panels and canvas import every leaf directly; `store.ts`, `sim.ts` and
   `attrition.ts` carry no re-exports.
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
-  `attrition.ts`; worker execution stays behind `mcClient.ts`. The worker value-import
+  `attrition.ts` or `trial.ts`; worker execution stays behind `mcClient.ts` and
+  `trialClient.ts`. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.
   `runSession.ts` is a main-thread store adapter, outside that graph. `playback/clock.ts`
   owns `DT` and `stepIndex`, so `sim.ts` and `policy.ts` form no cycle.
@@ -103,6 +104,28 @@ Breaking one of these breaks the app.
   object key order is ignored and array order is preserved. See the input matrix in
   `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
+- **Internal trial infrastructure (R4):** `trial.ts` runs nominal parameters through
+  `monteCarloPolicy` → `assessAllThreats` → `resolveEngagements`. Its complete assessments
+  and event/attrition ledger remain separate from the deterministic picture and MC summaries.
+  Optional sweep capture retains actual scan attempts, admitted member detections and misses,
+  cue/gate state and classification; existing assessment intervals retain holds and coasts.
+  Formation `memberIdx` is distinct from the nearest-first `drawIndex` used by the existing
+  policy. Continue-jam outcomes are retained separately because ledger `killDelta` does not
+  encode that draw. Default and ensemble sweeps collect no new observation histories.
+  `trialTypes.ts` freezes the run id, configuration basis, seed, `idHash(runId)` numeric
+  replicate index, nominal/aleatory basis and compatibility versions. Build provenance is
+  explicitly null until a build revision is supplied; the version tag is not a commit hash.
+  `trialClient.ts` owns a third independent worker slot, terminated at completion, error,
+  replacement or cancellation. Client and store require the current request token, run id,
+  basis and matching manifest; terminal deliveries cannot revive a request.
+  `prepareTrial` captures a detached scenario and prepares without starting the clock.
+  Internal `startTrialRun` waits for that result before playing. Pause, scrub and frame
+  navigation cancel a pending automatic start. Material edits, undo/redo, load and reset
+  clear the trial using `analysisBasisSignature`; presentation edits preserve it.
+  Trial Replay retains the ledger, identity, original completion and achieved observation;
+  New run replaces identity and clears both trial and observation. Nothing is autosaved or
+  archived. These actions are opt-in infrastructure: ordinary UI Play and all visible
+  consumers keep their existing forecast behavior until R5 migrates them together.
 - **Worker budget and cancel:** `replicateLoop` and `sensitivityLoop` (`mcRun.ts`)
   are generators that yield a `Checkpoint` after every replicate; `runReplicates` and
   `runSensitivity` drive them synchronously and unchanged. The worker drives them
@@ -140,9 +163,9 @@ src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basi
 src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant
                range, horizon), prng.ts (mulberry32, idHash, hashU01), webmerc.ts
 src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui +
-               playback + mc), analysisLayout.ts (lens presets and pure layout reducers),
+               playback + mc + trial), analysisLayout.ts (lens presets and pure layout reducers),
                layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
-               MC state shapes and their scenario-change reducers), analysisBasis.ts
+               MC/trial state shapes and their scenario-change reducers), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts
@@ -158,7 +181,10 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                hits, track states, effector states, held sensors), tactics.ts (threat
                tactics), raid.ts, runSession.ts,
                policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
-               McSummary), mc.worker.ts + mcClient.ts (the replicate worker)
+               McSummary), mc.worker.ts + mcClient.ts (the replicate worker), trial.ts
+               (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
+               (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
+               (independent internal preparation worker)
 src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), series.ts (chart

@@ -13,7 +13,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run dev -- --port <port> --strictPort` | Start Vite on an available explicit port |
 | `npm run typecheck` | Check application and colocated TypeScript tests |
 | `npm test` | Run all Vitest tests |
-| `npx vitest run --dir src/playback/pk.test.ts` | Run one file; `-t 'fragment'` selects test names |
+| `npx vitest run --dir src src/playback/pk.test.ts` | Run one file; `-t 'fragment'` selects test names |
 | `npm run lint` | Run oxlint; do not add to existing fast-refresh warnings |
 | `npm run build` | TypeScript project build and Vite production bundle |
 | `npm run schema:generate` | Regenerate runtime descriptors after domain type changes |
@@ -58,6 +58,12 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - Dev builds expose `window.__store` (the Board zustand hook) and `window.__teStore`.
   Drive real store actions through them. Read the action interfaces in
   `src/state/store.ts` and `src/te/state/teStore.ts` before you build a harness.
+- R4 trial infrastructure is internal: `prepareTrial` prepares without playing;
+  `startTrialRun` explicitly opts in and waits for preparation. Check real-worker equality
+  against `runTrial(trial.scenario, trial.manifest)`, cancellation and coexistence with
+  MC/sensitivity, and retained identity/completion/observation on Replay. Ordinary Play
+  must leave `trial` idle. These checks do not establish R5 sampled display agreement;
+  canvas, telemetry and exports still use their existing sources.
 - Inspect state with `window.__store.getState()` and `window.__teStore.getState()`; read a
   fresh snapshot after a mutation. Exercise real worker actions; never inject a success
   message to verify worker integration.
