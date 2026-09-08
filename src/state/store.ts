@@ -73,11 +73,12 @@ import {
   toggleCollapsed,
 } from './analysisLayout'
 // Keep worker execution behind analysisRequests; summaries are types, not store runtime dependencies.
-import type { McSensitivityMessage, McWorkerMessage } from '../playback/mcRun'
-import type { AnalysisSinks } from './analysisRequests'
+import type { McSensitivityMessage, McSweepMessage, McWorkerMessage } from '../playback/mcRun'
+import type { AnalysisSinks, SweepSpec } from './analysisRequests'
 import {
   acceptMcMessage,
   acceptSensitivityMessage,
+  acceptSweepMessage,
   acceptTrialMessage,
   cancelAnalysis,
   requestAnalysis,
@@ -369,6 +370,15 @@ export interface Store {
   sensitivityMessage: (m: McSensitivityMessage) => void
   /** Ask a running sensitivity run to stop at its next checkpoint, as `cancelMonteCarlo`. */
   cancelSensitivityRun: () => void
+  /**
+   * Launch a factor sweep for the current scenario and run id on the
+   * sensitivity slot (a sensitivity run or sweep already there is replaced).
+   */
+  runSweep: (spec: SweepSpec) => void
+  /** Sweep worker message sink; a message from another run is ignored. */
+  sweepMessage: (m: McSweepMessage) => void
+  /** Ask a running sweep to stop at its next cell, as `cancelMonteCarlo`. */
+  cancelSweep: () => void
 }
 
 /** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
@@ -421,6 +431,7 @@ export const useStore = create<Store>()((set, get) => {
   const sinks: AnalysisSinks = {
     mc: (m) => get().mcMessage(m),
     sensitivity: (m) => get().sensitivityMessage(m),
+    sweep: (m) => get().sweepMessage(m),
     trial: (m) => get().trialMessage(m),
   }
 
@@ -1393,6 +1404,7 @@ export const useStore = create<Store>()((set, get) => {
     resetRun: (reason = 'manual') => {
       cancelAnalysis('mc')
       cancelAnalysis('sensitivity')
+      cancelAnalysis('sweep')
       cancelAnalysis('trial')
       get().playbackCommand({ type: 'newRun', reason })
     },
@@ -1442,6 +1454,15 @@ export const useStore = create<Store>()((set, get) => {
       if (sensitivity.status === 'running' && sensitivity.runId != null) {
         requestCancel('sensitivity', sensitivity.runId)
       }
+    },
+
+    runSweep: (spec) => requestAnalysis('sweep', get(), set, sinks, spec),
+
+    sweepMessage: (m) => set((st) => acceptSweepMessage(st, m) ?? st),
+
+    cancelSweep: () => {
+      const { sweep } = get().mc
+      if (sweep.status === 'running' && sweep.runId != null) requestCancel('sweep', sweep.runId)
     },
 
   }
