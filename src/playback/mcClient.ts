@@ -5,87 +5,43 @@ import type {
   McSensitivityRequest,
   McWorkerMessage,
 } from './mcRun'
-
-/** Wall time a cancelled worker gets to post its summary before it is terminated. */
-export const CANCEL_GRACE_MS = 2000
-
-/** One worker and the callback it reports to; a cancel in flight holds its grace timer. */
-interface Slot<M> {
-  worker: Worker
-  runId: string
-  onMessage: (m: M) => void
-  grace: ReturnType<typeof setTimeout> | null
-}
-
-/** A slot holder: the current slot, or null while nothing runs. */
-interface Holder<M> {
-  current: Slot<M> | null
-}
+import type { SlotProtocol } from './workerSlot'
+import { createWorkerSlot } from './workerSlot'
 
 /**
  * The replicate run. A replicate run is long, so a second start always
  * terminates the first: the store keeps at most one Monte Carlo run alive.
  */
-const run: Holder<McWorkerMessage> = { current: null }
+const run = createWorkerSlot()
 
 /**
  * The sensitivity run, on its own slot. A sensitivity run is many replicate
  * loops, so it runs beside a replicate run: neither start cancels the other.
  */
-const sens: Holder<McSensitivityMessage> = { current: null }
+const sens = createWorkerSlot()
 
-/** Spawn a worker for `request` into `holder`; `errorOf` shapes a worker error for it. */
-function spawn<M extends { type: string }>(
-  holder: Holder<M>,
+type McMessage = McWorkerMessage | McSensitivityMessage
+
+/** The Monte Carlo protocol: messages are tagged by run id; `done` and `error` end the run. */
+function protocol<M extends McMessage>(
   request: Exclude<McRequest, { type: 'cancel' }>,
-  onMessage: (m: M) => void,
+  types: readonly M['type'][],
   errorOf: (message: string) => M,
-): void {
-  const worker = new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' })
-  const slot: Slot<M> = { worker, runId: request.runId, onMessage, grace: null }
-  holder.current = slot
-  // Termination cannot retract a callback already queued for an older request.
-  worker.onmessage = (e: MessageEvent<M>) => {
-    if (holder.current !== slot) return
-    if (e.data.type === 'done' || e.data.type === 'sens-done') clearGrace(slot)
-    onMessage(e.data)
+  onMessage: (m: M) => void,
+): SlotProtocol<M> {
+  return {
+    spawn: () => new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' }),
+    request,
+    decode: (data) => {
+      if (data === null || typeof data !== 'object') return null
+      const m = data as { type?: unknown; runId?: unknown }
+      if (m.runId !== request.runId || !types.includes(m.type as M['type'])) return null
+      return data as M
+    },
+    errorOf,
+    terminal: (m) => m.type !== 'progress' && m.type !== 'sens-progress',
+    onMessage,
   }
-  worker.onerror = (e: ErrorEvent) => {
-    if (holder.current === slot) onMessage(errorOf(e.message))
-  }
-  worker.postMessage(request)
-}
-
-function clearGrace<M>(slot: Slot<M>): void {
-  if (slot.grace != null) clearTimeout(slot.grace)
-  slot.grace = null
-}
-
-/** Terminate the holder's worker if one is running. */
-function terminate<M>(holder: Holder<M>): void {
-  const slot = holder.current
-  if (slot == null) return
-  clearGrace(slot)
-  slot.worker.terminate()
-  holder.current = null
-}
-
-/**
- * Ask the holder's worker to stop at its next checkpoint; its `done` message
- * then carries the summary so far with `stopped.rule` 'cancelled'. A worker
- * that has not answered after CANCEL_GRACE_MS is terminated and the run
- * reports an error. Returns false with nothing running or a cancel in flight.
- */
-function requestCancel<M>(holder: Holder<M>, errorOf: (message: string) => M): boolean {
-  const slot = holder.current
-  if (slot == null || slot.grace != null) return false
-  slot.worker.postMessage({ type: 'cancel', runId: slot.runId })
-  slot.grace = setTimeout(() => {
-    if (holder.current !== slot) return
-    terminate(holder)
-    slot.onMessage(errorOf('Cancel timed out; the worker was stopped'))
-  }, CANCEL_GRACE_MS)
-  return true
 }
 
 /**
@@ -98,25 +54,26 @@ export function startMcRun(
   runId: string,
   onMessage: (m: McWorkerMessage) => void,
 ): boolean {
-  cancelMcRun()
-  if (typeof Worker === 'undefined') return false
-  spawn(run, { type: 'run', runId, scenario }, onMessage, (message) => ({
-    type: 'error' as const,
-    runId,
-    message,
-  }))
-  return true
+  return run.start(protocol<McWorkerMessage>(
+    { type: 'run', runId, scenario },
+    ['progress', 'done', 'error'],
+    (message) => ({ type: 'error', runId, message }),
+    onMessage,
+  ))
 }
 
 /** Terminate the replicate worker if one is running. */
 export function cancelMcRun(): void {
-  terminate(run)
+  run.dispose()
 }
 
-/** Ask the replicate worker to stop at its next checkpoint (see `requestCancel`). */
-export function requestMcCancel(): boolean {
-  const runId = run.current?.runId ?? ''
-  return requestCancel(run, (message) => ({ type: 'error' as const, runId, message }))
+/**
+ * Ask the replicate worker to stop at its next checkpoint; its `done` message
+ * then carries the summary so far with `stopped.rule` 'cancelled'. A worker
+ * silent past the grace period is terminated and the run reports an error.
+ */
+export function requestMcCancel(runId: string): boolean {
+  return run.cancel({ type: 'cancel', runId })
 }
 
 /**
@@ -129,20 +86,21 @@ export function startSensitivity(
   runId: string,
   onMessage: (m: McSensitivityMessage) => void,
 ): boolean {
-  cancelSensitivity()
-  if (typeof Worker === 'undefined') return false
   const request: McSensitivityRequest = { type: 'sensitivity', runId, scenario }
-  spawn(sens, request, onMessage, (message) => ({ type: 'sens-error' as const, runId, message }))
-  return true
+  return sens.start(protocol<McSensitivityMessage>(
+    request,
+    ['sens-progress', 'sens-done', 'sens-error'],
+    (message) => ({ type: 'sens-error', runId, message }),
+    onMessage,
+  ))
 }
 
 /** Terminate the sensitivity worker if one is running. */
 export function cancelSensitivity(): void {
-  terminate(sens)
+  sens.dispose()
 }
 
-/** Ask the sensitivity worker to stop at its next checkpoint (see `requestCancel`). */
-export function requestSensitivityCancel(): boolean {
-  const runId = sens.current?.runId ?? ''
-  return requestCancel(sens, (message) => ({ type: 'sens-error' as const, runId, message }))
+/** Ask the sensitivity worker to stop at its next checkpoint (see `requestMcCancel`). */
+export function requestSensitivityCancel(runId: string): boolean {
+  return sens.cancel({ type: 'cancel', runId })
 }

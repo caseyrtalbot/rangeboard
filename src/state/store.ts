@@ -17,7 +17,7 @@ import type {
   TestCard,
   Vec2,
 } from '../model/types'
-import { dropEditedProvenance, newId, runSettings } from '../model/types'
+import { dropEditedProvenance, newId } from '../model/types'
 import type { SpecEditField, SpecEditValue } from '../model/specEdit'
 import { editSpecField } from '../model/specEdit'
 import type { RingKey, RingOverrides } from './rings'
@@ -29,9 +29,8 @@ import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
 import { analysisBasisSignature } from './analysisBasis'
-import { createTrialManifest } from '../playback/trialTypes'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
-import { cancelTrial, startTrial } from '../playback/trialClient'
+import { cancelTrial } from '../playback/trialClient'
 import { markPresentationVariant } from '../model/scenario'
 import { buildRaid, raidDraftFor } from './raidBuilder'
 import {
@@ -81,9 +80,14 @@ import {
   cancelSensitivity,
   requestMcCancel,
   requestSensitivityCancel,
-  startMcRun,
-  startSensitivity,
 } from '../playback/mcClient'
+import type { AnalysisSinks } from './analysisRequests'
+import {
+  acceptMcMessage,
+  acceptSensitivityMessage,
+  acceptTrialMessage,
+  requestAnalysis,
+} from './analysisRequests'
 
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
@@ -417,6 +421,13 @@ const CLEARED_DRAFT: Pick<
 }
 
 export const useStore = create<Store>()((set, get) => {
+  /** Worker messages reach the store through its sinks, never a slot directly. */
+  const sinks: AnalysisSinks = {
+    mc: (m) => get().mcMessage(m),
+    sensitivity: (m) => get().sensitivityMessage(m),
+    trial: (m) => get().trialMessage(m),
+  }
+
   /**
    * Make a Scenario current through `installScenario`, the one place that
    * decides what every scenario-governed slice does per operation. The store
@@ -1470,29 +1481,7 @@ export const useStore = create<Store>()((set, get) => {
         st = get()
       }
       if (st.trial.status === 'ready') return
-      const basisSignature = analysisBasisSignature(st.scenario)
-      const manifest = st.trial.manifest ?? createTrialManifest(
-        st.scenario, st.playback.runId, basisSignature,
-      )
-      const scenario = st.trial.scenario ?? structuredClone(st.scenario)
-      const requestToken = newId('trialrequest')
-      // Publish before worker construction: synchronous transport failures must stick.
-      set({
-        playback: { ...st.playback, playing: false, basisSignature },
-        trial: {
-          status: 'preparing', requestToken, manifest, scenario, result: null,
-          startWhenReady: st.trial.startWhenReady, error: null,
-        },
-      })
-      const request = {
-        type: 'prepare-trial' as const, requestToken, runId: manifest.runId,
-        basisSignature, scenario, manifest,
-      }
-      const ok = startTrial(request, (message) => get().trialMessage(message))
-      if (!ok) get().trialMessage({
-        type: 'trial-error', requestToken, runId: manifest.runId, basisSignature,
-        message: 'Web Worker unavailable',
-      })
+      requestAnalysis('trial', st, set, sinks)
     },
 
     startTrialRun: () => {
@@ -1534,149 +1523,31 @@ export const useStore = create<Store>()((set, get) => {
       set({ trial: { ...st.trial, status: 'cancelled', startWhenReady: false } })
     },
 
+    // Worker messages land here through `sinks`; acceptance lives in analysisRequests.ts.
     trialMessage: (message) => {
-      let startWhenReady = false
-      set((st) => {
-        const { trial, playback } = st
-        const manifest = trial.manifest
-        if (trial.status !== 'preparing' || manifest == null ||
-          message.requestToken !== trial.requestToken ||
-          message.runId !== playback.runId || message.runId !== manifest.runId ||
-          message.basisSignature !== manifest.basisSignature ||
-          message.basisSignature !== analysisBasisSignature(st.scenario)) return st
-        if (message.type === 'trial-error') return {
-          trial: { ...trial, status: 'error', error: message.message, startWhenReady: false },
-        }
-        // The envelope and retained manifest must identify the very same draw.
-        const received = message.result.manifest
-        if (Object.keys(manifest).some((key) =>
-          manifest[key as keyof typeof manifest] !== received[key as keyof typeof received])) {
-          return { trial: {
-            ...trial, status: 'error', error: 'Trial manifest mismatch', startWhenReady: false,
-          } }
-        }
-        const ready: TrialState = {
-          ...trial, status: 'ready', error: null, startWhenReady: false,
-          result: { ...message.result, manifest },
-        }
-        // Validate the shared adapter once before exposing a ready trial or starting its clock.
-        if (selectTrialSelection({ ...st, trial: ready }).status !== 'ready') {
-          return { trial: { ...trial, status: 'error', error: 'Invalid trial result', startWhenReady: false } }
-        }
-        startWhenReady = trial.startWhenReady
-        return { trial: ready }
-      })
-      if (startWhenReady) get().startTrialRun()
+      const armed = get().trial.startWhenReady
+      set((st) => acceptTrialMessage(st, message) ?? st)
+      if (armed && get().trial.status === 'ready') get().startTrialRun()
     },
 
-    runMonteCarlo: () => {
-      const st = get()
-      const { runMode, replicates } = runSettings(st.scenario)
-      if (runMode === 'deterministic') return
-      const basisSignature = analysisBasisSignature(st.scenario)
-      const runId = st.playback.runId
-      const ok = startMcRun(st.scenario, runId, (m) => get().mcMessage(m))
-      set({
-        mc: {
-          runId,
-          status: ok ? 'running' : 'error',
-          progress: 0,
-          total: replicates,
-          summary: null,
-          basisSignature,
-          error: ok ? null : 'Web Worker unavailable',
-          // The sensitivity run has its own worker and its own lifecycle.
-          sensitivity: st.mc.sensitivity,
-        },
-      })
-    },
+    runMonteCarlo: () => requestAnalysis('mc', get(), set, sinks),
 
-    mcMessage: (m) =>
-      set((st) => {
-        // A message from a cancelled or superseded run describes another board;
-        // so does a result that was already in flight when the basis changed.
-        if (m.runId !== st.mc.runId || m.runId !== st.playback.runId ||
-          st.mc.status !== 'running' ||
-          st.mc.basisSignature !== analysisBasisSignature(st.scenario)) return st
-        if (m.type === 'progress') {
-          return { mc: { ...st.mc, progress: m.done, total: m.total } }
-        }
-        if (m.type === 'done') {
-          return {
-            mc: {
-              ...st.mc,
-              status: 'done',
-              summary: m.summary,
-              progress: m.summary.replicates,
-              total: m.summary.replicates,
-              error: null,
-            },
-          }
-        }
-        return { mc: { ...st.mc, status: 'error', error: m.message } }
-      }),
+    mcMessage: (m) => set((st) => acceptMcMessage(st, m) ?? st),
 
     cancelMonteCarlo: () => {
-      if (get().mc.status === 'running') requestMcCancel()
+      const { mc } = get()
+      if (mc.status === 'running' && mc.runId != null) requestMcCancel(mc.runId)
     },
 
-    runSensitivity: () => {
-      const st = get()
-      if (runSettings(st.scenario).runMode === 'deterministic') return
-      const runId = st.playback.runId
-      const ok = startSensitivity(st.scenario, runId, (m) => get().sensitivityMessage(m))
-      set({
-        mc: {
-          ...st.mc,
-          sensitivity: {
-            runId,
-            status: ok ? 'running' : 'error',
-            progress: 0,
-            // The field count arrives with the first progress message: a value
-            // import of uncertainFields would pull attrition.ts into the store.
-            total: 0,
-            summary: null,
-            basisSignature: analysisBasisSignature(st.scenario),
-            error: ok ? null : 'Web Worker unavailable',
-          },
-        },
-      })
-    },
+    runSensitivity: () => requestAnalysis('sensitivity', get(), set, sinks),
 
-    sensitivityMessage: (m) =>
-      set((st) => {
-        const sens = st.mc.sensitivity
-        // A message from a cancelled or superseded run describes another board.
-        if (m.runId !== sens.runId || m.runId !== st.playback.runId ||
-          sens.status !== 'running' ||
-          sens.basisSignature !== analysisBasisSignature(st.scenario)) return st
-        if (m.type === 'sens-progress') {
-          return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
-        }
-        if (m.type === 'sens-done') {
-          // A run with no progress message (one field, or none) has no total yet.
-          const total = sens.total > 0 ? sens.total : m.summary.rows.length
-          return {
-            mc: {
-              ...st.mc,
-              sensitivity: {
-                ...sens,
-                status: 'done',
-                summary: m.summary,
-                progress: total,
-                total,
-                error: null,
-              },
-            },
-          }
-        }
-        return {
-          mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } },
-        }
-      }),
+    sensitivityMessage: (m) => set((st) => acceptSensitivityMessage(st, m) ?? st),
 
     cancelSensitivityRun: () => {
-      if (get().mc.sensitivity.status === 'running') requestSensitivityCancel()
+      const { sensitivity } = get().mc
+      if (sensitivity.status === 'running' && sensitivity.runId != null) {
+        requestSensitivityCancel(sensitivity.runId)
+      }
     },
 
   }

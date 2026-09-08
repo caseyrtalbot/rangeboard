@@ -96,17 +96,38 @@ Breaking one of these breaks the app.
   `attrition.ts` carry no re-exports.
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
   `attrition.ts` or `trial.ts`; worker execution stays behind `mcClient.ts` and
-  `trialClient.ts`. The worker value-import
+  `trialClient.ts`, both over `workerSlot.ts`, and the store reaches them only through
+  `src/state/analysisRequests.ts`. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.
   `runSession.ts` is a main-thread store adapter, outside that graph. `playback/clock.ts`
   owns `DT` and `stepIndex`, so `sim.ts` and `policy.ts` form no cycle.
   `src/analysis/fidelity.ts` reads the scenario, never the picture, so it stays cycle-free.
-- **Monte Carlo worker:** the store action `runMonteCarlo` posts a request through
+- **Worker slots and analysis requests:** `src/playback/workerSlot.ts` is the one worker
+  slot implementation (`createWorkerSlot`: `start`, `cancel`, `dispose`). A slot holds at
+  most one live worker; `start` replaces it, forwards callbacks only from its current
+  worker instance (a replaced or disposed worker's queued callbacks are dropped by exact
+  ownership), turns a synchronous construction or post failure into one terminal error in
+  the protocol's own shape, and releases the worker on a terminal message before delivering
+  it. `cancel` posts the protocol's stop request and terminates a worker silent for
+  `CANCEL_GRACE_MS`. `mcClient.ts` (two slots: replicates and sensitivity) and
+  `trialClient.ts` (one slot) are protocol adapters over it: they own the worker URL,
+  the request envelope, decoding, identity checks (run id; for a trial also request token,
+  basis and manifest) and their cancellation semantics (graceful with grace period for MC,
+  immediate terminate for a trial). Above them, `src/state/analysisRequests.ts` owns what
+  a request is for the three kinds `mc`, `sensitivity` and `trial`: `requestAnalysis` builds
+  the identity (run id, analysis basis, trial token and manifest), publishes the pending
+  slice state first and starts the worker second, so a synchronous startup error or a
+  missing `Worker` lands as a terminal error on that state; `acceptMcMessage`,
+  `acceptSensitivityMessage` and `acceptTrialMessage` accept a message only while the
+  request is live, for the current playback id and analysis basis (and for a trial the
+  token and manifest). Terminal states accept nothing. Store actions `runMonteCarlo`,
+  `runSensitivity` and `prepareTrial` request an analysis; the store's `mcMessage`,
+  `sensitivityMessage` and `trialMessage` sinks reduce through the accept functions. Adding
+  a fourth worker-backed analysis means one adapter and one launch/accept pair, not a new
+  slot implementation.
+- **Monte Carlo worker:** `runMonteCarlo` requests the `mc` kind, which posts through
   `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`
-  (`src/playback/mcRun.ts`). Each client slot forwards callbacks only from its current
-  worker instance, including repeated requests within one playback run. The store accepts
-  progress, completion and errors only while that slot is running, for the current playback
-  id and analysis basis. Terminal states reject later callbacks. The result lives in the
+  (`src/playback/mcRun.ts`). The result lives in the
   `mc` slice: view state, never persisted, never in `past`. `resetRun` and `replaceScenario`
   clear it; edits, undo and redo use `analysisBasisSignature` to mark mismatched results
   stale. The signature includes domain fields by default, removes named presentation and
@@ -126,9 +147,10 @@ Breaking one of these breaks the app.
   `trialTypes.ts` freezes the run id, configuration basis, seed, `idHash(runId)` numeric
   replicate index, nominal/aleatory basis and compatibility versions. Build provenance is
   explicitly null until a build revision is supplied; the version tag is not a commit hash.
-  `trialClient.ts` owns a third independent worker slot, terminated at completion, error,
-  replacement or cancellation. Client and store require the current request token, run id,
-  basis and matching manifest; terminal deliveries cannot revive a request.
+  `trialClient.ts` owns a third independent worker slot (over `workerSlot.ts`), released at
+  completion, error, replacement or cancellation. Adapter and `acceptTrialMessage` require
+  the current request token, run id, basis and matching manifest; terminal deliveries
+  cannot revive a request.
   `prepareTrial` captures a detached scenario and prepares without starting the clock.
   Ordinary Play calls `startTrialRun` and waits for that result before playing. Repeated
   Play reuses the pending preparation. Pause, scrub and frame
@@ -161,7 +183,8 @@ Breaking one of these breaks the app.
   cancel keeps the replicates done and reports `stopped.rule` 'budget' or 'cancelled'; a
   sensitivity run drops the field in progress and carries `stopped` only when cut short.
   The store actions `cancelMonteCarlo` and `cancelSensitivityRun` post the request through
-  `mcClient.ts`, which terminates a worker silent for `CANCEL_GRACE_MS`. Measurements:
+  `mcClient.ts` to the slot, which terminates a worker silent for `CANCEL_GRACE_MS`
+  (`workerSlot.ts`). Measurements:
   `docs/field-te/evidence/rf31-budget-2026-09-05/`.
 - **Thresholds are test-defined:** `Scenario.requirements` (`RequirementThresholds`,
   defaults in `DEFAULT_REQUIREMENT_THRESHOLDS`) holds what the test asks the system to
@@ -191,7 +214,8 @@ src/state/     store.ts: one zustand store (scenario + history + selection + cam
                layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
                MC/trial state shapes), scenarioInstall.ts (installScenario: the per-operation
                edit/undo/redo/replace response of history, selection, ring overrides,
-               playback, mc and trial), analysisBasis.ts
+               playback, mc and trial), analysisRequests.ts (requestAnalysis and the accept
+               reducers for the mc, sensitivity and trial requests), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
@@ -209,10 +233,12 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                hits, track states, effector states, held sensors), tactics.ts (threat
                tactics), raid.ts, runSession.ts,
                policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
-               McSummary), mc.worker.ts + mcClient.ts (the replicate worker), trial.ts
-               (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
+               McSummary), workerSlot.ts (the one worker slot: start, cancel, dispose),
+               mc.worker.ts + mcClient.ts (the replicate and sensitivity protocol adapters),
+               trial.ts (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
-               (independent preparation worker), trialTrackState.ts (retained member
+               (the trial protocol adapter), controlledWorker.ts (the shared Worker test
+               double), trialTrackState.ts (retained member
                outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector state)
 src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts

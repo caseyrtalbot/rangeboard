@@ -52,20 +52,28 @@ export const IDLE_TRIAL: TrialState = {
   error: null,
 }
 
-/** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */
+/** Lifecycle of a worker-backed analysis run (replicates or sensitivity). */
 type McStatus = 'idle' | 'running' | 'done' | 'stale' | 'error'
 
-/** Lifecycle of the sensitivity run behind the Sensitivity widget. */
-interface SensitivityState {
+/**
+ * One worker-backed analysis run and its result. The replicate and sensitivity
+ * runs share this shape so `analysisRequests.ts` accepts their messages by one rule.
+ */
+export interface AnalysisRunState<S> {
+  /** playback.runId the summary belongs to; null while idle. */
   runId: string | null
   status: McStatus
-  /** Uncertain fields done, and the total. */
+  /** Units done, and the total: replicates for a replicate run, uncertain fields for sensitivity. */
   progress: number
   total: number
-  summary: SensitivitySummary | null
+  summary: S | null
+  /** analysisBasisSignature of the scenario the summary was computed on. */
   basisSignature: string | null
   error: string | null
 }
+
+/** The sensitivity run behind the Sensitivity widget. */
+export type SensitivityState = AnalysisRunState<SensitivitySummary>
 
 /** The sensitivity slice before any run. */
 export const IDLE_SENSITIVITY: SensitivityState = {
@@ -79,17 +87,7 @@ export const IDLE_SENSITIVITY: SensitivityState = {
 }
 
 /** The Monte Carlo slice: replicate run and its sensitivity companion. */
-export interface McState {
-  /** playback.runId the summary belongs to; null while idle. */
-  runId: string | null
-  status: McStatus
-  /** Replicates done, and the total. After a run both equal summary.replicates. */
-  progress: number
-  total: number
-  summary: McSummary | null
-  /** analysisBasisSignature of the scenario the summary was computed on. */
-  basisSignature: string | null
-  error: string | null
+export interface McState extends AnalysisRunState<McSummary> {
   /** The sensitivity run, on its own worker and its own lifecycle. */
   sensitivity: SensitivityState
 }

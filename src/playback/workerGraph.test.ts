@@ -38,7 +38,8 @@ it.each(['mc.worker.ts', 'trial.worker.ts'])('keeps %s independent of stores, Re
 
 it('keeps trial transport independent of the engine and store at runtime', () => {
   const modules = valueGraph('src/playback/trialClient.ts')
-  expect([...modules.keys()].map(file => relative('.', file))).toEqual(['src/playback/trialClient.ts'])
+  expect([...modules.keys()].map(file => relative('.', file)).sort())
+    .toEqual(['src/playback/trialClient.ts', 'src/playback/workerSlot.ts'])
 })
 
 it('keeps store runtime imports outside trial execution and existing numerical result modules', () => {
