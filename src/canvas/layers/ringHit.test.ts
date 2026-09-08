@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Entity } from '../../model/types'
 import { destination } from '../../geometry/geo'
-import type { EntityRings } from './FootprintLayer'
-import { hitRing } from './ringHit'
+import type { EntityRings } from '../ringModel'
+import { hitRing } from '../ringModel'
 
 const entity: Entity = {
   id: 'sensor', name: 'Test sensor', kind: 'sensor', specId: null,

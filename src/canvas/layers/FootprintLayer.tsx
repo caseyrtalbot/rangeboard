@@ -1,60 +1,17 @@
-import { selectEffectiveLayers } from '../../state/selectors'
-import { memo, useEffect, useMemo, useRef } from 'react'
+import { memo, useMemo } from 'react'
 import { Arc, Circle, Group, Line, Ring as KonvaRing, Text } from 'react-konva'
-import { useShallow } from 'zustand/react/shallow'
-import type { Entity, Scenario, SensorSpec, Vec2 } from '../../model/types'
-import {
-  DEFAULT_REQUIREMENT_THRESHOLDS,
-  effectiveDoctrine,
-  entityActive,
-  mountHeightOf,
-} from '../../model/types'
-import type { UiState } from '../../state/store'
+import type { Entity, Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
-import { modelFor } from '../../model/scenario'
-import { ringVisible } from '../../state/layers'
-import { destination, formatDistance, wedgePoints } from '../../geometry/geo'
-import { entityInk, withAlpha } from '../../ui/ink'
-import { groundRangeM } from '../../geometry/slant'
-import {
-  effectiveClassifyRangeM,
-  effectiveDetectRangeM,
-  FT_TO_M,
-  pdContoursM,
-  radarPdModeled,
-  sensorHoldGate,
-} from '../../analysis/sensorEnv'
-import { commitPkFor } from '../../analysis/doctrineFactors'
-import { effectiveJamRangeM } from '../../analysis/ewPhysics'
-import { DEFAULT_PK } from '../../playback/pk'
-import { defendedRadiusOf } from '../../playback/sim'
-import { threatAltitudeFt } from '../../playback/tracks'
+import { destination, wedgePoints } from '../../geometry/geo'
+import { withAlpha } from '../../ui/ink'
 import { LABEL_FONT_PX } from '../labelLayout'
-import type { EnvelopeBand } from './footprintStyle'
-import {
-  COMMIT_DASH,
-  commitRangeM,
-  DISABLED_RING_COLOR,
-  EFFECTOR_RING_COLOR,
-  effectorRingStyle,
-  envelopeBandM,
-  PD_CONTOUR_HIGH,
-  PD_HIGH_DASH,
-  releaseRangeM,
-  RING_STYLE,
-  sensorRingStyle,
-} from './footprintStyle'
+import type { AssetRings, EffectorRings, JammerRings, SensorRings } from '../ringModel'
+import { useRingModel } from '../useRingModel'
+import { COMMIT_DASH, PD_HIGH_DASH, RING_STYLE } from './footprintStyle'
 
 interface Props {
   /** Measured or held sensors at the trial horizon; coast alone does not light a ring. */
   activeSensorIds: Set<string>
-}
-
-/** The ring visibility and unit state buildRings reads. A narrow slice of `ui`. */
-interface RingView {
-  units: UiState['units']
-  layers: UiState['layers']
-  ringOverrides: UiState['ringOverrides']
 }
 
 // Fill alphas come from the one style source, never from a literal here.
@@ -83,11 +40,6 @@ const LABEL_GAP_PX = 4
 function fillFor(base: number, dim: boolean, active: boolean): number {
   if (dim) return base * DIM_FILL
   return active ? base * ACTIVE_FILL : base
-}
-
-/** Commit Pk in a label: up to two decimals, no trailing zero. */
-function formatPk(pk: number): string {
-  return String(Math.round(pk * 100) / 100)
 }
 
 interface RingProps {
@@ -191,292 +143,6 @@ function RingLabel({ pos, radiusM, bearing, text, color }: RingLabelProps) {
       />
     </Group>
   )
-}
-
-interface SensorRings {
-  kind: 'sensor'
-  entity: Entity
-  sectorDeg: number
-  color: string
-  /** The sensor holds this threat: only a held sensor takes the active highlight. */
-  held: boolean
-  grey: boolean
-  /** Detect band over the placed threats, or null when the key is off. */
-  band: EnvelopeBand | null
-  placardM: number | null
-  placardDash: number[] | null
-  placardFill: boolean
-  /** A Pd contour draws over the placard ring, so the placard steps back. */
-  behind: boolean
-  contourLowM: number | null
-  contourHighM: number | null
-  contourFill: boolean
-  lowLabel: string | null
-  highLabel: string | null
-  classifyM: number | null
-}
-
-interface EffectorRings {
-  kind: 'effector'
-  entity: Entity
-  sectorDeg: number
-  color: string
-  off: boolean
-  maxM: number | null
-  minM: number | null
-  releaseM: number | null
-  commitM: number | null
-  releaseLabel: string | null
-  commitLabel: string | null
-}
-
-interface JammerRings {
-  kind: 'jammer'
-  entity: Entity
-  sectorDeg: number
-  color: string
-  off: boolean
-  rangeM: number | null
-  minM: number | null
-}
-
-interface AssetRings {
-  kind: 'asset'
-  entity: Entity
-  color: string
-  radiusM: number
-}
-
-export type EntityRings = SensorRings | EffectorRings | JammerRings | AssetRings
-
-/**
- * Every ring the board draws, one record per entity. Pure over the scenario,
- * the ring visibility and the selected threat, so the memo that calls it does
- * no work on a playback frame. Visibility is `ringVisible`: the per-entity
- * override, else ui.layers.
- */
-function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | null): EntityRings[] {
-  const env = scenario.environment
-  const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
-  const pdLow = thresholds.pdDetect
-  const doctrine = effectiveDoctrine(scenario)
-  const units = ui.units
-  const selectedUas = selectedUasId ? scenario.entities.find((e) => e.id === selectedUasId) : undefined
-  const target = selectedUas ? modelFor(scenario, selectedUas)?.uas : undefined
-  // The engine range is a slant range to the threat altitude, so a ring on a
-  // plan-view board is its ground projection. The mount height is the only
-  // per-entity term.
-  const targetAltM = selectedUas ? threatAltitudeFt(scenario, selectedUas) * FT_TO_M : null
-
-  // Every threat on the board feeds the envelope band. Each entity carries its
-  // own altitude, so two ships of one model can project to two ranges.
-  const threats = scenario.entities.flatMap((u) => {
-    if (u.kind !== 'uas') return []
-    const spec = modelFor(scenario, u)?.uas
-    if (!spec) return []
-    return [{ spec, altM: threatAltitudeFt(scenario, u) * FT_TO_M }]
-  })
-
-  function envelopeFor(spec: SensorSpec): EnvelopeBand | null {
-    const rs: number[] = []
-    for (const t of threats) {
-      const gate = sensorHoldGate(spec, t.spec)
-      if (gate !== 'ok' && gate !== 'needs-cue') continue
-      const r = effectiveDetectRangeM(spec, env, t.spec, pdLow)
-      rs.push(groundRangeM(r, t.altM - mountHeightOf(spec)))
-    }
-    return envelopeBandM(rs)
-  }
-
-  const out: EntityRings[] = []
-  for (const e of scenario.entities) {
-    const model = modelFor(scenario, e)
-
-    if (e.kind === 'sensor') {
-      const spec = model?.sensor
-      if (!spec) continue
-      const placardOn = ringVisible(ui, e.id, 'sensorPlacard')
-      const envelopeOn = ringVisible(ui, e.id, 'sensorEnvelope')
-      const contoursOn = ringVisible(ui, e.id, 'sensorPdContours')
-      const classifyOn = ringVisible(ui, e.id, 'classifyRings')
-      if (!placardOn && !envelopeOn && !contoursOn && !classifyOn) continue
-      const dAltM = targetAltM == null ? null : targetAltM - mountHeightOf(spec)
-      const project = (m: number) => (dAltM == null ? m : groundRangeM(m, dAltM))
-      let pdLowM: number | null = null
-      let pdHighM: number | null = null
-      if (target) {
-        const [low, high] = pdContoursM(spec, env, target, [pdLow, PD_CONTOUR_HIGH])
-        pdLowM = project(low)
-        // Only a radar under the Pd model has a second contour. Every other
-        // sensor keeps its scaled range as the lower contour.
-        pdHighM = radarPdModeled(spec, target) ? project(high) : null
-      }
-      const classifySlantM = effectiveClassifyRangeM(spec, env, target)
-      const style = sensorRingStyle({
-        gate: sensorHoldGate(spec, target),
-        on: entityActive(e),
-        // The placard is a reference condition, so it is never target scaled
-        // and never projected.
-        placardM: effectiveDetectRangeM(spec, env),
-        pdLowM,
-        pdHighM,
-        classifyM: classifySlantM == null ? null : project(classifySlantM),
-        contoursOn: contoursOn && target != null,
-        envelopeOn,
-      })
-      const color = style.grey ? DISABLED_RING_COLOR : entityInk(e, model)
-      out.push({
-        kind: 'sensor',
-        entity: e,
-        sectorDeg: spec.sectorDeg,
-        color,
-        held: style.kind === 'held',
-        grey: style.grey,
-        band: envelopeOn && !style.grey ? envelopeFor(spec) : null,
-        placardM: placardOn ? style.placardM : null,
-        placardDash: style.placardDash,
-        placardFill: placardOn && style.placardFill,
-        behind: style.contourLowM != null || style.contourHighM != null,
-        contourLowM: style.contourLowM,
-        contourHighM: style.contourHighM,
-        contourFill: style.contourFill,
-        lowLabel:
-          style.contourLowM == null
-            ? null
-            : `Pd ${pdLow} · ${formatDistance(style.contourLowM, units)}`,
-        highLabel:
-          style.contourHighM == null
-            ? null
-            : `Pd ${PD_CONTOUR_HIGH} · ${formatDistance(style.contourHighM, units)}`,
-        classifyM: classifyOn ? style.classifyM : null,
-      })
-      continue
-    }
-
-    if (e.kind === 'effector') {
-      const spec = model?.effector
-      if (!spec) continue
-      const maxOn = ringVisible(ui, e.id, 'effectorMaxRange')
-      const minOn = ringVisible(ui, e.id, 'effectorMinRange')
-      const doctrinalOn = ringVisible(ui, e.id, 'effectorDoctrinal')
-      const off = !entityActive(e)
-      const sectorDeg = spec.sectorDeg ?? 360
-
-      // A jammer keeps the flashlight cone: illumination, not a weapon arc.
-      // No danger ink, no ground projection, no doctrinal ring. The min
-      // circle stays under the cone key.
-      if (spec.effectorType === 'jammer') {
-        if (!maxOn) continue
-        out.push({
-          kind: 'jammer',
-          entity: e,
-          sectorDeg,
-          color: off ? DISABLED_RING_COLOR : entityInk(e, model),
-          off,
-          rangeM: maxOn ? effectiveJamRangeM(spec, target) : null,
-          minM: spec.minRangeM > 0 ? spec.minRangeM : null,
-        })
-        continue
-      }
-
-      if (!maxOn && !minOn && !doctrinalOn) continue
-      const dAltM = targetAltM == null ? null : targetAltM - mountHeightOf(spec)
-      const project = (m: number) => (dAltM == null ? m : groundRangeM(m, dAltM))
-      let releaseM: number | null = null
-      let commitM: number | null = null
-      let commitPk = 0
-      // Legacy release has no launch point, so doctrine off means no
-      // doctrinal ring at all.
-      if (target && doctrinalOn && doctrine.enabled) {
-        const basePk = spec.pk ?? DEFAULT_PK[spec.effectorType]
-        commitPk = commitPkFor(spec, doctrine)
-        const commitSlantM = commitRangeM({
-          basePk,
-          uas: target,
-          commitPk,
-          maxRangeM: spec.maxRangeM,
-        })
-        const releaseSlantM = releaseRangeM(doctrine, spec.maxRangeM, commitSlantM)
-        commitM = commitSlantM == null ? null : project(commitSlantM)
-        releaseM = releaseSlantM == null ? null : project(releaseSlantM)
-      }
-      const style = effectorRingStyle({
-        on: entityActive(e),
-        maxM: project(spec.maxRangeM),
-        minM: project(spec.minRangeM),
-        releaseM,
-        commitM,
-      })
-      const color = style.grey ? DISABLED_RING_COLOR : EFFECTOR_RING_COLOR
-      out.push({
-        kind: 'effector',
-        entity: e,
-        sectorDeg,
-        color,
-        off,
-        maxM: maxOn ? style.maxM : null,
-        minM: minOn ? style.minM : null,
-        releaseM: style.releaseM,
-        commitM: style.commitM,
-        releaseLabel:
-          style.releaseM == null ? null : `REL ${formatDistance(style.releaseM, units)}`,
-        commitLabel:
-          style.commitM == null
-            ? null
-            : `Pk ${formatPk(commitPk)} · ${formatDistance(style.commitM, units)}`,
-      })
-      continue
-    }
-
-    // The defended area is the boundary the engine scores arrival against
-    // (defendedRadiusOf: Entity.defendedRadiusM, else the 500 m default), so
-    // the ring on the board is the same distance the leaker count uses.
-    if (e.kind === 'asset' && ui.layers.defendedAreas) {
-      out.push({
-        kind: 'asset',
-        entity: e,
-        color: entityInk(e, model),
-        radiusM: defendedRadiusOf(e),
-      })
-    }
-  }
-  return out
-}
-
-/** Two ring records with equal fields; the band and the dash compare by value. */
-function sameRings(a: EntityRings, b: EntityRings): boolean {
-  if (a.kind !== b.kind || a.entity !== b.entity) return false
-  const x = a as unknown as Record<string, unknown>
-  const y = b as unknown as Record<string, unknown>
-  for (const key of Object.keys(x)) {
-    const u = x[key]
-    const v = y[key]
-    if (u === v) continue
-    if (key === 'band' && u != null && v != null) {
-      const bu = u as EnvelopeBand
-      const bv = v as EnvelopeBand
-      if (bu.innerM === bv.innerM && bu.outerM === bv.outerM) continue
-    }
-    if (key === 'placardDash' && Array.isArray(u) && Array.isArray(v)) {
-      if (u.length === v.length && u.every((n, i) => n === v[i])) continue
-    }
-    return false
-  }
-  return true
-}
-
-/** Fresh records keep the previous object where nothing changed, so a node memo holds across a swap. */
-function stableRings(next: EntityRings[], prev: EntityRings[]): EntityRings[] {
-  if (prev.length === 0) return next
-  const byId = new Map(prev.map((r) => [r.entity.id, r]))
-  let reused = 0
-  const out = next.map((r) => {
-    const old = byId.get(r.entity.id)
-    if (!old || !sameRings(r, old)) return r
-    reused++
-    return old
-  })
-  return reused === next.length && prev.length === next.length ? prev : out
 }
 
 const SensorNode = memo(function SensorNode({
@@ -746,7 +412,8 @@ const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: bool
 
 /**
  * Sensor rings, effector rings and asset defended areas. Never intercepts
- * pointer events.
+ * pointer events. Draw-only: the records come from the ring model
+ * (`src/canvas/ringModel.ts`), which the HUD hit-tests over the same result.
  *
  * Seven ring keys, each with a per-entity override (`ringVisible`). Sensor
  * rings answer "who holds THIS threat, and from how far": the placard ring at
@@ -761,7 +428,7 @@ const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: bool
  * label prints the Pd, the release and the commit distance.
  */
 export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: Props) {
-  const rings = useEntityRings()
+  const { rings } = useRingModel()
   const dim = useStore((s) => s.ui.basemap === 'airspace')
 
   return (
@@ -785,51 +452,3 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
   )
 })
 
-// Both consumers share the expensive geometry; old scenarios can be collected.
-const ringCache = new WeakMap<Scenario, { view: RingView; selected: string | null; rings: EntityRings[] }>()
-
-function sharedRings(scenario: Scenario, view: RingView, selected: string | null): EntityRings[] {
-  const cached = ringCache.get(scenario)
-  if (cached && cached.selected === selected && cached.view.units === view.units &&
-    cached.view.layers === view.layers && cached.view.ringOverrides === view.ringOverrides) {
-    return cached.rings
-  }
-  const rings = buildRings(scenario, view, selected)
-  ringCache.set(scenario, { view, selected, rings })
-  return rings
-}
-
-// The HUD shares this hook with the footprint renderer to reuse its geometry cache.
-// oxlint-disable-next-line react/only-export-components
-export function useEntityRings(): EntityRings[] {
-  const scenario = useStore((s) => s.scenario)
-  // Field subscriptions, not the whole `ui`: an unrelated ui action must not
-  // rebuild the rings, which run the Pd bisection per radar.
-  const units = useStore((s) => s.ui.units)
-  const layers = useStore(useShallow(selectEffectiveLayers))
-  const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
-  const selectedUasId = useStore((s) => {
-    const hit = s.scenario.entities.find(
-      (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
-    )
-    return hit?.id ?? null
-  })
-  const view = useMemo(() => ({ units, layers, ringOverrides }), [units, layers, ringOverrides])
-  // Ring geometry is scenario work, so it must not run on a playback frame.
-  // The sweep reaches this layer as a sensor-id set, which changes at the 10 Hz
-  // publication and is not a key here. A scenario swap (an edit, an undo)
-  // rebuilds the records, and every record whose fields did not change keeps
-  // its previous object, so the memoized nodes re-render only for the entity
-  // that changed.
-  const prevRings = useRef<EntityRings[]>([])
-  const rings = useMemo(
-    // eslint-disable-next-line react/refs -- the previous records lend identities; one render stale by design
-    () => stableRings(sharedRings(scenario, view, selectedUasId), prevRings.current),
-    [scenario, view, selectedUasId],
-  )
-  useEffect(() => {
-    prevRings.current = rings
-  }, [rings])
-
-  return rings
-}
