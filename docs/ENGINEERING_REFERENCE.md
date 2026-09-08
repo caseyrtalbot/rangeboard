@@ -236,8 +236,11 @@ src/state/     store.ts: one zustand store (scenario + history + selection + cam
                useTrialResult.ts (shared trial snapshot and series hook)
 src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), detection.ts
                (prepareSweep: per-sensor terms resolved once per threat; sweepSensorHits,
-               detectionsAt, spawn ring check), killChain.ts (kill-chain
-               routes), sim.ts (assessThreat, assessAllThreats), pk.ts (Pk model and
+               detectionsAt, spawn ring check), sweep.ts (the temporal sweep of one
+               threat: prepareSweepRun, stepSweep, finishSweep own scan scheduling,
+               holds, cue order, coast and M-of-N; SensorObservation), killChain.ts
+               (kill-chain routes), sim.ts (assessThreat consumes sweep step results,
+               assessThreatReusing, assessAllThreats), pk.ts (Pk model and
                expenditure channels), intercept.ts (time of flight, intercept, launch
                releases), shot.ts (evaluateShot: per-ship shot eligibility shared by both
                firing passes), attritionReport.ts (report types), sweepState.ts (sweep
@@ -330,8 +333,9 @@ dependency set (`threatAssessmentInputs`, beside `assessThreat`: the scenario fi
 sweep reads, the run duration, the threat, every asset, effector and C2 node, and every
 sensor whose technology gate admits the target and whose reach touches the flight path plus
 the formation spread); `impact.ts` only keeps the memos from one run to the next. A new
-scenario read inside `assessThreat` joins `threatAssessmentInputs` in `sim.ts` in the same
-change. `resolveEngagements` runs fresh every time. Engine entry
+scenario read inside `assessThreat`, or inside the sweep run it steps (`sweep.ts`), joins
+`threatAssessmentInputs` in `sim.ts` in the same change. `resolveEngagements` runs fresh
+every time. Engine entry
 points in call order: `assessAllThreats(scenario, policy?)` (`sim.ts`) sweeps detection and
 builds one `ThreatAssessment` per active threat; `resolveEngagements(scenario, assessments,
 policy?)` (`attrition.ts`) distributes fire and returns totals, events and per-effector rows.
@@ -355,7 +359,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `sensorGeometryGate` the one vertical gate, with a 0.001 degree tolerance (PF) at both
   elevation edges, `radarPdAt` the one Pd evaluation, `effectiveDetectRangeM` the one
   range. The environment multiplier enters radar SNR as the fourth power.
-- **Track initiation** (`sim.ts`): `scanPeriodS(spec, pdModeled)` (`doctrineFactors.ts`)
+- **Track initiation** (`sweep.ts`): `scanPeriodS(spec, pdModeled)` (`doctrineFactors.ts`)
   is the one scan period: a stated `updateRateS`, else `SCAN_S` by role for a Pd-modeled
   radar, else null. A sensor with a period runs the scan model (M-of-N over scans, coast on
   a missed scan, drop at the miss limit); a null period takes the `TRACK_INIT_S` role
