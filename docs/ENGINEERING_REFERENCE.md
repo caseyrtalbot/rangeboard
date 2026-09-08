@@ -66,11 +66,19 @@ Breaking one of these breaks the app.
   replaces nothing. A new stamp is a presentation variant of the current object
   (`markPresentationVariant` in `src/model/scenario.ts`): every engine-keyed cache reads
   `engineKeyOf(scenario)`, the base of that chain, so the Play click misses no cache.
-- **Schema:** `Scenario.schemaVersion = 1`. `fillScenario`
-  (`src/io/persist.ts`) spreads a save over `emptyScenario()` and deep-fills one level into
-  `environment`, `requirements`, `doctrine`, `mcdaWeights`, `underlay`, `raid`. A new
+- **Schema:** `Scenario.schemaVersion = 1`. `src/io/compat.ts` owns Board schema-1
+  compatibility. `SCENARIO_LEGACY_FIELDS` declares every field a legacy save may omit
+  together with the filler that supplies it. The validator's accepted omissions and
+  `fillScenario` both derive from that one declaration, so an accepted omission cannot
+  exist without a fill. `fillScenario`
+  (`src/io/persist.ts`) validates the shape, spreads a save over `emptyScenario()` and
+  deep-fills one level into every `container` entry
+  (`environment`, `requirements`, `doctrine`, `mcdaWeights`, `underlay`, `raid`).
+  `library` and `systemPresets` reconcile against the current seeds; `doctrine` and `roe`
+  carry named migrations. A new
   top-level field, or a field inside one of those, needs only a default in
-  `emptyScenario()`; a new nested object needs its own `fillScenario` line. New fields
+  `emptyScenario()`; a new nested object needs a `container` entry in the declaration.
+  New fields
   added to schema 1 must remain compatible with legacy saves, using optional fields and
   defaults where needed. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
@@ -79,7 +87,9 @@ Breaking one of these breaks the app.
   Read denial uses the save-status error; failed recovery queues an in-app Storage notice
   explaining export, storage cleanup and reload. Runtime validation
   (`src/io/runtimeValidation.ts`, `validateScenario.ts`) checks shapes, finite and ranged
-  values, ids, references and engine representability before default filling. Missing
+  values, ids, references and engine representability before default filling. The shape
+  check runs once, inside `fillScenario`; `parseScenarioData` and `parseAutosave` both
+  reach it through that one call. Missing
   legacy fields fill; a malformed present field fails with a path and reason. Unknown
   extension data survives. Reserved object-prototype ids are rejected. Triangular spread
   bounds are fractional offsets around zero. Base64 image syntax follows native decoder
@@ -305,7 +315,10 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                an AutosaveAdapter supplies key, parser, record selection, adoption and
                save status), persist.ts (scenarioAutosaveAdapter and the Board autosave
                entry points, fillScenario, JSON and library
-               import/export, runExportObject), runResultGroups.ts (per-group basis/units
+               import/export, runExportObject), compat.ts (the Board schema-1
+               legacy-omission declaration the validator and fillScenario both read;
+               te/io/compatTe.ts is its T&E counterpart),
+               runResultGroups.ts (per-group basis/units
                and separately typed TrialResultGroup),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
                runtimeValidation.ts + validateScenario.ts (runtime semantics),
@@ -907,7 +920,13 @@ Design system (`src/index.css`):
   actions enforce admission too; unchanged legacy payloads remain editable. Capture errors
   render a `State` notice. Admission does not reserve storage or guarantee the actual write.
 - Persistence and imports are validated through `io/validateTe.ts`, including campaign-local
-  references. An embedded Board snapshot is stored verbatim at load and validated by
+  references. `io/compatTe.ts` owns T&E schema-1 compatibility, the same way
+  `src/io/compat.ts` owns the Board's: `CAMPAIGN_LEGACY_FIELDS` and
+  `TE_STATE_LEGACY_FIELDS` declare every field a legacy save may omit together with the
+  filler that supplies it, and the validator's accepted omissions and `fillCampaign`
+  both derive from those declarations. `charter` and `decision` deep-fill one level from
+  `emptyCampaign()`; record arrays do not deep-fill, so they carry no entry. An embedded
+  Board snapshot is stored verbatim at load and validated by
   `parseConfigSnapshot` when it is opened. The store checks internal transitions and
   evidence history.
 
