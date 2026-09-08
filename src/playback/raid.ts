@@ -14,7 +14,7 @@ export function waveIndexFor(raid: RaidPlan | undefined, entityId: string): numb
 }
 
 /** Extra launch delay from the entity's wave, seconds. Zero when unassigned. */
-export function waveDelayS(raid: RaidPlan | undefined, entityId: string): number {
+function waveDelayS(raid: RaidPlan | undefined, entityId: string): number {
   const i = waveIndexFor(raid, entityId)
   return i == null ? 0 : raid!.waves[i].startDelayS
 }

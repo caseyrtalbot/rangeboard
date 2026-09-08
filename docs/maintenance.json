@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "6846268244f53ed063a0c2944f7a09932f8f009329ae8a25e36068cc7bc7d624",
+      "sha256": "f33c0479ea57c57ffa9d44636895f9d498e2a4abc9a2b9480bef1f945c52a561",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed R4 engine, transport and store sources; documented the independent internal trial slot and unchanged visible forecast path."
+      "note": "Reviewed PR 6 cleanup against the R4 foundation: removed helper has no production callers; raid entry-point behavior is unchanged; retained canvas timing export and tests. Feature guide remains accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "26ddcc96a5eae1e0bcef1aec1a4ce6f69a8d59c253d3f11d434c7503395fbbd2",
+      "sha256": "2d3f59e36d25a5dbcc470ad80e14a9e600fc4ab4e95b3a11040fd908461944f5",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed trial capture, stable draw-member mapping, compatibility manifest, worker guards, lifecycle and replay tests; documented non-persisted internal R4 contracts and module boundaries."
+      "note": "Reviewed PR 6 source and tests; removed the obsolete horizon null-censoring claim, retained canvas-clock boundary coverage, and confirmed unchanged raid scheduling and weapon planning tiers."
     },
     {
       "document": "docs/VERIFICATION.md",

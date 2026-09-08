@@ -26,9 +26,3 @@ export function visibleCount(length: number, t0S: number, dtS: number, h: Execut
   }
   return lo
 }
-
-/** Preserve the input when nothing needs censoring; never mutate source values. */
-export function censorValues<T>(values: T[], t0S: number, dtS: number, h: ExecutionHorizon): (T | null)[] {
-  const count = visibleCount(values.length, t0S, dtS, h)
-  return count === values.length ? values : values.map((value, i) => i < count ? value : null)
-}
