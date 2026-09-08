@@ -21,7 +21,7 @@ import { runAccounting } from '../calc/accounting'
 import { DATA_STANDARDS, REFUTED_CLAIMS } from '../seed/constants'
 import { DateField, PersonPicker, Provenance, SentenceBuilder, TextField } from './kit'
 
-export function fmtNum(n: number): number {
+function fmtNum(n: number): number {
   return Math.round(n * 1000) / 1000
 }
 

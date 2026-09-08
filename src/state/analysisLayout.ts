@@ -55,7 +55,7 @@ export const KPI_KEYS: readonly KpiKey[] = [
 export const DEFAULT_KPI_TILES: readonly KpiKey[] = KPI_KEYS.slice(0, 6)
 
 /** Series a time-series widget shows when nothing else is chosen. */
-export const DEFAULT_TIME_SERIES_IDS: readonly string[] = [
+const DEFAULT_TIME_SERIES_IDS: readonly string[] = [
   'kpi.expectedKills',
   'kpi.leakerShips',
   'kpi.detected',

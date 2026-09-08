@@ -263,8 +263,7 @@ export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = 
   const horizon = useExecutionHorizon()
   const [open, setOpen] = useState(false)
 
-  // A reset changes runId and explicitly clears engagementPicture's cache,
-  // so an unchanged scenario is rebuilt for each clean run.
+  // Run identity refreshes this view memo; unchanged engine inputs reuse the forecast cache.
   const tl = useMemo(() => {
     void runId
     const { assessments, report } = engagementPicture(scenario)

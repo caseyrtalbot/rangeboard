@@ -51,7 +51,7 @@ export const TRACK_INIT_S: Record<SensorRole, number> = {
 }
 
 /** Battle-damage-assessment dwell after a salvo's effect, by effector type, s. */
-export const BDA_S: Record<EffectorSpec['effectorType'], number> = {
+const BDA_S: Record<EffectorSpec['effectorType'], number> = {
   de: 3,
   hpm: 3,
   gun: 5,
@@ -66,7 +66,7 @@ export const BDA_S: Record<EffectorSpec['effectorType'], number> = {
  * hop latency, before the first possible release. A jammer is illumination,
  * not a round, and stays on the legacy release path.
  */
-export const TARGET_S: Record<EffectorSpec['effectorType'], number> = {
+const TARGET_S: Record<EffectorSpec['effectorType'], number> = {
   gun: 4,
   de: 5,
   hpm: 3,
@@ -76,7 +76,7 @@ export const TARGET_S: Record<EffectorSpec['effectorType'], number> = {
 }
 
 /** Hold-fire commit Pk by effector type: cheap fast shots commit earlier. */
-export const PK_COMMIT: Record<EffectorSpec['effectorType'], number> = {
+const PK_COMMIT: Record<EffectorSpec['effectorType'], number> = {
   de: 0.2,
   hpm: 0.2,
   gun: 0.25,

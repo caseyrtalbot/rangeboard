@@ -7,7 +7,7 @@ import { formatTime } from '../../../geometry/geo'
 import { emptyScenario } from '../../../model/seed'
 import type { Connection, Entity, EntityKind } from '../../../model/types'
 import { useStore } from '../../../state/store'
-import { DetailPane, hasDetailPane } from './index'
+import { DetailPane } from './DetailPane'
 
 function entityOf(kind: EntityKind): Entity {
   const entity = useStore.getState().scenario.entities.find((e) => e.kind === kind)
@@ -70,20 +70,11 @@ describe('DetailPane', () => {
     store.patchScenario({ connections })
   })
 
-  it('names the four kinds that have a pane', () => {
-    expect(hasDetailPane('sensor')).toBe(true)
-    expect(hasDetailPane('effector')).toBe(true)
-    expect(hasDetailPane('uas')).toBe(true)
-    expect(hasDetailPane('c2')).toBe(true)
-    expect(hasDetailPane('asset')).toBe(false)
-    expect(hasDetailPane('marker')).toBe(false)
-  })
-
-  it('renders nothing for an asset and for an unknown id', () => {
+  it.each(['asset', 'marker'] as const)('renders nothing for a %s and for an unknown id', (kind) => {
     const asset: Entity = {
       id: 'ent-asset',
       name: 'Asset 1',
-      kind: 'asset',
+      kind,
       specId: 'lib-asset',
       pos: { x: 0, y: 0 },
       headingDeg: 0,

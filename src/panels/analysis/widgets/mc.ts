@@ -50,7 +50,7 @@ export function countSub(band: BandSeries, i: number, n: number, scale = 1, unit
 }
 
 /** Minimum defined replicates before a conditional time mean claims its CI. */
-export const TIME_CI_MIN_N = 30
+const TIME_CI_MIN_N = 30
 
 /**
  * Undefined samples are excluded: time estimates are conditional on a finite time.

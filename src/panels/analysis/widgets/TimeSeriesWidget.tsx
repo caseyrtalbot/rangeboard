@@ -94,7 +94,7 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
   const raidSize = Math.max(1, report.totals.raidSize)
 
   const charts = useMemo<Chart[]>(() => {
-    // engagementPicture is a WeakMap cache cleared on reset: runId keys the memo.
+    // Refresh this chart memo for a new run; the underlying forecast cache is reusable.
     void runId
     if (threats === 0) return []
     const built = (() => {

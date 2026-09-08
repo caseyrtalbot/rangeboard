@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "3e196f15f8bfcaf9906a1ecc9eb91e43b47ee6db5314fac8338694825f3ac28c",
-      "reviewedAt": "2026-09-07",
-      "note": "Wave 5 adds bundle-check commands and accounting tests; complete gate and separate real browser verification guidance remain accurate."
+      "sha256": "69eae07785efedc38a091e81f848fe57861075b9016e9ce47de4b543df2ae6b0",
+      "reviewedAt": "2026-09-08",
+      "note": "Reviewed scoped npm test command; complete gate, browser and parity instructions remain accurate."
     },
     {
       "document": "CLAUDE.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "bec0caba8d3f09421df93662b8d68cb938a6fb7e4bd8d53593130273ea9cff0b",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed R2 session-only Board phase navigation in App; introduction, persistence overview and setup remain accurate."
+      "sha256": "63dd150c93155a3d8158cea79b83bbe0a25d1f008d6af5234143eaf2428ba11b",
+      "reviewedAt": "2026-09-08",
+      "note": "Reviewed package test scope and unchanged app entry points; setup and verification links remain accurate."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "2f8e69639019dd36b121874e2feafe97c7781b42cf2f4b3abdd69035d15df330",
+      "sha256": "7d2d31c0b529dafdcebd97fdec436d6f3e953ee1b5e4ceb6517f1bf3fb55df58",
       "reviewedAt": "2026-09-08",
-      "note": "Indexed R4 trial lifecycle evidence; prior R0-R3 evidence remains unchanged."
+      "note": "Indexed the preserved performance handoff as historical and updated the current continuation-status description."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "f33c0479ea57c57ffa9d44636895f9d498e2a4abc9a2b9480bef1f945c52a561",
+      "sha256": "1b966a4069726fc2cd802034000c8c568132c314f8def85f6a0a0b8b9707000b",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed PR 6 cleanup against the R4 foundation: removed helper has no production callers; raid entry-point behavior is unchanged; retained canvas timing export and tests. Feature guide remains accurate."
+      "note": "Reviewed unused detail barrel, asset and implementation-only exports; feature entry points and staged R4 boundaries remain accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "2d3f59e36d25a5dbcc470ad80e14a9e600fc4ab4e95b3a11040fd908461944f5",
+      "sha256": "f5ed7f2ba2b97404b24625505de368da38f3d17f80f27b5a20279cc1caf684cb",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed PR 6 source and tests; removed the obsolete horizon null-censoring claim, retained canvas-clock boundary coverage, and confirmed unchanged raid scheduling and weapon planning tiers."
+      "note": "Reviewed private helper exports, reset cache comments and doctrine-off timing copy; numerical behavior, cache invariants and release timing contracts are unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "3f718b26e512753b0cee0694fd1428c9f874932ae6011cdf683929bad6570266",
+      "sha256": "ca46a65a7a7962f85bc51b064d590b373a2e1c8b6084dc6b5a689c521aeb2971",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed actual R4 real-worker and lifecycle checks; added internal opt-in verification boundaries and corrected single-file Vitest directory syntax."
+      "note": "Documented current-source test discovery under src and retained separate documentation, bundle and browser checks."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -89,16 +89,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "06551ddf12bdf26ca1b55b0354bab560ddb2aab0534a1b18dc4eb9aad4d98cbf",
-      "reviewedAt": "2026-09-07",
-      "note": "CI now runs the built bundle budget and Chromium shell spec after check, with readiness and process cleanup; documented JS plus CSS accounting and separate font totals."
+      "sha256": "d7387ca01c46b59b5964047000c97f4bc46b084ca1ee75e419b7ce505d4e7a8a",
+      "reviewedAt": "2026-09-08",
+      "note": "Documented scoped tests and current continuation boundaries; archived handoffs do not select future work."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "02c20cb9df3158ece5aeec51b5868617df320ef1bcaad2f90f564affcc29a178",
-      "reviewedAt": "2026-09-07",
-      "note": "Recorded Wave 5 publication and first remote CI timeout, scoped 15-second parity-matrix timeout fix, and distinct current-source versus broad local test counts."
+      "sha256": "d8b7cfee105795d73c93b563c008726b9e7ebe26c23937ea19e860b279290cbf",
+      "reviewedAt": "2026-09-08",
+      "note": "Replaced obsolete Wave 6 tasking with verified R0-R4 publication status and explicit unstarted R5 and named-library boundaries; preserved the previous handoff byte for byte as dated history."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

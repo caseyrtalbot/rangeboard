@@ -180,7 +180,7 @@ export function posAtTime(
 /** Display-only unit convention: aviation (kt, nm, ft) or metric (m/s, km). */
 export type DisplayUnits = 'aviation' | 'metric'
 
-export const NM_M = 1852
+const NM_M = 1852
 const MPS_PER_KT = 0.514444
 
 /** Aviation grid steps: nice nm fractions, with metric values at fine zoom. */

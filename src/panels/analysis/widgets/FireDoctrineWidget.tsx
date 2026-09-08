@@ -90,8 +90,8 @@ function DoctrineInfo() {
         arrival, and every shot carries its predicted Pk at the effect point.
       </p>
       <p>
-        Doctrine off is the legacy instant-release engine: the ROE gate alone opens the window
-        and every ready effector volleys. Keep it for regression comparison.
+        With doctrine off, the ROE gate opens the engagement window and every ready effector
+        volleys. Effector preparation and travel times still apply.
       </p>
       <p>All timing values are planning factors, not measured system performance.</p>
     </Info>
@@ -100,7 +100,7 @@ function DoctrineInfo() {
 
 function doctrineHeadline(scenario: { doctrine?: ReturnType<typeof effectiveDoctrine> }): string {
   const d = effectiveDoctrine(scenario)
-  if (!d.enabled) return 'off · instant release'
+  if (!d.enabled) return 'off · ROE gating'
   const policy =
     d.launchPolicy === 'range-fraction'
       ? `${launchPolicyLabel(d.launchPolicy)} ${Math.round(d.launchRangeFraction * 100)}%`
@@ -127,7 +127,7 @@ function DoctrineControls() {
       />
       <label
         className="adv-toggle"
-        title="Doctrinal fire control (default): stable track, hostile declaration, target dwell, launch-point policy, shoot-look-shoot with BDA. Off = legacy instant release."
+        title="Doctrinal fire control (default): stable track, hostile declaration, target dwell, launch-point policy, shoot-look-shoot with BDA. Off = ROE gating; preparation and travel times still apply."
       >
         <input
           type="checkbox"

@@ -44,9 +44,8 @@ export function useSimTimeStep(): number {
 }
 
 /**
- * The engagement picture memoized on the scenario and the run id. A reset
- * changes runId and clears the engine cache, so an unchanged scenario is
- * rebuilt for each clean run.
+ * Refresh the view memo when scenario or run identity changes. The deterministic
+ * engine cache is keyed by engine inputs and remains reusable across clean runs.
  */
 export function useEngagement(scenario: Scenario, runId: string): EngagementPicture {
   return useMemo(() => {

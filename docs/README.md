@@ -17,7 +17,7 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [VERIFICATION.md](VERIFICATION.md) | Commands, tests, parity and browser procedures |
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
-| [HANDOFF.md](HANDOFF.md) | The one handoff for the performance and quality refactor: status ledger, current task, wave briefs |
+| [HANDOFF.md](HANDOFF.md) | Completed work, continuation references and unstarted-stage boundaries |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when
@@ -39,6 +39,7 @@ Proposals preserve design decisions for review; implementation requires separate
 
 ### Completion and integration records
 
+- [Performance refactor handoff, September 7, 2026 snapshot](field-te/performance-refactor-handoff-2026-09-07.md)
 - [Agent workspace preparation, 2026-09-06](field-te/WORKSPACE_PREPARATION_2026-09-06.md)
 - [C1: analysis identity and result invalidation](field-te/C1_COMPLETION.md)
 - [C4: authoritative T&E record transitions](field-te/C4_COMPLETION.md)
