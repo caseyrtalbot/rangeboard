@@ -1,0 +1,69 @@
+{
+  "dateLocal": "2026-09-07",
+  "baseCommit": "39b6b13",
+  "excludedFields": [
+    "tReleaseS"
+  ],
+  "node24BeforeAfterExact": true,
+  "node22AfterR0Exact": true,
+  "releaseMetadata": {
+    "firing": [
+      {
+        "assignmentS": 20,
+        "releaseS": 80,
+        "effectS": 111.67425623299752,
+        "delayS": 60
+      },
+      {
+        "assignmentS": 122,
+        "releaseS": 182,
+        "effectS": 205.23361102599796,
+        "delayS": 60
+      },
+      {
+        "assignmentS": 215.5,
+        "releaseS": 275.5,
+        "effectS": 292.8902142385777,
+        "delayS": 60.0
+      },
+      {
+        "assignmentS": 303,
+        "releaseS": 363,
+        "effectS": 378.9568022412329,
+        "delayS": 60
+      }
+    ],
+    "outside": [
+      {
+        "assignmentS": 556.5,
+        "releaseS": 616.5,
+        "effectS": 692.3035526490393,
+        "delayS": 60.0
+      },
+      {
+        "assignmentS": 702.5,
+        "releaseS": 762.5,
+        "effectS": 824.0369189779306,
+        "delayS": 60.0
+      },
+      {
+        "assignmentS": 834.5,
+        "releaseS": 894.5,
+        "effectS": 943.3220870896083,
+        "delayS": 60.0
+      },
+      {
+        "assignmentS": 953.5,
+        "releaseS": 1013.5,
+        "effectS": 1051.163400852874,
+        "delayS": 60.0
+      }
+    ]
+  },
+  "sha256": {
+    "numerical-before.json": "b8253af46bee18ce09332a04ca86ad4eb0bb7a5f51516f3aac2124901ad60d7b",
+    "numerical-after-node24.json": "4b40a050ca7fe2d58b2538e3c2dda164cae4750182eeaf20c5d78513889da9ba",
+    "numerical-after-node22.json": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6",
+    "numerical-baseline.json": "e87786f1900585ede0242888c33514a34f96c46dc35bb80a2fbcfd497e79ed44"
+  }
+}

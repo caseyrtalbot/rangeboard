@@ -122,6 +122,8 @@ export interface AttritionTotals {
 export interface EngagementEvent {
   /** Assignment (trigger) time; magazine, cooldown, and counts land here. */
   tS: number
+  /** Physical release: assignment plus resolved engagement delay. Absent in legacy ledgers. */
+  tReleaseS?: number
   /** Effect time: tS + engageTimeS + the flyout (interceptAt); kill or jam math lands here. */
   tEffectS: number
   effectorId: string

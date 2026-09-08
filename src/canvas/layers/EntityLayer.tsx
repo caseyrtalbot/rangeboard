@@ -626,6 +626,17 @@ const EntityBody = memo(function EntityBody({
           />
         </>
       )}
+      {(effectorState === 'preparing' || effectorState === 'timing-unavailable') && (
+        <Text
+          fontFamily="JetBrains Mono"
+          x={13}
+          y={-4}
+          text={effectorState === 'preparing' ? 'PREP' : 'LAUNCH ?'}
+          fontSize={11}
+          fill={PHASE_STYLE.targeted.color}
+          listening={false}
+        />
+      )}
       {depleted && (
         <Text
           fontFamily="JetBrains Mono"

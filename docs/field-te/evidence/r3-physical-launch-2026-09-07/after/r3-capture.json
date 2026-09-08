@@ -1,0 +1,1036 @@
+{
+  "phase": "after",
+  "date": "2026-09-07",
+  "url": "http://localhost:5443",
+  "fixtureSha256": "fb62cc6fce749f73f0809f7cf26962c81184d4e8d002005a6cc0277b11cffaa9",
+  "captures": [
+    {
+      "channel": "kinetic",
+      "label": "assigned",
+      "ev": {
+        "tS": 20,
+        "tReleaseS": 80,
+        "tEffectS": 111.67425623299752,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "interceptor",
+        "channelClass": "kinetic",
+        "lateEffect": false,
+        "pk": 0.5340514459287791,
+        "killDelta": 0.5340514459287791
+      },
+      "delay": 60,
+      "eventCount": 4,
+      "t": 20,
+      "shots": [],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "preparing"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5340514459287791,
+          "killDelta": 0.5340514459287791
+        },
+        {
+          "tS": 122,
+          "tReleaseS": 182,
+          "tEffectS": 205.23361102599796,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.550293188655444,
+          "killDelta": 0.2564083155692457
+        },
+        {
+          "tS": 215.5,
+          "tReleaseS": 275.5,
+          "tEffectS": 292.8902142385777,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5615372280557015,
+          "killDelta": 0.11766464469452975
+        },
+        {
+          "tS": 303,
+          "tReleaseS": 363,
+          "tEffectS": 378.9568022412329,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5642954424233524,
+          "killDelta": 0.05184497885548066
+        }
+      ],
+      "screenshot": "kinetic-assigned.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+0:20\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n96.0%\nplanning envelope · 0.96 of 1 ships\nResidual survival\n4.0%\nplanning envelope · 0.04 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:51\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n4\nplanning envelope · 4 kin · 0 DE · 0 EW\nCoyote Block 2 interceptor 1\n4 kin\nplanning envelope · 0/4 remaining\n▸\nProjected threat outcome · planning envelope\n0.04 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "kinetic",
+      "label": "preparing",
+      "ev": {
+        "tS": 20,
+        "tReleaseS": 80,
+        "tEffectS": 111.67425623299752,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "interceptor",
+        "channelClass": "kinetic",
+        "lateEffect": false,
+        "pk": 0.5340514459287791,
+        "killDelta": 0.5340514459287791
+      },
+      "delay": 60,
+      "eventCount": 4,
+      "t": 79,
+      "shots": [],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "preparing"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5340514459287791,
+          "killDelta": 0.5340514459287791
+        },
+        {
+          "tS": 122,
+          "tReleaseS": 182,
+          "tEffectS": 205.23361102599796,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.550293188655444,
+          "killDelta": 0.2564083155692457
+        },
+        {
+          "tS": 215.5,
+          "tReleaseS": 275.5,
+          "tEffectS": 292.8902142385777,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5615372280557015,
+          "killDelta": 0.11766464469452975
+        },
+        {
+          "tS": 303,
+          "tReleaseS": 363,
+          "tEffectS": 378.9568022412329,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5642954424233524,
+          "killDelta": 0.05184497885548066
+        }
+      ],
+      "screenshot": "kinetic-preparing.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:19\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n96.0%\nplanning envelope · 0.96 of 1 ships\nResidual survival\n4.0%\nplanning envelope · 0.04 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:51\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n4\nplanning envelope · 4 kin · 0 DE · 0 EW\nCoyote Block 2 interceptor 1\n4 kin\nplanning envelope · 0/4 remaining\n▸\nProjected threat outcome · planning envelope\n0.04 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "kinetic",
+      "label": "released",
+      "ev": {
+        "tS": 20,
+        "tReleaseS": 80,
+        "tEffectS": 111.67425623299752,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "interceptor",
+        "channelClass": "kinetic",
+        "lateEffect": false,
+        "pk": 0.5340514459287791,
+        "killDelta": 0.5340514459287791
+      },
+      "delay": 60,
+      "eventCount": 4,
+      "t": 80,
+      "shots": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "progress": 0,
+          "channel": "kill",
+          "softShot": false,
+          "pk": 0.5340514459287791,
+          "from": {
+            "x": 1700,
+            "y": -1700
+          },
+          "to": {
+            "x": 0,
+            "y": -4659.90892520403
+          },
+          "mode": "semi-active"
+        }
+      ],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "semi-active"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5340514459287791,
+          "killDelta": 0.5340514459287791
+        },
+        {
+          "tS": 122,
+          "tReleaseS": 182,
+          "tEffectS": 205.23361102599796,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.550293188655444,
+          "killDelta": 0.2564083155692457
+        },
+        {
+          "tS": 215.5,
+          "tReleaseS": 275.5,
+          "tEffectS": 292.8902142385777,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5615372280557015,
+          "killDelta": 0.11766464469452975
+        },
+        {
+          "tS": 303,
+          "tReleaseS": 363,
+          "tEffectS": 378.9568022412329,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5642954424233524,
+          "killDelta": 0.05184497885548066
+        }
+      ],
+      "screenshot": "kinetic-released.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:20\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n96.0%\nplanning envelope · 0.96 of 1 ships\nResidual survival\n4.0%\nplanning envelope · 0.04 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:51\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n4\nplanning envelope · 4 kin · 0 DE · 0 EW\nCoyote Block 2 interceptor 1\n4 kin\nplanning envelope · 0/4 remaining\n▸\nProjected threat outcome · planning envelope\n0.04 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "kinetic",
+      "label": "midflight",
+      "ev": {
+        "tS": 20,
+        "tReleaseS": 80,
+        "tEffectS": 111.67425623299752,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "interceptor",
+        "channelClass": "kinetic",
+        "lateEffect": false,
+        "pk": 0.5340514459287791,
+        "killDelta": 0.5340514459287791
+      },
+      "delay": 60,
+      "eventCount": 4,
+      "t": 95.83712811649876,
+      "shots": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "progress": 0.5,
+          "channel": "kill",
+          "softShot": false,
+          "pk": 0.5340514459287791,
+          "from": {
+            "x": 1700,
+            "y": -1700
+          },
+          "to": {
+            "x": 0,
+            "y": -4659.90892520403
+          },
+          "mode": "semi-active"
+        }
+      ],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "semi-active"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5340514459287791,
+          "killDelta": 0.5340514459287791
+        },
+        {
+          "tS": 122,
+          "tReleaseS": 182,
+          "tEffectS": 205.23361102599796,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.550293188655444,
+          "killDelta": 0.2564083155692457
+        },
+        {
+          "tS": 215.5,
+          "tReleaseS": 275.5,
+          "tEffectS": 292.8902142385777,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5615372280557015,
+          "killDelta": 0.11766464469452975
+        },
+        {
+          "tS": 303,
+          "tReleaseS": 363,
+          "tEffectS": 378.9568022412329,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5642954424233524,
+          "killDelta": 0.05184497885548066
+        }
+      ],
+      "screenshot": "kinetic-midflight.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:36\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n96.0%\nplanning envelope · 0.96 of 1 ships\nResidual survival\n4.0%\nplanning envelope · 0.04 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:51\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n4\nplanning envelope · 4 kin · 0 DE · 0 EW\nCoyote Block 2 interceptor 1\n4 kin\nplanning envelope · 0/4 remaining\n▸\nProjected threat outcome · planning envelope\n0.04 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "kinetic",
+      "label": "effect",
+      "ev": {
+        "tS": 20,
+        "tReleaseS": 80,
+        "tEffectS": 111.67425623299752,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "interceptor",
+        "channelClass": "kinetic",
+        "lateEffect": false,
+        "pk": 0.5340514459287791,
+        "killDelta": 0.5340514459287791
+      },
+      "delay": 60,
+      "eventCount": 4,
+      "t": 111.67425623299752,
+      "shots": [],
+      "effectorStates": [],
+      "events": [
+        {
+          "tS": 20,
+          "tReleaseS": 80,
+          "tEffectS": 111.67425623299752,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5340514459287791,
+          "killDelta": 0.5340514459287791
+        },
+        {
+          "tS": 122,
+          "tReleaseS": 182,
+          "tEffectS": 205.23361102599796,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.550293188655444,
+          "killDelta": 0.2564083155692457
+        },
+        {
+          "tS": 215.5,
+          "tReleaseS": 275.5,
+          "tEffectS": 292.8902142385777,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5615372280557015,
+          "killDelta": 0.11766464469452975
+        },
+        {
+          "tS": 303,
+          "tReleaseS": 363,
+          "tEffectS": 378.9568022412329,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "interceptor",
+          "channelClass": "kinetic",
+          "lateEffect": false,
+          "pk": 0.5642954424233524,
+          "killDelta": 0.05184497885548066
+        }
+      ],
+      "screenshot": "kinetic-effect.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:51\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n96.0%\nplanning envelope · 0.96 of 1 ships\nResidual survival\n4.0%\nplanning envelope · 0.04 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:51\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n4\nplanning envelope · 4 kin · 0 DE · 0 EW\nCoyote Block 2 interceptor 1\n4 kin\nplanning envelope · 0/4 remaining\n▸\nProjected threat outcome · planning envelope\n0.04 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "beam",
+      "label": "assigned",
+      "ev": {
+        "tS": 17,
+        "tReleaseS": 77,
+        "tEffectS": 77,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "de",
+        "channelClass": "directed-energy",
+        "lateEffect": false,
+        "pk": 0.5275113671149991,
+        "killDelta": 0.5275113671149991
+      },
+      "delay": 60,
+      "eventCount": 1,
+      "t": 17,
+      "shots": [],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "preparing"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "de",
+          "channelClass": "directed-energy",
+          "lateEffect": false,
+          "pk": 0.5275113671149991,
+          "killDelta": 0.5275113671149991
+        }
+      ],
+      "screenshot": "beam-assigned.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+0:17\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n52.8%\nplanning envelope · 0.53 of 1 ships\nResidual survival\n47.2%\nplanning envelope · 0.47 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:17\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n1\nplanning envelope · 0 kin · 1 DE · 0 EW\nCoyote Block 2 interceptor 1\n1 DE\nplanning envelope · 0/1 remaining\n▸\nProjected threat outcome · planning envelope\n0.47 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "beam",
+      "label": "preparing",
+      "ev": {
+        "tS": 17,
+        "tReleaseS": 77,
+        "tEffectS": 77,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "de",
+        "channelClass": "directed-energy",
+        "lateEffect": false,
+        "pk": 0.5275113671149991,
+        "killDelta": 0.5275113671149991
+      },
+      "delay": 60,
+      "eventCount": 1,
+      "t": 76,
+      "shots": [],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "preparing"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "de",
+          "channelClass": "directed-energy",
+          "lateEffect": false,
+          "pk": 0.5275113671149991,
+          "killDelta": 0.5275113671149991
+        }
+      ],
+      "screenshot": "beam-preparing.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:16\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n52.8%\nplanning envelope · 0.53 of 1 ships\nResidual survival\n47.2%\nplanning envelope · 0.47 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:17\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n1\nplanning envelope · 0 kin · 1 DE · 0 EW\nCoyote Block 2 interceptor 1\n1 DE\nplanning envelope · 0/1 remaining\n▸\nProjected threat outcome · planning envelope\n0.47 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "beam",
+      "label": "released",
+      "ev": {
+        "tS": 17,
+        "tReleaseS": 77,
+        "tEffectS": 77,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "de",
+        "channelClass": "directed-energy",
+        "lateEffect": false,
+        "pk": 0.5275113671149991,
+        "killDelta": 0.5275113671149991
+      },
+      "delay": 60,
+      "eventCount": 1,
+      "t": 77,
+      "shots": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "progress": 1,
+          "channel": "kill",
+          "softShot": false,
+          "pk": 0.5275113671149991,
+          "from": {
+            "x": 1700,
+            "y": -1700
+          },
+          "to": {
+            "x": 0,
+            "y": -5076
+          },
+          "mode": "beam"
+        }
+      ],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "beam"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "de",
+          "channelClass": "directed-energy",
+          "lateEffect": false,
+          "pk": 0.5275113671149991,
+          "killDelta": 0.5275113671149991
+        }
+      ],
+      "screenshot": "beam-released.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:17\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n52.8%\nplanning envelope · 0.53 of 1 ships\nResidual survival\n47.2%\nplanning envelope · 0.47 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:17\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n1\nplanning envelope · 0 kin · 1 DE · 0 EW\nCoyote Block 2 interceptor 1\n1 DE\nplanning envelope · 0/1 remaining\n▸\nProjected threat outcome · planning envelope\n0.47 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "beam",
+      "label": "midflight",
+      "ev": {
+        "tS": 17,
+        "tReleaseS": 77,
+        "tEffectS": 77,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "de",
+        "channelClass": "directed-energy",
+        "lateEffect": false,
+        "pk": 0.5275113671149991,
+        "killDelta": 0.5275113671149991
+      },
+      "delay": 60,
+      "eventCount": 1,
+      "t": 77,
+      "shots": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "progress": 1,
+          "channel": "kill",
+          "softShot": false,
+          "pk": 0.5275113671149991,
+          "from": {
+            "x": 1700,
+            "y": -1700
+          },
+          "to": {
+            "x": 0,
+            "y": -5076
+          },
+          "mode": "beam"
+        }
+      ],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "beam"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "de",
+          "channelClass": "directed-energy",
+          "lateEffect": false,
+          "pk": 0.5275113671149991,
+          "killDelta": 0.5275113671149991
+        }
+      ],
+      "screenshot": "beam-midflight.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:17\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n52.8%\nplanning envelope · 0.53 of 1 ships\nResidual survival\n47.2%\nplanning envelope · 0.47 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:17\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n1\nplanning envelope · 0 kin · 1 DE · 0 EW\nCoyote Block 2 interceptor 1\n1 DE\nplanning envelope · 0/1 remaining\n▸\nProjected threat outcome · planning envelope\n0.47 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    },
+    {
+      "channel": "beam",
+      "label": "effect",
+      "ev": {
+        "tS": 17,
+        "tReleaseS": 77,
+        "tEffectS": 77,
+        "effectorId": "ent-mtnvzhmr-24",
+        "uasId": "ent-mtnvzhmr-25",
+        "shipIdx": 0,
+        "channel": "kill",
+        "softShot": false,
+        "effectorType": "de",
+        "channelClass": "directed-energy",
+        "lateEffect": false,
+        "pk": 0.5275113671149991,
+        "killDelta": 0.5275113671149991
+      },
+      "delay": 60,
+      "eventCount": 1,
+      "t": 77,
+      "shots": [
+        {
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "progress": 1,
+          "channel": "kill",
+          "softShot": false,
+          "pk": 0.5275113671149991,
+          "from": {
+            "x": 1700,
+            "y": -1700
+          },
+          "to": {
+            "x": 0,
+            "y": -5076
+          },
+          "mode": "beam"
+        }
+      ],
+      "effectorStates": [
+        [
+          "ent-mtnvzhmr-24",
+          "beam"
+        ]
+      ],
+      "events": [
+        {
+          "tS": 17,
+          "tReleaseS": 77,
+          "tEffectS": 77,
+          "effectorId": "ent-mtnvzhmr-24",
+          "uasId": "ent-mtnvzhmr-25",
+          "shipIdx": 0,
+          "channel": "kill",
+          "softShot": false,
+          "effectorType": "de",
+          "channelClass": "directed-energy",
+          "lateEffect": false,
+          "pk": 0.5275113671149991,
+          "killDelta": 0.5275113671149991
+        }
+      ],
+      "screenshot": "beam-effect.png",
+      "rightPanelText": "Analyze run\nOverview\nSelected object\nTest cards\nModel library\nRun summary\nSensors\nEffectors\nSystem of systems\nThreat\nLayout\nPreview\nRUN-0001 · T+1:17\nMC 30 · total · seed 4821\nestimate · 30 replicates · total\ncursor only · observed through 0:00\nClean reset\n\nFull-run results · entire configured duration\n\n▾\nFull-run validity\n1 invalidating · 1 limiting\nINVALID\nA gate below is not scored: the run never made that measurement.\nFindings and model fidelity · 1 invalidating · 1 limiting\n▾\nFull-run projection\nfull run · not live · conditional\nINVALIDi\nExpected kills\n52.8%\nplanning envelope · 0.53 of 1 ships\nResidual survival\n47.2%\nplanning envelope · 0.47 of 1 ships\nExpected late kills\n0.00\nplanning envelope · after arrival, no asset protection\nFirst detect\n0:00\nplanning envelope · earliest track\nFirst effect\n1:17\nplanning envelope · expected kill mass removed\nMin warning\n7:55\nplanning envelope · worst threat\nSalvos\n1\nplanning envelope · 0 kin · 1 DE · 0 EW\nCoyote Block 2 interceptor 1\n1 DE\nplanning envelope · 0/1 remaining\n▸\nProjected threat outcome · planning envelope\n0.47 expected residual\nFull-run time series · cursor marker\nCursor-scoped supplemental data"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "chromium": "151.0.7922.34",
+  "effectorDetail": "Planning envelope · deterministic readouts and charts.\n\n‹ Back\nE\nCoyote Block 2 interceptor 1\nEMPTY\nCoyote Block 2 interceptor · de\nDoctrine · planning · none\nKinetic Pk · planning · none\nPk per track\nPk\n0:00\n5:00\n0.0\n0.5\n1.0\nT+3:20\nMagazine\nrounds\n0:00\n5:00\n0.0\n0.5\n1.0\nASG\nREL/FX\nT+3:20\nAssignment, release and effect\nDJI MAVIC 3 1\n0:00\n5:00\npreparation\nDJI MAVIC 3 1 · beam\nDoctrine by threat\nPk commit\nThreat\tGate\tReady\tCommit Pk\nDJI Mavic 3 (G1 quad) 1\t0:11\t0:17\t0.20\nCapacity\nfull run\nKinetic shots\n0\nDE salvos\n1\nJam salvos\n0\nRounds remaining\n0 of 1\nEngage time\n60 s\nFlyout speed\n0 m/s\nBDA dwell\n3 s",
+  "releaseDetail": "Assignment, release and effect\nDJI MAVIC 3 1\n0:00\n5:00\npreparation\nDJI MAVIC 3 1 · beam",
+  "panelOverflow": {
+    "scrollWidth": 319,
+    "clientWidth": 319
+  },
+  "playback": [
+    {
+      "speed": 1,
+      "samples": [
+        {
+          "t": 78,
+          "playing": true
+        },
+        {
+          "t": 78.10759999961853,
+          "playing": true
+        },
+        {
+          "t": 78.20759999961852,
+          "playing": true
+        },
+        {
+          "t": 78.30759999961852,
+          "playing": true
+        },
+        {
+          "t": 78.40759999961851,
+          "playing": true
+        },
+        {
+          "t": 78.5075999996185,
+          "playing": true
+        },
+        {
+          "t": 78.6075999996185,
+          "playing": true
+        },
+        {
+          "t": 78.7159999996185,
+          "playing": true
+        },
+        {
+          "t": 78.8242999996185,
+          "playing": true
+        },
+        {
+          "t": 78.9325999996185,
+          "playing": true
+        },
+        {
+          "t": 79.0325999996185,
+          "playing": true
+        },
+        {
+          "t": 79.1400999996185,
+          "playing": true
+        },
+        {
+          "t": 79.2409999996185,
+          "playing": true
+        },
+        {
+          "t": 79.3492999996185,
+          "playing": true
+        },
+        {
+          "t": 79.4575999996185,
+          "playing": true
+        },
+        {
+          "t": 79.55759999961849,
+          "playing": true
+        },
+        {
+          "t": 79.65759999961848,
+          "playing": true
+        },
+        {
+          "t": 79.76589999961848,
+          "playing": true
+        },
+        {
+          "t": 79.86589999961848,
+          "playing": true
+        },
+        {
+          "t": 79.96589999961847,
+          "playing": true
+        },
+        {
+          "t": 80.06589999961847,
+          "playing": true
+        },
+        {
+          "t": 80.16589999961846,
+          "playing": true
+        },
+        {
+          "t": 80.27439999961847,
+          "playing": true
+        },
+        {
+          "t": 80.38259999961846,
+          "playing": true
+        },
+        {
+          "t": 80.49089999961846,
+          "playing": true
+        },
+        {
+          "t": 80.59929999961847,
+          "playing": true
+        },
+        {
+          "t": 80.69929999961846,
+          "playing": true
+        },
+        {
+          "t": 80.79929999961846,
+          "playing": true
+        },
+        {
+          "t": 80.90759999961845,
+          "playing": true
+        },
+        {
+          "t": 81.00759999961845,
+          "playing": true
+        },
+        {
+          "t": 81.10759999961844,
+          "playing": true
+        },
+        {
+          "t": 81.20759999961844,
+          "playing": true
+        },
+        {
+          "t": 81.31599999961844,
+          "playing": true
+        },
+        {
+          "t": 81.41599999961844,
+          "playing": true
+        },
+        {
+          "t": 81.52419999961843,
+          "playing": true
+        },
+        {
+          "t": 81.62419999961843,
+          "playing": true
+        },
+        {
+          "t": 81.73259999961843,
+          "playing": true
+        },
+        {
+          "t": 81.83259999961842,
+          "playing": true
+        },
+        {
+          "t": 81.93259999961842,
+          "playing": true
+        },
+        {
+          "t": 82.03259999961841,
+          "playing": true
+        }
+      ]
+    },
+    {
+      "speed": 5,
+      "samples": [
+        {
+          "t": 78,
+          "playing": true
+        },
+        {
+          "t": 78.51,
+          "playing": true
+        },
+        {
+          "t": 79.052,
+          "playing": true
+        },
+        {
+          "t": 79.552,
+          "playing": true
+        },
+        {
+          "t": 80.09250000000002,
+          "playing": true
+        },
+        {
+          "t": 80.59350000000002,
+          "playing": true
+        },
+        {
+          "t": 81.09350000000002,
+          "playing": true
+        },
+        {
+          "t": 81.63550000000002,
+          "playing": true
+        },
+        {
+          "t": 82.17650000000002,
+          "playing": true
+        }
+      ]
+    }
+  ],
+  "status": "ok"
+}

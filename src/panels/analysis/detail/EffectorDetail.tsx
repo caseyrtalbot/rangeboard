@@ -78,10 +78,13 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
     })
   }, [scenario, spec, doctrine, threats, entity.id, horizon])
 
-  const legend: LegendEntry[] = releaseRows.map((row) => ({
-    label: row.label,
-    color: row.spans[0]?.color ?? OTHER_TOKEN,
-  }))
+  const legend: LegendEntry[] = [...new Map(releaseRows.flatMap((row) =>
+    row.spans.filter((span) => !horizon.scoped || reached(span.startS, horizon)).map((span) => {
+      const label = span.label === 'preparation' || span.label === 'launch timing unavailable'
+        ? span.label : `${row.label} · ${span.label ?? 'effect'}`
+      return [label, { label, color: span.color ?? OTHER_TOKEN }] as const
+    }),
+  )).values()]
 
   const landed = report.events.filter((event) => event.effectorId === entity.id && reached(event.tEffectS, horizon))
   const attrition = horizon.scoped ? {
@@ -170,7 +173,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
           none
         )}
       </DetailSection>
-      <DetailSection id="release" title="Release and effect">
+      <DetailSection id="release" title="Assignment, release and effect">
         {releaseRows.length > 0 ? (
           <>
             <Ladder rows={bareReleaseRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />

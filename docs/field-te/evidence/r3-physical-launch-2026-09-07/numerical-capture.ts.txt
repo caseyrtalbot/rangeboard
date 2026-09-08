@@ -1,0 +1,31 @@
+import { expect, it } from 'vitest'
+// @ts-expect-error scratch harness uses Node file IO
+import { writeFileSync } from 'node:fs'
+import { assessAllThreats } from './sim'
+import { resolveEngagements } from './attrition'
+import { runReplicates, runSensitivity } from './mcRun'
+import { parseScenarioData } from '../io/persist'
+import firing from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import outside from './__fixtures__/detection-outside-rings.json'
+
+const dir = 'docs/field-te/evidence/r3-physical-launch-2026-09-07'
+
+
+function capture(raw: unknown) {
+  const scenario = { ...parseScenarioData(raw), replicates: 4 }
+  const assessments = assessAllThreats(scenario)
+  return {
+    assessments,
+    report: resolveEngagements(scenario, assessments),
+    aleatory: runReplicates({ ...scenario, uncertainty: 'aleatory' }),
+    total: runReplicates({ ...scenario, uncertainty: 'total' }),
+    sensitivity: runSensitivity(scenario),
+  }
+}
+
+it('r0: capture baseline for firing and detection-outside-rings fixtures', () => {
+  const value = JSON.stringify({ firing: capture(firing), outside: capture(outside) })
+  const file = `${dir}/numerical-before.json`
+  writeFileSync(file, value)
+  expect(true).toBe(true)
+}, 300000)

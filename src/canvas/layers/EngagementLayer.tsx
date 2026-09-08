@@ -42,6 +42,8 @@ export function EngagementLayer({ shots, displayTimeS }: Props) {
   return (
     <Group listening={false}>
       {shots.map((s) => {
+        if (displayTimeS < s.tReleaseS) return null
+        if (s.mode !== 'beam' && s.tEffectS <= s.tReleaseS) return null
         const d = dist(s.from, s.to)
         if (d < 1) return null
         // Trim both ends the way ConnectionLayer trims its arrows, so the line

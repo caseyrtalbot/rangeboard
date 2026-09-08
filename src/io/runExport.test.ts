@@ -108,3 +108,45 @@ describe('run group basis and import compatibility', () => {
     expect(out.resultGroups.sensitivity?.measures.interval).toContain('no mean confidence interval')
   })
 })
+
+describe('run export physical launch timing', () => {
+  it('preserves new ledger timing and identifies assignment, release, effect and shipIdx', () => {
+    const f = fixture()
+    expect(f.report.events.length).toBeGreaterThan(0)
+    expect(f.report.events.every(event => event.tReleaseS != null)).toBe(true)
+    const out = runExportObject(f.scenario, f.run, f.assessments, f.report, f.summary)
+    const saved = JSON.parse(JSON.stringify(out))
+    expect(saved.attrition.events).toEqual(f.report.events)
+    const measures = out.resultGroups.attrition.measures
+    expect(measures['events.tS']).toContain('assignment time')
+    expect(measures['events.tReleaseS']).toContain('physical release time')
+    expect(measures['events.tEffectS']).toContain('effect time')
+    expect(measures['events.shipIdx']).toContain('zero-based member index')
+    expect(measures['events.shipIndex']).toBeUndefined()
+    expect(measures.releaseTimingRecordedEvents).toBe(f.report.events.length)
+    expect(measures.releaseTimingReconstructableEvents).toBe(0)
+    expect(measures.releaseTimingUnavailableEvents).toBe(0)
+  })
+
+  it('preserves omitted legacy fields and distinguishes reconstructable from unavailable release', () => {
+    const f = fixture()
+    const legacy = { ...f.report, events: f.report.events.map(event => {
+      const copy = { ...event }
+      delete copy.tReleaseS
+      return copy
+    }) }
+    const known = runExportObject(f.scenario, f.run, f.assessments, legacy, f.summary)
+    expect(known.resultGroups.attrition.measures.releaseTimingRecordedEvents).toBe(0)
+    expect(known.resultGroups.attrition.measures.releaseTimingReconstructableEvents).toBe(legacy.events.length)
+    expect(known.resultGroups.attrition.measures.releaseTimingUnavailableEvents).toBe(0)
+    const withoutEffector = { ...f.scenario, entities: f.scenario.entities.filter(entity => entity.kind !== 'effector') }
+    const unknown = runExportObject(withoutEffector, f.run, f.assessments, legacy, f.summary)
+    const measures = unknown.resultGroups.attrition.measures
+    expect(measures.releaseTimingReconstructableEvents).toBe(0)
+    expect(measures.releaseTimingUnavailableEvents).toBe(legacy.events.length)
+    expect(measures.releaseTiming).toContain('launch timing is unavailable')
+    expect(JSON.parse(JSON.stringify(known)).attrition.events).toEqual(legacy.events)
+    expect(JSON.parse(JSON.stringify(unknown)).attrition.events).toEqual(legacy.events)
+    expect(legacy.events.every(event => !('tReleaseS' in event))).toBe(true)
+  })
+})

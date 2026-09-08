@@ -131,7 +131,7 @@ describe('DetailPane', () => {
     expectSections(html, [
       ['pk', 'Pk per track'],
       ['magazine', 'Magazine'],
-      ['release', 'Release and effect'],
+      ['release', 'Assignment, release and effect'],
       ['doctrine', 'Doctrine by threat'],
       ['capacity', 'Capacity'],
     ])
@@ -281,6 +281,27 @@ describe('DetailPane', () => {
       }
     },
   )
+
+  it('reveals the preparation and flight legend only when each interval is reached', () => {
+    const store = useStore.getState()
+    const effector = entityOf('effector')
+    const event = engagementPicture(store.scenario).report.events[0]
+    expect(event.tReleaseS).toBeGreaterThan(event.tS)
+    expect(event.tEffectS).toBeGreaterThan(event.tReleaseS!)
+    store.setBoardPhase('execute')
+    store.startRun()
+    store.advanceRun(event.tS + 1)
+    store.pauseRun()
+    store.scrubTo(event.tEffectS + 1)
+    const preparing = section(render(effector.id), 'release')
+    expect(preparing).toContain('preparation')
+    expect(preparing).not.toContain('· flight')
+    store.scrubTo(event.tS + 1)
+    store.startRun()
+    store.advanceRun(event.tReleaseS! + 1)
+    store.pauseRun()
+    expect(section(render(effector.id), 'release')).toContain('· flight')
+  })
 
   it('counts capacity by reached effect and sensor load/hold at observation time', () => {
     const store = useStore.getState()

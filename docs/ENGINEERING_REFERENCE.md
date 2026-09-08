@@ -260,7 +260,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
 - **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
-  release. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows
+  assignment. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows
   `doctrine.launchPolicy`. `tEffect = t + engageTimeS + timeOfFlightS(spec, interceptSlant)`
   from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at
   `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, `intercept.ts`) because a
@@ -278,7 +278,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
   commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy
-  instant-release path; keep it for regression and pin legacy fixtures with
+  ungated assignment path; keep it for regression and pin legacy fixtures with
   `doctrine.enabled = false`. Route latency is charged from the ROE gate, not from T0.
 - **Fire-control uplink gate** (`sim.ts`, `attrition.ts`, `src/model/integration.ts`):
   when every path of a route is fully typed and the effector's integration profile has
@@ -449,7 +449,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   WidgetFrame hides meta when given a scoped horizon unless `metaWithinHorizon` is true.
   Execute mounts DebriefRecord only when the horizon reaches duration; Analyze retains
   full-run evidence while scrubbing. Cursor widgets sample within the execution horizon;
-  event counts include reached releases, while effect times, Pk and kill deltas wait for
+  event counts include reached assignments, while effect times, Pk and kill deltas wait for
   the effect. EngagementStrip clips windows and censors lane marks, tooltips and labels.
   Environment, doctrine, thresholds and the mode chip route Board scenario edits to Prepare.
 - **Selection detail** (`src/panels/EntityWorkspace.tsx`): the Board shell routes one
@@ -526,12 +526,28 @@ Each fact below has exactly one definition. Read it there; never add a second co
   failure probability small and stated. Common random numbers are a promise of the draw
   keys; paired comparisons depend on them.
 - **Engagement vocabulary.** A salvo record is an *event* (`report.events`), never a
-  ledger. `tS` is the release (launch) time; `tEffectS` is the effect time, release plus
-  `engageTimeS` plus flyout; `readyS` is the first possible release under the doctrine
-  gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
+  ledger. `tS` is assignment time: magazine, cooldown and salvo counts land here.
+  Newly produced events add `tReleaseS = tS + engageTimeS` using the resolved delay;
+  `tEffectS` is the unchanged effect time. `readyS` is the first possible assignment
+  under the doctrine gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
   (interceptor cannot reach the credited point) is declined and leaves no event. `expectedKills` is
   pre-arrival mass; `expectedLateKills` is a sub-measure of the leaker mass. Arrival and
   closest approach are different quantities. `reportedLeakers` is the display value.
+- **Physical launch display.** `engagementTiming.ts` resolves explicit release metadata,
+  or a legacy event's delay from the captured effector spec. Missing entity/spec or invalid
+  timing stays unavailable; a present spec's omitted delay uses the engine zero default.
+  `trackState.ts` precomputes nullable release times and fixed effect endpoints. A launcher
+  reads PREP before release or LAUNCH ? when release is unavailable. Kinetic rounds move
+  only over a positive release-to-effect interval; zero-flight kinetic events draw no
+  traveling round. Beam/EW channels draw at release without kinetic interpolation; a
+  zero-duration channel gets the existing 0.6 s display pulse. Committed rounds remain
+  through effect, independent of the target's expected-defeat state. Assignment counters,
+  effect calculations and outcomes are unchanged.
+  `series.ts` counts only physical kinetic flight, with NaN during an unresolved legacy
+  interval; effector marks are ASG, REL and FX, combined at coincident timestamps. Preparation/channel spans have a legend
+  censored to the horizon. `runResultGroups.ts` describes `tS`, `tReleaseS`, `tEffectS`
+  and `shipIdx` separately and counts recorded, reconstructable and unavailable release
+  timing. Exports preserve legacy event omissions and the captured scenario.
 - **Words.** UI copy follows the code style in AGENTS.md: short active sentences in the
   domain's terms, no em-dashes. Use one word for one thing ("phase center", "event").
   Measure labels in T&E Ops suppress pass or fail unless `thresholdApproved`.

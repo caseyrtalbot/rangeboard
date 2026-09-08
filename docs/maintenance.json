@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "5bfd93f3c771bbf4b8255021307f012b2fcc2349cd5863eb71fd3030f14468ad",
-      "reviewedAt": "2026-09-07",
-      "note": "Indexed the R2 execution scope and layers evidence record under Captured checks."
+      "sha256": "fe430d44b2322bb8e29848b987244aef79abbc7c059087f6a26ee43818a5d684",
+      "reviewedAt": "2026-09-08",
+      "note": "Indexed dated R3 physical launch timing evidence."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "00335d7b6e2f09b51b1884afcb024326303ab972d9b38a00943f7803c595cdd6",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed finished R2 horizon censoring, forecast placeholders, Planned path details, frame scrubs and phase-local layers."
+      "sha256": "1a5916a233300714888a1d1426152c0e8e23baa0e70f512766a2ce6f4f82c72a",
+      "reviewedAt": "2026-09-08",
+      "note": "Reviewed finished R3 timing consumers, tests and coincident event labels; documented release, preparation and legacy behavior remains accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "da3bfa233584e16d6ca6a66e3e08257b008fc2d4dfd992d27a5fd2c15410a1b4",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed finished R2 horizon consumers, effective layers, clamped sweep reuse and chart accessibility scope text."
+      "sha256": "a4f0480ceffa627185c30ad4ab976bc19b5af4d1f1a43ebe6a317c88e2835672",
+      "reviewedAt": "2026-09-08",
+      "note": "Reviewed finished R3 release semantics and tests; documented coincident ASG/REL/FX label combination without changing event accounting."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "53a0712aeb82f86474c6fc45dd7d6214e6c94f39ba31e47aa87b15d7c7e81dd3",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed vite.config.ts change: only the scaffold URL comment was removed; the config and verification commands are unchanged."
+      "sha256": "92c549a9fe0816425667e06fd2c22cd710007f52fc10fe1738fa6d138cafb33e",
+      "reviewedAt": "2026-09-08",
+      "note": "Reviewed runResultGroups and runExport tests: additive release metadata preserves scenario load shape; existing schema, parity and isolated browser verification guidance remains accurate."
     },
     {
       "document": "docs/WORKFLOW.md",

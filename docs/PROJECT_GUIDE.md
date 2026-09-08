@@ -41,6 +41,13 @@ The compact canvas readout links to full Telemetry, which retains the complete t
 fields and distinguishes cursor, constant and full-path quantities. In Execute, arrival
 and CPA appear under Planned path as Planned arrival and Planned CPA.
 
+Engagement playback separates assignment, preparation, physical release and effect.
+Launchers show PREP during the resolved engagement delay; kinetic rounds move only from
+release to effect. Beam and EW channels draw without a traveling round. The effector
+telemetry pane distinguishes assignment, release and effect marks and preparation/channel
+spans. Exported events retain assignment accounting in `tS` and add `tReleaseS`; legacy
+launch timing stays unavailable when the captured effector delay cannot resolve it.
+
 Forecast counts read as expected values: Expected kills with two decimals below ten,
 Expected neutralization when no defended asset exists, and an expected-defeat pill for a
 track below the residual cutoff. No surface labels a forecast as a realized kill.

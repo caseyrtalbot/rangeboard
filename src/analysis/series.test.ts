@@ -219,11 +219,11 @@ function coastScenario(points: Vec2[]): { scenario: Scenario; sensorId: string; 
   return { scenario, sensorId: sensor.id, uasId: uas.id }
 }
 
-/** The kill scenario with a 4 s interceptor flight, so a salvo has width. */
+/** The kill scenario with 4 s preparation followed by physical interceptor flight. */
 function flightScenario(): ReturnType<typeof killScenario> {
   const out = killScenario()
   out.scenario.library = out.scenario.library.map((m) =>
-    m.id === 'tst-int' ? { ...m, effector: { ...m.effector!, engageTimeS: 4 } } : m,
+    m.id === 'tst-int' ? { ...m, effector: { ...m.effector!, engageTimeS: 4, flyoutSpeedMps: 200 } } : m,
   )
   return out
 }
@@ -570,15 +570,22 @@ describe('heldTracksSeries and meanHeldPdSeries', () => {
 
 describe('salvosInFlightSeries', () => {
   it('is 1 from release to effect and 0 after', () => {
-    const { scenario } = flightScenario()
+    const { scenario, effId } = flightScenario()
     const { report } = engagementPicture(scenario)
     expect(report.events).toHaveLength(1)
     const ev = report.events[0]
-    expect(ev.tEffectS).toBe(ev.tS + 4)
+    expect(ev.tReleaseS).toBe(ev.tS + 4)
+    expect(ev.tEffectS).toBeGreaterThan(ev.tReleaseS!)
     const s = salvosInFlightSeries(scenario)
     expect(s.id).toBe('salvosInFlight')
-    const rel = Math.round(ev.tS / DT)
-    const fx = Math.round(ev.tEffectS / DT)
+    const assigned = Math.ceil(ev.tS / DT)
+    const rel = Math.ceil(ev.tReleaseS! / DT)
+    const fx = Math.ceil(ev.tEffectS / DT)
+    expect(s.values.slice(assigned, rel).every(v => v === 0)).toBe(true)
+    // Existing magazine and salvo accounting still lands at assignment.
+    const effector = effectorSeries(scenario, effId)
+    expect(effector.find(series => series.id === 'rounds')!.values[assigned]).toBe(9)
+    expect(effector.find(series => series.id === 'salvos')!.values[assigned]).toBe(1)
     expect(s.values[rel - 1]).toBe(0)
     expect(s.values[rel]).toBe(1)
     expect(s.values[fx - 1]).toBe(1)
@@ -600,26 +607,93 @@ describe('groupResidualSeries', () => {
 })
 
 describe('salvoMarks and releaseLadderRows', () => {
-  it('marks REL at tS and FX at tEffectS in time order', () => {
+  it('marks assignment, physical release and effect in time order', () => {
     const { scenario, effId } = flightScenario()
     const ev = engagementPicture(scenario).report.events[0]
     expect(salvoMarks(scenario, effId)).toEqual([
-      { tS: ev.tS, label: 'REL', color: 'accent' },
+      { tS: ev.tS, label: 'ASG', color: 'warn' },
+      { tS: ev.tReleaseS!, label: 'REL', color: 'accent' },
       { tS: ev.tEffectS, label: 'FX', color: 'danger' },
     ])
   })
 
-  it('draws one salvo span per event on the track row in its hue slot', () => {
+  it('separates preparation from physical flight on the track row', () => {
     const { scenario, effId, uasId } = flightScenario()
     const ev = engagementPicture(scenario).report.events[0]
     expect(releaseLadderRows(scenario, effId)).toEqual([
       {
         id: uasId,
         label: uasId,
-        spans: [{ startS: ev.tS, endS: ev.tEffectS, color: 'chart-1', label: 'salvo' }],
+        spans: [
+          { startS: ev.tS, endS: ev.tReleaseS!, color: 'warn', label: 'preparation' },
+          { startS: ev.tReleaseS!, endS: ev.tEffectS, color: 'chart-1', label: 'flight' },
+        ],
       },
     ])
     expect(releaseLadderRows(scenario, 'no-such-effector')).toEqual([])
+  })
+
+  it.each(['de', 'jammer'] as const)('labels %s channels without counting them as kinetic flight', (effectorType) => {
+    const { scenario, effId } = flightScenario()
+    scenario.library = scenario.library.map(model => model.id === 'tst-int'
+      ? { ...model, effector: { ...model.effector!, effectorType } } : model)
+    const event = engagementPicture(scenario).report.events[0]
+    expect(event).toBeDefined()
+    expect(event.tReleaseS).toBe(event.tEffectS)
+    expect(salvosInFlightSeries(scenario).values.every(value => value === 0)).toBe(true)
+    const spans = releaseLadderRows(scenario, effId)[0].spans
+    expect(spans[0].label).toBe('preparation')
+    expect(salvoMarks(scenario, effId)).toEqual([
+      { tS: event.tS, label: 'ASG', color: 'warn' },
+      { tS: event.tEffectS, label: 'REL/FX', color: event.channel === 'jam' ? 'ew' : 'danger' },
+    ])
+    expect(spans[1]).toMatchObject({
+      startS: event.tReleaseS, endS: event.tEffectS, label: effectorType === 'de' ? 'beam' : 'EW dwell',
+    })
+  })
+
+  it('does not fabricate flight for an instantaneous kinetic effect', () => {
+    const { scenario, effId } = killScenario()
+    const event = engagementPicture(scenario).report.events[0]
+    expect(event.tReleaseS).toBe(event.tEffectS)
+    expect(salvosInFlightSeries(scenario).values.every(value => value === 0)).toBe(true)
+    expect(salvoMarks(scenario, effId)).toEqual([
+      { tS: event.tEffectS, label: 'ASG/REL/FX', color: 'danger' },
+    ])
+    expect(releaseLadderRows(scenario, effId)[0].spans).toEqual([
+      { startS: event.tEffectS, endS: event.tEffectS, color: 'chart-1', label: 'effect' },
+    ])
+  })
+
+  it('deduplicates simultaneous marks without changing assignment counts or distinct times', () => {
+    const { scenario, effId } = flightScenario()
+    const report = engagementPicture(scenario).report
+    const event = report.events[0]
+    report.events.push({ ...event })
+    expect(salvoMarks(scenario, effId)).toEqual([
+      { tS: event.tS, label: 'ASG', color: 'warn' },
+      { tS: event.tReleaseS!, label: 'REL', color: 'accent' },
+      { tS: event.tEffectS, label: 'FX', color: 'danger' },
+    ])
+    const assigned = Math.ceil(event.tS / DT)
+    expect(effectorSeries(scenario, effId).find(series => series.id === 'salvos')!.values[assigned]).toBe(2)
+  })
+
+  it('reconstructs legacy release only with captured delay and discloses unavailable timing', () => {
+    const { scenario, effId } = flightScenario()
+    const event = engagementPicture(scenario).report.events[0]
+    const physicalReleaseS = event.tReleaseS!
+    delete event.tReleaseS
+    expect(salvoMarks(scenario, effId).find(mark => mark.label === 'REL')?.tS).toBe(physicalReleaseS)
+    // Keep this cached legacy ledger while removing its captured effector spec.
+    scenario.library = scenario.library.filter(model => model.id !== 'tst-int')
+    expect(salvoMarks(scenario, effId).map(mark => mark.label)).toEqual(['ASG', 'FX'])
+    const unavailable = salvosInFlightSeries(scenario)
+    expect(unavailable.values[Math.ceil(event.tS / DT)]).toBeNaN()
+    expect(unavailable.values[Math.ceil(event.tEffectS / DT)]).toBe(0)
+    expect(releaseLadderRows(scenario, effId)[0].spans).toEqual([
+      { startS: event.tS, endS: event.tEffectS, color: 'warn', label: 'launch timing unavailable' },
+    ])
   })
 })
 
