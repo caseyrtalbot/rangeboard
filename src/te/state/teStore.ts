@@ -18,6 +18,7 @@ import type {
   TeCampaign,
   TeCard,
   TeChecklist,
+  TeFinding,
   TeRun,
   TeRunValidity,
   TeState,
@@ -27,7 +28,6 @@ import type { ChecklistAnswer, ChecklistCompletion } from '../model/checklist'
 import { answerChecklistItem, checklistCompletionBlockers } from '../model/checklist'
 import { bumpMajor, bumpMinor, nextId } from '../model/ids'
 import type { MatrixPlan } from '../model/matrixPlan'
-import { plannedCell } from '../model/matrixPlan'
 import {
   emptyAnomaly,
   emptyCampaign,
@@ -55,9 +55,7 @@ import {
 } from '../validate'
 import { MAX_IMAGE_CODE_UNITS, validateImage, validateShape } from '../../io/runtimeValidation'
 import { validateCampaignShape } from '../io/validateTe'
-import { deliverPackage } from '../calc/package'
-import { findingLinkUpdate } from '../calc/findingEvidence'
-import type { FindingLinks } from '../calc/findingEvidence'
+import type { DeliveryProposal } from '../calc/package'
 
 /** Campaign fields that are arrays of records keyed by `id`. */
 type TeListKey = {
@@ -222,11 +220,20 @@ interface TeStore {
   ) => string
   addDebrief: (kind: DebriefKind, runId?: string | null) => string
 
-  // Delivery
-  /** One update: the links plus the empty-field fills they derive (calc/findingEvidence). */
-  setFindingLinks: (findingId: string, links: FindingLinks) => void
-  /** Resolves section text, freezes it and validates in one step (calc/package). */
-  markPackageDelivered: () => void
+  // Delivery. The panel prepares with the pure calc modules; the store applies and guards.
+  /**
+   * Applies one prepared finding-link update in one `patchItem`. The panel builds it
+   * with `findingLinkUpdate` (calc/findingEvidence): the links plus the fills they derive.
+   */
+  setFindingLinks: (findingId: string, update: Partial<TeFinding>) => void
+  /**
+   * Applies a prepared delivery in one update. The panel builds the proposal with
+   * `deliverPackage(campaign, at)` (calc/package), which resolves every section, freezes
+   * the text and runs the blockers on it. The store refuses a proposal that carries
+   * blockers, names another campaign, is not stamped delivered, or reaches an already
+   * delivered campaign.
+   */
+  markPackageDelivered: (proposal: DeliveryProposal) => void
 }
 
 function requireCampaign(s: { campaigns: TeCampaign[]; activeCampaignId: string | null }) {
@@ -540,22 +547,25 @@ export const useTeStore = create<TeStore>()((set, get) => {
           get().patchItem('configs', cfgA, { name: '[radar A]' })
           const cfgB = get().addConfig()
           get().patchItem('configs', cfgB, { name: '[radar B]' })
-          // Baseline row first, then the delta row, in one matrix update.
-          const baseline = plannedCell({
+          // Baseline row first, then the delta row, in one matrix update. The cell
+          // defaults come from `emptyMatrixCell`; `addMatrixCells` replaces the id.
+          const baseline = {
+            ...emptyMatrixCell(''),
             questionId: q,
             configId: cfgA,
             method: 'baseline comparison',
             measureIds: [...ms.values()],
-          })
+          }
           get().addMatrixCells({
             cells: [
               baseline,
-              plannedCell({
+              {
+                ...emptyMatrixCell(''),
                 questionId: q,
                 configId: cfgB,
                 method: 'comparison',
                 measureIds: [...ms.values()],
-              }),
+              },
             ],
             baseline,
             warnings: [],
@@ -810,8 +820,9 @@ export const useTeStore = create<TeStore>()((set, get) => {
         const allocation = allocateIds(c, 'MTX', plan.cells.length)
         if (!allocation) return c
         const { ids, seq } = allocation
+        // The plan arrives fully shaped (model/matrixPlan); the store only adds identity.
         const cells: TeCampaign['matrix'] = plan.cells.map((cell, i) =>
-          ({ ...structuredClone(plannedCell(cell)), id: ids[i] }))
+          ({ ...structuredClone(cell), id: ids[i] }))
         added = ids
         return { ...c, seq, matrix: [...c.matrix, ...cells] }
       })
@@ -1181,17 +1192,20 @@ export const useTeStore = create<TeStore>()((set, get) => {
         }),
       ),
 
-    setFindingLinks: (findingId, links) => {
-      const c = requireCampaign(get())
-      const f = c?.findings.find((x) => x.id === findingId)
-      if (!c || !f) return
-      get().patchItem('findings', findingId, findingLinkUpdate(c, f, links))
+    setFindingLinks: (findingId, update) => {
+      // One patchItem, so the links and their fills land in a single store update.
+      get().patchItem('findings', findingId, update)
     },
 
-    markPackageDelivered: () =>
+    markPackageDelivered: (proposal) =>
       mutate((c) => {
-        const proposal = deliverPackage(c, nowIso())
-        return proposal.campaign ? advance(proposal.campaign, 'decision-ready') : c
+        const next = proposal.campaign
+        // The store stays the guard: a proposal with blockers, for another campaign,
+        // or without the delivery stamp never lands. mutate's freeze guard refuses a
+        // campaign that is already delivered.
+        if (proposal.blockers.length > 0 || !next || next.id !== c.id ||
+            !next.evidencePackage.deliveredAt) return c
+        return advance(next, 'decision-ready')
       }),
   }
 })

@@ -44,15 +44,17 @@ import {
   suggestedQuestionDisposition,
   suggestedStrength,
 } from './DeliverBlocks'
-import { findingComputations, resolveFindingEvidence } from '../calc/findingEvidence'
+import { findingComputations, findingLinkUpdate, resolveFindingEvidence } from '../calc/findingEvidence'
 import type { FindingLinks } from '../calc/findingEvidence'
 import {
   SECTION_GUIDANCE,
   completeSectionCount,
+  deliverPackage,
   previewPackage,
   resolvedPackage,
   sectionTemplate,
 } from '../calc/package'
+import { nowIso } from '../model/empty'
 
 type GroupState = 'done' | 'partial' | 'empty'
 
@@ -77,8 +79,12 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
   const { patchItem, removeItem, selectRecord, bumpRecordVersion, addItem, setFindingLinks } = useTeStore.getState()
   const [dissentOpen, setDissentOpen] = useState(false)
   const set = (patch: Partial<TeFinding>) => patchItem('findings', f.id, patch)
-  /** One store update: links, unambiguous chained records, and empty-field fills. */
-  const linkPatch = (links: FindingLinks) => setFindingLinks(f.id, links)
+  /**
+   * The panel prepares the update with `findingLinkUpdate` and the store applies it:
+   * one store update carrying the links, the chained records and the empty-field fills.
+   */
+  const linkPatch = (links: FindingLinks) =>
+    setFindingLinks(f.id, findingLinkUpdate(campaign, f, links))
 
   const blockers = findingBlockers(campaign, f)
   const refuted = refutedClaimMatches(f.statement)
@@ -697,6 +703,8 @@ const CLAIM_DISPOSITIONS = [
 ]
 
 function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: GroupState }) {
+  // Delivery: the panel resolves, freezes and checks the section text with
+  // `deliverPackage`; the store applies that proposal in one update.
   const { patchItem, patchCampaign, markPackageDelivered } = useTeStore.getState()
   const blockers = deliveryBlockers(campaign)
   const claims = campaign.registers.filter((r) => r.kind === 'claim')
@@ -779,7 +787,7 @@ function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: Group
         ]}
         passLabel="Mark package delivered"
         disabled={pkg.deliveredAt !== null}
-        onPass={() => markPackageDelivered()}
+        onPass={() => markPackageDelivered(deliverPackage(campaign, nowIso()))}
       />
       <div className="inspector-actions">
         <button

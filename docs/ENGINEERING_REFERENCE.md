@@ -870,10 +870,12 @@ Design system (`src/index.css`):
   holds the build rules, the sample-size rules (`planSampleSize`, `sampleSizeCellPatch`,
   `requiredRepetitions`) and the drop-order ranking (`dropOrderRanking`); appended cells
   keep the unranked default. `planCells(campaign, factors, options)` returns the cells, the
-  baseline row and warnings; it carries no ids and drops links the campaign does not
-  hold, so adoption cannot fail reference validation. `DesignBuilders.tsx` previews that
-  plan and `addMatrixCells` adopts the whole batch in one store update, so a 1000-cell
-  build validates once and lands all or nothing. Only the store allocates `MTX` ids.
+  baseline row and warnings; the cells arrive in their final shape and drop links the
+  campaign does not hold, so adoption cannot fail reference validation. `DesignBuilders.tsx`
+  prepares that plan and the store applies it: `addMatrixCells` allocates the `MTX` ids,
+  assigns them and adopts the whole batch in one store update, so a 1000-cell build
+  validates once and lands all or nothing. Only the store allocates ids. `teStore.ts` holds
+  no value import from `matrixPlan.ts`; see the initial-bundle rule below.
 - Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
   traceability no finalized finding. Qualification, acknowledged design review, issue and
   delivery enforce blockers in the store. Delivery finalizes findings; prefilled approver
@@ -899,17 +901,28 @@ Design system (`src/index.css`):
   over the card plan. `evidenceDerivation` renders the eight evidence fields with units,
   denominators and intervals; `evidenceFills` proposes text only for empty fields.
   `findingLinkUpdate` builds one patch from a link change: the links, unambiguous chained
-  records, run-derived defaults and fills. The store action `setFindingLinks` applies that
-  patch as one update. Strength and dispositions are suggestions the user accepts in the
-  UI; derivation never writes a judgment.
+  records, run-derived defaults and fills. The panel prepares and the store applies:
+  `DeliverPanel.tsx` calls `findingLinkUpdate` and hands the patch to the store action
+  `setFindingLinks`, which writes it through `patchItem` as one update. Strength and
+  dispositions are suggestions the user accepts in the UI; derivation never writes a
+  judgment.
 - **Evidence package** (`src/te/calc/package.ts`): `generatedSection` and the manual
   section templates live here, not in the UI. `resolveSection` is the one precedence
   rule: delivered text, else edited text, else generated text, else stored text.
   `previewPackage` feeds the Deliver panel and `PackagePrint`; `resolvedPackage` is the
   "Save generated text" write. `deliverPackage(campaign, at)` resolves every section,
   runs `deliveryBlockers` on the resolved text and returns one frozen campaign update or
-  the blockers; `markPackageDelivered` applies that update in one `mutate`, so delivery
-  no longer depends on what the panel saved first.
+  the blockers. The panel prepares and the store applies: `DeliverPanel.tsx` calls
+  `deliverPackage` and hands the proposal to `markPackageDelivered`, which applies it in
+  one `mutate`, so delivery no longer depends on what the panel saved first. The store
+  stays the guard: it refuses a proposal that carries blockers, names another campaign or
+  is not stamped delivered, and the `mutate` freeze guard refuses an already delivered
+  campaign.
+- **Initial bundle:** `teStore.ts` is in the initial modulepreload graph, because
+  `App.tsx`, `main.tsx` and `Toolbar.tsx` import `useTeStore`. It therefore carries no
+  value import from `calc/package.ts`, `calc/findingEvidence.ts` or `model/matrixPlan.ts`;
+  those modules load with the lazy Ops panels that prepare the update. Type-only imports
+  are fine. `teStore.graph.test.ts` pins the rule and `npm run check:bundle` prices it.
 - Seeds in `src/te/seed/` (measure dictionary, templates, vignettes, `buildJiatf401()` demo
   campaign marked `illustrative`). The measure dictionary, the card templates and the threat
   vignettes load with `applyPreset` (async), not at startup. Print artifacts in `src/te/print/` render into
