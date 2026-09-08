@@ -8,9 +8,9 @@ import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioSlices } from './scenarioInstall'
 import { EMPTY_SELECTION, HISTORY_LIMIT, installScenario } from './scenarioInstall'
 
-vi.mock('../playback/mcClient', () => ({ cancelMcRun: vi.fn(), cancelSensitivity: vi.fn() }))
+vi.mock('../playback/mcClient', () => ({ cancelMcRun: vi.fn(), cancelSensitivity: vi.fn(), cancelSweep: vi.fn() }))
 vi.mock('../playback/trialClient', () => ({ cancelTrial: vi.fn() }))
-import { cancelMcRun, cancelSensitivity } from '../playback/mcClient'
+import { cancelMcRun, cancelSensitivity, cancelSweep } from '../playback/mcClient'
 import { cancelTrial } from '../playback/trialClient'
 
 const sensor = (id: string, x = 0): Entity => ({
@@ -47,6 +47,7 @@ function slices(scenario: Scenario, patch: Partial<ScenarioSlices> = {}): Scenar
     mc: {
       ...IDLE_MC, runId: playback.runId, status: 'done', basisSignature: signature,
       sensitivity: { ...IDLE_MC.sensitivity, runId: playback.runId, status: 'done', basisSignature: signature },
+      sweep: { ...IDLE_MC.sweep, runId: playback.runId, status: 'done', basisSignature: signature },
     },
     trial: { ...IDLE_TRIAL, status: 'ready', manifest: createTrialManifest(scenario, playback.runId, signature) },
     ...patch,
@@ -83,11 +84,13 @@ describe('installScenario operation matrix', () => {
     expect(cancelTrial).toHaveBeenCalledTimes(1)
     expect(cancelMcRun).toHaveBeenCalledTimes(1)
     expect(cancelSensitivity).toHaveBeenCalledTimes(1)
+    expect(cancelSweep).toHaveBeenCalledTimes(1)
     if (op === 'replace') {
       expect(out.mc).toBe(IDLE_MC)
     } else {
       expect(out.mc.status).toBe('stale')
       expect(out.mc.sensitivity.status).toBe('stale')
+      expect(out.mc.sweep.status).toBe('stale')
       expect(out.mc.summary).toBe(before.mc.summary)
     }
   })

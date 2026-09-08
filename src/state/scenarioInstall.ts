@@ -99,6 +99,7 @@ export function installScenario(st: ScenarioSlices, install: ScenarioInstall): S
     case 'replace': {
       cancelAnalysis('mc')
       cancelAnalysis('sensitivity')
+      cancelAnalysis('sweep')
       cancelAnalysis('trial')
       return {
         scenario: install.next,
@@ -185,17 +186,20 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
  */
 function mcForScenarioChange(mc: McState, next: Scenario): McState {
   const live = (status: McState['status']): boolean => status === 'running' || status === 'done'
-  if (!live(mc.status) && !live(mc.sensitivity.status)) return mc
+  if (!live(mc.status) && !live(mc.sensitivity.status) && !live(mc.sweep.status)) return mc
   const signature = analysisBasisSignature(next)
   const mcStale = live(mc.status) && mc.basisSignature !== signature
   const sensStale = live(mc.sensitivity.status) && mc.sensitivity.basisSignature !== signature
-  if (!mcStale && !sensStale) return mc
+  const sweepStale = live(mc.sweep.status) && mc.sweep.basisSignature !== signature
+  if (!mcStale && !sensStale && !sweepStale) return mc
   if (mcStale) cancelAnalysis('mc')
   if (sensStale) cancelAnalysis('sensitivity')
+  if (sweepStale) cancelAnalysis('sweep')
   return {
     ...mc,
     status: mcStale ? 'stale' : mc.status,
     sensitivity: sensStale ? { ...mc.sensitivity, status: 'stale' } : mc.sensitivity,
+    sweep: sweepStale ? { ...mc.sweep, status: 'stale' } : mc.sweep,
   }
 }
 
