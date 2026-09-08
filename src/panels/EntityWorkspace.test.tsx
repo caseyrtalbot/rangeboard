@@ -83,7 +83,7 @@ describe('EntityWorkspace', () => {
     store.select({ entityIds: [useStore.getState().scenario.entities[0].id] })
     const state = useStore.getState()
     const html = render(state.scenario.entities[0].id, 'telemetry')
-    expect(html).toContain('RUN-0001')
+    expect(html).toContain('No trial yet. Press Play in Execute to run one.')
     expect(html).toContain('aria-label="Back to overview"')
     expect(html).not.toContain('aria-label="Back to the lens stack"')
     expect(useStore.getState().selection).toBe(state.selection)
