@@ -27,7 +27,6 @@ import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } f
 import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
-import { analysisBasisSignature } from './analysisBasis'
 import type { PlaybackCommand } from './playbackCommands'
 import { resolvePlayback } from './playbackCommands'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
