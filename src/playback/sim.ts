@@ -1,5 +1,5 @@
 import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
+import { effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
@@ -14,25 +14,19 @@ import {
   instrumentedM,
   jammable,
   radarPdCurve,
-  radarPdModeled,
   sensorHoldGate,
 } from '../analysis/sensorEnv'
-import { mOfN } from '../analysis/radarPd'
 import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
-import {
-  CONFIRMED_DECLARE_FACTOR,
-  scanPeriodS,
-  targetSFor,
-  trackDropMissesFor,
-  trackInitMFor,
-  trackInitNFor,
-  trackInitSFor,
-} from '../analysis/doctrineFactors'
+import { CONFIRMED_DECLARE_FACTOR, targetSFor } from '../analysis/doctrineFactors'
 import { DT } from './clock'
 import { memberPositions, threatAltitudeFt } from './tracks'
-import type { DetectionHit, ScanSteering, SensorObservationSink } from './detection'
-import { pdTrackCumulativeOf, prepareSweep, resolvedThresholds } from './detection'
+import type { SensorObservationSink } from './detection'
+import { resolvedThresholds } from './detection'
+import type { SensorObservation } from './sweep'
+import { extendIntervals, finishSweep, prepareSweepRun, stepSweep } from './sweep'
 import { connectedEffectorIds, killChainConnected, killChainRoutes } from './killChain'
+
+export type { SensorObservation } from './sweep'
 
 type ThreatStatus =
   | 'no-path'
@@ -58,44 +52,6 @@ interface ClassificationTimes {
   unknownAtS: number | null
   suspectedAtS: number | null
   hostileAtS: number | null
-}
-
-/** One sensor's complete hold history against one threat. */
-export interface SensorObservation {
-  sensorId: string
-  sensorType: SensorType
-  firstDetectS: number
-  lastDetectS: number
-  firstClassifyS: number | null
-  heldSamples: number
-  resolvedEver: boolean
-  /** Closest slant range from the phase center over every held sample, meters. */
-  minSlantM: number
-  /** Inclusive 0.5 s hold intervals, split whenever the sensor loses the track. Coast included. */
-  intervals: Array<[number, number]>
-  /**
-   * First time this sensor initiated a track: the M-of-N scan rule for a
-   * scan radar, else continuous hold for the TRACK_INIT_S role time. Null
-   * for RF and acoustic sensors, which initiate no fire-control track.
-   * Written once, never rewritten after a drop.
-   */
-  trackInitAtS: number | null
-  /**
-   * Scan model only: inclusive DT intervals the sensor held by extrapolation
-   * after a missed scan, before the next detection or the drop. Each one is
-   * also inside intervals; the ladder and firstConfirmS never read a coast.
-   */
-  coastIntervals: Array<[number, number]>
-  /**
-   * Pd-modeled radar only: single-scan Pd at each DT step from
-   * pdSeriesStartS (the first scan this radar took against the threat,
-   * detected or not), index 0 = pdSeriesStartS, through the path end.
-   * Missed and pre-admission steps included (Pd 0 with nothing admitted),
-   * so a chart shows the approach and the fade.
-   */
-  pdSeries?: number[]
-  /** Sim time of pdSeries[0]: the first scan taken, at or before firstDetectS. */
-  pdSeriesStartS?: number
 }
 
 /** Track continuity from first detection through closest approach/path end. */
@@ -214,94 +170,6 @@ export interface ThreatAssessment {
   effectorWindows: Array<{ effectorId: string; intervals: Array<[number, number]> }>
 }
 
-/** Tolerance for a nominal scan time landing on the DT grid, seconds. */
-const SCAN_EPS = 1e-6
-
-/** Extend the trailing inclusive DT interval to t, or open a new one after a break. */
-function extendIntervals(intervals: Array<[number, number]>, t: number): void {
-  const last = intervals[intervals.length - 1]
-  if (last && Math.abs(last[1] - (t - DT)) < DT / 2) last[1] = t
-  else intervals.push([t, t])
-}
-
-/**
- * Scan-model state of one scan radar (scanPeriodS non-null) against one
- * threat. Scans fall at originS + k * periodS (originS = sweep start plus the
- * policy's phase times the period), each snapped forward to the first sweep
- * step at or after it; a period below DT counts one scan per step. A scan
- * before the target is first admitted stays out of the M-of-N window.
- * Between scans the hold carries the last scan result: a detected scan holds
- * with a measurement; a missed scan after initiation coasts until the next
- * detection or the drop at the dropMisses-th consecutive miss; a missed scan
- * before initiation ends the hold.
- */
-interface ScanState {
-  sensor: Entity
-  spec: SensorSpec
-  /** True when the radar draws the Pd model; false for a threshold radar with a stated period. */
-  pdModeled: boolean
-  fcRole: boolean
-  periodS: number
-  m: number
-  n: number
-  dropMisses: number
-  originS: number
-  /** Scans taken so far; the next nominal scan is originS + scans * periodS. */
-  scans: number
-  /** True from the first scan with the target admitted: the M-of-N window is open. */
-  windowOpen: boolean
-  /** Last n scan results, oldest first. */
-  window: Array<{ detected: boolean; pd: number }>
-  consecutiveMisses: number
-  /** Classified flag of the last detected scan, carried between scans. */
-  classifiedCarry: boolean
-  hold: 'none' | 'detected' | 'coast' | 'dropped'
-  /**
-   * Pd-modeled only: single-scan Pd per step from the first scan taken;
-   * becomes the observation's pdSeries at first detection.
-   */
-  pdSeries: number[] | null
-  pdSeriesStartS: number | null
-  /** This radar's observation once it first detects; the same object sensorObservations holds. */
-  observation: SensorObservation | undefined
-  /** This radar's hit at the current step, cleared per step. */
-  hit: DetectionHit | undefined
-}
-
-/** True when this scan radar's next nominal scan is due at or before step t. */
-function scanDue(scan: ScanState, t: number): boolean {
-  return scan.originS + scan.scans * scan.periodS <= t + SCAN_EPS
-}
-
-/**
- * Record one scan in the window and test the M-of-N initiation rule: at
- * least m of the last n scans detected and mOfN(mean single-scan Pd over the
- * scans recorded, m, n) reaches pdTrackCumulative. trackInitAtS is written
- * once, on the observation.
- */
-function recordScan(
-  scan: ScanState,
-  observation: SensorObservation | undefined,
-  detected: boolean,
-  pd: number,
-  t: number,
-  pdTrack: number,
-): void {
-  scan.window.push({ detected, pd })
-  if (scan.window.length > scan.n) scan.window.shift()
-  if (!observation || observation.trackInitAtS != null) return
-  // One pass, summed in window order: the same arithmetic as a filter and a reduce.
-  let detections = 0
-  let sum = 0
-  for (const w of scan.window) {
-    if (w.detected) detections += 1
-    sum += w.pd
-  }
-  if (detections < scan.m) return
-  const mean = sum / scan.window.length
-  if (mOfN(mean, scan.m, scan.n) >= pdTrack) observation.trackInitAtS = t
-}
-
 /**
  * One effector's terms against one threat: the reads of the in-range test
  * that do not move with the step. `windowGated` is a non-jammer whose
@@ -363,7 +231,6 @@ export function assessThreat(
   const altM = altitudeFt * FT_TO_M
   const speed = pathSpeed(scenario, path)
   const duration = scenarioDurationS(scenario)
-  const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const assets = scenario.entities.filter((e) => e.kind === 'asset')
   // A jammer that cannot reach this threat's links is not an effector against it.
   const effectors = scenario.entities.filter((e) => {
@@ -375,13 +242,11 @@ export function assessThreat(
     return true
   })
 
-  const detectingSensors = new Set<string>()
-  const techsSeen = new Set<SensorType>()
-  const sensorObservations = new Map<string, SensorObservation>()
-  const pdTrack = pdTrackCumulativeOf(scenario)
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
-  const sweep = prepareSweep(scenario, sensors, uas.formation, uasSpec, altitudeFt, draw, capture)
   const delayS = effectivePathDelayS(scenario, path)
+  // The temporal rules (scan schedule, holds, cue order, coast, M-of-N) live in sweep.ts.
+  const run = prepareSweepRun(scenario, uas, delayS, draw, capture)
+  const detectingSensors = run.detectingSensorIds
   // In range when any formation member is inside the envelope on slant
   // range, under the effector ceiling. A jammer's reach is its effective
   // range against this target, as attrition and the drawn cone use; its
@@ -401,43 +266,6 @@ export function assessThreat(
     })
   }
   const assetTerms = assets.map((asset) => ({ asset, radiusM: defendedRadiusOf(asset) }))
-  // The phase is the run's one draw per (radar, threat), taken before any scan.
-  const scanStates = new Map<string, ScanState>()
-  for (const sensor of sensors) {
-    const spec = modelFor(scenario, sensor)?.sensor
-    if (!spec) continue
-    const pdModeled = radarPdModeled(spec, uasSpec)
-    const periodS = scanPeriodS(spec, pdModeled)
-    if (periodS == null) continue
-    const role = defaultSensorRole(spec)
-    scanStates.set(sensor.id, {
-      sensor,
-      spec,
-      pdModeled,
-      fcRole: role === 'fire-control' || role === 'classification',
-      periodS,
-      m: trackInitMFor(spec),
-      n: trackInitNFor(spec),
-      dropMisses: trackDropMissesFor(spec),
-      originS: delayS + draw.phase(sensor.id) * periodS,
-      scans: 0,
-      windowOpen: false,
-      window: [],
-      consecutiveMisses: 0,
-      classifiedCarry: false,
-      hold: 'none',
-      pdSeries: null,
-      pdSeriesStartS: null,
-      observation: undefined,
-      hit: undefined,
-    })
-  }
-  // Scan radars whose next scan is not due this step; every other sensor scans.
-  const idleScans = new Set<string>()
-  const steering: ScanSteering = {
-    scanStep: (sensorId) => !idleScans.has(sensorId),
-    holding: (sensorId) => scanStates.get(sensorId)?.hold === 'detected',
-  }
   const trackSamples: Array<{ tS: number; held: boolean }> = []
   const effectorInRange = new Map<string, Array<[number, number]>>()
   let classification: ThreatClassification = 'pending'
@@ -445,7 +273,6 @@ export function assessThreat(
   const speedKph = speed * 3.6
   const attackIntent = isAttackIntent(modelFor(scenario, uas)?.threatProfile?.routeIntent)
   const hasFormation = !!uas.formation && uas.formation.count > 1
-  let anyResolved = false
   let closest: { assetId: string | null; tS: number | null; distM: number } = {
     assetId: null,
     tS: null,
@@ -455,159 +282,18 @@ export function assessThreat(
 
   let connectedCache: Set<string> | null = null
   let connectedCacheSize = -1
-  const stepTechs = new Set<SensorType>()
 
   for (let t = delayS; t <= duration; t += DT) {
     const sample = posAtTime(path.points, speed, delayS, t)
     const pos = sample.pos
     const members = memberPositions(uas, pos, sample.headingDeg)
 
-    stepTechs.clear()
-    let fcClassifiedNow = false
-    // A coast is held for continuity only: invisible to stepTechs and the ladder.
-    let coastHeld = false
-    let stepFirstId: string | null = null
-    idleScans.clear()
-    for (const [sensorId, scan] of scanStates) {
-      scan.hit = undefined
-      if (!scanDue(scan, t)) idleScans.add(sensorId)
-    }
-    for (const { spec, hit } of sweep.hits(members, uasId, t, steering)) {
-      // A scan radar's hit is a scan result only at its scan step.
-      const scan = scanStates.get(hit.sensorId)
-      if (scan) {
-        if (!idleScans.has(hit.sensorId)) {
-          scan.hit = hit
-          if (stepFirstId == null) stepFirstId = hit.sensorId
-        }
-        continue
-      }
-      if (stepFirstId == null) stepFirstId = hit.sensorId
-      stepTechs.add(hit.sensorType)
-      detectingSensors.add(hit.sensorId)
-      if (hit.resolved) anyResolved = true
-      let observation = sensorObservations.get(hit.sensorId)
-      if (!observation) {
-        observation = {
-          sensorId: hit.sensorId,
-          sensorType: hit.sensorType,
-          firstDetectS: t,
-          lastDetectS: t,
-          firstClassifyS: hit.classified ? t : null,
-          heldSamples: 0,
-          resolvedEver: false,
-          minSlantM: hit.slantM,
-          intervals: [],
-          trackInitAtS: null,
-          coastIntervals: [],
-        }
-        sensorObservations.set(hit.sensorId, observation)
-      }
-      observation.lastDetectS = t
-      observation.heldSamples += 1
-      observation.resolvedEver = observation.resolvedEver || hit.resolved
-      observation.minSlantM = Math.min(observation.minSlantM, hit.slantM)
-      if (hit.classified && observation.firstClassifyS == null) observation.firstClassifyS = t
-      extendIntervals(observation.intervals, t)
-      const role = defaultSensorRole(spec)
-      if (hit.classified && (role === 'fire-control' || role === 'classification')) {
-        fcClassifiedNow = true
-      }
-    }
-    // Scan pass. Without a Pd model the scan Pd is 1 on a hit and 0 on a
-    // miss, so M-of-N degenerates to a count. Pd telemetry runs every step
-    // from the first scan.
-    for (const [sensorId, scan] of scanStates) {
-      const scanStep = !idleScans.has(sensorId)
-      let observation = scan.observation
-      const hit = scan.hit
-      let probe: number | null = null
-      if (scan.pdModeled && (scan.pdSeries || scanStep)) {
-        probe = sweep.probe(sensorId, members) ?? 0
-        if (!scan.pdSeries) {
-          scan.pdSeries = []
-          scan.pdSeriesStartS = t
-        }
-        scan.pdSeries.push(probe)
-      }
-      if (scanStep) {
-        const pd = scan.pdModeled ? (hit ? hit.pd! : probe!) : hit ? 1 : 0
-        if (hit) {
-          detectingSensors.add(sensorId)
-          if (hit.resolved) anyResolved = true
-          if (!observation) {
-            observation = {
-              sensorId,
-              sensorType: hit.sensorType,
-              firstDetectS: t,
-              lastDetectS: t,
-              firstClassifyS: null,
-              heldSamples: 0,
-              resolvedEver: false,
-              minSlantM: hit.slantM,
-              intervals: [],
-              trackInitAtS: null,
-              coastIntervals: [],
-            }
-            if (scan.pdSeries) {
-              observation.pdSeries = scan.pdSeries
-              observation.pdSeriesStartS = scan.pdSeriesStartS!
-            }
-            sensorObservations.set(sensorId, observation)
-            scan.observation = observation
-          }
-          scan.consecutiveMisses = 0
-          scan.hold = 'detected'
-          scan.classifiedCarry = hit.classified
-          observation.lastDetectS = t
-          observation.resolvedEver = observation.resolvedEver || hit.resolved
-          observation.minSlantM = Math.min(observation.minSlantM, hit.slantM)
-          if (hit.classified && observation.firstClassifyS == null) observation.firstClassifyS = t
-          scan.windowOpen = true
-          recordScan(scan, observation, true, pd, t, pdTrack)
-        } else {
-          const admitted = scan.pdModeled && pd > 0
-          if (scan.hold !== 'none') {
-            scan.consecutiveMisses += 1
-            // Before initiation a miss ends the hold; the window keeps counting.
-            scan.hold =
-              observation?.trackInitAtS == null
-                ? 'none'
-                : scan.consecutiveMisses >= scan.dropMisses
-                  ? 'dropped'
-                  : 'coast'
-          }
-          if (scan.windowOpen || admitted) {
-            scan.windowOpen = true
-            recordScan(scan, observation, false, pd, t, pdTrack)
-          }
-        }
-        // One scan per step: skip every nominal scan the period lands on this step.
-        while (scanDue(scan, t)) scan.scans += 1
-      }
-      if (!observation) continue
-      if (scan.hold === 'detected') {
-        stepTechs.add(observation.sensorType)
-        if (scan.classifiedCarry && scan.fcRole) fcClassifiedNow = true
-        observation.heldSamples += 1
-        extendIntervals(observation.intervals, t)
-      } else if (scan.hold === 'coast') {
-        coastHeld = true
-        observation.heldSamples += 1
-        extendIntervals(observation.intervals, t)
-        extendIntervals(observation.coastIntervals, t)
-      }
-    }
-    if (base.firstDetectS == null && stepFirstId != null) {
-      base.firstDetectS = t
-      base.firstDetectSensorId = stepFirstId
-    }
-    trackSamples.push({ tS: t, held: stepTechs.size > 0 || coastHeld })
-    for (const tech of stepTechs) techsSeen.add(tech)
-    if (base.firstConfirmS == null && stepTechs.size >= 2) base.firstConfirmS = t
+    const step = stepSweep(run, members, t)
+    trackSamples.push({ tS: t, held: step.held })
+    if (base.firstConfirmS == null && step.measuredTechs >= 2) base.firstConfirmS = t
 
     // A track can climb several rungs in one step.
-    if (stepTechs.size > 0 && classification !== 'hostile') {
+    if (step.measuredTechs > 0 && classification !== 'hostile') {
       if (classification === 'pending') {
         classification = 'unknown'
         clsAt.unknownAtS = t
@@ -634,7 +320,7 @@ export function assessThreat(
         classification = 'suspected'
         clsAt.suspectedAtS = t
       }
-      if (classification === 'suspected' && (nearestRatio <= 1 || fcClassifiedNow)) {
+      if (classification === 'suspected' && (nearestRatio <= 1 || step.fcClassified)) {
         classification = 'hostile'
         clsAt.hostileAtS = t
       }
@@ -675,14 +361,17 @@ export function assessThreat(
     if (sample.done) break
   }
 
-  base.techs = [...techsSeen]
-  base.detectingSensorIds = [...detectingSensors]
-  base.sensorObservations = [...sensorObservations.values()]
+  const sweep = finishSweep(run)
+  base.firstDetectS = sweep.firstDetectS
+  base.firstDetectSensorId = sweep.firstDetectSensorId
+  base.techs = sweep.techs
+  base.detectingSensorIds = sweep.detectingSensorIds
+  base.sensorObservations = sweep.sensorObservations
   base.effectorWindows = [...effectorInRange.entries()].map(([effectorId, intervals]) => ({
     effectorId,
     intervals,
   }))
-  base.swarmMerged = hasFormation && base.firstDetectS != null && !anyResolved
+  base.swarmMerged = hasFormation && base.firstDetectS != null && !sweep.anyResolved
   if (closest.assetId != null) {
     base.cpaAssetId = closest.assetId
     base.cpaS = closest.tS
@@ -723,23 +412,12 @@ export function assessThreat(
     }
   }
 
-  // Stable track file per fire-control-quality sensor. A scan radar wrote
-  // trackInitAtS in the sweep; every other one initiates after an unbroken
-  // interval of its initiation time (trackInitSFor).
+  // Stable track file per fire-control-quality sensor: the sweep wrote
+  // trackInitAtS (finishSweep); the earliest one is the stable track time.
   const doctrine = effectiveDoctrine(scenario)
   const firmBySensor = new Map<string, number>()
-  for (const obs of sensorObservations.values()) {
+  for (const obs of sweep.sensorObservations) {
     if (obs.sensorType !== 'radar' && obs.sensorType !== 'eo-ir') continue
-    if (!scanStates.has(obs.sensorId)) {
-      const sensorEnt = sensors.find((s) => s.id === obs.sensorId)
-      const spec = sensorEnt ? modelFor(scenario, sensorEnt)?.sensor : undefined
-      const initS = spec ? trackInitSFor(spec, doctrine) : doctrine.trackFirmS
-      for (const [s0, s1] of obs.intervals) {
-        if (s1 - s0 + DT / 2 < initS) continue
-        obs.trackInitAtS = s0 + initS
-        break
-      }
-    }
     const firmAt = obs.trackInitAtS
     if (firmAt == null) continue
     firmBySensor.set(obs.sensorId, firmAt)

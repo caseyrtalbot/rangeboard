@@ -203,10 +203,10 @@ function sensorHit(
 }
 
 /**
- * Scan-model steering from assessThreat: which scan radars take a scan at
- * this step, and which hold a track from their last scan. Absent (a bare
- * call, detectionsAt, the board view): every step is a scan step and no
- * hold is carried.
+ * Scan-model steering from the sweep run (sweep.ts): which scan radars take
+ * a scan at this step, and which hold a track from their last scan. Absent
+ * (a bare call, detectionsAt, the board view): every step is a scan step and
+ * no hold is carried.
  */
 export interface ScanSteering {
   /** True when this radar takes a scan at this step; true for a sensor with no scan state. */

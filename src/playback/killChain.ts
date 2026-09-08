@@ -48,7 +48,7 @@ const MAX_C2_HOPS = 2
  * Standalone effectors (own radar / operator-aimed) always get a zero-latency
  * route with no via.
  */
-export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map<string, KillChainRoute> {
+export function killChainRoutes(scenario: Scenario, sensorIds: ReadonlySet<string>): Map<string, KillChainRoute> {
   // Disabled entities drop out of the chain entirely.
   const active = scenario.entities.filter(entityActive)
   const byId = new Map(active.map((e) => [e.id, e]))
@@ -193,11 +193,11 @@ export function killChainRoutes(scenario: Scenario, sensorIds: Set<string>): Map
 }
 
 /** Effector ids with a kill-chain route from the given sensors (incl. standalone). */
-export function connectedEffectorIds(scenario: Scenario, sensorIds: Set<string>): Set<string> {
+export function connectedEffectorIds(scenario: Scenario, sensorIds: ReadonlySet<string>): Set<string> {
   return new Set(killChainRoutes(scenario, sensorIds).keys())
 }
 
 /** True when some effector has a kill-chain route (or completes one standalone). */
-export function killChainConnected(scenario: Scenario, sensorIds: Set<string>): boolean {
+export function killChainConnected(scenario: Scenario, sensorIds: ReadonlySet<string>): boolean {
   return connectedEffectorIds(scenario, sensorIds).size > 0
 }
