@@ -115,7 +115,7 @@ describe('spawn-in-ring finding', () => {
     expect(finding.uasIds).toEqual(['u1'])
     expect(finding.gates).toEqual(['detect'])
     expect(finding.message).toBe(
-      'Flight paths start inside a detect ring (detected at T0): U1 held by S1',
+      'First detection not assessed: U1 starts inside detection coverage.',
     )
   })
 
@@ -126,7 +126,7 @@ describe('spawn-in-ring finding', () => {
       (f) => f.id === 'spawn-in-ring',
     )!
     expect(finding.uasIds).toEqual(['u1'])
-    expect(finding.message).toContain('U1 held by S1, S2')
+    expect(finding.message).toBe('First detection not assessed: U1 starts inside detection coverage.')
   })
 
   it('does not fire when the spawn point is outside every ring', () => {
@@ -147,6 +147,9 @@ describe('limiting findings', () => {
     expect(finding.severity).toBe('limiting')
     expect(finding.uasIds).toEqual([])
     expect(finding.gates).toEqual(['detect', 'track'])
+    expect(finding.message).toBe(
+      'No defended asset is placed. Warning time, arrival and leakage are not measurable.',
+    )
   })
 
   it('does not flag a disabled asset as a placed asset', () => {

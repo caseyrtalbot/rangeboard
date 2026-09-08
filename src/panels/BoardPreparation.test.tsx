@@ -43,4 +43,46 @@ describe('BoardPreparation', () => {
     expect(html).toContain('Open Test cards')
     expect(html).toContain('Open Library')
   })
+
+  it('surfaces setup consequences by severity and selects each affected threat', () => {
+    const store = useStore.getState()
+    store.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    store.addEntityFromModel('lib-mavic3', { x: 0, y: -3500 })
+    const threats = useStore.getState().scenario.entities.filter((entity) => entity.kind === 'uas')
+    for (const threat of threats) {
+      store.beginPath(threat.id)
+      store.addDraftPoint({ x: 0, y: -100 })
+      store.finishPath()
+    }
+    store.clearSelection()
+    const before = useStore.getState()
+    const html = render()
+    const disclosure = html.indexOf('<details class="prepare-validity-disclosure">')
+    const detection = `First detection not assessed: ${threats.map((threat) => threat.name).join(', ')} ${threats.length === 1 ? 'starts' : 'start'} inside detection coverage.`
+    const missingAsset = 'No defended asset is placed. Warning time, arrival and leakage are not measurable.'
+
+    expect(html).toContain(detection)
+    expect(html).toContain(missingAsset)
+    expect(html.indexOf(detection)).toBeLessThan(html.indexOf(missingAsset))
+    expect(html.indexOf(missingAsset)).toBeLessThan(disclosure)
+    expect(html.indexOf('Point values from the threshold envelope.')).toBeGreaterThan(disclosure)
+    expect(html.indexOf('These models are not validated:')).toBeGreaterThan(disclosure)
+    for (const threat of threats) {
+      expect(html).toContain(`<button class="mini" type="button">Select ${threat.name}</button>`)
+      expect(html.indexOf(`Select ${threat.name}`)).toBeLessThan(disclosure)
+    }
+    expect(html.match(/>Select /g)).toHaveLength(threats.length)
+    expect(html.match(/First detection not assessed:/g)).toHaveLength(1)
+    expect(useStore.getState().scenario).toBe(before.scenario)
+    expect(useStore.getState().selection).toBe(before.selection)
+    expect(useStore.getState().playback).toBe(before.playback)
+  })
+
+  it('shows pathless threats up front without a spawn selection action', () => {
+    const html = render()
+    expect(html.indexOf('These threats have no flight path')).toBeLessThan(
+      html.indexOf('<details class="prepare-validity-disclosure">'),
+    )
+    expect(html).not.toContain('>Select ')
+  })
 })

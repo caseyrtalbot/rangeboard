@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ComponentProps } from 'react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { AnalysisPanel } from './AnalysisPanel'
 import { emptyScenario } from '../model/seed'
 import type { Entity, EntityKind } from '../model/types'
@@ -135,7 +135,7 @@ describe('AnalysisPanel lenses', () => {
     expect(html).toContain('ID / class')
     expect(html).toContain('Engaged')
     // The two expectation tiles carry a bracketed symbol; the case is the widget's.
-    expect(html).toMatch(/Kill E\[k\]/i)
+    expect(html).toMatch(/Expected (kills|neutralization)/)
     expect(html).toMatch(/Leak E\[n\]/i)
   })
 
@@ -229,5 +229,60 @@ describe('AnalysisPanel selection detail', () => {
     const html = render()
 
     expect(widgetTypes(html)).toEqual(RUN_SUMMARY)
+  })
+})
+
+
+describe('Execute analysis visibility', () => {
+  beforeEach(() => {
+    const st = useStore.getState()
+    st.replaceScenario(emptyScenario())
+    st.applyLens('run-summary')
+    st.setAnalysisCustomize(false)
+    st.setBoardPhase('execute')
+  })
+  afterEach(() => useStore.getState().setBoardPhase('prepare'))
+
+  it('replaces forecast bodies while preserving widget order, collapse and customize controls', () => {
+    const st = useStore.getState()
+    st.addAnalysisWidget('requirement-gates')
+    st.addAnalysisWidget('sensitivity')
+    st.addAnalysisWidget('environment')
+    st.addAnalysisWidget('fire-doctrine')
+    st.setAnalysisCustomize(true)
+    const before = useStore.getState().ui.analysis
+    const html = render({ phase: 'execute' })
+    expect(widgetTypes(html)).toEqual(before.layout.widgets.map((w) => w.type))
+    for (const type of ['projection', 'requirement-gates', 'sensitivity']) {
+      expect(widgetHtml(html, type)).toContain('Forecast available in Analyze')
+    }
+    for (const type of ['run-validity', 'environment', 'fire-doctrine']) {
+      expect(widgetHtml(html, type)).not.toContain('Forecast available in Analyze')
+    }
+    expect(html).toContain('aria-label="Remove Full-run projection"')
+    expect(html).toContain('aria-label="Move Full-run projection up"')
+    expect(html).not.toContain('class="outcome-summary"')
+    expect(html).toContain('Execution view · outcomes through the observed horizon. Forecast widgets open in Analyze.')
+    expect(html).not.toContain('Full-run time series · playback cursor marker')
+    expect(useStore.getState().ui.analysis).toBe(before)
+    st.toggleAnalysisWidget('rs-projection')
+    expect(widgetHtml(render({ phase: 'execute' }), 'projection')).not.toContain('Forecast available in Analyze')
+    st.setBoardPhase('analyze')
+    expect(widgetHtml(render({ phase: 'analyze' }), 'projection')).toContain('aria-expanded="false"')
+    st.toggleAnalysisWidget('rs-projection')
+    expect(widgetHtml(render({ phase: 'analyze' }), 'projection')).toContain('No threats with flight paths.')
+  })
+
+  it('mounts completed evidence only when the Execute cursor reaches the full duration', () => {
+    const st = useStore.getState()
+    const durationS = selectDurationS(st)
+    st.completeRun(durationS)
+    expect(render({ phase: 'execute' })).toContain('evidence-products')
+    st.scrubTo(0)
+    expect(render({ phase: 'execute' })).not.toContain('evidence-products')
+    st.setBoardPhase('analyze')
+    expect(render({ phase: 'analyze' })).toContain('evidence-products')
+    st.resetRun()
+    expect(render({ phase: 'analyze' })).not.toContain('evidence-products')
   })
 })

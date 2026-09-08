@@ -1,5 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { engagementPicture } from '../../../analysis/impact'
+import { scanLoadSeries } from '../../../analysis/series'
+import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
+import { formatTime } from '../../../geometry/geo'
 import { emptyScenario } from '../../../model/seed'
 import type { Connection, Entity, EntityKind } from '../../../model/types'
 import { useStore } from '../../../state/store'
@@ -46,6 +50,7 @@ function expectNoControls(html: string): void {
 describe('DetailPane', () => {
   beforeEach(() => {
     const store = useStore.getState()
+    store.setBoardPhase('analyze')
     store.replaceScenario(emptyScenario())
     store.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
     store.addEntityFromModel('lib-coyote', { x: 1697, y: -1697 })
@@ -126,7 +131,7 @@ describe('DetailPane', () => {
     expectSections(html, [
       ['pk', 'Pk per track'],
       ['magazine', 'Magazine'],
-      ['release', 'Release and effect'],
+      ['release', 'Assignment, release and effect'],
       ['doctrine', 'Doctrine by threat'],
       ['capacity', 'Capacity'],
     ])
@@ -216,4 +221,142 @@ describe('DetailPane', () => {
     expect(bodyRows(section(html, 'timing'))).toBe(1)
     expectNoControls(html)
   })
+
+  it.each(['uas', 'sensor', 'effector', 'c2'] as const)(
+    'caps %s telemetry at 30 seconds after a forward scrub', (kind) => {
+      const store = useStore.getState()
+      store.setBoardPhase('execute')
+      store.startRun()
+      store.advanceRun(30)
+      store.pauseRun()
+      const at30 = render(entityOf(kind).id)
+      store.scrubTo(100)
+      const preview = render(entityOf(kind).id)
+      const telemetry = kind === 'uas' ? ['file'] : kind === 'sensor' ? ['load', 'gates']
+        : kind === 'effector' ? ['doctrine', 'capacity'] : ['hops', 'timing', 'coverage']
+      for (const key of telemetry) {
+        expect(section(preview, key)).toBe(section(at30, key))
+        for (const match of section(preview, key).matchAll(/(?:T\+)?(\d+):(\d{2})/g)) {
+          expect(Number(match[1]) * 60 + Number(match[2])).toBeLessThanOrEqual(30)
+        }
+      }
+      expect(preview).not.toContain('EXPECTED DEFEAT')
+      if (kind === 'uas') {
+        expect(section(preview, 'planned-path')).toContain('Planned arrival')
+        expect(section(preview, 'planned-path')).toContain('Planned CPA')
+        expect(section(preview, 'file')).not.toContain('full path')
+      }
+    },
+  )
+
+  it.each(['uas', 'sensor', 'effector', 'c2'] as const)(
+    'shows untouched %s telemetry at EMPTY_HORIZON before first Play', (kind) => {
+      const store = useStore.getState()
+      store.setBoardPhase('execute')
+      const html = render(entityOf(kind).id)
+      expect(html).not.toContain('EXPECTED DEFEAT')
+      if (kind === 'uas') {
+        const file = section(html, 'file')
+        expect(file).not.toMatch(/T\+\d/)
+        expect(file).toContain('0 sensors')
+        expect(file).toContain('0 landed · E[k] 0.00')
+        expect(file).toContain('0 kinetic · 0 DE · 0 EW · 0 inbound')
+        expect(file).not.toContain('1.00 of 1 ships')
+        expect(section(html, 'phase')).not.toContain('chart-legend')
+      } else if (kind === 'sensor') {
+        expect(section(html, 'load')).toContain('Tracks per scan</span><span class="rv num">0')
+        expect(section(html, 'load')).toContain('Hold clock (union)</span><span class="rv num">—')
+        expect(section(html, 'ladder')).toContain('No track observed.')
+        expect(section(html, 'slant')).toContain('No track observed.')
+      } else if (kind === 'effector') {
+        for (const label of ['Kinetic shots', 'DE salvos', 'Jam salvos']) {
+          expect(section(html, 'capacity')).toContain(`${label}</span><span class="rv num">0`)
+        }
+        expect(section(html, 'doctrine')).toContain('title="Forecast available in Analyze">—')
+        expect(section(html, 'release')).toContain('No salvo assigned.')
+      } else {
+        expect(section(html, 'hops')).toContain('No route through this node.')
+        expect(section(html, 'timing')).not.toMatch(/\d+:\d{2}/)
+        expect(section(html, 'coverage')).not.toContain('no route')
+      }
+    },
+  )
+
+  it('reveals the preparation and flight legend only when each interval is reached', () => {
+    const store = useStore.getState()
+    const effector = entityOf('effector')
+    const event = engagementPicture(store.scenario).report.events[0]
+    expect(event.tReleaseS).toBeGreaterThan(event.tS)
+    expect(event.tEffectS).toBeGreaterThan(event.tReleaseS!)
+    store.setBoardPhase('execute')
+    store.startRun()
+    store.advanceRun(event.tS + 1)
+    store.pauseRun()
+    store.scrubTo(event.tEffectS + 1)
+    const preparing = section(render(effector.id), 'release')
+    expect(preparing).toContain('preparation')
+    expect(preparing).not.toContain('· flight')
+    store.scrubTo(event.tS + 1)
+    store.startRun()
+    store.advanceRun(event.tReleaseS! + 1)
+    store.pauseRun()
+    expect(section(render(effector.id), 'release')).toContain('· flight')
+  })
+
+  it('counts capacity by reached effect and sensor load/hold at observation time', () => {
+    const store = useStore.getState()
+    const { scenario } = store
+    const { assessments, report } = engagementPicture(scenario)
+    const effector = entityOf('effector')
+    const sensor = entityOf('sensor')
+    expect(report.events.length).toBeGreaterThan(0)
+    store.setBoardPhase('execute')
+    store.startRun()
+    store.advanceRun(30)
+    store.pauseRun()
+    store.scrubTo(100)
+    const events = report.events.filter((event) => event.effectorId === effector.id && event.tEffectS <= 30)
+    const capacity = section(render(effector.id), 'capacity')
+    expect(capacity).toContain(`Kinetic shots</span><span class="rv num">${events.filter((event) => event.channelClass === 'kinetic').length}`)
+    const component = systemTelemetryAt(scenario, assessments, report, 30, new Map())
+      .flatMap((group) => group.components).find((candidate) => candidate.entityId === sensor.id)!
+    const load = section(render(sensor.id), 'load')
+    expect(load).toContain(`Tracks per scan</span><span class="rv num">${scanLoadSeries(scenario, sensor.id).values[60]}`)
+    expect(load).toContain(`Hold clock (union)</span><span class="rv num">${formatTime(component.holdSeconds)}`)
+  })
+
+  it('keeps Prepare and Analyze detail output identical for every pane', () => {
+    for (const kind of ['uas', 'sensor', 'effector', 'c2'] as const) {
+      useStore.getState().setBoardPhase('prepare')
+      const prepare = render(entityOf(kind).id)
+      useStore.getState().setBoardPhase('analyze')
+      expect(render(entityOf(kind).id)).toBe(prepare)
+    }
+  })
+
+
+  it('does not populate sensor track lists or C2 routes from future detections', () => {
+    const store = useStore.getState()
+    const sensor = entityOf('sensor')
+    const c2 = entityOf('c2')
+    store.patchScenario({ entities: store.scenario.entities.map((entity) => entity.id === sensor.id
+      ? { ...entity, pos: { x: 0, y: 3000 } } : entity) })
+    const { assessments } = engagementPicture(useStore.getState().scenario)
+    expect(assessments[0].sensorObservations?.[0].firstDetectS).toBeGreaterThan(30)
+    store.setBoardPhase('execute')
+    store.startRun()
+    store.advanceRun(30)
+    store.pauseRun()
+    store.scrubTo(200)
+    const sensorHtml = render(sensor.id)
+    expect(section(sensorHtml, 'ladder')).toContain('No track observed.')
+    expect(section(sensorHtml, 'slant')).toContain('No track observed.')
+    expect(section(render(c2.id), 'hops')).toContain('No route through this node.')
+    expect(section(render(entityOf('uas').id), 'file')).not.toContain('T+2:')
+    expect(section(render(entityOf('uas').id), 'pd')).toContain('No radar Pd model observed this track.')
+    store.setBoardPhase('analyze')
+    expect(section(render(sensor.id), 'ladder')).not.toContain('No track observed.')
+    expect(bodyRows(section(render(c2.id), 'hops'))).toBe(1)
+  })
+
 })

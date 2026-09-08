@@ -2,7 +2,7 @@ import { Fragment, useMemo } from 'react'
 import { useStore } from '../state/store'
 import { modelFor } from '../model/scenario'
 import { entityInk } from '../ui/ink'
-import { selectSimTimeS } from '../state/selectors'
+import { selectEffectiveLayers, selectExecutionHorizon, selectSimTimeS } from '../state/selectors'
 import type { Entity, Scenario } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import { PHASE_STYLE } from '../playback/trackState'
@@ -47,6 +47,8 @@ function ReadoutCard({
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
   const simTimeS = useStore(selectSimTimeS)
+  const horizon = useStore(selectExecutionHorizon)
+  const tObs = horizon.scoped ? Math.min(simTimeS, horizon.horizonS) : simTimeS
   const select = useStore((s) => s.select)
   const setRightTab = useStore((s) => s.setRightTab)
 
@@ -61,11 +63,12 @@ function ReadoutCard({
         entity,
         timeline,
         assessments,
-        tS: simTimeS,
+        tS: tObs,
+        horizon,
         units,
-        sweep: sweepAt(scenario, timeline, simTimeS),
+        sweep: tObs === -Infinity ? undefined : sweepAt(scenario, timeline, tObs),
       }),
-    [scenario, entity, timeline, assessments, simTimeS, units],
+    [scenario, entity, timeline, assessments, tObs, horizon, units],
   )
   const compactRows = [
     { label: 'CURSOR', value: readout.cursorText },
@@ -140,7 +143,7 @@ function ReadoutCard({
  */
 export function TrackFileReadout({ timeline, assessments, size, onOpenDetail }: Props) {
   const scenario = useStore((s) => s.scenario)
-  const show = useStore((s) => s.ui.layers.trackTelemetry)
+  const show = useStore((s) => selectEffectiveLayers(s).trackTelemetry)
   const selectedIds = useStore((s) => s.selection.entityIds)
 
   if (!show || selectedIds.length !== 1) return null

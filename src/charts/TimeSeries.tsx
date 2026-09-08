@@ -6,6 +6,8 @@ export {
 } from './seriesData'
 
 export interface TimeSeriesProps {
+  /** Latest visible outcome time; undefined or Infinity shows the full run. */
+  horizonS?: number
   series: Series[]
   /** Playhead position, seconds, quantized to DT by the caller. */
   tS: number

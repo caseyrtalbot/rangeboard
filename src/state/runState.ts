@@ -4,6 +4,9 @@ import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import { cancelMcRun, cancelSensitivity } from '../playback/mcClient'
 import { analysisBasisSignature } from './analysisBasis'
 
+/** Board navigation only, independent of the playback lifecycle. */
+export type BoardPhase = 'prepare' | 'execute' | 'analyze'
+
 /** Where a playback run is in its life. */
 export type RunPhase = 'ready' | 'running' | 'paused' | 'complete' | 'review'
 /** Why the current run replaced the previous one. */

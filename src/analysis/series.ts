@@ -28,6 +28,7 @@ import { effectivePathDelayS } from '../playback/raid'
 import type { SensorObservation, ThreatAssessment } from '../playback/sim'
 import type { BandSeries, McSummary } from '../playback/mcRun'
 import { DT } from '../playback/clock'
+import { engagementIsKinetic, engagementReleaseS } from '../playback/engagementTiming'
 import { entityPosAt, threatAltitudeFt } from '../playback/tracks'
 import { buildTrackTimeline, PHASE_STYLE, trackStatesAt } from '../playback/trackState'
 import type { TrackPhase } from '../playback/trackState'
@@ -648,14 +649,19 @@ export function meanHeldPdSeries(scenario: Scenario): Series {
   }
 }
 
-/** `salvosInFlight` (`step`, chart-2): at step i, events with tS <= t < tEffectS. */
+/** `salvosInFlight` (`step`, chart-2): kinetic salvos physically released but not yet effective. */
 export function salvosInFlightSeries(scenario: Scenario): Series {
   const { report } = engagementPicture(scenario)
   const n = sampleCount(scenario)
   const inFlight = new Array<number>(n).fill(0)
+  const flights = report.events.filter(engagementIsKinetic).map((ev) => ({
+    assignmentS: ev.tS, releaseS: engagementReleaseS(ev, scenario), effectS: ev.tEffectS,
+  }))
   for (let i = 0; i < n; i += 1) {
     const t = i * DT
-    inFlight[i] = report.events.filter((ev) => ev.tS <= t && t < ev.tEffectS).length
+    // Missing legacy release makes the count unknown during the possible flight interval.
+    inFlight[i] = flights.some(flight => flight.releaseS == null && flight.assignmentS <= t && t < flight.effectS)
+      ? NaN : flights.filter(flight => flight.releaseS != null && flight.releaseS <= t && t < flight.effectS).length
   }
   return {
     id: 'salvosInFlight',
@@ -698,30 +704,42 @@ export function groupResidualSeries(scenario: Scenario): Series[] {
   })
 }
 
-/** This effector's events in release order. */
+/** This effector's events in assignment order; release may follow later. */
 function effectorEvents(scenario: Scenario, effectorId: string): EngagementEvent[] {
   const { report } = engagementPicture(scenario)
   return report.events.filter((ev) => ev.effectorId === effectorId).sort((a, b) => a.tS - b.tS)
 }
 
 /**
- * Salvo marks of one effector in time order: per event `REL` at tS (accent)
- * and `FX` at tEffectS (danger, or ew for a jam salvo).
+ * Salvo marks of one effector in time order: ASG at assignment, REL only at
+ * known physical release, and FX at effect (danger, or ew for a jam salvo).
+ * Coincident labels share one mark so instantaneous channels remain readable.
  */
 export function salvoMarks(scenario: Scenario, effectorId: string): ChartMark[] {
   const marks: ChartMark[] = []
   for (const ev of effectorEvents(scenario, effectorId)) {
-    marks.push({ tS: ev.tS, label: 'REL', color: 'accent' })
+    marks.push({ tS: ev.tS, label: 'ASG', color: 'warn' })
+    const releaseS = engagementReleaseS(ev, scenario)
+    if (releaseS != null) marks.push({ tS: releaseS, label: 'REL', color: 'accent' })
     marks.push({ tS: ev.tEffectS, label: 'FX', color: ev.channel === 'jam' ? 'ew' : 'danger' })
   }
-  return marks.sort((a, b) => a.tS - b.tS)
+  const byTime = new Map<number, ChartMark[]>()
+  for (const mark of marks) {
+    const group = byTime.get(mark.tS) ?? []
+    group.push(mark)
+    byTime.set(mark.tS, group)
+  }
+  return [...byTime].map(([tS, group]) => ({
+    tS,
+    label: ['ASG', 'REL', 'FX'].filter(label => group.some(mark => mark.label === label)).join('/'),
+    color: ['danger', 'ew', 'accent', 'warn'].find(color => group.some(mark => mark.color === color))!,
+  })).sort((a, b) => a.tS - b.tS)
 }
 
 /**
- * Release-to-effect ladder of one effector: one row per engaged track in
- * first-event order, id = uasId, label = the entity name, one span per event
- * [tS, tEffectS] in the track's hue slot, label 'salvo'. A zero-flight-time
- * event gives startS === endS.
+ * Assignment, preparation and physical channel intervals of one effector,
+ * one row per engaged track in first-assignment order. Unknown legacy release
+ * timing stays explicit. Zero-duration effects remain zero-width markers.
  */
 export function releaseLadderRows(scenario: Scenario, effectorId: string): LadderRow[] {
   const slots = trackSlots(scenario)
@@ -732,11 +750,20 @@ export function releaseLadderRows(scenario: Scenario, effectorId: string): Ladde
       row = { id: ev.uasId, label: nameOf(scenario, ev.uasId), spans: [] }
       rows.set(ev.uasId, row)
     }
+    const releaseS = engagementReleaseS(ev, scenario)
+    if (releaseS == null) {
+      row.spans.push({ startS: ev.tS, endS: ev.tEffectS, color: 'warn', label: 'launch timing unavailable' })
+      continue
+    }
+    if (releaseS > ev.tS) {
+      row.spans.push({ startS: ev.tS, endS: releaseS, color: 'warn', label: 'preparation' })
+    }
     row.spans.push({
-      startS: ev.tS,
+      startS: releaseS,
       endS: ev.tEffectS,
       color: slots.get(ev.uasId) ?? OTHER_TOKEN,
-      label: 'salvo',
+      label: engagementIsKinetic(ev) ? (releaseS < ev.tEffectS ? 'flight' : 'effect')
+        : ev.channelClass === 'ew' ? 'EW dwell' : 'beam',
     })
   }
   return [...rows.values()]

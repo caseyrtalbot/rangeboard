@@ -1,14 +1,18 @@
+import { EMPTY_HORIZON, FULL_RUN } from '../../../analysis/horizon'
+import type { ExecutionHorizon } from '../../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { WidgetFrame } from './WidgetFrame'
 
-function frame(props: { collapsed?: boolean; customize?: boolean; index?: number; count?: number }) {
+function frame(props: { collapsed?: boolean; customize?: boolean; index?: number; count?: number; horizon?: ExecutionHorizon; metaWithinHorizon?: boolean }) {
   return renderToStaticMarkup(
     <WidgetFrame
       id="w1"
       type="kpi-tiles"
       title="KPI tiles"
       meta="6 of 13"
+      horizon={props.horizon}
+      metaWithinHorizon={props.metaWithinHorizon}
       collapsed={props.collapsed ?? false}
       customize={props.customize ?? false}
       index={props.index ?? 0}
@@ -20,6 +24,13 @@ function frame(props: { collapsed?: boolean; customize?: boolean; index?: number
 }
 
 describe('WidgetFrame', () => {
+  it('hides unscoped meta in Execute unless the caller explicitly vouches for it', () => {
+    expect(frame({ horizon: EMPTY_HORIZON })).not.toContain('6 of 13')
+    expect(frame({ horizon: { scoped: true, horizonS: 5 } })).not.toContain('6 of 13')
+    expect(frame({ horizon: EMPTY_HORIZON, metaWithinHorizon: true })).toContain('6 of 13')
+    expect(frame({ horizon: FULL_RUN })).toContain('6 of 13')
+  })
+
   it('renders the title, meta and body without handles outside customize mode', () => {
     const html = frame({})
     expect(html).toContain('data-widget-type="kpi-tiles"')

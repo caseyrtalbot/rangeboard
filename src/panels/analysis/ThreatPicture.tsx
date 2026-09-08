@@ -76,13 +76,13 @@ function memberTimeline(row: ThreatOperationalRow, mode: Mode): string {
     `D ${visible(row.detected, row.firstDetectS)}`,
     `ID ${visible(row.identified, row.hostileAtS)}`,
     `ENG ${visible(row.engaged, row.firstShotS)}`,
-    `FX ${visible(row.effectObserved, row.firstEffectS)}`,
+    `Expected FX ${visible(row.effectObserved, row.firstEffectS)}`,
   ].join(' · ')
 }
 
 function liveState(row: ThreatOperationalRow): string {
-  if (row.effectMet) return 'EFFECT'
-  if (row.effectObserved) return 'EFFECT OBS'
+  if (row.effectMet) return 'EXPECTED DEFEAT'
+  if (row.effectObserved) return 'EXPECTED EFFECT'
   if (row.engaged) return 'ENGAGED'
   if (row.targetableNow) return 'TARGET'
   if (row.identified) return 'HOSTILE'
@@ -105,7 +105,7 @@ function ThreatMember({ row, mode }: { row: ThreatOperationalRow; mode: Mode }) 
           {mode === 'live'
             ? liveState(row)
             : row.effectMet
-              ? 'EFFECT'
+              ? 'EXPECTED DEFEAT'
               : row.engaged
                 ? 'ENGAGED'
                 : row.status.replaceAll('-', ' ').toUpperCase()}
@@ -213,7 +213,7 @@ export function ThreatPicture({
   if (tracks === 0) return <p className="muted small">No threats with flight paths.</p>
   return (
     <div className="threat-picture">
-      <p className="muted small">Effect state uses surviving mass, including late effects. Requirement verdicts are in Requirement gates.</p>
+      <p className="muted small">Expected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.</p>
       {tracks > PAGE_SIZE && (
         <div className="scale-note">
           <strong>{tracks} tracks retained</strong>

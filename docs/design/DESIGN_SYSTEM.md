@@ -128,6 +128,8 @@ one content scroller. Long names, values, source records and statistical subtitl
 source rows disclose labeled fields instead of squeezing evidence into a narrow table.
 The canvas readout is 252 px wide, with cursor, speed/heading, altitude and a Details
 control. Complete telemetry stays in the canonical pane, including full-path scope labels.
+In Execute, Planned path uses the existing detail section header and rows for Planned
+arrival and Planned CPA; times retain the machine-data role.
 
 Analysis separates full-run results, full-run series and cursor statistics with explicit
 scope labels. Evidence products and supporting findings use native disclosures; metric
@@ -135,4 +137,8 @@ intervals, denominator labels and names wrap in the two-column outcome grid. Lay
 a bounded non-modal surface below persistent navigation. Presets scroll within that
 surface; widget editing uses named move/remove buttons and accessible title toggles.
 Escape and close controls return focus to Layout. Scenario readouts link to Prepare
-without changing data until an input is edited.
+without changing data until an input is edited. Execute forecast bodies use the existing
+muted text pattern for “Forecast available in Analyze”. Chart scope text reads “Shown
+through T+m:ss” or “No outcomes observed yet” in the legend accessibility label, or a
+visually hidden span when there is no legend. A preview playhead may show a later time.
+These reuse existing chart and text tokens.

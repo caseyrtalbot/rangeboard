@@ -1,3 +1,4 @@
+import { FORECAST_IN_ANALYZE } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import type { RequirementGateReport, RequirementGateStatus } from '../../../analysis/requirements'
 import { buildRequirementGateReport } from '../../../analysis/requirements'
@@ -203,6 +204,7 @@ export function RequirementGatesWidget({
   index,
   count,
   onOpenPreparation,
+  horizon,
 }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
@@ -223,6 +225,7 @@ export function RequirementGatesWidget({
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="requirement-gates"
       title="Requirement gates"
       meta={`${shown.met}/${shown.required} met · planning envelope`}
@@ -231,17 +234,23 @@ export function RequirementGatesWidget({
       index={index}
       count={count}
     >
-      {threats === 0 ? (
-        <p className="muted small">No threats with flight paths.</p>
+      {horizon.scoped ? (
+        <p className="muted small">{FORECAST_IN_ANALYZE}</p>
       ) : (
-        <RequirementGates report={shown} />
-      )}
-      {onOpenPreparation ? (
-        <RequirementReadout onEdit={() => onOpenPreparation('requirements')} />
-      ) : (
-        <AnalysisSection title="Thresholds" headline={thresholdsHeadline(scenario)}>
-          <ThresholdsBody />
-        </AnalysisSection>
+        <>
+          {threats === 0 ? (
+            <p className="muted small">No threats with flight paths.</p>
+          ) : (
+            <RequirementGates report={shown} />
+          )}
+          {onOpenPreparation ? (
+            <RequirementReadout onEdit={() => onOpenPreparation('requirements')} />
+          ) : (
+            <AnalysisSection title="Thresholds" headline={thresholdsHeadline(scenario)}>
+              <ThresholdsBody />
+            </AnalysisSection>
+          )}
+        </>
       )}
     </WidgetFrame>
   )

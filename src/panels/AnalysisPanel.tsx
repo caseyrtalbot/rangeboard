@@ -1,10 +1,12 @@
+import { FORECAST_IN_ANALYZE } from '../analysis/horizon'
+import { WidgetFrame } from './analysis/widgets/WidgetFrame'
 import { Fragment, memo, useMemo } from 'react'
 import { buildAarSummary } from '../analysis/aar'
 import { engagementPicture } from '../analysis/impact'
 import type { WidgetInstance, WidgetType } from '../state/analysisLayout'
 import { BUILTIN_LENSES, WIDGET_TYPES } from '../state/analysisLayout'
 import { useStore } from '../state/store'
-import { selectDurationS, selectRunComplete } from '../state/selectors'
+import { selectDurationS, selectExecutionHorizon, selectRunComplete } from '../state/selectors'
 import { DebriefRecord } from './analysis/DebriefRecord'
 import { LiveStrip } from './analysis/LiveStrip'
 import { WIDGETS } from './analysis/widgets/registry'
@@ -14,8 +16,8 @@ import { exportScenario } from '../io/persist'
 
 /**
  * Every widget subscribes to the store on its own, so a panel render must not
- * cascade into the stack. The props the panel passes are stable between
- * layout edits, so `memo` holds each widget until its own selectors move.
+ * cascade into the stack. Props stay stable between layout edits and horizon changes, so `memo`
+ * holds each widget until those inputs or its own selectors move.
  */
 const MEMO_WIDGETS = {} as Record<WidgetType, React.ComponentType<WidgetProps>>
 for (const type of WIDGET_TYPES) MEMO_WIDGETS[type] = memo(WIDGETS[type].component)
@@ -36,6 +38,7 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
   const entityIds = useStore((state) => state.selection.entityIds)
   const runId = useStore((state) => state.playback.runId)
   const complete = useStore(selectRunComplete)
+  const horizon = useStore(selectExecutionHorizon)
   const widgets = useStore((state) => state.ui.analysis.layout.widgets)
   const presetId = useStore((state) => state.ui.analysis.layout.presetId)
   const customize = useStore((state) => state.ui.analysisCustomize)
@@ -64,21 +67,30 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
     })
   const renderWidget = (instance: WidgetInstance) => {
     const Widget = MEMO_WIDGETS[instance.type]
+    const entry = WIDGETS[instance.type]
+    const forecast = horizon.scoped && entry.horizon === 'full-run' &&
+      !['run-validity', 'environment', 'fire-doctrine'].includes(instance.type)
+    const props: WidgetProps = {
+      id: instance.id,
+      params: instance.params,
+      collapsed: instance.collapsed,
+      customize,
+      index: widgets.indexOf(instance),
+      count: widgets.length,
+      horizon,
+      onOpenPreparation,
+    }
     return (
       <Fragment key={instance.id}>
-        {instance.type === 'time-series' && !groupSummary && (
+        {instance.type === 'time-series' && !groupSummary && !horizon.scoped && (
           <p className="analysis-scope">Full-run time series · playback cursor marker</p>
         )}
         <ErrorBoundary label={WIDGETS[instance.type].label} onExport={() => exportScenario(useStore.getState().scenario)}>
-          <Widget
-            id={instance.id}
-            params={instance.params}
-            collapsed={instance.collapsed}
-            customize={customize}
-            index={widgets.indexOf(instance)}
-            count={widgets.length}
-            onOpenPreparation={onOpenPreparation}
-          />
+          {forecast ? (
+            <WidgetFrame {...props} type={instance.type} title={entry.label}>
+              <p className="muted">{FORECAST_IN_ANALYZE}</p>
+            </WidgetFrame>
+          ) : <Widget {...props} />}
         </ErrorBoundary>
       </Fragment>
     )
@@ -126,14 +138,14 @@ export function AnalysisPanel({ phase = 'execute', onOpenPreparation }: Analysis
         <>
           <p className="analysis-scope">
             {phase === 'execute'
-              ? 'Execution view · playback cursor and observed horizon. Full-run widgets are labeled separately.'
+              ? 'Execution view · outcomes through the observed horizon. Forecast widgets open in Analyze.'
               : 'Analysis view · each widget retains its labeled cursor or full-run scope.'}
           </p>
           {widgets.map(renderWidget)}
         </>
       )}
 
-      {complete && aar && (
+      {complete && aar && (!horizon.scoped || horizon.horizonS >= durationS) && (
         <DebriefRecord
           scenario={scenario}
           assessments={assessments}

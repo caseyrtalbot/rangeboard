@@ -1,3 +1,4 @@
+import { reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import { systemTelemetryAt } from '../../../analysis/systemTelemetry'
 import type { SystemTelemetryGroup } from '../../../analysis/systemTelemetry'
@@ -33,13 +34,14 @@ function filterGroups(groups: SystemTelemetryGroup[], kind: SystemStatusKind): S
 }
 
 /** Component telemetry at the cursor time, filtered to sensors, effectors, or every kind. */
-export function SystemStatusWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function SystemStatusWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
   const { assessments, report } = useEngagement(scenario, runId)
   const { t, untouched } = useRunCursor(scenario)
   const kind = kindOf(params)
-  const tS = untouched ? null : t
+  const empty = horizon.scoped && !reached(0, horizon)
+  const tS = untouched || empty ? null : horizon.scoped ? Math.min(t, horizon.horizonS) : t
   const runTrackIds = useMemo(
     () => new Set(assessments.filter((a) => a.status !== 'no-path').map((a) => a.uasId)),
     [assessments],
@@ -68,15 +70,17 @@ export function SystemStatusWidget({ id, params, collapsed, customize, index, co
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="system-status"
       title={title}
+      metaWithinHorizon
       meta={`planning envelope · ${online}/${components} online`}
       collapsed={collapsed}
       customize={customize}
       index={index}
       count={count}
     >
-      <SystemStatus groups={filtered} />
+      <SystemStatus groups={filtered} horizon={horizon} sampledAtS={tS ?? -Infinity} />
     </WidgetFrame>
   )
 }

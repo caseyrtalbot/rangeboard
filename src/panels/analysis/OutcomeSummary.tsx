@@ -4,19 +4,14 @@ import type { McSummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
 import { formatTime } from '../../geometry/geo'
 import {
+  expectedCount,
   expenditureBreakdown,
   expenditureParts,
   residualHeadline,
   totalSalvos,
 } from '../headlines'
-import { SURVIVAL_LABELS } from './widgets/labels'
+import { forecastKillLabel, KPI_LABELS, SURVIVAL_LABELS } from './widgets/labels'
 import { bandMean, countSub, statMean, timeStatSub } from './widgets/mc'
-
-function expectedCount(value: number): string {
-  if (value === 0) return '0'
-  if (value < 0.1) return value.toFixed(2)
-  return value.toFixed(1)
-}
 
 function Metric({
   label,
@@ -45,13 +40,9 @@ function Metric({
 /**
  * Run outcome as a set of independent measures, never a rolled-up score.
  *
- * Three of the tiles carry a rule a reader cannot see in the number itself.
- * Defeat is PRE-ARRIVAL mass only. Late E[k] is destruction that landed after
- * the threat was already over the asset: real, but it defended nothing, so it
- * is shown apart and never added to the defeat. Leakers reads the DISPLAY
- * leaker figure (reportedLeakers), which is null when no defended asset is
- * placed; that run gets a dash and a reason, because printing the partition
- * term there would claim a perfect defence the run never demonstrated.
+ * Expected kills with an asset include pre-arrival mass only. Expected late
+ * kills stay separate and never reduce leakers. A null reportedLeakers value
+ * stays unavailable because there is no defended asset to measure leakage at.
  */
 export function OutcomeSummary({
   scenario,
@@ -66,9 +57,11 @@ export function OutcomeSummary({
   mc?: McSummary | null
 }) {
   const totals = report.totals
+  const reportedLeakers = totals.reportedLeakers
+  const hasActiveAsset = reportedLeakers != null
   const raid = totals.raidSize
   const kills = mc ? bandMean(mc.kills, mc.kills.mean.length - 1, mc.replicates) : totals.expectedKills
-  const leakers = mc ? bandMean(mc.leakers, mc.leakers.mean.length - 1, mc.replicates) : totals.reportedLeakers
+  const leakers = mc ? bandMean(mc.leakers, mc.leakers.mean.length - 1, mc.replicates) : reportedLeakers
   const defeatPct = raid > 0 && kills != null ? (kills / raid) * 100 : null
   const residual = residualHeadline(totals)
   const envelopeFirstDetect = assessments.reduce<number | null>(
@@ -91,13 +84,13 @@ export function OutcomeSummary({
     .map((assessment) => assessment.warningS)
     .filter((value): value is number => value != null)
   const firstDetect = mc ? statMean(mc.firstDetectS) : envelopeFirstDetect
-  const minWarning = mc ? statMean(mc.minWarningS) : warnings.length > 0 ? Math.min(...warnings) : null
+  const minWarning = !hasActiveAsset ? null : mc ? statMean(mc.minWarningS) : warnings.length > 0 ? Math.min(...warnings) : null
   const salvos = totalSalvos(totals)
   return (
     <div className="outcome-summary">
       <div className="outcome-grid">
         <Metric
-          label="Defeat"
+          label={forecastKillLabel(hasActiveAsset)}
           value={defeatPct == null ? '—' : `${defeatPct.toFixed(1)}%`}
           sub={
             raid <= 0 ? 'no ships' : mc
@@ -105,25 +98,25 @@ export function OutcomeSummary({
               : `planning envelope · ${expectedCount(totals.expectedKills)} of ${raid} ships`
           }
           cls="good"
-          title="Expected kill mass whose effect landed at or before the threat reached the defended asset. Late intercepts are not counted here."
+          title={hasActiveAsset ? KPI_LABELS.killEk.hint : 'Expected neutralization mass over the full run; no defended asset placed.'}
         />
         <Metric
-          label={SURVIVAL_LABELS.leakers}
-          value={totals.reportedLeakers == null ? '—' : leakers == null ? '—' : mc ? expectedCount(leakers) : residual.value}
+          label={mc ? SURVIVAL_LABELS.leakers : 'Residual survival'}
+          value={reportedLeakers == null ? '—' : leakers == null ? '—' : mc ? expectedCount(leakers) : residual.value}
           sub={
-            totals.reportedLeakers == null ? residual.sub : mc
+            reportedLeakers == null ? residual.sub : mc
               ? `${countSub(mc.leakers, mc.leakers.mean.length - 1, mc.replicates)} · ships`
               : `planning envelope · ${residual.sub}`
           }
-          cls={totals.reportedLeakers != null && leakers != null && leakers > 0.05 ? 'bad' : ''}
+          cls={reportedLeakers != null && leakers != null && leakers > 0.05 ? 'bad' : ''}
           title="Expected ship mass that reached a defended asset. Not measurable when the laydown places no asset."
         />
         <Metric
-          label="Late E[k]"
+          label={KPI_LABELS.lateEk.label}
           value={expectedCount(totals.expectedLateKills)}
-          sub="planning envelope · after arrival, not a defeat"
+          sub="planning envelope · after arrival, no asset protection"
           cls={totals.expectedLateKills > 0.05 ? 'warn' : ''}
-          title="Expected kill mass intercepted after the threat was already over the defended asset. The airframe was destroyed, but too late to protect the asset, so it is not a defeat and it does not reduce the leaker count."
+          title="Expected kill mass after arrival, too late to protect the asset; it does not reduce the leaker count."
         />
         <Metric
           label="First detect"
@@ -133,13 +126,13 @@ export function OutcomeSummary({
         <Metric
           label="First effect"
           value={firstEffect == null ? '—' : formatTime(firstEffect)}
-          sub="planning envelope · kill mass removed"
-          title="First effect that removed kill mass. A jam dwell that only degrades the track is not an effect here."
+          sub="planning envelope · expected kill mass removed"
+          title="First effect that removed expected kill mass. A jam dwell that only degrades the track is not an effect here."
         />
         <Metric
           label="Min warning"
           value={minWarning == null ? '—' : formatTime(minWarning)}
-          sub={(mc && timeStatSub(mc.minWarningS, 'warning')) ?? 'planning envelope · worst threat'}
+          sub={!hasActiveAsset ? 'no defended asset placed' : (mc && timeStatSub(mc.minWarningS, 'warning')) ?? 'planning envelope · worst threat'}
         />
         <Metric
           label="Salvos"

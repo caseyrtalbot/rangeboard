@@ -1,3 +1,4 @@
+import { FORECAST_IN_ANALYZE, reached } from '../../../analysis/horizon'
 import { useMemo, type ReactNode } from 'react'
 import { modelsForEntity } from '../../../analysis/fidelity'
 import { formatTime } from '../../../geometry/geo'
@@ -20,7 +21,7 @@ function entityName(scenario: Scenario, id: string): string {
 /** The C2 pane: kill-chain hops through this node, detect to effect, and route coverage. */
 export function SystemDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, runId, assessments, report } = run
+  const { scenario, runId, assessments, report, horizon, tObs, untouched } = run
   const model = modelFor(scenario, entity)
   const component = useComponentAt(run, entity.id)
   const color = entityInk(entity, model)
@@ -28,9 +29,11 @@ export function SystemDetail({ entity }: { entity: Entity }) {
 
   const hopRows = useMemo<ReactNode[][]>(() => {
     void runId
-    const detecting = new Set(assessments.flatMap((a) => a.detectingSensorIds))
+    const detecting = new Set(assessments.flatMap((a) => horizon.scoped
+      ? (a.sensorObservations ?? []).filter((observation) => observation.firstDetectS <= tObs).map((observation) => observation.sensorId)
+      : a.detectingSensorIds))
     const sensorIds =
-      detecting.size > 0
+      horizon.scoped || detecting.size > 0
         ? detecting
         : new Set(
             scenario.entities
@@ -51,7 +54,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
       ])
     }
     return rows
-  }, [scenario, runId, assessments, entity.id])
+  }, [scenario, runId, assessments, entity.id, horizon.scoped, tObs])
 
   const timingRows = useMemo<ReactNode[][]>(() => {
     void runId
@@ -59,26 +62,30 @@ export function SystemDetail({ entity }: { entity: Entity }) {
       const effect = report.events
         .filter((ev) => ev.uasId === a.uasId && ev.killDelta > 0)
         .sort((x, y) => x.tEffectS - y.tEffectS)[0]
-      const detect = a.firstDetectS
-      const effectS = effect?.tEffectS ?? null
+      const detect = !horizon.scoped || reached(a.firstDetectS, horizon) ? a.firstDetectS : null
+      const effectS = !horizon.scoped || reached(effect?.tEffectS, horizon) ? effect?.tEffectS ?? null : null
+      const missing = horizon.scoped ? <span title={FORECAST_IN_ANALYZE}>{DASH}</span> : DASH
       return [
         entityName(scenario, a.uasId),
-        detect != null ? formatTime(detect) : DASH,
-        effectS != null ? formatTime(effectS) : DASH,
-        detect != null && effectS != null ? formatTime(effectS - detect) : DASH,
+        detect != null ? formatTime(detect) : missing,
+        effectS != null ? formatTime(effectS) : missing,
+        detect != null && effectS != null ? formatTime(effectS - detect) : missing,
       ]
     })
-  }, [scenario, runId, threats, report])
+  }, [scenario, runId, threats, report, horizon])
 
   const uncovered = useMemo<DetailRow[]>(() => {
     void runId
     return threats
+      .filter((a) => !horizon.scoped || reached(a.firstDetectS, horizon))
       .filter((a) => {
-        const routes = killChainRoutes(scenario, new Set(a.detectingSensorIds))
+        const routes = killChainRoutes(scenario, new Set(horizon.scoped
+          ? (a.sensorObservations ?? []).filter((observation) => observation.firstDetectS <= tObs).map((observation) => observation.sensorId)
+          : a.detectingSensorIds))
         return ![...routes.values()].some((r) => r.viaC2Ids.includes(entity.id))
       })
       .map((a) => ({ label: entityName(scenario, a.uasId), value: 'no route' }))
-  }, [scenario, runId, threats, entity.id])
+  }, [scenario, runId, threats, entity.id, horizon, tObs])
 
   const pill = component
     ? { word: STATE_LABEL[component.state], tone: stateTone(component.state) }
@@ -113,7 +120,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
         {uncovered.length > 0 ? (
           <Rows rows={uncovered} />
         ) : (
-          <p className="muted small">Every detected threat routes through this node.</p>
+          <p className="muted small">{untouched ? DASH : 'Every detected threat routes through this node.'}</p>
         )}
       </DetailSection>
     </div>

@@ -328,6 +328,7 @@ export function resolveEngagements(
     salvoCounts.set(salvoKey, salvoIdx + 1)
     const event: EngagementEvent = {
       tS: t,
+      tReleaseS: t + es.engageTimeS,
       tEffectS: tEffect,
       effectorId: es.entity.id,
       uasId: target.a.uasId,

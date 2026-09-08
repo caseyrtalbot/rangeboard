@@ -1,3 +1,4 @@
+import { reached } from '../../../analysis/horizon'
 import { useMemo, type ReactNode } from 'react'
 import {
   SCAN_S,
@@ -56,18 +57,26 @@ const LADDER_KINDS = ['search', 'init', 'track', 'coast', 'drop'] as const
 /** The sensor pane: Pd and slant per track, the track ladder, load, and the gates by threat. */
 export function SensorDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, runId, setSimTime, assessments, t, durationS } = run
+  const { scenario, runId, setSimTime, assessments, t, durationS, horizon, tObs, untouched } = run
   const model = modelFor(scenario, entity)
   const spec = model?.sensor
   const doctrine = effectiveDoctrine(scenario)
   const component = useComponentAt(run, entity.id)
   const color = entityInk(entity, model)
 
-  const series = useMemo(() => {
+  const observedIds = useMemo(() => new Set(assessments.filter((assessment) =>
+    assessment.sensorObservations?.some((observation) => observation.sensorId === entity.id &&
+      (!horizon.scoped || observation.firstDetectS <= tObs)),
+  ).map((assessment) => assessment.uasId)), [assessments, entity.id, horizon.scoped, tObs])
+
+  const fullSeries = useMemo(() => {
     void runId
     return sensorSeries(scenario, entity.id)
   }, [scenario, runId, entity.id])
-  const ladderRows = useMemo(() => {
+  const series = useMemo(() => fullSeries.filter((series) =>
+    !horizon.scoped || observedIds.has(series.id.slice(series.id.indexOf('.') + 1)),
+  ), [fullSeries, horizon.scoped, observedIds])
+  const fullLadderRows = useMemo(() => {
     void runId
     // The gutter is 84 px (Ladder GUTTER_W): the board designator, as the canvas labels draw it.
     return trackLadderRows(scenario, entity.id).map((row) => ({
@@ -75,6 +84,9 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       label: boardDesignator(row.label),
     }))
   }, [scenario, runId, entity.id])
+  const ladderRows = useMemo(() => fullLadderRows.filter((row) =>
+    !horizon.scoped || observedIds.has(row.id),
+  ), [fullLadderRows, horizon.scoped, observedIds])
   const bareLadderRows = useMemo(() => ladderRows.map(bareSpans), [ladderRows])
   const load = useMemo(() => {
     void runId
@@ -96,8 +108,9 @@ export function SensorDetail({ entity }: { entity: Entity }) {
     return threats.flatMap((a) => {
       const uas = scenario.entities.find((e) => e.id === a.uasId)
       if (!uas) return []
+      if (untouched) return [[uas.name, DASH, DASH, DASH]]
       const uasSpec = modelFor(scenario, uas)?.uas
-      const pos = entityPosAt(scenario, uas, t)
+      const pos = entityPosAt(scenario, uas, tObs)
       const groundM = Math.hypot(pos.x - entity.pos.x, pos.y - entity.pos.y)
       const altM = threatAltitudeFt(scenario, uas) * FT_TO_M
       const geometry = sensorGeometryGate(spec, hM, altM, groundM)
@@ -112,7 +125,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
         ],
       ]
     })
-  }, [scenario, spec, threats, t, entity.pos])
+  }, [scenario, spec, threats, tObs, untouched, entity.pos])
 
   const pill = component
     ? { word: STATE_LABEL[component.state], tone: stateTone(component.state) }
@@ -147,7 +160,9 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const initM = trackInitMFor(spec)
   const initN = trackInitNFor(spec)
   // Legend words are lower case; the builder's labels are title case.
-  const legend: LegendEntry[] = LADDER_KINDS.map((kind) => {
+  const legend: LegendEntry[] = LADDER_KINDS.filter((kind) => !horizon.scoped || ladderRows.some((row) =>
+    row.spans.some((span) => span.label === TRACK_LADDER_STYLE[kind].label && reached(span.startS, horizon)),
+  )).map((kind) => {
     const word = TRACK_LADDER_STYLE[kind].label.toLowerCase()
     return {
       label: kind === 'init' && scan ? `${word} ${initM} of ${initN}` : word,
@@ -158,7 +173,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
     ? `M ${initM} · N ${initN} · drop ${trackDropMissesFor(spec)}`
     : `hold ${trackInitSFor(spec, doctrine)} s`
 
-  const loadNow = load.values[Math.min(load.values.length - 1, Math.round(t / DT))] ?? 0
+  const loadNow = untouched ? 0 : load.values[Math.min(load.values.length - 1, (horizon.scoped ? Math.floor(tObs / DT) : Math.round(tObs / DT)))] ?? 0
   const el = spec.elevationDeg
   const instrumented = spec.instrumentedRangeM
   const loadRows: DetailRow[] = [
@@ -180,11 +195,11 @@ export function SensorDetail({ entity }: { entity: Entity }) {
             value: 'role table',
             unit: ` · ${trackInitSFor(spec, doctrine)} s hold`,
           },
-    { label: 'Hold clock (union)', value: component ? formatTime(component.holdSeconds) : DASH },
+    { label: 'Hold clock (union)', value: component && !untouched ? formatTime(component.holdSeconds) : DASH },
     {
       label: 'Track seconds (sum)',
-      value: component ? `${Math.round(component.trackSeconds)}` : DASH,
-      unit: component ? ' s' : undefined,
+      value: component && !untouched ? `${Math.round(component.trackSeconds)}` : DASH,
+      unit: component && !untouched ? ' s' : undefined,
     },
     {
       label: 'Placard',
@@ -228,7 +243,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
         meta={pd.length > 0 ? `Swerling ${cal.swerling0} · Pfa ${pfaText(cal.pfa)}` : null}
       >
         {pd.length > 0 ? (
-          <TimeSeries series={pd} tS={t} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
+          <TimeSeries series={pd} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
         ) : (
           <p className="muted small">No Pd model for this sensor.</p>
         )}
@@ -239,7 +254,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
         meta={`mount ${mountHeightOf(spec)} m`}
       >
         {slant.length > 0 ? (
-          <TimeSeries series={slant} tS={t} onScrub={setSimTime} yLabel="km" />
+          <TimeSeries series={slant} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yLabel="km" />
         ) : (
           <p className="muted small">No track observed.</p>
         )}
@@ -247,7 +262,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       <DetailSection id="ladder" title="Track ladder" meta={ladderMeta}>
         {ladderRows.length > 0 ? (
           <>
-            <Ladder rows={bareLadderRows} durationS={durationS} tS={t} onScrub={setSimTime} />
+            <Ladder rows={bareLadderRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />
             <Legend entries={legend} />
           </>
         ) : (

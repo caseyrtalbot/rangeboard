@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useMemo, useRef } from 'react'
 import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
 import type Konva from 'konva'
@@ -517,7 +518,7 @@ const EntityBody = memo(function EntityBody({
   tool,
 }: Omit<NodeProps, 'x' | 'y'> & { model: SpecModel | undefined; color: string; tool: string }) {
   const connectFrom = useStore((s) => s.ui.connectFromId === entity.id)
-  const showLabels = useStore((s) => s.ui.layers.labels)
+  const showLabels = useStore((s) => selectEffectiveLayers(s).labels)
   const selected = useStore((s) => s.selection.entityIds.includes(entity.id))
   const cardLinked = useStore((s) => {
     const cardId = s.selection.cardId
@@ -624,6 +625,17 @@ const EntityBody = memo(function EntityBody({
             listening={false}
           />
         </>
+      )}
+      {(effectorState === 'preparing' || effectorState === 'timing-unavailable') && (
+        <Text
+          fontFamily="JetBrains Mono"
+          x={13}
+          y={-4}
+          text={effectorState === 'preparing' ? 'PREP' : 'LAUNCH ?'}
+          fontSize={11}
+          fill={PHASE_STYLE.targeted.color}
+          listening={false}
+        />
       )}
       {depleted && (
         <Text

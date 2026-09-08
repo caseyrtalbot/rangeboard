@@ -1,7 +1,13 @@
+import { EMPTY_HORIZON, FORECAST_IN_ANALYZE, FULL_RUN, type ExecutionHorizon } from '../../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import firingFixture from '../../../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import { engagementPicture } from '../../../analysis/impact'
+import { formatTime } from '../../../geometry/geo'
+import { parseAutosave } from '../../../io/persist'
 import { emptyScenario } from '../../../model/seed'
 import type { Entity, Scenario } from '../../../model/types'
+import * as liveStats from '../../../analysis/liveStats'
 import { sampleCount } from '../../../analysis/series'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DEFAULT_KPI_TILES, KPI_KEYS } from '../../../state/analysisLayout'
@@ -106,10 +112,11 @@ function setMc(status: 'done' | 'stale' | 'running' | 'error', detectedIn = 100)
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading widget needs the two in step.
-function render(params: Record<string, unknown>, customize = false): string {
+function render(params: Record<string, unknown>, customize = false, horizon: ExecutionHorizon = FULL_RUN): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(
     <KpiTilesWidget
+      horizon={horizon}
       id="rs-kpi"
       params={params}
       collapsed={false}
@@ -127,7 +134,7 @@ describe('KpiTilesWidget', () => {
 
   it('renders the six default tiles by label when params name no tile', () => {
     const html = render({})
-    for (const key of DEFAULT_KPI_TILES) expect(html).toContain(KPI_LABELS[key].label)
+    for (const key of DEFAULT_KPI_TILES) expect(html).toContain(key === 'killEk' ? 'Expected neutralization' : KPI_LABELS[key].label)
     expect(html).toContain('tiles c3')
     expect(html).toContain(`${DEFAULT_KPI_TILES.length} of ${KPI_KEYS.length}`)
     expect(html).not.toContain(KPI_LABELS.minWarning.label)
@@ -149,7 +156,7 @@ describe('KpiTilesWidget', () => {
   it('shows the checkbox grid over every key in customize mode', () => {
     const html = render({}, true)
     expect(html).toContain('class="params"')
-    for (const key of KPI_KEYS) expect(html).toContain(KPI_LABELS[key].label)
+    for (const key of KPI_KEYS) expect(html).toContain(key === 'killEk' ? 'Expected neutralization' : KPI_LABELS[key].label)
     expect(html).not.toContain('tiles c3')
   })
 
@@ -237,6 +244,9 @@ describe('KpiTilesWidget', () => {
   })
 
   it('shows a full-run MC warning even when the envelope has no detected arrival', () => {
+    const scenario = warningScenario()
+    scenario.entities = scenario.entities.filter((entity) => entity.kind !== 'sensor')
+    useStore.getState().replaceScenario(scenario)
     useStore.getState().advanceRun(1)
     useStore.getState().pauseRun()
     setMc('done')
@@ -245,8 +255,118 @@ describe('KpiTilesWidget', () => {
     expect(html).not.toContain('not yet')
   })
 
+  it('keeps 0.952 expected pre-arrival and late counts fractional', () => {
+    useStore.getState().replaceScenario(warningScenario())
+    useStore.getState().advanceRun(1)
+    useStore.getState().pauseRun()
+    const actual = liveStats.liveKpisAt
+    const spy = vi.spyOn(liveStats, 'liveKpisAt').mockImplementationOnce((timeline, t) => ({
+      ...actual(timeline, t), expectedKills: 0.952, lateKills: 0.952,
+    }))
+    try {
+      const html = render({ tiles: ['killEk', 'lateEk'] })
+      expect(html.match(/class="tv">0.95</g)).toHaveLength(2)
+      expect(html).toContain('Expected kills')
+      expect(html).toContain('Expected late kills')
+      expect(html).toContain('planning envelope')
+      expect(html).not.toContain('>1.0<')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('keeps no-asset labels and unavailable metrics with no asset placed', () => {
+    const scenario = threatScenario()
+    useStore.getState().replaceScenario(scenario)
+    useStore.getState().advanceRun(130)
+    useStore.getState().pauseRun()
+    setMc('done')
+    const html = render({ tiles: ['killEk', 'leakEn', 'minWarning'] })
+    expect(html).toContain('Expected neutralization')
+    expect(html).not.toContain('>Expected kills<')
+    expect(html.match(/class="tv">—</g)).toHaveLength(2)
+    expect(html).toContain('no defended asset placed')
+    expect(html).not.toContain('0.0%')
+  })
+
   it('says so when no threat has a flight path', () => {
     useStore.getState().replaceScenario(emptyScenario())
     expect(render({})).toContain('No threats with flight paths.')
   })
+})
+
+
+describe('KPI execution visibility', () => {
+  beforeEach(() => {
+    const scenario = warningScenario()
+    scenario.paths[0].startDelayS = 20
+    useStore.getState().replaceScenario(scenario)
+    useStore.getState().setBoardPhase('execute')
+    useStore.getState().advanceRun(1)
+    useStore.getState().pauseRun()
+    useStore.getState().scrubTo(150)
+  })
+
+  it('clamps event prefixes and deterministic time tiles before the first detection', () => {
+    const html = render({ tiles: [...KPI_KEYS] }, false, { scoped: true, horizonS: 1 })
+    expect(html).toContain('0<small>/1</small>')
+    expect(html).toContain('class="tv">0.00<')
+    expect(html).toContain('not yet')
+    expect(html).not.toMatch(/class="tv">\d+:\d+/)
+    expect(html).not.toContain('class="wg-m"')
+  })
+
+  it('uses only reached MC samples, including between grid points, and withholds full-run scalars', () => {
+    setMc('done')
+    const summary = useStore.getState().mc.summary!
+    for (const band of [summary.detected, summary.tracked, summary.engaged, summary.kills, summary.leakers]) {
+      for (const values of Object.values(band)) values.fill(9.7).fill(0, 0, 3)
+    }
+    const html = render({ tiles: [...KPI_KEYS] }, false, { scoped: true, horizonS: 1.4 })
+    expect(html).toContain('0 to 0 (95% mean CI)')
+    expect(html).not.toContain('9.7')
+    expect(html.match(/title="Forecast available in Analyze"/g)).toHaveLength(2)
+    expect(html).not.toContain('MC conditional mean')
+    expect(html).not.toContain('defined in')
+  })
+
+  it('shows zero counts and dashes for EMPTY_HORIZON despite a forward cursor and finished MC', () => {
+    setMc('done')
+    const html = render({ tiles: [...KPI_KEYS] }, false, EMPTY_HORIZON)
+    expect(html).toContain('0<small>/1</small>')
+    expect(html).toContain('class="tv">0.00<')
+    expect(html).toContain('class="tv">—<')
+    expect(html).not.toContain('mean CI')
+    expect(html.match(/title="Forecast available in Analyze"/g)).toHaveLength(2)
+    expect(html).not.toMatch(/class="tv">\d+:\d+/)
+  })
+
+  it('releases scalar statistics at the full-duration boundary only', () => {
+    setMc('done')
+    const durationS = useStore.getState().mc.summary!.durationS
+    const params = { tiles: ['firstDetect', 'minWarning'] }
+    expect(render(params, false, { scoped: true, horizonS: durationS - 0.5 })).toContain(FORECAST_IN_ANALYZE)
+    const full = render(params, false, { scoped: true, horizonS: durationS })
+    expect(full).toContain('full-run · MC conditional mean')
+    expect(full).not.toContain(FORECAST_IN_ANALYZE)
+  })
+})
+
+
+it('keeps assigned kills and first-effect times pending until the effect lands', () => {
+  const scenario = parseAutosave(JSON.stringify(firingFixture))
+  useStore.getState().replaceScenario(scenario)
+  useStore.getState().advanceRun(1)
+  useStore.getState().scrubTo(250)
+  const { report } = engagementPicture(useStore.getState().scenario)
+  const first = report.events.find((event) => event.killDelta > 0)!
+  expect(first.tEffectS).toBeGreaterThan(first.tS)
+  const params = { tiles: ['salvos', 'killEk', 'firstEffect', 'detectToEffect'] }
+  const pending = render(params, false, { scoped: true, horizonS: first.tS })
+  expect(pending).toContain('class="tv">0.00<')
+  expect(pending).not.toContain(formatTime(first.tEffectS))
+  expect(pending.match(/class="tv">—</g)).toHaveLength(2)
+  const landed = render(params, false, { scoped: true, horizonS: first.tEffectS })
+  expect(landed).toContain(formatTime(first.tEffectS))
+  expect(landed).not.toContain('class="tv">0.00<')
 })

@@ -1,3 +1,4 @@
+import { EMPTY_HORIZON, FORECAST_IN_ANALYZE, FULL_RUN } from '../../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
@@ -6,7 +7,7 @@ import type { ReactNode } from 'react'
 vi.mock('../Info', () => ({ Info: ({ children }: { children: ReactNode }) => <>{children}</> }))
 import { emptyScenario } from '../../../model/seed'
 import { useStore } from '../../../state/store'
-import { AboutProjection } from './ProjectionWidget'
+import { AboutProjection, ProjectionWidget } from './ProjectionWidget'
 
 it('uses the edited residual threshold in methodology copy and explains blocked routes', () => {
   const scenario = emptyScenario()
@@ -18,4 +19,38 @@ it('uses the edited residual threshold in methodology copy and explains blocked 
   expect(html).not.toContain('5% expected residual')
   expect(html).toContain('no shot')
   expect(html).toContain('do not estimate probability of passing')
+})
+
+it.each(['active', 'absent'] as const)('uses the %s asset forecast label and retains full-run qualifiers', (assetState) => {
+  const scenario = emptyScenario()
+  scenario.entities = [{ id: 'uas', name: 'UAS', kind: 'uas', specId: 'lib-mavic3',
+    pos: { x: -3000, y: 0 }, headingDeg: 90, color: null, notes: '' }]
+  if (assetState === 'active') scenario.entities.push({ id: 'asset', name: 'Asset', kind: 'asset', specId: 'lib-asset',
+    pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' })
+  scenario.paths = [{ id: 'path', entityId: 'uas', points: [{ x: -3000, y: 0 }, { x: 3000, y: 0 }],
+    speedMps: 20, startDelayS: 0 }]
+  useStore.getState().replaceScenario(scenario)
+  Object.assign(useStore.getInitialState(), useStore.getState())
+  const html = renderToStaticMarkup(<ProjectionWidget horizon={FULL_RUN} id="projection" params={{}} collapsed={false} customize={false} index={0} count={1} />)
+  expect(html).toContain(`<span>${assetState === 'active' ? 'Expected kills' : 'Expected neutralization'}</span>`)
+  expect(html).toContain('Residual survival')
+  expect(html).toContain('full run · not live')
+  expect(html).toContain('planning envelope')
+  if (assetState !== 'active') {
+    const residual = html.split('<span>Residual survival</span>')[1].split('</div>')[0]
+    expect(residual).toContain('>—</strong>')
+    expect(residual).toContain('no defended asset placed')
+    expect(residual).not.toContain('0.0%')
+  }
+})
+
+
+it.each([{ scoped: true, horizonS: 1 }, EMPTY_HORIZON])('withholds projection bodies and header details at %j', (horizon) => {
+  Object.assign(useStore.getInitialState(), useStore.getState())
+  const html = renderToStaticMarkup(<ProjectionWidget horizon={horizon} id="projection" params={{}} collapsed={false} customize={false} index={0} count={1} />)
+  expect(html).toContain(FORECAST_IN_ANALYZE)
+  expect(html).not.toContain('outcome-metric')
+  expect(html).not.toContain('class="wg-m"')
+  expect(html).not.toContain('projection-header-extra')
+  expect(html).not.toContain('section-headline')
 })

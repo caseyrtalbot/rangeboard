@@ -1,3 +1,4 @@
+import { EMPTY_HORIZON, FORECAST_IN_ANALYZE, FULL_RUN, type ExecutionHorizon } from '../../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../../../model/seed'
@@ -9,10 +10,11 @@ import { SensitivityWidget } from './SensitivityWidget'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading widget needs the two in step.
-function render(): string {
+function render(horizon: ExecutionHorizon = FULL_RUN): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(
     <SensitivityWidget
+      horizon={horizon}
       id="th-sensitivity"
       params={{}}
       collapsed={false}
@@ -143,4 +145,16 @@ describe('SensitivityWidget', () => {
     expect(html).not.toContain('reps · seed')
     expect(html).toContain('Run sensitivity')
   })
+
+  it.each([{ scoped: true, horizonS: 1 }, EMPTY_HORIZON])('withholds custom-mount reports at %j', (horizon) => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    setSensitivity({}, 'done')
+    const html = render(horizon)
+    expect(html).toContain(FORECAST_IN_ANALYZE)
+    expect(html).not.toContain('chart-tornado')
+    expect(html).not.toContain('<td>')
+    expect(html).not.toContain('class="wg-m"')
+    expect(html).not.toContain('Run again')
+  })
+
 })

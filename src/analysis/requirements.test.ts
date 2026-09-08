@@ -245,7 +245,7 @@ describe('Detect is a performance test, not a presence test', () => {
     // The spawn caveat, then the two run-basis caveats of a deterministic run.
     expect(detect.caveats).toHaveLength(3)
     expect(detect.caveats[0]).toBe(
-      '1 track not scored here. Flight paths start inside a detect ring (detected at T0): Threat 1 held by LSTAR',
+      '1 track not scored here. First detection not assessed: Threat 1 starts inside detection coverage.',
     )
     // The invalidated track still scores every gate the finding does not touch.
     expect(gateOf(result, 'track').status).toBe('pass')

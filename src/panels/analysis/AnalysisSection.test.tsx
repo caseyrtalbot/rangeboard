@@ -1,3 +1,4 @@
+import { EMPTY_HORIZON, FORECAST_IN_ANALYZE } from '../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { AnalysisSection } from './AnalysisSection'
@@ -34,4 +35,17 @@ describe('AnalysisSection', () => {
     expect(html).toContain('Requirement body')
     expect(action).toBeGreaterThan(toggleEnd)
   })
+})
+
+
+it.each([{ scoped: true, horizonS: 1 }, EMPTY_HORIZON])('withholds report headlines in collapsed sections at %j', (horizon) => {
+  const html = renderToStaticMarkup(
+    <AnalysisSection title="Outcome" headline="9.75 expected residual · T+9:30" horizon={horizon}>
+      <span>Full report</span>
+    </AnalysisSection>,
+  )
+  expect(html).toContain(FORECAST_IN_ANALYZE)
+  expect(html).not.toContain('9.75')
+  expect(html).not.toContain('T+')
+  expect(html).not.toContain('Full report')
 })

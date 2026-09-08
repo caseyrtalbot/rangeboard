@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useMemo } from 'react'
 import { Circle, Group, Line, Text } from 'react-konva'
 import type { Entity } from '../../model/types'
@@ -46,7 +47,7 @@ const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokeP
 export const CalloutLayer = memo(function CalloutLayer({ placements }: Props) {
   const entities = useStore((s) => s.scenario.entities)
   const camera = useStore((s) => s.camera)
-  const show = useStore((s) => s.ui.layers.labels)
+  const show = useStore((s) => selectEffectiveLayers(s).labels)
   if (!show) return null
   const k = camera.scale
   return (

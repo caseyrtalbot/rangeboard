@@ -1,3 +1,4 @@
+import { FORECAST_IN_ANALYZE } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../../../model/types'
 import { DT } from '../../../playback/clock'
@@ -49,7 +50,7 @@ export function AboutProjection() {
  * horizon. Kept apart from the live widgets so a future event never reads
  * as observed data.
  */
-export function ProjectionWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function ProjectionWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
@@ -66,10 +67,11 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="projection"
       title="Full-run projection"
       meta="full run · not live · conditional"
-      headerExtra={(
+      headerExtra={!horizon.scoped && (
         <span className="projection-header-extra">
           <State tone={VALIDITY_TEXT[validity.validity].tone}>{VALIDITY_TEXT[validity.validity].pill}</State>
           <AboutProjection />
@@ -80,7 +82,9 @@ export function ProjectionWidget({ id, params, collapsed, customize, index, coun
       index={index}
       count={count}
     >
-      {threats === 0 ? (
+      {horizon.scoped ? (
+        <p className="muted small">{FORECAST_IN_ANALYZE}</p>
+      ) : threats === 0 ? (
         <p className="muted small">No threats with flight paths.</p>
       ) : (
         <>

@@ -1,3 +1,4 @@
+import { FORECAST_IN_ANALYZE } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import type { TornadoRow } from '../../../charts/Tornado'
 import { Tornado } from '../../../charts/Tornado'
@@ -15,7 +16,7 @@ import { WidgetFrame } from './WidgetFrame'
  * uncertain field from its p10 run to its p90 run, the nominal run as the rule.
  * The rows come from the worker, sorted by swing, so the widget only draws.
  */
-export function SensitivityWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function SensitivityWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
@@ -45,6 +46,7 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="sensitivity"
       title="Sensitivity"
       meta={meta}
@@ -53,7 +55,9 @@ export function SensitivityWidget({ id, params, collapsed, customize, index, cou
       index={index}
       count={count}
     >
-      {run.runMode === 'deterministic' ? (
+      {horizon.scoped ? (
+        <p className="muted small">{FORECAST_IN_ANALYZE}</p>
+      ) : run.runMode === 'deterministic' ? (
         <p className="muted small">Sensitivity needs the Monte Carlo run mode.</p>
       ) : !hasAsset ? (
         <p className="muted small">Leakers unavailable: no defended asset. Sensitivity requires a defended asset.</p>

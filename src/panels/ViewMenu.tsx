@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../state/selectors'
 import { useRef } from 'react'
 import { Seg } from '../ui/kit'
 import { usePopover } from '../ui/usePopover'
@@ -93,7 +94,7 @@ export function ViewMenu() {
 }
 
 export function DeclutterControl() {
-  const layers = useStore((s) => s.ui.layers)
+  const layers = useStore(selectEffectiveLayers)
   const active = activeLayerPreset(layers)
   return (
     <div className="board-declutter">
@@ -163,7 +164,7 @@ export function BasemapSettings() {
 }
 
 export function LayerSettings() {
-  const layers = useStore((s) => s.ui.layers)
+  const layers = useStore(selectEffectiveLayers)
   return (
     <>
       {LAYER_GROUPS.map((group) => (

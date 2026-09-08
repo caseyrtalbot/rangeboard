@@ -6,6 +6,8 @@ import type { LadderRow } from './types'
 import { snapScrubS } from './seriesData'
 
 interface LadderProps {
+  /** Latest visible outcome time; undefined or Infinity shows the full run. */
+  horizonS?: number
   rows: LadderRow[]
   durationS: number
   /** Playhead position, seconds. */
@@ -43,7 +45,7 @@ function gutterLabel(label: string): string {
  * its shell and measures its host like EngagementStrip does. Scrub maps the pointer x
  * through the same linear scale the spans use.
  */
-export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14 }: LadderProps) {
+export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14, horizonS = Infinity }: LadderProps) {
   const tokens = useMemo(() => readTokens(), [])
   const hostRef = useRef<HTMLDivElement>(null)
   const [measured, setMeasured] = useState(0)
@@ -102,8 +104,13 @@ export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14 }: 
               </text>
               <line x1={GUTTER_W} y1={mid} x2={w - RIGHT_PAD} y2={mid} stroke={tokens.grid} />
               {r.spans.map((sp, k) => {
+                if (horizonS === -Infinity || sp.startS > horizonS) return null
+                const endS = Math.min(sp.endS, horizonS)
+                // Caller labels may contain the forecast end time.
+                const label = endS < sp.endS && sp.label
+                  ? `${formatTime(sp.startS)}–${formatTime(endS)}` : sp.label
                 const x0 = x(sp.startS)
-                const sw = Math.max(SPAN_MIN_W, x(sp.endS) - x0)
+                const sw = Math.max(SPAN_MIN_W, x(endS) - x0)
                 return (
                   <g key={k}>
                     <rect
@@ -114,9 +121,9 @@ export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14 }: 
                       rx={1}
                       fill={resolveColor(sp.color, tokens)}
                     />
-                    {sp.label ? (
+                    {label ? (
                       <text x={x0 + sw + 3} y={mid} dominantBaseline="middle" style={font}>
-                        {sp.label}
+                        {label}
                       </text>
                     ) : null}
                   </g>

@@ -65,6 +65,10 @@ export function totalSalvos(e: ExpenditureCounts): number {
   return e.shotsFired + (e.deSalvos ?? 0) + (e.jamSalvos ?? 0)
 }
 
+export function expectedCount(value: number): string {
+  return value.toFixed(value < 10 ? 2 : 1)
+}
+
 /**
  * Residual KPI text from the DISPLAY leaker figure.
  *
@@ -116,13 +120,13 @@ export function environmentHeadline(env: EnvironmentSpec, units: DisplayUnits = 
 }
 
 /**
- * AAR headline: "3.2 defeated · 0.8 undefeated". AarSummary.expectedLeakers
+ * AAR headline uses expected counts. AarSummary.expectedLeakers
  * carries UNDEFEATED ships (the leaker bucket plus the never-arrived bucket),
  * so the word is never "leakers": that would claim an arrival.
  */
 export function aarHeadline(
   aar: Pick<AarSummary, 'expectedKills' | 'expectedLeakers'>,
 ): string {
-  return `${aar.expectedKills.toFixed(1)} defeated · ${aar.expectedLeakers.toFixed(1)} undefeated`
+  return `${expectedCount(aar.expectedKills)} expected kills · ${expectedCount(aar.expectedLeakers)} expected survivors`
 }
 

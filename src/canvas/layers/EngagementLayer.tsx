@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { Circle, Group, Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { bearingDeg, dist } from '../../geometry/geo'
@@ -32,7 +33,7 @@ const BEAM_DASH = [2, 4]
  * turned ghost still draws to completion.
  */
 export function EngagementLayer({ shots, displayTimeS }: Props) {
-  const show = useStore((s) => s.ui.layers.engagements)
+  const show = useStore((s) => selectEffectiveLayers(s).engagements)
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
   if (!show) return null
@@ -41,6 +42,8 @@ export function EngagementLayer({ shots, displayTimeS }: Props) {
   return (
     <Group listening={false}>
       {shots.map((s) => {
+        if (displayTimeS < s.tReleaseS) return null
+        if (s.mode !== 'beam' && s.tEffectS <= s.tReleaseS) return null
         const d = dist(s.from, s.to)
         if (d < 1) return null
         // Trim both ends the way ConnectionLayer trims its arrows, so the line

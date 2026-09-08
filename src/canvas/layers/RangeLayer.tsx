@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { Circle, Group, Line, Text } from 'react-konva'
 import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
@@ -19,7 +20,7 @@ export function RangeLayer() {
   // Only the scale is read; the stage transform carries the pan.
   const scale = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
-  const show = useStore((s) => s.ui.layers.rangeRings)
+  const show = useStore((s) => selectEffectiveLayers(s).rangeRings)
   if (!show) return null
   const env = scenario.environment
 

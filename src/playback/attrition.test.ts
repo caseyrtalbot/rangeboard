@@ -7,6 +7,7 @@ import { posAtTime } from '../geometry/geo'
 import { resolveEngagements } from './attrition'
 import { distanceFalloff, expenditureChannel, isHardKill, SHIP_DEAD_BELOW } from './pk'
 import { assessAllThreats } from './sim'
+import { buildTrackTimeline, effectorStatesAt, shotsInFlightAt, trackStatesAt } from './trackState'
 
 /**
  * Hand-built scenarios with controlled specs so per-shot Pk is exactly
@@ -1065,6 +1066,7 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     expect(r.events).toHaveLength(1)
     const ev = r.events[0]
     expect(ev.tS).toBeCloseTo(5, 9)
+    expect(ev.tReleaseS).toBe(15)
     const tof = 4400 / (140 + 20)
     expect(tof).toBe(27.5)
     expect(ev.tEffectS).toBeCloseTo(15 + tof, 9)
@@ -1192,5 +1194,42 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
     expect(absent.events.length).toBeGreaterThan(0)
     expect(nulled).toEqual(absent)
     for (const ev of absent.events) expect(ev.tEffectS).toBe(ev.tS + 10)
+  })
+})
+
+
+describe('physical release metadata and playback', () => {
+  it.each([false, true])('keeps the round at a fixed-ID launcher until release (moving=%s)', (moving) => {
+    const scenario = legacyScenario()
+    const model = interceptor({ maxRangeM: 4600, engageTimeS: 3.25, flyoutSpeedMps: 200, magazineSize: 1, pk: 0.5 })
+    scenario.library = [...scenario.library, SENSOR, TARGET, model]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 }, { id: 'r3-sensor' })
+    const effector = ent('effector', model.id, { x: 0, y: 0 }, { id: 'r3-launcher' })
+    const uas = ent('uas', TARGET.id, { x: 2000, y: 0 }, { id: 'r3-threat' })
+    scenario.entities = [sensor, effector, uas]
+    scenario.connections = [{ id: 'r3-link', fromId: sensor.id, toId: effector.id, label: '' }]
+    scenario.paths = [{ ...flight(uas.id, [{ x: 2000, y: 0 }, { x: -1000, y: 0 }], 20), id: 'r3-path' }]
+    const assessments = assessAllThreats(scenario)
+    // Reuse the controlled eligibility window to isolate stationary kinematics;
+    // a zero-length path alone has no assessment duration in the full sweep.
+    if (!moving) scenario.paths[0].points = [{ x: 2000, y: 0 }, { x: 2000, y: 0 }]
+    const report = resolveEngagements(scenario, assessments)
+    expect(report.events).toHaveLength(1)
+    const ev = report.events[0]
+    const release = ev.tReleaseS!
+    expect(release).toBe(ev.tS + 3.25)
+    expect(ev.tEffectS).toBeGreaterThan(release)
+    if (!moving) expect(ev.tEffectS - release).toBeCloseTo(2000 / 140, 12)
+    const tl = buildTrackTimeline(scenario, assessments, report)
+    expect(shotsInFlightAt(tl, release - 0.001)).toEqual([])
+    expect(effectorStatesAt(tl, ev.tS).get(effector.id)).toBe('preparing')
+    expect(trackStatesAt(tl, ev.tS).get(uas.id)!.kineticSalvos).toBe(1)
+    expect(shotsInFlightAt(tl, release)[0].progress).toBe(0)
+    const middle = shotsInFlightAt(tl, (release + ev.tEffectS) / 2)[0]
+    expect(middle.progress).toBeCloseTo(0.5, 12)
+    expect(middle.from).toEqual(effector.pos)
+    expect(middle.to).toEqual(posAtTime(scenario.paths[0].points, 20, scenario.paths[0].startDelayS, ev.tEffectS).pos)
+    expect(shotsInFlightAt(tl, ev.tEffectS)).toEqual([])
+    expect(trackStatesAt(tl, ev.tEffectS).get(uas.id)!.expectedKills).toBe(report.threats[0].expectedKills)
   })
 })

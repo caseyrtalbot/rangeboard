@@ -1,0 +1,611 @@
+{
+  "status": "captured",
+  "date": "2026-09-07",
+  "commit": "8f018be4d14e0a1075e154c83572582cddbb4b7b",
+  "url": "http://localhost:5412",
+  "viewport": {
+    "width": 1400,
+    "height": 900
+  },
+  "panelWidth": 320,
+  "captures": [
+    {
+      "name": "prepare-with-asset",
+      "playback": {
+        "playing": false,
+        "simTimeS": 0,
+        "speedMult": 1,
+        "runId": "simrun-mtrwq753-2",
+        "runSeq": 1,
+        "phase": "ready",
+        "observedThroughS": 0,
+        "startedAtMs": null,
+        "completedAtMs": null,
+        "basisSignature": null,
+        "resetReason": "scenario-loaded"
+      },
+      "rightPanelText": [
+        "Prepare scenarioOverviewSelected objectTest cardsModel libraryRun summarySensorsEffectorsSystem of systemsThreatLayoutUntitled scenarioINVALIDBoard scenario · RUN-0001Scenario and run scopeScenarioUntitled scenarioPlayback runRUN-0001Run IDsimrun-mtrwq753-2LifecycleReadyThreats assessed1Run configurationEstimateScenario and run · Mode, seed and uncertainty settings define the run. Analysis-affecting changes reset playback and mark estimates stale.DeterministicMonte CarloUncertaintyAleatoryTotalSeedReplicatesTarget half-widthRun replicatesScenario inputsEnvironmentScenario · Conditions affect modeled sensor performance and threat reach when effects are enabled.applyiSkyClearRainFogLightDayNightEM clutterRural (quiet)Urban (dense)Visibility (m, blank = 20000 from sky)Wind 0 ktFrom 270 deg (W)Temperature 15 CField elevation (ft)Fire doctrineScenario · ROE and doctrine govern modeled engagement eligibility and timing.ROEHoldTightFreeDoctrineiLaunch pointMax rangeRange fractionPk commitLatest launchRelease once predicted per-shot Pk reaches the effector commit Pk. Quality firing solution first; the deadline still forces the shot.Release inside 67% of max rangeRe-engagement depth (cycles before arrival)Hostile declaration dwell (s)Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role and effector type tables in doctrineFactors, or the model's own override.Requirement inputsScenario · Operator-defined thresholds; unspecified inputs remain unspecified.Detect: single-scan PdTrack: cumulative PdEffect: max residual per trackDetect: min warning (s, empty = none)The test defines these pass lines. The engine never sets them. A radar contact counts as DETECT when its single-scan Pd reaches the detect value.Run validity2 findingsINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1INVALIDA gate below is not scored: the run never made that measurement.INVALIDATESFindingspawn-in-ringGatesDETECTAffectedDJI Mavic 3 (G1 quad) 1 · ent-mtnvzhmr-25LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Findingunvalidated-modelGatesDETECT · TRACK · IDENTIFY · TARGET · ENGAGE · EFFECTAffectedScenario-wideEntity register6 placedGiraffe 1X 3D radar (Saab) 1Sensor · ent-mtnvzhmr-22EnabledFAAD C2 (Northrop Grumman) 1C2 · ent-mtnvzhmr-23EnabledCoyote Block 2 interceptor 1Effector · ent-mtnvzhmr-24EnabledDJI Mavic 3 (G1 quad) 1UAS · ent-mtnvzhmr-25EngageableAudit assetAsset · audit-assetEnabledKuRFS fire-control radar (Raytheon) 1Sensor · ent-mtnvzhmx-29EnabledContinue preparationOpen Test cardsOpen Library"
+      ],
+      "validity": [
+        "Untitled scenarioINVALIDBoard scenario · RUN-0001Scenario and run scopeScenarioUntitled scenarioPlayback runRUN-0001Run IDsimrun-mtrwq753-2LifecycleReadyThreats assessed1Run configurationEstimateScenario and run · Mode, seed and uncertainty settings define the run. Analysis-affecting changes reset playback and mark estimates stale.DeterministicMonte CarloUncertaintyAleatoryTotalSeedReplicatesTarget half-widthRun replicatesScenario inputsEnvironmentScenario · Conditions affect modeled sensor performance and threat reach when effects are enabled.applyiSkyClearRainFogLightDayNightEM clutterRural (quiet)Urban (dense)Visibility (m, blank = 20000 from sky)Wind 0 ktFrom 270 deg (W)Temperature 15 CField elevation (ft)Fire doctrineScenario · ROE and doctrine govern modeled engagement eligibility and timing.ROEHoldTightFreeDoctrineiLaunch pointMax rangeRange fractionPk commitLatest launchRelease once predicted per-shot Pk reaches the effector commit Pk. Quality firing solution first; the deadline still forces the shot.Release inside 67% of max rangeRe-engagement depth (cycles before arrival)Hostile declaration dwell (s)Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role and effector type tables in doctrineFactors, or the model's own override.Requirement inputsScenario · Operator-defined thresholds; unspecified inputs remain unspecified.Detect: single-scan PdTrack: cumulative PdEffect: max residual per trackDetect: min warning (s, empty = none)The test defines these pass lines. The engine never sets them. A radar contact counts as DETECT when its single-scan Pd reaches the detect value.Run validity2 findingsINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1INVALIDA gate below is not scored: the run never made that measurement.INVALIDATESFindingspawn-in-ringGatesDETECTAffectedDJI Mavic 3 (G1 quad) 1 · ent-mtnvzhmr-25LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Findingunvalidated-modelGatesDETECT · TRACK · IDENTIFY · TARGET · ENGAGE · EFFECTAffectedScenario-wideEntity register6 placedGiraffe 1X 3D radar (Saab) 1Sensor · ent-mtnvzhmr-22EnabledFAAD C2 (Northrop Grumman) 1C2 · ent-mtnvzhmr-23EnabledCoyote Block 2 interceptor 1Effector · ent-mtnvzhmr-24EnabledDJI Mavic 3 (G1 quad) 1UAS · ent-mtnvzhmr-25EngageableAudit assetAsset · audit-assetEnabledKuRFS fire-control radar (Raytheon) 1Sensor · ent-mtnvzhmx-29EnabledContinue preparationOpen Test cardsOpen Library"
+      ],
+      "buttons": [
+        {
+          "text": "Deterministic",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Monte Carlo",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Aleatory",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Total",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Run replicates",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "i",
+          "title": "About environment effects",
+          "aria": "About environment effects"
+        },
+        {
+          "text": "Clear",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Rain",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Fog",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Day",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Night",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Rural (quiet)",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Urban (dense)",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Hold",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Tight",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Free",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "i",
+          "title": "About the fire-control sequence",
+          "aria": "About the fire-control sequence"
+        },
+        {
+          "text": "Max range",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Range fraction",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Pk commit",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Latest launch",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Select DJI Mavic 3 (G1 quad) 1",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Giraffe 1X 3D radar (Saab) 1Sensor · ent-mtnvzhmr-22Enabled",
+          "title": null,
+          "aria": "Inspect Giraffe 1X 3D radar (Saab) 1"
+        },
+        {
+          "text": "FAAD C2 (Northrop Grumman) 1C2 · ent-mtnvzhmr-23Enabled",
+          "title": null,
+          "aria": "Inspect FAAD C2 (Northrop Grumman) 1"
+        },
+        {
+          "text": "Coyote Block 2 interceptor 1Effector · ent-mtnvzhmr-24Enabled",
+          "title": null,
+          "aria": "Inspect Coyote Block 2 interceptor 1"
+        },
+        {
+          "text": "DJI Mavic 3 (G1 quad) 1UAS · ent-mtnvzhmr-25Engageable",
+          "title": null,
+          "aria": "Inspect DJI Mavic 3 (G1 quad) 1"
+        },
+        {
+          "text": "Audit assetAsset · audit-assetEnabled",
+          "title": null,
+          "aria": "Inspect Audit asset"
+        },
+        {
+          "text": "KuRFS fire-control radar (Raytheon) 1Sensor · ent-mtnvzhmx-29Enabled",
+          "title": null,
+          "aria": "Inspect KuRFS fire-control radar (Raytheon) 1"
+        },
+        {
+          "text": "Open Test cards",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Open Library",
+          "title": null,
+          "aria": null
+        }
+      ]
+    },
+    {
+      "name": "execute-ready",
+      "playback": {
+        "playing": false,
+        "simTimeS": 0,
+        "speedMult": 1,
+        "runId": "simrun-mtrwq753-2",
+        "runSeq": 1,
+        "phase": "ready",
+        "observedThroughS": 0,
+        "startedAtMs": null,
+        "completedAtMs": null,
+        "basisSignature": null,
+        "resetReason": "scenario-loaded"
+      },
+      "rightPanelText": [
+        "Run monitorOverviewSelected objectTest cardsModel libraryRun summarySensorsEffectorsSystem of systemsThreatLayoutReadyRUN-0001 · T+0:00MC 30 · total · seed 4821estimate · 30 replicates · totalbuffer clean · no prior-run telemetryClean resetExecution view · playback cursor and observed horizon. Full-run widgets are labeled separately.▾KPI tiles6 of 13 · planning envelopeDetect0/1planning envelopeTrack now0/1planning envelopeID / class0/1planning envelopeEngaged0/1planning envelopeExpected kills0.00planning envelopeLeak E[n]0.0planning envelopeFull-run time series · playback cursor marker▾Expected kills · planning envelope · Leaker ships · planning envelope · Detected tracks · planning envelope0.5 s · basis per series0:005:000.00.51.0ARRT+0:00Expected kills · planning envelopeLeaker ships · planning envelopeDetected tracks · planning envelope▾Live threat pictureplanning envelope · ready · 0/1 detectedWEZExpected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD0/1TRK0/1ID0/1TGT0/1ENG0/1FX0/1Survives 100%▾Full-run projectionfull run · not live · conditionalINVALIDiExpected kills96.0%planning envelope · 0.96 of 1 shipsResidual survival4.0%planning envelope · 0.04 of 1 shipsExpected late kills0.00planning envelope · after arrival, no asset protectionFirst detect0:00planning envelope · earliest trackFirst effect1:51planning envelope · expected kill mass removedMin warning7:55planning envelope · worst threatSalvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual▾Full-run validity1 invalidating · 1 limitingINVALIDA gate below is not scored: the run never made that measurement.Findings and model fidelity · 1 invalidating · 1 limitingRadar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1Gates: detect.Tracks: DJI Mavic 3 (G1 quad) 1.LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Gates: detect, track, identify, target, engage, effect.Review requirement inputs in Prepare"
+      ],
+      "widgets": [
+        {
+          "type": "kpi-tiles",
+          "text": "▾KPI tiles6 of 13 · planning envelopeDetect0/1planning envelopeTrack now0/1planning envelopeID / class0/1planning envelopeEngaged0/1planning envelopeExpected kills0.00planning envelopeLeak E[n]0.0planning envelope"
+        },
+        {
+          "type": "time-series",
+          "text": "▾Expected kills · planning envelope · Leaker ships · planning envelope · Detected tracks · planning envelope0.5 s · basis per series0:005:000.00.51.0ARRT+0:00Expected kills · planning envelopeLeaker ships · planning envelopeDetected tracks · planning envelope"
+        },
+        {
+          "type": "threat-picture",
+          "text": "▾Live threat pictureplanning envelope · ready · 0/1 detectedWEZExpected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD0/1TRK0/1ID0/1TGT0/1ENG0/1FX0/1Survives 100%"
+        },
+        {
+          "type": "projection",
+          "text": "▾Full-run projectionfull run · not live · conditionalINVALIDiExpected kills96.0%planning envelope · 0.96 of 1 shipsResidual survival4.0%planning envelope · 0.04 of 1 shipsExpected late kills0.00planning envelope · after arrival, no asset protectionFirst detect0:00planning envelope · earliest trackFirst effect1:51planning envelope · expected kill mass removedMin warning7:55planning envelope · worst threatSalvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual"
+        },
+        {
+          "type": "run-validity",
+          "text": "▾Full-run validity1 invalidating · 1 limitingINVALIDA gate below is not scored: the run never made that measurement.Findings and model fidelity · 1 invalidating · 1 limitingRadar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1Gates: detect.Tracks: DJI Mavic 3 (G1 quad) 1.LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Gates: detect, track, identify, target, engage, effect.Review requirement inputs in Prepare"
+        }
+      ],
+      "kpi": [
+        {
+          "text": "Detect0/1planning envelope",
+          "title": "Threats first detected by the cursor time.",
+          "aria": null
+        },
+        {
+          "text": "Track now0/1planning envelope",
+          "title": "Threats held by one or more enabled sensors at the cursor time.",
+          "aria": null
+        },
+        {
+          "text": "ID / class0/1planning envelope",
+          "title": "Threats promoted to hostile by the classification ladder.",
+          "aria": null
+        },
+        {
+          "text": "Engaged0/1planning envelope",
+          "title": "Threats with at least one salvo of any channel assigned by now.",
+          "aria": null
+        },
+        {
+          "text": "Expected kills0.00planning envelope",
+          "title": "Expected kill mass that landed at or before the threat reached the defended asset.",
+          "aria": null
+        },
+        {
+          "text": "Leak E[n]0.0planning envelope",
+          "title": "Expected ship mass that reached the defended asset. Expected late kills never reduce it.",
+          "aria": null
+        }
+      ],
+      "selected": {
+        "compact": [
+          "DJI Mavic 3 (G1 quad) 1HOSTILECURSORT+0:00SPEED / HDG23 kt · 180 degALT300 ft AGLPLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTEDDetails"
+        ],
+        "telemetry": [
+          "ReadyRUN-0001 · T+0:00MC 30 · total · seed 4821estimate · 30 replicates · totalbuffer clean · no prior-run telemetryClean reset‹ BackDJI Mavic 3 (G1 quad) 1HOSTILERed air: DJI Mavic 3 (G1 quad) · quadRadar Pd · physics · datasheetEnvironment · planning · noneKinetic Pk · planning · noneTrack fileT+0:00 cursor · full-path/full-run fields markedPlatformRed air: DJI Mavic 3 (G1 quad) · Group 1 · quadNavigationGPS and RF mixedPositionE 0.00 nm, N 3.24 nmSpeed / heading23 kt · 180 degHeld by1 sensors · KuRFS fire-control radar (Raytheon) 1ClassificationHOSTILE · continuity 100%EWno jam effectSalvos0 kinetic · 0 DE · 0 EW · 0 inboundEffects0 landed · E[k] 0.00Residual1.00 of 1 shipsCPA (full path)T+8:20 · 0 m from Audit assetArrival (full path)T+7:55Altitude (constant)300 ft AGL · band 50 - 1,200 ftSlant range6.0 kmBearing359 °Engage status (full run)engageableWarning (full path)7:55First detect (full path)KuRFS fire-control radar (Raytheon) 1 · T+0:00RCS0.01 m²Swerling1Phaseplanning envelopePhase0:005:00hostileengageddefeatedPd by sensor2 sensors · planning envelopePd0:005:000.00.51.0T+0:00Pd KuRFS fire-control radar (Raytheon) 1Pd Giraffe 1X 3D radar (Saab) 1Survivalplanning envelopeEvent markers use the planning envelope.ships0:005:000.00.51.0FXARRT+0:00"
+        ]
+      }
+    },
+    {
+      "name": "execute-scrub-end",
+      "playback": {
+        "playing": false,
+        "simTimeS": 379.9568022412329,
+        "speedMult": 1,
+        "runId": "simrun-mtrwq753-2",
+        "runSeq": 1,
+        "phase": "review",
+        "observedThroughS": 0,
+        "startedAtMs": null,
+        "completedAtMs": null,
+        "basisSignature": null,
+        "resetReason": "scenario-loaded"
+      },
+      "rightPanelText": [
+        "Run monitorOverviewSelected objectTest cardsModel libraryRun summarySensorsEffectorsSystem of systemsThreatLayoutPreviewRUN-0001 · T+6:20MC 30 · total · seed 4821estimate · 30 replicates · totalcursor only · observed through 0:00Clean resetExecution view · playback cursor and observed horizon. Full-run widgets are labeled separately.▾KPI tiles6 of 13 · planning envelopeDetect1/1planning envelopeTrack now1/1planning envelopeID / class1/1planning envelopeEngaged1/1planning envelopeExpected kills0.96planning envelopeLeak E[n]0.0planning envelopeFull-run time series · playback cursor marker▾Expected kills · planning envelope · Leaker ships · planning envelope · Detected tracks · planning envelope0.5 s · basis per series0:005:000.00.51.0ARRT+6:20Expected kills · planning envelopeLeaker ships · planning envelopeDetected tracks · planning envelope▾Threats at preview cursorplanning envelope · preview 6:20 · 1/1 detectedWEZExpected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1Survives 4.0%▾Full-run projectionfull run · not live · conditionalINVALIDiExpected kills96.0%planning envelope · 0.96 of 1 shipsResidual survival4.0%planning envelope · 0.04 of 1 shipsExpected late kills0.00planning envelope · after arrival, no asset protectionFirst detect0:00planning envelope · earliest trackFirst effect1:51planning envelope · expected kill mass removedMin warning7:55planning envelope · worst threatSalvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual▾Full-run validity1 invalidating · 1 limitingINVALIDA gate below is not scored: the run never made that measurement.Findings and model fidelity · 1 invalidating · 1 limitingRadar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1Gates: detect.Tracks: DJI Mavic 3 (G1 quad) 1.LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Gates: detect, track, identify, target, engage, effect.Review requirement inputs in Prepare"
+      ],
+      "widgets": [
+        {
+          "type": "kpi-tiles",
+          "text": "▾KPI tiles6 of 13 · planning envelopeDetect1/1planning envelopeTrack now1/1planning envelopeID / class1/1planning envelopeEngaged1/1planning envelopeExpected kills0.96planning envelopeLeak E[n]0.0planning envelope"
+        },
+        {
+          "type": "time-series",
+          "text": "▾Expected kills · planning envelope · Leaker ships · planning envelope · Detected tracks · planning envelope0.5 s · basis per series0:005:000.00.51.0ARRT+6:20Expected kills · planning envelopeLeaker ships · planning envelopeDetected tracks · planning envelope"
+        },
+        {
+          "type": "threat-picture",
+          "text": "▾Threats at preview cursorplanning envelope · preview 6:20 · 1/1 detectedWEZExpected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1Survives 4.0%"
+        },
+        {
+          "type": "projection",
+          "text": "▾Full-run projectionfull run · not live · conditionalINVALIDiExpected kills96.0%planning envelope · 0.96 of 1 shipsResidual survival4.0%planning envelope · 0.04 of 1 shipsExpected late kills0.00planning envelope · after arrival, no asset protectionFirst detect0:00planning envelope · earliest trackFirst effect1:51planning envelope · expected kill mass removedMin warning7:55planning envelope · worst threatSalvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual"
+        },
+        {
+          "type": "run-validity",
+          "text": "▾Full-run validity1 invalidating · 1 limitingINVALIDA gate below is not scored: the run never made that measurement.Findings and model fidelity · 1 invalidating · 1 limitingRadar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1Gates: detect.Tracks: DJI Mavic 3 (G1 quad) 1.LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Gates: detect, track, identify, target, engage, effect.Review requirement inputs in Prepare"
+        }
+      ],
+      "kpi": [
+        {
+          "text": "Detect1/1planning envelope",
+          "title": "Threats first detected by the cursor time.",
+          "aria": null
+        },
+        {
+          "text": "Track now1/1planning envelope",
+          "title": "Threats held by one or more enabled sensors at the cursor time.",
+          "aria": null
+        },
+        {
+          "text": "ID / class1/1planning envelope",
+          "title": "Threats promoted to hostile by the classification ladder.",
+          "aria": null
+        },
+        {
+          "text": "Engaged1/1planning envelope",
+          "title": "Threats with at least one salvo of any channel assigned by now.",
+          "aria": null
+        },
+        {
+          "text": "Expected kills0.96planning envelope",
+          "title": "Expected kill mass that landed at or before the threat reached the defended asset.",
+          "aria": null
+        },
+        {
+          "text": "Leak E[n]0.0planning envelope",
+          "title": "Expected ship mass that reached the defended asset. Expected late kills never reduce it.",
+          "aria": null
+        }
+      ],
+      "selected": {
+        "compact": [
+          "DJI Mavic 3 (G1 quad) 1EXPECTED DEFEATCURSORT+6:19SPEED / HDG23 kt · 180 degALT300 ft AGLPLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTEDDetails"
+        ],
+        "telemetry": [
+          "PreviewRUN-0001 · T+6:20MC 30 · total · seed 4821estimate · 30 replicates · totalcursor only · observed through 0:00Clean reset‹ BackDJI Mavic 3 (G1 quad) 1EXPECTED DEFEATRed air: DJI Mavic 3 (G1 quad) · quadRadar Pd · physics · datasheetEnvironment · planning · noneKinetic Pk · planning · noneTrack fileT+6:20 cursor · full-path/full-run fields markedExpected residual below cutoff at T+6:18 (hard-kill effects). Motion continues along the planned path.PlatformRed air: DJI Mavic 3 (G1 quad) · Group 1 · quadNavigationGPS and RF mixedPositionE 0.00 nm, N 0.78 nmSpeed / heading23 kt · 180 degHeld by2 sensors · KuRFS fire-control radar (Raytheon) 1 · Giraffe 1X 3D radar (Saab) 1ClassificationHOSTILE · continuity 100%EWno jam effectSalvos4 kinetic · 0 DE · 0 EW · 0 inboundEffects4 landed · E[k] 0.96Residual0.04 of 1 shipsCPA (full path)T+8:20 · 0 m from Audit assetArrival (full path)T+7:55Altitude (constant)300 ft AGL · band 50 - 1,200 ftSlant range1.4 kmBearing356 °Engage status (full run)engageableWarning (full path)7:55First detect (full path)KuRFS fire-control radar (Raytheon) 1 · T+0:00RCS0.01 m²Swerling1Phaseplanning envelopePhase0:005:00hostileengageddefeatedPd by sensor2 sensors · planning envelopePd0:005:000.00.51.0T+6:20Pd KuRFS fire-control radar (Raytheon) 1Pd Giraffe 1X 3D radar (Saab) 1Survivalplanning envelopeEvent markers use the planning envelope.ships0:005:000.00.51.0FXARRT+6:20"
+        ]
+      }
+    },
+    {
+      "name": "prepare-no-asset",
+      "playback": {
+        "playing": false,
+        "simTimeS": 379.9568022412329,
+        "speedMult": 1,
+        "runId": "simrun-mtrwq753-2",
+        "runSeq": 1,
+        "phase": "review",
+        "observedThroughS": 0,
+        "startedAtMs": null,
+        "completedAtMs": null,
+        "basisSignature": null,
+        "resetReason": "scenario-loaded"
+      },
+      "rightPanelText": [
+        "Prepare scenarioOverviewSelected objectTest cardsModel libraryRun summarySensorsEffectorsSystem of systemsThreatLayoutUntitled scenarioINVALIDBoard scenario · RUN-0001Scenario and run scopeScenarioUntitled scenarioPlayback runRUN-0001Run IDsimrun-mtrwq753-2LifecycleReviewThreats assessed1Run configurationEstimateScenario and run · Mode, seed and uncertainty settings define the run. Analysis-affecting changes reset playback and mark estimates stale.DeterministicMonte CarloUncertaintyAleatoryTotalSeedReplicatesTarget half-widthRun replicatesScenario inputsEnvironmentScenario · Conditions affect modeled sensor performance and threat reach when effects are enabled.applyiSkyClearRainFogLightDayNightEM clutterRural (quiet)Urban (dense)Visibility (m, blank = 20000 from sky)Wind 0 ktFrom 270 deg (W)Temperature 15 CField elevation (ft)Fire doctrineScenario · ROE and doctrine govern modeled engagement eligibility and timing.ROEHoldTightFreeDoctrineiLaunch pointMax rangeRange fractionPk commitLatest launchRelease once predicted per-shot Pk reaches the effector commit Pk. Quality firing solution first; the deadline still forces the shot.Release inside 67% of max rangeRe-engagement depth (cycles before arrival)Hostile declaration dwell (s)Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role and effector type tables in doctrineFactors, or the model's own override.Requirement inputsScenario · Operator-defined thresholds; unspecified inputs remain unspecified.Detect: single-scan PdTrack: cumulative PdEffect: max residual per trackDetect: min warning (s, empty = none)The test defines these pass lines. The engine never sets them. A radar contact counts as DETECT when its single-scan Pd reaches the detect value.Run validity3 findingsINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1LIMITSNo defended asset is placed. Warning time, arrival and leakage are not measurable.INVALIDA gate below is not scored: the run never made that measurement.INVALIDATESFindingspawn-in-ringGatesDETECTAffectedDJI Mavic 3 (G1 quad) 1 · ent-mtnvzhmr-25LIMITSFindingno-defended-assetGatesDETECT · TRACKAffectedScenario-wideLIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Findingunvalidated-modelGatesDETECT · TRACK · IDENTIFY · TARGET · ENGAGE · EFFECTAffectedScenario-wideEntity register6 placedGiraffe 1X 3D radar (Saab) 1Sensor · ent-mtnvzhmr-22EnabledFAAD C2 (Northrop Grumman) 1C2 · ent-mtnvzhmr-23EnabledCoyote Block 2 interceptor 1Effector · ent-mtnvzhmr-24EnabledDJI Mavic 3 (G1 quad) 1UAS · ent-mtnvzhmr-25EngageableAudit assetAsset · audit-assetDisabledKuRFS fire-control radar (Raytheon) 1Sensor · ent-mtnvzhmx-29EnabledContinue preparationOpen Test cardsOpen Library"
+      ],
+      "validity": [
+        "Untitled scenarioINVALIDBoard scenario · RUN-0001Scenario and run scopeScenarioUntitled scenarioPlayback runRUN-0001Run IDsimrun-mtrwq753-2LifecycleReviewThreats assessed1Run configurationEstimateScenario and run · Mode, seed and uncertainty settings define the run. Analysis-affecting changes reset playback and mark estimates stale.DeterministicMonte CarloUncertaintyAleatoryTotalSeedReplicatesTarget half-widthRun replicatesScenario inputsEnvironmentScenario · Conditions affect modeled sensor performance and threat reach when effects are enabled.applyiSkyClearRainFogLightDayNightEM clutterRural (quiet)Urban (dense)Visibility (m, blank = 20000 from sky)Wind 0 ktFrom 270 deg (W)Temperature 15 CField elevation (ft)Fire doctrineScenario · ROE and doctrine govern modeled engagement eligibility and timing.ROEHoldTightFreeDoctrineiLaunch pointMax rangeRange fractionPk commitLatest launchRelease once predicted per-shot Pk reaches the effector commit Pk. Quality firing solution first; the deadline still forces the shot.Release inside 67% of max rangeRe-engagement depth (cycles before arrival)Hostile declaration dwell (s)Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role and effector type tables in doctrineFactors, or the model's own override.Requirement inputsScenario · Operator-defined thresholds; unspecified inputs remain unspecified.Detect: single-scan PdTrack: cumulative PdEffect: max residual per trackDetect: min warning (s, empty = none)The test defines these pass lines. The engine never sets them. A radar contact counts as DETECT when its single-scan Pd reaches the detect value.Run validity3 findingsINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1LIMITSNo defended asset is placed. Warning time, arrival and leakage are not measurable.INVALIDA gate below is not scored: the run never made that measurement.INVALIDATESFindingspawn-in-ringGatesDETECTAffectedDJI Mavic 3 (G1 quad) 1 · ent-mtnvzhmr-25LIMITSFindingno-defended-assetGatesDETECT · TRACKAffectedScenario-wideLIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Findingunvalidated-modelGatesDETECT · TRACK · IDENTIFY · TARGET · ENGAGE · EFFECTAffectedScenario-wideEntity register6 placedGiraffe 1X 3D radar (Saab) 1Sensor · ent-mtnvzhmr-22EnabledFAAD C2 (Northrop Grumman) 1C2 · ent-mtnvzhmr-23EnabledCoyote Block 2 interceptor 1Effector · ent-mtnvzhmr-24EnabledDJI Mavic 3 (G1 quad) 1UAS · ent-mtnvzhmr-25EngageableAudit assetAsset · audit-assetDisabledKuRFS fire-control radar (Raytheon) 1Sensor · ent-mtnvzhmx-29EnabledContinue preparationOpen Test cardsOpen Library"
+      ],
+      "buttons": [
+        {
+          "text": "Deterministic",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Monte Carlo",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Aleatory",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Total",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Run replicates",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "i",
+          "title": "About environment effects",
+          "aria": "About environment effects"
+        },
+        {
+          "text": "Clear",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Rain",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Fog",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Day",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Night",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Rural (quiet)",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Urban (dense)",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Hold",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Tight",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Free",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "i",
+          "title": "About the fire-control sequence",
+          "aria": "About the fire-control sequence"
+        },
+        {
+          "text": "Max range",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Range fraction",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Pk commit",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Latest launch",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Select DJI Mavic 3 (G1 quad) 1",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Giraffe 1X 3D radar (Saab) 1Sensor · ent-mtnvzhmr-22Enabled",
+          "title": null,
+          "aria": "Inspect Giraffe 1X 3D radar (Saab) 1"
+        },
+        {
+          "text": "FAAD C2 (Northrop Grumman) 1C2 · ent-mtnvzhmr-23Enabled",
+          "title": null,
+          "aria": "Inspect FAAD C2 (Northrop Grumman) 1"
+        },
+        {
+          "text": "Coyote Block 2 interceptor 1Effector · ent-mtnvzhmr-24Enabled",
+          "title": null,
+          "aria": "Inspect Coyote Block 2 interceptor 1"
+        },
+        {
+          "text": "DJI Mavic 3 (G1 quad) 1UAS · ent-mtnvzhmr-25Engageable",
+          "title": null,
+          "aria": "Inspect DJI Mavic 3 (G1 quad) 1"
+        },
+        {
+          "text": "Audit assetAsset · audit-assetDisabled",
+          "title": null,
+          "aria": "Inspect Audit asset"
+        },
+        {
+          "text": "KuRFS fire-control radar (Raytheon) 1Sensor · ent-mtnvzhmx-29Enabled",
+          "title": null,
+          "aria": "Inspect KuRFS fire-control radar (Raytheon) 1"
+        },
+        {
+          "text": "Open Test cards",
+          "title": null,
+          "aria": null
+        },
+        {
+          "text": "Open Library",
+          "title": null,
+          "aria": null
+        }
+      ]
+    },
+    {
+      "name": "execute-no-asset-scrub-end",
+      "playback": {
+        "playing": false,
+        "simTimeS": 379.9568022412329,
+        "speedMult": 1,
+        "runId": "simrun-mtrwq753-2",
+        "runSeq": 1,
+        "phase": "review",
+        "observedThroughS": 0,
+        "startedAtMs": null,
+        "completedAtMs": null,
+        "basisSignature": null,
+        "resetReason": "scenario-loaded"
+      },
+      "rightPanelText": [
+        "Run monitorOverviewSelected objectTest cardsModel libraryRun summarySensorsEffectorsSystem of systemsThreatLayoutPreviewRUN-0001 · T+6:20MC 30 · total · seed 4821estimate · 30 replicates · totalcursor only · observed through 0:00Clean resetExecution view · playback cursor and observed horizon. Full-run widgets are labeled separately.▾KPI tiles6 of 13 · planning envelopeDetect1/1planning envelopeTrack now1/1planning envelopeID / class1/1planning envelopeEngaged1/1planning envelopeExpected kills0.96planning envelopeLeak E[n]0.0planning envelopeFull-run time series · playback cursor marker▾Expected kills · planning envelope · Leaker ships · planning envelope · Detected tracks · planning envelope0.5 s · basis per series0:005:000.00.51.0ARRT+6:20Expected kills · planning envelopeLeaker ships · planning envelopeDetected tracks · planning envelope▾Threats at preview cursorplanning envelope · preview 6:20 · 1/1 detectedWEZExpected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1Survives 4.0%▾Full-run projectionfull run · not live · conditionalINVALIDiExpected kills96.0%planning envelope · 0.96 of 1 shipsResidual survival4.0%planning envelope · 0.04 of 1 shipsExpected late kills0.00planning envelope · after arrival, no asset protectionFirst detect0:00planning envelope · earliest trackFirst effect1:51planning envelope · expected kill mass removedMin warning7:55planning envelope · worst threatSalvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual▾Full-run validity1 invalidating · 2 limitingINVALIDA gate below is not scored: the run never made that measurement.Findings and model fidelity · 1 invalidating · 2 limitingRadar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1Gates: detect.Tracks: DJI Mavic 3 (G1 quad) 1.LIMITSNo defended asset is placed. Warning time, arrival and leakage are not measurable.Gates: detect, track.LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Gates: detect, track, identify, target, engage, effect.Review requirement inputs in Prepare"
+      ],
+      "widgets": [
+        {
+          "type": "kpi-tiles",
+          "text": "▾KPI tiles6 of 13 · planning envelopeDetect1/1planning envelopeTrack now1/1planning envelopeID / class1/1planning envelopeEngaged1/1planning envelopeExpected kills0.96planning envelopeLeak E[n]0.0planning envelope"
+        },
+        {
+          "type": "time-series",
+          "text": "▾Expected kills · planning envelope · Leaker ships · planning envelope · Detected tracks · planning envelope0.5 s · basis per series0:005:000.00.51.0ARRT+6:20Expected kills · planning envelopeLeaker ships · planning envelopeDetected tracks · planning envelope"
+        },
+        {
+          "type": "threat-picture",
+          "text": "▾Threats at preview cursorplanning envelope · preview 6:20 · 1/1 detectedWEZExpected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.▸DJI Mavic 3 (G1 quad)1 trk · 1 shipsD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1Survives 4.0%"
+        },
+        {
+          "type": "projection",
+          "text": "▾Full-run projectionfull run · not live · conditionalINVALIDiExpected kills96.0%planning envelope · 0.96 of 1 shipsResidual survival4.0%planning envelope · 0.04 of 1 shipsExpected late kills0.00planning envelope · after arrival, no asset protectionFirst detect0:00planning envelope · earliest trackFirst effect1:51planning envelope · expected kill mass removedMin warning7:55planning envelope · worst threatSalvos4planning envelope · 4 kin · 0 DE · 0 EWCoyote Block 2 interceptor 14 kinplanning envelope · 0/4 remaining▸Projected threat outcome · planning envelope0.04 expected residual"
+        },
+        {
+          "type": "run-validity",
+          "text": "▾Full-run validity1 invalidating · 2 limitingINVALIDA gate below is not scored: the run never made that measurement.Findings and model fidelity · 1 invalidating · 2 limitingRadar Pd · physics · datasheetRadar scan · physics · analyticEnvironment · planning · noneHorizon · physics · analyticDoctrine · planning · noneKinetic Pk · planning · noneFlyout · physics · analyticDraw policy · physics · analyticParameter spread · planning · noneINVALIDATESFirst detection not assessed: DJI Mavic 3 (G1 quad) 1 starts inside detection coverage.Select DJI Mavic 3 (G1 quad) 1Gates: detect.Tracks: DJI Mavic 3 (G1 quad) 1.LIMITSNo defended asset is placed. Warning time, arrival and leakage are not measurable.Gates: detect, track.LIMITSThese models are not validated: Environment, Doctrine, Kinetic Pk, Parameter spread. Their outputs are planning factors.Gates: detect, track, identify, target, engage, effect.Review requirement inputs in Prepare"
+        }
+      ],
+      "kpi": [
+        {
+          "text": "Detect1/1planning envelope",
+          "title": "Threats first detected by the cursor time.",
+          "aria": null
+        },
+        {
+          "text": "Track now1/1planning envelope",
+          "title": "Threats held by one or more enabled sensors at the cursor time.",
+          "aria": null
+        },
+        {
+          "text": "ID / class1/1planning envelope",
+          "title": "Threats promoted to hostile by the classification ladder.",
+          "aria": null
+        },
+        {
+          "text": "Engaged1/1planning envelope",
+          "title": "Threats with at least one salvo of any channel assigned by now.",
+          "aria": null
+        },
+        {
+          "text": "Expected kills0.96planning envelope",
+          "title": "Expected kill mass that landed at or before the threat reached the defended asset.",
+          "aria": null
+        },
+        {
+          "text": "Leak E[n]0.0planning envelope",
+          "title": "Expected ship mass that reached the defended asset. Expected late kills never reduce it.",
+          "aria": null
+        }
+      ],
+      "selected": {
+        "compact": [
+          "DJI Mavic 3 (G1 quad) 1EXPECTED DEFEATCURSORT+6:19SPEED / HDG23 kt · 180 degALT300 ft AGLPLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTEDDetails"
+        ],
+        "telemetry": [
+          "PreviewRUN-0001 · T+6:20MC 30 · total · seed 4821estimate · 30 replicates · totalcursor only · observed through 0:00Clean reset‹ BackDJI Mavic 3 (G1 quad) 1EXPECTED DEFEATRed air: DJI Mavic 3 (G1 quad) · quadRadar Pd · physics · datasheetEnvironment · planning · noneKinetic Pk · planning · noneTrack fileT+6:20 cursor · full-path/full-run fields markedExpected residual below cutoff at T+6:18 (hard-kill effects). Motion continues along the planned path.PlatformRed air: DJI Mavic 3 (G1 quad) · Group 1 · quadNavigationGPS and RF mixedPositionE 0.00 nm, N 0.78 nmSpeed / heading23 kt · 180 degHeld by2 sensors · KuRFS fire-control radar (Raytheon) 1 · Giraffe 1X 3D radar (Saab) 1ClassificationHOSTILE · continuity 100%EWno jam effectSalvos4 kinetic · 0 DE · 0 EW · 0 inboundEffects4 landed · E[k] 0.96Residual0.04 of 1 shipsCPA (full path)T+8:20 · 0 m from Audit assetArrival (full path)T+7:55Altitude (constant)300 ft AGL · band 50 - 1,200 ftSlant range1.4 kmBearing356 °Engage status (full run)engageableWarning (full path)7:55First detect (full path)KuRFS fire-control radar (Raytheon) 1 · T+0:00RCS0.01 m²Swerling1Phaseplanning envelopePhase0:005:00hostileengageddefeatedPd by sensor2 sensors · planning envelopePd0:005:000.00.51.0T+6:20Pd KuRFS fire-control radar (Raytheon) 1Pd Giraffe 1X 3D radar (Saab) 1Survivalplanning envelopeEvent markers use the planning envelope.ships0:005:000.00.51.0FXARRT+6:20"
+        ]
+      }
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "ids": {
+    "threat": "ent-mtnvzhmr-25",
+    "asset": "audit-asset"
+  },
+  "expectedKills": 0.9599693850480352
+}

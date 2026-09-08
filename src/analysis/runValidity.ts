@@ -94,15 +94,13 @@ function spawnInRingFinding(scenario: Scenario): RunValidityFinding | null {
     names.push(nameOf(scenario, v.sensorId))
     sensorsByUas.set(v.uasId, names)
   }
-  const lines = [...sensorsByUas.entries()].map(
-    ([uasId, sensors]) => `${nameOf(scenario, uasId)} held by ${sensors.join(', ')}`,
-  )
+  const names = [...sensorsByUas.keys()].map((uasId) => nameOf(scenario, uasId))
   return {
     id: 'spawn-in-ring',
     severity: 'invalidating',
     uasIds: [...sensorsByUas.keys()],
     gates: ['detect'],
-    message: `Flight paths start inside a detect ring (detected at T0): ${lines.join('; ')}`,
+    message: `First detection not assessed: ${names.join(', ')} ${names.length === 1 ? 'starts' : 'start'} inside detection coverage.`,
   }
 }
 
@@ -132,7 +130,7 @@ export function assessRunValidity(
       uasIds: [],
       gates: ['detect', 'track'],
       message:
-        'No defended asset is placed. Warning time is not measurable, and no track has an arrival time.',
+        'No defended asset is placed. Warning time, arrival and leakage are not measurable.',
     })
   }
 

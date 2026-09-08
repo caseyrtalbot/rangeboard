@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useEffect, useMemo, useRef } from 'react'
 import { Arc, Circle, Group, Line, Ring as KonvaRing, Text } from 'react-konva'
 import { useShallow } from 'zustand/react/shallow'
@@ -805,7 +806,7 @@ export function useEntityRings(): EntityRings[] {
   // Field subscriptions, not the whole `ui`: an unrelated ui action must not
   // rebuild the rings, which run the Pd bisection per radar.
   const units = useStore((s) => s.ui.units)
-  const layers = useStore(useShallow((s) => s.ui.layers))
+  const layers = useStore(useShallow(selectEffectiveLayers))
   const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
   const selectedUasId = useStore((s) => {
     const hit = s.scenario.entities.find(

@@ -145,6 +145,9 @@ export const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
   },
 }
 
+/** Execute starts in engagement view, with a session-only override. */
+export const EXECUTE_DEFAULT_LAYERS: LayerVisibility = { ...LAYER_PRESETS.engagement }
+
 /** Exact layer match; an individually adjusted view has no active preset. */
 export function activeLayerPreset(layers: LayerVisibility): LayerPreset | null {
   return (Object.keys(LAYER_PRESETS) as LayerPreset[]).find((name) => {

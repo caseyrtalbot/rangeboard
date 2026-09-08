@@ -5,10 +5,16 @@
  */
 
 import { DT } from '../playback/clock'
+import { FULL_RUN, visibleCount } from '../analysis/horizon'
 import type { Series } from './types'
 
 /** One Recharts row: the time plus one key per series and per band. */
-export type SeriesRow = Record<string, number | [number, number] | null>
+export type SeriesRow = Record<string, number | [number, number] | null | undefined>
+
+function visibleSamples(length: number, horizonS?: number): number {
+  return visibleCount(length, 0, DT, horizonS == null || horizonS === Infinity
+    ? FULL_RUN : { scoped: true, horizonS })
+}
 
 /** Duration in seconds of the longest series: (maxLen - 1) * DT. */
 export function seriesDurationS(series: Series[]): number {
@@ -20,20 +26,21 @@ export function seriesDurationS(series: Series[]): number {
 export const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v)
 
 /** Build the Recharts rows. NaN maps to null so the line breaks at a gap. */
-export function seriesRows(series: Series[]): SeriesRow[] {
+export function seriesRows(series: Series[], horizonS?: number): SeriesRow[] {
   let n = 0
   for (const s of series) n = Math.max(n, s.values.length)
   const rows: SeriesRow[] = []
+  const count = visibleSamples(n, horizonS)
   for (let i = 0; i < n; i++) {
     const row: SeriesRow = { t: i * DT }
     for (const s of series) {
       const v = s.values[i]
-      row[s.id] = finite(v) ? v : null
+      row[s.id] = i >= count ? undefined : finite(v) ? v : null
       for (const [k, band] of [['95', s.band95], ['80', s.band80]] as const) {
         if (!band) continue
         const lo = band[0][i]
         const hi = band[1][i]
-        row[`${s.id}:${k}`] = finite(lo) && finite(hi) ? [lo, hi] : null
+        row[`${s.id}:${k}`] = i >= count ? undefined : finite(lo) && finite(hi) ? [lo, hi] : null
       }
     }
     rows.push(row)
@@ -45,7 +52,7 @@ export function seriesRows(series: Series[]): SeriesRow[] {
  * Y domain: the given one, else 0 (or the data minimum when negative) to the data maximum
  * plus 8 percent headroom, bands included. An empty or flat-at-zero set spans [0, 1].
  */
-export function seriesRange(series: Series[], yDomain?: [number, number]): [number, number] {
+export function seriesRange(series: Series[], yDomain?: [number, number], horizonS?: number): [number, number] {
   if (yDomain) return yDomain
   let lo = 0
   let hi = -Infinity
@@ -54,12 +61,14 @@ export function seriesRange(series: Series[], yDomain?: [number, number]): [numb
     if (v < lo) lo = v
     if (v > hi) hi = v
   }
+  const takeVisible = (values: number[]) => {
+    const count = visibleSamples(values.length, horizonS)
+    for (let i = 0; i < count; i++) take(values[i])
+  }
   for (const s of series) {
-    s.values.forEach(take)
-    s.band95?.[1].forEach(take)
-    s.band80?.[1].forEach(take)
-    s.band95?.[0].forEach(take)
-    s.band80?.[0].forEach(take)
+    takeVisible(s.values)
+    if (s.band95) s.band95.forEach(takeVisible)
+    if (s.band80) s.band80.forEach(takeVisible)
   }
   if (!(hi > lo)) return [lo, lo + 1]
   return [lo, hi > 0 ? hi * 1.08 : hi]
@@ -67,7 +76,12 @@ export function seriesRange(series: Series[], yDomain?: [number, number]): [numb
 
 /** Index of the last finite sample, or -1. */
 export function lastFiniteIndex(values: number[]): number {
-  for (let i = values.length - 1; i >= 0; i--) if (finite(values[i])) return i
+  return lastVisibleIndex(values)
+}
+
+/** Index of the last finite sample at or before the horizon, or -1. */
+export function lastVisibleIndex(values: number[], horizonS?: number): number {
+  for (let i = visibleSamples(values.length, horizonS) - 1; i >= 0; i--) if (finite(values[i])) return i
   return -1
 }
 

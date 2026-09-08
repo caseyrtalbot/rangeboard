@@ -9,6 +9,7 @@ import { posAtTime } from '../geometry/geo'
 import { effectivePathDelayS } from './raid'
 import { profileFor } from '../model/integration'
 import { engineKeyOf } from '../model/scenario'
+import { engagementIsKinetic, engagementReleaseS } from './engagementTiming'
 
 /**
  * Per-track playback state for the board. buildTrackTimeline prefix-aggregates
@@ -23,12 +24,12 @@ import { engineKeyOf } from '../model/scenario'
  * probability replayed to time t, and every pulse is a function of sim time so
  * a paused run freezes it.
  *
- * Time semantics match the ledger: a salvo is assigned at tS and its effect
- * lands at tEffectS. Expenditure counts at tS; kill mass and jam mass count at
- * tEffectS.
+ * Time semantics match the ledger: assignment is tS, physical release is
+ * tReleaseS, and effect is tEffectS. Expenditure counts at assignment; kill
+ * mass and jam mass count at effect. Unknown legacy release never draws flight.
  */
 
-/** Seconds a zero-flight-time effect (beam, instantaneous burst) stays drawn. */
+/** Display-only hold for a beam or dwell with no modeled duration. */
 export const BEAM_DISPLAY_S = 0.6
 
 /** Pulse period, seconds. */
@@ -154,8 +155,10 @@ export interface ShotInFlight {
   uasId: string
   shipIdx: number
   tS: number
+  /** Physical release; resolved from explicit metadata or the captured scenario. */
+  tReleaseS: number
   tEffectS: number
-  /** 0 at launch, 1 at effect. Always 1 for zero-flight-time effects. */
+  /** Kinetic: 0 at release, approaching 1 at effect. Beams always use 1. */
   progress: number
   channel: 'kill' | 'jam'
   softShot: boolean
@@ -181,10 +184,12 @@ type EffectorEngagementMode = 'semi-active' | 'active' | 'beam'
 
 /**
  * Effector glyph treatment at t. 'idle' draws the outline frame only.
+ * 'preparing' marks assignment before release; unknown legacy release uses
+ * 'timing-unavailable' and never implies that a round has launched.
  * 'depleted' means the magazine is spent; a live salvo outranks it, so the
  * guidance treatment still plays out on the last round in flight.
  */
-export type EffectorLiveState = 'idle' | 'semi-active' | 'active' | 'beam' | 'depleted'
+export type EffectorLiveState = 'idle' | 'preparing' | 'timing-unavailable' | 'semi-active' | 'active' | 'beam' | 'depleted'
 
 /** Researched guidance value to draw treatment. */
 const GUIDANCE_MODE: Record<'fc-uplink' | 'c2-cue' | 'self' | 'operator', EffectorEngagementMode> = {
@@ -254,7 +259,7 @@ interface TrackSeries {
   deTS: number[]
   jamTS: number[]
   assignTS: number[]
-  /** Per-salvo end of draw ascending: tEffectS, or tS + BEAM_DISPLAY_S. */
+  /** End of pending/display window; only zero-duration beams extend past effect. */
   liveEndTS: number[]
   /** EW dwell draw windows ascending (both jam and soft-kill channel). */
   ewLiveStartTS: number[]
@@ -281,8 +286,10 @@ interface ShotRecord {
   uasId: string
   shipIdx: number
   tS: number
+  /** Null when legacy launch timing cannot be reconstructed. */
+  tReleaseS: number | null
   tEffectS: number
-  /** Draw ends here: tEffectS, or tS + BEAM_DISPLAY_S at zero flight time. */
+  /** Effect time, with a display-only hold for zero-duration beam/dwell events. */
   liveEndS: number
   channel: 'kill' | 'jam'
   softShot: boolean
@@ -381,9 +388,11 @@ function speedFor(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
-/** Last instant the salvo is drawn. A zero-flight-time effect holds for BEAM_DISPLAY_S. */
-function drawEndS(ev: EngagementEvent): number {
-  return ev.tEffectS > ev.tS ? ev.tEffectS : ev.tS + BEAM_DISPLAY_S
+/** Kinetic zero-flight intervals have no travel; only beams get a display hold. */
+function drawEndS(ev: EngagementEvent, releaseS: number | null): number {
+  return !engagementIsKinetic(ev) && releaseS != null && ev.tEffectS === releaseS
+    ? releaseS + BEAM_DISPLAY_S
+    : ev.tEffectS
 }
 
 interface TimelineEntry {
@@ -448,13 +457,16 @@ export function buildTrackTimeline(
     const ewLiveEndTS: number[] = []
     for (const ev of evs) {
       assignTS.push(ev.tS)
+      const releaseS = engagementReleaseS(ev, scenario)
       if (ev.channelClass === 'ew') {
         jamTS.push(ev.tS)
-        ewLiveStartTS.push(ev.tS)
-        ewLiveEndTS.push(drawEndS(ev))
+        if (releaseS != null) {
+          ewLiveStartTS.push(releaseS)
+          ewLiveEndTS.push(drawEndS(ev, releaseS))
+        }
       } else if (ev.channelClass === 'directed-energy') deTS.push(ev.tS)
       else kineticTS.push(ev.tS)
-      liveEndTS.push(drawEndS(ev))
+      liveEndTS.push(drawEndS(ev, releaseS))
     }
     kineticTS.sort(ascending)
     deTS.sort(ascending)
@@ -654,13 +666,15 @@ export function buildTrackTimeline(
     const members = membersAt(ev.uasId, ev.tEffectS)
     const to = members[Math.min(Math.max(ev.shipIdx, 0), members.length - 1)]
     const from = effectorById.get(ev.effectorId)?.pos ?? { x: 0, y: 0 }
-    const liveEndS = drawEndS(ev)
+    const tReleaseS = engagementReleaseS(ev, scenario)
+    const liveEndS = drawEndS(ev, tReleaseS)
     if (liveEndS - ev.tS > maxSpanS) maxSpanS = liveEndS - ev.tS
     shots.push({
       effectorId: ev.effectorId,
       uasId: ev.uasId,
       shipIdx: ev.shipIdx,
       tS: ev.tS,
+      tReleaseS,
       tEffectS: ev.tEffectS,
       liveEndS,
       channel: ev.channel,
@@ -668,7 +682,9 @@ export function buildTrackTimeline(
       pk: ev.pk,
       from: { x: from.x, y: from.y },
       to: { x: to.x, y: to.y },
-      mode: modeById.get(ev.effectorId) ?? 'semi-active',
+      mode: !engagementIsKinetic(ev)
+        ? 'beam'
+        : modeById.get(ev.effectorId) ?? effectorEngagementMode(null, ev.effectorType),
     })
   }
   shots.sort((x, y) => x.tS - y.tS)
@@ -769,23 +785,28 @@ function liveShots(tl: TrackTimeline, tS: number): ShotRecord[] {
   return out
 }
 
-/** Salvos currently drawn. Zero-flight-time salvos stay for BEAM_DISPLAY_S. */
+/** Released salvos only. Kinetic zero-flight intervals never fabricate travel. */
 export function shotsInFlightAt(tl: TrackTimeline, tS: number): ShotInFlight[] {
-  return liveShots(tl, tS).map((s) => ({
-    effectorId: s.effectorId,
-    uasId: s.uasId,
-    shipIdx: s.shipIdx,
-    tS: s.tS,
-    tEffectS: s.tEffectS,
-    progress:
-      s.tEffectS > s.tS ? Math.min(1, Math.max(0, (tS - s.tS) / (s.tEffectS - s.tS))) : 1,
-    channel: s.channel,
-    softShot: s.softShot,
-    pk: s.pk,
-    from: s.from,
-    to: s.to,
-    mode: s.mode,
-  }))
+  return liveShots(tl, tS)
+    .filter((s): s is ShotRecord & { tReleaseS: number } => s.tReleaseS != null && tS >= s.tReleaseS)
+    .map((s) => ({
+      effectorId: s.effectorId,
+      uasId: s.uasId,
+      shipIdx: s.shipIdx,
+      tS: s.tS,
+      tReleaseS: s.tReleaseS,
+      tEffectS: s.tEffectS,
+      progress:
+        s.mode !== 'beam' && s.tEffectS > s.tReleaseS
+          ? Math.min(1, Math.max(0, (tS - s.tReleaseS) / (s.tEffectS - s.tReleaseS)))
+          : 1,
+      channel: s.channel,
+      softShot: s.softShot,
+      pk: s.pk,
+      from: s.from,
+      to: s.to,
+      mode: s.mode,
+    }))
 }
 
 /**
@@ -796,7 +817,12 @@ export function shotsInFlightAt(tl: TrackTimeline, tS: number): ShotInFlight[] {
 export function effectorStatesAt(tl: TrackTimeline, tS: number): Map<string, EffectorLiveState> {
   const out = new Map<string, EffectorLiveState>()
   for (const s of liveShots(tl, tS)) {
-    if (!out.has(s.effectorId)) out.set(s.effectorId, s.mode)
+    const state = s.tReleaseS == null ? 'timing-unavailable' : tS < s.tReleaseS ? 'preparing' : s.mode
+    const current = out.get(s.effectorId)
+    // A released round keeps its guidance cue while the next round prepares.
+    if (current == null || current === 'preparing' || current === 'timing-unavailable') {
+      out.set(s.effectorId, state)
+    }
   }
   for (const e of tl.effectors) {
     if (e.magazineSize == null || out.has(e.effectorId)) continue

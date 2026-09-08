@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { engagementPicture } from '../analysis/impact'
 import { emptyScenario } from '../model/seed'
-import { buildTrackTimeline } from '../playback/trackState'
+import { buildTrackTimeline, PHASE_STYLE } from '../playback/trackState'
 import { useStore } from '../state/store'
 import { TrackFileReadout } from './TrackFileReadout'
 
@@ -47,5 +47,36 @@ describe('TrackFileReadout', () => {
     expect(html).toContain('PLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTED')
     expect(html).toContain('title="Details in Analysis"')
     expect(html).toContain('>Details</button>')
+  })
+
+  it('renders the expected-defeat label with the existing ghost color', () => {
+    const scenario = useStore.getState().scenario
+    const threat = scenario.entities.find((entity) => entity.kind === 'uas')!
+    const { assessments, report } = engagementPicture(scenario)
+    const timeline = buildTrackTimeline(scenario, assessments, {
+      ...report,
+      events: [{
+        tS: 5,
+        tEffectS: 10,
+        effectorId: 'fixture-effector',
+        uasId: threat.id,
+        shipIdx: 0,
+        channel: 'kill',
+        softShot: false,
+        effectorType: 'interceptor',
+        channelClass: 'kinetic',
+        lateEffect: false,
+        pk: 0.999,
+        killDelta: 0.999,
+      }],
+    })
+    useStore.getState().setSimTime(10)
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    const html = renderToStaticMarkup(
+      <TrackFileReadout timeline={timeline} assessments={assessments} size={{ w: 1200, h: 800 }} />,
+    )
+
+    expect(html).toContain(`style="color:${PHASE_STYLE.ghost.color};border-color:${PHASE_STYLE.ghost.color}">EXPECTED DEFEAT</span>`)
+    expect(html).not.toContain('DEFEATED')
   })
 })

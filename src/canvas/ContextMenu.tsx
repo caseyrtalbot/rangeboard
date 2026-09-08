@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../state/selectors'
 import { useEffect, useRef, useState } from 'react'
 import type { EntityKind } from '../model/types'
 import { entityActive } from '../model/types'
@@ -105,7 +106,7 @@ export function ContextMenu() {
   const scenario = useStore((s) => s.scenario)
   const selection = useStore((s) => s.selection)
   const ui = useStore((s) => s.ui)
-  const layers = ui.layers
+  const layers = useStore(selectEffectiveLayers)
   const closeContextMenu = useStore((s) => s.closeContextMenu)
   // Tied to the menu object identity so each freshly opened menu starts closed.
   const [submenuState, setSubmenuState] = useState<{ menu: unknown; value: string | null } | null>(
@@ -169,7 +170,7 @@ export function ContextMenu() {
               <RingItem
                 key={k}
                 label={RING_LABELS[k]}
-                checked={ringVisible(ui, entityId, k)}
+                checked={ringVisible({ layers, ringOverrides: ui.ringOverrides }, entityId, k)}
                 override={forced[k] ?? null}
                 onPick={() => st.setRingOverride(entityId, k, nextOverride(forced[k] ?? null))}
               />

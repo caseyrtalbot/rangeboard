@@ -4,6 +4,7 @@ import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import type { RunValidityAssessment } from '../analysis/runValidity'
 import { assessRunValidity } from '../analysis/runValidity'
+import { engagementReleaseS } from '../playback/engagementTiming'
 
 interface ResultGroup {
   basis: 'planning-envelope' | 'monte-carlo-estimate' | 'paired-one-at-a-time'
@@ -35,6 +36,8 @@ export function runResultGroups(
   const group = (measures: ResultGroup['measures']): ResultGroup => ({
     basis: 'planning-envelope', horizon: 'full-run', validity: envelope, measures,
   })
+  const recordedReleaseCount = report.events.filter(event => engagementReleaseS(event) != null).length
+  const availableReleaseCount = report.events.filter(event => engagementReleaseS(event, scenario) != null).length
   const measurableLeakers = report.totals.reportedLeakers != null
   const groups: RunResultGroups = {
     assessments: group({
@@ -55,9 +58,15 @@ export function runResultGroups(
       leakProbability: 'per-ship residual at arrival, not probability of passing a requirement',
       shotsFired: 'kinetic salvos', deSalvos: 'directed-energy bursts', jamSalvos: 'EW salvos',
       expectedRoundsRemaining: 'remaining magazine units under the effector expenditure channel',
-      'events.tS, events.tEffectS': 'release and effect time in seconds from T0, respectively',
+      'events.tS': 'assignment time in seconds from T0; magazine, cooldown and salvo counts land here',
+      'events.tReleaseS': 'physical release time in seconds from T0; assignment plus resolved engagement delay; optional in legacy records',
+      'events.tEffectS': 'effect time in seconds from T0; kill or jam math lands here',
+      releaseTiming: 'missing legacy release is reconstructable only from the captured effector delay; otherwise launch timing is unavailable; raw events remain unchanged',
+      releaseTimingRecordedEvents: recordedReleaseCount,
+      releaseTimingReconstructableEvents: availableReleaseCount - recordedReleaseCount,
+      releaseTimingUnavailableEvents: report.events.length - availableReleaseCount,
       'events.killDelta': 'ship mass removed at effect, including late effects',
-      'events.shipIndex': 'zero-based member index within the threat',
+      'events.shipIdx': 'zero-based member index within the threat',
       'events.pk': 'planning per-shot kill probability',
     }),
     requirements: group({

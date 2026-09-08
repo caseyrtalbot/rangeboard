@@ -16,6 +16,8 @@ function stat(mean: number, n = 4): Stat {
 }
 function fixture() {
   const scenario = emptyScenario()
+  scenario.entities = [{ id: 'asset', name: 'Asset', kind: 'asset', specId: 'lib-asset',
+    pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' }]
   scenario.replicates = 4
   const { report, assessments } = engagementPicture(scenario)
   // Deliberately distinct envelope and replicate values expose mixed-source readouts.
@@ -34,25 +36,55 @@ describe('C2 projection source consistency', () => {
   it('uses the MC defeat proportion and converts its CI to percentage points over the same four ships', () => {
     const { render } = fixture()
     const html = render()
-    expect(metric(html, 'Defeat')).toContain('75.0%')
-    expect(metric(html, 'Defeat')).toContain('65 to 85% (95% mean CI)')
-    expect(metric(html, 'Leakers')).toContain('>1.0</strong>')
+    expect(metric(html, 'Expected kills')).toContain('75.0%')
+    expect(metric(html, 'Expected kills')).toContain('65 to 85% (95% mean CI)')
+    expect(metric(html, 'Leakers')).toContain('>1.00</strong>')
     expect(metric(html, 'Leakers')).toContain('0.6 to 1.4 (95% mean CI)')
     expect(metric(html, 'First detect')).toContain('0:12')
     expect(metric(html, 'Min warning')).toContain('0:25')
-    expect(metric(html, 'Late E[k]')).toContain('>0.3</strong>')
-    expect(metric(html, 'Late E[k]')).toContain('planning envelope')
+    expect(metric(html, 'Expected late kills')).toContain('>0.30</strong>')
+    expect(metric(html, 'Expected late kills')).toContain('planning envelope')
     expect(metric(html, 'First effect')).toContain('planning envelope')
     expect(metric(html, 'Salvos')).toContain('planning envelope')
   })
 
   it('keeps leakers undefined without an asset, regardless of MC partition values', () => {
-    const { report, render } = fixture()
+    const { scenario, report, render } = fixture()
+    scenario.entities = []
     report.totals.reportedLeakers = null
     const shown = metric(render(), 'Leakers')
     expect(shown).toContain('>—</strong>')
     expect(shown).toContain('no defended asset')
     expect(shown).not.toContain('mean CI')
+  })
+
+  it('preserves 0.952 expected kills and 4.8% residual survival below the targeting cutoff', () => {
+    const { scenario, report } = fixture()
+    report.totals = { ...report.totals, raidSize: 1, expectedKills: 0.952,
+      expectedLateKills: 0.048, reportedLeakers: 0.048 }
+    const html = renderToStaticMarkup(<OutcomeSummary scenario={scenario} assessments={[]} report={report} />)
+    expect(metric(html, 'Expected kills')).toContain('95.2%')
+    expect(metric(html, 'Expected kills')).toContain('planning envelope · 0.95 of 1 ships')
+    expect(metric(html, 'Residual survival')).toContain('4.8%')
+    expect(metric(html, 'Expected late kills')).toContain('>0.05</strong>')
+    expect(html).not.toMatch(/>Defeat<|confirmed|was destroyed/)
+  })
+
+  it.each([false, true])('keeps no-asset neutralization and undefined residual and warning with a disabled asset: %s', (disabledAsset) => {
+    const { scenario, report, render } = fixture()
+    if (disabledAsset) scenario.entities[0].enabled = false
+    else scenario.entities = []
+    report.totals.reportedLeakers = null
+    const html = render()
+    expect(metric(html, 'Expected neutralization')).toContain('75.0%')
+    expect(metric(html, 'Leakers')).toContain('>—</strong>')
+    expect(metric(html, 'Min warning')).toContain('>—</strong>')
+    expect(metric(html, 'Min warning')).toContain('no defended asset placed')
+    const envelope = renderToStaticMarkup(<OutcomeSummary scenario={scenario} assessments={[]} report={report} />)
+    expect(metric(envelope, 'Expected neutralization')).toContain('25.0%')
+    expect(metric(envelope, 'Residual survival')).toContain('>—</strong>')
+    expect(metric(envelope, 'Residual survival')).toContain('no defended asset placed')
+    expect(metric(envelope, 'Residual survival')).not.toContain('0.0%')
   })
 
   it('reports no detection/no arrival as undefined conditional times without falling back', () => {
@@ -72,7 +104,7 @@ describe('C2 projection source consistency', () => {
     mc.firstDetectS = stat(12, 1)
     mc.minWarningS = stat(25, 1)
     const html = render()
-    expect(metric(html, 'Defeat')).toContain('75.0%')
+    expect(metric(html, 'Expected kills')).toContain('75.0%')
     expect(html).toContain('CI unavailable')
     expect(html).not.toContain('(95% mean CI)')
   })
@@ -81,9 +113,9 @@ describe('C2 projection source consistency', () => {
     const { mc, report, render } = fixture()
     mc.replicates = 0
     mc.kills = band(NaN, NaN, NaN)
-    expect(metric(render(), 'Defeat')).toContain('MC estimate unavailable')
+    expect(metric(render(), 'Expected kills')).toContain('MC estimate unavailable')
     expect(render()).not.toContain('NaN')
     report.totals.raidSize = 0
-    expect(metric(render(), 'Defeat')).toContain('no ships')
+    expect(metric(render(), 'Expected kills')).toContain('no ships')
   })
 })

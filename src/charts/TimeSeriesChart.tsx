@@ -16,7 +16,7 @@ import { DT } from '../playback/clock'
 import { ChartFrame, useChartTokens } from './ChartFrame'
 import { timeTicks } from './timeAxis'
 import {
-  finite, formatYTick, lastFiniteIndex, seriesDurationS, seriesRange, seriesRows, snapScrubS,
+  finite, formatYTick, lastVisibleIndex, seriesDurationS, seriesRange, seriesRows, snapScrubS,
 } from './seriesData'
 import type { TimeSeriesProps } from './TimeSeries'
 import { resolveColor, type ChartTokens } from './tokens'
@@ -70,16 +70,18 @@ function useScrub(durationS: number, inset: PlotInset, onScrub?: (tS: number) =>
 }
 
 interface TipProps {
+  horizonS?: number
   series: Series[]
   tokens: ChartTokens
   label?: string | number
   active?: boolean
 }
 
-function SeriesTip({ series, tokens, label, active }: TipProps) {
+export function SeriesTip({ series, tokens, label, active, horizonS = Infinity }: TipProps) {
   const t = Number(label)
-  if (!active || !Number.isFinite(t)) return null
+  if (!active || !Number.isFinite(t) || t > horizonS) return null
   const i = Math.round(t / DT)
+  if (i * DT > horizonS) return null
   return (
     <div className="chart-tooltip">
       <div className="chart-tooltip-time">T+{formatTime(t)}</div>
@@ -106,6 +108,8 @@ function tickStyle(tokens: ChartTokens) {
 }
 
 interface PlotProps {
+  /** Latest visible outcome time; undefined or Infinity shows the full run. */
+  horizonS?: number
   series: Series[]
   /** Null = no playhead. */
   tS: number | null
@@ -118,12 +122,13 @@ interface PlotProps {
 
 /** The Recharts plot without the frame. */
 export function TimeSeriesPlot({
-  series, tS, onScrub, width, height, marks, yDomain,
+  series, tS, onScrub, width, height, marks, yDomain, horizonS = Infinity,
 }: PlotProps) {
   const tokens = useChartTokens()
-  const rows = useMemo(() => seriesRows(series), [series])
+  const rows = useMemo(() => seriesRows(series, horizonS), [series, horizonS])
+  const plotSeries = horizonS === -Infinity ? [] : series
   const durationS = seriesDurationS(series)
-  const [lo, hi] = useMemo(() => seriesRange(series, yDomain), [series, yDomain])
+  const [lo, hi] = useMemo(() => seriesRange(series, yDomain, horizonS), [series, yDomain, horizonS])
   const plotW = (width ?? 312) - MARGIN.left - MARGIN.right - Y_AXIS_W
   const xTicks = useMemo(() => timeTicks(durationS, plotW), [durationS, plotW])
   const scrub = useScrub(
@@ -172,7 +177,7 @@ export function TimeSeriesPlot({
         tickMargin={3}
         width={Y_AXIS_W}
       />
-      {series.map((s) =>
+      {plotSeries.map((s) =>
         (['95', '80'] as const).map((k) =>
           (k === '95' ? s.band95 : s.band80) ? (
             <Area
@@ -190,7 +195,7 @@ export function TimeSeriesPlot({
           ) : null,
         ),
       )}
-      {series.map((s) => (
+      {plotSeries.map((s) => (
         <Line
           key={s.id}
           dataKey={s.id}
@@ -205,8 +210,8 @@ export function TimeSeriesPlot({
           connectNulls={false}
         />
       ))}
-      {series.map((s) => {
-        const i = lastFiniteIndex(s.values)
+      {plotSeries.map((s) => {
+        const i = lastVisibleIndex(s.values, horizonS)
         if (i < 0) return null
         return (
           <ReferenceDot
@@ -221,18 +226,18 @@ export function TimeSeriesPlot({
           />
         )
       })}
-      {marks?.map((m) => {
-            const color = resolveColor(m.color, tokens)
-            return (
-              <ReferenceLine
-                key={`${m.label}@${m.tS}`}
-                x={m.tS}
-                stroke={color}
-                strokeDasharray="2 3"
-                label={{ value: m.label, position: 'top', ...ticks, fill: color }}
-              />
-            )
-          })}
+      {marks?.filter((m) => horizonS !== -Infinity && (horizonS === Infinity || m.tS <= horizonS)).map((m) => {
+        const color = resolveColor(m.color, tokens)
+        return (
+          <ReferenceLine
+            key={`${m.label}@${m.tS}`}
+            x={m.tS}
+            stroke={color}
+            strokeDasharray="2 3"
+            label={{ value: m.label, position: 'top', ...ticks, fill: color }}
+          />
+        )
+      })}
       {tS != null ? (
         <ReferenceLine
           x={tS}
@@ -242,13 +247,13 @@ export function TimeSeriesPlot({
           label={{ value: playheadLabel, position: 'top', ...ticks, fill: accent }}
         />
       ) : null}
-              <Tooltip
-          cursor={false}
-          isAnimationActive={false}
-          content={(p: TooltipContentProps) => (
-            <SeriesTip series={series} tokens={tokens} label={p.label} active={p.active} />
-          )}
-        />
+      <Tooltip
+        cursor={false}
+        isAnimationActive={false}
+        content={(p: TooltipContentProps) => (
+          <SeriesTip series={series} tokens={tokens} label={p.label} active={p.active} horizonS={horizonS} />
+        )}
+      />
     </ComposedChart>
   )
 }
@@ -268,17 +273,21 @@ export function TimeSeries({
   yLabel,
   yDomain,
   legend,
+  horizonS = Infinity,
 }: TimeSeriesProps) {
   const showLegend = legend ?? series.length > 1
   const legendItems = useMemo(
     () =>
-      showLegend ? series.map((s) => ({ id: s.id, label: s.label, color: s.color })) : undefined,
-    [series, showLegend],
+      showLegend ? series
+        .filter((s) => horizonS === Infinity || lastVisibleIndex(s.values, horizonS) >= 0)
+        .map((s) => ({ id: s.id, label: s.label, color: s.color })) : undefined,
+    [series, showLegend, horizonS],
   )
   return (
-    <ChartFrame width={width} height={height} yLabel={yLabel} legend={legendItems}>
+    <ChartFrame width={width} height={height} yLabel={yLabel} legend={legendItems} horizonS={horizonS}>
       <TimeSeriesPlot
         series={series}
+        horizonS={horizonS}
         tS={tS}
         onScrub={onScrub}
         width={width}

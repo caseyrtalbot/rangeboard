@@ -13,7 +13,7 @@ import { McPopover } from './analysis/LiveStrip'
 import { EnvironmentSettings } from './analysis/widgets/EnvironmentWidget'
 import { FireDoctrineSettings } from './analysis/widgets/FireDoctrineWidget'
 import { RequirementSettings } from './analysis/widgets/RequirementGatesWidget'
-import { SEVERITY_PILL, VALIDITY_TEXT } from './analysis/widgets/RunValidityWidget'
+import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from './analysis/widgets/RunValidityWidget'
 
 /** Select one placed entity and open its existing Inspector editor. */
 function openEntityInspector(entityId: string): void {
@@ -137,6 +137,10 @@ export function BoardPreparation() {
   const run = runSettings(scenario)
   const validityText = VALIDITY_TEXT[validity.validity]
   const runLabel = formatRunLabel(runSeq)
+  // Keep general model caveats in the disclosure; surface setup consequences first.
+  const consequentialFindings = validity.findings
+    .filter((finding) => finding.id !== 'planning-envelope' && finding.id !== 'unvalidated-model')
+    .sort((a, b) => Number(b.severity === 'invalidating') - Number(a.severity === 'invalidating'))
 
   return (
     <div className="inspector-body board-preparation">
@@ -173,6 +177,19 @@ export function BoardPreparation() {
       </Section>
 
       <Section label="Run validity" note={`${validity.findings.length} findings`}>
+        <div className="prepare-validity">
+          {consequentialFindings.map((finding) => (
+            <article className="prepare-finding validity-finding" key={finding.id}>
+              <State tone={SEVERITY_PILL[finding.severity].tone}>
+                {SEVERITY_PILL[finding.severity].text}
+              </State>
+              <div className="prepare-finding-body">
+                <span>{finding.message}</span>
+                <FindingThreatActions finding={finding} entities={scenario.entities} />
+              </div>
+            </article>
+          ))}
+        </div>
         <details className="prepare-validity-disclosure">
           <summary>
             <State tone={validityText.tone}>{validityText.pill}</State>
@@ -185,7 +202,7 @@ export function BoardPreparation() {
                 <article className="prepare-finding validity-finding" key={finding.id}>
                   <State tone={severity.tone}>{severity.text}</State>
                   <div className="prepare-finding-body">
-                    <span>{finding.message}</span>
+                    {!consequentialFindings.includes(finding) && <span>{finding.message}</span>}
                     <dl className="prepare-finding-scope">
                       <div>
                         <dt>Finding</dt>

@@ -27,6 +27,17 @@ Breaking one of these breaks the app.
   from the last published `simTimeS` plus the wall time since that publication at
   `speedMult`, clamped to one period. Any pulse, blink or playhead derives from `simTimeS`
   or that display time; never a timer. Panels subscribe through `src/state/selectors.ts`.
+  `applyFrame` restores camera/basemap and scrubs like `scrubTo`: neither advances
+  `observedThroughS` nor stamps `startedAtMs` or `basisSignature`.
+- **Board phase and horizon:** `BoardPhase` is exported only from `state/runState.ts`.
+  `ui.boardPhase` starts at Prepare and is never persisted or recorded in undo history.
+  `analysis/horizon.ts` is store-free: frozen full-run and empty horizons, inclusive time
+  checks, leading sample counts and null censoring. `selectExecutionHorizon` returns the
+  full-run constant in Prepare and Analyze, the empty constant when `startedAtMs == null`
+  (including a scrub before first Play), otherwise a stable object for the minimum of
+  quantized cursor and observed time. `useExecutionHorizon` and `useRunCursor.horizon`
+  expose that scope; scrubbing can narrow it but never advances observation. Changing
+  navigation alone never changes scenario, history or playback.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
   clears `future`. Only scenario changes are undoable. A scenario-touching action goes
   through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis
@@ -249,7 +260,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
 - **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
-  release. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows
+  assignment. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows
   `doctrine.launchPolicy`. `tEffect = t + engageTimeS + timeOfFlightS(spec, interceptSlant)`
   from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at
   `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, `intercept.ts`) because a
@@ -267,7 +278,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
   commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy
-  instant-release path; keep it for regression and pin legacy fixtures with
+  ungated assignment path; keep it for regression and pin legacy fixtures with
   `doctrine.enabled = false`. Route latency is charged from the ROE gate, not from T0.
 - **Fire-control uplink gate** (`sim.ts`, `attrition.ts`, `src/model/integration.ts`):
   when every path of a route is fully typed and the effector's integration profile has
@@ -392,6 +403,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `none`. Derived live, never stored. `valid` depends on the models and conditions used.
   Requirement gates always evaluate the deterministic planning envelope using complete
   envelope findings, even in MC mode; a mean CI is not probability of meeting a gate.
+  Finding text names the lost measurement; `FindingThreatActions` renders selection from
+  the finding's `uasIds` and never edits the laydown.
   Run exports retain deterministic payloads and declare `resultGroups` basis, horizon,
   validity and quantity semantics, plus configuration equality identity. `packageBasis`
   scopes the legacy `dataBasis` field to its named groups. Sensitivity endpoints are
@@ -404,8 +417,14 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `EntityLayer`. `PHASE_STYLE` is the one track-phase color and label table. Canvas labels
   draw `boardDesignator(entity.name)`.
 - **Rings** (`src/canvas/layers/footprintStyle.ts`, `src/panels/ringLabels.ts`): seven
-  ring keys under `ui.layers`, per-entity overrides under `ui.ringOverrides`,
-  `ringVisible(ui, entityId, key)` the one resolver, `RING_STYLE` the one style source,
+  ring keys resolved through `selectEffectiveLayers`, per-entity overrides under `ui.ringOverrides`.
+  `ui.layers` persists the Prepare/Analyze view. Execute uses `ui.executeLayers` or the
+  `EXECUTE_DEFAULT_LAYERS` engagement preset; set, toggle and preset actions update only
+  that session override and never write storage. Canvas layers, including ThreatWezLayer,
+  and layer controls use effective layers; ring callers pass them to the resolver.
+  WEZ impact badges require an arrival reached within the execution horizon; planning
+  summary badges at time zero remain outside Execute.
+  `ringVisible(ui, entityId, key)` is the one resolver, `RING_STYLE` the one style source,
   `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in the danger
   red from `src/ui/ink.ts`, the one Konva ink table; a jammer keeps its entity-color
   cone. Only a selected-threat ring carries a label.
@@ -423,8 +442,16 @@ Each fact below has exactly one definition. Read it there; never add a second co
   Analyze groups the unmodified Run summary at render time only; customized widgets keep
   their stored order and parameters. Full-run time series remain distinct from cursor
   statistics. DebriefRecord retains completion guards, current-result readers and exports
-  behind Evidence products, without rendering a second OutcomeSummary. Environment,
-  doctrine, thresholds and the mode chip route Board scenario edits to Prepare.
+  behind Evidence products, without rendering a second OutcomeSummary. Execute replaces
+  projection, requirement-gates and sensitivity bodies with “Forecast available in Analyze”
+  using the same instance controls without changing saved layouts. Registry horizon metadata
+  and WidgetProps carry the scope;
+  WidgetFrame hides meta when given a scoped horizon unless `metaWithinHorizon` is true.
+  Execute mounts DebriefRecord only when the horizon reaches duration; Analyze retains
+  full-run evidence while scrubbing. Cursor widgets sample within the execution horizon;
+  event counts include reached assignments, while effect times, Pk and kill deltas wait for
+  the effect. EngagementStrip clips windows and censors lane marks, tooltips and labels.
+  Environment, doctrine, thresholds and the mode chip route Board scenario edits to Prepare.
 - **Selection detail** (`src/panels/EntityWorkspace.tsx`): the Board shell routes one
   selected entity into Telemetry, Configure and Model basis. `DetailPane` is the one
   telemetry kind-to-pane map (sensor, effector, uas, c2); Inspector owns configuration
@@ -432,17 +459,29 @@ Each fact below has exactly one definition. Read it there; never add a second co
   the preset id. Multi-selection, boundaries, connections and raid drafts retain the
   existing Inspector. AnalysisPanel renders the widget stack alone; the Board shell owns
   selection detail.
-  Series and ladder rows memo on `[scenario, runId]`, so only the now-readouts read
-  quantized time. `threatReadoutAt` (`panels/analysis/threatReadout.ts`) shares the existing
-  telemetry readers between the compact canvas card and complete threat detail; full-path
-  fields remain explicitly scoped. Model source disclosures preserve all provenance fields.
+  Full-run series and ladder builders memo on scenario/run identity; scoped adapters and
+  now-readouts consume the quantized execution horizon. `threatReadoutAt`
+  (`panels/analysis/threatReadout.ts`) shares the existing
+  telemetry readers between the compact canvas card and complete threat detail. Detail
+  readers use `tObs`, the cursor clamped to the execution horizon, and hide unreached
+  outcomes. Execute moves full-path fields into a Planned path block labeled Planned
+  arrival and Planned CPA; Prepare and Analyze retain full-path scope. The ghost phase
+  reads `EXPECTED DEFEAT` at the readout,
+  never a realized kill; `expectedCount` (`headlines.ts`) is the one expected-count formatter
+  and the engine's null `reportedLeakers` is the one no-asset signal for display. Model source disclosures preserve all provenance fields.
   `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL`
   (`SystemStatus.tsx`) the one component-state word.
 - **Chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) =>
   Series[]`, `LadderRow[]` or `ChartMark[]`, a series sampled from t = 0 at DT to
   `scenarioDurationS`, NaN where undefined, one `engagementPicture` call per builder.
   `trackSlots` assigns the five chart hues by first detection and never reassigns under a
-  filter; status colors never color a series.
+  filter; status colors never color a series. Chart `horizonS` censors sample values and
+  bands, automatic Y range, marks, endpoint dots, tooltips and legends while preserving
+  the full time axis and scrub navigation. Scope text reads “Shown through T+m:ss”
+  or “No outcomes observed yet” in the legend accessibility label, or a visually hidden
+  span when no legend is shown.
+  Ladder clips spans and their labels at the horizon. Tornado shows the Analyze forecast
+  placeholder for a scoped horizon. Builders and full-run numerical results stay intact.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `Scenario.deletedSeedIds` keeps the seed merge from
@@ -487,12 +526,28 @@ Each fact below has exactly one definition. Read it there; never add a second co
   failure probability small and stated. Common random numbers are a promise of the draw
   keys; paired comparisons depend on them.
 - **Engagement vocabulary.** A salvo record is an *event* (`report.events`), never a
-  ledger. `tS` is the release (launch) time; `tEffectS` is the effect time, release plus
-  `engageTimeS` plus flyout; `readyS` is the first possible release under the doctrine
-  gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
+  ledger. `tS` is assignment time: magazine, cooldown and salvo counts land here.
+  Newly produced events add `tReleaseS = tS + engageTimeS` using the resolved delay;
+  `tEffectS` is the unchanged effect time. `readyS` is the first possible assignment
+  under the doctrine gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
   (interceptor cannot reach the credited point) is declined and leaves no event. `expectedKills` is
   pre-arrival mass; `expectedLateKills` is a sub-measure of the leaker mass. Arrival and
   closest approach are different quantities. `reportedLeakers` is the display value.
+- **Physical launch display.** `engagementTiming.ts` resolves explicit release metadata,
+  or a legacy event's delay from the captured effector spec. Missing entity/spec or invalid
+  timing stays unavailable; a present spec's omitted delay uses the engine zero default.
+  `trackState.ts` precomputes nullable release times and fixed effect endpoints. A launcher
+  reads PREP before release or LAUNCH ? when release is unavailable. Kinetic rounds move
+  only over a positive release-to-effect interval; zero-flight kinetic events draw no
+  traveling round. Beam/EW channels draw at release without kinetic interpolation; a
+  zero-duration channel gets the existing 0.6 s display pulse. Committed rounds remain
+  through effect, independent of the target's expected-defeat state. Assignment counters,
+  effect calculations and outcomes are unchanged.
+  `series.ts` counts only physical kinetic flight, with NaN during an unresolved legacy
+  interval; effector marks are ASG, REL and FX, combined at coincident timestamps. Preparation/channel spans have a legend
+  censored to the horizon. `runResultGroups.ts` describes `tS`, `tReleaseS`, `tEffectS`
+  and `shipIdx` separately and counts recorded, reconstructable and unavailable release
+  timing. Exports preserve legacy event omissions and the captured scenario.
 - **Words.** UI copy follows the code style in AGENTS.md: short active sentences in the
   domain's terms, no em-dashes. Use one word for one thing ("phase center", "event").
   Measure labels in T&E Ops suppress pass or fail unless `thresholdApproved`.
@@ -522,10 +577,10 @@ Konva conventions:
 - Drawing tools do not use Konva drag: the stage is `draggable` only when `ui.tool ===
   'select'`; other tools consume plain clicks and keep the rubber-band draft in
   `ui.draftPoints`.
-- Each layer reads its own `ui.layers` flag and returns `null`; `CanvasStage` does no
-  gating.
+- Each layer reads its flag through `selectEffectiveLayers` and returns `null`;
+  `CanvasStage` does no gating.
 - Everything a layer draws at time t is derived at render from the scenario and
-  `simTimeS`. A layer never stores derived state. A layer may keep the previous render's
+  `simTimeS`, with outcome badges limited by the execution horizon. A layer never stores derived state. A layer may keep the previous render's
   records in a ref only to lend their identities to the records that did not change
   (`FootprintLayer` rings, `ThreatWezLayer` zones, `LiveScene` placements, tracks and spoke
   ids; `sweepAt` lends hits, track states and effector states the same way), never to skip
@@ -540,8 +595,9 @@ Konva conventions:
 - The snapped per-publication values (the sensor sweep, track states, effector states,
   the held-sensor set) come from `sweepAt(scenario, timeline, simTimeS)`
   (`src/playback/sweepAt.ts`): one computation per instant, shared by the live scene, the
-  static scene, the track card and the threat pane. `threatReadoutAt` takes that sweep so
-  the 10 Hz card reruns no sweep of its own. The timeline comes from `trackTimelineOf`,
+  static scene, the track card and the threat pane. `threatReadoutAt` reuses that sweep
+  only when its time matches `tObs`; a forward scrub reads telemetry at the execution
+  horizon instead. The timeline comes from `trackTimelineOf`,
   cached per picture. Both key on `engineKeyOf(scenario)`.
 - A frame creates React elements for what moved. `EntityNode` is memoized on per-entity
   primitives, the pulse phase is one boolean computed per frame (never `displayTimeS`

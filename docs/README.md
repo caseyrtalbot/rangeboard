@@ -35,6 +35,7 @@ the original bytes from the capture commit when checking an old manifest.
 Proposals preserve design decisions for review; implementation requires separate approval.
 
 - [Board workspace design plan and interactive prototype, 2026-09-06](field-te/evidence/board-workspace-design-2026-09-06/board-workspace-prototype.html)
+- [Playback realism implementation proposal, 2026-09-07](field-te/evidence/playback-realism-plan-2026-09-07.md)
 
 ### Completion and integration records
 
@@ -73,6 +74,13 @@ Proposals preserve design decisions for review; implementation requires separate
 - [Track, C2 and doctrine slice: before-and-after capture, 2026-09-05](field-te/evidence/track-c2-slice-2026-09-05/diff.md)
 - [Native import browser check](field-te/evidence/wave-c2-c3-e1-2026-09-05/native-import-recipe.md)
 - [Performance baseline at 955ad6b, 2026-09-06](field-te/evidence/perf-2026-09-06/README.md)
+- [R0 playback realism baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/README.md)
+- [R0 numerical baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/numerical-baseline.md)
+- [R0 consumer matrix, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/consumer-matrix.md)
+- [R0 browser and performance baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/browser-perf-baseline.md)
+- [R1 honest readouts and setup, 2026-09-07](field-te/evidence/r1-honest-readouts-2026-09-07/README.md)
+- [R2 execution scope and layers, 2026-09-07](field-te/evidence/r2-execution-scope-2026-09-07/README.md)
+- [R3 physical launch timing, 2026-09-07](field-te/evidence/r3-physical-launch-2026-09-07/README.md)
 
 Other evidence formats, including fixtures, screenshots, raw sources and numerical JSON,
 live under [field-te/evidence](field-te/evidence/).

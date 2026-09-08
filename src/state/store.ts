@@ -21,7 +21,8 @@ import type { RingKey, RingOverrides } from './rings'
 import { pruneRingOverrides } from './rings'
 import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
 import { LAYER_PRESETS } from './layers'
-import type { McState, PlaybackState, RunResetReason } from './runState'
+import { selectEffectiveLayers } from './selectors'
+import type { BoardPhase, McState, PlaybackState, RunResetReason } from './runState'
 import { freshPlayback, IDLE_MC, mcForScenarioChange, playbackForScenarioChange } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
 import { markPresentationVariant } from '../model/scenario'
@@ -120,6 +121,10 @@ export interface RaidDraft {
 }
 
 export interface UiState {
+  /** Session-only navigation; never persisted or undoable. */
+  boardPhase: BoardPhase
+  /** Execute layer override, retained only for this session. */
+  executeLayers: LayerVisibility | null
   basemap: BasemapMode
   tool: Tool
   boundaryType: BoundaryType
@@ -310,6 +315,7 @@ export interface Store {
   setRightTab: (t: RightTab) => void
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
+  setBoardPhase: (phase: BoardPhase) => void
   setLayer: (key: LayerKey, v: boolean) => void
   toggleLayer: (key: LayerKey) => void
   applyLayerPreset: (p: LayerPreset) => void
@@ -477,6 +483,8 @@ export const useStore = create<Store>()((set, get) => {
     selection: EMPTY_SELECTION,
     camera: view.camera ?? { x: 0, y: 0, scale: 0.05 },
     ui: {
+      boardPhase: 'prepare',
+      executeLayers: null,
       basemap: view.basemap ?? 'canvas',
       tool: 'select',
       boundaryType: 'range',
@@ -1290,21 +1298,16 @@ export const useStore = create<Store>()((set, get) => {
       if (!frame) return
       writeView({ camera: { ...frame.camera }, basemap: frame.basemap })
       set((st) => {
-        // A frame is a recorded instant of this run: play resumes from it, so
-        // the observation horizon covers it, as startRun requires.
-        const ready = frame.simTimeS === 0 && st.playback.startedAtMs == null
+        // Frame navigation is a scrub, not evidence of playback.
+        const simTimeS = Math.max(0, frame.simTimeS)
+        const ready = simTimeS === 0 && st.playback.startedAtMs == null
         return {
           camera: { ...frame.camera },
           playback: {
             ...st.playback,
             playing: false,
-            simTimeS: frame.simTimeS,
-            observedThroughS: Math.max(st.playback.observedThroughS, frame.simTimeS),
+            simTimeS,
             phase: ready ? 'ready' : 'review',
-            startedAtMs: ready ? st.playback.startedAtMs : (st.playback.startedAtMs ?? Date.now()),
-            basisSignature: ready
-              ? st.playback.basisSignature
-              : (st.playback.basisSignature ?? analysisBasisSignature(st.scenario)),
           },
           ui: { ...st.ui, basemap: frame.basemap },
         }
@@ -1358,21 +1361,28 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, theme: t } }))
     },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
+    setBoardPhase: (boardPhase) => set((st) =>
+      st.ui.boardPhase === boardPhase ? st : { ui: { ...st.ui, boardPhase } }),
     setLayer: (key, v) => {
-      const layers = { ...get().ui.layers, [key]: v }
+      const st = get()
+      const layers = { ...selectEffectiveLayers(st), [key]: v }
+      if (st.ui.boardPhase === 'execute') {
+        set({ ui: { ...st.ui, executeLayers: layers } })
+        return
+      }
       writeLayers(layers)
-      set((st) => ({ ui: { ...st.ui, layers } }))
+      set({ ui: { ...st.ui, layers } })
     },
-    toggleLayer: (key) => {
-      const current = get().ui.layers
-      const layers = { ...current, [key]: !current[key] }
-      writeLayers(layers)
-      set((st) => ({ ui: { ...st.ui, layers } }))
-    },
+    toggleLayer: (key) => get().setLayer(key, !selectEffectiveLayers(get())[key]),
     applyLayerPreset: (p) => {
+      const st = get()
       const layers = { ...LAYER_PRESETS[p] }
+      if (st.ui.boardPhase === 'execute') {
+        set({ ui: { ...st.ui, executeLayers: layers } })
+        return
+      }
       writeLayers(layers)
-      set((st) => ({ ui: { ...st.ui, layers } }))
+      set({ ui: { ...st.ui, layers } })
     },
     setRingOverride: (entityId, key, on) => {
       const current = get().ui.ringOverrides

@@ -91,6 +91,37 @@ describe('LiveStrip mode chip', () => {
     expect(el).toContain('class="chip mc warn"')
     expect(el).toContain('MC 100 · stale')
   })
+
+  it('retains an unscoped forward preview time', () => {
+    useStore.getState().setBoardPhase('analyze')
+    useStore.getState().advanceRun(1)
+    useStore.getState().scrubTo(60)
+    const html = render()
+    expect(html).toContain('T+1:00')
+    expect(html).toContain('>Preview<')
+  })
+
+  it('caps Execute time text after forward and backward scrubs', () => {
+    useStore.getState().setBoardPhase('execute')
+    useStore.getState().advanceRun(1)
+    useStore.getState().scrubTo(60)
+    const html = render()
+    expect(html).toContain('T+0:01')
+    expect(html).not.toContain('1:00')
+    useStore.getState().advanceRun(60)
+    useStore.getState().scrubTo(1)
+    expect(render()).toContain('observed through 0:01')
+    expect(render()).not.toContain('1:00')
+  })
+
+  it('shows an empty Execute clock before Play', () => {
+    useStore.getState().setBoardPhase('execute')
+    const html = render()
+    expect(html).toContain('T+0:00')
+    expect(html).toContain('>Ready<')
+    expect(html).toContain('no prior-run telemetry')
+  })
+
 })
 
 describe('McPopover run button', () => {
