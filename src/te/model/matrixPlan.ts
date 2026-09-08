@@ -1,15 +1,18 @@
 /**
  * Matrix planning. Pure: the Design panel previews a plan, the store adopts it in
  * one update. The sample-size and drop-order rules live here, not in click handlers.
- * The plan carries no ids; the store allocates them in plan order.
+ * `planCells` returns cells in their final shape; the store only allocates the ids.
  */
 
 import { attemptInflation, sampleSizeProportion } from '../calc/stats'
 import { emptyMatrixCell } from './empty'
 import type { TeCampaign, TeMatrixCell } from './types'
 
-/** A cell the plan would add. The store owns identity, so the plan carries no id. */
-export type PlannedMatrixCell = Omit<TeMatrixCell, 'id'>
+/**
+ * A cell the plan would add, already in its final shape. The store owns identity, so
+ * an id is optional here and the store replaces whatever it finds.
+ */
+export type PlannedMatrixCell = Omit<TeMatrixCell, 'id'> & { id?: string }
 
 /** Drop order of a cell nobody ranked (`emptyMatrixCell`). */
 export const UNRANKED_DROP_ORDER = 99

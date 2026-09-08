@@ -4,13 +4,21 @@ import { buildJiatf401 } from '../seed/jiatf401'
 import { computeMeasure } from '../calc/measures'
 import { CHECKLIST_TEMPLATES } from '../seed/checklistTemplates'
 import { deliveryBlockers, findingBlockers, runIncludable } from '../validate'
-import { findingComputations } from '../calc/findingEvidence'
-import { generatedSection } from '../calc/package'
-import { emptyFinding } from '../model/empty'
+import { findingComputations, findingLinkUpdate } from '../calc/findingEvidence'
+import type { FindingLinks } from '../calc/findingEvidence'
+import { deliverPackage, generatedSection } from '../calc/package'
+import { emptyFinding, nowIso } from '../model/empty'
 import { parseCampaignData, parseTeAutosave } from '../io/persistTe'
 
 const store = () => useTeStore.getState()
 const campaign = () => store().campaigns.find(c => c.id === store().activeCampaignId)!
+
+/** Delivery as the panel does it: the pure module prepares, the store applies. */
+const deliver = () => store().markPackageDelivered(deliverPackage(campaign(), nowIso()))
+
+/** A finding link change as the panel does it: prepare the patch, then apply it. */
+const linkUpdate = (id: string, links: FindingLinks) =>
+  findingLinkUpdate(campaign(), campaign().findings.find(f => f.id === id)!, links)
 
 beforeEach(() => {
   useTeStore.setState({ campaigns: [], activeCampaignId: null })
@@ -69,7 +77,7 @@ describe('C4 authoritative record transitions', () => {
     const c = campaign()
     store().passQualificationGate()
     store().approveDesign()
-    store().markPackageDelivered()
+    deliver()
     store().patchCampaign({ phase: 'closed', qualificationPassedAt: 'forged', designApprovedAt: 'forged' })
     expect(campaign()).toEqual(c)
   })
@@ -150,7 +158,7 @@ describe('C4 authoritative record transitions', () => {
   it('validates complete findings at delivery while allowing empty drafts', () => {
     const f = store().addFinding()
     expect(campaign().findings.find(x => x.id === f)).toEqual(emptyFinding(f))
-    store().markPackageDelivered()
+    deliver()
     expect(campaign().evidencePackage.deliveredAt).toBeNull()
   })
 
@@ -194,7 +202,7 @@ describe('C4 evidence and finalization acceptance', () => {
   it('finalizes a traceable package, rejects rewrites, closes, and reloads exactly', () => {
     prepareDelivery()
     expect(deliveryBlockers(campaign())).toEqual([])
-    store().markPackageDelivered()
+    deliver()
     const delivered = campaign()
     expect(delivered.evidencePackage.deliveredAt).toBeTruthy()
     store().patchItem('findings', delivered.findings[0].id, { statement: 'rewritten' })
@@ -215,7 +223,7 @@ describe('C4 evidence and finalization acceptance', () => {
       s.n === 1 ? { ...s, content: '', edited: false } : s.n === 2 ? { ...s, content: 'Edited by hand', edited: true } : s) } })
     let updates = 0
     const unsubscribe = useTeStore.subscribe(() => { updates++ })
-    store().markPackageDelivered()
+    deliver()
     unsubscribe()
     expect(updates).toBe(1)
     const pkg = campaign().evidencePackage
@@ -232,7 +240,7 @@ describe('C4 evidence and finalization acceptance', () => {
     store().patchItem('findings', id, { measureIds: [c.measures[0].id], quantifiedResult: 'Kept' })
     let updates = 0
     const unsubscribe = useTeStore.subscribe(() => { updates++ })
-    store().setFindingLinks(id, { supportingRunIds: [c.runs[0].id] })
+    store().setFindingLinks(id, linkUpdate(id, { supportingRunIds: [c.runs[0].id] }))
     unsubscribe()
     expect(updates).toBe(1)
     const f = campaign().findings.find(x => x.id === id)!
@@ -241,7 +249,7 @@ describe('C4 evidence and finalization acceptance', () => {
     expect(f.sampleAndIndependence).toContain('1 included of 1 attempted')
     expect(f.strength).toBe(emptyFinding(id).strength)
     const before = campaign()
-    store().setFindingLinks(id, { supportingRunIds: ['foreign-run'] })
+    store().setFindingLinks(id, linkUpdate(id, { supportingRunIds: ['foreign-run'] }))
     expect(campaign()).toEqual(before)
   })
 

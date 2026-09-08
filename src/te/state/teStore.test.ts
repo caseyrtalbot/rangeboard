@@ -3,6 +3,8 @@ import { useTeStore } from './teStore'
 import { linkedRecordFill } from '../model/cardLinks'
 import { nextId, bumpMajor, bumpMinor, displayId } from '../model/ids'
 import { deleteImpacts, hasPlaceholder } from '../validate'
+import { deliverPackage } from '../calc/package'
+import { nowIso } from '../model/empty'
 
 function campaign() {
   const s = useTeStore.getState()
@@ -337,7 +339,7 @@ describe('campaign phase lifecycle', () => {
     const second = addIssuableCard()
     st.issueCard(second)
     expect(campaign().phase).toBe('analyzing')
-    st.markPackageDelivered()
+    st.markPackageDelivered(deliverPackage(campaign(), nowIso()))
     expect(campaign().phase).toBe('analyzing')
     expect(campaign().evidencePackage.deliveredAt).toBeNull()
     st.adjudicateRun(runId, 'conditionally-valid', 'Board', 'gap found')
