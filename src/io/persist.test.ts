@@ -13,10 +13,13 @@ import type { McSummary, SensitivitySummary, Stat } from '../playback/mcRun'
 import type { ThreatAssessment } from '../playback/sim'
 import {
   fillScenario,
+  parseBaselineSave,
   runExportObject,
   scenarioAutosaveAdapter,
   scenarioHasWork,
 } from './persist'
+import { runReplicates } from '../playback/mcRun'
+import { buildBaseline } from '../state/baseline'
 import { createAutosave } from './autosave'
 
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
@@ -731,5 +734,32 @@ describe('seed provenance reaches an existing save', () => {
     const giraffe = loaded?.library.find((m) => m.id === 'lib-giraffe1x')
     expect(giraffe?.provenance?.some((r) => r.field === 'updateRateS')).toBe(true)
     expect([...store.keys()].filter((k) => k.startsWith(SCENARIO_RECOVERY_PREFIX))).toHaveLength(0)
+  })
+})
+
+describe('baseline save parsing', () => {
+  const summary = runReplicates({ ...emptyScenario(), replicates: 1 })
+  const pinned = buildBaseline({ ...emptyScenario(), name: 'Ref' }, summary, 'hash', 'Reference', '2026-09-08T12:00:00.000Z')
+  const save = (baseline: unknown, schemaVersion: unknown = 1) => JSON.stringify({ schemaVersion, baseline })
+
+  it('validates and fills the scenario and restores the summary', () => {
+    const parsed = parseBaselineSave(save({ ...pinned, scenario: { ...pinned.scenario, requirements: undefined } }))
+    expect(parsed.baseline?.label).toBe('Reference')
+    expect(parsed.baseline?.pinnedAt).toBe('2026-09-08T12:00:00.000Z')
+    expect(parsed.baseline?.scenarioHash).toBe('hash')
+    expect(parsed.baseline?.scenario.requirements).toEqual(emptyScenario().requirements)
+    expect(parsed.baseline?.mc).toEqual(summary)
+    expect(parseBaselineSave(save(null))).toEqual({ schemaVersion: 1, baseline: null })
+  })
+
+  it.each([
+    ['another schema version', save(pinned, 2), 'schemaVersion: expected 1'],
+    ['a missing label', save({ ...pinned, label: '' }), 'baseline.label: expected a nonempty string'],
+    ['an unparseable pin time', save({ ...pinned, pinnedAt: 'yesterday' }), 'baseline.pinnedAt: expected an ISO time'],
+    ['a malformed scenario', save({ ...pinned, scenario: { ...pinned.scenario, entities: null } }), 'entities'],
+    ['a malformed summary', save({ ...pinned, mc: { ...summary, seed: 'x' } }), 'baseline.mc.seed: expected a finite number'],
+    ['no record', 'null', 'baselineSave: expected an object'],
+  ])('rejects %s with a path', (_what, raw, message) => {
+    expect(() => parseBaselineSave(raw)).toThrow(message)
   })
 })

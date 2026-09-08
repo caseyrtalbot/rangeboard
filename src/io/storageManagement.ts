@@ -12,16 +12,19 @@ export interface StorageReadout {
   error: string | null
 }
 
+// Every export of storageKeys.ts is a live key or a `_RECOVERY_PREFIX` namespace.
+const recoveryPrefixes = Object.entries(storageKeys)
+  .filter(([name]) => name.endsWith('_RECOVERY_PREFIX')).map(([, prefix]) => prefix)
+const liveKeys = Object.entries(storageKeys)
+  .filter(([name]) => !name.endsWith('_RECOVERY_PREFIX')).map(([, key]) => key)
+
 function isRecoveryKey(key: string): boolean {
-  return [storageKeys.SCENARIO_RECOVERY_PREFIX, storageKeys.TE_RECOVERY_PREFIX]
-    .some(prefix => key.startsWith(prefix) && key.length > prefix.length)
+  return recoveryPrefixes.some(prefix => key.startsWith(prefix) && key.length > prefix.length)
 }
 
-/** Read only RangeBoard's documented live keys and its two recovery namespaces. */
+/** Read only RangeBoard's documented live keys and its recovery namespaces. */
 export function readStorageUsage(): StorageReadout {
   try {
-    const liveKeys = Object.entries(storageKeys)
-      .filter(([name]) => name.endsWith('_KEY')).map(([, key]) => key)
     const keys = new Set<string>(liveKeys)
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)

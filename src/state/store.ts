@@ -28,6 +28,9 @@ import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
 import type { PlaybackCommand } from './playbackCommands'
+import type { PinnedBaseline } from './baseline'
+import { buildBaseline } from './baseline'
+import { analysisBasisSignature } from './analysisBasis'
 import { resolvePlayback } from './playbackCommands'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { buildRaid, raidDraftFor } from './raidBuilder'
@@ -186,6 +189,8 @@ export interface Store {
   mc: McState
   /** Captured simulated trial shared by playback and execution views; never persisted. */
   trial: TrialState
+  /** Pinned laydown and ensemble for Compare. Its own persisted key; never in history. */
+  baseline: PinnedBaseline | null
   save: SaveState
 
   // History
@@ -370,6 +375,17 @@ export interface Store {
   sensitivityMessage: (m: McSensitivityMessage) => void
   /** Ask a running sensitivity run to stop at its next checkpoint, as `cancelMonteCarlo`. */
   cancelSensitivityRun: () => void
+
+  // Baseline
+  /**
+   * Keep the current scenario and its finished ensemble as the baseline. A no-op
+   * without a done summary for the current run and analysis basis. The label
+   * defaults to the scenario name and the pin time.
+   */
+  pinBaseline: (label?: string) => void
+  clearBaseline: () => void
+  /** Install a restored baseline; persistence only, never a user action. */
+  restoreBaseline: (baseline: PinnedBaseline | null) => void
   /**
    * Launch a factor sweep for the current scenario and run id on the
    * sensitivity slot (a sensitivity run or sweep already there is replaced).
@@ -505,6 +521,7 @@ export const useStore = create<Store>()((set, get) => {
     playback: freshPlayback(savedRunSeq()),
     mc: IDLE_MC,
     trial: IDLE_TRIAL,
+    baseline: null,
     save: { lastAutosaveAt: null, error: null },
 
     undo: () => install({ op: 'undo' }),
@@ -1464,6 +1481,18 @@ export const useStore = create<Store>()((set, get) => {
       const { sweep } = get().mc
       if (sweep.status === 'running' && sweep.runId != null) requestCancel('sweep', sweep.runId)
     },
+
+    pinBaseline: (label) => {
+      const { scenario, mc, playback } = get()
+      if (mc.status !== 'done' || mc.runId !== playback.runId || !mc.summary) return
+      const scenarioHash = analysisBasisSignature(scenario)
+      if (mc.basisSignature != null && mc.basisSignature !== scenarioHash) return
+      set({ baseline: buildBaseline(scenario, mc.summary, scenarioHash, label) })
+    },
+
+    clearBaseline: () => set({ baseline: null }),
+
+    restoreBaseline: (baseline) => set({ baseline }),
 
   }
 })
