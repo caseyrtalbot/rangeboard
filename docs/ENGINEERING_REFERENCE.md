@@ -733,6 +733,16 @@ Design system (`src/index.css`):
   remains available. The [record rules](field-te/C4_COMPLETION.md#record-rules) list them.
 - IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the
   record. Cards use `id` (per version) plus `cardCode` (shared across versions).
+- Card links and fill live in `src/te/model/cardLinks.ts` (pure) and reach the UI as four
+  store actions: `linkCardCell`, `setCardLinks`, `fillCard`, `refillCard`. Callers pass a
+  selection; the module owns link precedence and the fill rules. `linkedRecordFill` writes
+  empty fields only, or every derived field on the refill path. A cell merged into an
+  existing card unions the id lists and moves a single link only where the cell names a
+  record; a cleared or unknown cell changes the cell link alone. `fillCard` adds the default
+  event marks and the authority preconditions and runs on a draft only. Creating a card from
+  a cell (`createCardFromMatrixCell`) stays a separate operation: the cell decides every link
+  and no draft defaults are added. Every one of them writes through `patchItem`, so issued
+  and superseded cards reject them.
 - Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
   traceability no finalized finding. Qualification, acknowledged design review, issue and
   delivery enforce blockers in the store. Delivery finalizes findings; prefilled approver

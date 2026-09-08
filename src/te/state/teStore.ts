@@ -43,6 +43,8 @@ import {
   nowIso,
 } from '../model/empty'
 import { newId } from '../../model/types'
+import type { CardLinkSelection } from '../model/cardLinks'
+import { cellPatch, fillPatch, linkPatch, linkedRecordFill, newCardLinks, refillPatch } from '../model/cardLinks'
 import {
   campaignReferenceBlockers, cardIssueBlockers, checklistBlockers, deliveryBlockers, designBlockers,
   qualificationBlockers, sanitizeCardTemplatePatch,
@@ -161,6 +163,17 @@ interface TeStore {
   passQualificationGate: () => void
   approveDesign: (warningsAcknowledged?: boolean) => void
 
+  // Card links and fill. The rules live in `src/te/model/cardLinks.ts`;
+  // callers pass a selection only. Issued and superseded cards reject all four.
+  /** Merges a matrix cell into an existing card and fills what the new links allow. */
+  linkCardCell: (cardId: string, cellId: string | null) => void
+  /** Replaces chosen links on a card and fills what the new links allow. */
+  setCardLinks: (cardId: string, links: CardLinkSelection) => void
+  /** Fills the empty fields of a draft card from its links. */
+  fillCard: (cardId: string) => void
+  /** Writes every derived field of a card again from its links. */
+  refillCard: (cardId: string) => void
+
   // Card lifecycle
   /** Issue is blocked while cardIssueBlockers returns any blocker. */
   issueCard: (cardId: string) => string[]
@@ -213,112 +226,6 @@ const PHASE_ORDER: CampaignPhase[] = [
 function advance(c: TeCampaign, phase: CampaignPhase): TeCampaign {
   if (PHASE_ORDER.indexOf(phase) <= PHASE_ORDER.indexOf(c.phase)) return c
   return { ...c, phase }
-}
-
-/**
- * Card text derived from the records the card links to.
- * With `all` false only empty fields fill; `all` true overwrites every
- * derived field (the explicit refill path).
- */
-export function linkedRecordFill(c: TeCampaign, card: TeCard, all = false): Partial<TeCard> {
-  const patch: Partial<TeCard> = {}
-  const put = (key: keyof TeCard & string, current: string, next: string) => {
-    if (next.trim() === '') return
-    if (!all && current.trim() !== '') return
-    ;(patch as Record<string, unknown>)[key] = next
-  }
-  const config = c.configs.find((x) => x.id === card.configId)
-  if (config) {
-    put(
-      'systemStateNote',
-      card.systemStateNote,
-      [config.name && `${config.name} ${config.version}`, config.settingsAndModes]
-        .filter((t) => t && t.trim() !== '')
-        .join('; '),
-    )
-    put('trainingState', card.trainingState, config.operatorsAndTraining)
-  }
-  const threat = c.threats.find((x) => x.id === card.threatId)
-  if (threat) {
-    put('redControlled', card.redControlled, threat.redControlledVariables)
-    put('redFixed', card.redFixed, threat.redFixedVariables)
-    put('blinding', card.blinding, threat.blinding)
-  }
-  const cond = c.conditions.find((x) => x.id === card.conditionId)
-  if (cond) {
-    put(
-      'conditionNote',
-      card.conditionNote,
-      [cond.name, cond.weatherAndIllumination, cond.emEnvironment]
-        .filter((t) => t.trim() !== '')
-        .join('; '),
-    )
-  }
-  put(
-    'operatingLimits',
-    card.operatingLimits,
-    c.authorities
-      .filter((a) => a.status === 'active' && a.operatingLimits.trim() !== '')
-      .map((a) => a.operatingLimits)
-      .join('; '),
-  )
-  const measures = card.measureIds
-    .map((id) => c.measures.find((m) => m.id === id))
-    .filter((m) => m !== undefined)
-  if (measures.length > 0) {
-    put(
-      'dataSources',
-      card.dataSources,
-      [
-        ...new Set(
-          measures.flatMap((m) => [m.truth.primarySource, m.truth.backupSource]).filter((t) => t.trim() !== ''),
-        ),
-      ].join('\n'),
-    )
-    put(
-      'groundTruth',
-      card.groundTruth,
-      [
-        ...new Set(
-          measures
-            .map((m) =>
-              [m.truth.primarySource, m.truth.independenceFromSut].filter((t) => t.trim() !== '').join('; '),
-            )
-            .filter((t) => t !== ''),
-        ),
-      ].join('\n'),
-    )
-    const tolerances = measures
-      .map((m) => m.truth.timeToleranceS)
-      .filter((t): t is number => t !== null)
-    if (tolerances.length > 0) {
-      put(
-        'commonTimeAndTolerance',
-        card.commonTimeAndTolerance,
-        `Common time base; tightest tolerance ${Math.min(...tolerances)} s`,
-      )
-    }
-  }
-  const cell = c.matrix.find((x) => x.id === card.matrixCellId)
-  if (cell) put('orderAndBlocking', card.orderAndBlocking, cell.orderOrBlock)
-  put(
-    'resultThatCouldChangeDecision',
-    card.resultThatCouldChangeDecision,
-    c.decision.resultThatChangesChoice,
-  )
-  const q = card.questionIds.map((id) => c.questions.find((x) => x.id === id)).find((x) => x !== undefined)
-  if (q) put('purpose', card.purpose, q.wording)
-  const hyp = card.hypothesisIds
-    .map((id) => c.hypotheses.find((h) => h.id === id))
-    .find((h) => h !== undefined)
-  if (hyp) {
-    put(
-      'prediction',
-      card.prediction,
-      [hyp.predictedValue, hyp.producesBehavior].filter((t) => t.trim() !== '').join('; '),
-    )
-  }
-  return patch
 }
 
 export const useTeStore = create<TeStore>()((set, get) => {
@@ -870,15 +777,8 @@ export const useTeStore = create<TeStore>()((set, get) => {
       const c = requireCampaign(get())
       const cell = c?.matrix.find((x) => x.id === cellId)
       if (!c || !cell) return null
-      const id = get().addCard({
-        matrixCellId: cell.id,
-        questionIds: cell.questionId ? [cell.questionId] : [],
-        hypothesisIds: cell.hypothesisId ? [cell.hypothesisId] : [],
-        configId: cell.configId || null,
-        threatId: cell.threatId || null,
-        conditionId: cell.conditionId || null,
-        measureIds: [...cell.measureIds],
-      })
+      // A new card takes the cell's links; merging into an existing card is linkCardCell.
+      const id = get().addCard(newCardLinks(cell))
       const camp = requireCampaign(get())
       const card = camp?.cards.find((x) => x.id === id)
       if (camp && card) {
@@ -886,6 +786,35 @@ export const useTeStore = create<TeStore>()((set, get) => {
         if (Object.keys(fill).length > 0) get().patchItem('cards', id, fill)
       }
       return id
+    },
+
+    linkCardCell: (cardId, cellId) => {
+      const c = requireCampaign(get())
+      const card = c?.cards.find((x) => x.id === cardId)
+      if (!c || !card) return
+      get().patchItem('cards', cardId, cellPatch(c, card, cellId))
+    },
+
+    setCardLinks: (cardId, links) => {
+      const c = requireCampaign(get())
+      const card = c?.cards.find((x) => x.id === cardId)
+      if (!c || !card) return
+      get().patchItem('cards', cardId, linkPatch(c, card, links))
+    },
+
+    fillCard: (cardId) => {
+      const c = requireCampaign(get())
+      const card = c?.cards.find((x) => x.id === cardId)
+      // Fill from the design belongs to a draft; a reviewed card keeps its text.
+      if (!c || !card || card.status !== 'draft') return
+      get().patchItem('cards', cardId, fillPatch(c, card))
+    },
+
+    refillCard: (cardId) => {
+      const c = requireCampaign(get())
+      const card = c?.cards.find((x) => x.id === cardId)
+      if (!c || !card) return
+      get().patchItem('cards', cardId, refillPatch(c, card))
     },
 
     createDiagnosticCard: (anomalyId) => {
