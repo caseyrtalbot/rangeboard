@@ -49,17 +49,14 @@ describe('DebriefRecord', () => {
     complete()
   })
 
-  it('renders the completed sampled record, integer counts, milestones and manifest even after rewind', () => {
+  it('keeps the completed records after rewind without repeating the outcome grid', () => {
     const html = render()
     const trial = html.slice(html.indexOf('aria-label="Completed simulated trial record"'), html.indexOf('class="debrief-actions"'))
-    expect(trial).toContain('Simulated trial · complete')
-    expect(trial).toContain('Pre-arrival hard kills</span><strong>2</strong>')
-    expect(trial).toContain('Pre-arrival mission kills</span><strong>1</strong>')
-    expect(trial).toContain('Late hard kills</span><strong>1</strong>')
-    expect(trial).toContain('Late mission kills</span><strong>1</strong>')
-    expect(trial).toContain('Arrived undefeated</span><strong>3</strong>')
-    expect(trial).toContain('First detect</span><strong>0:01</strong>')
-    expect(trial).toContain('First effect</span><strong>0:02</strong>')
+    expect(html).not.toContain('trial-summary')
+    expect(html).not.toContain('outcome-grid')
+    expect(html).not.toContain('Pre-arrival hard kills')
+    expect(html).toContain('Export debrief JSON')
+    expect(html).toContain('Capture final PNG')
     expect(trial).toContain('Trial engagement event ledger · 8 events')
     expect(trial).toContain('Jam succeeded')
     expect(trial).toContain('Jam failed')
