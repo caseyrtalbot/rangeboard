@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "d13bb44936741cfdf5a133eb50d13b7ce19e2cfb509646d8e10b1c7b1b5e44ea",
+      "sha256": "220f09928a688721ee4386887d28d507c66212cb14f315353fab99a6ebe28606",
       "reviewedAt": "2026-09-08",
-      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
+      "note": "Fingerprint refresh after review fixes"
     },
     {
       "document": "docs/WORKFLOW.md",
