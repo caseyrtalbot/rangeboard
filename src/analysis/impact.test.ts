@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, FlightPath, Scenario, SpecModel, UasSpec, Vec2 } from '../model/types'
-import { assessAllThreats } from '../playback/sim'
+import { assessAllThreats, assessThreat, assessThreatReusing } from '../playback/sim'
 import type { AttritionReport, ThreatAttrition } from '../playback/attritionReport'
 import { resolveEngagements } from '../playback/attrition'
 import {
@@ -468,6 +468,40 @@ describe('engagementPicture incremental assessments', () => {
       expect(JSON.stringify(picture.assessments)).toBe(fresh(next))
     }
   }, 15_000)
+
+  // The picture goes through assessThreatReusing; these pin that interface
+  // directly, so the dependency set stays owned by sim.ts.
+  it('assessThreatReusing returns the prior memo while its inputs hold and a fresh one otherwise', () => {
+    const uas = firstOf(base, (e) => e.kind === 'uas')
+    const asset = base.entities.find((e) => e.kind === 'asset')!
+    const first = assessThreatReusing(base, uas, undefined)
+    expect(JSON.stringify(first.assessment)).toBe(JSON.stringify(assessThreat(base, uas)))
+    // The asset is a dependency the assessment reads, so the memo records it.
+    expect(first.inputs).toContain(asset)
+    expect(first.inputs).toContain(base.paths)
+    // Same objects: the same memo comes back.
+    expect(assessThreatReusing({ ...base, name: 'copy' }, uas, first)).toBe(first)
+    // A marker joins; no read touches it, so the prior survives.
+    const marker: Entity = {
+      id: 'marker-2',
+      name: 'marker',
+      kind: 'marker',
+      specId: null,
+      pos: { x: 0, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    }
+    expect(assessThreatReusing({ ...base, entities: [...base.entities, marker] }, uas, first)).toBe(first)
+    // Moving a dependency invalidates the reuse and the new memo matches a fresh run.
+    const next = moved(base, asset.id)
+    const second = assessThreatReusing(next, uas, first)
+    expect(second).not.toBe(first)
+    expect(second.assessment).not.toBe(first.assessment)
+    expect(JSON.stringify(second.assessment)).toBe(JSON.stringify(assessThreat(next, uas)))
+    expect(second.inputs).toContain(next.entities.find((e) => e.id === asset.id))
+    expect(second.inputs).not.toContain(asset)
+  })
 
   it('reuses every assessment when a sensor the technology gate refuses is moved', () => {
     // The harness scenario: its RF sensors hear none of its threats, so the

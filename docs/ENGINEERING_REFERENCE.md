@@ -266,12 +266,15 @@ reads `engagementPicture(scenario)` (`src/analysis/impact.ts`), a WeakMap cache 
 the scenario's engine identity (`engineKeyOf`) and bounded to the eight most recently
 used pictures, so the deterministic sweep runs once per scenario change and a deep undo
 recomputes one picture. A cache miss assesses the threats incrementally
-(`assessThreatsIncremental`): a threat keeps the last run's assessment object while every
-input it reads is the same object (the scenario fields the sweep reads, the run duration, the
-threat, every asset, effector and C2 node, and every sensor whose technology gate admits the
-target and whose reach touches the flight path plus the formation spread);
-`resolveEngagements` runs fresh every time, and a new read inside `assessThreat` must join
-that input list in the same change. Engine entry
+(`assessThreatsIncremental`) through `assessThreatReusing(scenario, uasId, prior, policy?)`
+(`sim.ts`), which returns the prior `ThreatAssessmentMemo` while every input the assessment
+reads is the same object and a fresh memo otherwise. The assessment module owns that
+dependency set (`threatAssessmentInputs`, beside `assessThreat`: the scenario fields the
+sweep reads, the run duration, the threat, every asset, effector and C2 node, and every
+sensor whose technology gate admits the target and whose reach touches the flight path plus
+the formation spread); `impact.ts` only keeps the memos from one run to the next. A new
+scenario read inside `assessThreat` joins `threatAssessmentInputs` in `sim.ts` in the same
+change. `resolveEngagements` runs fresh every time. Engine entry
 points in call order: `assessAllThreats(scenario, policy?)` (`sim.ts`) sweeps detection and
 builds one `ThreatAssessment` per active threat; `resolveEngagements(scenario, assessments,
 policy?)` (`attrition.ts`) distributes fire and returns totals, events and per-effector rows.

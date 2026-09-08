@@ -1,13 +1,22 @@
-import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType } from '../model/types'
+import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
 import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
 import { profileFor } from '../model/integration'
-import { dist, pointInWedge, posAtTime } from '../geometry/geo'
+import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
 import { effectivePathDelayS } from './raid'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
-import { FT_TO_M, effectorGeometryGate, jammable, radarPdModeled } from '../analysis/sensorEnv'
+import {
+  FT_TO_M,
+  effectiveDetectRangeM,
+  effectorGeometryGate,
+  instrumentedM,
+  jammable,
+  radarPdCurve,
+  radarPdModeled,
+  sensorHoldGate,
+} from '../analysis/sensorEnv'
 import { mOfN } from '../analysis/radarPd'
 import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
 import {
@@ -861,6 +870,128 @@ export function assessThreat(
     base.status = anyUsable ? 'engageable' : fcBlockedUsable ? 'no-fc-uplink' : 'window-too-short'
   }
   return base
+}
+
+/**
+ * One threat's assessment with the dependency set it was computed from:
+ * every object and value `assessThreat` read, in a fixed order, so a later
+ * run can tell whether an edit touched any of them (`assessThreatReusing`).
+ */
+export interface ThreatAssessmentMemo {
+  inputs: readonly unknown[]
+  assessment: ThreatAssessment
+}
+
+/** Ground distance from p to the segment ab, meters. */
+function distToSegment(p: Vec2, a: Vec2, b: Vec2): number {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const len2 = dx * dx + dy * dy
+  const t = len2 > 0 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2)) : 0
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+}
+
+/**
+ * The farthest ground distance, meters, at which `spec` can still hit this
+ * target: the effective detect range of a threshold sensor, the instrumented
+ * range of a Pd-modeled radar (its Pd is 0 beyond it), null when it has no
+ * bound. The sweep hits on slant range, which is never below ground range,
+ * so a member farther than this on the ground is never detected.
+ */
+function sensorReachM(spec: SensorSpec, scenario: Scenario, uasSpec: UasSpec | undefined): number | null {
+  if (radarPdCurve(spec, scenario.environment, uasSpec)) return instrumentedM(spec)
+  return effectiveDetectRangeM(spec, scenario.environment, uasSpec)
+}
+
+/**
+ * The entity objects one threat's assessment reads, in scenario order: the
+ * threat itself, every asset, effector and C2 node, and every sensor that
+ * can hit it. A sensor whose technology gate refuses the target, or whose
+ * reach ends short of every point of the flight path with the formation's
+ * spread added, never hits, so it never cues, never routes and writes no
+ * observation, wherever it stands or points. Other threats reach the
+ * assessment only through the run duration, which the shared inputs carry
+ * as a number. Markers are never read.
+ */
+function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
+  const path = scenario.paths.find((p) => p.entityId === uas.id)
+  // A threat with no flight path is 'no-path' before any other read.
+  if (!path || path.points.length < 2) return [uas]
+  const uasSpec = modelFor(scenario, uas)?.uas
+  const f = uas.formation
+  const spreadM =
+    f && f.count > 1
+      ? Math.max(...formationOffsets(f.shape, f.count, f.spacingM, 0).map((o) => Math.hypot(o.x, o.y)))
+      : 0
+  const out: Entity[] = [uas]
+  for (const e of scenario.entities) {
+    if (e === uas || e.kind === 'uas' || e.kind === 'marker') continue
+    if (e.kind === 'sensor') {
+      const spec = modelFor(scenario, e)?.sensor
+      if (spec) {
+        const gate = sensorHoldGate(spec, uasSpec)
+        if (gate !== 'ok' && gate !== 'needs-cue') continue
+        const reachM = sensorReachM(spec, scenario, uasSpec)
+        if (reachM != null) {
+          let nearestM = Number.POSITIVE_INFINITY
+          for (let i = 1; i < path.points.length; i++) {
+            nearestM = Math.min(nearestM, distToSegment(e.pos, path.points[i - 1], path.points[i]))
+          }
+          if (nearestM - spreadM > reachM) continue
+        }
+      }
+    }
+    out.push(e)
+  }
+  return out
+}
+
+/**
+ * Everything `assessThreat` reads for one threat: the scenario fields the
+ * sweep, the kill chain and the gates read, the run duration, then the
+ * entities (`threatEntityInputs`). Every scenario change replaces the
+ * objects it touches, so identity equality on this list is exact. This list
+ * is part of assessThreat's contract: a new scenario read inside
+ * assessThreat, or inside anything it calls, joins it in the same change.
+ */
+function threatAssessmentInputs(scenario: Scenario, uasId: string): unknown[] {
+  const inputs: unknown[] = [
+    scenario.paths,
+    scenario.connections,
+    scenario.library,
+    scenario.environment,
+    scenario.requirements,
+    scenario.roe,
+    scenario.doctrine,
+    scenario.raid,
+    scenarioDurationS(scenario),
+  ]
+  const uas = scenario.entities.find((e) => e.id === uasId)
+  if (uas) inputs.push(...threatEntityInputs(scenario, uas))
+  return inputs
+}
+
+function sameInputs(a: readonly unknown[], b: readonly unknown[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
+/**
+ * `assessThreat` with reuse: `prior` is returned as is when every input the
+ * assessment reads is the same object it was last time, else a fresh memo.
+ * Sound for a pure policy only (the deterministic run); a Monte Carlo
+ * replicate draws differently each time and must assess fresh.
+ */
+export function assessThreatReusing(
+  scenario: Scenario,
+  uasId: string,
+  prior: ThreatAssessmentMemo | undefined,
+  policy?: DrawPolicy,
+): ThreatAssessmentMemo {
+  const inputs = threatAssessmentInputs(scenario, uasId)
+  if (prior && sameInputs(prior.inputs, inputs)) return prior
+  return { inputs, assessment: assessThreat(scenario, uasId, policy) }
 }
 
 /** assessThreat over every active threat, one policy threaded through. */
