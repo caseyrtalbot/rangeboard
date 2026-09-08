@@ -1,10 +1,7 @@
 import type { Scenario } from '../model/types'
 import { newId } from '../model/types'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
-import { cancelMcRun, cancelSensitivity } from '../playback/mcClient'
-import { analysisBasisSignature } from './analysisBasis'
 import type { TrialManifest, TrialResult } from '../playback/trialTypes'
-import { cancelTrial } from '../playback/trialClient'
 
 /** Board navigation only, independent of the playback lifecycle. */
 export type BoardPhase = 'prepare' | 'execute' | 'analyze'
@@ -53,15 +50,6 @@ export const IDLE_TRIAL: TrialState = {
   result: null,
   startWhenReady: false,
   error: null,
-}
-
-/** Use the same material-input definition as playback and ensemble analysis. */
-export function trialForScenarioChange(trial: TrialState, next: Scenario): TrialState {
-  if (trial.manifest == null || trial.manifest.basisSignature === analysisBasisSignature(next)) {
-    return trial
-  }
-  cancelTrial()
-  return IDLE_TRIAL
 }
 
 /** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */
@@ -136,42 +124,5 @@ export function freshPlayback(
     completedAtMs: null,
     basisSignature: null,
     resetReason,
-  }
-}
-
-/**
- * A configuration change invalidates the run in progress: the telemetry it
- * produced no longer describes the board. The run keeps its sequence number;
- * only a manual reset issues a new one.
- */
-export function playbackForScenarioChange(playback: PlaybackState, next: Scenario): PlaybackState {
-  if (
-    playback.basisSignature == null ||
-    playback.basisSignature === analysisBasisSignature(next)
-  ) {
-    return playback
-  }
-  return freshPlayback(playback.runSeq, playback.speedMult, 'configuration-changed')
-}
-
-/**
- * The replicates describe the board they ran on. A configuration change makes
- * them stale: the worker is stopped and the summary is kept for reference, but
- * it is no longer the current answer. Bands read `status === 'done'` only. The
- * sensitivity run carries its own signature, so each side goes stale on its own.
- */
-export function mcForScenarioChange(mc: McState, next: Scenario): McState {
-  const live = (status: McStatus): boolean => status === 'running' || status === 'done'
-  if (!live(mc.status) && !live(mc.sensitivity.status)) return mc
-  const signature = analysisBasisSignature(next)
-  const mcStale = live(mc.status) && mc.basisSignature !== signature
-  const sensStale = live(mc.sensitivity.status) && mc.sensitivity.basisSignature !== signature
-  if (!mcStale && !sensStale) return mc
-  if (mcStale) cancelMcRun()
-  if (sensStale) cancelSensitivity()
-  return {
-    ...mc,
-    status: mcStale ? 'stale' : mc.status,
-    sensitivity: sensStale ? { ...mc.sensitivity, status: 'stale' } : mc.sensitivity,
   }
 }

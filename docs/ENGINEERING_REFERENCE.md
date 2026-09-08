@@ -45,8 +45,13 @@ Breaking one of these breaks the app.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
   clears `future`. Only scenario changes are undoable. A scenario-touching action goes
   through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis
-  layout, the `mc` and `trial` slices) goes through `set` and never pushes history. Undo and redo
-  restore through `set`, so a rule added to `mutate` must be added to both. One exception:
+  layout, the `mc` and `trial` slices) goes through `set` and never pushes history.
+  `mutate`, `undo`, `redo` and `replaceScenario` all install the next scenario through
+  `installScenario(slices, { op })` in `src/state/scenarioInstall.ts`, the one place that
+  decides per operation what history, selection, ring overrides, playback, `mc` and
+  `trial` do (`edit` pushes, `undo`/`redo` walk, `replace` clears history and cancels every
+  worker). A rule for "a new Scenario is current" belongs there, keyed by operation, never
+  in one caller. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
   and redo carry the current stamp over a restored snapshot. A stamp that already matches
   replaces nothing. A new stamp is a presentation variant of the current object
@@ -182,7 +187,9 @@ src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.
 src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui +
                playback + mc + trial), analysisLayout.ts (lens presets and pure layout reducers),
                layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
-               MC/trial state shapes and their scenario-change reducers), analysisBasis.ts
+               MC/trial state shapes), scenarioInstall.ts (installScenario: the per-operation
+               edit/undo/redo/replace response of history, selection, ring overrides,
+               playback, mc and trial), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
