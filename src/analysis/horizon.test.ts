@@ -25,5 +25,4 @@ describe('execution horizon', () => {
     const h = { scoped: true, horizonS: 3 * 0.1 }
     expect(visibleCount(10, 0, 0.1, h)).toBe(4)
   })
-
 })

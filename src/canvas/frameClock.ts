@@ -30,7 +30,7 @@ export function nextPublishedTimeS(
  * publication period ahead and to the run duration. It never runs ahead of
  * the observed horizon by more than the current period.
  */
-function displayTimeAt(
+export function displayTimeAt(
   publishedS: number,
   sinceMs: number,
   speedMult: number,

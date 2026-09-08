@@ -26,4 +26,3 @@ export function visibleCount(length: number, t0S: number, dtS: number, h: Execut
   }
   return lo
 }
-

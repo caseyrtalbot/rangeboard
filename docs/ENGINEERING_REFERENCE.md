@@ -32,7 +32,7 @@ Breaking one of these breaks the app.
 - **Board phase and horizon:** `BoardPhase` is exported only from `state/runState.ts`.
   `ui.boardPhase` starts at Prepare and is never persisted or recorded in undo history.
   `analysis/horizon.ts` is store-free: frozen full-run and empty horizons, inclusive time
-  checks, leading sample counts and null censoring. `selectExecutionHorizon` returns the
+  checks and leading sample counts. `selectExecutionHorizon` returns the
   full-run constant in Prepare and Analyze, the empty constant when `startedAtMs == null`
   (including a scrub before first Play), otherwise a stable object for the minimum of
   quantized cursor and observed time. `useExecutionHorizon` and `useRunCursor.horizon`
