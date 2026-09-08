@@ -16,7 +16,6 @@ import {
   emptyThreat,
 } from './empty'
 import {
-  appendedDropOrder,
   dropOrderRanking,
   planCells,
   planSampleSize,
@@ -96,16 +95,6 @@ describe('drop order', () => {
     ])
   })
 
-  it('keeps the unranked default, and continues a ranked matrix', () => {
-    expect(appendedDropOrder([], 2)).toEqual([UNRANKED_DROP_ORDER, UNRANKED_DROP_ORDER])
-    const unranked = [emptyMatrixCell('a'), { ...emptyMatrixCell('b'), dropOrder: 1 }]
-    expect(appendedDropOrder(unranked, 1)).toEqual([UNRANKED_DROP_ORDER])
-    const ranked = [
-      { ...emptyMatrixCell('a'), dropOrder: 1 },
-      { ...emptyMatrixCell('b'), dropOrder: 2 },
-    ]
-    expect(appendedDropOrder(ranked, 2)).toEqual([3, 4])
-  })
 })
 
 describe('planCells', () => {
@@ -135,8 +124,8 @@ describe('planCells', () => {
   it('drops links the campaign does not hold and plans nothing without them', () => {
     const c = makeCampaign()
     const plan = planCells(c, factorsFor(c, 'h2'), { method: 'stress' })
-    expect(plan.cells[0].hypothesisId).toBeNull()
-    expect(plan.warnings).toContain('The picked hypothesis belongs to another question; cells carry none.')
+    expect(plan.cells[0].hypothesisId).toBe('h2')
+    expect(plan.warnings).toContain('The picked hypothesis belongs to another question.')
     const empty = planCells(
       c,
       { questionId: null, hypothesisId: null, configId: 'cfg1', threatId: 'thr1', conditionIds: [] },

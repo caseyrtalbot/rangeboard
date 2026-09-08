@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "caf208f37f041190c607213f6fead5e8d536aa17b340c17f8ee7c4fc3871b013",
+      "sha256": "f7b86cc0d3373910f59bd5d68ccdc7a825621f5cc076671a27e20af72b77e136",
       "reviewedAt": "2026-09-08",
-      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
+      "note": "Fingerprint refresh after review fixes"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "f48daf546e1b0dd7aa5a06df6759eb27a5af2c113d1985b4a227587de65424fe",
+      "sha256": "4afa78820e56e9e73f5c9484fce20e9de35db804a331fa42d3839db9285bdfb1",
       "reviewedAt": "2026-09-08",
-      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
+      "note": "Review fixes: matrix plan parity, one id allocator, disjoint compat tables"
     },
     {
       "document": "docs/VERIFICATION.md",

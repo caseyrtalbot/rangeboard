@@ -271,19 +271,36 @@ export const useTeStore = create<TeStore>()((set, get) => {
     return accepted
   }
 
+  /**
+   * Allocate `count` grammar ids in sequence, skipping ids and card codes already in
+   * use. Returns null when the sequence is exhausted.
+   */
+  function allocateIds(c: TeCampaign, code: TypeCode, count: number): { ids: string[]; seq: TeCampaign['seq'] } | null {
+    const used = new Set(Object.values(c).flatMap(value => Array.isArray(value)
+      ? value.flatMap(r => r && typeof r === 'object' && 'id' in r
+        ? [r.id, ...('cardCode' in r ? [r.cardCode] : [])] : []) : []))
+    const ids: string[] = []
+    let seq = c.seq
+    for (let i = 0; i < count; i++) {
+      let allocation = nextId(seq, c.code, code)
+      while (used.has(allocation.id) && Number.isSafeInteger(allocation.seq[code]))
+        allocation = nextId(allocation.seq, c.code, code)
+      if (!Number.isSafeInteger(allocation.seq[code])) return null
+      used.add(allocation.id)
+      ids.push(allocation.id)
+      seq = allocation.seq
+    }
+    return { ids, seq }
+  }
+
   /** Allocate a grammar id on the active campaign and hand it to `build`. */
   function allocate(code: TypeCode, build: (c: TeCampaign, id: string) => TeCampaign): string {
     let allocated = ''
     const accepted = mutate((c) => {
-      const used = new Set(Object.values(c).flatMap(value => Array.isArray(value)
-        ? value.flatMap(r => r && typeof r === 'object' && 'id' in r
-          ? [r.id, ...('cardCode' in r ? [r.cardCode] : [])] : []) : []))
-      let allocation = nextId(c.seq, c.code, code)
-      while (used.has(allocation.id) && Number.isSafeInteger(allocation.seq[code]))
-        allocation = nextId(allocation.seq, c.code, code)
-      if (!Number.isSafeInteger(allocation.seq[code])) return c
-      allocated = allocation.id
-      return build({ ...c, seq: allocation.seq }, allocation.id)
+      const allocation = allocateIds(c, code, 1)
+      if (!allocation) return c
+      allocated = allocation.ids[0]
+      return build({ ...c, seq: allocation.seq }, allocation.ids[0])
     })
     return accepted ? allocated : ''
   }
@@ -790,22 +807,11 @@ export const useTeStore = create<TeStore>()((set, get) => {
       let added: string[] = []
       const accepted = mutate((c) => {
         if (plan.cells.length === 0) return c
-        const used = new Set(Object.values(c).flatMap(value => Array.isArray(value)
-          ? value.flatMap(r => r && typeof r === 'object' && 'id' in r
-            ? [r.id, ...('cardCode' in r ? [r.cardCode] : [])] : []) : []))
-        const ids: string[] = []
-        let seq = c.seq
-        const cells: TeCampaign['matrix'] = []
-        for (const cell of plan.cells) {
-          let allocation = nextId(seq, c.code, 'MTX')
-          while (used.has(allocation.id) && Number.isSafeInteger(allocation.seq.MTX))
-            allocation = nextId(allocation.seq, c.code, 'MTX')
-          if (!Number.isSafeInteger(allocation.seq.MTX)) return c
-          used.add(allocation.id)
-          ids.push(allocation.id)
-          seq = allocation.seq
-          cells.push({ ...structuredClone(plannedCell(cell)), id: allocation.id })
-        }
+        const allocation = allocateIds(c, 'MTX', plan.cells.length)
+        if (!allocation) return c
+        const { ids, seq } = allocation
+        const cells: TeCampaign['matrix'] = plan.cells.map((cell, i) =>
+          ({ ...structuredClone(plannedCell(cell)), id: ids[i] }))
         added = ids
         return { ...c, seq, matrix: [...c.matrix, ...cells] }
       })

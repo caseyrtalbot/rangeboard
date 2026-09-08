@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import { SCENARIO_LEGACY_FIELDS, boardLegacyOmissions } from './compat'
+import { teLegacyOmissions } from '../te/io/compatTe'
 import { fillScenario } from './persist'
 import { runtimeShapes } from './runtimeSchema'
 
@@ -12,6 +13,10 @@ const filled = (legacy: Record<string, unknown>): Record<string, unknown> =>
 // The declaration is the one owner: an omission the validator accepts must have
 // a fill, and a field fillScenario supplies must be an accepted omission.
 describe('Board schema-1 compatibility ownership', () => {
+  it('declares shapes the T&E domain does not, so the merged table hides nothing', () => {
+    const shared = Object.keys(boardLegacyOmissions).filter((k) => k in teLegacyOmissions)
+    expect(shared).toEqual([])
+  })
   it('accepts exactly the omissions the declaration names', () => {
     expect(boardLegacyOmissions.Scenario).toEqual(new Set(Object.keys(SCENARIO_LEGACY_FIELDS)))
     for (const [field, { shape }] of Object.entries(SCENARIO_LEGACY_FIELDS)) {

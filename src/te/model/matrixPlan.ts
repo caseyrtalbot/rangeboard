@@ -110,19 +110,6 @@ export function dropOrderRanking(
 }
 
 /**
- * Drop order for appended cells. An unranked matrix keeps the unranked default, so a
- * new cell never jumps ahead of cells nobody ranked; a ranked matrix continues its
- * numbering, so appended cells drop last.
- */
-export function appendedDropOrder(matrix: readonly TeMatrixCell[], count: number): number[] {
-  const ranked =
-    matrix.length > 0 && matrix.every((cell) => cell.dropOrder < UNRANKED_DROP_ORDER)
-  if (!ranked) return Array.from({ length: count }, () => UNRANKED_DROP_ORDER)
-  const last = Math.max(...matrix.map((cell) => cell.dropOrder))
-  return Array.from({ length: count }, (_, i) => last + i + 1)
-}
-
-/**
  * True when a comparison build still needs a baseline row. The method or the charter
  * makes the build a comparison; an existing baseline row settles it.
  */
@@ -153,8 +140,9 @@ export function planCells(
   if (conditionIds.length === 0) warnings.push('Pick at least one condition.')
 
   const hypothesis = campaign.hypotheses.find((h) => h.id === factors.hypothesisId) ?? null
-  if (factors.hypothesisId && (!hypothesis || hypothesis.questionId !== question?.id)) {
-    warnings.push('The picked hypothesis belongs to another question; cells carry none.')
+  if (factors.hypothesisId && !hypothesis) warnings.push('The picked hypothesis is not in the campaign.')
+  if (hypothesis && question && hypothesis.questionId !== question.id) {
+    warnings.push('The picked hypothesis belongs to another question.')
   }
   const measureIds = campaign.measures
     .filter((m) => m.questionId === question?.id)
@@ -177,7 +165,7 @@ export function planCells(
 
   const base: Partial<PlannedMatrixCell> = {
     questionId: question.id,
-    hypothesisId: hypothesis && hypothesis.questionId === question.id ? hypothesis.id : null,
+    hypothesisId: hypothesis?.id ?? null,
     configId: config.id,
     threatId: threat.id,
     measureIds,
@@ -192,10 +180,6 @@ export function planCells(
     ...conditionIds.map((conditionId) =>
       plannedCell({ ...base, conditionId, method: options.method })),
   ]
-  const order = appendedDropOrder(campaign.matrix, cells.length)
-  cells.forEach((cell, i) => {
-    cell.dropOrder = order[i]
-  })
   if (cells.length > LARGE_BATCH) {
     warnings.push(`${cells.length} cells plan ${cells.length * plannedReps} runs. Trim the batch or the reps.`)
   }

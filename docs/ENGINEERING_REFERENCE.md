@@ -868,8 +868,8 @@ Design system (`src/index.css`):
   and superseded cards reject them.
 - **Matrix planning is pure and adopted in one update:** `src/te/model/matrixPlan.ts`
   holds the build rules, the sample-size rules (`planSampleSize`, `sampleSizeCellPatch`,
-  `requiredRepetitions`) and the drop-order rules (`dropOrderRanking`,
-  `appendedDropOrder`). `planCells(campaign, factors, options)` returns the cells, the
+  `requiredRepetitions`) and the drop-order ranking (`dropOrderRanking`); appended cells
+  keep the unranked default. `planCells(campaign, factors, options)` returns the cells, the
   baseline row and warnings; it carries no ids and drops links the campaign does not
   hold, so adoption cannot fail reference validation. `DesignBuilders.tsx` previews that
   plan and `addMatrixCells` adopts the whole batch in one store update, so a 1000-cell
