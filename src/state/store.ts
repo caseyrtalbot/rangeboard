@@ -39,7 +39,8 @@ import {
   typedConnections,
 } from './labels'
 import { fitCameraTo } from './camera'
-import { emptyScenario, SEED_LIBRARY } from '../model/seed'
+import { emptyScenario } from '../model/seed'
+import { importModels, resetBuiltin } from '../model/libraryLifecycle'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { rotatePoint } from '../geometry/geo'
 import type { DisplayUnits } from '../geometry/geo'
@@ -1172,22 +1173,15 @@ export const useStore = create<Store>()((set, get) => {
         entities: s.entities.map((e) => (e.specId === id ? { ...e, specId: null } : e)),
       })),
 
+    // Both actions read one policy: src/model/libraryLifecycle.ts. A reset that
+    // changes nothing returns the same library array, so mutate records no edit.
     resetModelToSeed: (id) =>
       mutate((s) => {
-        const model = s.library.find((m) => m.id === id)
-        const seed = SEED_LIBRARY.find((m) => m.id === id)
-        if (!model || !seed || !model.builtin) return s
-        if (JSON.stringify(model) === JSON.stringify(seed)) return s
-        const copy: SpecModel = JSON.parse(JSON.stringify(seed))
-        return { ...s, library: s.library.map((m) => (m.id === id ? copy : m)) }
+        const library = resetBuiltin(s.library, id)
+        return library === s.library ? s : { ...s, library }
       }),
 
-    mergeLibrary: (models) =>
-      mutate((s) => {
-        const existing = new Set(s.library.map((m) => m.id))
-        const added = models.filter((m) => !existing.has(m.id))
-        return { ...s, library: [...s.library, ...added] }
-      }),
+    mergeLibrary: (models) => mutate((s) => ({ ...s, library: importModels(s.library, models) })),
 
     addCard: (patch) => {
       const id = newId('tc')
