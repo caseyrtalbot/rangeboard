@@ -740,6 +740,15 @@ Design system (`src/index.css`):
   explicit policy in `validate.ts`; invalid runs cannot count as valid quantitative trials.
   Observation corrections preserve both values and require re-adjudication. Optional
   history fields do not fabricate past snapshots on legacy loads.
+- **Checklist transitions live in `src/te/model/checklist.ts`,** not in the panel.
+  `answerChecklistItem` writes the fields one answer owns: only a check stamps `at`, only
+  unchecking clears it, and a blank completer defaults to the nearest earlier answered
+  item. It returns null for an unknown item index and for a completed checklist, which is
+  a closed record. `checklistCompletionBlockers` adds the already-complete rule to
+  `checklistBlockers`. The store operations `setChecklistAnswer` and `completeChecklist`
+  own the timestamps; `completeChecklist` returns `{ ok }` or `{ ok: false, blockers }` and
+  a refused completion writes nothing. `ExecutePanel.tsx` calls those and renders the
+  blockers in a `GateList`. Items are addressed by index; instance items carry no id.
 - `src/te/calc/` is pure TypeScript, fixture-tested from MASTER-CALCULATIONS.md. The Board
   engine imports `meanInterval`, `quantile`, `wilson` and `betaQuantile` from
   `src/te/calc/stats.ts`; that is the one dependency from the engine on `src/te/`.

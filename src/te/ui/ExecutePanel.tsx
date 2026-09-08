@@ -6,23 +6,19 @@
  */
 
 import { useState } from 'react'
-import type {
-  ChecklistInstanceItem,
-  ChecklistPhase,
-  GoNoGo,
-  TeCampaign,
-  TeChecklist,
-} from '../model/types'
+import type { ChecklistPhase, GoNoGo, TeCampaign, TeChecklist } from '../model/types'
+import type { ChecklistAnswer } from '../model/checklist'
+import { checklistCompletionBlockers } from '../model/checklist'
 import { useTeStore } from '../state/teStore'
 import { coverage } from '../calc/matrix'
 import { templateByKey, templatesForPhase } from '../seed/checklistTemplates'
-import { checklistBlockers } from '../validate'
 import { nowIso } from '../model/empty'
 import { HELP, allPeople } from './help'
 import { AccountingLine } from './AccountingLine'
 import {
   CheckField,
   DecisionGroup,
+  GateList,
   PersonPicker,
   PhaseIntro,
   Pill,
@@ -251,26 +247,21 @@ const CHECKLIST_PHASES: ChecklistPhase[] = [
   'closeout',
 ]
 
-/** The most recent earlier item's completer; one person usually runs a checklist. */
-function previousCompleter(inst: TeChecklist, index: number): string {
-  for (let i = index - 1; i >= 0; i--) {
-    const it = inst.items[i]
-    if (it.state !== 'unchecked' && it.completer.trim() !== '') return it.completer
-  }
-  return ''
-}
-
 function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
-  const { startChecklist, patchItem } = useTeStore.getState()
+  const { startChecklist, patchItem, setChecklistAnswer, completeChecklist } = useTeStore.getState()
+  // Blockers the store returned when it refused a completion, per checklist.
+  const [refusals, setRefusals] = useState<Record<string, string[]>>({})
   const people = allPeople(campaign)
   const open = campaign.checklists.filter((c) => c.completedAt === null)
   const done = campaign.checklists
     .filter((c) => c.completedAt !== null)
     .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
-  const setItem = (inst: TeChecklist, index: number, patch: Partial<ChecklistInstanceItem>) =>
-    patchItem('checklists', inst.id, {
-      items: inst.items.map((it, i) => (i === index ? { ...it, ...patch } : it)),
-    })
+  const answer = (inst: TeChecklist, index: number, a: ChecklistAnswer) =>
+    setChecklistAnswer(inst.id, index, a)
+  const complete = (inst: TeChecklist) => {
+    const result = completeChecklist(inst.id)
+    setRefusals((prev) => ({ ...prev, [inst.id]: result.ok ? [] : result.blockers }))
+  }
 
   return (
     <div className="inspector-body">
@@ -303,6 +294,7 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
         const holdCount = inst.items.filter(
           (it, i) => template?.items[i]?.holdOnUnknown && it.state === 'unchecked',
         ).length
+        const blockers = checklistCompletionBlockers(inst)
         return (
           <div key={inst.id} className="run-row">
             <SubTitle>
@@ -321,19 +313,7 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
                       checked={it.state === 'checked'}
                       disabled={it.state === 'na'}
                       onChange={(e) =>
-                        setItem(
-                          inst,
-                          i,
-                          e.target.checked
-                            ? {
-                                state: 'checked',
-                                at: nowIso(),
-                                ...(it.completer.trim() === ''
-                                  ? { completer: previousCompleter(inst, i) }
-                                  : {}),
-                              }
-                            : { state: 'unchecked', at: null },
-                        )
+                        answer(inst, i, { field: 'checked', checked: e.target.checked })
                       }
                     />
                     <span>{it.text}</span>
@@ -342,24 +322,28 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
                   </label>
                   <div className="field-row">
                     {it.type === 'value' && (
-                      <TextField label="Value" value={it.value} onChange={(v) => setItem(inst, i, { value: v })} />
+                      <TextField
+                        label="Value"
+                        value={it.value}
+                        onChange={(v) => answer(inst, i, { field: 'value', value: v })}
+                      />
                     )}
                     <PersonPicker
                       label="Completer"
                       value={it.completer}
-                      onChange={(v) => setItem(inst, i, { completer: v })}
+                      onChange={(v) => answer(inst, i, { field: 'completer', completer: v })}
                       people={people}
                     />
                     <CheckField
                       label="n/a"
                       value={it.state === 'na'}
-                      onChange={(v) => setItem(inst, i, v ? { state: 'na' } : { state: 'unchecked' })}
+                      onChange={(v) => answer(inst, i, { field: 'na', na: v })}
                     />
                     {it.state === 'na' && (
                       <TextField
                         label="n/a reason"
                         value={it.naReason}
-                        onChange={(v) => setItem(inst, i, { naReason: v })}
+                        onChange={(v) => answer(inst, i, { field: 'naReason', naReason: v })}
                       />
                     )}
                   </div>
@@ -385,13 +369,9 @@ function ChecklistsTab({ campaign }: { campaign: TeCampaign }) {
                 )}
               </>
             )}
+            <GateList items={blockers.length > 0 ? blockers : refusals[inst.id] ?? []} kind="bad" />
             <div className="inspector-actions">
-              <button
-                className="primary"
-                disabled={checklistBlockers(inst).length > 0}
-                title={checklistBlockers(inst).join(' ')}
-                onClick={() => patchItem('checklists', inst.id, { completedAt: nowIso() })}
-              >
+              <button className="primary" disabled={blockers.length > 0} onClick={() => complete(inst)}>
                 Complete checklist
               </button>
             </div>
