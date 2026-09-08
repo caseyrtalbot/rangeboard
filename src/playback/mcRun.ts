@@ -213,6 +213,36 @@ export type McSensitivityMessage =
   | { type: 'sens-done'; runId: string; summary: SensitivitySummary }
   | { type: 'sens-error'; runId: string; message: string }
 
+/**
+ * The end-of-run responses a sensitivity row records per replicate: leaker
+ * ships, expected kills, the raid's first detect and minimum warning times
+ * (NaN in a replicate with no detect or no warning) and the salvos fired
+ * over every effector.
+ */
+export type SensitivityResponse = 'leakers' | 'kills' | 'firstDetectS' | 'minWarningS' | 'salvos'
+
+/** The five responses, in the order the row records them. */
+export const SENSITIVITY_RESPONSES: readonly SensitivityResponse[] = [
+  'leakers', 'kills', 'firstDetectS', 'minWarningS', 'salvos',
+]
+
+/** One response of one row: its mean at the field's p10 and p90, the paired swing and se. */
+export interface SensitivityResponseStat {
+  /** Mean over the finite replicates with the field at its p10 sample; NaN with none. */
+  lo: number
+  /** The same with the field at its p90 sample. */
+  hi: number
+  /** |hi - lo|. */
+  swing: number
+  /**
+   * Paired standard error of the swing over the replicates finite on both
+   * sides: their sd of (hi minus lo) over sqrt(count); 0 with one, NaN with none.
+   */
+  se: number
+  /** The defined fraction of each side (a time's definedness; always n of n for a count). */
+  defined: { lo: Stat['defined']; hi: Stat['defined'] }
+}
+
 /** One tornado row: the headline statistic with one field at its p10 and at its p90. */
 interface SensitivityRow {
   /** A library model id, a connection id, or 'doctrine' (uncertainFields). */
@@ -224,13 +254,20 @@ interface SensitivityRow {
   low: number
   /** The same with the field at its p90 sample. */
   high: number
-  /** |high - low|; rows sort by it, largest first. */
+  /** |high - low|; rows sort by it, largest first. Alias of `responses.leakers.swing`. */
   swing: number
   /**
    * Paired standard error of the swing: the sample sd of the per-replicate
    * difference (high minus low) over sqrt(replicates); 0 with one replicate.
+   * Alias of `responses.leakers.se`.
    */
   se: number
+  /**
+   * Every response at the same two field runs. The loop always records it;
+   * optional only so hand-built rows in the store and widget tests still
+   * type until the UI moves to it.
+   */
+  responses?: Record<SensitivityResponse, SensitivityResponseStat>
 }
 
 /** The sensitivity run result: one row per uncertain field, paired by common random numbers. */
@@ -595,24 +632,43 @@ interface Halt {
   rule: 'budget' | 'cancelled' | null
 }
 
+/** Per-replicate samples of every response, in replicate order. */
+type ResponseSamples = Record<SensitivityResponse, Samples>
+
 /**
- * End-of-run leakers per replicate over the replicates of
- * `runSettings(scenario)`; their sum over the count is the number
- * `runReplicates(scenario).leakers.mean[n - 1]` reports, without the bands.
+ * End-of-run responses per replicate over the replicates of
+ * `runSettings(scenario)`. The leaker sum over the count is the number
+ * `runReplicates(scenario).leakers.mean[n - 1]` reports, without the bands;
+ * the times and salvos are the per-replicate scalars that loop records.
  * The caller passes an aleatory scenario with no stopping rule, so every
  * replicate runs. One checkpoint per replicate, reporting the caller's field
  * progress; a stop records itself in `halt` and returns null.
  */
-function* leakerLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<Samples | null> {
+function* responseLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<ResponseSamples | null> {
   const { seed, replicates } = runSettings(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const tEndS = (sampleCount(scenario) - 1) * DT
-  const leakers: Samples = []
+  const out: ResponseSamples = { leakers: [], kills: [], firstDetectS: [], minWarningS: [], salvos: [] }
   for (let i = 0; i < replicates; i += 1) {
     const policy = monteCarloPolicy(seed, i, thresholds)
     const assessments = assessAllThreats(scenario, policy)
     const report = resolveEngagements(scenario, assessments, policy)
-    leakers.push(liveKpisAt(buildLiveTimeline(assessments, report), tEndS).leakerShips)
+    const kpi = liveKpisAt(buildLiveTimeline(assessments, report), tEndS)
+    out.leakers.push(kpi.leakerShips)
+    out.kills.push(kpi.expectedKills)
+    // The raid's first detect and minimum warning, as replicateLoop records them.
+    let firstDetect = NaN
+    let minWarning = NaN
+    for (const a of assessments) {
+      if (a.status === 'no-path') continue
+      if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
+      if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
+    }
+    out.firstDetectS.push(firstDetect)
+    out.minWarningS.push(minWarning)
+    let salvos = 0
+    for (const ef of report.effectors) salvos += ef.shotsFired + ef.deSalvos + ef.jamSalvos
+    out.salvos.push(salvos)
     const stop = yield cp
     if (stop) {
       // The half-width rule never runs here, so a stop is a budget or a cancel.
@@ -620,21 +676,47 @@ function* leakerLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<Sampl
       return null
     }
   }
-  return leakers
+  return out
 }
 
-/** The mean of per-replicate samples, summed in replicate order. */
+/** The mean of the finite per-replicate samples, summed in replicate order; NaN with none. */
 function meanOf(samples: Samples): number {
   let sum = 0
-  for (const v of samples) sum += v
-  return sum / samples.length
+  let n = 0
+  for (const v of samples) {
+    if (!Number.isFinite(v)) continue
+    sum += v
+    n += 1
+  }
+  return sum / n
 }
 
-/** The paired standard error of `high - low` over the replicates. */
+/** The paired standard error of `high - low` over the replicates finite on both sides. */
 function pairedSe(low: Samples, high: Samples): number {
-  const d = high.map((v, i) => v - low[i])
+  const d: number[] = []
+  for (let i = 0; i < low.length; i += 1) {
+    if (Number.isFinite(low[i]) && Number.isFinite(high[i])) d.push(high[i] - low[i])
+  }
   const { sd } = meanInterval(d, STAT_CONF)
   return sd / Math.sqrt(d.length)
+}
+
+/** The count of finite samples over the count run, as a Stat reports `defined`. */
+function definedOfSamples(samples: Samples): Stat['defined'] {
+  return definedOf(samples.filter((v) => Number.isFinite(v)).length, samples.length)
+}
+
+/** One response's paired statistics between the p10 and p90 runs. */
+function responseStat(low: Samples, high: Samples): SensitivityResponseStat {
+  const lo = meanOf(low)
+  const hi = meanOf(high)
+  return {
+    lo,
+    hi,
+    swing: Math.abs(hi - lo),
+    se: pairedSe(low, high),
+    defined: { lo: definedOfSamples(low), hi: definedOfSamples(high) },
+  }
 }
 
 /** The panel label of one uncertain field's owner: model name, connection label, or Doctrine. */
@@ -651,8 +733,9 @@ function fieldLabel(scenario: Scenario, modelId: string): string {
  * field the loop runs `replicates` replicates twice, the field at its p10
  * sample and at its p90 sample with every other field nominal, under the
  * same seed and replicate indices as the nominal run (common random
- * numbers), so the swing is a paired difference. Rows sort by swing, largest
- * first; ties keep the `uncertainFields` order. `onProgress` fires after
+ * numbers), so the swing is a paired difference. Each row also records the
+ * same pair for every `SensitivityResponse`. Rows sort by the leaker swing,
+ * largest first; ties keep the `uncertainFields` order. `onProgress` fires after
  * every field with the field count. `elapsedMs` is 0 here; the worker fills it.
  */
 export function runSensitivity(
@@ -687,12 +770,12 @@ export function* sensitivityLoop(
     const done = { stat: 'leakers' as const, rows, nominal, replicates, seed, elapsedMs: 0 }
     return halt.rule ? { ...done, stopped: { rule: halt.rule, at: cp.done } } : done
   }
-  const nominalLeakers = yield* leakerLoop(base, cp, halt)
-  if (nominalLeakers == null) return summary(NaN)
-  const nominal = meanOf(nominalLeakers)
+  const nominalRuns = yield* responseLoop(base, cp, halt)
+  if (nominalRuns == null) return summary(NaN)
+  const nominal = meanOf(nominalRuns.leakers)
   for (const f of fields) {
     const at = (q: number) =>
-      leakerLoop(
+      responseLoop(
         sampleScenario(base, (m, fl) => (m === f.modelId && fl === f.field ? q : null)),
         cp,
         halt,
@@ -701,14 +784,18 @@ export function* sensitivityLoop(
     if (low == null) break
     const high = yield* at(0.9)
     if (high == null) break
+    const responses = {} as Record<SensitivityResponse, SensitivityResponseStat>
+    for (const r of SENSITIVITY_RESPONSES) responses[r] = responseStat(low[r], high[r])
+    // The headline fields alias the leaker response.
     rows.push({
       modelId: f.modelId,
       field: f.field,
       label: fieldLabel(base, f.modelId),
-      low: meanOf(low),
-      high: meanOf(high),
-      swing: Math.abs(meanOf(high) - meanOf(low)),
-      se: pairedSe(low, high),
+      low: responses.leakers.lo,
+      high: responses.leakers.hi,
+      swing: responses.leakers.swing,
+      se: responses.leakers.se,
+      responses,
     })
     cp.done += 1
     onProgress?.(cp.done, fields.length)
