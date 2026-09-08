@@ -36,6 +36,7 @@ Proposals preserve design decisions for review; implementation requires separate
 
 - [Board workspace design plan and interactive prototype, 2026-09-06](field-te/evidence/board-workspace-design-2026-09-06/board-workspace-prototype.html)
 - [Playback realism implementation proposal, 2026-09-07](field-te/evidence/playback-realism-plan-2026-09-07.md)
+- [Analysis rebuild implementation plan, 2026-09-08, approved](field-te/evidence/analysis-rebuild-plan-2026-09-08.md)
 
 ### Completion and integration records
 

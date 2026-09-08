@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "75121baf78bec5d73be4f8f327cf58939296019bfeb570c5319394473d3bd991",
+      "sha256": "8ce8188cd036546eea8558462e860dd5e5880bc4d30c5825d0f4b9789795fdcf",
       "reviewedAt": "2026-09-08",
-      "note": "Added the direct R5 sampled experience evidence link next to R4; reviewed index placement."
+      "note": "Added the approved analysis rebuild plan link under design proposals."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -96,9 +96,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "90ee43233cf5a8e50b6cd49a46a11860c10268db97146e21091b90b09e62cf94",
+      "sha256": "7c56f474e2997298050b289a5b82c5160d6f4e73f0cf160ea7d841abc746fbf3",
       "reviewedAt": "2026-09-08",
-      "note": "Recorded R5 completion and evidence link; replaced the unstarted-R5 boundary with the recorded follow-ups."
+      "note": "Recorded the approved analysis rebuild plan as selected work with S1 as the next action and lane ownership."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
