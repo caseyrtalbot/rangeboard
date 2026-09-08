@@ -1,10 +1,11 @@
+import type { ExecutionHorizon } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import type { Scenario } from '../../../model/types'
 import type { EngagementPicture } from '../../../analysis/impact'
 import { engagementPicture } from '../../../analysis/impact'
 import type { RunPhase } from '../../../state/runState'
 import { useStore } from '../../../state/store'
-import { durationOf, selectSimTimeStep } from '../../../state/selectors'
+import { durationOf, selectExecutionHorizon, selectSimTimeStep } from '../../../state/selectors'
 
 /**
  * Segmented control that carries a `data-role` for browser checks. The shared
@@ -54,16 +55,23 @@ export function useEngagement(scenario: Scenario, runId: string): EngagementPict
   }, [scenario, runId])
 }
 
+// oxlint-disable-next-line react/only-export-components -- Keep widget hooks in the shared controls module.
+export function useExecutionHorizon(): ExecutionHorizon {
+  return useStore(selectExecutionHorizon)
+}
+
 /** The clamped cursor and the run phase every live widget reads. */
 export function useRunCursor(scenario: Scenario): {
   t: number
+  horizon: ExecutionHorizon
   durationS: number
   phase: RunPhase
   /** Phase 'ready': nothing observed yet. Counters read 0 and times read a dash. */
   untouched: boolean
 } {
+  const horizon = useExecutionHorizon()
   const tS = useSimTimeStep()
   const phase = useStore((s) => s.playback.phase)
   const durationS = durationOf(scenario)
-  return { t: Math.min(tS, durationS), durationS, phase, untouched: phase === 'ready' }
+  return { horizon, t: Math.min(tS, durationS), durationS, phase, untouched: phase === 'ready' }
 }

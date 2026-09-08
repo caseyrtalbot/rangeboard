@@ -1,3 +1,4 @@
+import { reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import { TimeSeries } from '../../../charts/TimeSeries'
 import type { ChartMark, Series } from '../../../charts/types'
@@ -78,7 +79,7 @@ function idsCharts(
 }
 
 /** A time-series chart on the DT grid: a KPI id list or one of the three named presets. */
-export function TimeSeriesWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function TimeSeriesWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
   const setSimTime = useStore((s) => s.setSimTime)
@@ -125,8 +126,10 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="time-series"
       title={title}
+      metaWithinHorizon
       meta={`${DT} s · basis per series`}
       collapsed={collapsed}
       customize={customize}
@@ -141,10 +144,11 @@ export function TimeSeriesWidget({ id, params, collapsed, customize, index, coun
           <TimeSeries
             key={i}
             series={chart.series}
-            tS={t}
+            tS={horizon.scoped ? Math.min(t, horizon.horizonS) : t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
             onScrub={setSimTime}
             yDomain={chart.yDomain}
-            marks={chart.marks}
+            marks={horizon.scoped ? chart.marks?.filter((mark) => mark.label !== 'ARR' && reached(mark.tS, horizon)) : chart.marks}
           />
         ))
       )}

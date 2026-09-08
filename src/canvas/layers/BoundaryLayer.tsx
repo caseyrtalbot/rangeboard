@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { Group, Line, Text } from 'react-konva'
 import type { Boundary, BoundaryType } from '../../model/types'
 import { useStore } from '../../state/store'
@@ -62,7 +63,7 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
 
 export function BoundaryLayer() {
   const boundaries = useStore((s) => s.scenario.boundaries)
-  const show = useStore((s) => s.ui.layers.boundaries)
+  const show = useStore((s) => selectEffectiveLayers(s).boundaries)
   if (!show) return null
   return (
     <>

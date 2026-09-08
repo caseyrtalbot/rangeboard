@@ -12,8 +12,10 @@ maps changes to checks.
 ## Board features
 
 The Board shell provides Prepare, Execute and Analyze lifecycle views. These are local
-navigation choices: changing a view preserves the playback cursor, observed horizon and
-analysis basis. Prepare composes the existing run inputs, validity findings and a
+navigation choices stored only for the session: changing a view preserves the playback
+cursor, observed horizon and analysis basis. Execute starts with engagement layers and
+retains its own session-only layer override; Prepare and Analyze share the saved layers.
+Prepare composes the existing run inputs, validity findings and a
 keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPreparation.tsx).
 Setup findings that cost a measurement appear first, with a Select button for a threat
 that starts inside detection coverage; model caveats stay inside the disclosure.
@@ -36,7 +38,8 @@ Telemetry, Configure and Model basis share one content scroller. Overview preser
 selection. Model basis names all linked instances and reuses the model editor; duplication
 leaves the selected instance linked to its original model until explicitly changed.
 The compact canvas readout links to full Telemetry, which retains the complete track-file
-fields and distinguishes cursor, constant and full-path quantities.
+fields and distinguishes cursor, constant and full-path quantities. In Execute, arrival
+and CPA appear under Planned path as Planned arrival and Planned CPA.
 
 Forecast counts read as expected values: Expected kills with two decimals below ten,
 Expected neutralization when no defended asset exists, and an expected-defeat pill for a
@@ -44,10 +47,19 @@ track below the residual cutoff. No surface labels a forecast as a realized kill
 
 Analyze presents the untouched Run summary with full-run validity and outcome first,
 then separately disclosed full-run time series and cursor data. Execute retains the
-cursor-oriented stack. Each view labels its horizon; custom widget order and parameters
-remain as saved. Completed-run Evidence products retain export, final-frame capture,
-reset and full-run records without repeating the outcome summary. The persistent Layout
-control manages saved layouts, widgets and editing mode. Scenario-input readouts route
+cursor-oriented stack. Its shared execution horizon is empty before the first Play, then
+the lesser of the quantized cursor and observed horizon. Scrubbing and saved-frame
+navigation never advance observation. Prepare and Analyze retain full-run scope.
+Charts, engagement strips and lanes, WEZ impact badges, selected-object details and
+widgets censor outcomes at that horizon, including tooltips and accessibility text.
+Chart accessibility text identifies the shown horizon separately from a forward preview playhead.
+Projection, requirement gates and sensitivity show “Forecast available in Analyze” in
+Execute; validity, environment and doctrine remain available. The placeholders retain
+collapse, order and customization without changing saved layouts. Completed Evidence
+products mount in Execute only at the full-duration horizon. Each view labels its scope;
+custom widget order and parameters remain as saved. Completed-run Evidence products
+retain export, final-frame capture, reset and full-run records without repeating the
+outcome summary. The persistent Layout control manages saved layouts, widgets and editing mode. Scenario-input readouts route
 to the matching Prepare section; view and layout changes preserve the result basis.
 
 | Activity | Implemented features | Source entry points |
@@ -60,6 +72,9 @@ to the matching Prepare section; view and layout changes preserve the result bas
 | Play a scenario | Run identity, play/pause/reset, speed, cursor, observation horizon and derived track/engagement display | [TimelineBar](../src/panels/TimelineBar.tsx), [runState](../src/state/runState.ts), [frameClock](../src/canvas/frameClock.ts) |
 | Analyze a configuration | Deterministic envelope, Monte Carlo, aleatory/total uncertainty, sensitivity, requirements, validity, timelines, event ledgers and analysis lenses | [AnalysisPanel](../src/panels/AnalysisPanel.tsx), [analysis UI](../src/panels/analysis/), [mcRun](../src/playback/mcRun.ts) |
 | Retain work | Autosave, scenario/library/run JSON, saved Board frames, basic test cards and run logs | [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [TestCardsPanel](../src/panels/TestCardsPanel.tsx) |
+
+Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
+never advances observation or stamps a run start or analysis basis.
 
 Board test cards (`Scenario.testCards`) differ from controlled T&E cards
 (`TeCampaign.cards`). Board saved frames and T&E captured image records also have

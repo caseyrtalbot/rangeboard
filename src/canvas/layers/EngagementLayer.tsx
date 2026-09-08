@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { Circle, Group, Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { bearingDeg, dist } from '../../geometry/geo'
@@ -32,7 +33,7 @@ const BEAM_DASH = [2, 4]
  * turned ghost still draws to completion.
  */
 export function EngagementLayer({ shots, displayTimeS }: Props) {
-  const show = useStore((s) => s.ui.layers.engagements)
+  const show = useStore((s) => selectEffectiveLayers(s).engagements)
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
   if (!show) return null

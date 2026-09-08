@@ -1,3 +1,4 @@
+import { FULL_RUN } from '../../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../../../model/seed'
@@ -11,6 +12,7 @@ function render(onOpenPreparation?: WidgetProps['onOpenPreparation']): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(
     <RunValidityWidget
+      horizon={FULL_RUN}
       id="rs-validity"
       params={{}}
       collapsed={false}

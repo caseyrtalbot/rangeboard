@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../state/selectors'
 import { lazy, memo, Suspense, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
@@ -241,7 +242,7 @@ export const Toolbar = memo(function Toolbar() {
   const scenarioName = useStore((s) => s.scenario.name)
   const environment = useStore((s) => s.scenario.environment)
   const spawnWarning = useStore(useShallow(selectSpawnWarning))
-  const threatWez = useStore((s) => s.ui.layers.threatWez)
+  const threatWez = useStore((s) => selectEffectiveLayers(s).threatWez)
   const save = useStore((s) => s.save)
   const { setScenarioName } = useStore.getState()
 

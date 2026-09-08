@@ -1,3 +1,4 @@
+import { FORECAST_IN_ANALYZE, FULL_RUN, type ExecutionHorizon } from '../../analysis/horizon'
 import type { RequirementGate, RequirementGateReport } from '../../analysis/requirements'
 import { SURVIVAL_LABELS } from './widgets/labels'
 import { State } from '../../ui/kit'
@@ -50,7 +51,8 @@ function GateCard({ gate, runWideCaveats }: { gate: RequirementGate; runWideCave
   )
 }
 
-export function RequirementGates({ report }: { report: RequirementGateReport }) {
+export function RequirementGates({ report, horizon = FULL_RUN }: { report: RequirementGateReport; horizon?: ExecutionHorizon }) {
+  if (horizon.scoped) return <p className="muted small">{FORECAST_IN_ANALYZE}</p>
   const runWideCaveats = new Set(
     (report.gates[0]?.caveats ?? []).filter((caveat) =>
       report.gates.every((gate) => gate.caveats.includes(caveat)),

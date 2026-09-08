@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useMemo } from 'react'
 import { Arrow, Circle, Group, Line, Text } from 'react-konva'
 import type { FlightPath, Vec2 } from '../../model/types'
@@ -103,7 +104,7 @@ export function PathLayer({ mouseWorld }: Props) {
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
-  const showPaths = useStore((s) => s.ui.layers.flightPaths)
+  const showPaths = useStore((s) => selectEffectiveLayers(s).flightPaths)
 
   // The flightPaths toggle hides committed paths only. The draft below and the
   // calibrate markers always draw, or the drawing tools lose their feedback.

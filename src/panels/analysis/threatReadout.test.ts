@@ -1,6 +1,9 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { EMPTY_HORIZON, FULL_RUN } from '../../analysis/horizon'
+import { detectionsAt } from '../../playback/detection'
+import { trackStatesAt } from '../../playback/trackState'
 import { engagementPicture } from '../../analysis/impact'
 import { threatPictureAt } from '../../analysis/threatAggregation'
 import { emptyScenario } from '../../model/seed'
@@ -105,4 +108,61 @@ describe('threat outcome wording', () => {
     expect(html).not.toContain('EXPECTED DEFEAT')
     expect(html).toContain('title="0.75 expected kills · 0.25 expected surviving ships · 1 salvos"')
   })
+
+  it('ignores a future supplied sweep and hides unreached defeat at a 30-second horizon', () => {
+    const input = fixture()
+    const report = { ...input.report, events: input.report.events.map((event) => ({ ...event, tS: 35, tEffectS: 40 })) }
+    const timeline = buildTrackTimeline(input.scenario, input.assessments, report)
+    const readout = threatReadoutAt({
+      ...input, timeline, tS: 100, units: 'metric', horizon: { scoped: true, horizonS: 30 },
+      sweep: { states: trackStatesAt(timeline, 100), hits: detectionsAt(input.scenario, 100) },
+    })
+    expect(readout.pillLabel).not.toBe('EXPECTED DEFEAT')
+    expect(readout.ghostLine).toBeNull()
+    expect(readout.state?.effectsLanded).toBe(0)
+    expect(readout.cursorText).toBe('T+0:30')
+    expect(readout.rows.some((row) => row.horizon === 'full-path')).toBe(false)
+    expect(readout.planningRows.map((row) => row.label)).toEqual(['Planned CPA', 'Planned arrival'])
+    const reached = threatReadoutAt({ ...input, timeline, tS: 100, units: 'metric', horizon: { scoped: true, horizonS: 40 } })
+    expect(reached.pillLabel).toBe('EXPECTED DEFEAT')
+    expect(reached.ghostLine).toContain('T+0:40')
+  })
+
+  it('shows untouched telemetry even when a T0 sensor fallback would detect a pathless threat', () => {
+    useStore.getState().addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
+    const input = fixture()
+    const scenario = { ...input.scenario, paths: [] }
+    expect(detectionsAt(scenario, 0).get(input.entity.id)?.length).toBeGreaterThan(0)
+    const readout = threatReadoutAt({ ...input, scenario, tS: 100, units: 'metric', horizon: EMPTY_HORIZON })
+    expect(readout.state).toBeUndefined()
+    expect(readout.phase).toBe('undetected')
+    expect(readout.ghostLine).toBeNull()
+    expect(readout.cursorText).toBe('—')
+    expect(readout.engageText).toBe('—')
+    expect(readout.warningText).toBe('—')
+    expect(readout.firstDetectText).toBe('—')
+    for (const id of ['position', 'classification', 'ew', 'residual']) {
+      expect(readout.rows.find((row) => row.id === id)?.value).toBe('—')
+    }
+    expect(readout.rows.find((row) => row.id === 'hold')?.value).toBe('0 sensors')
+  })
+
+  it('preserves the full-run default and censors first detection and warning independently', () => {
+    const input = fixture()
+    const assessments = input.assessments.map((assessment) => ({
+      ...assessment, firstDetectS: 35, arrivalS: 80, warningS: 45,
+    }))
+    const resolve = (horizonS: number) => threatReadoutAt({
+      ...input, assessments, tS: 100, units: 'metric', horizon: { scoped: true, horizonS },
+    })
+    expect(resolve(30).firstDetectText).toBe('—')
+    expect(resolve(35).firstDetectText).toContain('T+0:35')
+    expect(resolve(35).warningText).toBe('—')
+    expect(resolve(80).warningText).toBe('0:45')
+    const defaults = threatReadoutAt({ ...input, tS: 100, units: 'metric' })
+    expect(threatReadoutAt({ ...input, tS: 100, units: 'metric', horizon: FULL_RUN })).toEqual(defaults)
+    expect(defaults.planningRows).toEqual([])
+    expect(defaults.rows.find((row) => row.id === 'arrival')?.label).toBe('Arrival (full path)')
+  })
+
 })

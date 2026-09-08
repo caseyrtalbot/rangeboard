@@ -1,3 +1,4 @@
+import { reached } from '../../analysis/horizon'
 import { useMemo, useState } from 'react'
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
@@ -15,7 +16,7 @@ import { runSettings } from '../../model/types'
 import type { StopRule } from '../../playback/mcRun'
 import { resetAnalysisRun } from '../../playback/runSession'
 import { Field } from '../../ui/kit'
-import { RoleSeg, useSimTimeStep } from './widgets/controls'
+import { RoleSeg, useExecutionHorizon, useSimTimeStep } from './widgets/controls'
 
 const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
   { v: 'deterministic', label: 'Deterministic' },
@@ -259,6 +260,7 @@ export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = 
   const resetReason = useStore((s) => s.playback.resetReason)
   const mc = useStore((s) => s.mc)
   const qt = useSimTimeStep()
+  const horizon = useExecutionHorizon()
   const [open, setOpen] = useState(false)
 
   // A reset changes runId and explicitly clears engagementPicture's cache,
@@ -272,10 +274,11 @@ export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = 
 
   if (tl.trackCount === 0) return null
 
-  const t = Math.min(qt, durationS)
-  const untouched = phase === 'ready'
+  const t = Math.min(qt, durationS, horizon.scoped ? horizon.horizonS : Infinity)
+  const visibleObservedS = horizon.scoped ? Math.max(0, Math.min(observedThroughS, t)) : observedThroughS
+  const untouched = phase === 'ready' || (horizon.scoped && !reached(0, horizon))
   const preview =
-    phase === 'review' && completedAtMs == null && t > observedStepS + 0.25
+    !horizon.scoped && phase === 'review' && completedAtMs == null && t > observedStepS + 0.25
   const tag = untouched
     ? 'Ready'
     : phase === 'running'
@@ -292,12 +295,12 @@ export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = 
       ? 'buffer clean · configuration changed'
       : 'buffer clean · no prior-run telemetry'
     : phase === 'running'
-      ? `observed through ${formatTime(observedThroughS)}`
+      ? `observed through ${formatTime(visibleObservedS)}`
       : preview
-        ? `cursor only · observed through ${formatTime(observedThroughS)}`
-        : completedAtMs != null
+        ? `cursor only · observed through ${formatTime(visibleObservedS)}`
+        : completedAtMs != null && (!horizon.scoped || reached(durationS, horizon))
           ? 'full run observed'
-          : `observed through ${formatTime(observedThroughS)}`
+          : `observed through ${formatTime(visibleObservedS)}`
 
   const run = runSettings(scenario)
   const chip = chipOf(run, mc)

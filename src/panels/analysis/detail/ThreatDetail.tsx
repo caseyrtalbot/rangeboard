@@ -1,3 +1,4 @@
+import { reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import { modelsForEntity } from '../../../analysis/fidelity'
 import { FT_TO_M } from '../../../analysis/sensorEnv'
@@ -5,7 +6,7 @@ import { phaseLadderRow, threatSeries, trackMarks, withBands } from '../../../an
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
 import type { ChartMark, Series } from '../../../charts/types'
-import { bearingDeg, formatTime } from '../../../geometry/geo'
+import { bearingDeg } from '../../../geometry/geo'
 import { slantRangeM } from '../../../geometry/slant'
 import { rcsM2For, swerlingFor } from '../../../model/rcsFactors'
 import type { Entity } from '../../../model/types'
@@ -18,7 +19,6 @@ import { sweepAt } from '../../../playback/sweepAt'
 import { useStore } from '../../../state/store'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
-import { profileFor } from '../../../model/integration'
 import { threatReadoutAt } from '../threatReadout'
 import { SURVIVAL_LABELS } from '../widgets/labels'
 import { bandNote, currentSummary } from '../widgets/mc'
@@ -37,13 +37,12 @@ import {
 /** The threat pane: the track file at t, the phase ladder, Pd by sensor and survival. */
 export function ThreatDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, runId, setSimTime, units, assessments, report, t, durationS } = run
+  const { scenario, runId, setSimTime, units, assessments, report, t, durationS, horizon, tObs, untouched } = run
   const mc = useStore((s) => s.mc)
   const summary = currentSummary(mc, runId)
   const model = modelFor(scenario, entity)
   const uasSpec = model?.uas
   const color = entityInk(entity, model)
-  const assessment = assessments.find((a) => a.uasId === entity.id)
 
   // Both caches key on the scenario object, so the canvas and this pane share
   // one timeline and one sweep per instant.
@@ -55,11 +54,12 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         entity,
         timeline,
         assessments,
-        tS: t,
+        tS: tObs,
+        horizon,
         units,
-        sweep: sweepAt(scenario, timeline, t),
+        sweep: untouched ? undefined : sweepAt(scenario, timeline, tObs),
       }),
-    [scenario, entity, timeline, assessments, t, units],
+    [scenario, entity, timeline, assessments, tObs, units, horizon, untouched],
   )
   const state = readout.state
 
@@ -72,7 +72,11 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     return phaseLadderRow(scenario, entity.id)
   }, [scenario, runId, entity.id])
   const barePhaseRows = useMemo(() => [bareSpans(phaseRow)], [phaseRow])
-  const pd = useMemo(() => series.filter((s) => s.id.startsWith('pd.')), [series])
+  const pd = useMemo(() => {
+    const observations = assessments.find((a) => a.uasId === entity.id)?.sensorObservations ?? []
+    return series.filter((series) => series.id.startsWith('pd.') && (!horizon.scoped ||
+      observations.some((observation) => observation.sensorId === series.id.slice(3) && observation.firstDetectS <= tObs)))
+  }, [series, assessments, entity.id, horizon.scoped, tObs])
   const residual = series.find((s) => s.id === 'residual')
   const shipCount = report.threats.find((x) => x.uasId === entity.id)?.shipCount ?? 1
   const survival = useMemo<Series | null>(
@@ -92,14 +96,14 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     for (const mark of trackMarks(scenario, entity.id)) {
       if (mark.label === 'ARR' || mark.label === 'CPA') marks.push(mark)
     }
-    return marks
-  }, [scenario, runId, report, entity.id])
+    return horizon.scoped ? marks.filter((mark) => reached(mark.tS, horizon)) : marks
+  }, [scenario, runId, report, entity.id, horizon])
 
   // The phase legend lists only the phases the row shows, by the label the builder wrote.
   const phaseLegend: LegendEntry[] = (Object.keys(PHASE_STYLE) as TrackPhase[])
     .filter((phase) => {
       const style = PHASE_STYLE[phase]
-      return style.color != null && phaseRow.spans.some((span) => span.label === style.label)
+      return style.color != null && phaseRow.spans.some((span) => span.label === style.label && (!horizon.scoped || span.startS <= tObs))
     })
     .map((phase) => ({
       label: PHASE_STYLE[phase].label.toLowerCase(),
@@ -112,34 +116,13 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     let slantText = DASH
     let bearingText = DASH
     if (sensor) {
-      const pos = entityPosAt(scenario, entity, t)
+      const pos = entityPosAt(scenario, entity, tObs)
       const groundM = Math.hypot(pos.x - sensor.pos.x, pos.y - sensor.pos.y)
       const altM = threatAltitudeFt(scenario, entity) * FT_TO_M
       const hM = mountHeightOf(modelFor(scenario, sensor)?.sensor ?? {})
       slantText = (slantRangeM(groundM, altM - hM) / 1000).toFixed(1)
       bearingText = `${Math.round(bearingDeg(sensor.pos, pos))}`
     }
-    const firstSensor = assessment?.firstDetectSensorId
-      ? scenario.entities.find((e) => e.id === assessment.firstDetectSensorId)
-      : undefined
-    // Why no shot: a fully typed route to a command-guided effector with no
-    // fire-control sensor on it blocks that effector (sim.ts fcBlocked); name
-    // the effector and the sensors its profile accepts.
-    const engageText = !assessment
-      ? DASH
-      : assessment.status === 'no-fc-uplink'
-        ? `no fire-control source on the route · ${scenario.entities
-            .filter((e) => e.kind === 'effector')
-            .flatMap((e) => {
-              const profile = profileFor(e.specId)
-              if (profile?.guidance !== 'fc-uplink' || !profile.fcSources?.length) return []
-              const names = profile.fcSources
-                .map((id) => scenario.library.find((m) => m.id === id)?.name ?? id)
-                .join(' or ')
-              return [`${e.name} needs a fire-control track from ${names}`]
-            })
-            .join(' · ')}`
-        : assessment.status.replaceAll('-', ' ')
     const rows: DetailRow[] = readout.rows.map((row) => ({
       label: row.label,
       value: row.value,
@@ -151,18 +134,9 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     rows.push(
       { label: 'Slant range', value: slantText, unit: sensor ? ' km' : undefined },
       { label: 'Bearing', value: bearingText, unit: sensor ? ' °' : undefined },
-      { label: 'Engage status (full run)', value: engageText },
-      {
-        label: 'Warning (full path)',
-        value: assessment?.warningS != null ? formatTime(assessment.warningS) : DASH,
-      },
-      {
-        label: 'First detect (full path)',
-        value:
-          assessment?.firstDetectS != null
-            ? `${firstSensor?.name ?? DASH} · T+${formatTime(assessment.firstDetectS)}`
-            : DASH,
-      },
+      { label: horizon.scoped ? 'Engage status' : 'Engage status (full run)', value: readout.engageText },
+      { label: horizon.scoped ? 'Warning' : 'Warning (full path)', value: readout.warningText },
+      { label: horizon.scoped ? 'First detect' : 'First detect (full path)', value: readout.firstDetectText },
     )
     if (uasSpec) {
       rows.push(
@@ -185,7 +159,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       )
     }
     return rows
-  }, [scenario, entity, model, uasSpec, state, assessment, t, readout.rows])
+  }, [scenario, entity, model, uasSpec, state, tObs, readout, horizon.scoped])
 
   const phase: TrackPhase = readout.phase
   const style = PHASE_STYLE[phase]
@@ -208,13 +182,18 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="file"
         title="Track file"
-        meta={`${readout.cursorText} cursor · full-path/full-run fields marked`}
+        meta={horizon.scoped ? `${readout.cursorText} observed` : `${readout.cursorText} cursor · full-path/full-run fields marked`}
       >
         {readout.ghostLine ? <p className="detail-ghost">{readout.ghostLine}</p> : null}
         <Rows rows={fileRows} />
       </DetailSection>
+      {horizon.scoped ? (
+        <DetailSection id="planned-path" title="Planned path">
+          <Rows rows={readout.planningRows} />
+        </DetailSection>
+      ) : null}
       <DetailSection id="phase" title="Phase" meta="planning envelope">
-        <Ladder rows={barePhaseRows} durationS={durationS} tS={t} onScrub={setSimTime} />
+        <Ladder rows={barePhaseRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />
         {phaseLegend.length > 0 ? <Legend entries={phaseLegend} /> : null}
       </DetailSection>
       <DetailSection
@@ -223,7 +202,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         meta={pd.length > 0 ? `${pd.length} sensor${pd.length === 1 ? '' : 's'} · planning envelope` : null}
       >
         {pd.length > 0 ? (
-          <TimeSeries series={pd} tS={t} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
+          <TimeSeries series={pd} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
         ) : (
           <p className="muted small">No radar Pd model observed this track.</p>
         )}
@@ -237,7 +216,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         {survival ? (
           <TimeSeries
             series={[survival]}
-            tS={t}
+            tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined}
             onScrub={setSimTime}
             yDomain={[0, shipCount]}
             yLabel="ships"

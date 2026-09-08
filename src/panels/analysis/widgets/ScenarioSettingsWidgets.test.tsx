@@ -1,3 +1,4 @@
+import { FULL_RUN } from '../../../analysis/horizon'
 import type { ComponentType } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -10,6 +11,7 @@ import type { WidgetProps } from './registry'
 import { RequirementGatesWidget } from './RequirementGatesWidget'
 
 const BASE_PROPS: WidgetProps = {
+  horizon: FULL_RUN,
   id: 'settings-test',
   params: {},
   collapsed: false,

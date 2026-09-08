@@ -1,3 +1,4 @@
+import { FORECAST_IN_ANALYZE, FULL_RUN, reached, type ExecutionHorizon } from '../../analysis/horizon'
 import { useState } from 'react'
 import { State } from '../../ui/kit'
 import type { StateTone } from '../../ui/kit'
@@ -113,11 +114,19 @@ export function SystemStatus({
   groups,
   expanded = true,
   endOfRun = false,
+  horizon = FULL_RUN,
+  sampledAtS,
 }: {
   groups: SystemTelemetryGroup[]
   expanded?: boolean
   endOfRun?: boolean
+  horizon?: ExecutionHorizon
+  /** Time used by the caller to compute every group and component count. */
+  sampledAtS?: number
 }) {
+  if (horizon.scoped && !reached(0, horizon)) return <p className="muted small">No system telemetry yet.</p>
+  // Group totals and hover details must come from the same reached sample.
+  if (horizon.scoped && !reached(sampledAtS, horizon)) return <p className="muted small">{FORECAST_IN_ANALYZE}</p>
   if (groups.length === 0) return <p className="muted small">No sensors, C2, or effectors placed.</p>
   return (
     <div className="system-telemetry-list">

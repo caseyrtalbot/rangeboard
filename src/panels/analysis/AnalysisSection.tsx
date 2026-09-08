@@ -1,9 +1,11 @@
+import { FORECAST_IN_ANALYZE, FULL_RUN, type ExecutionHorizon } from '../../analysis/horizon'
 import { useId, useState } from 'react'
 
 /** Compact disclosure matching the existing inspector rhythm. */
 export function AnalysisSection({
   title,
   headline,
+  horizon = FULL_RUN,
   defaultOpen = false,
   headerExtra,
   children,
@@ -11,6 +13,7 @@ export function AnalysisSection({
 }: {
   title: string
   headline?: string
+  horizon?: ExecutionHorizon
   defaultOpen?: boolean
   headerExtra?: React.ReactNode
   children: React.ReactNode
@@ -33,7 +36,7 @@ export function AnalysisSection({
         >
           <span className={`chevron${open ? ' open' : ''}`} aria-hidden="true">▸</span>
           <span className="section-title">{title}</span>
-          {!open && headline ? <span className="section-headline">{headline}</span> : null}
+          {!open && headline ? <span className="section-headline">{horizon.scoped ? FORECAST_IN_ANALYZE : headline}</span> : null}
         </button>
         {headerExtra ? <span className="section-extra">{headerExtra}</span> : null}
       </div>

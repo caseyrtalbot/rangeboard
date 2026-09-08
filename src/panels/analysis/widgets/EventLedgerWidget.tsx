@@ -1,3 +1,4 @@
+import { FULL_RUN, reached, type ExecutionHorizon } from '../../../analysis/horizon'
 import { useState } from 'react'
 import { formatTime } from '../../../geometry/geo'
 import type { Scenario } from '../../../model/types'
@@ -19,18 +20,22 @@ export function EventLedgerList({
   scenario,
   report,
   upToS,
+  horizon = FULL_RUN,
 }: {
   scenario: Scenario
   report: AttritionReport
   upToS?: number
+  horizon?: ExecutionHorizon
 }) {
   const [visible, setVisible] = useState(EVENT_PAGE)
   const name = (id: string) => scenario.entities.find((entity) => entity.id === id)?.name ?? id
-  const events = upToS == null ? report.events : report.events.filter((event) => event.tS <= upToS)
+  const events = report.events.filter((event) =>
+    (upToS == null || event.tS <= upToS) && (!horizon.scoped || reached(event.tS, horizon)),
+  )
   if (events.length === 0) {
     return (
       <p className="muted small">
-        {upToS == null ? 'No engagement events recorded.' : 'No engagement events yet.'}
+        {upToS == null && !horizon.scoped ? 'No engagement events recorded.' : 'No engagement events yet.'}
       </p>
     )
   }
@@ -39,7 +44,7 @@ export function EventLedgerList({
       {events.slice(0, visible).map((event, index) => (
         <div className="event-row" key={`${event.effectorId}:${event.uasId}:${event.tS}:${index}`}>
           <span className="event-time">
-            {formatTime(event.tS)} → {formatTime(event.tEffectS)}
+            {formatTime(event.tS)} → {horizon.scoped && !reached(event.tEffectS, horizon) ? '—' : formatTime(event.tEffectS)}
           </span>
           <span className="event-route">
             <strong>{name(event.effectorId)}</strong>
@@ -51,8 +56,8 @@ export function EventLedgerList({
             </small>
           </span>
           <span className="event-effect">
-            P {`${(event.pk * 100).toFixed(1)}%`}
-            <small>ΔE[k] {event.killDelta.toFixed(3)}</small>
+            P {horizon.scoped && !reached(event.tEffectS, horizon) ? '—' : `${(event.pk * 100).toFixed(1)}%`}
+            <small>ΔE[k] {horizon.scoped && !reached(event.tEffectS, horizon) ? '—' : event.killDelta.toFixed(3)}</small>
           </span>
         </div>
       ))}
@@ -66,22 +71,24 @@ export function EventLedgerList({
 }
 
 /** Events assigned by the cursor time. Nothing before the first play. */
-export function EventLedgerWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function EventLedgerWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   void params
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
   const { assessments, report } = useEngagement(scenario, runId)
   const { t, untouched } = useRunCursor(scenario)
-  const upToS = untouched ? -1 : t
+  const upToS = untouched ? -Infinity : horizon.scoped ? Math.min(t, horizon.horizonS) : t
   const shown = report.events.filter((event) => event.tS <= upToS).length
   const threats = assessments.filter((a) => a.status !== 'no-path').length
 
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="event-ledger"
       title="Event ledger"
-      meta={`planning envelope · ${shown} of ${report.events.length}`}
+      meta={`planning envelope · ${shown} of ${horizon.scoped ? shown : report.events.length}`}
+      metaWithinHorizon
       collapsed={collapsed}
       customize={customize}
       index={index}
@@ -90,7 +97,7 @@ export function EventLedgerWidget({ id, params, collapsed, customize, index, cou
       {threats === 0 ? (
         <p className="muted small">No threats with flight paths.</p>
       ) : (
-        <EventLedgerList scenario={scenario} report={report} upToS={upToS} />
+        <EventLedgerList scenario={scenario} report={report} upToS={upToS} horizon={horizon} />
       )}
     </WidgetFrame>
   )

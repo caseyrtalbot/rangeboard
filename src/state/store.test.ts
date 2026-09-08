@@ -1,9 +1,10 @@
+import { selectEffectiveLayers } from './selectors'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from './store'
 import { scenarioDurationS } from '../model/scenario'
 import { analysisBasisSignature } from './analysisBasis'
 import { bumpCardVersion } from './labels'
-import { DEFAULT_LAYERS, ringVisible } from './layers'
+import { DEFAULT_LAYERS, EXECUTE_DEFAULT_LAYERS, LAYER_PRESETS, ringVisible } from './layers'
 import type { LayerVisibility } from './layers'
 import { IDLE_MC, IDLE_SENSITIVITY } from './runState'
 import { defaultAnalysisView } from './analysisLayout'
@@ -24,6 +25,7 @@ import { ANALYSIS_KEY, RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys
 import { useTeStore } from '../te/state/teStore'
 
 function reset() {
+  useStore.setState((st) => ({ ui: { ...st.ui, boardPhase: 'prepare', executeLayers: null } }))
   useStore.getState().replaceScenario(emptyScenario())
 }
 
@@ -1325,7 +1327,7 @@ describe('run sequence persistence', () => {
 describe('applyFrame', () => {
   beforeEach(reset)
 
-  it('extends the observation horizon so play resumes from the frame', () => {
+  it('scrubs to an unobserved frame without starting or extending observation', () => {
     const st = useStore.getState()
     st.scrubTo(30)
     st.saveFrame('mid-run')
@@ -1334,11 +1336,13 @@ describe('applyFrame', () => {
     useStore.getState().applyFrame(id)
     const p = useStore.getState().playback
     expect(p.simTimeS).toBe(30)
-    expect(p.observedThroughS).toBe(30)
+    expect(p.observedThroughS).toBe(0)
     expect(p.phase).toBe('review')
-    expect(p.startedAtMs).not.toBeNull()
+    expect(p.playing).toBe(false)
+    expect(p.startedAtMs).toBeNull()
+    expect(p.basisSignature).toBeNull()
     useStore.getState().startRun()
-    expect(useStore.getState().playback.simTimeS).toBe(30)
+    expect(useStore.getState().playback.simTimeS).toBe(0)
     expect(useStore.getState().playback.phase).toBe('running')
   })
 
@@ -1706,5 +1710,81 @@ describe('resetModelToSeed', () => {
     useStore.getState().updateModel('lib-giraffe1x', { description: 'changed again' })
     reset()
     expect(model('lib-giraffe1x')?.description).not.toBe('changed again')
+  })
+})
+
+describe('Execute phase view state', () => {
+  beforeEach(reset)
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('changes only boardPhase without storage, scenario, history or playback writes', () => {
+    const storage = stubStorage({ sentinel: 'unchanged' })
+    useStore.getState().setScenarioName('phase test')
+    const before = useStore.getState()
+    const writes = vi.spyOn(localStorage, 'setItem')
+    before.setBoardPhase('execute')
+    const after = useStore.getState()
+    expect(after.ui).toEqual({ ...before.ui, boardPhase: 'execute' })
+    expect(after.scenario).toBe(before.scenario)
+    expect(after.past).toBe(before.past)
+    expect(after.future).toBe(before.future)
+    expect(after.playback).toBe(before.playback)
+    expect(after.mc).toBe(before.mc)
+    expect(after.ui.layers).toBe(before.ui.layers)
+    expect(after.ui.executeLayers).toBe(before.ui.executeLayers)
+    expect(writes).not.toHaveBeenCalled()
+    expect([...storage]).toEqual([['sentinel', 'unchanged']])
+  })
+
+  it('defaults to engagement and retains an Execute preset override across phases without persisting', () => {
+    const storage = stubLayerStorage(null)
+    const st = useStore.getState()
+    st.applyLayerPreset('planning')
+    const before = useStore.getState()
+    const saved = new Map(storage)
+    const writes = vi.spyOn(localStorage, 'setItem')
+    st.setBoardPhase('execute')
+    expect(selectEffectiveLayers(useStore.getState())).toBe(EXECUTE_DEFAULT_LAYERS)
+    st.applyLayerPreset('clean')
+    const override = useStore.getState().ui.executeLayers
+    expect(override).toEqual(LAYER_PRESETS.clean)
+    expect(useStore.getState().ui.layers).toBe(before.ui.layers)
+    expect(storage).toEqual(saved)
+    expect(writes).not.toHaveBeenCalled()
+    for (const phase of ['prepare', 'analyze'] as const) {
+      st.setBoardPhase(phase)
+      expect(selectEffectiveLayers(useStore.getState())).toBe(before.ui.layers)
+      expect(useStore.getState().ui.executeLayers).toBe(override)
+    }
+    st.setBoardPhase('execute')
+    expect(selectEffectiveLayers(useStore.getState())).toBe(override)
+  })
+
+  it('sets and toggles Execute layers from the effective view only', () => {
+    const storage = stubLayerStorage(null)
+    const st = useStore.getState()
+    st.applyLayerPreset('full')
+    const saved = new Map(storage)
+    const layers = useStore.getState().ui.layers
+    st.setBoardPhase('execute')
+    st.setLayer('labels', false)
+    expect(selectEffectiveLayers(useStore.getState())).toEqual({ ...EXECUTE_DEFAULT_LAYERS, labels: false })
+    st.toggleLayer('connections')
+    expect(selectEffectiveLayers(useStore.getState())).toEqual({ ...EXECUTE_DEFAULT_LAYERS, labels: false, connections: true })
+    expect(useStore.getState().ui.layers).toBe(layers)
+    expect(storage).toEqual(saved)
+  })
+
+  it('applying a future frame preserves an already-started run and its observation', () => {
+    const st = useStore.getState()
+    st.scrubTo(30)
+    st.saveFrame('future')
+    const id = useStore.getState().scenario.frames[0].id
+    st.scrubTo(0)
+    st.startRun()
+    st.advanceRun(5)
+    const before = useStore.getState().playback
+    st.applyFrame(id)
+    expect(useStore.getState().playback).toEqual({ ...before, simTimeS: 30, playing: false, phase: 'review' })
   })
 })

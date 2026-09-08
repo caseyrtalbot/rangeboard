@@ -1,7 +1,9 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../state/store'
 import { scenarioDurationS } from '../../model/scenario'
-import { selectSimTimeS } from '../../state/selectors'
+import { selectExecutionHorizon, selectSimTimeS } from '../../state/selectors'
+import type { ExecutionHorizon } from '../../analysis/horizon'
+import { reached } from '../../analysis/horizon'
 import type { ImpactSeverity, Scenario } from '../../model/types'
 import { SEVERITY_RANK, engagementPicture } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
@@ -35,6 +37,23 @@ interface Lane {
   shotS: number | null
   arrS: number | null
   severity: ImpactSeverity | null
+}
+
+/** Censor members before grouping so future arrivals cannot affect group outcomes. */
+// eslint-disable-next-line react/only-export-components -- colocated pure regression-test seam
+export function censorLane(lane: Lane, horizon: ExecutionHorizon): Lane {
+  if (!horizon.scoped) return lane
+  return {
+    ...lane,
+    detS: reached(lane.detS, horizon) ? lane.detS : null,
+    suspectedAtS: reached(lane.suspectedAtS, horizon) ? lane.suspectedAtS : null,
+    hostileAtS: reached(lane.hostileAtS, horizon) ? lane.hostileAtS : null,
+    winS: lane.winS && reached(lane.winS[0], horizon)
+      ? [lane.winS[0], Math.min(lane.winS[1], horizon.horizonS)] : null,
+    shotS: reached(lane.shotS, horizon) ? lane.shotS : null,
+    arrS: reached(lane.arrS, horizon) ? lane.arrS : null,
+    severity: reached(lane.arrS, horizon) ? lane.severity : null,
+  }
 }
 
 function minS(vals: Array<number | null>): number | null {
@@ -125,7 +144,17 @@ function visibleLanes(lanes: Lane[], openGroups: Set<string>): Lane[] {
   return out
 }
 
-function tipText(l: Lane): string {
+function tipText(l: Lane, scoped: boolean): string {
+  if (scoped) {
+    const time = (t: number | null) => t == null ? '—' : formatTime(t)
+    return [
+      `det ${time(l.detS)}`,
+      `hostile ${time(l.hostileAtS)}`,
+      `win ${l.winS ? `${formatTime(l.winS[0])}–${formatTime(l.winS[1])}` : '—'}`,
+      `shot ${time(l.shotS)}`,
+      `arr ${time(l.arrS)}`,
+    ].join(' · ')
+  }
   const p: string[] = []
   if (l.detS != null) p.push(`det ${formatTime(l.detS)}`)
   if (l.hostileAtS != null) p.push(`hostile ${formatTime(l.hostileAtS)}`)
@@ -141,11 +170,12 @@ const SEVERITY_FILL: Record<ImpactSeverity, string> = {
   low: 'var(--warn)',
 }
 
-function LaneMarks({ lane, i, x, durationS }: { lane: Lane; i: number; x: (t: number) => number; durationS: number }) {
+function LaneMarks({ lane, i, x, durationS, endS }: { lane: Lane; i: number; x: (t: number) => number; durationS: number; endS: number }) {
+  if (endS < 0) return null
   const y = i * LANE_H
-  const rampEndS = lane.arrS ?? durationS
+  const rampEndS = lane.arrS ?? endS
   const els: React.ReactNode[] = []
-  const trackEnd = x(lane.detS ?? durationS)
+  const trackEnd = x(lane.detS ?? endS)
   if (trackEnd > 0) {
     els.push(
       <rect key="pre" x={0} y={y + 5} width={trackEnd} height={2} fill="var(--border)" shapeRendering="crispEdges" />,
@@ -209,8 +239,8 @@ function LaneMarks({ lane, i, x, durationS }: { lane: Lane; i: number; x: (t: nu
 }
 
 /**
- * Only this subscribes to the published sim time, so the 10 Hz playback loop
- * moves one div. A linear transition over one publication period carries it
+ * The playhead subscribes separately so full-run lanes stay memoized during playback.
+ * A linear transition over one publication period carries it
  * between publications without a subscription change.
  */
 const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS: number }) {
@@ -232,6 +262,8 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
  */
 export const EngagementStrip = memo(function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
   const scenario = useStore((s) => s.scenario)
+  const horizon = useStore(selectExecutionHorizon)
+  const clipId = useId()
   const [openFlag, setOpen] = useState(
     () => !embedded && readSetting(OPEN_KEY) === '1',
   )
@@ -247,7 +279,12 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
     () => ({ lanes: threatLanes(scenario), durationS: scenarioDurationS(scenario) }),
     [scenario],
   )
-  const rows = useMemo(() => visibleLanes(lanes, openGroups), [lanes, openGroups])
+  const scopedLanes = useMemo(
+    () => horizon.scoped ? lanes.map((lane) => censorLane(lane, horizon)) : lanes,
+    [lanes, horizon],
+  )
+  const rows = useMemo(() => visibleLanes(scopedLanes, openGroups), [scopedLanes, openGroups])
+  const endS = horizon.scoped ? Math.min(durationS, horizon.horizonS) : durationS
 
   useEffect(() => {
     const el = plotRef.current
@@ -265,12 +302,21 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
   const svg = useMemo(
     () => (
       <svg className="engstrip-svg" width={w} height={rows.length * LANE_H}>
-        {rows.map((l, i) => (
-          <LaneMarks key={l.key} lane={l} i={i} x={x} durationS={durationS} />
-        ))}
+        {horizon.scoped && (
+          <defs>
+            <clipPath id={clipId}>
+              <rect width={x(endS)} height={rows.length * LANE_H} />
+            </clipPath>
+          </defs>
+        )}
+        <g clipPath={horizon.scoped ? `url(#${clipId})` : undefined}>
+          {rows.map((l, i) => (
+            <LaneMarks key={l.key} lane={l} i={i} x={x} durationS={durationS} endS={endS} />
+          ))}
+        </g>
       </svg>
     ),
-    [rows, w, x, durationS],
+    [rows, w, x, durationS, endS, horizon.scoped, clipId],
   )
 
   const ticks = useMemo(() => {
@@ -316,7 +362,14 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
   const tip = hover != null && rows[hover.i] != null ? rows[hover.i] : null
 
   return (
-    <div className="engstrip" ref={stripRef}>
+    <div
+      className="engstrip"
+      ref={stripRef}
+      role={horizon.scoped ? 'group' : undefined}
+      aria-label={horizon.scoped
+        ? horizon.horizonS < 0 ? 'No outcomes observed yet' : `Outcomes through T+${formatTime(horizon.horizonS)}`
+        : undefined}
+    >
       {!embedded && (
       <div className="engstrip-head" onClick={toggleOpen}>
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
@@ -416,7 +469,7 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
       )}
       {open && tip != null && hover != null && (
         <div className="engstrip-tip" style={{ left: hover.tipLeft, top: hover.tipTop }}>
-          <span className="name">{tip.label}</span> {tipText(tip)}
+          <span className="name">{tip.label}</span> {tipText(tip, horizon.scoped)}
         </div>
       )}
     </div>

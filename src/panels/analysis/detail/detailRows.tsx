@@ -1,3 +1,4 @@
+import type { ExecutionHorizon } from '../../../analysis/horizon'
 import type { LadderRow } from '../../../charts/types'
 import { useMemo, type ReactNode } from 'react'
 import type { ComponentTelemetry } from '../../../analysis/systemTelemetry'
@@ -24,6 +25,9 @@ interface DetailRun {
   /** The one quantized cursor time. */
   t: number
   durationS: number
+  horizon: ExecutionHorizon
+  tObs: number
+  untouched: boolean
 }
 
 /** The store selectors, the engagement picture and the run cursor of one pane. */
@@ -33,19 +37,21 @@ export function useDetailRun(): DetailRun {
   const setSimTime = useStore((s) => s.setSimTime)
   const units = useStore((s) => s.ui.units)
   const { assessments, report } = useEngagement(scenario, runId)
-  const { t, durationS } = useRunCursor(scenario)
-  return { scenario, runId, setSimTime, units, assessments, report, t, durationS }
+  const { t, durationS, horizon } = useRunCursor(scenario)
+  const tObs = horizon.scoped ? Math.min(t, horizon.horizonS) : t
+  const untouched = tObs === -Infinity
+  return { scenario, runId, setSimTime, units, assessments, report, t, durationS, horizon, tObs, untouched }
 }
 
 /** This entity's component telemetry at t, or undefined when it is in no group. */
 export function useComponentAt(run: DetailRun, entityId: string): ComponentTelemetry | undefined {
-  const { scenario, runId, assessments, report, t } = run
+  const { scenario, runId, assessments, report, tObs } = run
   return useMemo(() => {
     void runId
-    return systemTelemetryAt(scenario, assessments, report, t, new Map())
+    return systemTelemetryAt(scenario, assessments, report, tObs, new Map())
       .flatMap((group) => group.components)
       .find((component) => component.entityId === entityId)
-  }, [scenario, runId, assessments, report, t, entityId])
+  }, [scenario, runId, assessments, report, tObs, entityId])
 }
 
 /** One label and value line of a `.rows` block. */

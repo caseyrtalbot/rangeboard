@@ -1,6 +1,8 @@
+import { FORECAST_IN_ANALYZE, reached } from '../../../analysis/horizon'
 import { useMemo } from 'react'
 import { buildLiveTimeline, liveKpisAt, type LiveKpis } from '../../../analysis/liveStats'
 import { expectedCount } from '../../headlines'
+import { DT } from '../../../playback/clock'
 import { formatTime } from '../../../geometry/geo'
 import type { BandSeries, McSummary } from '../../../playback/mcRun'
 import { detectionsAt } from '../../../playback/detection'
@@ -32,6 +34,7 @@ interface Tile {
   value: React.ReactNode
   sub?: string
   cls?: string
+  title?: string
 }
 
 /** The tile keys from params: unknown keys dropped, an empty list falls back to the default. */
@@ -105,16 +108,21 @@ function KpiParams({ id, tiles, hasActiveAsset }: { id: string; tiles: KpiKey[];
 }
 
 /** KPI tiles at the cursor time: the run header's counters, one tile per chosen key. */
-export function KpiTilesWidget({ id, params, collapsed, customize, index, count }: WidgetProps) {
+export function KpiTilesWidget({ id, params, collapsed, customize, index, count, horizon }: WidgetProps) {
   const scenario = useStore((s) => s.scenario)
   const runId = useStore((s) => s.playback.runId)
   const mc = useStore((s) => s.mc)
   const { assessments, report } = useEngagement(scenario, runId)
   // The engine reports leakers as null when no asset defends: reuse that as the asset signal.
   const hasActiveAsset = report.totals.reportedLeakers != null
-  const { t, untouched } = useRunCursor(scenario)
+  const { t: cursorT, untouched: ready, durationS } = useRunCursor(scenario)
+  const t = horizon.scoped ? Math.min(cursorT, horizon.horizonS) : cursorT
+  const untouched = ready || (horizon.scoped && !reached(0, horizon))
+  const bandT = horizon.scoped ? Math.floor(t / DT) * DT : t
+  const fullRun = !horizon.scoped || reached(durationS, horizon)
   // Nothing is observed before the first play: the replicate means wait too.
-  const summary = untouched ? null : currentSummary(mc, runId)
+  const forecast = currentSummary(mc, runId)
+  const summary = untouched ? null : forecast
   const tiles = useMemo(() => tilesOf(params), [params])
   const tl = useMemo(() => buildLiveTimeline(assessments, report), [assessments, report])
   const threats = useMemo(
@@ -147,17 +155,17 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
   const tile = (key: KpiKey): Tile => {
     switch (key) {
       case 'detect':
-        if (summary) return bandCountTile(key, summary.detected, t, n, summary.replicates)
+        if (summary) return bandCountTile(key, summary.detected, bandT, n, summary.replicates)
         return { key, value: <>{k.detected}<small>/{n}</small></> }
       case 'trackNow':
-        if (summary) return bandCountTile(key, summary.tracked, t, n, summary.replicates)
+        if (summary) return bandCountTile(key, summary.tracked, bandT, n, summary.replicates)
         return { key, value: <>{tracking}<small>/{n}</small></> }
       case 'idClass':
         return { key, value: <>{k.classified}<small>/{n}</small></> }
       case 'targetNow':
         return { key, value: <>{k.targetable}<small>/{n}</small></> }
       case 'engaged':
-        if (summary) return bandCountTile(key, summary.engaged, t, n, summary.replicates)
+        if (summary) return bandCountTile(key, summary.engaged, bandT, n, summary.replicates)
         return { key, value: <>{k.engaged}<small>/{n}</small></> }
       case 'salvos':
         return {
@@ -172,7 +180,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         }
       case 'killEk': {
         if (!summary) return { key, value: expectedCount(k.expectedKills) }
-        const at = bandAt(summary.kills, t, summary.replicates)
+        const at = bandAt(summary.kills, bandT, summary.replicates)
         return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub }
       }
       case 'lateEk':
@@ -182,11 +190,12 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
           return { key, value: '—', sub: 'no defended asset' }
         }
         if (!summary) return { key, value: k.leakerShips.toFixed(1), cls: leakCls }
-        const at = bandAt(summary.leakers, t, summary.replicates)
+        const at = bandAt(summary.leakers, bandT, summary.replicates)
         const cls = at.mean >= 1 ? 'bad' : at.mean > 0.05 ? 'warn' : ''
         return { key, value: Number.isFinite(at.mean) ? formatCount(at.mean) : '—', sub: at.sub, cls }
       }
       case 'firstDetect': {
+        if (forecast && !fullRun) return { key, value: '—', title: FORECAST_IN_ANALYZE }
         if (!summary) return timeTile(key, firstDetect, firstDetect, cursor)
         return estimateTimeTile(key, summary.firstDetectS, 'detected')
       }
@@ -199,6 +208,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         return timeTile(key, value, reachedAt, cursor)
       }
       case 'minWarning': {
+        if (forecast && !fullRun) return { key, value: '—', title: FORECAST_IN_ANALYZE }
         if (!hasActiveAsset) return { key, value: '—', sub: 'no defended asset placed' }
         const arrivalS = warningHolder?.arrivalS ?? null
         if (!summary) return timeTile(key, warningHolder?.warningS ?? null, arrivalS, cursor)
@@ -218,7 +228,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
         const estimated = summary && ['detect', 'trackNow', 'engaged', 'killEk', 'leakEn', 'firstDetect', 'minWarning'].includes(key)
         if (!estimated) item.sub = `planning envelope${item.sub ? ` · ${item.sub}` : ''}`
         return (
-          <div className="tile" key={key} title={key === 'killEk' && !hasActiveAsset ? 'Expected neutralization mass at the cursor time; no defended asset placed.' : KPI_LABELS[key].hint}>
+          <div className="tile" key={key} title={item.title ?? (key === 'killEk' && !hasActiveAsset ? 'Expected neutralization mass at the cursor time; no defended asset placed.' : KPI_LABELS[key].hint)}>
             <span className="tl">{key === 'killEk' ? forecastKillLabel(hasActiveAsset) : KPI_LABELS[key].label}</span>
             <span className={`tv${item.cls ? ` ${item.cls}` : ''}`}>{item.value}</span>
             {item.sub ? <span className="ts">{item.sub}</span> : null}
@@ -231,6 +241,7 @@ export function KpiTilesWidget({ id, params, collapsed, customize, index, count 
   return (
     <WidgetFrame
       id={id}
+      horizon={horizon}
       type="kpi-tiles"
       title="KPI tiles"
       meta={`${tiles.length} of ${KPI_KEYS.length}${

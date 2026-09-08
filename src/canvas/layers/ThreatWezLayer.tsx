@@ -1,6 +1,9 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
 import { Circle, Group, Line, RegularPolygon, Text } from 'react-konva'
 import { useStore } from '../../state/store'
+import { selectEffectiveLayers, selectExecutionHorizon } from '../../state/selectors'
+import type { ExecutionHorizon } from '../../analysis/horizon'
+import { reached } from '../../analysis/horizon'
 import type { LiveTrack } from '../../playback/tracks'
 import type { ImpactSeverity, LeakerImpact, ThreatWez } from '../../analysis/impact'
 import { SEVERITY_LABEL, SEVERITY_RANK, threatWezList } from '../../analysis/impact'
@@ -14,6 +17,16 @@ const MONO = 'JetBrains Mono'
 const WEZ_DASH = [3, 3]
 const IMPACT_X_DOWN = [-5, -5, 5, 5]
 const IMPACT_X_UP = [-5, 5, 5, -5]
+
+/** Preview geometry may advance, but an impact badge requires a reached arrival. */
+// eslint-disable-next-line react/only-export-components -- colocated pure regression-test seam
+export function visibleImpactArrivals(impacts: LeakerImpact[], displayTimeS: number, horizon: ExecutionHorizon): LeakerImpact[] {
+  const t = horizon.scoped ? Math.min(displayTimeS, horizon.horizonS) : displayTimeS
+  if (t <= 0) return []
+  return impacts
+    .filter((i) => i.severity != null && i.assetId != null && reached(i.arrivalS, { scoped: true, horizonS: t }))
+    .sort((a, b) => a.arrivalS! - b.arrivalS!)
+}
 
 /** Badge copy: `I&W SEVERE · 1.6 ships · 64 kg`. Unknown warheads (kg 0) must
  *  stay visible: partial sums show `>= n kg`, fully unknown shows the words. */
@@ -189,8 +202,8 @@ const WezRing = memo(function WezRing({ wez, cx, cy, label, k }: {
  *   outcome, not overlay geometry. Planning view (t = 0) shows one summary
  *   badge per asset at its highest severity, MODERATE and up; playback shows
  *   a badge per leaker from its arrival, all tiers, SEVERE with a pulse ring.
- * The time comes in as a prop from the canvas frame clock, so this layer holds
- * no playback subscription and the Konva root commits once per frame.
+ * The canvas frame clock drives geometry, fade and pulse; the execution horizon
+ * limits which outcome badges may render.
  * Never intercepts pointer events.
  */
 export function ThreatWezLayer({
@@ -206,7 +219,8 @@ export function ThreatWezLayer({
   const scenario = useStore((s) => s.scenario)
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
-  const show = useStore((s) => s.ui.layers.threatWez)
+  const show = useStore((s) => selectEffectiveLayers(s).threatWez)
+  const horizon = useStore(selectExecutionHorizon)
   const units = useStore((s) => s.ui.units)
 
   // A scenario swap rebuilds the zones; a zone whose fields did not change
@@ -260,18 +274,14 @@ export function ThreatWezLayer({
 
   // Playback: a badge per arrived leaker, stacked per asset in arrival order.
   const liveBadges = useMemo(() => {
-    if (displayTimeS <= 0) return []
-    const arrived = impacts
-      .filter((i) => i.severity != null && i.assetId != null && i.arrivalS != null)
-      .filter((i) => displayTimeS >= i.arrivalS!)
-      .sort((a, b) => a.arrivalS! - b.arrivalS!)
+    const arrived = visibleImpactArrivals(impacts, displayTimeS, horizon)
     const stackIndex = new Map<string, number>()
     return arrived.map((i) => {
       const idx = stackIndex.get(i.assetId!) ?? 0
       stackIndex.set(i.assetId!, idx + 1)
       return { impact: i, stack: idx }
     })
-  }, [impacts, displayTimeS])
+  }, [impacts, displayTimeS, horizon])
 
   const pulse = 0.5 + 0.5 * Math.sin(displayTimeS * Math.PI)
 
@@ -294,7 +304,7 @@ export function ThreatWezLayer({
             />
           )
         })}
-      {displayTimeS <= 0 &&
+      {!horizon.scoped && displayTimeS <= 0 &&
         [...planBadges.entries()].map(([assetId, b]) => {
           const asset = entityById(assetId)
           if (!asset) return null

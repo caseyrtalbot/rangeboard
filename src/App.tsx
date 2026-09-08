@@ -1,5 +1,7 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './state/store'
+import type { BoardPhase } from './state/runState'
+import { selectBoardPhase } from './state/selectors'
 import type { RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
 import { useTeStore } from './te/state/teStore'
@@ -55,8 +57,6 @@ function savedRightWidth(): number {
   const n = Number(readSetting(RIGHT_PANEL_WIDTH_KEY))
   return n >= RIGHT_MIN_W && n <= RIGHT_MAX_W ? n : 408
 }
-
-type BoardPhase = 'prepare' | 'execute' | 'analyze'
 
 const PHASES: { id: BoardPhase; label: string }[] = [
   { id: 'prepare', label: 'Prepare' },
@@ -396,7 +396,8 @@ export default function App() {
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [placement, setPlacement] = useState<LibraryPlacement | null>(null)
   const libraryTrigger = useRef<HTMLButtonElement>(null)
-  const [boardPhase, setBoardPhase] = useState<BoardPhase>('prepare')
+  const boardPhase = useStore(selectBoardPhase)
+  const setBoardPhase = useStore((s) => s.setBoardPhase)
 
   useEffect(() => {
     if (savedView().rightTab == null) setRightTab('analysis')
@@ -493,7 +494,7 @@ export default function App() {
     setLibraryOpen(false)
     setBoardPhase(phase)
     setRightTab('analysis')
-  }, [setRightTab])
+  }, [setBoardPhase, setRightTab])
 
   // Stable handlers for the memoized chrome, so a selection change stops at `App`.
   const clearPlacement = useCallback(() => setPlacement(null), [])
@@ -505,9 +506,9 @@ export default function App() {
   const openCards = useCallback(() => setRightTab('cards'), [setRightTab])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
   const navigateAnalysis = useCallback(() => {
-    setBoardPhase((phase) => (phase === 'prepare' ? 'analyze' : phase))
+    if (useStore.getState().ui.boardPhase === 'prepare') setBoardPhase('analyze')
     setRightTab('analysis')
-  }, [setRightTab])
+  }, [setBoardPhase, setRightTab])
 
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
@@ -525,7 +526,7 @@ export default function App() {
       focusTarget.focus()
       target.scrollIntoView({ block: 'start' })
     })
-  }, [setRightTab])
+  }, [setBoardPhase, setRightTab])
 
   const [rightW, setRightW] = useState(savedRightWidth)
 

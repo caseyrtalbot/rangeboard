@@ -4,8 +4,10 @@ import {
   formatYTick, lastFiniteIndex, seriesDurationS, seriesRange, seriesRows, snapScrubS,
 } from './TimeSeries'
 // The drawn chart, not the lazy shell: renderToStaticMarkup resolves no Suspense boundary.
-import { TimeSeries } from './TimeSeriesChart'
+import { SeriesTip, TimeSeries } from './TimeSeriesChart'
 import type { Series } from './types'
+import { DT } from '../playback/clock'
+import { readTokens } from './tokens'
 
 const a: Series = {
   id: 'a',
@@ -95,5 +97,46 @@ describe('TimeSeries helpers', () => {
     expect(snapScrubS(12.3, 100)).toBe(12.5)
     expect(snapScrubS(-4, 100)).toBe(0)
     expect(snapScrubS(140, 100)).toBe(100)
+  })
+})
+
+describe('TimeSeries horizon markup', () => {
+  const late: Series = { ...a, id: 'late', label: 'Late series', values: Array.from({ length: 121 }, (_, i) => i * DT < 40 ? NaN : 999) }
+  const render = (horizonS?: number) => renderToStaticMarkup(
+    <TimeSeries series={[a, late]} tS={45} width={312} horizonS={horizonS} marks={[{ tS: 45, label: 'Future mark', color: 'accent' }]} />,
+  )
+
+  it('preserves unscoped markup with Infinity, including all-NaN legend entries', () => {
+    expect(render(Infinity)).toBe(render())
+    const emptySeries = [a, { ...late, values: [NaN] }]
+    expect(renderToStaticMarkup(<TimeSeries series={emptySeries} tS={0} width={312} />)).toContain('Late series')
+  })
+
+  it('excludes a series first finite at 40 seconds from the 30-second legend', () => {
+    const html = render(30)
+    expect(html).toContain('Pd T01')
+    expect(html).not.toContain('Late series')
+    expect(html).toContain('role="list" aria-label="Shown through T+0:30"')
+    expect(render(40)).toContain('Late series')
+  })
+
+  it('keeps the plot box but no legend entries before observation', () => {
+    const html = render(-Infinity)
+    expect(html).toContain('recharts-wrapper')
+    expect(html).toContain('No outcomes observed yet')
+    expect(html).not.toContain('chart-legend')
+    expect(html).not.toContain('Pd T01')
+    expect(html).not.toContain('Late series')
+  })
+
+  it('never reads a tooltip sample past the horizon, even when snapping rounds forward', () => {
+    const tip = (label: number, horizonS?: number) => renderToStaticMarkup(
+      <SeriesTip series={[late]} tokens={readTokens()} label={label} active horizonS={horizonS} />,
+    )
+    expect(tip(40)).toContain('999')
+    expect(tip(40, 30)).toBe('')
+    expect(tip(39.8, 39.9)).toBe('')
+    expect(tip(40, 40)).toContain('999')
+    expect(tip(0, -Infinity)).toBe('')
   })
 })

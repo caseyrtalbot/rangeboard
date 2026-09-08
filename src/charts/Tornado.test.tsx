@@ -52,3 +52,25 @@ describe('Tornado static markup', () => {
     expect(html).toContain('stop-color="#3987e5"')
   })
 })
+
+describe('Tornado horizon', () => {
+  it('preserves unscoped markup with Infinity', () => {
+    expect(renderToStaticMarkup(
+      <Tornado rows={rows} nominal={6} unit="leakers" width={300} horizonS={Infinity} />,
+    )).toBe(html)
+  })
+
+  it.each([30, 0, -Infinity])('shows only the forecast placeholder at horizon %s', (horizonS) => {
+    const scoped = renderToStaticMarkup(
+      <Tornado rows={rows} nominal={6} unit="leakers" width={300} horizonS={horizonS} />,
+    )
+    expect(scoped).toContain('chart chart-tornado')
+    expect(scoped).toContain('Forecast available in Analyze')
+    expect(scoped).toContain('width="300" height="64"')
+    expect(scoped).not.toContain('<rect')
+    expect(scoped).not.toContain('data-role="nominal')
+    expect(scoped).not.toContain('leakers')
+    expect(scoped).not.toContain('2.50')
+    expect(scoped).not.toContain('9.50')
+  })
+})

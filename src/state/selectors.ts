@@ -2,6 +2,11 @@ import type { FrameSnap, RaidWave, Scenario } from '../model/types'
 import { engineKeyOf, scenarioDurationS } from '../model/scenario'
 import { DT } from '../playback/clock'
 import type { Store } from './store'
+import type { BoardPhase } from './runState'
+import type { LayerVisibility } from './layers'
+import { EXECUTE_DEFAULT_LAYERS } from './layers'
+import type { ExecutionHorizon } from '../analysis/horizon'
+import { EMPTY_HORIZON, FULL_RUN } from '../analysis/horizon'
 
 /**
  * Store selectors the panels and the canvas subscribe with. Every selector is
@@ -19,6 +24,26 @@ export const selectSimTimeStep = (s: Store): number => Math.round(s.playback.sim
 /** The observed horizon quantized to the DT grid. Feeds the preview flag. */
 export const selectObservedThroughStep = (s: Store): number =>
   Math.round(s.playback.observedThroughS / DT) * DT
+
+export const selectBoardPhase = (s: Store): BoardPhase => s.ui.boardPhase
+
+export const selectEffectiveLayers = (s: Store): LayerVisibility =>
+  s.ui.boardPhase === 'execute' ? (s.ui.executeLayers ?? EXECUTE_DEFAULT_LAYERS) : s.ui.layers
+
+let cachedHorizon: ExecutionHorizon = EMPTY_HORIZON
+
+/**
+ * Scrubbing can narrow visibility, but cannot extend the observed horizon.
+ * Nothing is observed before the first Play: a scrub before Play moves the
+ * phase to 'review', so the start stamp, not the phase, decides emptiness.
+ */
+export function selectExecutionHorizon(s: Store): ExecutionHorizon {
+  if (s.ui.boardPhase !== 'execute') return FULL_RUN
+  if (s.playback.startedAtMs == null) return EMPTY_HORIZON
+  const horizonS = Math.min(selectSimTimeStep(s), selectObservedThroughStep(s))
+  if (cachedHorizon.horizonS !== horizonS) cachedHorizon = Object.freeze({ scoped: true, horizonS })
+  return cachedHorizon
+}
 
 /**
  * The observed horizon floored to whole seconds. `formatTime` shows whole

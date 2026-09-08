@@ -1,3 +1,4 @@
+import { EMPTY_HORIZON, FORECAST_IN_ANALYZE, FULL_RUN } from '../../../analysis/horizon'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
@@ -30,7 +31,7 @@ it.each(['active', 'absent'] as const)('uses the %s asset forecast label and ret
     speedMps: 20, startDelayS: 0 }]
   useStore.getState().replaceScenario(scenario)
   Object.assign(useStore.getInitialState(), useStore.getState())
-  const html = renderToStaticMarkup(<ProjectionWidget id="projection" params={{}} collapsed={false} customize={false} index={0} count={1} />)
+  const html = renderToStaticMarkup(<ProjectionWidget horizon={FULL_RUN} id="projection" params={{}} collapsed={false} customize={false} index={0} count={1} />)
   expect(html).toContain(`<span>${assetState === 'active' ? 'Expected kills' : 'Expected neutralization'}</span>`)
   expect(html).toContain('Residual survival')
   expect(html).toContain('full run · not live')
@@ -41,4 +42,15 @@ it.each(['active', 'absent'] as const)('uses the %s asset forecast label and ret
     expect(residual).toContain('no defended asset placed')
     expect(residual).not.toContain('0.0%')
   }
+})
+
+
+it.each([{ scoped: true, horizonS: 1 }, EMPTY_HORIZON])('withholds projection bodies and header details at %j', (horizon) => {
+  Object.assign(useStore.getInitialState(), useStore.getState())
+  const html = renderToStaticMarkup(<ProjectionWidget horizon={horizon} id="projection" params={{}} collapsed={false} customize={false} index={0} count={1} />)
+  expect(html).toContain(FORECAST_IN_ANALYZE)
+  expect(html).not.toContain('outcome-metric')
+  expect(html).not.toContain('class="wg-m"')
+  expect(html).not.toContain('projection-header-extra')
+  expect(html).not.toContain('section-headline')
 })

@@ -1,3 +1,4 @@
+import { selectEffectiveLayers } from '../../state/selectors'
 import { Arrow, Group, Text } from 'react-konva'
 import { useStore } from '../../state/store'
 import { dist } from '../../geometry/geo'
@@ -10,7 +11,7 @@ export function ConnectionLayer() {
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
-  const show = useStore((s) => s.ui.layers.connections)
+  const show = useStore((s) => selectEffectiveLayers(s).connections)
   if (!show) return null
 
   return (

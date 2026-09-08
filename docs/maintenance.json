@@ -16,8 +16,8 @@
         "AGENTS.md"
       ],
       "sha256": "bf464ff360b3a2778295a60caa6899332a93bca85350575b15c4d0e4bd00527f",
-      "reviewedAt": "2026-09-06",
-      "note": "Verified this is only the shared AGENTS.md entry-point redirect; removed host-specific Claude tool assumptions."
+      "reviewedAt": "2026-09-07",
+      "note": "Reviewed the R2 instruction entry point and AGENTS.md; the shared-guidance redirect remains accurate."
     },
     {
       "document": "README.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "6e65dc0149ed14c2be54bed611e05d92492a90c0ea223e3b46aeedc0b1966ecb",
+      "sha256": "bec0caba8d3f09421df93662b8d68cb938a6fb7e4bd8d53593130273ea9cff0b",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. No README claim changed."
+      "note": "Reviewed R2 session-only Board phase navigation in App; introduction, persistence overview and setup remain accurate."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "7b760e908f17f71de4cdcdbce53d40b5b9207c02a1c76608d192f98caacc09b5",
-      "reviewedAt": "2026-09-08",
-      "note": "Added the R1 honest readouts record under Captured checks after the four R0 rows; every other index row is unchanged and still resolves."
+      "sha256": "5bfd93f3c771bbf4b8255021307f012b2fcc2349cd5863eb71fd3030f14468ad",
+      "reviewedAt": "2026-09-07",
+      "note": "Indexed the R2 execution scope and layers evidence record under Captured checks."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "089844a3f9a76c6038b399b737344c3bbee6cd8c9ec7ab8a3a64cbe90a54be50",
-      "reviewedAt": "2026-09-08",
-      "note": "R1 honest readouts: Prepare lists consequential findings first with threat selection; forecast counts read as expected values with the no-asset neutralization label."
+      "sha256": "00335d7b6e2f09b51b1884afcb024326303ab972d9b38a00943f7803c595cdd6",
+      "reviewedAt": "2026-09-07",
+      "note": "Reviewed finished R2 horizon censoring, forecast placeholders, Planned path details, frame scrubs and phase-local layers."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "ab8709fbd2d4afbe6ccb7e1d9900f2ff561945b3f736db93b8c28215299e413b",
-      "reviewedAt": "2026-09-08",
-      "note": "R1 honest readouts: finding text names the lost measurement, FindingThreatActions selection, EXPECTED DEFEAT ghost label, expectedCount formatter and the null reportedLeakers no-asset signal."
+      "sha256": "da3bfa233584e16d6ca6a66e3e08257b008fc2d4dfd992d27a5fd2c15410a1b4",
+      "reviewedAt": "2026-09-07",
+      "note": "Reviewed finished R2 horizon consumers, effective layers, clamped sweep reuse and chart accessibility scope text."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "280430ad02a9d087c90129a3896a150841618662e5fe9ea7fadf44b7463ebf96",
+      "sha256": "4f7c353d60f501a224f9992a7226c891271476267e586e521ad6705a8f4a823e",
       "reviewedAt": "2026-09-07",
-      "note": "Reviewed the UI pass: Settings dialog (SettingsPanel.tsx), ROE popover in the toolbar, declutter presets moved out of the View menu, ring hover hints in HudLayer, trimmed gate and system-status text, Board controls legend removed. index.css adds settings-panel, declutter and roe-menu rules on existing tokens; no token changed."
+      "note": "Reviewed R2 forecast text, chart accessibility scope labels and Planned path reuse of existing detail and text tokens."
     }
   ],
   "historical": [

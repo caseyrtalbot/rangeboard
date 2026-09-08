@@ -1,3 +1,4 @@
+import type { ExecutionHorizon } from '../../../analysis/horizon'
 import { useId } from 'react'
 import type { WidgetType } from '../../../state/analysisLayout'
 import { useStore } from '../../../state/store'
@@ -24,6 +25,8 @@ export function WidgetFrame({
   type,
   title,
   meta,
+  horizon,
+  metaWithinHorizon,
   headerExtra,
   collapsed,
   customize,
@@ -35,6 +38,9 @@ export function WidgetFrame({
   type: WidgetType
   title: string
   meta?: string
+  horizon?: ExecutionHorizon
+  /** The caller guarantees that meta describes only reached outcomes. */
+  metaWithinHorizon?: boolean
   headerExtra?: React.ReactNode
   collapsed: boolean
   customize: boolean
@@ -63,7 +69,7 @@ export function WidgetFrame({
           <span className="wg-chevron" aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
           <span className="wg-t">{title}</span>
         </button>
-        {meta ? <span className="wg-m">{meta}</span> : null}
+        {meta && (!horizon?.scoped || metaWithinHorizon === true) ? <span className="wg-m">{meta}</span> : null}
         {headerExtra ? (
           <span className="wg-x">{headerExtra}</span>
         ) : null}

@@ -1,3 +1,5 @@
+import { FULL_RUN, reached, type ExecutionHorizon } from '../../analysis/horizon'
+import { profileFor } from '../../model/integration'
 import { trackQualityAt } from '../../analysis/threatAggregation'
 import type { DisplayUnits } from '../../geometry/geo'
 import { formatAxis, formatDistance, formatSpeed, formatTime } from '../../geometry/geo'
@@ -10,6 +12,7 @@ import { liveTracks, threatAltitudeFt } from '../../playback/tracks'
 import { PHASE_STYLE, trackStatesAt } from '../../playback/trackState'
 import type { TrackFileState, TrackPhase, TrackTimeline } from '../../playback/trackState'
 
+const DASH = '—'
 const NA = 'not available'
 const NO_ASSET = 'no defended asset placed'
 
@@ -46,6 +49,10 @@ export interface ThreatReadoutRow {
 
 export interface ThreatReadoutView {
   rows: ThreatReadoutRow[]
+  planningRows: ThreatReadoutRow[]
+  engageText: string
+  firstDetectText: string
+  warningText: string
   state: TrackFileState | undefined
   phase: TrackPhase
   pillLabel: string
@@ -63,6 +70,7 @@ interface ThreatReadoutInput {
   assessments: ThreatAssessment[]
   tS: number
   units: DisplayUnits
+  horizon?: ExecutionHorizon
   /**
    * The sweep at tS when the caller already holds it (`sweepAt`), so the
    * 10 Hz readout does not rerun the sensor sweep the canvas just ran. Absent,
@@ -80,15 +88,21 @@ export function threatReadoutAt({
   tS,
   units,
   sweep,
+  horizon = FULL_RUN,
 }: ThreatReadoutInput): ThreatReadoutView {
-  const state = (sweep?.states ?? trackStatesAt(timeline, tS)).get(entity.id)
+  const tObs = horizon.scoped ? Math.min(tS, horizon.horizonS) : tS
+  const untouched = tObs === -Infinity
+  const observationHorizon = horizon.scoped ? { scoped: true, horizonS: tObs } : horizon
+  // A supplied sweep is reusable only at the censored observation time.
+  const currentSweep = tObs === tS && !untouched ? sweep : undefined
+  const state = untouched ? undefined : (currentSweep?.states ?? trackStatesAt(timeline, tObs)).get(entity.id)
   const assessment = assessments.find((candidate) => candidate.uasId === entity.id)
   const model = modelFor(scenario, entity)
   const uas = model?.uas
-  const track = liveTracks(scenario, tS).get(entity.id)
+  const track = untouched ? undefined : liveTracks(scenario, tObs).get(entity.id)
   const position = track?.pos ?? entity.pos
   const headingDeg = Math.round(track?.headingDeg ?? entity.headingDeg)
-  const hits = (sweep?.hits ?? detectionsAt(scenario, tS)).get(entity.id) ?? []
+  const hits = untouched ? [] : (currentSweep?.hits ?? detectionsAt(scenario, tObs)).get(entity.id) ?? []
 
   // A threat without a path has no timeline row. Match the canvas glyph's
   // render-time detection fallback so its status does not disagree with it.
@@ -108,7 +122,7 @@ export function threatReadoutAt({
   const holdNames = holdIds
     .map((id) => scenario.entities.find((candidate) => candidate.id === id)?.name)
     .filter((name): name is string => name != null)
-  const continuity = assessment ? trackQualityAt(assessment, tS)?.continuity : undefined
+  const continuity = assessment && !untouched ? trackQualityAt(assessment, tObs)?.continuity : undefined
   const jam = state?.jammedFraction ?? 0
   const altitudeText = `${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`
 
@@ -124,10 +138,11 @@ export function threatReadoutAt({
       : hasAsset
         ? NA
         : NO_ASSET
-  const arrivalText = !state
+  const arrival = horizon.scoped ? assessment : state
+  const arrivalText = !arrival
     ? NA
-    : state.arrivalS != null
-      ? `T+${formatTime(state.arrivalS)}`
+    : arrival.arrivalS != null
+      ? `T+${formatTime(arrival.arrivalS)}`
       : hasAsset
         ? 'never crossed the defended boundary'
         : NO_ASSET
@@ -223,21 +238,60 @@ export function threatReadoutAt({
   ]
 
   const ghostLine =
-    state?.eliminated && state.eliminatedAtS != null
+    state?.eliminated && state.eliminatedAtS != null && (!horizon.scoped || reached(state.eliminatedAtS, observationHorizon))
       ? `Expected residual below cutoff at T+${formatTime(state.eliminatedAtS)} (${
           state.eliminatedBySoft ? 'mission-kill effects' : 'hard-kill effects'
         }). Motion continues along the planned path.`
       : null
 
+  const planningRows = horizon.scoped
+    ? rows.filter((row) => row.horizon === 'full-path').map((row) => ({
+        ...row, label: row.id === 'arrival' ? 'Planned arrival' : 'Planned CPA',
+      }))
+    : []
+  const telemetryRows = horizon.scoped ? rows.filter((row) => row.horizon !== 'full-path') : rows
+  if (untouched) {
+    for (const row of telemetryRows) {
+      if (row.horizon !== 'cursor') continue
+      row.value = row.id === 'hold' ? '0 sensors'
+        : row.id === 'salvos' ? '0 kinetic · 0 DE · 0 EW · 0 inbound'
+          : row.id === 'effects' ? '0 landed · E[k] 0.00' : DASH
+    }
+  }
+  const firstSensor = scenario.entities.find((candidate) => candidate.id === assessment?.firstDetectSensorId)
+  const firstDetectText = assessment?.firstDetectS != null && (!horizon.scoped || reached(assessment.firstDetectS, observationHorizon))
+    ? `${firstSensor?.name ?? DASH} · T+${formatTime(assessment.firstDetectS)}` : DASH
+  const warningText = assessment?.warningS != null && (!horizon.scoped || (
+    reached(assessment.firstDetectS, observationHorizon) && reached(assessment.arrivalS, observationHorizon)
+  )) ? formatTime(assessment.warningS) : DASH
+  // Full-run failure reasons depend on future windows; Execute names only current state.
+  const engageText = horizon.scoped
+    ? untouched ? DASH : state?.firstSalvoAtS != null ? 'engaged' : state?.targetedNow ? 'targeted' : DASH
+    : !assessment ? DASH : assessment.status === 'no-fc-uplink'
+      ? `no fire-control source on the route · ${scenario.entities
+          .filter((candidate) => candidate.kind === 'effector')
+          .flatMap((candidate) => {
+            const profile = profileFor(candidate.specId)
+            if (profile?.guidance !== 'fc-uplink' || !profile.fcSources?.length) return []
+            const names = profile.fcSources
+              .map((id) => scenario.library.find((model) => model.id === id)?.name ?? id).join(' or ')
+            return [`${candidate.name} needs a fire-control track from ${names}`]
+          }).join(' · ')}`
+      : assessment.status.replaceAll('-', ' ')
+
   return {
-    rows,
+    rows: telemetryRows,
+    planningRows,
+    engageText,
+    firstDetectText,
+    warningText,
     state,
     phase,
     pillLabel,
     ghostLine,
     position,
     altitudeText,
-    cursorText: `T+${formatTime(tS)}`,
+    cursorText: untouched ? DASH : `T+${formatTime(tObs)}`,
     sourceHorizon: 'PLANNING MODEL · CURSOR @ 0.5 S · ALT CONSTANT · NOT INSTRUMENTED',
   }
 }
