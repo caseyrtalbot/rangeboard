@@ -1,51 +1,39 @@
+import { useMemo } from 'react'
 import { useStore } from '../../state/store'
-import { formatRunLabel } from '../../state/labels'
-import { selectObservedThroughWholeS } from '../../state/selectors'
-import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
+import type { TrialResultView } from '../../analysis/trialResult'
+import { trialResultOf, trialSnapshotAt } from '../../analysis/trialResult'
 import { formatTime } from '../../geometry/geo'
-import { resetAnalysisRun } from '../../playback/runSession'
+import { State } from '../../ui/kit'
+import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
 
-/** Execution identity and bounded visibility, without forecast preparation work. */
-export function LiveStrip({ onOpenSettings }: { onOpenSettings?: () => void } = {}) {
+/** One simulated-trial basis and one cursor bound for the whole Execute screen. */
+export function LiveStrip({ view: suppliedView, horizon: suppliedHorizon }: {
+  view?: TrialResultView
+  horizon?: number
+  /** Retained for the selected-object caller; actions now belong to NowScreen. */
+  onOpenSettings?: () => void
+} = {}) {
   const selection = useStore(selectTrialSelection)
-  const phase = useStore((s) => s.playback.phase)
-  const runSeq = useStore((s) => s.playback.runSeq)
-  const started = useStore((s) => s.playback.startedAtMs != null)
-  const completed = useStore((s) => s.playback.completedAtMs != null)
-  const observed = useStore(selectObservedThroughWholeS)
-  const horizon = useStore((s) => Math.floor(selectTrialHorizon(s, s.playback.simTimeS)))
-  const { pauseRun, cancelTrialPreparation, startTrialRun } = useStore.getState()
-  const preparing = selection.status === 'preparing'
-  const error = selection.status === 'error'
-  const tag = preparing ? 'Preparing trial' : error ? 'Trial error' :
-    selection.status !== 'ready' ? 'Simulated trial · ready' : !started ? 'Trial ready' :
-      phase === 'complete' ? 'Complete' : completed ? 'Replay' :
-        phase === 'running' ? 'Running' : phase === 'paused' ? 'Paused' : 'Replay'
+  const started = useStore(state => state.playback.startedAtMs != null)
+  const cursor = useStore(state => suppliedHorizon ?? selectTrialHorizon(state, state.playback.simTimeS))
+  const view = useMemo(() => suppliedView ?? (selection.status === 'ready' && started
+    ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : undefined), [suppliedView, selection, started])
+  const horizon = suppliedHorizon ?? cursor
+  const phase = useStore(state => state.playback.phase)
+  const completed = useStore(state => state.playback.completedAtMs != null)
+  const counts = useMemo(() => view ? trialSnapshotAt(view, horizon).counts : undefined, [view, horizon])
+  if (!view || !counts) return <p className="muted small" role="status">{selection.status === 'error' ? selection.message
+    : selection.status === 'preparing' ? 'Preparing trial' : 'No trial yet. Press Play in Execute to run one.'}</p>
+  const defeated = counts.preArrivalHardKills + counts.preArrivalSoftKills + counts.lateHardKills + counts.lateSoftKills
+  const word = phase === 'complete' ? 'Complete' : completed ? 'Replay' : phase === 'running' ? 'Running' : 'Paused'
 
   return (
-    <div className={`live-strip run-${completed && phase !== 'complete' ? 'replay' : phase}`}>
-      <div className="live-head" role="status" aria-live="polite">
-        <span className="live-tag">{started && selection.status === 'ready' ? `Simulated trial · ${tag}` : tag}</span>
-        <span className="live-time" title={selection.runId}>
-          {formatRunLabel(runSeq)} · T+{formatTime(horizon)}
-        </span>
-        <span className="muted small">
-          {error ? selection.message : started && selection.status === 'ready'
-            ? `Visible prefix through ${formatTime(horizon)} · achieved observation through ${formatTime(observed)}${completed ? ' · full trial observed' : ''}`
-            : selection.status === 'cancelled' ? 'Preparation cancelled' : 'No outcomes observed yet'}
-        </span>
-      </div>
-      <div className="live-head">
-        {preparing && <>
-          <button className="mini" onClick={pauseRun} aria-label="Pause trial preparation start">Pause</button>
-          <button className="mini" onClick={cancelTrialPreparation}>Cancel</button>
-        </>}
-        {(error || selection.status === 'cancelled') && <button className="mini" onClick={startTrialRun}>Retry</button>}
-        {phase === 'complete' && <button className="mini" onClick={startTrialRun}>Replay</button>}
-        <button className="mini run-reset" onClick={() => resetAnalysisRun('manual')}
-          title="New run" aria-label="New run">New run</button>
-        {onOpenSettings && <button className="mini" onClick={onOpenSettings}>Forecast and analysis</button>}
-      </div>
-    </div>
+    <p className="analysis-scope" role="status">
+      <State tone={phase === 'running' ? 'nominal' : 'inactive'}>{word}</State>
+      {' · Simulated trial · observed through T+'}{formatTime(horizon)} of {formatTime(view.durationS)}
+      {' · tracks '}{counts.detectedTracks}/{counts.totalTracks}
+      {' · engaged '}{counts.engagedTracks}/{counts.totalTracks} tracks
+      {' · defeated '}{defeated}/{counts.activeAtHorizon + defeated} members
+    </p>
   )
 }
