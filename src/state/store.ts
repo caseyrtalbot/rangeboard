@@ -18,6 +18,8 @@ import type {
   Vec2,
 } from '../model/types'
 import { dropEditedProvenance, newId, runSettings } from '../model/types'
+import type { SpecEditField, SpecEditValue } from '../model/specEdit'
+import { editSpecField } from '../model/specEdit'
 import type { RingKey, RingOverrides } from './rings'
 import { pruneRingOverrides } from './rings'
 import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
@@ -289,6 +291,13 @@ export interface Store {
   addModel: (kind: EntityKind) => string
   duplicateModel: (id: string) => string
   updateModel: (id: string, patch: Partial<SpecModel>) => void
+  /**
+   * Edit one named spec field of a model. `editSpecField` owns the field
+   * rules (clear to planning factor, clamps, M-of-N coupling, tuple and mount
+   * height parsing); the store keeps provenance invalidation and one undo
+   * step per edit. A rejected or absent field writes nothing.
+   */
+  editModel: (id: string, field: SpecEditField, value: SpecEditValue) => void
   deleteModel: (id: string) => void
   /** Restore a builtin model to its seed definition. A custom model is left as it is. */
   resetModelToSeed: (id: string) => void
@@ -1163,6 +1172,15 @@ export const useStore = create<Store>()((set, get) => {
           m.id === id ? dropEditedProvenance(m, { ...m, ...patch }) : m,
         ),
       })),
+
+    editModel: (id, field, value) =>
+      mutate((s) => {
+        const before = s.library.find((m) => m.id === id)
+        if (!before) return s
+        const after = dropEditedProvenance(before, editSpecField(before, field, value))
+        if (after === before) return s
+        return { ...s, library: s.library.map((m) => (m === before ? after : m)) }
+      }),
 
     deleteModel: (id) =>
       mutate((s) => ({

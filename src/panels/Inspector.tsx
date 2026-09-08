@@ -334,7 +334,7 @@ function MountHeight({
 }: {
   model: SpecModel
   heightM: number | null | undefined
-  onChange: (m: number | null) => void
+  onChange: (raw: string) => void
   note: string
 }) {
   return (
@@ -346,7 +346,7 @@ function MountHeight({
           step={0.5}
           placeholder={String(MOUNT_HEIGHT_M)}
           value={heightM ?? ''}
-          onChange={(e) => onChange(e.target.value === '' ? null : Math.max(0, Number(e.target.value)))}
+          onChange={(e) => onChange(e.target.value)}
         />
       </Field>
       <Row
@@ -660,7 +660,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
   const units = useStore((s) => s.ui.units)
   const {
     updateEntity,
-    updateModel,
+    editModel,
     deleteSelection,
     setTool,
     beginPath,
@@ -905,7 +905,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
           <MountHeight
             model={model}
             heightM={model.sensor.mountHeightM}
-            onChange={(m) => updateModel(model.id, { sensor: { ...model.sensor!, mountHeightM: m } })}
+            onChange={(raw) => editModel(model.id, 'sensor.mountHeightM', raw)}
             note="Height of the antenna phase centre above ground. The engine measures the slant range and the radio horizon from it. The value applies to every sensor placed from this model."
           />
         </Section>
@@ -992,9 +992,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
           <MountHeight
             model={model}
             heightM={model.effector.mountHeightM}
-            onChange={(m) =>
-              updateModel(model.id, { effector: { ...model.effector!, mountHeightM: m } })
-            }
+            onChange={(raw) => editModel(model.id, 'effector.mountHeightM', raw)}
             note="Height of the launcher or the emitter above ground. The engine measures the slant range from it. The value applies to every effector placed from this model."
           />
         </Section>

@@ -1744,6 +1744,46 @@ describe('resetModelToSeed', () => {
   })
 })
 
+describe('editModel', () => {
+  beforeEach(reset)
+
+  /** The library copy of a model, by id. */
+  function model(id: string) {
+    return useStore.getState().scenario.library.find((m) => m.id === id)
+  }
+
+  it('applies the coupled M-of-N pair in one undoable step', () => {
+    const before = model('lib-giraffe1x')!.sensor
+    const past = useStore.getState().past.length
+    // M rises above the N in use, so the reducer carries N up with it.
+    useStore.getState().editModel('lib-giraffe1x', 'sensor.trackInitM', 7)
+    expect(useStore.getState().past.length).toBe(past + 1)
+    expect(model('lib-giraffe1x')?.sensor?.trackInitM).toBe(7)
+    expect(model('lib-giraffe1x')?.sensor?.trackInitN).toBe(7)
+    useStore.getState().undo()
+    expect(model('lib-giraffe1x')?.sensor).toEqual(before)
+    expect(useStore.getState().past.length).toBe(past)
+  })
+
+  it('drops the source row of the field it edits and keeps the rest', () => {
+    const fields = () => model('lib-giraffe1x')?.provenance?.map((r) => r.field) ?? []
+    expect(fields()).toContain('detectRangeM')
+    useStore.getState().editModel('lib-giraffe1x', 'sensor.detectRangeM', 9000)
+    expect(fields()).not.toContain('detectRangeM')
+    expect(fields()).toContain('instrumentedRangeM')
+  })
+
+  it('writes nothing when the field rule rejects the value or the section is absent', () => {
+    const scenario = useStore.getState().scenario
+    const past = useStore.getState().past.length
+    useStore.getState().editModel('lib-giraffe1x', 'sensor.rfBands', [])
+    useStore.getState().editModel('lib-giraffe1x', 'uas.cruiseSpeedMps', 30)
+    useStore.getState().editModel('no-such-model', 'sensor.detectRangeM', 1000)
+    expect(useStore.getState().scenario).toBe(scenario)
+    expect(useStore.getState().past.length).toBe(past)
+  })
+})
+
 describe('Execute phase view state', () => {
   beforeEach(reset)
   afterEach(() => vi.unstubAllGlobals())
