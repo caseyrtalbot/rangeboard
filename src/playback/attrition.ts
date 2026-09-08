@@ -6,10 +6,7 @@ import {
   entityActive,
   mountHeightOf,
 } from '../model/types'
-import { dist, pointInWedge } from '../geometry/geo'
-import { slantRangeM } from '../geometry/slant'
-import { assessJam, effectiveJamRangeM } from '../analysis/ewPhysics'
-import { FT_TO_M, effectorGeometryGate } from '../analysis/sensorEnv'
+import { FT_TO_M } from '../analysis/sensorEnv'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats } from './sim'
 import { DT } from './clock'
@@ -21,7 +18,6 @@ import {
   DEFAULT_SALVO_COOLDOWN_S,
   expenditureChannel,
   isHardKill,
-  kineticPk,
   SHIP_DEAD_BELOW,
 } from './pk'
 import type {
@@ -31,7 +27,9 @@ import type {
   ThreatAttrition,
 } from './attritionReport'
 import type { EffectorState, JamHold, PendingEffect, ShipState, ThreatState } from './sweepState'
-import { EPS, interceptAt, intervalIndexAt, launchPolicyReleases, membersAtTime } from './intercept'
+import { EPS, intervalIndexAt, launchPolicyReleases, membersAtTime } from './intercept'
+import type { ShotAccepted, ShotContext } from './shot'
+import { evaluateShot } from './shot'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
 import { effectivePathDelayS } from './raid'
@@ -391,6 +389,8 @@ export function resolveEngagements(
   for (let t = 0; t <= tEnd + EPS; t += DT) {
     applyDueEffects(t)
     tickGeom = new Map()
+    const volleyShot: ShotContext = { t, effectContainment: 'any', membersAt }
+    const doctrineShot: ShotContext = { t, effectContainment: 'same', membersAt }
 
     for (const es of effectors.values()) {
       // Under doctrine only jammers fire here: shoot-look-shoot does not apply to a dwell.
@@ -399,55 +399,29 @@ export function resolveEngagements(
       if (es.rounds != null && es.rounds <= 0) continue
       const softShot = !isHardKill(es.spec.effectorType)
 
-      const isJammer = es.spec.effectorType === 'jammer'
-      // Per-ship envelope test on slant range from the launcher. A jammer's
-      // reach is its effective range against this target (as the sim window
-      // and the drawn cone use); its cone test takes no ceiling.
-      const inEnvelope = (p: Vec2, ts: ThreatState) => {
-        if (!isJammer && effectorGeometryGate(es.spec, ts.altM) !== 'ok') return false
-        const slant = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
-        return (
-          slant >= es.spec.minRangeM &&
-          slant <= (isJammer ? effectiveJamRangeM(es.spec, ts.uasSpec) : es.spec.maxRangeM) &&
-          pointInWedge(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, p)
-        )
-      }
-      // A ship the jam physics cannot reach is never a jam candidate.
-      const jamFactor = (ts: ThreatState, p: Vec2): number =>
-        assessJam(es.spec, es.entity.pos, es.entity.headingDeg, ts.uasSpec, p, ts.altM - es.mountM)
-          .factor
-
       // Global ship-level assignment (see the header). The scan order makes
-      // the first candidate win exact ties.
+      // the first candidate win exact ties. Shot eligibility (interval,
+      // reach, containment, envelope, jam link) is evaluateShot's.
       let target: ThreatState | null = null
       let shipIdx = -1
-      let hit: ReturnType<typeof interceptAt> | null = null
+      let hit: ShotAccepted | null = null
       let bestWeight = 0
       let bestArrivalS = Number.POSITIVE_INFINITY
       for (const ts of threats) {
         if (ts.gateS == null || !ts.path) continue
-        const intervals = ts.windows.get(es.entity.id)
-        if (!intervals) continue
+        if (!ts.windows.has(es.entity.id)) continue
         // Under doctrine the release-ready time already carries the route latency.
         const readyS = doctrine.enabled
           ? ts.effectorReadyS.get(es.entity.id)
-          : ts.gateS == null
-            ? null
-            : ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)
+          : ts.gateS + (ts.routeLatencyS.get(es.entity.id) ?? 0)
         if (readyS == null || t + EPS < readyS) continue
-        const contains = (x: number) => intervals.some(([s0, s1]) => x >= s0 - EPS && x <= s1 + EPS)
-        const within = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
-        if (!within) continue
         const continueJam = softShot && ts.jamBehavior === 'continue'
         // Closing soonest: arrival, else closest approach for a fly-by.
         const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
 
         for (let i = 0; i < ts.ships.length; i++) {
-          const ic = interceptAt(ts, es, t, i, membersAt, within[1])
-          if (ic.infeasible) continue
-          if (!contains(ic.tEffectS)) continue
-          if (!inEnvelope(ic.pos, ts)) continue
-          if (isJammer && jamFactor(ts, ic.pos) <= 0) continue
+          const shot = evaluateShot(volleyShot, es, ts, i)
+          if (shot.rejected) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
           if (alive < SHIP_DEAD_BELOW) continue // expected dead: never targeted
@@ -455,7 +429,7 @@ export function resolveEngagements(
           if (continueJam) {
             // Un-jammed probability where the dwell would land, discounted by
             // the jam salvos already in flight.
-            const unjammed = (1 - jammedAt(ts, s, ic.tEffectS)) * s.jamDiscount
+            const unjammed = (1 - jammedAt(ts, s, shot.intercept.tEffectS)) * s.jamDiscount
             if (unjammed < SHIP_DEAD_BELOW) continue // track saturated: hold
             weight = alive * unjammed
           }
@@ -466,7 +440,7 @@ export function resolveEngagements(
           ) {
             target = ts
             shipIdx = i
-            hit = ic
+            hit = shot
             bestWeight = weight
             bestArrivalS = arrivalS
           }
@@ -474,13 +448,8 @@ export function resolveEngagements(
       }
       if (target == null || shipIdx < 0 || hit == null) continue
       const continueJam = softShot && target.jamBehavior === 'continue'
-
-      // Jam Pk is link physics, not aiming: no kinetic penalties apply.
-      const pk = isJammer
-        ? Math.min(1, Math.max(0, es.pk * jamFactor(target, hit.pos)))
-        : kineticPk(es.pk, es.spec.maxRangeM, target.uasSpec, hit.slantM)
-
-      commitSalvo(es, target, shipIdx, pk, t, hit.tEffectS, continueJam, hit.capped)
+      const ic = hit.intercept
+      commitSalvo(es, target, shipIdx, hit.pk, t, ic.tEffectS, continueJam, ic.capped)
     }
 
     // Doctrine assignment pass (kinetic and DE). Shoot-look-shoot: a ship with
@@ -508,22 +477,12 @@ export function resolveEngagements(
         if (es.rounds != null && es.rounds <= 0) continue
         const esBdaS = bdaSFor(es.spec, doctrine)
         const esCommitPk = commitPkFor(es.spec, doctrine)
-        const inEnvelope = (p: Vec2, ts: ThreatState) => {
-          if (effectorGeometryGate(es.spec, ts.altM) !== 'ok') return false
-          const slant = slantRangeM(dist(es.entity.pos, p), ts.altM - es.mountM)
-          return (
-            slant >= es.spec.minRangeM &&
-            slant <= es.spec.maxRangeM &&
-            pointInWedge(es.entity.pos, es.entity.headingDeg, es.spec.sectorDeg ?? 360, p)
-          )
-        }
         for (const ts of threats) {
           if (!ts.path) continue
           // No release-ready time for this effector: no shot.
           const readyS = ts.effectorReadyS.get(es.entity.id)
           if (readyS == null) continue
-          const intervals = ts.windows.get(es.entity.id)
-          if (!intervals) continue
+          if (!ts.windows.has(es.entity.id)) continue
           if (t + EPS < readyS) continue
           const refS = ts.a.arrivalS ?? ts.a.cpaS
           const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
@@ -531,16 +490,11 @@ export function resolveEngagements(
             const ship = ts.ships[i]
             if (t + EPS < ship.holdUntilS) continue
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
-            const at = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
-            if (!at) continue
-            const ic = interceptAt(ts, es, t, i, membersAt, at[1])
-            if (ic.infeasible) continue
+            // The effect must land in the interval containing t: its end is the deadline.
+            const shot = evaluateShot(doctrineShot, es, ts, i)
+            if (shot.rejected) continue
+            const { intercept: ic, interval: within, pk } = shot
             const tEffect = ic.tEffectS
-            const within = intervals.find(
-              ([s0, s1]) =>
-                t >= s0 - EPS && tEffect >= s0 - EPS && t <= s1 + EPS && tEffect <= s1 + EPS,
-            )
-            if (!within) continue
             // Assignment-to-effect time: engage time plus the flyout.
             const flightS = es.engageTimeS + (tEffect - (t + es.engageTimeS))
             // A closing window is its own deadline: a high pkCommit can never
@@ -550,8 +504,6 @@ export function resolveEngagements(
               refS != null
                 ? Math.min(refS - doctrine.opportunities * (flightS + esBdaS), windowDeadlineS)
                 : windowDeadlineS
-            if (!inEnvelope(ic.pos, ts)) continue
-            const pk = kineticPk(es.pk, es.spec.maxRangeM, ts.uasSpec, ic.slantM)
             if (pk <= 0) continue
             // The deadline overrides a "no" from every launch policy.
             if (!launchPolicyReleases(doctrine, pk, esCommitPk, ic.slantM, es.spec.maxRangeM)) {

@@ -193,9 +193,10 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                detectionsAt, spawn ring check), killChain.ts (kill-chain
                routes), sim.ts (assessThreat, assessAllThreats), pk.ts (Pk model and
                expenditure channels), intercept.ts (time of flight, intercept, launch
-               releases), attritionReport.ts (report types), sweepState.ts (sweep state
-               types), attrition.ts (resolveEngagements: fire distribution, expected
-               kills, events), trackState.ts
+               releases), shot.ts (evaluateShot: per-ship shot eligibility shared by both
+               firing passes), attritionReport.ts (report types), sweepState.ts (sweep
+               state types), attrition.ts (resolveEngagements: fire distribution,
+               expected kills, events), trackState.ts
                (phase at t, trackTimelineOf), sweepAt.ts (the per-publication sweep memo:
                hits, track states, effector states, held sensors), tactics.ts (threat
                tactics), raid.ts, runSession.ts,
@@ -583,7 +584,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   Newly produced events add `tReleaseS = tS + engageTimeS` using the resolved delay;
   `tEffectS` is the unchanged effect time. `readyS` is the first possible assignment
   under the doctrine gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
-  (interceptor cannot reach the credited point) is declined and leaves no event. `expectedKills` is
+  (interceptor cannot reach the credited point) is declined and leaves no event. Shot
+  eligibility (in-range interval, intercept, reach, effect containment, envelope, jam link)
+  is `evaluateShot` in `playback/shot.ts`; both firing passes call it and a rejection names
+  its reason. `expectedKills` is
   pre-arrival mass; `expectedLateKills` is a sub-measure of the leaker mass. Arrival and
   closest approach are different quantities. `reportedLeakers` is the display value.
 - **Physical launch display.** `engagementTiming.ts` resolves explicit release metadata,
