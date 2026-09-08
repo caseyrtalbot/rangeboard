@@ -1,8 +1,6 @@
 import type {
   AarSummary,
   FireDoctrine,
-  McdaVector,
-  RaidPlan,
   Scenario,
   SpecModel,
   UncertaintyMode,
@@ -28,23 +26,27 @@ import type { RunResultGroups } from './runResultGroups'
 import type { TrialResultView } from '../analysis/trialResult'
 import type { AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
+import { SCENARIO_LEGACY_FIELDS, fillContainers } from './compat'
 import { parseLibraryData, validateScenarioReferences, validateScenarioShape } from './validateScenario'
 import { MAX_IMAGE_CODE_UNITS, validateImage } from './runtimeValidation'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 
 /**
- * Fill fields added after a save was written and migrate the legacy engageOn
- * policy to an ROE posture ('detected' -> 'free', 'confirmed' -> 'tight').
- * Nested objects (environment, requirements, doctrine, mcdaWeights, underlay,
- * raid) are deep-filled one level so a field added to any of them reaches an
- * older save. Exported for tests.
+ * The one Board load boundary: validate the shape, then fill fields added after
+ * a save was written. `SCENARIO_LEGACY_FIELDS` (`io/compat.ts`) declares which
+ * fields a legacy save may omit and what supplies each one, so the validator's
+ * accepted omissions and these fills cannot drift apart. Every `container`
+ * entry is deep-filled one level from `emptyScenario()`, which stays the source
+ * of top-level defaults. Exported for tests.
  *
- * Library and system presets RECONCILE rather than being taken whole from the
- * save. Spreading the save over the seeds would let a stale library shadow every
- * model and preset added since, so an existing scenario would never receive new
- * seed content. `src/model/libraryLifecycle.ts` owns that policy.
+ * Two fills are named rather than generic. Library and system presets RECONCILE
+ * rather than being taken whole from the save: spreading the save over the seeds
+ * would let a stale library shadow every model and preset added since, so an
+ * existing scenario would never receive new seed content
+ * (`src/model/libraryLifecycle.ts` owns that policy). The legacy engageOn policy
+ * migrates to an ROE posture ('detected' -> 'free', 'confirmed' -> 'tight').
  */
-export function fillScenario(parsed: Scenario): Scenario {
+export function fillScenario(parsed: unknown): Scenario {
   validateScenarioShape(parsed)
   const empty = emptyScenario()
   const roe =
@@ -54,17 +56,12 @@ export function fillScenario(parsed: Scenario): Scenario {
   const filled: Scenario = {
     ...empty,
     ...parsed,
+    ...fillContainers(parsed, empty, SCENARIO_LEGACY_FIELDS),
     library: reconcileLibrary(parsed.library, empty.library, deletedSeedIds),
     systemPresets: reconcileSeeded(parsed.systemPresets, empty.systemPresets, deletedSeedIds),
     deletedSeedIds,
-    environment: { ...empty.environment, ...parsed.environment },
-    requirements: { ...empty.requirements, ...parsed.requirements },
-    // emptyScenario() always sets these; the Scenario type keeps them optional for old saves.
+    // emptyScenario() always sets doctrine; the Scenario type keeps it optional for old saves.
     doctrine: fillDoctrine(empty.doctrine as FireDoctrine, parsed.doctrine),
-    mcdaWeights: { ...(empty.mcdaWeights as McdaVector), ...parsed.mcdaWeights },
-    underlay: { ...empty.underlay, ...parsed.underlay },
-    raid: { ...(empty.raid as RaidPlan), ...parsed.raid },
-
     roe,
   }
   validateScenarioReferences(filled)
@@ -95,7 +92,6 @@ export function parseAutosave(raw: string): Scenario {
 
 /** Pure scenario import boundary; no malformed payload reaches a store. */
 export function parseScenarioData(value: unknown): Scenario {
-  validateScenarioShape(value)
   return fillScenario(value)
 }
 

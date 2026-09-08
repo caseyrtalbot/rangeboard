@@ -1,4 +1,7 @@
+import type { LegacyOmissions } from './compat'
+import { boardLegacyOmissions } from './compat'
 import { runtimeShapes } from './runtimeSchema'
+import { teLegacyOmissions } from '../te/io/compatTe'
 
 /** JSON structural contract, generated from the domain types, with semantics below. */
 export interface RuntimeShape {
@@ -43,16 +46,10 @@ export function validateImage(value: string, path: string, newImage = false): vo
   if (!/^data:image\/[a-z0-9.+-]+(?:;[^,]*)?,/i.test(value)) invalid(path, 'expected an image data URL')
 }
 
-// These containers have explicit load-time defaults. Only missing fields get
-// defaults; a present null/string/array is always checked against its actual type.
-const legacyMissing: Record<string, Set<string> | 'all'> = {
-  Scenario: new Set(['library', 'systemPresets', 'environment', 'requirements', 'underlay', 'geoRef']),
-  EnvironmentSpec: 'all', RequirementThresholds: 'all', FireDoctrine: 'all',
-  McdaVector: 'all', Underlay: 'all', RaidPlan: 'all',
-  TeCampaign: new Set(['charter', 'decision', 'evidencePackage', 'frames', 'illustrative']),
-  CampaignCharter: 'all', DecisionCharter: 'all',
-  TeState: new Set(['activeCampaignId']),
-}
+// Every accepted omission comes from the domain that fills it: `io/compat.ts`
+// for the Board, `te/io/compatTe.ts` for T&E. Only missing fields get defaults;
+// a present null/string/array is always checked against its actual type.
+const legacyMissing: LegacyOmissions = { ...boardLegacyOmissions, ...teLegacyOmissions }
 
 /** Validate all known nested fields; retain extension data for forward compatibility. */
 export function validateShape(value: unknown, name: string, path = name, legacy = false): void {

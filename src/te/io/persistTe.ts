@@ -5,17 +5,22 @@ import { emptyCampaign, emptyPackage } from '../model/empty'
 import { useTeStore } from '../state/teStore'
 import type { AutosaveAdapter } from '../../io/autosave'
 import { createAutosave } from '../../io/autosave'
+import { fillContainers } from '../../io/compat'
 import { idsOf, invalid, objectAt, reference, validateShape } from '../../io/runtimeValidation'
+import { CAMPAIGN_LEGACY_FIELDS } from './compatTe'
 import { validateCampaignReferences, validateCampaignShape } from './validateTe'
 import { parseAutosave } from '../../io/persist'
 import { TE_KEY, TE_RECOVERY_PREFIX } from '../../io/storageKeys'
 
 /**
  * Fill fields added after a save was written so old campaigns round-trip.
- * Deep-fills only `charter`, `decision`, and `evidencePackage`; top-level
- * optional fields (presetKey, sourceCampaignId) get defaults from the spread.
- * Record arrays (measures, threats, cards, ...) are NOT deep-filled. Do not
- * add new per-record fields; if one ever becomes necessary, read it
+ * `CAMPAIGN_LEGACY_FIELDS` (`compatTe.ts`) declares which fields a legacy save
+ * may omit and what supplies each one, so the validator's accepted omissions
+ * and these fills cannot drift apart. Its `container` entries (`charter`,
+ * `decision`) are deep-filled one level; the rest come from `emptyCampaign()`.
+ * Top-level optional fields (presetKey, sourceCampaignId) get defaults from the
+ * spread. Record arrays (measures, threats, cards, ...) are NOT deep-filled. Do
+ * not add new per-record fields; if one ever becomes necessary, read it
  * defensively (`?? default`) at every use site or extend this function with
  * a per-record filler in the same change.
  */
@@ -25,8 +30,7 @@ export function fillCampaign(parsed: TeCampaign): TeCampaign {
   const filled: TeCampaign = {
     ...empty,
     ...parsed,
-    charter: { ...empty.charter, ...parsed.charter },
-    decision: { ...empty.decision, ...parsed.decision },
+    ...fillContainers(parsed, empty, CAMPAIGN_LEGACY_FIELDS),
     evidencePackage: parsed.evidencePackage ?? emptyPackage(),
   }
   validateCampaignReferences(filled)
