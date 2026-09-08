@@ -3,6 +3,8 @@ import type {
   McRequest,
   McSensitivityMessage,
   McSensitivityRequest,
+  McSweepMessage,
+  McSweepRequest,
   McWorkerMessage,
 } from './mcRun'
 import type { SlotProtocol } from './workerSlot'
@@ -17,10 +19,11 @@ const run = createWorkerSlot()
 /**
  * The sensitivity run, on its own slot. A sensitivity run is many replicate
  * loops, so it runs beside a replicate run: neither start cancels the other.
+ * A sweep shares this slot: a sweep and a sensitivity run replace each other.
  */
 const sens = createWorkerSlot()
 
-type McMessage = McWorkerMessage | McSensitivityMessage
+type McMessage = McWorkerMessage | McSensitivityMessage | McSweepMessage
 
 /** The Monte Carlo protocol: messages are tagged by run id; `done` and `error` end the run. */
 function protocol<M extends McMessage>(
@@ -39,7 +42,7 @@ function protocol<M extends McMessage>(
       return data as M
     },
     errorOf,
-    terminal: (m) => m.type !== 'progress' && m.type !== 'sens-progress',
+    terminal: (m) => m.type !== 'progress' && m.type !== 'sens-progress' && m.type !== 'sweep-progress',
     onMessage,
   }
 }
@@ -102,5 +105,32 @@ export function cancelSensitivity(): void {
 
 /** Ask the sensitivity worker to stop at its next checkpoint (see `requestMcCancel`). */
 export function requestSensitivityCancel(runId: string): boolean {
+  return sens.cancel({ type: 'cancel', runId })
+}
+
+/**
+ * Start a sweep on the sensitivity slot; a sensitivity run or sweep already
+ * running there is terminated. Returns false when the environment has no
+ * Worker, as `startMcRun` does.
+ */
+export function startSweep(
+  request: McSweepRequest,
+  onMessage: (m: McSweepMessage) => void,
+): boolean {
+  return sens.start(protocol<McSweepMessage>(
+    request,
+    ['sweep-progress', 'sweep-done', 'sweep-error'],
+    (message) => ({ type: 'sweep-error', runId: request.runId, message }),
+    onMessage,
+  ))
+}
+
+/** Terminate the sweep worker if one is running (the sensitivity slot). */
+export function cancelSweep(): void {
+  sens.dispose()
+}
+
+/** Ask the sweep worker to stop at its next cell (see `requestMcCancel`). */
+export function requestSweepCancel(runId: string): boolean {
   return sens.cancel({ type: 'cancel', runId })
 }

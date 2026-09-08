@@ -1,23 +1,33 @@
 import type { Scenario } from '../model/types'
 import { newId, runSettings } from '../model/types'
-import type { McSensitivityMessage, McWorkerMessage } from '../playback/mcRun'
+import type {
+  McSensitivityMessage,
+  McSweepMessage,
+  McSweepRequest,
+  McWorkerMessage,
+  SensitivityResponse,
+} from '../playback/mcRun'
 import {
   cancelMcRun,
   cancelSensitivity,
+  cancelSweep,
   requestMcCancel,
   requestSensitivityCancel,
+  requestSweepCancel,
   startMcRun,
   startSensitivity,
+  startSweep,
 } from '../playback/mcClient'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { createTrialManifest } from '../playback/trialTypes'
 import type { AnalysisRunState, McState, PlaybackState, TrialState } from './runState'
+import { IDLE_SENSITIVITY, IDLE_SWEEP } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
 import { selectTrialSelection } from './trialSelectors'
 
 /**
- * The three worker-backed analyses the store can request. This module owns
+ * The four worker-backed analyses the store can request. This module owns
  * what a request is: its identity (run id, analysis basis, and for a trial the
  * request token and manifest), the startup order (pending state is published
  * before the worker starts, so a synchronous startup error lands as a terminal
@@ -25,7 +35,20 @@ import { selectTrialSelection } from './trialSelectors'
  * request ends early. Callers request, accept and cancel through this module;
  * the envelope, the slot and the adapters are decided here and below.
  */
-export type AnalysisKind = 'mc' | 'sensitivity' | 'trial'
+export type AnalysisKind = 'mc' | 'sensitivity' | 'sweep' | 'trial'
+
+/** What a sweep request needs beyond the current scenario and run; the defaults fill the rest. */
+export interface SweepSpec {
+  factors: McSweepRequest['factors']
+  replicatesPerCell?: number
+  responses?: SensitivityResponse[]
+}
+
+/** The request defaults of the plan: 40 replicates per cell on the leaker response. */
+export const SWEEP_DEFAULTS: Required<Omit<SweepSpec, 'factors'>> = {
+  replicatesPerCell: 40,
+  responses: ['leakers'],
+}
 
 /** The slices a request reads and writes. */
 export interface AnalysisSlices {
@@ -41,6 +64,7 @@ export type AnalysisPatch = Partial<Pick<AnalysisSlices, 'playback' | 'mc' | 'tr
 export interface AnalysisSinks {
   mc: (m: McWorkerMessage) => void
   sensitivity: (m: McSensitivityMessage) => void
+  sweep: (m: McSweepMessage) => void
   trial: (m: TrialWorkerMessage) => void
 }
 
@@ -59,19 +83,23 @@ const UNAVAILABLE = 'Web Worker unavailable'
  * Request one analysis for the current scenario and run. Publishes the pending
  * state, then starts the worker; the environment without a Worker and every
  * synchronous startup failure end the request through its sink. Nothing is
- * requested for replicates or sensitivity under deterministic mode.
+ * requested for replicates, sensitivity or a sweep under deterministic mode,
+ * nor for a sweep without its spec.
  */
 export function requestAnalysis(
   kind: AnalysisKind,
   st: AnalysisSlices,
   publish: (patch: AnalysisPatch) => void,
   sinks: AnalysisSinks,
+  sweep?: SweepSpec,
 ): void {
   switch (kind) {
     case 'mc':
       return launch(mcLaunch(st), publish, sinks.mc)
     case 'sensitivity':
       return launch(sensitivityLaunch(st), publish, sinks.sensitivity)
+    case 'sweep':
+      return launch(sweep ? sweepLaunch(st, sweep) : null, publish, sinks.sweep)
     case 'trial':
       return launch(trialLaunch(st), publish, sinks.trial)
   }
@@ -89,19 +117,22 @@ export function cancelAnalysis(kind: AnalysisKind): void {
       return cancelMcRun()
     case 'sensitivity':
       return cancelSensitivity()
+    case 'sweep':
+      return cancelSweep()
     case 'trial':
       return cancelTrial()
   }
 }
 
 /**
- * Ask a running replicate or sensitivity run to stop at its next checkpoint,
- * so its `done` message still carries the replicates already finished. A worker
- * silent past the grace period is terminated. A trial has no graceful stop;
- * cancel it through `cancelAnalysis`.
+ * Ask a running replicate, sensitivity or sweep run to stop at its next
+ * checkpoint, so its `done` message still carries the work already finished.
+ * A worker silent past the grace period is terminated. A trial has no
+ * graceful stop; cancel it through `cancelAnalysis`.
  */
-export function requestCancel(kind: 'mc' | 'sensitivity', runId: string): boolean {
-  return kind === 'mc' ? requestMcCancel(runId) : requestSensitivityCancel(runId)
+export function requestCancel(kind: 'mc' | 'sensitivity' | 'sweep', runId: string): boolean {
+  if (kind === 'mc') return requestMcCancel(runId)
+  return kind === 'sweep' ? requestSweepCancel(runId) : requestSensitivityCancel(runId)
 }
 
 function launch<M>(
@@ -121,8 +152,9 @@ function mcLaunch(st: AnalysisSlices): Launch<McWorkerMessage> | null {
   return {
     pending: { mc: {
       ...pendingRun(st, replicates),
-      // The sensitivity run has its own worker and its own lifecycle.
+      // The sensitivity run and the sweep have their own worker and lifecycle.
       sensitivity: st.mc.sensitivity,
+      sweep: st.mc.sweep,
     } },
     start: (deliver) => startMcRun(st.scenario, runId, deliver),
     unavailable: { type: 'error', runId, message: UNAVAILABLE },
@@ -135,9 +167,34 @@ function sensitivityLaunch(st: AnalysisSlices): Launch<McSensitivityMessage> | n
   return {
     // The field count arrives with the first progress message: a value
     // import of uncertainFields would pull attrition.ts into the store.
-    pending: { mc: { ...st.mc, sensitivity: pendingRun(st, 0) } },
+    // A sweep on the shared slot is replaced; its pending state goes with it.
+    pending: { mc: { ...st.mc, sensitivity: pendingRun(st, 0), sweep: replaced(st.mc.sweep, IDLE_SWEEP) } },
     start: (deliver) => startSensitivity(st.scenario, runId, deliver),
     unavailable: { type: 'sens-error', runId, message: UNAVAILABLE },
+  }
+}
+
+/** The state of the run the shared slot drops: a running one goes idle, a finished one stays. */
+function replaced<S extends AnalysisRunState<unknown>>(run: S, idle: S): S {
+  return run.status === 'running' ? idle : run
+}
+
+function sweepLaunch(st: AnalysisSlices, spec: SweepSpec): Launch<McSweepMessage> | null {
+  if (runSettings(st.scenario).runMode === 'deterministic') return null
+  const runId = st.playback.runId
+  const request: McSweepRequest = {
+    type: 'sweep',
+    runId,
+    scenario: st.scenario,
+    factors: spec.factors,
+    replicatesPerCell: spec.replicatesPerCell ?? SWEEP_DEFAULTS.replicatesPerCell,
+    responses: spec.responses ?? SWEEP_DEFAULTS.responses,
+  }
+  const cells = spec.factors.reduce((n, f) => n * f.values.length, 1)
+  return {
+    pending: { mc: { ...st.mc, sweep: pendingRun(st, cells), sensitivity: replaced(st.mc.sensitivity, IDLE_SENSITIVITY) } },
+    start: (deliver) => startSweep(request, deliver),
+    unavailable: { type: 'sweep-error', runId, message: UNAVAILABLE },
   }
 }
 
@@ -213,12 +270,19 @@ export function acceptSensitivityMessage(
   return next == null ? null : { mc: { ...st.mc, sensitivity: { ...sens, ...next } } }
 }
 
-type RunMessage<S> =
-  | { type: 'progress' | 'sens-progress'; runId: string; done: number; total: number }
-  | { type: 'done' | 'sens-done'; runId: string; summary: S }
-  | { type: 'error' | 'sens-error'; runId: string; message: string }
+/** Accept a sweep message; null when it belongs to no live request. */
+export function acceptSweepMessage(st: AnalysisSlices, m: McSweepMessage): AnalysisPatch | null {
+  const { sweep } = st.mc
+  const next = acceptRun(st, sweep, m, (summary) => summary.cells.length)
+  return next == null ? null : { mc: { ...st.mc, sweep: { ...sweep, ...next } } }
+}
 
-/** The shared acceptance of the replicate and sensitivity runs. */
+type RunMessage<S> =
+  | { type: 'progress' | 'sens-progress' | 'sweep-progress'; runId: string; done: number; total: number }
+  | { type: 'done' | 'sens-done' | 'sweep-done'; runId: string; summary: S }
+  | { type: 'error' | 'sens-error' | 'sweep-error'; runId: string; message: string }
+
+/** The shared acceptance of the replicate, sensitivity and sweep runs. */
 function acceptRun<S>(
   st: AnalysisSlices,
   run: AnalysisRunState<S>,
@@ -229,14 +293,17 @@ function acceptRun<S>(
   switch (m.type) {
     case 'progress':
     case 'sens-progress':
+    case 'sweep-progress':
       return { progress: m.done, total: m.total }
     case 'done':
-    case 'sens-done': {
+    case 'sens-done':
+    case 'sweep-done': {
       const total = totalOf(m.summary)
       return { status: 'done', summary: m.summary, progress: total, total, error: null }
     }
     case 'error':
     case 'sens-error':
+    case 'sweep-error':
       return { status: 'error', error: m.message }
   }
 }

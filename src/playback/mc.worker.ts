@@ -2,7 +2,8 @@
 /**
  * Monte Carlo worker: one run per worker instance. A replicate run streams
  * `progress` and posts `done`; a sensitivity run streams `sens-progress` and
- * posts `sens-done`; a throw posts the error message. Loops run under
+ * posts `sens-done`; a sweep streams `sweep-progress` and posts `sweep-done`;
+ * a throw posts the error message. Loops run under
  * `DEFAULT_BUDGET` and stop at a checkpoint with `stopped.rule` 'budget'. The
  * driver yields every YIELD_MS so a `cancel` request ends the run at the next
  * checkpoint with 'cancelled'.
@@ -12,6 +13,7 @@ import type {
   Loop,
   McRequest,
   McSensitivityMessage,
+  McSweepMessage,
   McWorkerMessage,
   StopRule,
 } from './mcRun'
@@ -21,6 +23,7 @@ import {
   overBudget,
   replicateLoop,
   sensitivityLoop,
+  sweepLoop,
 } from './mcRun'
 
 /** Longest stretch of replicates run before the driver lets a message in. */
@@ -31,7 +34,7 @@ const PROGRESS_MS = 250
 let runId: string | null = null
 let cancelled = false
 
-const post = (m: McWorkerMessage | McSensitivityMessage): void => self.postMessage(m)
+const post = (m: McWorkerMessage | McSensitivityMessage | McSweepMessage): void => self.postMessage(m)
 const yieldToEvents = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
 /** Post progress at a checkpoint when its count is new and due. */
@@ -83,6 +86,28 @@ self.onmessage = async (e: MessageEvent<McRequest>) => {
   cancelled = false
   const id = runId
   const t0 = performance.now()
+  if (e.data.type === 'sweep') {
+    const { factors, replicatesPerCell, responses } = e.data
+    try {
+      // The per-cell summary guard runs inside the loop with the worker budget.
+      const loop = sweepLoop({ scenario, factors, replicatesPerCell, responses }, undefined, DEFAULT_BUDGET)
+      const summary = await drive(loop, 1, (cp) =>
+        post({ type: 'sweep-progress', runId: id, done: cp.done, total: cp.total }),
+      )
+      post({
+        type: 'sweep-done',
+        runId: id,
+        summary: { ...summary, elapsedMs: Math.round(performance.now() - t0) },
+      })
+    } catch (err) {
+      post({
+        type: 'sweep-error',
+        runId: id,
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+    return
+  }
   if (e.data.type === 'sensitivity') {
     try {
       const summary = await drive(sensitivityLoop(scenario), 1, (cp) =>

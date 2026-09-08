@@ -15,6 +15,8 @@ import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import { sampleScenario, uncertainFields } from '../analysis/uncertainty'
 import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
+import type { SweepFactor } from './sweepFactors'
+import { applySweepValue, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from './sweepFactors'
 import { meanInterval, quantile, wilson } from '../te/calc/stats'
 import { resolveEngagements } from './attrition'
 import { monteCarloPolicy } from './policy'
@@ -198,8 +200,23 @@ interface McCancelRequest {
   runId: string
 }
 
+/**
+ * One factor sweep request, on the sensitivity slot: one ensemble of
+ * `replicatesPerCell` replicates per grid cell over one or two factors.
+ * `responses` names the headline responses the reader maps; every cell
+ * records all five regardless.
+ */
+export interface McSweepRequest {
+  type: 'sweep'
+  runId: string
+  scenario: Scenario
+  factors: [SweepFactor] | [SweepFactor, SweepFactor]
+  replicatesPerCell: number
+  responses: SensitivityResponse[]
+}
+
 /** Every request the worker accepts; it dispatches on `type`. */
-export type McRequest = McRunRequest | McSensitivityRequest | McCancelRequest
+export type McRequest = McRunRequest | McSensitivityRequest | McSweepRequest | McCancelRequest
 
 /** Messages the worker posts back, tagged by the run they belong to. */
 export type McWorkerMessage =
@@ -212,6 +229,12 @@ export type McSensitivityMessage =
   | { type: 'sens-progress'; runId: string; done: number; total: number }
   | { type: 'sens-done'; runId: string; summary: SensitivitySummary }
   | { type: 'sens-error'; runId: string; message: string }
+
+/** Messages of a sweep run; `done` and `total` count grid cells. */
+export type McSweepMessage =
+  | { type: 'sweep-progress'; runId: string; done: number; total: number }
+  | { type: 'sweep-done'; runId: string; summary: SweepSummary }
+  | { type: 'sweep-error'; runId: string; message: string }
 
 /**
  * The end-of-run responses a sensitivity row records per replicate: leaker
@@ -801,4 +824,135 @@ export function* sensitivityLoop(
     onProgress?.(cp.done, fields.length)
   }
   return summary(nominal)
+}
+
+/** Default replicates per sweep cell. */
+export const SWEEP_REPLICATES_DEFAULT = 40
+
+/**
+ * One grid cell: its index per factor, the factor values it ran, and the
+ * replicate summary reduced to what the map reads. `kills` and `leakers`
+ * keep the band series (the end-of-run value is the last step, as the
+ * tiles read it); the times keep their Stat with definedness; `salvos` are
+ * per effector under `perEffector`, as McSummary records them (no raid-level
+ * salvos Stat exists there); `replicates` is every count's denominator.
+ */
+export interface SweepCell {
+  index: number[]
+  values: (number | string)[]
+  summary: Pick<McSummary, 'kills' | 'leakers' | 'firstDetectS' | 'minWarningS' | 'perEffector' | 'replicates'>
+}
+
+/** The sweep run result: cells in row-major order over the factor grid. */
+export interface SweepSummary {
+  factors: SweepFactor[]
+  responses: SensitivityResponse[]
+  cells: SweepCell[]
+  replicatesPerCell: number
+  seed: number
+  /** Wall time in the worker, ms; 0 when run outside the worker. */
+  elapsedMs: number
+  /** Present only when the run ended before every cell: the rule and the cells completed. */
+  stopped?: { rule: 'budget' | 'cancelled'; at: number }
+}
+
+/** Every cell index of the grid in row-major order (the first factor outermost). */
+function gridIndices(factors: SweepFactor[]): number[][] {
+  let cells: number[][] = [[]]
+  for (const f of factors) {
+    const next: number[][] = []
+    for (const prefix of cells) for (let i = 0; i < f.values.length; i += 1) next.push([...prefix, i])
+    cells = next
+  }
+  return cells
+}
+
+/** Throws when a factor has too few or too many values; the UI caps the grid separately. */
+function assertSweepFactors(factors: SweepFactor[]): void {
+  if (factors.length < 1 || factors.length > 2) throw new Error('A sweep takes one or two factors')
+  for (const f of factors) {
+    if (f.values.length < SWEEP_VALUES_MIN || f.values.length > SWEEP_VALUES_MAX) {
+      throw new Error(`${f.id} takes ${SWEEP_VALUES_MIN} to ${SWEEP_VALUES_MAX} values, not ${f.values.length}`)
+    }
+  }
+}
+
+/**
+ * The scenario of one cell: the base with each factor at its indexed value,
+ * every cell's replicate count set and the half-width rule off, so every
+ * cell runs the same replicates from the same seed (common random numbers
+ * across cells). The uncertainty mode is the scenario's own.
+ */
+export function sweepCellScenario(
+  scenario: Scenario,
+  factors: SweepFactor[],
+  index: number[],
+  replicatesPerCell: number,
+): Scenario {
+  let s: Scenario = { ...scenario, replicates: replicatesPerCell, targetHalfWidth: null }
+  factors.forEach((f, k) => { s = applySweepValue(s, f.id, f.values[index[k]]) })
+  return s
+}
+
+/** Run a sweep to its summary on this thread (see `runReplicates` for the budget). */
+export function runSweep(
+  request: Omit<McSweepRequest, 'type' | 'runId'>,
+  onProgress?: (done: number, total: number) => void,
+  budget?: ExecutionBudget,
+): SweepSummary {
+  return drive(sweepLoop(request, onProgress, budget), budget)
+}
+
+/**
+ * The loop behind `runSweep`: one checkpoint per cell, cells in sequence.
+ * Each cell drives `replicateLoop` to its replicate count with no stop of its
+ * own; the checkpoint reports the numbers that cell retained at its peak, so
+ * the driver's budget rule sees the cost of the next cell. With a `budget`,
+ * `assertSummaryFits` is checked per cell before its first replicate. A
+ * stop lands between cells: the cells done are kept under `stopped`, and a
+ * full run has no `stopped` key. `onProgress` fires after every cell.
+ */
+export function* sweepLoop(
+  request: Omit<McSweepRequest, 'type' | 'runId'>,
+  onProgress?: (done: number, total: number) => void,
+  budget?: ExecutionBudget,
+): Loop<SweepSummary> {
+  const { scenario, factors, replicatesPerCell, responses } = request
+  assertSweepFactors(factors)
+  if (!Number.isInteger(replicatesPerCell) || replicatesPerCell < 1) {
+    throw new Error(`replicatesPerCell takes a whole number of 1 or more, not ${replicatesPerCell}`)
+  }
+  const indices = gridIndices(factors)
+  const cells: SweepCell[] = []
+  const summary = (stopped?: SweepSummary['stopped']): SweepSummary => ({
+    factors,
+    responses: [...responses],
+    cells,
+    replicatesPerCell,
+    seed: runSettings(scenario).seed,
+    elapsedMs: 0,
+    ...(stopped ? { stopped } : {}),
+  })
+  for (const index of indices) {
+    const cell = sweepCellScenario(scenario, factors, index, replicatesPerCell)
+    if (budget) assertSummaryFits(cell, budget)
+    const loop = replicateLoop(cell)
+    let retained = 0
+    let next = loop.next()
+    while (!next.done) {
+      retained = Math.max(retained, next.value.retained)
+      next = loop.next()
+    }
+    const { kills, leakers, firstDetectS, minWarningS, perEffector, replicates } = next.value
+    cells.push({
+      index,
+      values: factors.map((f, k) => f.values[index[k]]),
+      summary: { kills, leakers, firstDetectS, minWarningS, perEffector, replicates },
+    })
+    onProgress?.(cells.length, indices.length)
+    if (cells.length === indices.length) break
+    const stop = yield { done: cells.length, total: indices.length, retained }
+    if (stop) return summary({ rule: stop === 'cancelled' ? 'cancelled' : 'budget', at: cells.length })
+  }
+  return summary()
 }

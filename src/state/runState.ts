@@ -1,6 +1,6 @@
 import type { Scenario } from '../model/types'
 import { newId } from '../model/types'
-import type { McSummary, SensitivitySummary } from '../playback/mcRun'
+import type { McSummary, SensitivitySummary, SweepSummary } from '../playback/mcRun'
 import type { TrialManifest, TrialResult } from '../playback/trialTypes'
 
 /** Board navigation only, independent of the playback lifecycle. */
@@ -86,10 +86,18 @@ export const IDLE_SENSITIVITY: SensitivityState = {
   error: null,
 }
 
-/** The Monte Carlo slice: replicate run and its sensitivity companion. */
+/** The factor sweep behind the Fragility screen; `progress` and `total` count cells. */
+export type SweepState = AnalysisRunState<SweepSummary>
+
+/** The sweep slice before any run. */
+export const IDLE_SWEEP: SweepState = { ...IDLE_SENSITIVITY, summary: null }
+
+/** The Monte Carlo slice: replicate run, its sensitivity companion and the factor sweep. */
 export interface McState extends AnalysisRunState<McSummary> {
   /** The sensitivity run, on its own worker and its own lifecycle. */
   sensitivity: SensitivityState
+  /** The factor sweep. It shares the sensitivity worker slot, so the two replace each other. */
+  sweep: SweepState
 }
 
 /** The Monte Carlo slice before any run: no summary, no signature, no error. */
@@ -102,6 +110,7 @@ export const IDLE_MC: McState = {
   basisSignature: null,
   error: null,
   sensitivity: IDLE_SENSITIVITY,
+  sweep: IDLE_SWEEP,
 }
 
 /** A clean run: new identity, clock at zero, nothing observed. */
