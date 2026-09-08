@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "9947ed9581bae258f071699acd79149991ac7ecd2ad6048b555298b6fafcdfc7",
+      "sha256": "8b699a665a139eedbdd9e7061809ce1552f8f27a509c6028771dabc6c2addb2b",
       "reviewedAt": "2026-09-08",
-      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
+      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "5f6b1b39109e5173bef2d4c6c9ce1ac3df18da3f9bed3ac6d806e817733051a5",
+      "sha256": "caf208f37f041190c607213f6fead5e8d536aa17b340c17f8ee7c4fc3871b013",
       "reviewedAt": "2026-09-08",
-      "note": "Source fingerprint refresh after review fixes; text unchanged"
+      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "0a25bc9f548c948043e577aed909513e6b3f042038e8c2523e6a7e794823f696",
+      "sha256": "f48daf546e1b0dd7aa5a06df6759eb27a5af2c113d1985b4a227587de65424fe",
       "reviewedAt": "2026-09-08",
-      "note": "Worker access wording: starts via analysisRequests, cancels direct"
+      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "85b02ee96495091f1de88db13ce82ecea0112d10138dde38487e43f5f8b6c60f",
+      "sha256": "d13bb44936741cfdf5a133eb50d13b7ce19e2cfb509646d8e10b1c7b1b5e44ea",
       "reviewedAt": "2026-09-08",
-      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
+      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
     },
     {
       "document": "docs/WORKFLOW.md",
