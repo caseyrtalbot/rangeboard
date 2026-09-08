@@ -134,6 +134,15 @@ describe('resolvePlayback is store-free', () => {
     expect(resolvePlayback({ type: 'complete', durationS: 9 }, c)).toEqual({ kind: 'none' })
   })
 
+  it('publish at the duration without a ready trial pauses instead of changing nothing', () => {
+    const c = { ...ctx(), playback: { ...freshPlayback(3), playing: true, startedAtMs: 5 } }
+    const next = resolvePlayback({ type: 'publish', t: 1e6 }, c)
+    // Nothing can be sealed, so the run stops and the frame loop with it.
+    expect(next).toMatchObject({ kind: 'apply', patch: { playback: { playing: false, phase: 'paused' } } })
+    expect(next.kind === 'apply' && next.patch.playback)
+      .toMatchObject({ completedAtMs: null, observedThroughS: 0, simTimeS: 0 })
+  })
+
   it('play without a trial asks for preparation and waits; a pending start does not re-prepare', () => {
     const waiting = resolvePlayback({ type: 'play' }, ctx())
     expect(waiting).toMatchObject({ kind: 'apply', prepare: true, patch: { trial: { startWhenReady: true } } })

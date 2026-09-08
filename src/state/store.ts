@@ -30,7 +30,6 @@ import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
 import type { PlaybackCommand } from './playbackCommands'
 import { resolvePlayback } from './playbackCommands'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
-import { cancelTrial } from '../playback/trialClient'
 import { buildRaid, raidDraftFor } from './raidBuilder'
 import {
   bumpCardVersion,
@@ -73,20 +72,16 @@ import {
   setWidgetParams,
   toggleCollapsed,
 } from './analysisLayout'
-// Keep worker execution behind mcClient; summaries are types, not store runtime dependencies.
+// Keep worker execution behind analysisRequests; summaries are types, not store runtime dependencies.
 import type { McSensitivityMessage, McWorkerMessage } from '../playback/mcRun'
-import {
-  cancelMcRun,
-  cancelSensitivity,
-  requestMcCancel,
-  requestSensitivityCancel,
-} from '../playback/mcClient'
 import type { AnalysisSinks } from './analysisRequests'
 import {
   acceptMcMessage,
   acceptSensitivityMessage,
   acceptTrialMessage,
+  cancelAnalysis,
   requestAnalysis,
+  requestCancel,
 } from './analysisRequests'
 
 
@@ -1396,9 +1391,9 @@ export const useStore = create<Store>()((set, get) => {
     scrubTo: (t) => get().playbackCommand({ type: 'scrub', t }),
 
     resetRun: (reason = 'manual') => {
-      cancelMcRun()
-      cancelSensitivity()
-      cancelTrial()
+      cancelAnalysis('mc')
+      cancelAnalysis('sensitivity')
+      cancelAnalysis('trial')
       get().playbackCommand({ type: 'newRun', reason })
     },
 
@@ -1418,7 +1413,7 @@ export const useStore = create<Store>()((set, get) => {
     cancelTrialPreparation: () => {
       const st = get()
       if (st.trial.status !== 'preparing') return
-      cancelTrial()
+      cancelAnalysis('trial')
       set({ trial: { ...st.trial, status: 'cancelled', startWhenReady: false } })
     },
 
@@ -1435,7 +1430,7 @@ export const useStore = create<Store>()((set, get) => {
 
     cancelMonteCarlo: () => {
       const { mc } = get()
-      if (mc.status === 'running' && mc.runId != null) requestMcCancel(mc.runId)
+      if (mc.status === 'running' && mc.runId != null) requestCancel('mc', mc.runId)
     },
 
     runSensitivity: () => requestAnalysis('sensitivity', get(), set, sinks),
@@ -1445,7 +1440,7 @@ export const useStore = create<Store>()((set, get) => {
     cancelSensitivityRun: () => {
       const { sensitivity } = get().mc
       if (sensitivity.status === 'running' && sensitivity.runId != null) {
-        requestSensitivityCancel(sensitivity.runId)
+        requestCancel('sensitivity', sensitivity.runId)
       }
     },
 

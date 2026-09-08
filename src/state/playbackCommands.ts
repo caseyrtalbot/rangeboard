@@ -108,7 +108,10 @@ export function resolvePlayback(command: PlaybackCommand, ctx: PlaybackContext):
       // completion publishes nothing, so completion happens once.
       if (!ctx.playback.playing) return NONE
       const durationS = durationOf(ctx.scenario)
-      return command.t >= durationS ? complete(ctx, durationS) : advance(ctx, command.t)
+      if (command.t < durationS) return advance(ctx, command.t)
+      // At the duration with no ready trial there is nothing to seal, and a
+      // playing run that changes nothing keeps the frame loop alive. Pause it.
+      return trialReady(ctx) ? complete(ctx, durationS) : resolvePlayback({ type: 'pause' }, ctx)
     }
     case 'advance':
       return advance(ctx, command.t)
