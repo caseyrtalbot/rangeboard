@@ -7,8 +7,8 @@ import { prepareRingModel } from './ringModel'
 
 /**
  * The store-bound ring model. The footprint layer draws its records; the HUD
- * hit-tests it. Both read one prepared result, so the geometry runs once per
- * scenario, view or selection change.
+ * hit-tests it. Each caller memoizes its own model over the same five store
+ * fields, so the two stay in step on every scenario, view or selection change.
  */
 export function useRingModel(): RingModel {
   const scenario = useStore((s) => s.scenario)

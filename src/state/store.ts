@@ -101,7 +101,6 @@ export interface Camera {
   scale: number
 }
 
-export type { Selection }
 
 /**
  * Armed tactic-builder state. UI only, never part of the scenario and never

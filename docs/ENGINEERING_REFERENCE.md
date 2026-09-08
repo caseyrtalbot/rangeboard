@@ -105,8 +105,8 @@ Breaking one of these breaks the app.
   `attrition.ts` carry no re-exports.
   Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
   `attrition.ts` or `trial.ts`; worker execution stays behind `mcClient.ts` and
-  `trialClient.ts`, both over `workerSlot.ts`, and the store reaches them only through
-  `src/state/analysisRequests.ts`. The worker value-import
+  `trialClient.ts`, both over `workerSlot.ts`; the store starts an analysis only through
+  `src/state/analysisRequests.ts` and calls the adapters directly only to cancel. The worker value-import
   graph must stay independent of stores, React, zustand, localStorage and panel modules.
   `runSession.ts` is a main-thread store adapter, outside that graph. `playback/clock.ts`
   owns `DT` and `stepIndex`, so `sim.ts` and `policy.ts` form no cycle.

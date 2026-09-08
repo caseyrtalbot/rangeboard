@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "77d8b20117815423cc2a7914ac0819e69e20af0d12655bd932411c21438aab93",
+      "sha256": "5f6b1b39109e5173bef2d4c6c9ce1ac3df18da3f9bed3ac6d806e817733051a5",
       "reviewedAt": "2026-09-08",
-      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
+      "note": "Source fingerprint refresh after review fixes; text unchanged"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "09ee9feebee845778b3da7bf675ebf08c15abe6caec4d869c594eb41e395cd9c",
+      "sha256": "0a25bc9f548c948043e577aed909513e6b3f042038e8c2523e6a7e794823f696",
       "reviewedAt": "2026-09-08",
-      "note": "Architecture review 2026-09-08: ten deepening candidates merged (scenarioInstall, autosave adapters, workerSlot + analysisRequests, playbackCommands, assessThreatReusing, specEdit, ringModel, package + findingEvidence, cardLinks)"
+      "note": "Worker access wording: starts via analysisRequests, cancels direct"
     },
     {
       "document": "docs/VERIFICATION.md",
