@@ -33,8 +33,8 @@ describe('AnalysisPanel screens', () => {
     const inputs = render({ phase: 'prepare', screen: 'inputs' })
     expect(inputs).toBe(renderToStaticMarkup(<BoardPreparation />))
     installTrial()
-    expect(render()).toContain('<h3>Now</h3>')
-    expect(render({ phase: 'analyze' })).toContain('<h3>Outcome</h3>')
+    expect(render()).toContain('aria-label="Now"')
+    expect(render({ phase: 'analyze' })).toContain('aria-label="Outcome"')
     expect(render({ phase: 'prepare', screen: 'compare' })).toContain('<h3>Fragility</h3>')
   })
 
@@ -48,19 +48,17 @@ describe('AnalysisPanel screens', () => {
     expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
   })
 
-  it('mounts each trial screen with one basis line and one placeholder paragraph', () => {
+  it('mounts each trial screen once with its own basis and no widget', () => {
     installTrial(3)
     for (const props of trialScreens) {
       const html = render(props)
       const title = props.screen[0].toUpperCase() + props.screen.slice(1)
-      expect(html).toContain(`<h3>${title}</h3>`)
-      expect(html.match(/<p /g)).toHaveLength(2)
-      expect(html.match(/class="analysis-scope"/g)).toHaveLength(1)
+      expect(html.match(new RegExp(`aria-label="${title}"`, 'g'))).toHaveLength(1)
       expect(html).not.toContain('data-widget-type')
       expect(html).not.toContain('No trial yet')
     }
     observeTrial(3, 1)
-    expect(render({ phase: 'execute' })).toContain('T+0:01 observed')
+    expect(render({ phase: 'execute' })).toContain('observed through T+0:01 of ')
     expect(render({ phase: 'analyze' })).toContain('T+0:03 observed')
   })
 

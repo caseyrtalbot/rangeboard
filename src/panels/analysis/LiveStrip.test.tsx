@@ -1,63 +1,31 @@
-import { emptyScenario } from '../../model/seed'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { useStore } from '../../state/store'
-import { IDLE_TRIAL } from '../../state/runState'
-import { installTrial, observeTrial, unstartTrial } from './widgets/trialTestState'
-import * as forecast from '../../analysis/impact'
+import { installTrial } from './widgets/trialTestState'
 import { LiveStrip } from './LiveStrip'
 
-function render() {
+function render(horizon: number, complete = false) {
+  const { view } = installTrial()
+  useStore.setState(({ playback }) => ({ playback: { ...playback, phase: complete ? 'complete' : 'paused', completedAtMs: complete ? 1 : null } }))
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<LiveStrip />)
+  return renderToStaticMarkup(<LiveStrip view={view} horizon={horizon} />)
 }
-afterEach(() => vi.restoreAllMocks())
 
-describe('LiveStrip trial lifecycle', () => {
-  it.each(['idle', 'preparing', 'error', 'cancelled', 'ready'] as const)('retains the %s header without requiring threats or computing a forecast', status => {
-    installTrial()
-    unstartTrial()
-    const trial = useStore.getState().trial
-    useStore.setState({ trial: status === 'idle' ? IDLE_TRIAL : { ...trial, status, error: status === 'error' ? 'Preparation failed' : null } })
-    const spy = vi.spyOn(forecast, 'engagementPicture')
-    const html = render()
-    expect(html).toContain('aria-live="polite"')
-    expect(html).not.toContain('DET')
-    expect(html).not.toContain('mc-pop')
-    const text = status === 'preparing' ? 'Preparing trial' : status === 'error' ? 'Preparation failed' : status === 'ready' ? 'Trial ready' : 'Simulated trial · ready'
-    expect(html).toContain(text)
-    if (status === 'preparing') expect(html).toContain('>Cancel<')
-    if (status === 'error' || status === 'cancelled') expect(html).toContain('>Retry<')
-    expect(spy).not.toHaveBeenCalled()
+describe('LiveStrip run line', () => {
+  it('keeps track and member denominators distinct at the cursor', () => {
+    const html = render(3)
+    expect(html).toContain('Paused')
+    expect(html).toContain('Simulated trial · observed through T+0:03 of 1:00')
+    expect(html).toContain('tracks 1/3')
+    expect(html).toContain('engaged 2/3 tracks')
+    expect(html).toContain('defeated 3/11 members')
+    expect(html).not.toContain('<button')
+    expect(html).not.toContain('live-strip')
   })
 
-  it('shows preparation errors even on an empty scenario', () => {
-    useStore.getState().replaceScenario(emptyScenario())
-    useStore.getState().startTrialRun()
-    const html = render()
-    expect(html).toContain('Web Worker unavailable')
-    expect(html).toContain('>Retry</button>')
-  })
-
-  it('distinguishes visible prefix, achieved observation and replay across phases', () => {
-    installTrial()
-    observeTrial(60, 1)
-    useStore.setState(({ playback }) => ({ playback: { ...playback, completedAtMs: 1, phase: 'paused' } }))
-    for (const phase of ['execute', 'analyze'] as const) {
-      useStore.getState().setBoardPhase(phase)
-      const html = render()
-      expect(html).toContain('Simulated trial · Replay')
-      expect(html).toContain('Visible prefix through 0:01')
-      expect(html).toContain('achieved observation through 1:00')
-      expect(html).toContain('full trial observed')
-    }
-  })
-
-  it('offers separate Replay and New run controls at completion', () => {
-    installTrial()
-    useStore.setState(({ playback }) => ({ playback: { ...playback, completedAtMs: 1, phase: 'complete' } }))
-    const html = render()
-    expect(html).toContain('>Replay</button>')
-    expect(html).toContain('aria-label="New run"')
+  it('shows completion and includes late defeats only after their effects', () => {
+    expect(render(60, true)).toContain('Complete')
+    expect(render(60, true)).toContain('defeated 5/11 members')
+    expect(render(1)).toContain('defeated 0/11 members')
   })
 })
