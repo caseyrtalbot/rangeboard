@@ -32,6 +32,8 @@ const columns: Array<{ key: SortColumn; label: string; title: string }> = [
   { key: 'result', label: 'Result', title: 'Track result at the completed horizon' },
 ]
 const machineStyle: CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 'var(--type-dense-size)' }
+// Seven columns in a 350 px panel: the track name and the result word take the slack.
+const columnWidth: Record<SortColumn, string> = { track: '23%', detect: '10%', identify: '10%', engage: '10%', effect: '10%', salvos: '8%', result: '29%' }
 const timeText = (value: number | null) => value == null ? '—' : formatTime(value)
 
 function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS: number }) {
@@ -45,29 +47,28 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
     return (sort.descending ? -order : order) || a.track.localeCompare(b.track)
   })
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table className="register-table" style={machineStyle} aria-label={`Per-threat outcomes through T+${formatTime(durationS)}; times in minutes:seconds`}>
-        <thead><tr>{columns.map(column => (
-          <th key={column.key} scope="col" aria-sort={sort.column === column.key ? sort.descending ? 'descending' : 'ascending' : 'none'}>
-            <button type="button" title={column.title} style={machineStyle} onClick={() => setSort({
-              column: column.key, descending: sort.column === column.key && !sort.descending,
-            })}>{column.label}</button>
-          </th>
-        ))}</tr></thead>
-        <tbody>{sorted.map(row => (
-          <tr key={row.id}>
-            <td style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{row.track}</td>
-            {[row.detect, row.identify, row.engage, row.effect].map((value, index) => (
-              <td key={index} style={{ minWidth: 0 }}>{timeText(value)}</td>
-            ))}
-            <td style={{ minWidth: 0 }}>{row.salvos}</td>
-            <td style={{ minWidth: 0 }}>{row.states.map(word => (
-              <State key={word} tone={word === 'leaked' ? 'critical' : word === 'active' ? 'warning' : 'inactive'} style={machineStyle}>{word}</State>
-            ))}</td>
-          </tr>
-        ))}</tbody>
-      </table>
-    </div>
+    <table className="tb tb-dense" aria-label={`Per-threat outcomes through T+${formatTime(durationS)}; times in minutes:seconds`}>
+      <thead><tr>{columns.map(column => (
+        <th key={column.key} scope="col" style={{ width: columnWidth[column.key] }}
+          aria-sort={sort.column === column.key ? sort.descending ? 'descending' : 'ascending' : 'none'}>
+          <button type="button" title={column.title} style={machineStyle} onClick={() => setSort({
+            column: column.key, descending: sort.column === column.key && !sort.descending,
+          })}>{column.label}</button>
+        </th>
+      ))}</tr></thead>
+      <tbody>{sorted.map(row => (
+        <tr key={row.id}>
+          <td title={row.track}>{row.track}</td>
+          {[row.detect, row.identify, row.engage, row.effect].map((value, index) => (
+            <td key={index}>{timeText(value)}</td>
+          ))}
+          <td>{row.salvos}</td>
+          <td title={row.states.join(', ')}>{row.states.map(word => (
+            <State key={word} tone={word === 'leaked' ? 'critical' : word === 'active' ? 'warning' : 'inactive'} style={machineStyle}>{word}</State>
+          ))}</td>
+        </tr>
+      ))}</tbody>
+    </table>
   )
 }
 

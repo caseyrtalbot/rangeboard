@@ -5434,6 +5434,15 @@ select.nu-unit {
   flex-wrap: wrap;
 }
 
+/* Per-threat tables on the analysis screens keep one row per track: mono
+   cells clip with an ellipsis instead of wrapping, and the full text is in the
+   cell title. */
+.board-app .right-panel .tb.tb-dense :is(th, td) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .board-app .right-panel .wg-m {
   flex: 1 0 100%;
   max-width: none;

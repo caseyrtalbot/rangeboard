@@ -12,6 +12,8 @@ import { stateTone } from '../SystemStatus'
 
 const SettingsPanel = lazy(() => import('../../SettingsPanel').then(module => ({ default: module.SettingsPanel })))
 const columns = ['Track', 'State', 'Held', 'ID', 'Eng', 'Arr'] as const
+// Six columns in a 350 px panel: the three times hold their width, the names clip.
+const columnWidth: Record<Column, string> = { Track: '24%', State: '17%', Held: '23%', ID: '12%', Eng: '12%', Arr: '12%' }
 type Column = typeof columns[number]
 
 export function NowScreen() {
@@ -79,8 +81,8 @@ export function NowScreen() {
     <section className="analysis-primary" aria-label="Now">
       <LiveStrip view={view} horizon={horizon} />
       <h3>Kill chain</h3>
-      <table className="tb" aria-label="Kill chain">
-        <thead><tr>{columns.map(column => <th key={column} scope="col"
+      <table className="tb tb-dense" aria-label="Kill chain">
+        <thead><tr>{columns.map(column => <th key={column} scope="col" style={{ width: columnWidth[column] }}
           aria-sort={sort.column === column ? sort.descending ? 'descending' : 'ascending' : 'none'}>
           <button type="button" style={{ padding: 0, fontSize: 'inherit' }}
             title={column === 'Arr' ? 'Planned arrival (m:ss)' : column === 'ID' ? 'Identified (m:ss)' : column === 'Eng' ? 'First engagement (m:ss)' : undefined}

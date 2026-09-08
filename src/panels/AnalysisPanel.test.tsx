@@ -59,7 +59,7 @@ describe('AnalysisPanel screens', () => {
     }
     observeTrial(3, 1)
     expect(render({ phase: 'execute' })).toContain('observed through T+0:01 of ')
-    expect(render({ phase: 'analyze' })).toContain('T+0:03 observed')
+    expect(render({ phase: 'analyze' })).toContain('T+0:03 of 1:00 observed')
   })
 
   it('uses only the current ensemble for Fragility and Compare', () => {
