@@ -3,6 +3,8 @@ import { newId } from '../model/types'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
 import { cancelMcRun, cancelSensitivity } from '../playback/mcClient'
 import { analysisBasisSignature } from './analysisBasis'
+import type { TrialManifest, TrialResult } from '../playback/trialTypes'
+import { cancelTrial } from '../playback/trialClient'
 
 /** Board navigation only, independent of the playback lifecycle. */
 export type BoardPhase = 'prepare' | 'execute' | 'analyze'
@@ -29,6 +31,37 @@ export interface PlaybackState {
   /** Analysis-only configuration snapshot used to detect mid-run changes. */
   basisSignature: string | null
   resetReason: RunResetReason
+}
+
+/** Internal R4 infrastructure. No UI selects this result until R5 integration. */
+export interface TrialState {
+  status: 'idle' | 'preparing' | 'ready' | 'cancelled' | 'error'
+  requestToken: string | null
+  manifest: TrialManifest | null
+  /** Detached configuration captured once for this identity; never autosaved. */
+  scenario: Scenario | null
+  result: TrialResult | null
+  startWhenReady: boolean
+  error: string | null
+}
+
+export const IDLE_TRIAL: TrialState = {
+  status: 'idle',
+  requestToken: null,
+  manifest: null,
+  scenario: null,
+  result: null,
+  startWhenReady: false,
+  error: null,
+}
+
+/** Use the same material-input definition as playback and ensemble analysis. */
+export function trialForScenarioChange(trial: TrialState, next: Scenario): TrialState {
+  if (trial.manifest == null || trial.manifest.basisSignature === analysisBasisSignature(next)) {
+    return trial
+  }
+  cancelTrial()
+  return IDLE_TRIAL
 }
 
 /** Lifecycle of the Monte Carlo replicate run behind the analysis panel. */

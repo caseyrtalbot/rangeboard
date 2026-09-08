@@ -27,12 +27,27 @@ function valueGraph(entry: string): Map<string, string> {
   return modules
 }
 
-it('keeps the worker engine independent of stores, React, panels and browser persistence', () => {
-  const modules = valueGraph('src/playback/mc.worker.ts')
+it.each(['mc.worker.ts', 'trial.worker.ts'])('keeps %s independent of stores, React, panels and browser persistence', (entry) => {
+  const modules = valueGraph(`src/playback/${entry}`)
   expect(modules.size).toBeGreaterThan(1)
   for (const [file, source] of modules) {
     expect(relative('.', file)).not.toMatch(/^src\/(state|io|panels|canvas)\//)
     expect(source, relative('.', file)).not.toMatch(/\b(localStorage|sessionStorage)\b/)
+  }
+})
+
+it('keeps trial transport independent of the engine and store at runtime', () => {
+  const modules = valueGraph('src/playback/trialClient.ts')
+  expect([...modules.keys()].map(file => relative('.', file))).toEqual(['src/playback/trialClient.ts'])
+})
+
+it('keeps store runtime imports outside trial execution and existing numerical result modules', () => {
+  const { outputText } = ts.transpileModule(readFileSync('src/state/store.ts', 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ESNext },
+    fileName: 'src/state/store.ts',
+  })
+  for (const dep of ts.preProcessFile(outputText).importedFiles) {
+    expect(dep.fileName).not.toMatch(/\/(mcRun|series|impact|attrition|trial|trial\.worker)$/)
   }
 })
 

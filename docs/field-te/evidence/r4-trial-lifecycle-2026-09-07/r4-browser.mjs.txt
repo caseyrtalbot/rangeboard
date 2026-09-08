@@ -1,0 +1,209 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import { createHash } from 'node:crypto'
+import { chromium } from '/Users/caseytalbot/Projects/rangeboard/node_modules/playwright/index.mjs'
+const repo = '/Users/caseytalbot/Projects/rangeboard'
+const out = `${repo}/docs/field-te/evidence/r4-trial-lifecycle-2026-09-07/browser`
+fs.mkdirSync(out, { recursive: true })
+const raw = fs.readFileSync(`${repo}/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`, 'utf8')
+const result = { date: new Date().toISOString(), url: 'http://localhost:5454', fixtureSha256: createHash('sha256').update(raw).digest('hex'), pageErrors: [], consoleErrors: [], checks: [] }
+const browser = await chromium.launch({ headless: true })
+result.chromium = browser.version()
+const context = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+await context.addInitScript(() => {
+  localStorage.setItem('rangeboard.rightpanel.width', '320')
+  const NativeWorker = window.Worker
+  window.__workerAudit = { created: 0, active: [], peak: 0, history: [] }
+  window.Worker = class extends NativeWorker {
+    constructor(url, options) {
+      super(url, options)
+      this.auditId = ++window.__workerAudit.created
+      const record = { id: this.auditId, url: String(url), createdAt: performance.now(), terminatedAt: null }
+      window.__workerAudit.history.push(record)
+      window.__workerAudit.active.push(this.auditId)
+      window.__workerAudit.peak = Math.max(window.__workerAudit.peak, window.__workerAudit.active.length)
+    }
+    terminate() {
+      const a = window.__workerAudit
+      a.active = a.active.filter(id => id !== this.auditId)
+      const record = a.history.find(r => r.id === this.auditId)
+      if (record) record.terminatedAt ??= performance.now()
+      return super.terminate()
+    }
+  }
+})
+const page = await context.newPage()
+page.on('pageerror', e => result.pageErrors.push(e.message))
+page.on('console', m => { if (m.type() === 'error') result.consoleErrors.push(m.text()) })
+const snap = () => page.evaluate(() => {
+  const s = window.__store.getState()
+  return { playback: s.playback, trial: { status: s.trial.status, manifest: s.trial.manifest, error: s.trial.error, events: s.trial.result?.report.events.length, observations: s.trial.result?.observations.length }, mc: s.mc.status, sensitivity: s.mc.sensitivity.status, workers: window.__workerAudit }
+})
+const load = async () => page.evaluate(async raw => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = parseAutosave(raw)
+  s.runMode = 'deterministic'
+  s.replicates = 4
+  window.__store.getState().loadScenario(s, { fit: 'always' })
+}, raw)
+const waitReady = () => page.waitForFunction(() => ['ready', 'error'].includes(window.__store.getState().trial.status), null, { timeout: 30000 })
+try {
+  await page.goto(result.url)
+  await page.waitForFunction(() => window.__store && document.querySelector('.konvajs-content canvas'))
+  await load()
+  await page.click('#board-phase-execute')
+  for (const speed of [1, 5]) {
+    await page.evaluate(async speed => {
+      const { toggleAnalysisRun } = await import('/src/playback/runSession.ts')
+      window.__store.getState().setSpeedMult(speed)
+      toggleAnalysisRun()
+    }, speed)
+    await page.waitForTimeout(800)
+    await page.evaluate(() => window.__store.getState().pauseRun())
+    const s = await snap()
+    assert.equal(s.trial.status, 'idle')
+    assert.ok(s.playback.observedThroughS > 0)
+    assert.equal(s.workers.created, 0)
+    result.checks.push({ check: 'ordinary-play', speed, playback: s.playback })
+  }
+  await page.screenshot({ path: `${out}/ordinary-play.png`, fullPage: true })
+  await load()
+  const immediate = await page.evaluate(() => {
+    const s = window.__store.getState()
+    const before = JSON.stringify(s.scenario)
+    s.prepareTrial()
+    const after = window.__store.getState()
+    return { before, after: JSON.stringify(after.scenario), playing: after.playback.playing, startedAtMs: after.playback.startedAtMs, status: after.trial.status }
+  })
+  assert.equal(immediate.before, immediate.after)
+  assert.equal(immediate.status, 'preparing')
+  assert.equal(immediate.playing, false)
+  assert.equal(immediate.startedAtMs, null)
+  await waitReady()
+  assert.equal((await snap()).trial.status, 'ready')
+  const retained = await page.evaluate(async () => {
+    const { runTrial } = await import('/src/playback/trial.ts')
+    const { trial } = window.__store.getState()
+    const direct = runTrial(trial.scenario, trial.manifest)
+    return { equal: JSON.stringify(direct) === JSON.stringify(trial.result), scenario: trial.scenario, result: trial.result, frozen: Object.isFrozen(trial.manifest) }
+  })
+  assert.equal(retained.equal, true)
+  assert.equal(retained.frozen, true)
+  fs.writeFileSync(`${out}/retained-trial.json`, JSON.stringify(retained))
+  result.checks.push({ check: 'real-worker-direct-equality', events: retained.result.report.events.length, observations: retained.result.observations.length, frozen: retained.frozen })
+  const ledgerHash = createHash('sha256').update(JSON.stringify(retained.result)).digest('hex')
+  await page.evaluate(() => { const s = window.__store.getState(); s.setSpeedMult(1000); s.startTrialRun() })
+  await page.waitForFunction(() => window.__store.getState().playback.phase === 'complete', null, { timeout: 15000 })
+  const completed = await snap()
+  for (const speed of [1, 5]) {
+    await page.evaluate(async speed => {
+      const s = window.__store.getState()
+      s.setSpeedMult(speed)
+      if (s.playback.phase !== 'complete') s.scrubTo(0)
+      const { toggleAnalysisRun } = await import('/src/playback/runSession.ts')
+      toggleAnalysisRun()
+    }, speed)
+    await page.waitForTimeout(700)
+    await page.evaluate(() => window.__store.getState().pauseRun())
+    const state = await snap()
+    assert.equal(state.playback.runId, completed.playback.runId)
+    assert.equal(state.playback.completedAtMs, completed.playback.completedAtMs)
+    assert.equal(state.playback.observedThroughS, completed.playback.observedThroughS)
+    assert.ok(state.playback.simTimeS > 0 && state.playback.simTimeS < 20)
+    result.checks.push({ check: 'internal-replay', speed, playback: state.playback })
+  }
+  const replayResult = await page.evaluate(() => window.__store.getState().trial.result)
+  assert.equal(createHash('sha256').update(JSON.stringify(replayResult)).digest('hex'), ledgerHash)
+  assert.equal((await snap()).workers.active.length, 0)
+
+  await load()
+  await page.evaluate(() => {
+    const s = window.__store.getState()
+    s.patchScenario({ runMode: 'monte-carlo', replicates: 4 })
+    s.runMonteCarlo(); s.runSensitivity(); s.startTrialRun(); s.cancelTrialPreparation()
+  })
+  await page.waitForFunction(() => { const s = window.__store.getState(); return s.mc.status === 'done' && s.mc.sensitivity.status === 'done' }, null, { timeout: 30000 })
+  const isolated = await snap()
+  assert.equal(isolated.trial.status, 'cancelled')
+  assert.equal(isolated.playback.startedAtMs, null)
+  result.checks.push({ check: 'trial-cancel-preserves-real-mc-and-sensitivity', mc: isolated.mc, sensitivity: isolated.sensitivity, trial: isolated.trial.status })
+  await page.evaluate(() => {
+    const s = window.__store.getState()
+    s.runMonteCarlo(); s.runSensitivity(); s.prepareTrial(); s.cancelMonteCarlo(); s.cancelSensitivityRun()
+  })
+  await waitReady()
+  assert.equal((await snap()).trial.status, 'ready')
+  result.checks.push({ check: 'ensemble-cancel-preserves-trial', state: await snap() })
+
+  for (const action of ['reset', 'edit', 'undo', 'redo', 'load']) {
+    await load()
+    const capture = await page.evaluate(({ action, raw }) => {
+      const s = window.__store.getState()
+      if (action === 'undo' || action === 'redo') s.patchScenario({ seed: (s.scenario.seed ?? 0) + 1 })
+      if (action === 'redo') s.undo()
+      s.startTrialRun()
+      const before = window.__store.getState().playback.runId
+      if (action === 'reset') s.resetRun()
+      if (action === 'edit') s.patchScenario({ seed: (window.__store.getState().scenario.seed ?? 0) + 1 })
+      if (action === 'undo') s.undo()
+      if (action === 'redo') s.redo()
+      if (action === 'load') s.loadScenario(JSON.parse(raw))
+      return { before, after: window.__store.getState().playback.runId }
+    }, { action, raw })
+    await page.waitForTimeout(150)
+    assert.notEqual(capture.before, capture.after)
+    const s = await snap()
+    assert.equal(s.trial.status, 'idle')
+    assert.equal(s.playback.startedAtMs, null)
+    assert.equal(s.workers.active.length, 0)
+    result.checks.push({ check: `preparing-${action}`, ...capture })
+  }
+
+  await load()
+  await page.evaluate(() => { const s = window.__store.getState(); s.prepareTrial(); s.prepareTrial(); s.patchScenario({ name: 'Presentation edit during preparation' }) })
+  await waitReady()
+  assert.equal((await snap()).trial.status, 'ready')
+  result.checks.push({ check: 'repeat-request-presentation-edit', state: await snap() })
+  await load()
+  const timings = []
+  const ids = []
+  for (let i = 0; i < 30; i++) {
+    const start = Date.now()
+    const run = await page.evaluate(() => {
+      const s = window.__store.getState()
+      s.resetRun(); s.prepareTrial()
+      return window.__store.getState().trial.manifest.runId
+    })
+    await waitReady()
+    const s = await snap()
+    assert.equal(s.trial.status, 'ready')
+    assert.equal(s.workers.active.length, 0)
+    ids.push(run)
+    timings.push(Date.now() - start)
+  }
+  assert.equal(new Set(ids).size, 30)
+  result.checks.push({ check: '30-new-runs', uniqueIdentities: new Set(ids).size, preparationRoundTripMs: timings, workers: (await snap()).workers })
+  await page.reload()
+  await page.waitForFunction(() => window.__store)
+  assert.equal((await snap()).trial.status, 'idle')
+  assert.equal((await snap()).playback.startedAtMs, null)
+  result.checks.push({ check: 'reload-ready-no-trial-autosave' })
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.click('#board-phase-execute')
+  await page.screenshot({ path: `${out}/ordinary-ready-compact.png`, fullPage: true })
+  const overflow = await page.locator('.right-panel').evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
+  assert.ok(overflow.scrollWidth <= overflow.clientWidth)
+  result.panelOverflow = overflow
+  assert.deepEqual(result.pageErrors, [])
+  assert.deepEqual(result.consoleErrors, [])
+  result.status = 'ok'
+} catch (error) {
+  result.status = 'failed'
+  result.error = error.stack
+  throw error
+} finally {
+  fs.writeFileSync(`${out}/r4-browser.json`, JSON.stringify(result, null, 2))
+  await browser.close()
+  console.log(JSON.stringify({ status: result.status, checks: result.checks.length, error: result.error, output: out }))
+}

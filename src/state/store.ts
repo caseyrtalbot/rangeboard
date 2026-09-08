@@ -22,9 +22,12 @@ import { pruneRingOverrides } from './rings'
 import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
 import { LAYER_PRESETS } from './layers'
 import { selectEffectiveLayers } from './selectors'
-import type { BoardPhase, McState, PlaybackState, RunResetReason } from './runState'
-import { freshPlayback, IDLE_MC, mcForScenarioChange, playbackForScenarioChange } from './runState'
+import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } from './runState'
+import { freshPlayback, IDLE_MC, IDLE_TRIAL, mcForScenarioChange, playbackForScenarioChange, trialForScenarioChange } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
+import { createTrialManifest } from '../playback/trialTypes'
+import type { TrialWorkerMessage } from '../playback/trialMessages'
+import { cancelTrial, startTrial } from '../playback/trialClient'
 import { markPresentationVariant } from '../model/scenario'
 import { buildRaid, raidDraftFor } from './raidBuilder'
 import {
@@ -194,6 +197,8 @@ export interface Store {
   playback: PlaybackState
   /** Monte Carlo run state. View state: never persisted, never in history. */
   mc: McState
+  /** Opt-in trial infrastructure, never persisted or consumed by the R4 UI. */
+  trial: TrialState
   save: SaveState
 
   // History
@@ -346,6 +351,12 @@ export interface Store {
   scrubTo: (t: number) => void
   resetRun: (reason?: RunResetReason) => void
 
+  // Internal trial lifecycle; R5 owns user-facing adoption.
+  prepareTrial: () => void
+  startTrialRun: () => void
+  cancelTrialPreparation: () => void
+  trialMessage: (message: TrialWorkerMessage) => void
+
   // Monte Carlo
   /** Launch the replicate run for the current scenario and run id (cancels an older one). */
   runMonteCarlo: () => void
@@ -440,7 +451,7 @@ const CLEARED_DRAFT: Pick<
 export const useStore = create<Store>()((set, get) => {
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
-    const { scenario, past, playback, mc } = get()
+    const { scenario, past, playback, mc, trial } = get()
     const next = fn(scenario)
     if (next === scenario) return
     set({
@@ -449,6 +460,7 @@ export const useStore = create<Store>()((set, get) => {
       future: [],
       playback: playbackForScenarioChange(playback, next),
       mc: mcForScenarioChange(mc, next),
+      trial: trialForScenarioChange(trial, next),
     })
   }
 
@@ -508,10 +520,11 @@ export const useStore = create<Store>()((set, get) => {
     },
     playback: freshPlayback(savedRunSeq()),
     mc: IDLE_MC,
+    trial: IDLE_TRIAL,
     save: { lastAutosaveAt: null, error: null },
 
     undo: () => {
-      const { past, future, scenario, ui, playback, selection, mc } = get()
+      const { past, future, scenario, ui, playback, selection, mc, trial } = get()
       if (past.length === 0) return
       const restored = withObservedLens(past[past.length - 1], scenario)
       set({
@@ -521,13 +534,14 @@ export const useStore = create<Store>()((set, get) => {
         selection: pruneSelection(selection, restored),
         playback: playbackForScenarioChange(playback, restored),
         mc: mcForScenarioChange(mc, restored),
+        trial: trialForScenarioChange(trial, restored),
         // A restored scenario invalidates any open connect offer.
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
 
     redo: () => {
-      const { past, future, scenario, ui, playback, selection, mc } = get()
+      const { past, future, scenario, ui, playback, selection, mc, trial } = get()
       if (future.length === 0) return
       const restored = withObservedLens(future[0], scenario)
       set({
@@ -537,6 +551,7 @@ export const useStore = create<Store>()((set, get) => {
         selection: pruneSelection(selection, restored),
         playback: playbackForScenarioChange(playback, restored),
         mc: mcForScenarioChange(mc, restored),
+        trial: trialForScenarioChange(trial, restored),
         ui: ui.connectSuggestion ? { ...ui, connectSuggestion: null } : ui,
       })
     },
@@ -547,6 +562,7 @@ export const useStore = create<Store>()((set, get) => {
       if (ringOverrides !== current) writeRingOverrides(ringOverrides)
       cancelMcRun()
       cancelSensitivity()
+      cancelTrial()
       set((st) => ({
         scenario: s,
         past: [],
@@ -554,6 +570,7 @@ export const useStore = create<Store>()((set, get) => {
         selection: EMPTY_SELECTION,
         playback: freshPlayback(st.playback.runSeq, st.playback.speedMult, 'scenario-loaded'),
         mc: IDLE_MC,
+        trial: IDLE_TRIAL,
         ui: { ...st.ui, ...CLEARED_DRAFT, tool: 'select', ringOverrides },
       }))
     },
@@ -1302,6 +1319,7 @@ export const useStore = create<Store>()((set, get) => {
         const simTimeS = Math.max(0, frame.simTimeS)
         const ready = simTimeS === 0 && st.playback.startedAtMs == null
         return {
+          trial: st.trial.startWhenReady ? { ...st.trial, startWhenReady: false } : st.trial,
           camera: { ...frame.camera },
           playback: {
             ...st.playback,
@@ -1427,6 +1445,10 @@ export const useStore = create<Store>()((set, get) => {
     setSpeedMult: (m) => set((st) => ({ playback: { ...st.playback, speedMult: m } })),
 
     startRun: () => {
+      if (get().trial.manifest != null) {
+        get().startTrialRun()
+        return
+      }
       set((st) => {
         if (st.playback.completedAtMs != null) return st
         // A preview beyond the observed horizon is never silently promoted
@@ -1460,6 +1482,7 @@ export const useStore = create<Store>()((set, get) => {
 
     pauseRun: () =>
       set((st) => ({
+        trial: st.trial.startWhenReady ? { ...st.trial, startWhenReady: false } : st.trial,
         playback: {
           ...st.playback,
           playing: false,
@@ -1469,6 +1492,7 @@ export const useStore = create<Store>()((set, get) => {
 
     advanceRun: (t) =>
       set((st) => {
+        if (st.trial.manifest != null && st.trial.status !== 'ready') return st
         const simTimeS = Math.max(0, t)
         const first = st.playback.startedAtMs == null
         if (first) writeRunSeq(st.playback.runSeq + 1)
@@ -1488,7 +1512,7 @@ export const useStore = create<Store>()((set, get) => {
       }),
 
     completeRun: (durationS) =>
-      set((st) => ({
+      set((st) => st.trial.manifest != null && st.trial.status !== 'ready' ? st : ({
         playback: {
           ...st.playback,
           playing: false,
@@ -1496,7 +1520,7 @@ export const useStore = create<Store>()((set, get) => {
           observedThroughS: Math.max(st.playback.observedThroughS, durationS),
           phase: 'complete',
           startedAtMs: st.playback.startedAtMs ?? Date.now(),
-          completedAtMs: Date.now(),
+          completedAtMs: st.playback.completedAtMs ?? Date.now(),
           basisSignature:
             st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
         },
@@ -1507,6 +1531,7 @@ export const useStore = create<Store>()((set, get) => {
         const simTimeS = Math.max(0, t)
         const ready = simTimeS === 0 && st.playback.startedAtMs == null
         return {
+          trial: st.trial.startWhenReady ? { ...st.trial, startWhenReady: false } : st.trial,
           playback: {
             ...st.playback,
             playing: false,
@@ -1519,6 +1544,7 @@ export const useStore = create<Store>()((set, get) => {
     resetRun: (reason = 'manual') => {
       cancelMcRun()
       cancelSensitivity()
+      cancelTrial()
       set((st) => {
         const runSeq = reason === 'manual' ? st.playback.runSeq + 1 : st.playback.runSeq
         if (reason === 'manual') writeRunSeq(runSeq)
@@ -1526,8 +1552,110 @@ export const useStore = create<Store>()((set, get) => {
           ...observedPatch(st),
           playback: freshPlayback(runSeq, st.playback.speedMult, reason),
           mc: IDLE_MC,
+          trial: IDLE_TRIAL,
         }
       })
+    },
+
+    prepareTrial: () => {
+      let st = get()
+      // Opting in after forecast playback starts needs a clean observation record.
+      if (st.trial.manifest == null && st.playback.startedAtMs != null) {
+        st.resetRun()
+        st = get()
+      }
+      if (st.trial.status === 'ready') return
+      const basisSignature = analysisBasisSignature(st.scenario)
+      const manifest = st.trial.manifest ?? createTrialManifest(
+        st.scenario, st.playback.runId, basisSignature,
+      )
+      const scenario = st.trial.scenario ?? structuredClone(st.scenario)
+      const requestToken = newId('trialrequest')
+      // Publish before worker construction: synchronous transport failures must stick.
+      set({
+        playback: { ...st.playback, playing: false, basisSignature },
+        trial: {
+          status: 'preparing', requestToken, manifest, scenario, result: null,
+          startWhenReady: st.trial.startWhenReady, error: null,
+        },
+      })
+      const request = {
+        type: 'prepare-trial' as const, requestToken, runId: manifest.runId,
+        basisSignature, scenario, manifest,
+      }
+      const ok = startTrial(request, (message) => get().trialMessage(message))
+      if (!ok) get().trialMessage({
+        type: 'trial-error', requestToken, runId: manifest.runId, basisSignature,
+        message: 'Web Worker unavailable',
+      })
+    },
+
+    startTrialRun: () => {
+      let st = get()
+      if (st.trial.manifest == null && st.playback.startedAtMs != null) {
+        st.resetRun()
+        st = get()
+      }
+      if (st.trial.status !== 'ready') {
+        set({ trial: { ...st.trial, startWhenReady: true } })
+        if (st.trial.status !== 'preparing') {
+          get().prepareTrial()
+        }
+        return
+      }
+      const first = st.playback.startedAtMs == null
+      if (first) writeRunSeq(st.playback.runSeq + 1)
+      set({
+        ...(first ? observedPatch(st) : {}),
+        trial: { ...st.trial, startWhenReady: false },
+        playback: {
+          ...st.playback,
+          playing: true,
+          phase: 'running',
+          simTimeS: st.playback.phase === 'complete' ? 0 :
+            Math.min(st.playback.simTimeS, st.playback.observedThroughS),
+          startedAtMs: st.playback.startedAtMs ?? Date.now(),
+          // Completion and achieved observation survive every replay.
+          basisSignature: st.trial.manifest!.basisSignature,
+        },
+      })
+    },
+
+    cancelTrialPreparation: () => {
+      const st = get()
+      if (st.trial.status !== 'preparing') return
+      cancelTrial()
+      set({ trial: { ...st.trial, status: 'cancelled', startWhenReady: false } })
+    },
+
+    trialMessage: (message) => {
+      let startWhenReady = false
+      set((st) => {
+        const { trial, playback } = st
+        const manifest = trial.manifest
+        if (trial.status !== 'preparing' || manifest == null ||
+          message.requestToken !== trial.requestToken ||
+          message.runId !== playback.runId || message.runId !== manifest.runId ||
+          message.basisSignature !== manifest.basisSignature ||
+          message.basisSignature !== analysisBasisSignature(st.scenario)) return st
+        if (message.type === 'trial-error') return {
+          trial: { ...trial, status: 'error', error: message.message, startWhenReady: false },
+        }
+        // The envelope and retained manifest must identify the very same draw.
+        const received = message.result.manifest
+        if (Object.keys(manifest).some((key) =>
+          manifest[key as keyof typeof manifest] !== received[key as keyof typeof received])) {
+          return { trial: {
+            ...trial, status: 'error', error: 'Trial manifest mismatch', startWhenReady: false,
+          } }
+        }
+        startWhenReady = trial.startWhenReady
+        return { trial: {
+          ...trial, status: 'ready', error: null, startWhenReady: false,
+          result: { ...message.result, manifest },
+        } }
+      })
+      if (startWhenReady) get().startTrialRun()
     },
 
     runMonteCarlo: () => {

@@ -126,8 +126,11 @@ before changing lifecycle behavior.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; live views and full-run projections consume those results.
-3. Monte Carlo and sensitivity use separate worker slots. Results require the current
-   slot, run and analysis basis. Cancellation and stale-result behavior are contracts.
+3. Monte Carlo and sensitivity use separate worker slots. Internal trial preparation has
+   a third slot and retains one nominal/aleatory ledger, sampled observations and frozen
+   manifest. Results require the current slot, request, run and analysis basis. Trial
+   infrastructure is opt-in; ordinary Play and visible results remain on their existing
+   forecast path until the coordinated R5 integration. No trial is autosaved or archived.
 4. Runtime validation precedes default filling and adoption. Recovery preserves unreadable
    saves and suppresses autosave when preservation fails.
 5. T&E can retain Board snapshots and images. The Board engine's only T&E dependency is

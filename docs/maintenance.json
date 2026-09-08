@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "fe430d44b2322bb8e29848b987244aef79abbc7c059087f6a26ee43818a5d684",
+      "sha256": "2f8e69639019dd36b121874e2feafe97c7781b42cf2f4b3abdd69035d15df330",
       "reviewedAt": "2026-09-08",
-      "note": "Indexed dated R3 physical launch timing evidence."
+      "note": "Indexed R4 trial lifecycle evidence; prior R0-R3 evidence remains unchanged."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1a5916a233300714888a1d1426152c0e8e23baa0e70f512766a2ce6f4f82c72a",
+      "sha256": "6846268244f53ed063a0c2944f7a09932f8f009329ae8a25e36068cc7bc7d624",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed finished R3 timing consumers, tests and coincident event labels; documented release, preparation and legacy behavior remains accurate."
+      "note": "Reviewed R4 engine, transport and store sources; documented the independent internal trial slot and unchanged visible forecast path."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "a4f0480ceffa627185c30ad4ab976bc19b5af4d1f1a43ebe6a317c88e2835672",
+      "sha256": "26ddcc96a5eae1e0bcef1aec1a4ce6f69a8d59c253d3f11d434c7503395fbbd2",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed finished R3 release semantics and tests; documented coincident ASG/REL/FX label combination without changing event accounting."
+      "note": "Reviewed trial capture, stable draw-member mapping, compatibility manifest, worker guards, lifecycle and replay tests; documented non-persisted internal R4 contracts and module boundaries."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "92c549a9fe0816425667e06fd2c22cd710007f52fc10fe1738fa6d138cafb33e",
+      "sha256": "3f718b26e512753b0cee0694fd1428c9f874932ae6011cdf683929bad6570266",
       "reviewedAt": "2026-09-08",
-      "note": "Reviewed runResultGroups and runExport tests: additive release metadata preserves scenario load shape; existing schema, parity and isolated browser verification guidance remains accurate."
+      "note": "Reviewed actual R4 real-worker and lifecycle checks; added internal opt-in verification boundaries and corrected single-file Vitest directory syntax."
     },
     {
       "document": "docs/WORKFLOW.md",

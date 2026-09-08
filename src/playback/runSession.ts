@@ -11,11 +11,15 @@ export function resetAnalysisRun(reason: RunResetReason = 'manual'): void {
   useStore.getState().resetRun(reason)
 }
 
-/** Play/pause with strict new-run behavior after completion or future preview. */
+/** R4 keeps forecast Play unchanged; internal trial opt-in reuses its retained run. */
 export function toggleAnalysisRun(): void {
   let st = useStore.getState()
   if (st.playback.playing) {
     st.pauseRun()
+    return
+  }
+  if (st.trial.manifest != null) {
+    st.startTrialRun()
     return
   }
   if (
