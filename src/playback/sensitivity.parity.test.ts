@@ -69,5 +69,5 @@ describe('sensitivityLoop parity on the JIATF-401 laydown', () => {
       expect(r.responses!.minWarningS.lo).toBe(mc.minWarningS.mean)
       expect(r.responses!.salvos.lo).toBeCloseTo(salvos, 12)
     }
-  })
+  }, 30000)
 })

@@ -79,7 +79,7 @@ export function NowScreen() {
     <section className="analysis-primary" aria-label="Now">
       <LiveStrip view={view} horizon={horizon} />
       <h3>Kill chain</h3>
-      <table className="tb" aria-label="Kill chain" style={{ tableLayout: 'auto' }}>
+      <table className="tb" aria-label="Kill chain">
         <thead><tr>{columns.map(column => <th key={column} scope="col"
           aria-sort={sort.column === column ? sort.descending ? 'descending' : 'ascending' : 'none'}>
           <button type="button" style={{ padding: 0, fontSize: 'inherit' }}
@@ -87,10 +87,10 @@ export function NowScreen() {
             onClick={() => setSort({ column, descending: sort.column === column && !sort.descending })}>{column}</button>
         </th>)}</tr></thead>
         <tbody>{rows.map(row => <tr key={row.key}>
-          <td style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{row.Track}</td>
-          <td style={{ whiteSpace: 'normal' }}><State tone={row.State === 'engaged' ? 'critical' : row.State === 'targeted' ? 'warning' : 'inactive'}
+          <td title={row.Track}>{row.Track}</td>
+          <td><State tone={row.State === 'engaged' ? 'critical' : row.State === 'targeted' ? 'warning' : 'inactive'}
             hollow={row.State === 'identified'} style={row.State === 'defeated' ? { color: 'var(--ghost)' } : undefined}>{row.State}</State></td>
-          <td style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{row.Held}</td>
+          <td title={row.Held}>{row.Held}</td>
           <td>{row.ID == null ? '—' : formatTime(row.ID)}</td>
           <td>{row.Eng == null ? '—' : formatTime(row.Eng)}</td>
           <td>{row.Arr == null ? '—' : formatTime(row.Arr)}</td>
