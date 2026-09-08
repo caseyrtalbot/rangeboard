@@ -27,8 +27,17 @@ Breaking one of these breaks the app.
   from the last published `simTimeS` plus the wall time since that publication at
   `speedMult`, clamped to one period. Any pulse, blink or playhead derives from `simTimeS`
   or that display time; never a timer. Panels subscribe through `src/state/selectors.ts`.
-  `applyFrame` restores camera/basemap and scrubs like `scrubTo`: neither advances
-  `observedThroughS` nor stamps `startedAtMs` or `basisSignature`.
+  Playback commands own observation and replay: `src/state/playbackCommands.ts` is
+  store-free and resolves one intent (`play`, `pause`, `toggle`, `scrub`, `frame`,
+  `publish`, `advance`, `complete`, `newRun`) into a transition that the store action
+  `playbackCommand` applies through `set`; the named actions (`startTrialRun`, `pauseRun`,
+  `scrubTo`, `applyFrame`, `advanceRun`, `completeRun`, `resetRun`) are those commands.
+  The module owns reset versus replay, the first-start stamps (`startedAtMs`,
+  `basisSignature`, the observed lens, the run sequence write), observation advance,
+  the one completion at the run duration, cancellation of a pending automatic start and
+  frame = scrub + camera. `TimelineBar` publishes only; a publication while stopped
+  changes nothing. `scrub` and `frame` neither advance `observedThroughS` nor stamp
+  `startedAtMs` or `basisSignature`.
 - **Board phase and horizon:** `BoardPhase` is exported only from `state/runState.ts`.
   `ui.boardPhase` starts at Prepare and is never persisted or recorded in undo history.
   `analysis/horizon.ts` is store-free: frozen full-run and empty horizons, inclusive time
@@ -185,7 +194,9 @@ src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basi
 src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant
                range, horizon), prng.ts (mulberry32, idHash, hashU01), webmerc.ts
 src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui +
-               playback + mc + trial), analysisLayout.ts (lens presets and pure layout reducers),
+               playback + mc + trial), playbackCommands.ts (store-free playback intents:
+               play, pause, scrub, frame, publish, newRun and their transitions),
+               analysisLayout.ts (lens presets and pure layout reducers),
                layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
                MC/trial state shapes), scenarioInstall.ts (installScenario: the per-operation
                edit/undo/redo/replace response of history, selection, ring overrides,
@@ -205,7 +216,7 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                kills, events), trackState.ts
                (phase at t, trackTimelineOf), sweepAt.ts (the per-publication sweep memo:
                hits, track states, effector states, held sensors), tactics.ts (threat
-               tactics), raid.ts, runSession.ts,
+               tactics), raid.ts, runSession.ts (thin adapter: toggle and reset commands),
                policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
                McSummary), mc.worker.ts + mcClient.ts (the replicate worker), trial.ts
                (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
@@ -242,7 +253,7 @@ src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over s
                spreadText.ts),
                LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/,
                analysis/detail/, analysis/ForecastSettings.tsx for forecast/MC controls),
-               TimelineBar (owns the rAF loop), CommandPalette,
+               TimelineBar (owns the rAF loop; publishes the clock only), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
 src/io/        persist.ts (autosave, fillScenario, adoptSeedProvenance, JSON and library
                import/export, runExportObject), runResultGroups.ts (per-group basis/units

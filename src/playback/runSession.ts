@@ -6,9 +6,7 @@ export function resetAnalysisRun(reason: RunResetReason = 'manual'): void {
   useStore.getState().resetRun(reason)
 }
 
-/** Repeated Play reuses preparation; completed transport replays the retained draw. */
+/** Play or pause; the store's playback commands resolve prepare, resume, replay or reset. */
 export function toggleAnalysisRun(): void {
-  const st = useStore.getState()
-  if (st.playback.playing) st.pauseRun()
-  else st.startTrialRun()
+  useStore.getState().playbackCommand({ type: 'toggle' })
 }
