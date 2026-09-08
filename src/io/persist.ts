@@ -28,8 +28,10 @@ import type { AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
 import { SCENARIO_LEGACY_FIELDS, fillContainers } from './compat'
 import { parseLibraryData, validateScenarioReferences, validateScenarioShape } from './validateScenario'
-import { MAX_IMAGE_CODE_UNITS, validateImage } from './runtimeValidation'
-import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+import { MAX_IMAGE_CODE_UNITS, objectAt, validateImage } from './runtimeValidation'
+import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+import type { PinnedBaseline } from '../state/baseline'
+import { validateMcSummary } from '../state/baseline'
 
 /**
  * The one Board load boundary: validate the shape, then fill fields added after
@@ -125,9 +127,71 @@ export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
 
 const scenarioAutosave = createAutosave(scenarioAutosaveAdapter)
 
-/** Read the saved scenario back into the store at startup. Runs at most once. */
+/**
+ * The persisted baseline record. A cleared baseline is written as null rather
+ * than removed, so a pending pin write can never resurrect a cleared baseline.
+ */
+export interface BaselineSave {
+  schemaVersion: 1
+  baseline: PinnedBaseline | null
+}
+
+/**
+ * Parse a raw baseline save. The scenario passes the one Board load boundary;
+ * the summary passes `validateMcSummary`, which restores NaN from null.
+ */
+export function parseBaselineSave(raw: string): BaselineSave {
+  const save = objectAt(JSON.parse(raw), 'baselineSave')
+  if (save.schemaVersion !== 1) throw new Error('baselineSave.schemaVersion: expected 1')
+  if (save.baseline === null) return { schemaVersion: 1, baseline: null }
+  const b = objectAt(save.baseline, 'baseline')
+  for (const key of ['pinnedAt', 'label', 'scenarioHash'] as const) {
+    if (typeof b[key] !== 'string' || !b[key]) throw new Error(`baseline.${key}: expected a nonempty string`)
+  }
+  if (!Number.isFinite(Date.parse(b.pinnedAt as string))) throw new Error('baseline.pinnedAt: expected an ISO time')
+  return { schemaVersion: 1, baseline: {
+    pinnedAt: b.pinnedAt as string, label: b.label as string, scenarioHash: b.scenarioHash as string,
+    scenario: parseScenarioData(b.scenario), mc: validateMcSummary(b.mc, 'baseline.mc'),
+  } }
+}
+
+const BASELINE_ERROR = 'Baseline not saved'
+
+/** The baseline half of the lifecycle: its own key, parser and record, sharing the Board save status. */
+export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
+  key: BOARD_BASELINE,
+  recoveryPrefix: BASELINE_RECOVERY_PREFIX,
+  label: 'baseline',
+  parse: parseBaselineSave,
+  adopt: (save) => useStore.getState().restoreBaseline(save.baseline),
+  deferred: true,
+  subscribe: (changed) =>
+    useStore.subscribe((state, prev) => {
+      if (state.baseline === prev.baseline) return
+      changed({ schemaVersion: 1, baseline: state.baseline })
+    }),
+  // The scenario stamp stays the scenario's; a baseline write clears only its own error.
+  reportSaved: () => {
+    const store = useStore.getState()
+    if (store.save.error?.startsWith(BASELINE_ERROR)) store.setSaveState(store.save.lastAutosaveAt, null)
+  },
+  reportPaused: (message) => {
+    const store = useStore.getState()
+    store.setSaveState(store.save.lastAutosaveAt, message)
+  },
+  reportWriteFailure: (error) => {
+    const store = useStore.getState()
+    const reason = error instanceof Error ? error.message || error.name : 'storage error'
+    store.setSaveState(store.save.lastAutosaveAt, `${BASELINE_ERROR}: ${reason}. Pin again when storage is available.`)
+  },
+}
+
+const baselineAutosave = createAutosave(baselineAutosaveAdapter)
+
+/** Read the saved scenario, then the saved baseline, back into the store at startup. Runs at most once. */
 export function restoreAutosave(): void {
   scenarioAutosave.restore()
+  baselineAutosave.restore()
 }
 
 /**
@@ -137,6 +201,7 @@ export function restoreAutosave(): void {
  */
 export function startAutosave(): void {
   scenarioAutosave.observe()
+  baselineAutosave.observe()
 }
 
 function downloadJson(data: unknown, filename: string): void {

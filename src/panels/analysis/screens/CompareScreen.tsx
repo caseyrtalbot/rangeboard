@@ -7,9 +7,12 @@ import type { TrialResultView } from '../../../analysis/trialResult'
 import { trialSeriesOf } from '../../../analysis/trialSeries'
 import { BandChart } from '../../../charts/BandChart'
 import { formatTime } from '../../../geometry/geo'
-import { runSettings } from '../../../model/types'
+import { entityActive, runSettings } from '../../../model/types'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DT } from '../../../playback/clock'
+import { analysisBasisSignature } from '../../../state/analysisBasis'
+import type { PinnedBaseline } from '../../../state/baseline'
+import { defaultBaselineLabel } from '../../../state/baseline'
 import { selectRunComplete } from '../../../state/selectors'
 import { useStore } from '../../../state/store'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
@@ -19,6 +22,8 @@ import { currentSummary, formatCount, statMean, timeStatSub } from '../widgets/m
 import { SEVERITY_PILL } from '../widgets/RunValidityWidget'
 
 type DeltaRow = { label: string; trial: number | null; mean: number | null; lo: number | null; hi: number | null; unit: string; note?: string }
+type MeanKey = 'kills' | 'leakers' | 'firstDetect' | 'minWarning' | 'salvos'
+const ROW_KEYS: MeanKey[] = ['kills', 'leakers', 'firstDetect', 'minWarning', 'salvos']
 // Interval ends and units must remain readable at the panel's minimum width.
 const cellStyle: CSSProperties = { whiteSpace: 'normal', overflowWrap: 'anywhere', overflow: 'visible' }
 const finite = (value: number | null | undefined) => value != null && Number.isFinite(value) ? value : null
@@ -27,11 +32,28 @@ const minimum = (values: Array<number | null>) => {
   return defined.length ? Math.min(...defined) : null
 }
 
-function CompletedCompare({ view, mc }: { view: TrialResultView; mc: McSummary }) {
+/** End-of-run ensemble means of the five compared quantities, on the summary's own horizon and population. */
+function ensembleMeans(mc: McSummary, hasAsset: boolean) {
+  const population = Object.values(mc.perThreat).reduce((sum, row) => sum + row.shipCount, 0)
+  const i = Math.floor(mc.durationS / DT)
+  const endMean = (band: BandSeries) => mc.replicates > 0 ? finite(band.mean[i]) : null
+  const salvos = Object.values(mc.perEffector).map(row => row.salvos)
+  // Means add; marginal intervals cannot supply the covariance of total salvos.
+  const salvoMean = mc.replicates > 0 && salvos.length > 0 && salvos.every(stat => stat.n === mc.replicates && statMean(stat) != null)
+    ? salvos.reduce((sum, stat) => sum + stat.mean, 0) : null
+  const means: Record<MeanKey, number | null> = {
+    kills: endMean(mc.kills), leakers: hasAsset ? endMean(mc.leakers) : null,
+    firstDetect: statMean(mc.firstDetectS), minWarning: hasAsset ? statMean(mc.minWarningS) : null, salvos: salvoMean,
+  }
+  return { population, i, salvos, salvoMean, means }
+}
+
+const signed = (value: number) => `${value > 0 ? '+' : ''}${formatCount(value)}`
+
+function CompletedCompare({ view, mc, baseline }: { view: TrialResultView; mc: McSummary; baseline: PinnedBaseline | null }) {
   const data = useMemo(() => {
     const kpis = trialKpisAt(view, view.durationS)
-    const population = Object.values(mc.perThreat).reduce((sum, row) => sum + row.shipCount, 0)
-    const i = Math.floor(mc.durationS / DT)
+    const { population, i, salvos, salvoMean } = ensembleMeans(mc, view.hasActiveAsset)
     const countRow = (label: string, trial: number | null, band: BandSeries, available = true): DeltaRow => ({
       label, trial, mean: available && mc.replicates > 0 ? finite(band.mean[i]) : null,
       lo: available && mc.replicates >= 2 ? finite(band.lo[i]) : null,
@@ -43,10 +65,6 @@ function CompletedCompare({ view, mc }: { view: TrialResultView; mc: McSummary }
       hi: available && stat.n >= 30 && stat.conf === 0.95 ? finite(stat.hi) : null,
       unit: label === 'First detect' ? 's from T0' : 's', note: available ? timeStatSub(stat, quantity) : 'No defended asset; unavailable.',
     })
-    const salvos = Object.values(mc.perEffector).map(row => row.salvos)
-    // Means add; marginal intervals cannot supply the covariance of total salvos.
-    const salvoMean = mc.replicates > 0 && salvos.length > 0 && salvos.every(stat => stat.n === mc.replicates && statMean(stat) != null)
-      ? salvos.reduce((sum, stat) => sum + stat.mean, 0) : null
     const salvoBand = salvos.length === 1 && salvos[0].n >= 2 && salvos[0].conf === 0.95 ? salvos[0] : null
     const rows = [
       countRow('Kills', kpis.kills, mc.kills),
@@ -62,25 +80,41 @@ function CompletedCompare({ view, mc }: { view: TrialResultView; mc: McSummary }
     return { rows, population, trial: trialSeriesOf(view, view.durationS).kpi.find(series => series.id === 'kpi.expectedKills')!,
       findings: validity.findings.filter(finding => finding.id !== 'planning-envelope') }
   }, [view, mc])
+  // The baseline keeps its own population and horizon; only means are compared, never bands.
+  const base = useMemo(() => {
+    if (!baseline) return null
+    const hasAsset = baseline.scenario.entities.some(e => e.kind === 'asset' && entityActive(e))
+    const { population, means } = ensembleMeans(baseline.mc, hasAsset)
+    const series = { id: 'baseline', label: 'Baseline mean', unit: 'members', color: 'text-dim', kind: 'step' as const,
+      values: baseline.mc.replicates > 0 ? baseline.mc.kills.mean : baseline.mc.kills.mean.map(() => NaN) }
+    return { population, means, series, hasAsset }
+  }, [baseline])
   const value = (number: number | null, unit: string) => number == null ? '—' : `${formatCount(number)} ${unit}`
+  const headers = base ? ['Quantity', 'Trial', 'Ensemble mean', '95 % band', 'Baseline', 'Current − Baseline', 'Flag'] : ['Quantity', 'Trial', 'Ensemble mean', '95 % band', 'Flag']
+  const widths = base ? ['16%', '12%', '15%', '19%', '14%', '12%', '12%'] : ['18%', '18%', '20%', '24%', '20%']
   return (
     <>
       <p className="muted small">Simulated trial · one draw · seed {view.manifest.seed} · through T+{formatTime(view.durationS)}. Kills exclude late effects. Bands are intervals on ensemble means, not replicate ranges; count bounds may use Wilson or rule of three.</p>
-      <BandChart ensemble={mc.kills} trial={data.trial} durationS={mc.durationS} population={data.population} replicates={mc.replicates} />
+      <BandChart ensemble={mc.kills} trial={data.trial} baseline={base?.series} durationS={mc.durationS} population={data.population} replicates={mc.replicates} />
       <table className="tb tb-dense" aria-label={`Trial against ensemble through T+${formatTime(view.durationS)}`}>
         <thead><tr>
-          {(['Quantity', 'Trial', 'Ensemble mean', '95 % band', 'Flag'] as const).map((label, i) => (
-            <th key={label} scope="col" style={{ ...cellStyle, width: ['18%', '18%', '20%', '24%', '20%'][i] }}>{label}</th>
+          {headers.map((label, i) => (
+            <th key={label} scope="col" style={{ ...cellStyle, width: widths[i] }}>{label}</th>
           ))}
         </tr></thead>
-        <tbody>{data.rows.map(row => {
+        <tbody>{data.rows.map((row, r) => {
           const comparable = row.trial != null && row.mean != null && row.lo != null && row.hi != null
           const inside = comparable && row.trial! >= row.lo! && row.trial! <= row.hi!
+          const baseMean = base ? base.means[ROW_KEYS[r]] : null
+          const baseUnit = r < 2 && base ? `/${base.population} members` : row.unit
+          const delta = row.mean != null && baseMean != null ? row.mean - baseMean : null
           return <tr key={row.label}>
-            <th scope="row" style={{ ...cellStyle, width: '18%' }}>{row.label}</th>
+            <th scope="row" style={{ ...cellStyle, width: widths[0] }}>{row.label}</th>
             <td style={cellStyle}>{value(row.trial, row.unit)}</td>
             <td style={cellStyle}>{value(row.mean, row.unit)}</td>
             <td style={cellStyle}>{row.lo == null || row.hi == null ? 'Unavailable' : `${formatCount(row.lo)} to ${formatCount(row.hi)} ${row.unit}`}</td>
+            {base && <td style={cellStyle}>{value(baseMean, baseUnit)}</td>}
+            {base && <td style={cellStyle}>{delta == null ? '—' : `${signed(delta)} ${r < 2 ? 'members' : row.unit}`}</td>}
             <td style={cellStyle}>{comparable ? <State tone={inside ? 'nominal' : 'warning'} style={{ whiteSpace: 'normal', fontSize: 'var(--type-dense-size)' }}>{inside ? 'inside' : 'outside'}</State> : '—'}</td>
           </tr>
         })}</tbody>
@@ -89,6 +123,7 @@ function CompletedCompare({ view, mc }: { view: TrialResultView; mc: McSummary }
         <summary>Interval and definedness details</summary>
         {data.rows.filter(row => row.note).map(row => <p className="muted small" key={row.label}>{row.label}: {row.note}</p>)}
         {!view.hasActiveAsset && <p className="muted small">No defended asset · arrival and leakage unavailable.</p>}
+        {baseline && base && <p className="muted small">Baseline: {baseline.label} · {baseline.mc.replicates} replicates · seed {baseline.mc.seed} · full run T+{formatTime(baseline.mc.durationS)} · {base.population} members{base.population !== data.population ? ' (population differs; count deltas are in members)' : ''}{!base.hasAsset ? ' · no defended asset, leakage and warning unavailable' : ''}. Deltas are current ensemble mean minus baseline mean.</p>}
       </details>
       <section aria-label="Findings">
         <h4>Findings</h4>
@@ -105,8 +140,26 @@ function CompletedCompare({ view, mc }: { view: TrialResultView; mc: McSummary }
         </div>)}
         {!data.findings.length && <p className="muted small">No findings.</p>}
       </section>
-      <div className="insp-row"><span>No pinned baseline</span><button className="mini" type="button" disabled>Pin</button></div>
     </>
+  )
+}
+
+/** Pin, Clear and the pinned label. Pin needs a done summary for the current run and basis. */
+function BaselineRow({ mc, current }: { mc: McSummary | null; current: boolean }) {
+  const baseline = useStore(state => state.baseline)
+  const pinBaseline = useStore(state => state.pinBaseline)
+  const clearBaseline = useStore(state => state.clearBaseline)
+  // The default label already carries the pin time; a custom label gets it appended.
+  const pinnedAt = baseline && baseline.label !== defaultBaselineLabel(baseline.scenario.name, baseline.pinnedAt)
+    ? new Date(baseline.pinnedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) : null
+  return (
+    <div className="insp-row" aria-label="Baseline">
+      <span>{baseline ? <>Baseline · {baseline.label}{pinnedAt && <span className="muted small"> pinned {pinnedAt}</span>}</> : 'No pinned baseline'}</span>
+      <span style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        {baseline && <button className="mini" type="button" onClick={clearBaseline}>Clear</button>}
+        <button className="mini" type="button" disabled={!mc || !current} onClick={() => pinBaseline()}>Pin</button>
+      </span>
+    </div>
   )
 }
 
@@ -119,7 +172,10 @@ export function CompareScreen() {
   const runMonteCarlo = useStore(state => state.runMonteCarlo)
   const complete = useStore(selectRunComplete)
   const horizon = useStore(state => selectTrialHorizon(state, state.playback.observedThroughS))
+  const baseline = useStore(state => state.baseline)
   const mc = currentSummary(mcState, runId)
+  // Stale marking already covers an edit; the check also guards a summary restored without a signature.
+  const current = useMemo(() => mc != null && (mcState.basisSignature == null || mcState.basisSignature === analysisBasisSignature(scenario)), [mc, mcState.basisSignature, scenario])
   if (selection.status === 'idle' || selection.status === 'cancelled' || (selection.status === 'ready' && !snapshot)) {
     return <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
   }
@@ -131,8 +187,9 @@ export function CompareScreen() {
       <h3>Compare</h3>
       <p className="analysis-scope">Monte Carlo · {mc.replicates} replicates · {runSettings(scenario).uncertainty === 'total' ? 'Total uncertainty' : 'Aleatory uncertainty'} · seed {mc.seed} · 95 % band · full run T+{formatTime(mc.durationS)}</p>
       {view && complete && horizon >= view.durationS && mc.durationS === view.durationS
-        ? <CompletedCompare view={view} mc={mc} />
+        ? <CompletedCompare view={view} mc={mc} baseline={baseline} />
         : <p className="muted small">{!view ? trialStateText(selection) : mc.durationS !== view.durationS ? 'Ensemble and trial horizons differ. Run Monte Carlo again for this trial.' : 'Trial in progress. Complete playback in Execute to compare.'}</p>}
+      <BaselineRow mc={mc} current={current} />
     </section>
   )
 }

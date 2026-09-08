@@ -6,10 +6,14 @@ import type { TeState } from '../te/model/types'
 import { emptyCampaign } from '../te/model/empty'
 import { useTeStore } from '../te/state/teStore'
 import { teAutosaveAdapter } from '../te/io/persistTe'
-import { scenarioAutosaveAdapter } from './persist'
+import type { BaselineSave } from './persist'
+import { baselineAutosaveAdapter, scenarioAutosaveAdapter } from './persist'
 import type { Autosave, AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
-import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY, TE_RECOVERY_PREFIX } from './storageKeys'
+import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY, TE_RECOVERY_PREFIX } from './storageKeys'
+import { runReplicates } from '../playback/mcRun'
+import { buildBaseline } from '../state/baseline'
+import { IDLE_MC } from '../state/runState'
 import { allowAutosave, assertAutosaveAllowed, dismissRecoveryNotice, getRecoveryNotices } from './recovery'
 
 function storage(initial: Record<string, string> = {}, fail?: (key: string) => boolean) {
@@ -84,12 +88,31 @@ const te: Lane<TeState> = {
   status: () => useTeStore.getState().saveError,
 }
 
+/** A finished ensemble on the empty scenario: its undefined statistics round-trip as null. */
+const summary = runReplicates({ ...emptyScenario(), replicates: 1 })
+const baseline: Lane<BaselineSave> = {
+  adapter: baselineAutosaveAdapter,
+  key: BOARD_BASELINE,
+  prefix: BASELINE_RECOVERY_PREFIX,
+  raw: (label) => JSON.stringify({ schemaVersion: 1, baseline: buildBaseline(emptyScenario(), summary, 'hash', label) }),
+  corrupt: JSON.stringify({ schemaVersion: 1, baseline: { ...buildBaseline(emptyScenario(), summary, 'hash', 'bad'), mc: { ...summary, kills: null } } }),
+  edit: (label) => {
+    const st = useStore.getState()
+    useStore.setState({ mc: { ...IDLE_MC, status: 'done', runId: st.playback.runId, summary } })
+    st.pinBaseline(label)
+  },
+  held: () => useStore.getState().baseline?.label,
+  written: (raw) => (JSON.parse(raw) as BaselineSave).baseline!.label,
+  status: () => useStore.getState().save.error,
+}
+
 const running: Autosave<unknown>[] = []
 
-/** Run one lifecycle case against both adapters. Each lane keeps its own record type. */
+/** Run one lifecycle case against every adapter. Each lane keeps its own record type. */
 function eachLane(what: string, run: <R>(lane: Lane<R>) => void): void {
   it(`Board ${what}`, () => run(board))
   it(`T&E ${what}`, () => run(te))
+  it(`Baseline ${what}`, () => run(baseline))
 }
 
 /** Every instance is restored first: the T&E lane admits no write before that. */
@@ -104,7 +127,8 @@ function started<R>(lane: Lane<R>): Autosave<R> {
 afterEach(() => {
   running.splice(0).forEach(autosave => autosave.stop())
   getRecoveryNotices().forEach(notice => dismissRecoveryNotice(notice.id))
-  allowAutosave(SCENARIO_KEY); allowAutosave(TE_KEY)
+  allowAutosave(SCENARIO_KEY); allowAutosave(TE_KEY); allowAutosave(BOARD_BASELINE)
+  useStore.setState({ baseline: null, mc: IDLE_MC, save: { lastAutosaveAt: null, error: null } })
   vi.restoreAllMocks(); vi.unstubAllGlobals()
 })
 
@@ -171,6 +195,45 @@ describe('autosave lifecycle', () => {
     te.edit('after restore')
     timers.runTimers()
     expect(te.written(data.get(TE_KEY)!)).toBe('after restore')
+  })
+
+  it('writes a cleared baseline as null under the same key, so a pending pin cannot outlive a clear', () => {
+    const { data } = storage({ [BOARD_BASELINE]: baseline.raw('saved') })
+    const timers = browser()
+    started(baseline)
+    expect(baseline.held()).toBe('saved')
+    baseline.edit('replaced')
+    useStore.getState().clearBaseline()
+    timers.runTimers()
+    expect(JSON.parse(data.get(BOARD_BASELINE)!)).toEqual({ schemaVersion: 1, baseline: null })
+    expect(createAutosave(baselineAutosaveAdapter).read()).toEqual({ schemaVersion: 1, baseline: null })
+  })
+
+  it('restores a baseline whose undefined statistics were saved as null, as NaN', () => {
+    storage({ [BOARD_BASELINE]: baseline.raw('nan') }); browser()
+    expect(baseline.raw('nan')).toContain('"mean":null')
+    createAutosave(baselineAutosaveAdapter).restore()
+    const restored = useStore.getState().baseline!
+    expect(Number.isNaN(restored.mc.firstDetectS.mean)).toBe(true)
+    expect(restored.mc).toEqual(summary)
+    expect(restored.scenario.schemaVersion).toBe(1)
+    expect(restored.scenarioHash).toBe('hash')
+  })
+
+  it('keeps the scenario stamp and clears only a baseline write error after the next baseline write', () => {
+    let failing = true
+    const { data } = storage({ [BOARD_BASELINE]: baseline.raw('saved') }, key => failing && key === BOARD_BASELINE)
+    const timers = browser()
+    useStore.getState().setSaveState(1234, null)
+    started(baseline)
+    baseline.edit('cannot save')
+    timers.runTimers()
+    expect(useStore.getState().save).toEqual({ lastAutosaveAt: 1234, error: expect.stringContaining('Baseline not saved') })
+    failing = false
+    baseline.edit('saved now')
+    timers.runTimers()
+    expect(baseline.written(data.get(BOARD_BASELINE)!)).toBe('saved now')
+    expect(useStore.getState().save).toEqual({ lastAutosaveAt: 1234, error: null })
   })
 
   eachLane('writes nothing after a stop', (lane) => {

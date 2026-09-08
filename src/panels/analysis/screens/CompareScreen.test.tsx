@@ -94,7 +94,50 @@ describe('CompareScreen', () => {
     expect(html).toContain('First detect: MC conditional mean')
     expect(html).toContain('detected in 40 of 40')
     expect(html).toContain('No pinned baseline')
+    expect(html).not.toContain('disabled="">Pin</button>')
+    expect(html).not.toContain('Current − Baseline')
+    expect(html).not.toContain('>Clear</button>')
+  })
+
+  it('pins the current ensemble, compares against it and clears it from the Baseline row', () => {
+    let html = render()
+    interaction.buttons.get('Pin')!()
+    const pinned = useStore.getState().baseline!
+    expect(pinned.mc.seed).toBe(7)
+    expect(pinned.scenario).toBe(useStore.getState().scenario)
+    expect(pinned.label).toContain(useStore.getState().scenario.name)
+    // A different current ensemble against the pinned one: one more kill, one fewer salvo.
+    const mc = useStore.getState().mc.summary!
+    useStore.setState({ mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(3.5, 3, 4), perEffector: { gun: mc.perEffector.gun } } } })
+    html = render()
+    expect(html).toContain(`Baseline · ${pinned.label}`)
+    expect(html).not.toContain('pinned ')
+    useStore.setState({ baseline: { ...pinned, label: 'Reference' } })
+    expect(render()).toContain('Baseline · Reference<span class="muted small"> pinned ')
+    useStore.setState({ baseline: pinned })
+    expect(html).toContain('Baseline mean, dashed')
+    expect(html).toContain('>Baseline</th>')
+    expect(html).toContain('>Current − Baseline</th>')
+    expect(row(html, 'Kills')).toContain('>2.5 /9 members</td>')
+    expect(row(html, 'Kills')).toContain('>+1 members</td>')
+    expect(row(html, 'Salvos')).toContain('>8 salvos</td><td')
+    expect(row(html, 'Salvos')).toContain('>-4 salvos</td>')
+    expect(row(html, 'Min warning').match(/>4 s<\/td>/g)).toHaveLength(2)
+    expect(row(html, 'Min warning')).toContain('>0 s</td>')
+    expect(html).toContain('Deltas are current ensemble mean minus baseline mean.')
+    interaction.buttons.get('Clear')!()
+    expect(useStore.getState().baseline).toBeNull()
+    html = render()
+    expect(html).toContain('No pinned baseline')
+    expect(html).not.toContain('>Baseline</th>')
+  })
+
+  it('disables Pin when the done summary belongs to another basis', () => {
+    useStore.setState({ mc: { ...useStore.getState().mc, basisSignature: 'another basis' } })
+    const html = render()
     expect(html).toContain('disabled="">Pin</button>')
+    interaction.buttons.get('Pin')!()
+    expect(useStore.getState().baseline).toBeNull()
   })
 
   it('does not compare incomplete playback or a partially retained trial', () => {

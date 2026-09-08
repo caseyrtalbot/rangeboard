@@ -31,3 +31,7 @@ export const PALETTE_COLLAPSED_KEY = 'rangeboard.palette.collapsed'
 export const ENGSTRIP_OPEN_KEY = 'rangeboard.engstrip.open'
 /** Analysis lens layout and user presets (`AnalysisViewState`). */
 export const ANALYSIS_KEY = 'rangeboard.analysis.v1'
+/** Pinned baseline save (`BaselineSave`): one laydown and its ensemble kept for Compare. */
+export const BOARD_BASELINE = 'rangeboard.baseline.v1'
+/** Copy of an unreadable baseline save; suffix is the epoch ms of the rescue. */
+export const BASELINE_RECOVERY_PREFIX = 'rangeboard.baseline.recovered.'
