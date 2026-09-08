@@ -31,8 +31,7 @@ export function defaultEffectRadiusM(warheadKg: number | null | undefined): numb
     const tier = EFFECT_RADIUS_PLANNING_M[i]
     if (i === 0 ? warheadKg < tier.maxKg : warheadKg <= tier.maxKg) return tier.radiusM
   }
-  // Unreachable: the last tier bound is Infinity.
-  return EFFECT_RADIUS_PLANNING_M[EFFECT_RADIUS_PLANNING_M.length - 1].radiusM
+  return null
 }
 
 /**

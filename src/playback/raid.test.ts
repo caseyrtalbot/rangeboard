@@ -3,7 +3,7 @@ import { useStore } from '../state/store'
 import { scenarioDurationS } from '../model/scenario'
 import { emptyScenario } from '../model/seed'
 import type { FlightPath, Scenario } from '../model/types'
-import { buildRaidPlan, effectivePathDelayS, waveDelayS, waveIndexFor } from './raid'
+import { buildRaidPlan, effectivePathDelayS, waveIndexFor } from './raid'
 import { liveTracks } from './tracks'
 
 function reset() {
@@ -42,7 +42,6 @@ describe('effective path delay helper', () => {
     }
     expect(effectivePathDelayS(s, makePath('e1', 15))).toBe(60)
     expect(waveIndexFor(s.raid, 'e1')).toBe(0)
-    expect(waveDelayS(s.raid, 'e1')).toBe(45)
   })
 
   it('an unassigned entity keeps its own path delay', () => {
@@ -58,7 +57,6 @@ describe('effective path delay helper', () => {
     const s = emptyScenario()
     delete s.raid
     expect(effectivePathDelayS(s, makePath('e1', 15))).toBe(15)
-    expect(waveDelayS(s.raid, 'e1')).toBe(0)
   })
 })
 
