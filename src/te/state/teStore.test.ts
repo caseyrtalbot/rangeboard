@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { linkedRecordFill, useTeStore } from './teStore'
+import { useTeStore } from './teStore'
+import { linkedRecordFill } from '../model/cardLinks'
 import { nextId, bumpMajor, bumpMinor, displayId } from '../model/ids'
 import { deleteImpacts, hasPlaceholder } from '../validate'
 
@@ -472,6 +473,76 @@ describe('linkedRecordFill', () => {
     expect(fill.redFixed).toBe('payload')
     const refill = linkedRecordFill(c, card, true)
     expect(refill.redControlled).toBe('ingress axis')
+  })
+})
+
+describe('card links and fill on an existing card', () => {
+  it('merges a cell: lists union and a single link changes only where the cell names a record', () => {
+    const st = useTeStore.getState()
+    const qCard = st.addQuestion()
+    const qCell = st.addQuestion()
+    const mCard = st.addMeasure(qCard)
+    const mCell = st.addMeasure(qCell)
+    const cfg = st.addConfig()
+    const thr = st.addThreat()
+    st.patchItem('threats', thr, { redControlledVariables: 'ingress axis' })
+    const cell = st.addMatrixCell()
+    st.patchItem('matrix', cell, {
+      questionId: qCell,
+      threatId: thr,
+      measureIds: [mCard, mCell],
+      orderOrBlock: 'blocked by day',
+    })
+    const cardId = st.addCard({ questionIds: [qCard], measureIds: [mCard], configId: cfg })
+    st.linkCardCell(cardId, cell)
+    const card = campaign().cards.find((x) => x.id === cardId)!
+    expect(card.matrixCellId).toBe(cell)
+    expect(card.questionIds).toEqual([qCard, qCell])
+    expect(card.measureIds).toEqual([mCard, mCell])
+    expect(card.threatId).toBe(thr)
+    // The cell names no configuration, so the card keeps its own.
+    expect(card.configId).toBe(cfg)
+    expect(card.redControlled).toBe('ingress axis')
+    expect(card.orderAndBlocking).toBe('blocked by day')
+  })
+
+  it('a link change fills the empty fields the new link allows', () => {
+    const st = useTeStore.getState()
+    const cond = st.addCondition()
+    st.patchItem('conditions', cond, { name: 'Night clear', weatherAndIllumination: 'clear, no moon' })
+    const cardId = st.addCard()
+    st.setCardLinks(cardId, { conditionId: cond })
+    const card = campaign().cards.find((x) => x.id === cardId)!
+    expect(card.conditionId).toBe(cond)
+    expect(card.conditionNote).toContain('Night clear')
+  })
+
+  it('fill keeps written text and refill writes the linked value over it', () => {
+    const st = useTeStore.getState()
+    const thr = st.addThreat()
+    st.patchItem('threats', thr, { redControlledVariables: 'ingress axis', redFixedVariables: 'payload' })
+    const cardId = st.addCard({ threatId: thr, redControlled: 'user text' })
+    st.fillCard(cardId)
+    const filled = campaign().cards.find((x) => x.id === cardId)!
+    expect(filled.redControlled).toBe('user text')
+    expect(filled.redFixed).toBe('payload')
+    expect(filled.eventMarks).toContain('first detection')
+    st.refillCard(cardId)
+    const refilled = campaign().cards.find((x) => x.id === cardId)!
+    expect(refilled.redControlled).toBe('ingress axis')
+  })
+
+  it('an issued card takes no link, fill or refill change', () => {
+    const st = useTeStore.getState()
+    const cardId = st.addCard({ title: 'Issued card' })
+    issueFixtureCard(cardId)
+    const before = campaign().cards.find((x) => x.id === cardId)!
+    const other = st.addThreat()
+    st.patchItem('threats', other, { redControlledVariables: 'new axis' })
+    st.setCardLinks(cardId, { threatId: other })
+    st.fillCard(cardId)
+    st.refillCard(cardId)
+    expect(campaign().cards.find((x) => x.id === cardId)).toEqual(before)
   })
 })
 

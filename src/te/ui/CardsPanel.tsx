@@ -8,7 +8,8 @@
 import { useState } from 'react'
 import type { FactorClass, ProcedureStep, TeCampaign, TeCard, TeRecordStatus } from '../model/types'
 import { RUN_ROLES } from '../model/types'
-import { linkedRecordFill, useTeStore } from '../state/teStore'
+import { useTeStore } from '../state/teStore'
+import { DEFAULT_EVENT_MARKS, linkedRecordFill } from '../model/cardLinks'
 import { emptyProcedureStep, nowIso } from '../model/empty'
 import { cardIssueBlockers, sanitizeCardTemplatePatch } from '../validate'
 import { CARD_TEMPLATES } from '../seed/cardTemplates'
@@ -49,19 +50,6 @@ import {
   OrderBlockingBuilder,
   RedStateBuilder,
 } from './CardBlocks'
-
-const DEFAULT_EVENT_MARKS = [
-  'start recording',
-  'start run',
-  'threat enters eligibility region',
-  'first detection',
-  'first stable track',
-  'usable C2 track',
-  'operator decision',
-  'protected-boundary crossing',
-  'run complete',
-  'stop recording',
-]
 
 function statusKind(s: TeRecordStatus): 'good' | 'warn' | 'bad' | 'neutral' {
   if (s === 'issued') return 'good'
@@ -166,7 +154,8 @@ function CardStartRow({ campaign }: { campaign: TeCampaign }) {
 }
 
 function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) {
-  const { patchItem, issueCard, reviseCard, selectRecord } = useTeStore.getState()
+  const { patchItem, issueCard, reviseCard, selectRecord, linkCardCell, setCardLinks, fillCard, refillCard } =
+    useTeStore.getState()
   const [printing, setPrinting] = useState(false)
   const [showCellPicker, setShowCellPicker] = useState(false)
   const frozen = card.status === 'issued' || card.status === 'superseded'
@@ -191,45 +180,15 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
   const runs = campaign.runs.filter((r) => r.cardId === card.id)
   const devs = campaign.deviations.filter((d) => d.cardId === card.id)
 
-  /** Applies a link change plus the empty-field fill the new links allow. */
-  const applyLinks = (links: Partial<TeCard>) => {
-    const next = { ...card, ...links }
-    set({ ...links, ...linkedRecordFill(campaign, next) })
-  }
-
+  // Link and fill rules live in the store; the panel passes the selection only.
   const pickMatrixCell = (v: string | null) => {
     setShowCellPicker(false)
-    const cell = campaign.matrix.find((x) => x.id === v)
-    if (!cell) {
-      set({ matrixCellId: v })
-      return
-    }
-    applyLinks({
-      matrixCellId: v,
-      questionIds: [...new Set([...card.questionIds, cell.questionId])].filter((id) => id !== ''),
-      hypothesisIds:
-        cell.hypothesisId && !card.hypothesisIds.includes(cell.hypothesisId)
-          ? [...card.hypothesisIds, cell.hypothesisId]
-          : card.hypothesisIds,
-      configId: cell.configId || card.configId,
-      threatId: cell.threatId || card.threatId,
-      conditionId: cell.conditionId || card.conditionId,
-      measureIds: [...new Set([...card.measureIds, ...cell.measureIds])],
-    })
-  }
-
-  const autoFill = () => {
-    const patch: Partial<TeCard> = linkedRecordFill(campaign, card)
-    if (card.eventMarks.length === 0) patch.eventMarks = [...DEFAULT_EVENT_MARKS]
-    if (card.preconditions.length === 0 && campaign.authorities.length > 0) {
-      patch.preconditions = campaign.authorities.map((a) => `${a.authorityType || 'authority'}: ${a.status}`)
-    }
-    set(patch)
+    linkCardCell(card.id, v)
   }
 
   const refill = () => {
     if (!window.confirm('Refill every linked field? This overwrites existing text.')) return
-    set(linkedRecordFill(campaign, card, true))
+    refillCard(card.id)
   }
 
   // Linked records and live derivations. The stored string stays the truth;
@@ -384,7 +343,7 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
       <div className="inspector-actions">
         <Pill kind={statusKind(card.status)} text={`${card.status} ${card.version}`} />
         <span className="muted small num">{card.cardCode}</span>
-        <button type="button" className="mini" disabled={card.status !== 'draft'} onClick={autoFill}>
+        <button type="button" className="mini" disabled={card.status !== 'draft'} onClick={() => fillCard(card.id)}>
           Auto-fill from design
         </button>
         <button type="button" className="mini" disabled={frozen} onClick={refill}>
@@ -450,7 +409,7 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
           label="Questions"
           multi
           values={card.questionIds}
-          onChangeMulti={(v) => applyLinks({ questionIds: v })}
+          onChangeMulti={(v) => setCardLinks(card.id, { questionIds: v })}
           options={campaign.questions.map((q) => ({ id: q.id, label: q.wording.slice(0, 60) || q.id, sub: q.id }))}
           disabled={frozen}
         />
@@ -459,7 +418,7 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
             label="Hypotheses"
             multi
             values={card.hypothesisIds}
-            onChangeMulti={(v) => applyLinks({ hypothesisIds: v })}
+            onChangeMulti={(v) => setCardLinks(card.id, { hypothesisIds: v })}
             options={campaign.hypotheses.map((h) => ({
               id: h.id,
               label: h.producesBehavior.slice(0, 60) || h.id,
@@ -472,7 +431,7 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
           label="Measures"
           multi
           values={card.measureIds}
-          onChangeMulti={(v) => applyLinks({ measureIds: v })}
+          onChangeMulti={(v) => setCardLinks(card.id, { measureIds: v })}
           options={campaign.measures.map((m) => ({
             id: m.id,
             label: m.name || m.id,
@@ -489,21 +448,21 @@ function CardEditor({ campaign, card }: { campaign: TeCampaign; card: TeCard }) 
               sub: x.frozen ? 'frozen' : 'not frozen',
             }))}
             value={card.configId}
-            onChange={(v) => applyLinks({ configId: v })}
+            onChange={(v) => setCardLinks(card.id, { configId: v })}
             disabled={frozen}
           />
           <EntityPicker
             label="Threat"
             options={campaign.threats.map((x) => ({ id: x.id, label: x.name || x.id, sub: x.id }))}
             value={card.threatId}
-            onChange={(v) => applyLinks({ threatId: v })}
+            onChange={(v) => setCardLinks(card.id, { threatId: v })}
             disabled={frozen}
           />
           <EntityPicker
             label="Condition"
             options={campaign.conditions.map((x) => ({ id: x.id, label: x.name || x.id, sub: x.id }))}
             value={card.conditionId}
-            onChange={(v) => applyLinks({ conditionId: v })}
+            onChange={(v) => setCardLinks(card.id, { conditionId: v })}
             disabled={frozen}
           />
         </div>
