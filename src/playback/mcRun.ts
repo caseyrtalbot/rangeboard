@@ -6,10 +6,11 @@
  * Under `uncertainty: 'total'` each replicate first samples every uncertain
  * field through the policy's `param` draw; under `aleatory` the nominal
  * scenario runs. No store import at the value level; never reads
- * `engagementPicture`. The grid is the chart grid: `sampleCount(scenario)`
- * steps at DT, index k is t = k * DT.
+ * `engagementPicture`. The grid is the projection grid (`analysis/projection.ts`):
+ * `sampleCount(scenario)` steps at DT, index k is t = k * DT; the chart series
+ * builders sample the same grid.
  */
-import { heldOnGrid, residualOnGrid, sampleCount } from '../analysis/series'
+import { heldTracksOnGrid, residualOnGrid, sampleCount } from '../analysis/projection'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import { sampleScenario, uncertainFields } from '../analysis/uncertainty'
 import type { Scenario } from '../model/types'
@@ -17,7 +18,6 @@ import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../mo
 import { meanInterval, quantile, wilson } from '../te/calc/stats'
 import { resolveEngagements } from './attrition'
 import { monteCarloPolicy } from './policy'
-import type { ThreatAssessment } from './sim'
 import { assessAllThreats } from './sim'
 import { DT } from './clock'
 
@@ -113,7 +113,7 @@ export interface Checkpoint {
 /** A loop that yields a Checkpoint per unit of work and returns its summary. */
 export type Loop<T> = Generator<Checkpoint, T, StopRule | undefined>
 
-/** Per DT step from t = 0 to scenarioDurationS inclusive (series.ts sampleCount). */
+/** Per DT step from t = 0 to scenarioDurationS inclusive (projection.ts sampleCount). */
 export interface BandSeries {
   mean: number[]
   /** The Stat interval on the mean at STAT_CONF, per step (a count Stat). */
@@ -158,7 +158,7 @@ export interface McSummary {
   kills: BandSeries
   leakers: BandSeries
   detected: BandSeries
-  /** Held-track count at each step, the heldPass rule of series.ts. */
+  /** Held-track count at each step: `heldTracksOnGrid`, the rule the `tracksHeld` chart series shares. */
   tracked: BandSeries
   engaged: BandSeries
   /** Earliest first detection over the tracks, per replicate: the first single-scan hit. */
@@ -350,31 +350,6 @@ function bandOf(rows: number[][], n: number, max: number): BandSeries {
   return band
 }
 
-/**
- * Held-track count per step: the heldPass rule of series.ts. At step k, the
- * count of tracks with a hold flag of 1 for at least one enabled sensor; a
- * flag is 1 inside any inclusive interval of that sensor's observation
- * (`heldOnGrid`), coast intervals included.
- */
-function trackedOnGrid(
-  tracks: ThreatAssessment[],
-  enabledSensorIds: Set<string>,
-  n: number,
-): number[] {
-  const tracked = new Array<number>(n).fill(0)
-  for (const a of tracks) {
-    const held = new Array<boolean>(n).fill(false)
-    for (const obs of a.sensorObservations ?? []) {
-      if (!enabledSensorIds.has(obs.sensorId)) continue
-      heldOnGrid(obs, n).forEach((flag, i) => {
-        if (flag === 1) held[i] = true
-      })
-    }
-    for (let i = 0; i < n; i += 1) if (held[i]) tracked[i] += 1
-  }
-  return tracked
-}
-
 /** Per-replicate samples of one quantity, in replicate order. */
 type Samples = number[]
 
@@ -519,7 +494,7 @@ export function* replicateLoop(
     leakers.push(leakRow)
     detected.push(detRow)
     engaged.push(engRow)
-    tracked.push(trackedOnGrid(tracks, enabledSensorIds, n))
+    tracked.push(heldTracksOnGrid(tracks, enabledSensorIds, n))
 
     let firstDetect = NaN
     let firmTrack = NaN
