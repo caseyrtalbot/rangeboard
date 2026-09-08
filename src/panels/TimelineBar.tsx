@@ -20,8 +20,9 @@ const SPEEDS = [1, 2, 5, 10, 30]
  * the playback loop: one requestAnimationFrame loop that publishes
  * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time at every speed
  * (10 Hz). Each publication advances sim time by the measured wall time at
- * playback speed, so the clock does not drift. The canvas interpolates
- * between publications with its own frame clock (`useFrameClock`).
+ * playback speed, so the clock does not drift. The loop only publishes; the
+ * store's playback commands own observation and completion. The canvas
+ * interpolates between publications with its own frame clock (`useFrameClock`).
  * Memoized with no props: it re-renders on its own selectors only.
  */
 export const TimelineBar = memo(function TimelineBar() {
@@ -67,17 +68,15 @@ export const TimelineBar = memo(function TimelineBar() {
       }
       last = now
       speed = st.playback.speedMult
-      if (next >= durationS) {
-        st.advanceRun(durationS)
-        st.completeRun(durationS)
-        return
-      }
-      st.advanceRun(next)
+      // The store resolves the publication: observation advance, or the one
+      // completion once the clock reaches the run duration.
+      st.playbackCommand({ type: 'publish', t: next })
+      if (!useStore.getState().playback.playing) return
       raf.current = requestAnimationFrame(tick)
     }
     raf.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf.current)
-  }, [playing, durationS])
+  }, [playing])
 
   return (
     <div className="timeline">

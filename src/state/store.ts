@@ -1,4 +1,3 @@
-import { selectTrialSelection } from './trialSelectors'
 import { create } from 'zustand'
 import type {
   BasemapMode,
@@ -29,9 +28,10 @@ import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
 import { analysisBasisSignature } from './analysisBasis'
+import type { PlaybackCommand } from './playbackCommands'
+import { resolvePlayback } from './playbackCommands'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { cancelTrial } from '../playback/trialClient'
-import { markPresentationVariant } from '../model/scenario'
 import { buildRaid, raidDraftFor } from './raidBuilder'
 import {
   bumpCardVersion,
@@ -349,6 +349,8 @@ export interface Store {
   completeRun: (durationS: number) => void
   scrubTo: (t: number) => void
   resetRun: (reason?: RunResetReason) => void
+  /** Resolve and apply one playback intent (`src/state/playbackCommands.ts`). */
+  playbackCommand: (command: PlaybackCommand) => void
 
   // Internal trial lifecycle; R5 owns user-facing adoption.
   prepareTrial: () => void
@@ -455,22 +457,6 @@ export const useStore = create<Store>()((set, get) => {
   /** Apply an undoable scenario change. */
   function mutate(fn: (s: Scenario) => Scenario) {
     install({ op: 'edit', next: fn(get().scenario) })
-  }
-
-  /**
-   * Stamp the active lens on the scenario as the lens this run is observed
-   * under. It is run evidence the debrief export carries, so it goes through
-   * `set`: no undo entry, and no run invalidation (`analysisBasisSignature`
-   * never reads it). A stamp that already matches replaces nothing, and a
-   * new stamp is a presentation variant of the current object, so no
-   * engine-keyed cache misses on the Play click.
-   */
-  function observedPatch(st: Store): { scenario: Scenario } | Record<string, never> {
-    const presetId = st.ui.analysis.layout.presetId
-    if ((st.scenario.observedPresetId ?? null) === presetId) return {}
-    const scenario = { ...st.scenario, observedPresetId: presetId }
-    markPresentationVariant(scenario, st.scenario)
-    return { scenario }
   }
 
   /** Install an analysis view: eager storage write, ui only, never undo history. */
@@ -1262,24 +1248,7 @@ export const useStore = create<Store>()((set, get) => {
 
     applyFrame: (id) => {
       const frame = get().scenario.frames.find((f) => f.id === id)
-      if (!frame) return
-      writeView({ camera: { ...frame.camera }, basemap: frame.basemap })
-      set((st) => {
-        // Frame navigation is a scrub, not evidence of playback.
-        const simTimeS = Math.max(0, frame.simTimeS)
-        const ready = simTimeS === 0 && st.playback.startedAtMs == null
-        return {
-          trial: st.trial.startWhenReady ? { ...st.trial, startWhenReady: false } : st.trial,
-          camera: { ...frame.camera },
-          playback: {
-            ...st.playback,
-            playing: false,
-            simTimeS,
-            phase: ready ? 'ready' : 'review',
-          },
-          ui: { ...st.ui, basemap: frame.basemap },
-        }
-      })
+      if (frame) get().playbackCommand({ type: 'frame', frame })
     },
 
     deleteFrame: (id) => mutate((s) => ({ ...s, frames: s.frames.filter((f) => f.id !== id) })),
@@ -1396,81 +1365,49 @@ export const useStore = create<Store>()((set, get) => {
 
     startRun: () => get().startTrialRun(),
 
-    pauseRun: () =>
-      set((st) => ({
-        trial: st.trial.startWhenReady ? { ...st.trial, startWhenReady: false } : st.trial,
-        playback: {
-          ...st.playback,
-          playing: false,
-          phase: st.playback.startedAtMs == null ? 'ready' : 'paused',
-        },
-      })),
+    /**
+     * The one playback interface: `resolvePlayback` (playbackCommands.ts)
+     * turns an intent into a transition; this applies it through `set`, so
+     * no playback change enters undo history. Every lifecycle action below
+     * is a named command.
+     */
+    playbackCommand: (command) => {
+      const st = get()
+      const next = resolvePlayback(command, {
+        scenario: st.scenario,
+        playback: st.playback,
+        trial: st.trial,
+        presetId: st.ui.analysis.layout.presetId,
+        nowMs: Date.now(),
+      })
+      if (next.kind === 'none') return
+      if (next.kind === 'reset') {
+        // An observation record without a retained trial: repair, then retry.
+        get().resetRun()
+        get().playbackCommand(command)
+        return
+      }
+      if (next.writeRunSeq != null) writeRunSeq(next.writeRunSeq)
+      const { camera, basemap, ...slices } = next.patch
+      if (camera && basemap) writeView({ camera: { ...camera }, basemap })
+      set((cur) => ({
+        ...slices,
+        ...(camera ? { camera } : {}),
+        ...(basemap ? { ui: { ...cur.ui, basemap } } : {}),
+      }))
+      if (next.prepare) get().prepareTrial()
+    },
 
-    advanceRun: (t) =>
-      set((st) => {
-        if (selectTrialSelection(st).status !== 'ready') return st
-        const simTimeS = Math.max(0, t)
-        const first = st.playback.startedAtMs == null
-        if (first) writeRunSeq(st.playback.runSeq + 1)
-        return {
-          ...(first ? observedPatch(st) : {}),
-          playback: {
-            ...st.playback,
-            playing: true,
-            phase: 'running',
-            simTimeS,
-            observedThroughS: Math.max(st.playback.observedThroughS, simTimeS),
-            startedAtMs: st.playback.startedAtMs ?? Date.now(),
-            basisSignature:
-              st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
-          },
-        }
-      }),
-
-    completeRun: (durationS) =>
-      set((st) => selectTrialSelection(st).status !== 'ready' ? st : ({
-        playback: {
-          ...st.playback,
-          playing: false,
-          simTimeS: durationS,
-          observedThroughS: Math.max(st.playback.observedThroughS, durationS),
-          phase: 'complete',
-          startedAtMs: st.playback.startedAtMs ?? Date.now(),
-          completedAtMs: st.playback.completedAtMs ?? Date.now(),
-          basisSignature:
-            st.playback.basisSignature ?? analysisBasisSignature(st.scenario),
-        },
-      })),
-
-    scrubTo: (t) =>
-      set((st) => {
-        const simTimeS = Math.max(0, t)
-        const ready = simTimeS === 0 && st.playback.startedAtMs == null
-        return {
-          trial: st.trial.startWhenReady ? { ...st.trial, startWhenReady: false } : st.trial,
-          playback: {
-            ...st.playback,
-            playing: false,
-            simTimeS,
-            phase: ready ? 'ready' : 'review',
-          },
-        }
-      }),
+    pauseRun: () => get().playbackCommand({ type: 'pause' }),
+    advanceRun: (t) => get().playbackCommand({ type: 'advance', t }),
+    completeRun: (durationS) => get().playbackCommand({ type: 'complete', durationS }),
+    scrubTo: (t) => get().playbackCommand({ type: 'scrub', t }),
 
     resetRun: (reason = 'manual') => {
       cancelMcRun()
       cancelSensitivity()
       cancelTrial()
-      set((st) => {
-        const runSeq = reason === 'manual' ? st.playback.runSeq + 1 : st.playback.runSeq
-        if (reason === 'manual') writeRunSeq(runSeq)
-        return {
-          ...observedPatch(st),
-          playback: freshPlayback(runSeq, st.playback.speedMult, reason),
-          mc: IDLE_MC,
-          trial: IDLE_TRIAL,
-        }
-      })
+      get().playbackCommand({ type: 'newRun', reason })
     },
 
     prepareTrial: () => {
@@ -1484,37 +1421,7 @@ export const useStore = create<Store>()((set, get) => {
       requestAnalysis('trial', st, set, sinks)
     },
 
-    startTrialRun: () => {
-      let st = get()
-      if (st.trial.manifest == null && st.playback.startedAtMs != null) {
-        st.resetRun()
-        st = get()
-      }
-      if (st.trial.status !== 'ready') {
-        set({ trial: { ...st.trial, startWhenReady: true } })
-        if (st.trial.status !== 'preparing') {
-          get().prepareTrial()
-        }
-        return
-      }
-      if (selectTrialSelection(st).status !== 'ready') return
-      const first = st.playback.startedAtMs == null
-      if (first) writeRunSeq(st.playback.runSeq + 1)
-      set({
-        ...(first ? observedPatch(st) : {}),
-        trial: { ...st.trial, startWhenReady: false },
-        playback: {
-          ...st.playback,
-          playing: true,
-          phase: 'running',
-          simTimeS: st.playback.phase === 'complete' ? 0 :
-            Math.min(st.playback.simTimeS, st.playback.observedThroughS),
-          startedAtMs: st.playback.startedAtMs ?? Date.now(),
-          // Completion and achieved observation survive every replay.
-          basisSignature: st.trial.manifest!.basisSignature,
-        },
-      })
-    },
+    startTrialRun: () => get().playbackCommand({ type: 'play' }),
 
     cancelTrialPreparation: () => {
       const st = get()
