@@ -4,7 +4,8 @@ import { buildJiatf401 } from '../seed/jiatf401'
 import { computeMeasure } from '../calc/measures'
 import { CHECKLIST_TEMPLATES } from '../seed/checklistTemplates'
 import { deliveryBlockers, findingBlockers, runIncludable } from '../validate'
-import { findingComputations } from '../ui/DeliverBlocks'
+import { findingComputations } from '../calc/findingEvidence'
+import { generatedSection } from '../calc/package'
 import { emptyFinding } from '../model/empty'
 import { parseCampaignData, parseTeAutosave } from '../io/persistTe'
 
@@ -205,6 +206,43 @@ describe('C4 evidence and finalization acceptance', () => {
     const c = campaign()
     expect(parseCampaignData({ rangeboardCampaign: 1, campaign: c })).toEqual(c)
     expect(parseTeAutosave(JSON.stringify({ schemaVersion: 1, campaigns: [c], activeCampaignId: c.id })).campaigns[0]).toEqual(c)
+  })
+
+  it('freezes edited, manual and generated section text in one delivery', () => {
+    prepareDelivery()
+    const c = campaign()
+    store().patchCampaign({ evidencePackage: { ...c.evidencePackage, sections: c.evidencePackage.sections.map(s =>
+      s.n === 1 ? { ...s, content: '', edited: false } : s.n === 2 ? { ...s, content: 'Edited by hand', edited: true } : s) } })
+    let updates = 0
+    const unsubscribe = useTeStore.subscribe(() => { updates++ })
+    store().markPackageDelivered()
+    unsubscribe()
+    expect(updates).toBe(1)
+    const pkg = campaign().evidencePackage
+    expect(pkg.deliveredAt).toBeTruthy()
+    expect(pkg.sections[0].content).toBe(generatedSection(c, c.evidencePackage.sections[0]))
+    expect(pkg.sections[1].content).toBe('Edited by hand')
+    expect(pkg.sections.find(s => s.n === 11)?.content).toBe('Illustrative section completed')
+    expect(campaign().phase).toBe('decision-ready')
+  })
+
+  it('applies a finding link change and its empty-field fills in one update', () => {
+    const c = campaign()
+    const id = store().addFinding()
+    store().patchItem('findings', id, { measureIds: [c.measures[0].id], quantifiedResult: 'Kept' })
+    let updates = 0
+    const unsubscribe = useTeStore.subscribe(() => { updates++ })
+    store().setFindingLinks(id, { supportingRunIds: [c.runs[0].id] })
+    unsubscribe()
+    expect(updates).toBe(1)
+    const f = campaign().findings.find(x => x.id === id)!
+    expect(f).toMatchObject({ supportingRunIds: [c.runs[0].id], configId: c.runs[0].actualConfigId, quantifiedResult: 'Kept' })
+    expect(f.threatIds).toEqual([c.runs[0].actualThreatId])
+    expect(f.sampleAndIndependence).toContain('1 included of 1 attempted')
+    expect(f.strength).toBe(emptyFinding(id).strength)
+    const before = campaign()
+    store().setFindingLinks(id, { supportingRunIds: ['foreign-run'] })
+    expect(campaign()).toEqual(before)
   })
 
   it('rejects fabricated finalized imports without changing live history', () => {

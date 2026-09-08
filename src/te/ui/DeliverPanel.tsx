@@ -1,8 +1,8 @@
 /**
  * Deliver stage as ordered decision groups L1-L6. One scrolling
- * column, free navigation, only the gates block. Evidence generation runs on
- * link change and fills only empty fields; the package generator respects
- * the edited flag; the closeout ends in a generated StageReview.
+ * column, free navigation, only the gates block. A link change is one store
+ * update (setFindingLinks) that fills only empty fields; section text follows
+ * the precedence rule in calc/package.ts; the closeout ends in a StageReview.
  */
 
 import { useState } from 'react'
@@ -37,47 +37,24 @@ import {
   EvidenceField,
   FinalAuthorityField,
   FindingStatementBuilder,
-  MANUAL_SECTIONS,
-  SECTION_GUIDANCE,
   SuggestLine,
   decisionSeed,
-  derivedRunLinks,
-  evidenceDerivation,
-  findingComputations,
-  generatedEvidence,
-  generatedSection,
   refutedClaimMatches,
-  sectionTemplate,
   suggestedClaimDisposition,
   suggestedQuestionDisposition,
   suggestedStrength,
 } from './DeliverBlocks'
+import { findingComputations, resolveFindingEvidence } from '../calc/findingEvidence'
+import type { FindingLinks } from '../calc/findingEvidence'
+import {
+  SECTION_GUIDANCE,
+  completeSectionCount,
+  previewPackage,
+  resolvedPackage,
+  sectionTemplate,
+} from '../calc/package'
 
 type GroupState = 'done' | 'partial' | 'empty'
-
-/** Display text for a package section: edited text wins, else live generation. */
-function sectionDisplay(campaign: TeCampaign, s: TeEvidencePackage['sections'][number]): string {
-  if (s.edited) return s.content
-  const gen = generatedSection(campaign, s)
-  return gen !== '' ? gen : s.content
-}
-
-/** Persist live generated text into every unedited generated section. */
-function persistGeneratedSections() {
-  const st = useTeStore.getState()
-  const c = st.campaigns.find((x) => x.id === st.activeCampaignId)
-  if (!c) return
-  st.patchCampaign({
-    evidencePackage: {
-      ...c.evidencePackage,
-      sections: c.evidencePackage.sections.map((s) => {
-        if (s.edited) return s
-        const gen = generatedSection(c, s)
-        return gen === '' ? s : { ...s, content: gen }
-      }),
-    },
-  })
-}
 
 // L1: What did we learn?
 
@@ -97,68 +74,16 @@ const LADDER_OPTIONS = [
 ]
 
 function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) {
-  const { patchItem, removeItem, selectRecord, bumpRecordVersion, addItem } = useTeStore.getState()
+  const { patchItem, removeItem, selectRecord, bumpRecordVersion, addItem, setFindingLinks } = useTeStore.getState()
   const [dissentOpen, setDissentOpen] = useState(false)
   const set = (patch: Partial<TeFinding>) => patchItem('findings', f.id, patch)
-
-  /** Link writes trigger derived fills; generation fills only empty fields. */
-  const linkPatch = (patch: Partial<TeFinding>) => {
-    patchItem('findings', f.id, patch)
-    const st = useTeStore.getState()
-    const c2 = st.campaigns.find((x) => x.id === campaign.id)
-    const f2 = c2?.findings.find((x) => x.id === f.id)
-    if (!c2 || !f2) return
-    const extra: Partial<TeFinding> = {}
-    if (patch.supportingRunIds !== undefined || patch.contradictingRunIds !== undefined) {
-      const d = derivedRunLinks(c2, f2)
-      if (f2.threatIds.length === 0 && d.threatIds.length > 0) extra.threatIds = d.threatIds
-      if (f2.conditionIds.length === 0 && d.conditionIds.length > 0)
-        extra.conditionIds = d.conditionIds
-    }
-    const gen = generatedEvidence(c2, { ...f2, ...extra })
-    const all = { ...extra, ...gen }
-    if (Object.keys(all).length > 0) patchItem('findings', f.id, all)
-  }
-
-  /** Question pick fills the chained records when exactly one candidate exists. */
-  const pickQuestion = (v: string | null) => {
-    const patch: Partial<TeFinding> = { questionId: v ?? '' }
-    if (v) {
-      const hyps = campaign.hypotheses.filter((h) => h.questionId === v)
-      if (hyps.length === 1 && !f.hypothesisId) patch.hypothesisId = hyps[0].id
-      const claimIds = [...new Set(hyps.map((h) => h.claimId).filter((x): x is string => x !== null))]
-      if (claimIds.length === 1 && !f.claimId) patch.claimId = claimIds[0]
-      const ms = campaign.measures.filter((m) => m.questionId === v)
-      if (ms.length === 1 && f.measureIds.length === 0) patch.measureIds = [ms[0].id]
-    }
-    linkPatch(patch)
-  }
-
-  /** Supporting-run pick fills configId from the runs' cards when unambiguous. */
-  const pickSupportingRuns = (v: string[]) => {
-    const patch: Partial<TeFinding> = { supportingRunIds: v }
-    if (!f.configId) {
-      const configIds = [
-        ...new Set(
-          v
-            .map((id) => {
-              const r = campaign.runs.find((x) => x.id === id)
-              if (!r) return null
-              return r.actualConfigId ?? campaign.cards.find((c) => c.id === r.cardId)?.configId ?? null
-            })
-            .filter((x): x is string => x !== null),
-        ),
-      ]
-      if (configIds.length === 1) patch.configId = configIds[0]
-    }
-    linkPatch(patch)
-  }
+  /** One store update: links, unambiguous chained records, and empty-field fills. */
+  const linkPatch = (links: FindingLinks) => setFindingLinks(f.id, links)
 
   const blockers = findingBlockers(campaign, f)
   const refuted = refutedClaimMatches(f.statement)
   const people = allPeople(campaign)
-  const comps = findingComputations(campaign, f)
-  const derivation = evidenceDerivation(campaign, f)
+  const { computations: comps, derivation } = resolveFindingEvidence(campaign, f)
   const claims = campaign.registers.filter((r) => r.kind === 'claim')
   const assumptionRegs = campaign.registers.filter((r) => r.kind === 'assumption')
   const hyp = campaign.hypotheses.find((h) => h.id === f.hypothesisId)
@@ -235,7 +160,7 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
           label="Question"
           options={campaign.questions.map((q) => ({ id: q.id, label: q.id, sub: q.wording.slice(0, 48) }))}
           value={f.questionId || null}
-          onChange={pickQuestion}
+          onChange={(v) => linkPatch({ questionId: v ?? '' })}
         />
         <EntityPicker
           label="Claim"
@@ -263,7 +188,7 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
         options={runOptions}
         multi
         values={f.supportingRunIds}
-        onChangeMulti={pickSupportingRuns}
+        onChangeMulti={(v) => linkPatch({ supportingRunIds: v })}
       />
       <EntityPicker
         label="Contradicting runs"
@@ -312,15 +237,15 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
 
       <SubTitle>Evidence detail</SubTitle>
       <p className="muted small">Text below derives from the linked records. Edit any field; revert restores the derivation.</p>
-      <EvidenceField label="Quantified result" rows={2} value={f.quantifiedResult} derived={derivation.quantifiedResult as string | undefined} onChange={(v) => set({ quantifiedResult: v })} />
-      <EvidenceField label="Result vs required value" value={f.thresholdComparison} derived={derivation.thresholdComparison as string | undefined} onChange={(v) => set({ thresholdComparison: v })} />
+      <EvidenceField label="Quantified result" rows={2} value={f.quantifiedResult} derived={derivation.quantifiedResult} onChange={(v) => set({ quantifiedResult: v })} />
+      <EvidenceField label="Result vs required value" value={f.thresholdComparison} derived={derivation.thresholdComparison} onChange={(v) => set({ thresholdComparison: v })} />
       <div className="field-row">
-        <EvidenceField label="How many runs count?" help="Sample and independence of the counted runs." value={f.sampleAndIndependence} derived={derivation.sampleAndIndependence as string | undefined} onChange={(v) => set({ sampleAndIndependence: v })} />
-        <EvidenceField label="How sure are we?" help="Uncertainty interval on the estimate." value={f.uncertaintyNote} derived={derivation.uncertaintyNote as string | undefined} onChange={(v) => set({ uncertaintyNote: v })} />
+        <EvidenceField label="How many runs count?" help="Sample and independence of the counted runs." value={f.sampleAndIndependence} derived={derivation.sampleAndIndependence} onChange={(v) => set({ sampleAndIndependence: v })} />
+        <EvidenceField label="How sure are we?" help="Uncertainty interval on the estimate." value={f.uncertaintyNote} derived={derivation.uncertaintyNote} onChange={(v) => set({ uncertaintyNote: v })} />
       </div>
-      <EvidenceField label="Missing and excluded data" value={f.missingAndExcludedData} derived={derivation.missingAndExcludedData as string | undefined} onChange={(v) => set({ missingAndExcludedData: v })} />
+      <EvidenceField label="Missing and excluded data" value={f.missingAndExcludedData} derived={derivation.missingAndExcludedData} onChange={(v) => set({ missingAndExcludedData: v })} />
       {f.hypothesisId && (
-        <EvidenceField label="Result vs prediction" value={f.comparisonWithPrediction} derived={derivation.comparisonWithPrediction as string | undefined} onChange={(v) => set({ comparisonWithPrediction: v })} />
+        <EvidenceField label="Result vs prediction" value={f.comparisonWithPrediction} derived={derivation.comparisonWithPrediction} onChange={(v) => set({ comparisonWithPrediction: v })} />
       )}
       <TextField label="What else could explain this?" help="Confounders and alternative explanations." value={f.confoundersAndAlternatives} onChange={(v) => set({ confoundersAndAlternatives: v })} />
       {hyp && hyp.competingExplanations.trim() !== '' && f.confoundersAndAlternatives.trim() === '' && (
@@ -328,8 +253,8 @@ function FindingEditor({ campaign, f }: { campaign: TeCampaign; f: TeFinding }) 
       )}
 
       <SubTitle>Where does this finding hold?</SubTitle>
-      <EvidenceField label="Applies to" help={HINTS['generalization-bounds'].definition} value={f.appliesTo} derived={derivation.appliesTo as string | undefined} onChange={(v) => set({ appliesTo: v })} />
-      <EvidenceField label="Does not apply to" value={f.doesNotApplyTo} derived={derivation.doesNotApplyTo as string | undefined} onChange={(v) => set({ doesNotApplyTo: v })} />
+      <EvidenceField label="Applies to" help={HINTS['generalization-bounds'].definition} value={f.appliesTo} derived={derivation.appliesTo} onChange={(v) => set({ appliesTo: v })} />
+      <EvidenceField label="Does not apply to" value={f.doesNotApplyTo} derived={derivation.doesNotApplyTo} onChange={(v) => set({ doesNotApplyTo: v })} />
       <SegChips
         label="Assumptions this finding rests on"
         help="Pick from the assumption register. A new entry joins the register."
@@ -672,20 +597,20 @@ function PackageGroup({ campaign, state }: { campaign: TeCampaign; state: GroupS
     setPkg({ sections: pkg.sections.map((s) => (s.n === n ? { ...s, content, edited: true } : s)) })
   const revertSection = (n: number) =>
     setPkg({ sections: pkg.sections.map((s) => (s.n === n ? { ...s, content: '', edited: false } : s)) })
+  const preview = previewPackage(campaign)
   const methodDefault = campaign.charter.acceptance.methodApprovalAuthority.trim()
   const evidenceDefault = campaign.charter.evidenceAcceptanceAuthority.trim()
   return (
     <DecisionGroup id="deliver-package" question="Is the evidence package complete?" hint="Decision evidence package: 20 sections. Generated text tracks the records; edits stick." tier="recommended" state={state}>
       <div className="field-row">
         {pkg.deliveredAt && <Pill kind="good" text={`delivered ${fmtDate(pkg.deliveredAt)}`} />}
-        <button type="button" className="mini" onClick={() => persistGeneratedSections()}>
+        <button type="button" className="mini" onClick={() => patchCampaign({ evidencePackage: resolvedPackage(campaign) })}>
           Save generated text
         </button>
-        <div className="muted small">Generated sections track the records live. Save writes them; edits always stick.</div>
+        <div className="muted small">Generated sections track the records live. Save writes them; edits always stick. Delivery freezes the text shown.</div>
       </div>
-      {pkg.sections.map((s) => {
-        const manual = MANUAL_SECTIONS.includes(s.n)
-        if (manual) {
+      {pkg.sections.map((s, i) => {
+        if (preview[i].manual) {
           const template = sectionTemplate(campaign, s.n)
           return (
             <div key={s.n}>
@@ -700,10 +625,9 @@ function PackageGroup({ campaign, state }: { campaign: TeCampaign; state: GroupS
             </div>
           )
         }
-        const display = sectionDisplay(campaign, s)
         return (
           <div key={s.n} className={`provenance ${s.edited ? 'edited' : 'inherited'}`}>
-            <TextField label={`${s.n}. ${s.title}`} rows={3} value={display} onChange={(v) => setSection(s.n, v)} />
+            <TextField label={`${s.n}. ${s.title}`} rows={3} value={preview[i].text} onChange={(v) => setSection(s.n, v)} />
             <div className="provenance-line">
               {s.edited ? (
                 <>
@@ -780,7 +704,7 @@ function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: Group
   const openActions = campaign.actions.filter((a) => a.status === 'open')
   const disposedQ = campaign.questions.filter((q) => q.disposition !== null).length
   const disposedC = claims.filter((r) => r.disposition !== null).length
-  const sectionsComplete = pkg.sections.filter((s) => sectionDisplay(campaign, s).trim() !== '').length
+  const sectionsComplete = completeSectionCount(campaign)
   const strengths = (['conclusive', 'directional', 'insufficient', 'not-tested'] as const)
     .map((s) => ({ s, n: campaign.findings.filter((f) => f.strength === s).length }))
     .filter((x) => x.n > 0)
@@ -855,10 +779,7 @@ function CloseoutGroup({ campaign, state }: { campaign: TeCampaign; state: Group
         ]}
         passLabel="Mark package delivered"
         disabled={pkg.deliveredAt !== null}
-        onPass={() => {
-          persistGeneratedSections()
-          markPackageDelivered()
-        }}
+        onPass={() => markPackageDelivered()}
       />
       <div className="inspector-actions">
         <button
@@ -902,7 +823,7 @@ export function DeliverPanel({ campaign }: { campaign: TeCampaign }) {
         ? 'done'
         : 'partial'
   const debriefsState: GroupState = campaign.debriefs.length > 0 ? 'done' : 'empty'
-  const sectionsComplete = pkg.sections.filter((s) => sectionDisplay(campaign, s).trim() !== '').length
+  const sectionsComplete = completeSectionCount(campaign)
   const packageState: GroupState =
     pkg.deliveredAt !== null
       ? 'done'
