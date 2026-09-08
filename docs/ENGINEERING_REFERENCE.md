@@ -213,7 +213,9 @@ src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basi
                scenario.ts (modelFor index, pathSpeed, scenarioDurationS, engineKeyOf and
                markPresentationVariant), seed.ts (emptyScenario, DEFAULT_SEED),
                seedLibrary.ts (builtin specs with
-               provenance rows), integrationData.ts (researched pairings and profiles),
+               provenance rows), libraryLifecycle.ts (the one seed library lifecycle:
+               initial library and presets, load reconcile, import merge, reset to seed,
+               provenance adoption), integrationData.ts (researched pairings and profiles),
                seedSystems.ts (system presets), seedCards.ts,
                rcsFactors / signatureFactors / weaponFactors (PF tiers)
 src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant
@@ -293,7 +295,7 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                write gate, the 500 ms debounce, the pagehide and visibilitychange flush;
                an AutosaveAdapter supplies key, parser, record selection, adoption and
                save status), persist.ts (scenarioAutosaveAdapter and the Board autosave
-               entry points, fillScenario, adoptSeedProvenance, JSON and library
+               entry points, fillScenario, JSON and library
                import/export, runExportObject), runResultGroups.ts (per-group basis/units
                and separately typed TrialResultGroup),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
@@ -457,11 +459,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `Provenance.spread` is the row's epistemic spread (`Spread`: lognormal `sigmaDb`,
   triangular fraction bounds, beta counts); a `pf` row may carry a spread, and then it may
   also carry the url of the trial count behind that spread (the Stinger and Leonidas `pk`
-  rows). `adoptSeedProvenance` (`src/io/persist.ts`), called from `fillScenario`, copies
-  seed rows onto a saved builtin only for fields the user has not edited, and `updateModel`
-  and `editModel` drop the row of a spec field they change (`dropEditedProvenance`); an
-  edited field takes no row and stays PF. "Reset to seed" (`resetModelToSeed`, undoable)
-  puts a builtin back to its seed.
+  rows). `adoptSeedProvenance` (`src/model/libraryLifecycle.ts`), called from
+  `fillScenario`, copies seed rows onto a saved builtin only for fields the user has not
+  edited, and `updateModel` and `editModel` drop the row of a spec field they change; an
+  edited field takes no row and stays PF. Both read one field comparison,
+  `dropEditedProvenance` (`src/model/types.ts`). "Reset to seed" (`resetModelToSeed`,
+  undoable) puts a builtin back to its seed through `resetBuiltin`.
 - **Specification field edits** (`src/model/specEdit.ts`): `editSpecField(model, field,
   value)` holds the rule of every edited spec field. It owns the value that clears back to
   the planning factor, the clamps, the M-of-N coupling (N follows M up, M follows N down),
@@ -608,9 +611,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `useTrialResult` supplies the same bounded series to execution widgets and detail panes.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
-  deletion with `specId` set to null). `Scenario.deletedSeedIds` keeps the seed merge from
-  resurrecting a deleted builtin. A seed field change does not reach an existing save's
-  copy of a builtin model; "Reset to seed" does.
+  deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed
+  library lifecycle: `initialLibrary` and `initialSystemPresets` for a new scenario,
+  `reconcileLibrary` and `reconcileSeeded` for a save, `importModels` for a library import
+  and `resetBuiltin` for "Reset to seed". Saved-id precedence is one rule everywhere: the
+  entry the user holds wins over the seed of the same id, and `Scenario.deletedSeedIds`
+  keeps the reconcile from resurrecting a deleted builtin. A seed field change does not
+  reach an existing save's copy of a builtin model; "Reset to seed" does.
 - **Other:** kill chain = `Connection` list, sensor to C2 to effector or direct. Threat
   tactics live in `src/playback/tactics.ts`; the raid builder commits entities, paths and
   waves in one `mutate`. Threat WEZ geometry is `src/analysis/impact.ts`; `effectRadiusM`

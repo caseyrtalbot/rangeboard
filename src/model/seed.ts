@@ -5,8 +5,7 @@ import {
   DEFAULT_REQUIREMENT_THRESHOLDS,
   DEFAULT_SEED,
 } from './types'
-import { SEED_LIBRARY } from './seedLibrary'
-import { SEED_SYSTEMS } from './seedSystems'
+import { initialLibrary, initialSystemPresets } from './libraryLifecycle'
 
 export { SEED_LIBRARY } from './seedLibrary'
 export { SEED_SYSTEMS, SEED_FORMATIONS } from './seedSystems'
@@ -39,8 +38,8 @@ export function emptyScenario(): Scenario {
   return {
     schemaVersion: 1,
     name: 'Untitled scenario',
-    library: SEED_LIBRARY.map((m) => ({ ...m })),
-    systemPresets: SEED_SYSTEMS.map((p) => ({ ...p })),
+    library: initialLibrary(),
+    systemPresets: initialSystemPresets(),
     deletedSeedIds: [],
     observedPresetId: null,
     runMode: 'deterministic',
