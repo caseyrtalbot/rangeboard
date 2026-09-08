@@ -103,7 +103,7 @@ function RunActions({
  * Findings come from the one assessRunValidity call the record already made,
  * which is also the call the gates read, so the two can never disagree.
  */
-function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }) {
+export function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }) {
   const text = VALIDITY_TEXT[assessment.validity]
   return (
     <div className={`run-validity validity-${assessment.validity}`}>
@@ -136,6 +136,7 @@ export function DebriefRecord({
   aar,
   durationS,
   showValidity = true,
+  showTrialRecords = true,
 }: {
   scenario: Scenario
   assessments: ThreatAssessment[]
@@ -144,6 +145,8 @@ export function DebriefRecord({
   durationS: number
   /** A lens with the validity widget already exposes the full finding record. */
   showValidity?: boolean
+  /** Outcome owns these disclosures when the record is mounted there. */
+  showTrialRecords?: boolean
 }) {
   const completedAtMs = useStore((state) => state.playback.completedAtMs)
   const startedAtMs = useStore((state) => state.playback.startedAtMs)
@@ -190,17 +193,12 @@ export function DebriefRecord({
         <strong>Evidence products</strong>
         <span>{formatRunLabel(runSeq)} · COMPLETE</span>
       </summary>
-      {completedTrial ? (
+      {showTrialRecords && (completedTrial ? (
         <section aria-label="Completed simulated trial record">
           <p className="debrief-kicker">Completed simulated trial record</p>
-          <TrialOutcomeSummary view={completedTrial} horizonS={completedTrial.durationS} />
           <details className="analysis-disclosure">
             <summary>Trial manifest</summary>
-            <dl style={{ overflowWrap: 'anywhere' }}>
-              {Object.entries(completedTrial.manifest).map(([key, value]) => (
-                <div key={key}><dt>{key}</dt><dd>{value ?? 'Build revision unavailable'}</dd></div>
-              ))}
-            </dl>
+            <TrialManifestRecord view={completedTrial} />
           </details>
           <details className="analysis-disclosure">
             <summary>Trial system and component record · {componentCount} components</summary>
@@ -215,7 +213,7 @@ export function DebriefRecord({
             <TrialEventLedger view={completedTrial} />
           </details>
         </section>
-      ) : <p className="muted small">{trialStateText(selection)} · completed trial record unavailable</p>}
+      ) : <p className="muted small">{trialStateText(selection)} · completed trial record unavailable</p>)}
       <RunActions
         scenario={scenario}
         assessments={assessments}
@@ -272,7 +270,17 @@ export function TrialOutcomeSummary({ view, horizonS }: { view: TrialResultView;
   )
 }
 
-function TrialEventLedger({ view }: { view: TrialResultView }) {
+export function TrialManifestRecord({ view }: { view: TrialResultView }) {
+  return (
+    <dl style={{ overflowWrap: 'anywhere' }}>
+      {Object.entries(view.manifest).map(([key, value]) => (
+        <div key={key}><dt>{key}</dt><dd>{value ?? 'Build revision unavailable'}</dd></div>
+      ))}
+    </dl>
+  )
+}
+
+export function TrialEventLedger({ view }: { view: TrialResultView }) {
   const [visible, setVisible] = useState(20)
   const name = (id: string) => view.scenario.entities.find(entity => entity.id === id)?.name ?? id
   return (

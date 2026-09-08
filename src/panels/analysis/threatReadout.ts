@@ -20,6 +20,51 @@ const DASH = '—'
 const NA = 'not available'
 const NO_ASSET = 'no defended asset placed'
 
+export type TrialOutcomeWord = 'defeated (hard)' | 'defeated (mission)' | 'leaked' | 'active' | 'no path'
+
+export interface TrialOutcomeRow {
+  id: string
+  track: string
+  detect: number | null
+  identify: number | null
+  engage: number | null
+  effect: number | null
+  salvos: number
+  result: string
+  states: TrialOutcomeWord[]
+}
+
+/** Track-file milestones from the retained trial, with no forecast substitutions. */
+export function trialOutcomeRows(view: TrialResultView): TrialOutcomeRow[] {
+  const t = Math.min(view.durationS, view.observedThroughS)
+  const first = (values: Array<number | null | undefined>) => {
+    const reached = values.filter((value): value is number => value != null && value <= t)
+    return reached.length ? Math.min(...reached) : null
+  }
+  return view.assessments.flatMap(assessment => {
+    const entity = view.scenario.entities.find(candidate => candidate.id === assessment.uasId)
+    if (!entity || !view.scenario.paths.some(path => path.entityId === entity.id)) return []
+    const events = view.attrition.events.filter(event => event.uasId === entity.id && event.tS <= t)
+    const members = trialMemberStatesAt(view, entity.id, t)
+    // A formation leaks if any member leaks; partial defeat never labels it defeated.
+    const states: TrialOutcomeWord[] = assessment.status === 'no-path' ? ['no path']
+      : members.some(member => member.leakageCredit) ? ['leaked']
+        : members.some(member => member.outcome === 'active') || members.length === 0 ? ['active']
+          : [
+            ...(members.some(member => member.outcome === 'hard-kill') ? ['defeated (hard)' as const] : []),
+            ...(members.some(member => member.outcome === 'mission-kill') ? ['defeated (mission)' as const] : []),
+          ]
+    return [{
+      id: entity.id, track: entity.name,
+      detect: first([assessment.firstDetectS]),
+      identify: first([assessment.classificationAtS.hostileAtS]),
+      engage: first(events.map(event => event.tS)),
+      effect: first(events.filter(event => event.killDelta === 1).map(event => event.tEffectS)),
+      salvos: events.length, result: states.join(' · '), states,
+    }]
+  })
+}
+
 const NAV_LABEL: Record<string, string> = {
   gps: 'GPS',
   inertial: 'inertial',
