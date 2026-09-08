@@ -29,7 +29,7 @@
       ],
       "sha256": "8b699a665a139eedbdd9e7061809ce1552f8f27a509c6028771dabc6c2addb2b",
       "reviewedAt": "2026-09-08",
-      "note": "Worth-exploring lanes 2026-09-08: sweep.ts, shot.ts, projection.ts, interactionRouter.ts, libraryLifecycle.ts, compat.ts + compatTe.ts, matrixPlan.ts, checklist.ts; cancels via analysisRequests; loadAutosave removed"
+      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "f7b86cc0d3373910f59bd5d68ccdc7a825621f5cc076671a27e20af72b77e136",
+      "sha256": "6c93fd2f57f03dae59f726348460c0fd7fd615c25eb76bcdd5456d58b6c1d8fc",
       "reviewedAt": "2026-09-08",
-      "note": "Fingerprint refresh after review fixes"
+      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "4afa78820e56e9e73f5c9484fce20e9de35db804a331fa42d3839db9285bdfb1",
+      "sha256": "dd8cba9d17c967b349e513e6ede8cb9b06fdfb10d943279ea30e4d940ce1c1b4",
       "reviewedAt": "2026-09-08",
-      "note": "Review fixes: matrix plan parity, one id allocator, disjoint compat tables"
+      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -72,7 +72,7 @@
       ],
       "sha256": "220f09928a688721ee4386887d28d507c66212cb14f315353fab99a6ebe28606",
       "reviewedAt": "2026-09-08",
-      "note": "Fingerprint refresh after review fixes"
+      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
     },
     {
       "document": "docs/WORKFLOW.md",
