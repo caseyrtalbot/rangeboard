@@ -1,0 +1,78 @@
+// S9 browser check: old analysis lens field loads clean; four screens render after a played trial.
+import { readFileSync } from 'node:fs'
+import { chromium } from '/Users/caseytalbot/Projects/rangeboard-wt/s9/node_modules/playwright/index.mjs'
+
+const BASE_URL = 'http://localhost:5181'
+const RAW = readFileSync('/Users/caseytalbot/Projects/rangeboard-wt/s9/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json', 'utf8')
+
+// The shape earlier builds wrote under rangeboard.analysis.v1, also planted inside view.v1.
+const OLD_ANALYSIS = {
+  layout: {
+    presetId: 'sensors',
+    widgets: [
+      { id: 'se-kpi', type: 'kpi-tiles', params: { tiles: ['detect', 'trackNow'] }, collapsed: false },
+      { id: 'se-lanes', type: 'engagement-lanes', params: {}, collapsed: true },
+    ],
+  },
+  userPresets: [{ id: 'user-1', label: 'Wide look', builtin: false, widgets: [] }],
+}
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 } })
+await ctx.addInitScript((analysis) => {
+  localStorage.setItem('rangeboard.view.v1', JSON.stringify({ rightTab: 'analysis', theme: 'dark', analysis }))
+  localStorage.setItem('rangeboard.analysis.v1', JSON.stringify(analysis))
+}, OLD_ANALYSIS)
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 300)}`) })
+
+const read = (path) => page.evaluate((p) => p.split('.').reduce((o, k) => o?.[k], window.__store.getState()), path)
+const waitFor = (fn, arg, timeout = 30000) => page.waitForFunction(fn, arg, { timeout })
+const out = {}
+
+await page.goto(BASE_URL, { waitUntil: 'load' })
+await waitFor(() => document.querySelector('.konvajs-content canvas') && window.__store, null, 60000)
+out.rightTabFromSavedView = await read('ui.rightTab')
+out.themeFromSavedView = await read('ui.theme')
+out.uiHasAnalysisField = await page.evaluate(() => 'analysis' in window.__store.getState().ui)
+out.recoveryKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.includes('recovered')))
+out.recoveryNoticeText = await page.evaluate(() => document.body.innerText.includes('recovery notice'))
+out.analysisKeyStillPresent = await page.evaluate(() => localStorage.getItem('rangeboard.analysis.v1') != null)
+
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  window.__store.getState().loadScenario(parseAutosave(raw))
+}, RAW)
+out.threats = await page.evaluate(() => window.__store.getState().scenario.entities.filter((e) => e.kind === 'uas').length)
+
+// Prepare: Fragility.
+await page.evaluate(() => { const s = window.__store.getState(); s.setBoardPhase('prepare'); s.setRightTab('analysis') })
+await waitFor(() => document.querySelector('section[aria-label="Fragility"] h3'))
+out.fragility = await page.textContent('section[aria-label="Fragility"] h3')
+
+// Execute: Play a trial to completion.
+await page.evaluate(() => { const s = window.__store.getState(); s.setBoardPhase('execute'); s.setSpeedMult(64); s.startRun() })
+await waitFor(() => ['ready', 'error'].includes(window.__store.getState().trial.status), null, 60000)
+out.trialStatus = await read('trial.status')
+await waitFor(() => ['complete', 'review'].includes(window.__store.getState().playback.phase), null, 120000)
+out.playbackPhase = await read('playback.phase')
+out.observedThroughS = await read('playback.observedThroughS')
+await waitFor(() => document.querySelector('[aria-label="Now"]'))
+out.now = await page.evaluate(() => document.querySelector('[aria-label="Now"]').textContent.slice(0, 120))
+
+// Analyze: Outcome, then Compare.
+await page.evaluate(() => window.__store.getState().setBoardPhase('analyze'))
+await waitFor(() => document.querySelector('[aria-label="Outcome"]'))
+out.outcome = await page.evaluate(() => document.querySelector('[aria-label="Outcome"]').textContent.slice(0, 120))
+await page.click('[aria-label="Analysis screens"] button:has-text("Compare")')
+await waitFor(() => document.querySelector('[aria-label="Compare"]'))
+out.compare = await page.evaluate(() => document.querySelector('[aria-label="Compare"]').textContent.slice(0, 160))
+out.layoutControl = await page.evaluate(() => !!document.querySelector('.analysis-layout-popover, .lens-builtins, [data-widget-type]'))
+out.bodyScrollX = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
+
+out.errors = errors
+console.log(JSON.stringify(out, null, 2))
+await browser.close()
+process.exit(errors.length === 0 && out.recoveryKeys.length === 0 && !out.recoveryNoticeText ? 0 : 1)

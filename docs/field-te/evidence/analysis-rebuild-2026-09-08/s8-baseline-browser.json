@@ -1,0 +1,164 @@
+{
+  "threats": 1,
+  "replicates": 30,
+  "headersBefore": [
+    "Quantity",
+    "Trial",
+    "Ensemble mean",
+    "95 % band",
+    "Flag"
+  ],
+  "beforePin": {
+    "text": "No pinned baselinePin",
+    "buttons": [
+      {
+        "text": "Pin",
+        "disabled": false
+      }
+    ]
+  },
+  "pinned": {
+    "label": "Untitled scenario · 9/8/26, 4:04 PM",
+    "pinnedAt": "2026-09-08T23:04:42.146Z",
+    "hash": 26084,
+    "seed": 4821,
+    "replicates": 30,
+    "name": "Untitled scenario"
+  },
+  "afterPin": {
+    "text": "Baseline · Untitled scenario · 9/8/26, 4:04 PMClearPin",
+    "buttons": [
+      {
+        "text": "Clear",
+        "disabled": false
+      },
+      {
+        "text": "Pin",
+        "disabled": false
+      }
+    ]
+  },
+  "savedBytes": 397087,
+  "savedNullCount": 426,
+  "afterReload": {
+    "label": "Untitled scenario · 9/8/26, 4:04 PM",
+    "pinnedAt": "2026-09-08T23:04:42.146Z",
+    "nanRestored": true,
+    "keys": [
+      "rangeboard.baseline.v1",
+      "rangeboard.rightpanel.width",
+      "rangeboard.runseq.v1",
+      "rangeboard.scenario.v1",
+      "rangeboard.view.v1"
+    ],
+    "entities": 6
+  },
+  "listing": [
+    {
+      "key": "rangeboard.baseline.v1",
+      "kind": "live",
+      "bytes": 794218
+    }
+  ],
+  "storagePanelShowsKey": true,
+  "compare": {
+    "headers": [
+      "Quantity",
+      "Trial",
+      "Ensemble mean",
+      "95 % band",
+      "Baseline",
+      "Current − Baseline",
+      "Flag"
+    ],
+    "rows": [
+      [
+        "Kills",
+        "1 /1 members",
+        "1.0 /1 members",
+        "0.8 to 1.0 /1 members",
+        "1.0 /1 members",
+        "0 members",
+        "outside"
+      ],
+      [
+        "Leakers",
+        "0 /1 members",
+        "0.0 /1 members",
+        "0.0 to 0.2 /1 members",
+        "0.0 /1 members",
+        "0 members",
+        "outside"
+      ],
+      [
+        "First detect",
+        "0.5 s from T0",
+        "0.8 s from T0",
+        "0.4 to 1.1 s from T0",
+        "0.8 s from T0",
+        "0 s from T0",
+        "inside"
+      ],
+      [
+        "Min warning",
+        "474.5 s",
+        "474.2 s",
+        "473.9 to 474.6 s",
+        "474.2 s",
+        "0 s",
+        "inside"
+      ],
+      [
+        "Salvos",
+        "1 salvos",
+        "1.7 salvos",
+        "1.4 to 2.0 salvos",
+        "1.7 salvos",
+        "0 salvos",
+        "outside"
+      ]
+    ],
+    "legend": [
+      "Ensemble mean",
+      "95 % band on mean",
+      "Simulated trial",
+      "Baseline mean"
+    ],
+    "dashed": true,
+    "img": "Kills before arrival, members of 1. Ensemble mean and 95 % band on mean; simulated trial with endpoint marked; Baseline mean, dashed. Horizon T+8:20.",
+    "details": "Interval and definedness detailsFirst detect: MC conditional mean · first single-scan hit · ±0.3 s (95% mean CI) · n=30 · detected in 30 of 30 · 89% to 100% (95% Wilson)Min warning: MC conditional mean · arrival minus first single-scan hit · ±0.3 s (95% mean CI) · n=30 · warning time in 30 of 30 · 89% to 100% (95% Wilson)Salvos: One effector; its salvo interval is the aggregate interval.Baseline: ",
+    "width": 291,
+    "overflow": false,
+    "panelClass": "inspector-body analysis-panel"
+  },
+  "afterClear": {
+    "text": "No pinned baselinePin",
+    "buttons": [
+      {
+        "text": "Pin",
+        "disabled": false
+      }
+    ]
+  },
+  "afterClearReload": {
+    "baseline": null,
+    "keys": [
+      "rangeboard.baseline.v1",
+      "rangeboard.rightpanel.width",
+      "rangeboard.runseq.v1",
+      "rangeboard.scenario.v1",
+      "rangeboard.view.v1"
+    ]
+  },
+  "corrupt": {
+    "baseline": null,
+    "notices": [
+      "The saved baseline could not be read and was not loaded. baseline.pinnedAt: expected an ISO time A copy is kept in browser storage under \"rangeboard.baseline.recovered.1788908684331\"."
+    ],
+    "recovered": [
+      "rangeboard.baseline.recovered.1788908684331"
+    ]
+  },
+  "storageButton": "Storage · 1 recovery notices",
+  "errors": []
+}

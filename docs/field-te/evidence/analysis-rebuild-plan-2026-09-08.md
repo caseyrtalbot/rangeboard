@@ -487,5 +487,18 @@ Stop when: docs:check passes and no doc describes a lens.
 
 ## 7. Completion record
 
-Record each slice here as it passes its gate, with the commit and the evidence path.
-Empty at capture.
+Every slice passed its gate on 2026-09-08. Evidence:
+[analysis-rebuild-2026-09-08](analysis-rebuild-2026-09-08/README.md).
+
+| Slice | Commit | Gate |
+| --- | --- | --- |
+| S1 | `9a2b981` | tests, browser: screens mount, lens bar gone |
+| S4 | `c99b03d` | fixed-ID parity on leakers swing and se, 13 fields |
+| S3 | `ab336cb`, fixes `5e91b45` `e92428e` | tests, browser at 30x, 86 fps |
+| S2 | `7faad63`, fix `b6295f6` | tests, browser: grid once, table sorts |
+| S6 | `bb94514`, fix `2873ab3` | parity on every existing path, 2 x 2 worker sweep |
+| S5 | `3032326` | tests, browser with ensemble, finding fired |
+| S7 | `399eefa` | tests, browser: 5 x 4 sweep painted |
+| S8 | `8d26f1e`, wiring `e919f09` | schema:check, recovery tests, pin, reload, clear |
+| S9 | `dff38b0`, e2e `25fd789` | full gate, bundle budget, −1,668 bytes initial |
+| S10 | see HANDOFF | `npm run docs:check` |
