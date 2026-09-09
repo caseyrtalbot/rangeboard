@@ -29,7 +29,7 @@ export interface AutosaveAdapter<R> {
   key: string
   /** Prefix of a recovery copy of an unreadable record. */
   recoveryPrefix: string
-  /** What a recovery notice calls this record ('scenario', 'T&E campaigns'). */
+  /** What a recovery notice calls this record ('scenario', 'baseline'). */
   label: string
   /** Parse a raw record. Throws a path and reason on invalid JSON or shape. */
   parse: (raw: string) => R
@@ -38,7 +38,7 @@ export interface AutosaveAdapter<R> {
   /**
    * Subscribe the owning store and report every record worth writing. Returns
    * the unsubscribe. The comparison that decides "worth writing" belongs here:
-   * the Board watches the scenario, T&E watches campaigns and the active id.
+   * the Board watches the scenario, the baseline lane watches the pinned baseline.
    */
   subscribe: (changed: (record: R) => void) => () => void
   /** Stamp a completed write in the owning store's time format. */

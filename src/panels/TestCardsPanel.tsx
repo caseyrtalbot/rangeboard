@@ -10,9 +10,6 @@ import {
   standardCovariates,
 } from '../model/seedCards'
 import { useStore } from '../state/store'
-import { useTeStore } from '../te/state/teStore'
-import { MEASURE_DICTIONARY } from '../te/seed/measureDictionary'
-import { CHECKLIST_TEMPLATES } from '../te/seed/checklistTemplates'
 import { engagementPicture } from '../analysis/impact'
 import { buildAarSummary } from '../analysis/aar'
 import { aarHeadline } from './headlines'
@@ -30,12 +27,6 @@ const STANDARD_IVS = [
   'EM background',
   'wind',
 ]
-
-const MEASURE_OPTIONS = [
-  ...new Set([...MEASURES_DTI, ...MEASURE_DICTIONARY.map((m) => m.name)]),
-]
-
-const NO_QUESTIONS: never[] = []
 
 function Field({
   label,
@@ -206,13 +197,9 @@ function CardEditor({ card }: { card: TestCard }) {
   const scenario = useStore((s) => s.scenario)
   const { deleteCard, toggleCardEntity, addRun, updateRun, updateCard, newCardVersion, select } =
     useStore.getState()
-  const teCampaign = useTeStore((s) => s.campaigns.find((c) => c.id === s.activeCampaignId))
-  const teQuestions = teCampaign?.questions ?? NO_QUESTIONS
-
   const campaignValues = [
     ...new Set(
       [
-        ...(teCampaign ? [teCampaign.name] : []),
         ...scenario.testCards.map((c) => c.campaign),
         ...CARD_TEMPLATES.map((t) => t.category),
       ].filter(Boolean),
@@ -242,12 +229,12 @@ function CardEditor({ card }: { card: TestCard }) {
       <TextField card={card} field="campaign" label="Campaign" listId="dl-card-campaign" />
       <div className="field">
         <span>Question IDs</span>
-        {teQuestions.length === 0 && splitIds(card.questionIds).length === 0 && (
-          <div className="muted small">No active T&amp;E campaign questions. Add an ID below.</div>
+        {splitIds(card.questionIds).length === 0 && (
+          <div className="muted small">No question IDs yet. Add an ID below.</div>
         )}
         <CheckPicker
           values={splitIds(card.questionIds)}
-          options={teQuestions.map((q) => ({ value: q.id, label: `${q.id} ${q.wording}` }))}
+          options={[]}
           addPlaceholder="Add question ID"
           onChange={(next) => updateCard(card.id, { questionIds: next.join(', ') })}
         />
@@ -339,28 +326,12 @@ function CardEditor({ card }: { card: TestCard }) {
         <span>Measures</span>
         <CheckPicker
           values={card.measures}
-          options={MEASURE_OPTIONS.map((m) => ({ value: m, label: m }))}
+          options={MEASURES_DTI.map((m) => ({ value: m, label: m }))}
           addPlaceholder="Add measure"
           onChange={(next) => updateCard(card.id, { measures: next })}
         />
       </div>
-      <ListField
-        card={card}
-        field="procedure"
-        label="Procedure (one step per line)"
-        action={
-          <PickSelect
-            placeholder="Insert from checklist template…"
-            options={CHECKLIST_TEMPLATES.map((t) => t.name)}
-            onPick={(name) => {
-              const t = CHECKLIST_TEMPLATES.find((x) => x.name === name)
-              if (t) {
-                updateCard(card.id, { procedure: [...card.procedure, ...t.items.map((i) => i.text)] })
-              }
-            }}
-          />
-        }
-      />
+      <ListField card={card} field="procedure" label="Procedure (one step per line)" />
       <TextField card={card} field="thresholds" label="Thresholds" rows={2} />
       <TextField card={card} field="abortCriteria" label="Safety / abort criteria" rows={2} />
       <TextField

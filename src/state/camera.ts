@@ -8,7 +8,7 @@ const FIT_MAX_SCALE = 20
 /**
  * Camera that fits the given world points in the canvas viewport. Reads the
  * mounted canvas host for its pixel size and falls back to a representative
- * viewport when none is mounted (tests, T&E workspace).
+ * viewport when none is mounted (tests).
  */
 export function fitCameraTo(points: Vec2[]): Camera | null {
   if (points.length === 0) return null

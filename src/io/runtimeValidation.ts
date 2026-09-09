@@ -1,7 +1,6 @@
 import type { LegacyOmissions } from './compat'
 import { boardLegacyOmissions } from './compat'
 import { runtimeShapes } from './runtimeSchema'
-import { teLegacyOmissions } from '../te/io/compatTe'
 
 /** JSON structural contract, generated from the domain types, with semantics below. */
 export interface RuntimeShape {
@@ -27,7 +26,7 @@ export function objectAt(value: unknown, path: string): Record<string, unknown> 
 // New-image admission uses a conservative 5 MiB storage budget, accounting
 // for UTF-16 code units. Browser quotas/free space vary. Existing saved images
 // remain portable; actual storage failures are authoritative. This does not
-// cap campaigns/records or guarantee sufficient quota for an admitted image.
+// cap records or guarantee sufficient quota for an admitted image.
 export const MAX_ARRAY_LENGTH = 2 ** 32 - 1
 export const MAX_IMAGE_CODE_UNITS = (5 * 1024 * 1024) / 2
 export function validateImage(value: string, path: string, newImage = false): void {
@@ -46,10 +45,10 @@ export function validateImage(value: string, path: string, newImage = false): vo
   if (!/^data:image\/[a-z0-9.+-]+(?:;[^,]*)?,/i.test(value)) invalid(path, 'expected an image data URL')
 }
 
-// Every accepted omission comes from the domain that fills it: `io/compat.ts`
-// for the Board, `te/io/compatTe.ts` for T&E. Only missing fields get defaults;
-// a present null/string/array is always checked against its actual type.
-const legacyMissing: LegacyOmissions = { ...boardLegacyOmissions, ...teLegacyOmissions }
+// Every accepted omission comes from `io/compat.ts`, which fills it. Only missing
+// fields get defaults; a present null/string/array is always checked against its
+// actual type.
+const legacyMissing: LegacyOmissions = boardLegacyOmissions
 
 /** Validate all known nested fields; retain extension data for forward compatibility. */
 export function validateShape(value: unknown, name: string, path = name, legacy = false): void {
@@ -138,7 +137,6 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
       range('naturalW', 0, Infinity, true, true); range('naturalH', 0, Infinity, true, true)
     }
   }
-  if (owner === 'TeFrame') validateImage(o.pngDataUrl as string, `${path}.pngDataUrl`)
   if (owner === 'SpecModel') {
     for (const field of ['sensor', 'effector', 'uas']) {
       if (o.kind === field && o[field] == null) invalid(`${path}.${field}`, `required for kind ${field}`)
@@ -173,13 +171,6 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
     range('hi', 0)
   }
   if (o.kind === 'beta') { range('trials', 0); range('successes', 0, Number(o.trials)) }
-  if (owner === 'TeMeasure') { range('priorAlpha', 0, Infinity, false, true); range('priorBeta', 0, Infinity, false, true); range('requiredRepetitions', 1, Number.MAX_SAFE_INTEGER, true) }
-  if (owner === 'TeThreatProfile') { ordered('speedBandMps'); ordered('altBandFt'); range('count', 1, Number.MAX_SAFE_INTEGER, true); range('uasGroup', 1, 5, true) }
-  if (owner === 'TeMatrixCell') { range('plannedReps', 1, Number.MAX_SAFE_INTEGER, true); range('minValidEvidence', 1, Number.MAX_SAFE_INTEGER, true) }
-  if (owner === 'TeCard') for (const k of ['repetitionNumber', 'minValidSample']) range(k, 1, Number.MAX_SAFE_INTEGER, true)
-  if (owner === 'TeCampaign') {
-    for (const [key, n] of Object.entries(o.seq as Record<string, unknown>)) if (!Number.isSafeInteger(n) || Number(n) < 0) invalid(`${path}.seq.${key}`, 'expected a nonnegative safe integer')
-  }
   if (o.camera && typeof o.camera === 'object' && Number((o.camera as Record<string, unknown>).scale) <= 0) invalid(`${path}.camera.scale`, 'expected a positive scale')
 }
 

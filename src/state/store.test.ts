@@ -22,7 +22,6 @@ import {
   savedView,
 } from '../io/viewState'
 import { RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
-import { useTeStore } from '../te/state/teStore'
 import { ControlledWorker } from '../playback/controlledWorker'
 
 
@@ -1041,7 +1040,7 @@ describe('view state', () => {
   beforeEach(reset)
   afterEach(() => vi.unstubAllGlobals())
 
-  it('round-trips camera, basemap, right tab and workspace through localStorage', () => {
+  it('round-trips camera, basemap and right tab through localStorage', () => {
     const store = stubStorage()
     useStore.getState().setCamera({ x: 1, y: 1, scale: 1 })
     useStore.getState().setCamera({ x: 12, y: -8, scale: 0.25 })
@@ -1050,20 +1049,16 @@ describe('view state', () => {
     flushViewWrites()
     useStore.getState().setBasemap('sat')
     useStore.getState().setRightTab('analysis')
-    useTeStore.getState().setWorkspace('ops')
     expect(JSON.parse(store.get(VIEW_KEY)!)).toEqual({
       camera: { x: 12, y: -8, scale: 0.25 },
       basemap: 'sat',
       rightTab: 'analysis',
-      workspace: 'ops',
     })
     expect(savedView()).toEqual({
       camera: { x: 12, y: -8, scale: 0.25 },
       basemap: 'sat',
       rightTab: 'analysis',
-      workspace: 'ops',
     })
-    useTeStore.getState().setWorkspace('board')
   })
 
   it('drops an invalid field and keeps the others', () => {

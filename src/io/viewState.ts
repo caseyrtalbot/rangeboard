@@ -5,21 +5,19 @@ import { DEFAULT_LAYERS } from '../state/layers'
 import type { Camera, RightTab, Theme } from '../state/store'
 import type { RingKey, RingOverrides } from '../state/rings'
 import { RING_KEYS } from '../state/rings'
-import type { Workspace } from '../te/state/teStore'
 import { LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } from './storageKeys'
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
- * basemap, right panel tab, workspace and theme. Written eagerly by the store
+ * basemap, right panel tab and theme. Written eagerly by the store
  * setters, read once at store construction. Every field is optional so a
  * partial or older record still loads. An older record can also carry an
- * `analysis` lens layout: it is read and dropped, never an error.
+ * `analysis` lens layout or a `workspace`: each is read and dropped, never an error.
  */
 export interface SavedView {
   camera?: Camera
   basemap?: BasemapMode
   rightTab?: RightTab
-  workspace?: Workspace
   theme?: Theme
 }
 
@@ -77,19 +75,16 @@ function oneOf<T extends string>(v: unknown, allowed: T[]): T | undefined {
 export function savedView(): SavedView {
   const BASEMAPS: BasemapMode[] = ['canvas', 'sat', 'airspace']
   const RIGHT_TABS: RightTab[] = ['inspect', 'cards', 'library', 'analysis']
-  const WORKSPACES: Workspace[] = ['board', 'ops']
   const THEMES: Theme[] = ['system', 'dark', 'light']
   const raw = readRaw()
   const out: SavedView = {}
   const camera = validCamera(raw.camera)
   const basemap = oneOf(raw.basemap, BASEMAPS)
   const rightTab = oneOf(raw.rightTab, RIGHT_TABS)
-  const workspace = oneOf(raw.workspace, WORKSPACES)
   const theme = oneOf(raw.theme, THEMES)
   if (camera) out.camera = camera
   if (basemap) out.basemap = basemap
   if (rightTab) out.rightTab = rightTab
-  if (workspace) out.workspace = workspace
   if (theme) out.theme = theme
   return out
 }

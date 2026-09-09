@@ -3,7 +3,6 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
-import { useTeStore } from '../te/state/teStore'
 import { RangeSetupMenuPanel } from './RangeSetupMenu'
 import { BoardTools, FileActions, Toolbar } from './Toolbar'
 import { ViewMenuPanel } from './ViewMenu'
@@ -13,7 +12,6 @@ import type { LayerPreset } from '../state/layers'
 
 function render(node: ReactNode): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
-  Object.assign(useTeStore.getInitialState(), useTeStore.getState())
   return renderToStaticMarkup(node)
 }
 
@@ -22,15 +20,12 @@ describe('Board toolbar grouping', () => {
     useStore.getState().replaceScenario(emptyScenario())
     useStore.getState().setTool('select')
     useStore.getState().setTheme('system')
-    useTeStore.getState().setWorkspace('board')
-    useTeStore.setState({ activeCampaignId: null })
   })
 
   it('keeps Board identity, scenario, file trigger and status in the top bar', () => {
     const html = render(<Toolbar />)
 
     expect(html).toContain('Rangeboard')
-    expect(html).toContain('aria-label="Workspace"')
     expect(html).toContain('aria-label="Scenario name"')
     expect(html).toContain('aria-label="More actions"')
     expect(html).toContain('aria-label="Status"')
@@ -38,15 +33,6 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('title="ROE · click to change"')
     expect(html).not.toContain('aria-label="Board tools"')
     expect(html).not.toContain('aria-label="Theme"')
-  })
-
-  it('keeps the T&amp;E Ops branch theme control', () => {
-    useTeStore.getState().setWorkspace('ops')
-    const html = render(<Toolbar />)
-
-    expect(html).toContain('T&amp;E Ops')
-    expect(html).toContain('aria-label="Theme"')
-    expect(html).not.toContain('aria-label="Scenario name"')
   })
 
   it('orders canvas tools before range setup, view and history', () => {
@@ -60,11 +46,10 @@ describe('Board toolbar grouping', () => {
     expect(html).not.toContain('Calibrate scale')
   })
 
-  it('preserves every file action, including campaign frame capture', () => {
-    useTeStore.setState({ activeCampaignId: 'campaign-test' })
+  it('preserves every file action', () => {
     const html = render(<FileActions onRequestClose={() => {}} />)
 
-    for (const action of ['New', 'Import', 'Export', 'Capture frame']) {
+    for (const action of ['New', 'Import', 'Export']) {
       expect(html).toContain(`>${action}</button>`)
     }
     expect(html).toContain('role="dialog" aria-label="File actions"')

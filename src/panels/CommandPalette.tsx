@@ -111,7 +111,7 @@ const ACTIONS: Command[] = [
   { id: 'import-library', category: 'Library', label: 'Import library', run: importLibraryFile },
 ]
 
-/** Cmd+K command palette. Mounted only while open, Board workspace only. */
+/** Cmd+K command palette. Mounted only while open. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const library = useStore((s) => s.scenario.library)
   const testCards = useStore((s) => s.scenario.testCards)
