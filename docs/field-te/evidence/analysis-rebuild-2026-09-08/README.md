@@ -35,6 +35,8 @@ each merge: `test:docs`, `test:bundle`, `typecheck`, `schema:check`, `test`, `li
 | S9 | 161 | 1934 | pass, bundle budget passed |
 
 `gate-after-s9.txt` is the raw log of the S9 gate including `check:bundle`.
+`check-final.txt` is the full `npm run check` plus `check:bundle` after S10 and the
+handoff update: docs:check passed, 161 files, 1934 tests, bundle budget passed.
 Initial bundle after S9: 385,533 bytes gzip against 387,201 at base (−1,668).
 `npm run test:e2e` passed 6 of 6 after the lens e2e check was replaced (`25fd789`).
 

@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "8ce8188cd036546eea8558462e860dd5e5880bc4d30c5825d0f4b9789795fdcf",
-      "reviewedAt": "2026-09-08",
-      "note": "Added the approved analysis rebuild plan link under design proposals."
+      "sha256": "6b04690a98c3d0787772edf67739b1619f4bbee7713441dbf3632cc4f0e782b8",
+      "reviewedAt": "2026-09-09",
+      "note": "Added the analysis rebuild completion evidence link under completion records."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "1294c3be51df22867c3edb2412c472db075a26cf32aed8e0e670ea11d21215dc",
+      "sha256": "78eb5af9d946e75874885d350b7c835bf3db14df92238432e6c9169d0809d5e3",
       "reviewedAt": "2026-09-09",
-      "note": "S10: mapped each analysis screen and the baseline to its tests and browser check; added the sensitivity parity and sweep tests; removed the widget render probe and lens role guidance; noted the shell spec lens test targets removed markup."
+      "note": "Shell spec now checks the analysis screen control and no lens bar; the stale lens test is gone."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -89,16 +89,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "71315964fe11fb5895267dc6c25555253016d1e7fdf0a2d9afa0d9b1f244d207",
-      "reviewedAt": "2026-09-08",
-      "note": "Reviewed the Board shell spec trial-readiness wait; documented CI sequence and separate browser-check command remain accurate without prose changes."
+      "sha256": "76c88262ecadda54d17a945dd16eca762d712226d0cbdd01b0595acdc31ab69f",
+      "reviewedAt": "2026-09-09",
+      "note": "Reviewed the e2e shell spec change (lens test replaced by a screens test); workflow text unchanged."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "7c56f474e2997298050b289a5b82c5160d6f4e73f0cf160ea7d841abc746fbf3",
-      "reviewedAt": "2026-09-08",
-      "note": "Recorded the approved analysis rebuild plan as selected work with S1 as the next action and lane ownership."
+      "sha256": "0a08acd15e3174c7c7c815ebf8fe62950ba11fb18ad50b52e1a52a8522155d39",
+      "reviewedAt": "2026-09-09",
+      "note": "Recorded the analysis rebuild as complete on branch analysis-rebuild with its follow-ups; no work selected."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

@@ -501,4 +501,4 @@ Every slice passed its gate on 2026-09-08. Evidence:
 | S7 | `399eefa` | tests, browser: 5 x 4 sweep painted |
 | S8 | `8d26f1e`, wiring `e919f09` | schema:check, recovery tests, pin, reload, clear |
 | S9 | `dff38b0`, e2e `25fd789` | full gate, bundle budget, −1,668 bytes initial |
-| S10 | see HANDOFF | `npm run docs:check` |
+| S10 | `ar/s10` merged in `4dfa2f7`, review notes in `docs/maintenance.json` | `npm run docs:check` and full `npm run check` |

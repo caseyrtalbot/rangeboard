@@ -17,19 +17,26 @@ it does not authorize an implementation stage, commit, push or merge.
 
 ## Selected work
 
-The [analysis rebuild plan](field-te/evidence/analysis-rebuild-plan-2026-09-08.md) was
-approved on 2026-09-08 with every decision resolved. It replaces the five-lens widget stack
-with four screens and adds a factor sweep and a pinned baseline. Base commit
-`5d69c6bffba2dc678ee142592e1c0bdeaad6a75d` on `main`, clean tree at capture.
+None selected. The [analysis rebuild plan](field-te/evidence/analysis-rebuild-plan-2026-09-08.md)
+completed on 2026-09-08. Its section 7 records each slice's commit and gate, and the
+[evidence folder](field-te/evidence/analysis-rebuild-2026-09-08/README.md) records the
+worker assignment, the gate results after every merge and the browser checks. The work
+sits on branch `analysis-rebuild` from `77c225e`, with `npm run check`, `check:bundle` and
+`test:e2e` green at its head. Merge to `main` and push need explicit authorization.
 
-- Next action: slice S1, screen shell, from the plan's section 6 brief. Lane B may start
-  S4 at the same time; the two share no files.
-- Order: Lane A runs S1, S2 and S3, S5, S8. Lane B runs S4, S6, S7. S9 and S10 follow both.
-- Integrator owns `src/state/store.ts`, `src/io/*`, schema generation, shared docs and
-  each merge. `npm run check` runs after every merge. No slice commits.
-- Completion: record each slice in the plan's section 7 and here, with commit and evidence.
-- Stop: after S10 passes `npm run docs:check`, or when a gate fails and the failure needs
-  a decision the plan does not cover.
+Recorded follow-ups from the rebuild, none selected:
+
+- Monte Carlo first detect on the detection fixture is about 2 s while the deterministic
+  first detect is over 100 s; the new `forecast-trial-disagreement` finding fires on the
+  JIATF-401 laydown for the same reason. Inspect the Pd draw in `detection.ts`.
+- Compare prints times in seconds; Outcome prints m:ss. Align the formatters.
+- The Outcome screen scrolls in a 552 px panel with eight threats.
+- Dead code after S9: `.lens-*` and `.wg-*` CSS rules, `OutcomeSummary.tsx`,
+  `TrialOutcomeSummary` in `DebriefRecord.tsx`, the `observedPresetId` stamp now a constant.
+- Sweep progress carries no partial cell summaries; cells paint at completion.
+- Raid-size sweep cells take fresh ids from the time-based allocator, so they are not
+  draw-reproducible across runs.
+- `SensitivityRow.responses` is optional until the store and widget test fixtures carry it.
 
 ## Continuation boundary
 

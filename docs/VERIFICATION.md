@@ -125,10 +125,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
   in the page, then checks phase switching, selection routing, placement, the Escape chain
-  and the debrief record against store state. Its last test still targets the
-  `.lens-builtins` group and `ui.analysis.layout.presetId`; both left with the lens
-  system on 2026-09-08, so that test fails until it is removed, and the shell spec then
-  checks no lens roles. The debrief check calls
+  and the debrief record against store state. Its last test checks that the analysis
+  screen control follows the phase (Outcome and Compare in Analyze, Now in Execute) and
+  that no lens bar renders. The debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.
   CI runs it separately after `npm run check` and `npm run check:bundle`, installing Chromium
