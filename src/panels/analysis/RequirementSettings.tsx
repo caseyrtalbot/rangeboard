@@ -36,6 +36,7 @@ function ThresholdsBody() {
             min={0.05}
             max={0.99}
             step={0.05}
+            title="A radar contact counts as DETECT when its single-scan Pd reaches this value"
             value={thresholds.pdDetect}
             onChange={onNumber((n) => patch({ pdDetect: clamp(n, 0.05, 0.99) }))}
           />
@@ -79,10 +80,6 @@ function ThresholdsBody() {
           />
         </Field>
       </div>
-      <p className="muted analysis-empty">
-        The test defines these pass lines. The engine never sets them. A radar contact counts
-        as DETECT when its single-scan Pd reaches the detect value.
-      </p>
     </>
   )
 }

@@ -54,7 +54,7 @@ describe('ForecastSettings mode metadata', () => {
     expect(el).toContain('>DET<')
     expect(render()).toContain('<span class="chip-meta">envelope · Pd threshold</span>')
     expect(render()).toContain('Forecast and analysis')
-    expect(render()).toContain('freezes the shared seed')
+    expect(render()).not.toContain('freezes the shared seed')
   })
 
   it('shows the replicate count and the seed while idle under Monte Carlo', () => {

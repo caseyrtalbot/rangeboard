@@ -422,7 +422,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <EmptyState
             title={modelId == null ? 'No model selected' : 'Model unavailable'}
             body={modelId == null
-              ? 'Select a model in the library panel, or create one with the + buttons to edit its recorded specification.'
+              ? 'Open the Library (L) and choose Model basis on a model.'
               : 'This model is no longer in the library. Choose a model in Configure to link an available specification.'}
           />
         </Section>

@@ -397,7 +397,7 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                style source)
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
-               LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/screens/ for the
+               LibraryEditor, AnalysisPanel (+ analysis/screens/ for the
                Fragility, Now, Outcome and Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
@@ -420,7 +420,7 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
 src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
                the autosave subscription, exposes window.__store in dev
 src/App.tsx    right panel tabs, keyboard map, resizer; lazy boundaries for
-               AnalysisPanel, TestCardsPanel and CommandPalette
+               AnalysisPanel and CommandPalette
 ```
 
 Data flow for a click or drag: Konva event, store action, new scenario, React re-render of

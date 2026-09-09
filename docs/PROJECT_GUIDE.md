@@ -16,12 +16,12 @@ cursor, observed horizon and analysis basis. Execute starts with engagement laye
 retains its own session-only layer override; Prepare and Analyze share the saved layers.
 Prepare composes the existing run inputs, validity findings and a
 keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPreparation.tsx).
-Setup findings that cost a measurement appear first, with a Select button for a threat
-that starts inside detection coverage; model caveats stay inside the disclosure.
+Each validity finding appears once with its gates. Setup findings that cost a measurement
+come first, with a Select button for a threat that starts inside detection coverage.
 The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is one segmented
 control of the current phase's screens. It stays outside the scrolling panel, including
-while an object is selected. Test cards, selected-object configuration and the model
-library remain available in the panel tabs.
+while an object is selected. Selected-object configuration and the model library remain
+available in the panel tabs.
 
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its
@@ -59,9 +59,8 @@ numerical paths. Forecast uses the deterministic `engagementPicture`. It appears
 analysis screen. It remains in the run export and the requirement record, and the
 Outcome validity row falls back to forecast requirement validity when a trial captured
 none. Forecast/MC settings live under **Forecast and analysis** in Prepare and Settings.
-Where a forecast count still prints, as in the test-card headline, it reads as an
-expected value with two decimals below ten. No surface labels a forecast as a realized
-kill.
+Where a forecast count still prints, it reads as an expected value with two decimals
+below ten. No surface labels a forecast as a realized kill.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
@@ -113,7 +112,7 @@ screen changes preserve the result basis.
 | Read a completed trial | Outcome screen: count tiles, per-threat table, event ledger, manifest, validity and export | [OutcomeScreen](../src/panels/analysis/screens/OutcomeScreen.tsx), [trialResult](../src/analysis/trialResult.ts), [DebriefRecord](../src/panels/analysis/DebriefRecord.tsx) |
 | Compare against expectation | Compare screen: ensemble band with the trial marked, delta table, disagreement finding and a pinned baseline | [CompareScreen](../src/panels/analysis/screens/CompareScreen.tsx), [BandChart](../src/charts/BandChart.tsx), [runValidity](../src/analysis/runValidity.ts), [baseline](../src/state/baseline.ts) |
 | Find where a laydown fails | Fragility screen: Monte Carlo tiles, factor sweep map, ranked multi-response sensitivity and validity; aleatory/total uncertainty and run settings under Forecast and analysis | [FragilityScreen](../src/panels/analysis/screens/FragilityScreen.tsx), [SweepMap](../src/charts/SweepMap.tsx), [sweepFactors](../src/playback/sweepFactors.ts), [mcRun](../src/playback/mcRun.ts), [ForecastSettings](../src/panels/analysis/ForecastSettings.tsx) |
-| Retain work | Autosave, scenario/library/run JSON, saved Board frames, basic test cards and run logs | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [TestCardsPanel](../src/panels/TestCardsPanel.tsx) |
+| Retain work | Autosave, scenario/library/run JSON, saved Board frames and run logs | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts) |
 
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
 never advances observation or stamps a run start or analysis basis.
@@ -132,8 +131,8 @@ when a view fails; it carries the scenario and the pinned baseline as two lanes.
 1. [main.tsx](../src/main.tsx) restores the Board autosave synchronously and starts the
    autosave subscription, one [autosave lifecycle](../src/io/autosave.ts) with a scenario
    adapter and a baseline adapter. [App.tsx](../src/App.tsx) manages the interaction
-   chrome. The analysis and test-card panels, the command palette and the recharts plot
-   load behind lazy boundaries.
+   chrome. The analysis panel, the command palette and the recharts plot load behind
+   lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; explicit forecasts consume those results.

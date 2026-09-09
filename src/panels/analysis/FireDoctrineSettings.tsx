@@ -63,10 +63,6 @@ function DoctrineBody() {
           />
         </Field>
       </div>
-      <p className="muted analysis-empty">
-        Track initiation, target dwell, BDA dwell and commit Pk are per system: the sensor role
-        and effector type tables in doctrineFactors, or the model's own override.
-      </p>
     </>
   )
 }
@@ -88,6 +84,10 @@ function DoctrineInfo() {
       <p>
         With doctrine off, the ROE gate opens the engagement window and every ready effector
         volleys. Effector preparation and travel times still apply.
+      </p>
+      <p>
+        Track initiation, target dwell, BDA dwell and commit Pk are set per system by sensor
+        role and effector type, or by the model's own override.
       </p>
       <p>All timing values are planning factors, not measured system performance.</p>
     </Info>

@@ -31,7 +31,6 @@ import { nextTabIndex } from './ui/rovingTabs'
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
 // LibraryEditor stays static: EntityWorkspace renders it inline, so a boundary here
 // moves no bytes and only makes rolldown report an ineffective dynamic import.
-const TestCardsPanel = lazy(() => import('./panels/TestCardsPanel').then((m) => ({ default: m.TestCardsPanel })))
 const AnalysisPanel = lazy(() => import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })))
 const CommandPalette = lazy(() => import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })))
 
@@ -57,7 +56,6 @@ const PHASES: { id: BoardPhase; label: string }[] = [
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'analysis', label: 'Overview' },
   { id: 'inspect', label: 'Selected object' },
-  { id: 'cards', label: 'Test cards' },
   { id: 'library', label: 'Model library' },
 ]
 
@@ -145,14 +143,12 @@ const ResourceRail = memo(function ResourceRail({
   libraryTrigger,
   onToggleLibrary,
   onOpenObjects,
-  onOpenCards,
   onOpenKeys,
 }: {
   libraryOpen: boolean
   libraryTrigger: React.RefObject<HTMLButtonElement | null>
   onToggleLibrary: () => void
   onOpenObjects: () => void
-  onOpenCards: () => void
   onOpenKeys: () => void
 }) {
   return (
@@ -163,7 +159,6 @@ const ResourceRail = memo(function ResourceRail({
       <button onClick={onOpenObjects} title="Board entity register">
         <span aria-hidden="true">⌖</span>Objects
       </button>
-      <button onClick={onOpenCards}><span aria-hidden="true">▤</span>Cards</button>
       <button className="board-keys" onClick={onOpenKeys} title="Command palette (⌘K)"><span aria-hidden="true">⌘</span>Keys</button>
     </nav>
   )
@@ -544,7 +539,6 @@ export default function App() {
     setPrepareScreen('inputs')
     requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView())
   }, [openPhase])
-  const openCards = useCallback(() => setRightTab('cards'), [setRightTab])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
   const navigateAnalysis = useCallback((screen: AnalysisScreen) => {
     if (screen === 'fragility' || screen === 'inputs') setPrepareScreen(screen)
@@ -682,7 +676,6 @@ export default function App() {
           libraryTrigger={libraryTrigger}
           onToggleLibrary={toggleLibrary}
           onOpenObjects={openObjects}
-          onOpenCards={openCards}
           onOpenKeys={openKeys}
         />
         <div id="board-library-drawer" className="board-library-drawer" hidden={!libraryOpen}>
@@ -743,11 +736,6 @@ export default function App() {
                   }}
                 />
               : <Inspector />)}
-            {activeTab === 'cards' && (
-              <Suspense fallback={<PanelLoading label="Loading test cards" />}>
-                <TestCardsPanel />
-              </Suspense>
-            )}
             {activeTab === 'library' && <LibraryEditor />}
             {activeTab === 'analysis' && (analysisScreen === 'inputs'
               ? <BoardPreparation />

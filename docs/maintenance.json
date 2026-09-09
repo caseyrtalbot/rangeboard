@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "f6e61e1ed1fe957a6887c1e848be7f3a42b192841432c538e0f09450451f40d2",
+      "sha256": "00adf71c499ac4ff348bbe1577c5318f470590bf56b5e45478e443dc4017973c",
       "reviewedAt": "2026-09-09",
-      "note": "Summary describes the Board alone after the T&E Ops removal."
+      "note": "Test cards dropped from the summary after the tab removal"
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "d9a389a7d28182cd50e728fd779e05394d981d8a16bbdfa5f4dc65cd77e6be9e",
+      "sha256": "3c0ccb96dbe2753334bbfa93d44e24baf123e309871bfb0cff7902a980e3e04e",
       "reviewedAt": "2026-09-09",
-      "note": "compat.ts helpers made module-private; guide text unchanged."
+      "note": "Prepare panel declutter: one validity list, no run-scope rows, Test cards tab removed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "4e8b1e85734bebf164ef7b8755d6175e09901d82130872cd0692bef2b36645db",
+      "sha256": "28977558ba03d87824a9abee640e3f0b94ec3b5e5568141526236f793bf87c30",
       "reviewedAt": "2026-09-09",
-      "note": "compat.ts keeps one exported declaration and one derived omission set; reference text unchanged."
+      "note": "TestCardsPanel removed from the panel and lazy boundary lists"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "691faf965a0864ccf20916eb486f34f7599fafd983df24cb44701c08ea7314cf",
+      "sha256": "8d26413ac95a4ff8975d21e54e589a659a6e365e6505d2260435388ab482003c",
       "reviewedAt": "2026-09-09",
-      "note": "compat.ts export change; verification text unchanged."
+      "note": "e2e phase test now resets from the library tab; verification text unchanged"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "76c88262ecadda54d17a945dd16eca762d712226d0cbdd01b0595acdc31ab69f",
+      "sha256": "8855db0835a873d38c4770cc0e4e68597e086964a0f07812d6409cbe5b2bf309",
       "reviewedAt": "2026-09-09",
-      "note": "Reviewed the e2e shell spec change (lens test replaced by a screens test); workflow text unchanged."
+      "note": "e2e phase test tab change reviewed; workflow text unchanged"
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "d92f588e87ef4672db270c419df6484c3e275f234adf45f8af6e9db38d2a601e",
+      "sha256": "b590161b8618c1165d8df6d96cd062db28411be682716c2e2398ba47678b52fa",
       "reviewedAt": "2026-09-09",
-      "note": "Recorded the T&E Ops removal on branch remove-te-ops."
+      "note": "Recorded the Test cards tab removal on remove-te-ops"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "476d844089180baa6799396ceaf2519f850c16e6f4754bd707393720075d4ca9",
+      "sha256": "0966801c8d0e011b149929bc08f7d8d8dec0672a0ede3e4b071559ec3ba89908",
       "reviewedAt": "2026-09-09",
-      "note": "Theme switch text drops the T&E toolbar; T&E CSS blocks removed from index.css."
+      "note": "Reviewed the CSS removal of test-card chips and finding scope grid; design text unchanged"
     }
   ],
   "historical": [

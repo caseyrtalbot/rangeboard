@@ -2,7 +2,7 @@
 
 RangeBoard is a local-first, single-user C-UAS test and evaluation planning web app. The
 Board has a meter-scaled canvas, a system and threat library, flight paths, playback,
-deterministic and Monte Carlo analysis and test cards. React 19, TypeScript, Vite. No
+deterministic and Monte Carlo analysis. React 19, TypeScript, Vite. No
 backend. Persistence is `localStorage`.
 
 Every estimate carries its uncertainty, quantity, units, denominator and horizon. An

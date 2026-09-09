@@ -19,8 +19,10 @@ it does not authorize an implementation stage, commit, push or merge.
   its Board seams, its CSS region and its storage keys are gone. The engine statistics
   live in `src/analysis/stats.ts` and Board frame download in `src/canvas/frameCapture.ts`.
   Saved `rangeboard.te.v1` records are left in browser storage and are no longer read.
-  The Board test cards panel keeps its `campaign` and `questionIds` fields; their T&E
-  pickers are gone. `docs/te-plan.md` and `docs/te-compilation/` stay as historical source.
+  `docs/te-plan.md` and `docs/te-compilation/` stay as historical source.
+- The Board Test cards tab, its rail button, command palette entries and
+  `TestCardsPanel.tsx` were removed on 2026-09-09 on the same branch. `Scenario.testCards`,
+  its store actions, seed card and validation stay, so saved scenarios still load.
 
 ## Selected work
 

@@ -238,8 +238,6 @@ export function ForecastSettings() {
   const chip = chipOf(run, mc)
   return (
     <div aria-label="Forecast and analysis">
-      <p className="muted small">The trial freezes the shared seed at preparation and uses nominal parameters with aleatory draws. Committing analysis settings invalidates the current run.</p>
-      <p className="muted small">Replicates are a separate analysis; Play does not wait for them.</p>
       <span className={chip.cls} title={chip.title}>{chip.text}</span>
       <span className="chip-meta">{chip.meta}</span>
       <McPopover run={run} mc={mc} />

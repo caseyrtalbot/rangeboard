@@ -1023,10 +1023,10 @@ describe('no-op guards', () => {
     expect(useStore.getState().selection).toBe(selection)
 
     const tabBefore = useStore.getState().ui.rightTab
-    useStore.getState().setRightTab('cards')
+    useStore.getState().setRightTab('inspect')
     const ui = useStore.getState().ui
     const store = stubStorage()
-    useStore.getState().setRightTab('cards')
+    useStore.getState().setRightTab('inspect')
     expect(useStore.getState().ui).toBe(ui)
     expect(store.has(VIEW_KEY)).toBe(false)
     useStore.getState().setRightTab('library')

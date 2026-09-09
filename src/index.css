@@ -1790,59 +1790,6 @@ select.nu-unit {
   font-size: var(--type-meta-size);
 }
 
-/* ---------- Test cards ---------- */
-
-.cards-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-.cards-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--panel-pad);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.card-chip {
-  border: 1px solid var(--border-control);
-  color: var(--text-secondary);
-  font-size: var(--type-meta-size);
-}
-
-.card-chip:hover {
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
-}
-
-.cards-list select.card-chip {
-  width: auto;
-  color: var(--text-dim);
-  padding: 4px 6px;
-}
-
-.card-chip.active {
-  background: var(--surface-hover);
-  border-color: var(--text-secondary);
-  color: var(--text-primary);
-  font-weight: var(--type-label-weight);
-}
-
-.card-chip.add {
-  color: var(--text-dim);
-}
-
-.run-row {
-  border-top: 1px solid var(--border-subtle);
-  padding: var(--space-3) 0 var(--space-1);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 /* ---------- Analysis ---------- */
 
 /* Progressive disclosure: a lens bar over a stack of widget frames. */
@@ -4188,8 +4135,14 @@ input[type='number'] {
   white-space: normal;
 }
 
+.prepare-entity-name {
+  flex: 1 1 auto;
+}
+
 .prepare-entity-meta,
 .prepare-entity-state {
+  flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--text-secondary);
   font-size: var(--type-meta-size);
 }
@@ -4198,20 +4151,11 @@ input[type='number'] {
   min-width: 0;
 }
 
-.prepare-finding-scope {
-  margin: var(--space-2) 0 0;
+.prepare-finding-gates {
+  display: block;
+  margin-top: var(--space-1);
   font-size: var(--type-meta-size);
   color: var(--text-secondary);
-}
-
-.prepare-finding-scope div {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: var(--space-2);
-}
-
-.prepare-finding-scope dd {
-  margin: 0;
 }
 
 
@@ -4349,23 +4293,15 @@ input[type='number'] {
   min-width: 0;
 }
 
-.prepare-setting,
-.prepare-validity-disclosure {
+.prepare-setting {
   border-top: 1px solid var(--border-subtle);
 }
 
-.prepare-setting > summary,
-.prepare-validity-disclosure > summary {
+.prepare-setting > summary {
   padding: var(--space-3) 0;
   cursor: pointer;
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
-}
-
-.prepare-setting-impact {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--type-meta-size);
 }
 
 .prepare-setting-body .field-row {
