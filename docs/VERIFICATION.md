@@ -47,6 +47,22 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   seed and settings: deterministic, aleatory MC, total MC and sensitivity. Compare after
   the change with the same harness. Select applicable preserved fixtures under
   [evidence](field-te/evidence/); old numerical captures describe their original commits.
+- The sensitivity parity test (`src/playback/sensitivity.parity.test.ts`) runs
+  `sensitivityLoop` on the seeded JIATF-401 laydown and holds the leaker swing and paired
+  se of every field; `sensitivity.responses.test.ts` holds the definedness of an
+  undefined time. The sweep tests are `playback/sweepFactors.test.ts` (one case per
+  `applySweepValue` factor and input purity), `playback/mcRun.sweep.test.ts` (row-major
+  cells, a one-factor sweep at the scenario value equal to the plain replicate run, a
+  stop between cells, budget and grid refusal), `playback/mc.worker.sweep.test.ts` (a
+  2 x 2 sweep of 4 replicates that completes and cancels in the real worker) and
+  `state/store.sweep.test.ts` (the store action, the shared slot and cancellation). Keep
+  them green with the fixed-ID captures; a sweep change must leave every existing MC and
+  sensitivity number unchanged.
+- Baseline checks are `state/baseline.test.ts` (`validateMcSummary` null to NaN, arrival
+  stays null, `buildBaseline` labels, the store actions and the scenario/history
+  isolation), the baseline lane of `io/autosave.test.ts` (save, restore, corrupt copy and
+  recovery beside the scenario and T&E lanes) and `io/storageManagement.test.ts` (the
+  key and its recovery namespace in the storage readout).
 - R5 reuses the retained R4 fixed-ID numerical harness, preserved as
   [numerical-capture.ts.txt](field-te/evidence/r5-sampled-experience-2026-09-08/numerical-capture.ts.txt).
   It captures assessments, deterministic attrition, aleatory MC, total MC and sensitivity
@@ -93,20 +109,35 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   fields, write it back, reload, and expect no `rangeboard.scenario.recovered.*` key.
 - Handle the `window.confirm` dialog before a script clicks the run reset control with a
   dirty run.
+- Each analysis screen has its component tests and one browser check at 1265 px wide
+  with the JIATF-401 laydown:
+
+  | Screen | Tests | Browser check |
+  | --- | --- | --- |
+  | Fragility | `panels/analysis/screens/FragilityScreen.test.tsx`, `charts/SweepMap.test.tsx` | Run a sweep from the screen; the map paints cell by cell as it completes |
+  | Now | `panels/analysis/screens/NowScreen.test.tsx` | Play at 30x; the run line, kill chain, bars and sensor rows update with no dropped canvas frame and no scenario input shown |
+  | Outcome | `panels/analysis/screens/OutcomeScreen.test.tsx`, `panels/analysis/DebriefRecord.test.tsx` | A completed run; the tiles render once, the table sorts, the records open in place |
+  | Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `charts/BandChart.test.tsx`, `analysis/runValidity.test.ts` | A completed run with an ensemble; the band chart, delta table and disagreement finding render |
+  | Baseline | `state/baseline.test.ts`, the persistence tests above | Pin, reload, compare against the dashed baseline, clear; the Storage section lists `rangeboard.baseline.v1` |
+
+  `panels/AnalysisPanel.test.tsx` and `panels/analysis/AnalysisNavigation.test.tsx` cover
+  the phase-to-screen map and the screen control.
 - `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
-  in the page, then checks phase switching, selection routing, placement, the Escape chain,
-  the debrief record and the lens roles against store state. The debrief check calls
+  in the page, then checks phase switching, selection routing, placement, the Escape chain
+  and the debrief record against store state. Its last test still targets the
+  `.lens-builtins` group and `ui.analysis.layout.presetId`; both left with the lens
+  system on 2026-09-08, so that test fails until it is removed, and the shell spec then
+  checks no lens roles. The debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.
   CI runs it separately after `npm run check` and `npm run check:bundle`, installing Chromium
   and managing its own fixed-port Vite process. Locally the browser and built-bundle checks
   remain separate commands; bundle-accounting unit tests are included in `check`.
-- The performance-wave browser harness additionally verifies a widget render failure,
-  surviving Board/T&E autosaves, boundary export/reload, oversized frame and snapshot
-  refusal, and recovery listing/download/deletion and startup notices. Its dev-only
-  `window.__throwWidgetRender` probe takes a widget id; collapse and re-expand that widget
-  to throw inside its frame. Delete the hook before Reload. Only the exact injected
+- The performance-wave browser harness additionally verifies surviving Board/T&E
+  autosaves, boundary export/reload, oversized frame and snapshot refusal, and recovery
+  listing/download/deletion and startup notices. Its widget render failure probe targets
+  the widget frames removed on 2026-09-08 and no longer applies. Only an exact injected
   diagnostic is expected; every other page error fails the harness.
 
 ## Harness setup

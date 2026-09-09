@@ -116,6 +116,30 @@ analysis navigation sit outside the scroll body. Labels wrap and no panel text m
   Label in text 3 (`.tl`), value in mono at value size with a small denominator (`.tv`).
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
+- **Per-threat table** (`.tb.tb-dense`, the kill-chain table on Now and the outcome table
+  on Outcome). One row per track. Fixed layout: each column header carries its width as a
+  percentage, so the three or four time columns hold their width and the name and result
+  columns take the slack. Cells are mono at `--type-dense-size`. In the right panel a
+  dense cell clips with an ellipsis and never wraps; the full text is in the cell
+  `title`. Each header is a sort button with `aria-sort`; an abbreviated header (D, ID,
+  ENG, FX, Slv, Arr) spells its meaning and unit in the button title. A result or state
+  word is a `State` in its ink: leaked or engaged critical, active or targeted warning,
+  identified hollow, defeated in `--ghost`.
+- **Inventory bar** (`.rr-bar`, `.rr-bar-fill`; the effector row on Now). An
+  `.insp-row` with the effector name and `remaining/capacity` in mono, then a 3 px bar
+  in `--border-subtle` with the remaining fraction filled in `--accent`. The bar is a
+  `role="meter"` with min, max, now and a value text. A jam or HPM channel shows a full
+  bar and `cont.`.
+- **Sweep map** (`SweepMap` in `src/charts/SweepMap.tsx`, on Fragility). A CSS grid with
+  one label column plus one column per value of the first factor, and one row per value
+  of the second factor (one row, `Full run`, with one factor), all in `--font-mono` at
+  `--type-dense-size` with `--space-1` gaps. Each cell is filled on a three-step scale of
+  the displayed values' range: `--status-nominal`, `--status-warning`,
+  `--status-critical`, ordered so the better third is nominal. The value prints in
+  `--ink` on the fill. A cell with no value is unfilled: a dash in `--text-secondary`
+  while pending, a check mark in `--status-nominal` when complete. The caption states the
+  scale, the replicates per cell and that the thirds are relative, never a requirement.
+  Each cell title carries the factor values, response, replicates, horizon and interval.
 
 The Board has a 60 px resource rail and an overlaid Library drawer (306 px default,
 existing saved width retained). Drawing tools and the View and Range setup disclosures
@@ -131,14 +155,15 @@ control. Complete telemetry stays in the canonical pane, including full-path sco
 In Execute, Planned path uses the existing detail section header and rows for Planned
 arrival and Planned CPA; times retain the machine-data role.
 
-Analysis separates full-run results, full-run series and cursor statistics with explicit
-scope labels. Evidence products and supporting findings use native disclosures; metric
-intervals, denominator labels and names wrap in the two-column outcome grid. Layout opens
-a bounded non-modal surface below persistent navigation. Presets scroll within that
-surface; widget editing uses named move/remove buttons and accessible title toggles.
-Escape and close controls return focus to Layout. Scenario readouts link to Prepare
-without changing data until an input is edited. Execute forecast bodies use the existing
-muted text pattern for “Forecast available in Analyze”. Chart scope text reads “Shown
+Each analysis screen is one labeled section with one basis line (`.analysis-scope`)
+under its heading and one caveat per section header, never on a tile. Tiles are `.tiles.c3` with the denominator and horizon inside the tile. Records,
+findings and evidence products use native disclosures (`.analysis-disclosure`). A
+placeholder before the first Play is one muted line. The band chart on Compare draws the
+95 % band in `--rule-strong`, the ensemble mean in `--text-secondary`, the trial in
+`--chart-1` with its endpoint marked, and the pinned baseline mean dashed in
+`--text-tertiary`; its axis labels are mono at `--type-dense-size`. The delta table flag
+is a `State`: `inside` nominal, `outside` warning. Findings link to Prepare without
+changing data until an input is edited. Chart scope text reads “Shown
 through T+m:ss” or “No outcomes observed yet” in the legend accessibility label, or a
 visually hidden span when there is no legend. A preview playhead may show a later time.
 These reuse existing chart and text tokens.
