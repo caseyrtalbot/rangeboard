@@ -1,7 +1,8 @@
 # RangeBoard T&E Operations module: product plan and implementation plan
 
 > Dated source document: the completed implementation spec for `src/te/`, as it stood on
-> 2026-09-04. Source and tests decide current behaviour. The module was built in `c3f9853`
+> 2026-09-04. The module was removed on 2026-09-09; `src/te/` no longer exists and the
+> Board keeps no dependency on it. The module was built in `c3f9853`
 > (2026-08-19) and `901248e` (2026-08-22). Which of the stages in section 11 were completed
 > is not recorded here. Later persistence validation and record-transition work are
 > recorded in `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md` and

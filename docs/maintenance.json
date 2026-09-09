@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "69eae07785efedc38a091e81f848fe57861075b9016e9ce47de4b543df2ae6b0",
-      "reviewedAt": "2026-09-08",
-      "note": "Reviewed scoped npm test command; complete gate, browser and parity instructions remain accurate."
+      "sha256": "1471ae7366164b11a4fa3140fc26548fb081d04ee8adddceb1bcafba05669af5",
+      "reviewedAt": "2026-09-09",
+      "note": "T&E Ops removed: one store, no campaign guidance."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "bf464ff360b3a2778295a60caa6899332a93bca85350575b15c4d0e4bd00527f",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed the R2 instruction entry point and AGENTS.md; the shared-guidance redirect remains accurate."
+      "sha256": "7cc27f013d2735730eb45fa3736f392580b20a6d0850f3f1c7fc660ad46014ba",
+      "reviewedAt": "2026-09-09",
+      "note": "Redirect unchanged; AGENTS.md reviewed after the T&E Ops removal."
     },
     {
       "document": "README.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "fd7605de72fd38ef510d3429392f494cecf2c6571582e4b55d6484d7dbce1d1b",
+      "sha256": "f6e61e1ed1fe957a6887c1e848be7f3a42b192841432c538e0f09450451f40d2",
       "reviewedAt": "2026-09-09",
-      "note": "Reviewed App.tsx screen-state wiring for the four analysis screens; the introduction and setup text remain accurate without change."
+      "note": "Summary describes the Board alone after the T&E Ops removal."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "6b04690a98c3d0787772edf67739b1619f4bbee7713441dbf3632cc4f0e782b8",
+      "sha256": "6fa267d4cb50a7b6348ce84d4c7042578144d11f9f94c4b2bf8832ae6995e0f2",
       "reviewedAt": "2026-09-09",
-      "note": "Added the analysis rebuild completion evidence link under completion records."
+      "note": "te-plan index entry notes the module removal; historical folders unchanged."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9b7e0b1684bedd1f2f9d0f3716e31675f55fba6b3ebc700f7e26131e788e7a68",
+      "sha256": "e15483d0e8c7e4dcb7b14ea690071445d94194fc9987cece3a228940277e9878",
       "reviewedAt": "2026-09-09",
-      "note": "Board statistics moved to src/analysis/stats.ts; guide text unchanged."
+      "note": "Removed the T&E Ops features section and every T&E seam: boundaries, autosave lanes, refactor rows, placement cancel, test-card contrast."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "22fb91837ac09f72585d50f8234cb9fbfaf49724657e8e6298c2e3159d5a243d",
+      "sha256": "8d5fd93abc0b84d275ee461bc79fdb977163d1e56233ef60c35cdfe5ee79498a",
       "reviewedAt": "2026-09-09",
-      "note": "Statistics entry now points at src/analysis/stats.ts; the engine no longer depends on src/te/."
+      "note": "Removed section 8 (T&E module) and renumbered standards to 8; storage keys list the orphaned te keys; map, boundary, keyboard and copy entries describe the Board alone."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -63,16 +63,15 @@
         "vite.config.ts",
         "tsconfig.app.json",
         "src/io/",
-        "src/te/io/",
         "src/playback/__fixtures__/",
         "scripts/",
         ".github/workflows/quality.yml",
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "78eb5af9d946e75874885d350b7c835bf3db14df92238432e6c9169d0809d5e3",
+      "sha256": "5f17bf170f1a3ede37eb5610985078b09449cbd82196e45f2a6391f0877dd550",
       "reviewedAt": "2026-09-09",
-      "note": "Shell spec now checks the analysis screen control and no lens bar; the stale lens test is gone."
+      "note": "Dev hook is window.__store alone; src/te/io input removed."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -96,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "0a08acd15e3174c7c7c815ebf8fe62950ba11fb18ad50b52e1a52a8522155d39",
+      "sha256": "d92f588e87ef4672db270c419df6484c3e275f234adf45f8af6e9db38d2a601e",
       "reviewedAt": "2026-09-09",
-      "note": "Recorded the analysis rebuild as complete on branch analysis-rebuild with its follow-ups; no work selected."
+      "note": "Recorded the T&E Ops removal on branch remove-te-ops."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -108,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "71d04acf20783456855f152a2cc655b501e1cd6fe727fbe871b512e4d273c37f",
+      "sha256": "476d844089180baa6799396ceaf2519f850c16e6f4754bd707393720075d4ca9",
       "reviewedAt": "2026-09-09",
-      "note": "Field help dot, number-unit row and inventory bar rules moved into Board CSS sections; tokens and components unchanged."
+      "note": "Theme switch text drops the T&E toolbar; T&E CSS blocks removed from index.css."
     }
   ],
   "historical": [

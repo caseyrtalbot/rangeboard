@@ -97,18 +97,19 @@ Breaking one of these breaks the app.
   is not size-capped. `loadScenario` is the one load path; `replaceScenario` clears
   history, selection, drafts and the tool, and prunes per-entity view state.
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
-  instead. The live keys are `SCENARIO_KEY` (`rangeboard.scenario.v1`), `TE_KEY`
-  (`rangeboard.te.v1`), `BOARD_BASELINE` (`rangeboard.baseline.v1`), `LAYERS_KEY`,
+  instead. The live keys are `SCENARIO_KEY` (`rangeboard.scenario.v1`), `BOARD_BASELINE`
+  (`rangeboard.baseline.v1`), `LAYERS_KEY`,
   `RINGS_KEY`, `UNITS_KEY`, `VIEW_KEY`, `RUNSEQ_KEY`, `RIGHT_PANEL_WIDTH_KEY`,
   `PALETTE_WIDTH_KEY`, `PALETTE_COLLAPSED_KEY`, `ENGSTRIP_OPEN_KEY` and the retired
   `ANALYSIS_KEY` (`rangeboard.analysis.v1`), which earlier builds wrote for the removed
-  lens layout and nothing reads now. Three recovery namespaces exist:
-  `SCENARIO_RECOVERY_PREFIX`, `TE_RECOVERY_PREFIX` and `BASELINE_RECOVERY_PREFIX`
-  (`rangeboard.baseline.recovered.`); `storageManagement.ts` derives the live-key list and
-  the namespace list from every export of `storageKeys.ts` by the `_RECOVERY_PREFIX` name
-  suffix. The scenario, baseline and T&E autosaves have their own read and error paths;
-  all three run through the one lifecycle in `src/io/autosave.ts`, and their adapters keep
-  the keys, the records and the save status separate. The baseline adapter
+  lens layout and nothing reads now. The removed T&E Ops workspace wrote
+  `rangeboard.te.v1` and `rangeboard.te.recovered.*`; nothing reads or lists them now,
+  and no code deletes them. Two recovery namespaces exist: `SCENARIO_RECOVERY_PREFIX` and
+  `BASELINE_RECOVERY_PREFIX` (`rangeboard.baseline.recovered.`); `storageManagement.ts`
+  derives the live-key list and the namespace list from every export of `storageKeys.ts`
+  by the `_RECOVERY_PREFIX` name suffix. The scenario and baseline autosaves have their
+  own read and error paths; both run through the one lifecycle in `src/io/autosave.ts`,
+  and their adapters keep the keys, the records and the save status separate. The baseline adapter
   (`baselineAutosaveAdapter`, `src/io/persist.ts`) writes a `BaselineSave` (`schemaVersion`
   1, `baseline` or null; a cleared baseline is written as null, never removed, so a
   pending pin write cannot revive it). `parseBaselineSave` validates before adoption: the
@@ -304,7 +305,6 @@ Breaking one of these breaks the app.
   as one. Never invent a value to fill a blank; record the blank as an open item instead.
 - **No `Math.random` under `src/`.** Every draw goes through `DrawPolicy` (section 5). The
   engine draws in exactly five places; a sixth changes the draw keys and the CRN tests.
-- **T&E store is separate** (section 8 below). Never embed campaign data in `Scenario`.
 
 ## 4. Architecture map
 
@@ -370,8 +370,8 @@ src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPh
                fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
                threatAggregation.ts, range.ts, trialResult.ts (validated trial view and
                integer counts), trialSeries.ts (observation-bounded trial chart adapters)
-src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that both the
-               Board panels and the T&E kit render; reads index.css classes only, no store.
+src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that the
+               Board panels render; reads index.css classes only, no store.
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
                the layers, the palette glyphs, the detail panels and trackState share.
                usePopover.ts: the one dismissal rule for the toolbar dropdowns (outside
@@ -410,21 +410,17 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                save status), persist.ts (scenarioAutosaveAdapter and the Board autosave
                entry points, fillScenario, JSON and library
                import/export, runExportObject), compat.ts (the Board schema-1
-               legacy-omission declaration the validator and fillScenario both read;
-               te/io/compatTe.ts is its T&E counterpart),
+               legacy-omission declaration the validator and fillScenario both read),
                runResultGroups.ts (per-group basis/units
                and separately typed TrialResultGroup),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
                runtimeValidation.ts + validateScenario.ts (runtime semantics),
                viewState.ts (readSetting and writeSetting over every settings key),
                storageKeys.ts, recovery.ts
-src/te/        T&E Operations workspace (own store, section 8)
 src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
-               both autosave subscriptions, schedules the T&E restore on idle,
-               exposes window.__store and window.__teStore in dev
-src/App.tsx    workspace toggle, right panel tabs, keyboard map, resizer; lazy boundaries
-               for OpsWorkspace (which restores the T&E record first), AnalysisPanel,
-               TestCardsPanel and CommandPalette
+               the autosave subscription, exposes window.__store in dev
+src/App.tsx    right panel tabs, keyboard map, resizer; lazy boundaries for
+               AnalysisPanel, TestCardsPanel and CommandPalette
 ```
 
 Data flow for a click or drag: Konva event, store action, new scenario, React re-render of
@@ -624,7 +620,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   the one spread wording, shown by the Sources table and appended to the `PfTag` title.
 - **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row
   for each of the fourteen model ids with a tier, a validation status and, where a
-  published method applies, a `standard` that quotes a row of section 9. `modelsUsed
+  published method applies, a `standard` that quotes a row of section 8. `modelsUsed
   (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
   Outcome validity row and the detail pane header show the tags, and the export carries
   `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with
@@ -770,8 +766,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
 - **Seed value changes** need a `datasheet` or `reference` row in the same unit against a
   small-UAS class; a range band takes the lower bound. Every change is listed in the commit
   message. Seed values are load-bearing for fixtures and for the claims the tool makes.
-- **Illustrative data** is labeled. The T&E demo campaign (`buildJiatf401()`) is marked
-  `illustrative` and renders a banner; MASTER-CALCULATIONS fixtures are labeled
+- **Illustrative data** is labeled. MASTER-CALCULATIONS fixtures are labeled
   illustrative in their sources and still bind the unit tests.
 - **Fixture pins.** When a sourced seed value moves a fixture, pin the fixture, never the
   seed, with a comment that names the row. Hand-built test threats resolve altitude to the
@@ -819,7 +814,6 @@ Each fact below has exactly one definition. Read it there; never add a second co
   timing. Exports preserve legacy event omissions and the captured scenario.
 - **Words.** UI copy follows the code style in AGENTS.md: short active sentences in the
   domain's terms, no em-dashes. Use one word for one thing ("phase center", "event").
-  Measure labels in T&E Ops suppress pass or fail unless `thresholdApproved`.
 
 ## 7. UI and rendering invariants
 
@@ -828,10 +822,9 @@ exports and interfaces for object shapes, JSDoc on exported symbols, short ratio
 comments and lines near 100 characters. There is no source formatter. Do not add unused
 exports or TODO markers.
 
-`src/ui/ErrorBoundary.tsx` isolates the Board and Ops roots and print contents. Its
-fallback uses `State` with Export and Reload.
-Exports read the owning Board scenario or T&E campaign; a caught render error never clears
-records. `startAutosave` and `startTeAutosave` stay outside React in `main.tsx`.
+`src/ui/ErrorBoundary.tsx` isolates the Board root. Its fallback uses `State` with Export
+and Reload. Export reads the Board scenario; a caught render error never clears records.
+`startAutosave` stays outside React in `main.tsx`.
 
 Konva conventions:
 
@@ -928,7 +921,7 @@ Design system (`src/index.css`):
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to
   select), Enter (finish boundary or path), Space (play/pause). Shortcuts are suppressed
-  while typing in inputs and inside the T&E workspace. Escape order: the command palette,
+  while typing in inputs. Escape order: the command palette,
   then an open dialog (Location, Calibrate), then a toolbar dropdown or the Layout
   surface, then an armed placement or the open drawer, then the canvas draft and the
   selection.
@@ -948,113 +941,7 @@ Design system (`src/index.css`):
   is one `Seg` (`role="group"`, one pressed segment) that stays rendered in every phase
   and tab; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 
-## 8. T&E Operations module (`src/te/`)
-
-- Second workspace ("T&E Ops" toggle). Spec sources: `docs/te-plan.md` and the MASTER-*.md
-  files in `docs/te-compilation/`.
-- **Separate store, no undo:** `src/te/state/teStore.ts`, persisted at `rangeboard.te.v1`,
-  recovery copy at `rangeboard.te.recovered.<ms>`. `teAutosaveAdapter` in
-  `src/te/io/persistTe.ts` is the T&E half of the shared lifecycle (`src/io/autosave.ts`):
-  the T&E key and parser, the campaigns and active-id selection, adoption through
-  `replaceState` and an ISO save stamp. It is the deferred adapter, so `startTeAutosave`
-  only subscribes and writes nothing until `restoreTeAutosave` has read the saved record
-  back; the restore runs once per lifecycle instance, on idle, on the first Ops entry or
-  on a Board frame capture, whichever comes first.
-  Records are versioned and append-only
-  (runs never renumber, issued cards freeze, changes create new versions). Never embed
-  campaign data in `Scenario`. The store enforces issued/superseded card immutability,
-  frozen baselines and generic action guards. Delivery freezes campaign evidence; closure
-  remains available. The [record rules](field-te/C4_COMPLETION.md#record-rules) list them.
-- IDs follow `VLK-<code>-<type>-<seq>` (`src/te/model/ids.ts`); versions live on the
-  record. Cards use `id` (per version) plus `cardCode` (shared across versions).
-- Card links and fill live in `src/te/model/cardLinks.ts` (pure) and reach the UI as four
-  store actions: `linkCardCell`, `setCardLinks`, `fillCard`, `refillCard`. Callers pass a
-  selection; the module owns link precedence and the fill rules. `linkedRecordFill` writes
-  empty fields only, or every derived field on the refill path. A cell merged into an
-  existing card unions the id lists and moves a single link only where the cell names a
-  record; a cleared or unknown cell changes the cell link alone. `fillCard` adds the default
-  event marks and the authority preconditions and runs on a draft only. Creating a card from
-  a cell (`createCardFromMatrixCell`) stays a separate operation: the cell decides every link
-  and no draft defaults are added. Every one of them writes through `patchItem`, so issued
-  and superseded cards reject them.
-- **Matrix planning is pure and adopted in one update:** `src/te/model/matrixPlan.ts`
-  holds the build rules, the sample-size rules (`planSampleSize`, `sampleSizeCellPatch`,
-  `requiredRepetitions`) and the drop-order ranking (`dropOrderRanking`); appended cells
-  keep the unranked default. `planCells(campaign, factors, options)` returns the cells, the
-  baseline row and warnings; the cells arrive in their final shape and drop links the
-  campaign does not hold, so adoption cannot fail reference validation. `DesignBuilders.tsx`
-  prepares that plan and the store applies it: `addMatrixCells` allocates the `MTX` ids,
-  assigns them and adopts the whole batch in one store update, so a 1000-cell build
-  validates once and lands all or nothing. Only the store allocates ids. `teStore.ts` holds
-  no value import from `matrixPlan.ts`; see the initial-bundle rule below.
-- Gates in `src/te/validate.ts`: no issued card no run, no validity status no analysis, no
-  traceability no finalized finding. Qualification, acknowledged design review, issue and
-  delivery enforce blockers in the store. Delivery finalizes findings; prefilled approver
-  names are not finalization. Quantitative and failure-investigation inclusion use the
-  explicit policy in `validate.ts`; invalid runs cannot count as valid quantitative trials.
-  Observation corrections preserve both values and require re-adjudication. Optional
-  history fields do not fabricate past snapshots on legacy loads.
-- **Checklist transitions live in `src/te/model/checklist.ts`,** not in the panel.
-  `answerChecklistItem` writes the fields one answer owns: only a check stamps `at`, only
-  unchecking clears it, and a blank completer defaults to the nearest earlier answered
-  item. It returns null for an unknown item index and for a completed checklist, which is
-  a closed record. `checklistCompletionBlockers` adds the already-complete rule to
-  `checklistBlockers`. The store operations `setChecklistAnswer` and `completeChecklist`
-  own the timestamps; `completeChecklist` returns `{ ok }` or `{ ok: false, blockers }` and
-  a refused completion writes nothing. `ExecutePanel.tsx` calls those and renders the
-  blockers in a `GateList`. Items are addressed by index; instance items carry no id.
-- `src/te/calc/` is pure TypeScript, fixture-tested from MASTER-CALCULATIONS.md. The Board
-  engine imports `meanInterval`, `quantile`, `wilson` and `betaQuantile` from
-  `src/te/calc/stats.ts`; that is the one dependency from the engine on `src/te/`.
-- **Finding evidence** (`src/te/calc/findingEvidence.ts`): `findingComputations` scopes
-  `computeMeasure` to the finding's linked runs, so the inclusion policy in `validate.ts`
-  decides what counts. `derivedRunLinks` and `derivedRunConfig` take actual run records
-  over the card plan. `evidenceDerivation` renders the eight evidence fields with units,
-  denominators and intervals; `evidenceFills` proposes text only for empty fields.
-  `findingLinkUpdate` builds one patch from a link change: the links, unambiguous chained
-  records, run-derived defaults and fills. The panel prepares and the store applies:
-  `DeliverPanel.tsx` calls `findingLinkUpdate` and hands the patch to the store action
-  `setFindingLinks`, which writes it through `patchItem` as one update. Strength and
-  dispositions are suggestions the user accepts in the UI; derivation never writes a
-  judgment.
-- **Evidence package** (`src/te/calc/package.ts`): `generatedSection` and the manual
-  section templates live here, not in the UI. `resolveSection` is the one precedence
-  rule: delivered text, else edited text, else generated text, else stored text.
-  `previewPackage` feeds the Deliver panel and `PackagePrint`; `resolvedPackage` is the
-  "Save generated text" write. `deliverPackage(campaign, at)` resolves every section,
-  runs `deliveryBlockers` on the resolved text and returns one frozen campaign update or
-  the blockers. The panel prepares and the store applies: `DeliverPanel.tsx` calls
-  `deliverPackage` and hands the proposal to `markPackageDelivered`, which applies it in
-  one `mutate`, so delivery no longer depends on what the panel saved first. The store
-  stays the guard: it refuses a proposal that carries blockers, names another campaign or
-  is not stamped delivered, and the `mutate` freeze guard refuses an already delivered
-  campaign.
-- **Initial bundle:** `teStore.ts` is in the initial modulepreload graph, because
-  `App.tsx`, `main.tsx` and `Toolbar.tsx` import `useTeStore`. It therefore carries no
-  value import from `calc/package.ts`, `calc/findingEvidence.ts` or `model/matrixPlan.ts`;
-  those modules load with the lazy Ops panels that prepare the update. Type-only imports
-  are fine. `teStore.graph.test.ts` pins the rule and `npm run check:bundle` prices it.
-- Seeds in `src/te/seed/` (measure dictionary, templates, vignettes, `buildJiatf401()` demo
-  campaign marked `illustrative`). The measure dictionary, the card templates and the threat
-  vignettes load with `applyPreset` (async), not at startup. Print artifacts in `src/te/print/` render into
-  `PrintOverlay`; CSV exports in `src/te/io/exportCsv.ts`. Board frame capture
-  (`src/te/io/frameCapture.ts`) works only from the Board workspace. New PNG captures and
-  serialized Board config snapshots are admitted against `MAX_IMAGE_CODE_UNITS` (5 MiB
-  accounting for UTF-16) before the campaign changes. Generic frame/config add and patch
-  actions enforce admission too; unchanged legacy payloads remain editable. Capture errors
-  render a `State` notice. Admission does not reserve storage or guarantee the actual write.
-- Persistence and imports are validated through `io/validateTe.ts`, including campaign-local
-  references. `io/compatTe.ts` owns T&E schema-1 compatibility, the same way
-  `src/io/compat.ts` owns the Board's: `CAMPAIGN_LEGACY_FIELDS` and
-  `TE_STATE_LEGACY_FIELDS` declare every field a legacy save may omit together with the
-  filler that supplies it, and the validator's accepted omissions and `fillCampaign`
-  both derive from those declarations. `charter` and `decision` deep-fill one level from
-  `emptyCampaign()`; record arrays do not deep-fill, so they carry no entry. An embedded
-  Board snapshot is stored verbatim at load and validated by
-  `parseConfigSnapshot` when it is opened. The store checks internal transitions and
-  evidence history.
-
-## 9. Standards referenced by model tags
+## 8. Standards referenced by model tags
 
 The `standard` column of `MODEL_TAGS` in `src/analysis/fidelity.ts` quotes a row of this
 table where a published method applies. A row here is a reference, not a claim that the

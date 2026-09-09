@@ -59,7 +59,7 @@ Spacing is `--space-1` (4 px) to `--space-6` (24 px) plus `--panel-pad` (14 px).
 nominal `#378154`, warning `#98691b`, critical `#d43725` (4.4:1 each). Two blocks map the
 palette onto the semantic tokens: `:root[data-theme='light']` for the manual switch and
 `@media (prefers-color-scheme: light)` for the OS setting, with `data-theme='dark'` as the
-override. The switch is a `Seg` in Board View controls and the T&E toolbar (`system`, `dark`, `light`); the choice is
+override. The switch is a `Seg` in Board View controls (`system`, `dark`, `light`); the choice is
 the `theme` field of the saved view record. Channel colours are the same in both themes;
 the contrast findings for them on paper are in
 `../field-te/evidence/design-step4-2026-09-05/findings.json`.

@@ -116,7 +116,7 @@ Source titles, thresholds, citations and unknowns retain their original meaning.
 - [MASTER-FORMS — Checklists, Templates, Print Artifacts & Deliverables](te-compilation/MASTER-FORMS.md)
 - [MASTER-SEEDDATA: RangeBoard T&E Operations module](te-compilation/MASTER-SEEDDATA.md)
 - [Extraction brief: RangeBoard T&E Operations module](te-compilation/_BRIEF.md)
-- [RangeBoard T&E Operations module: product plan and implementation plan](te-plan.md)
+- [RangeBoard T&E Operations module: product plan and implementation plan (module removed 2026-09-09)](te-plan.md)
 
 ### Inventory research
 
