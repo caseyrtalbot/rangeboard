@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { ForecastSettings } from './analysis/ForecastSettings'
-import { FireDoctrineSettings } from './analysis/widgets/FireDoctrineWidget'
-import { EnvironmentSettings } from './analysis/widgets/EnvironmentWidget'
-import { RequirementSettings } from './analysis/widgets/RequirementGatesWidget'
+import { FireDoctrineSettings } from './analysis/FireDoctrineSettings'
+import { EnvironmentSettings } from './analysis/EnvironmentSettings'
+import { RequirementSettings } from './analysis/RequirementSettings'
 import { ThemeSettings, UnitsSettings, BasemapSettings, LayerSettings } from './ViewMenu'
 
 export type SettingsSection = 'scenario' | 'run' | 'view'

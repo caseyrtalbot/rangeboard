@@ -3,7 +3,7 @@ import { DT } from '../playback/clock'
 import type { SensitivityResponse, SweepCell } from '../playback/mcRun'
 import type { SweepFactor, SweepFactorId } from '../playback/sweepFactors'
 import { SWEEP_ENVIRONMENT_PRESETS, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from '../playback/sweepFactors'
-import { bandMean, countSub, formatCount, statMean, timeStatSub } from '../panels/analysis/widgets/mc'
+import { bandMean, countSub, formatCount, statMean, timeStatSub } from '../panels/analysis/mc'
 
 export const SWEEP_FACTOR_LABELS: Record<SweepFactorId, string> = {
   threatAltitudeFt: 'Threat altitude (ft AGL)',

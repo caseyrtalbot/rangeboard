@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { useStore } from '../../state/store'
-import { installTrial } from './widgets/trialTestState'
+import { installTrial } from './trialTestState'
 import { LiveStrip } from './LiveStrip'
 
 function render(horizon: number, complete = false) {

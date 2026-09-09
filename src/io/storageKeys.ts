@@ -29,7 +29,7 @@ export const PALETTE_WIDTH_KEY = 'rangeboard.palette.width'
 export const PALETTE_COLLAPSED_KEY = 'rangeboard.palette.collapsed'
 /** Engagement strip open flag, '1' or '0'. */
 export const ENGSTRIP_OPEN_KEY = 'rangeboard.engstrip.open'
-/** Analysis lens layout and user presets (`AnalysisViewState`). */
+/** Retired analysis lens layout. Earlier builds wrote it; nothing reads it now. Never renamed. */
 export const ANALYSIS_KEY = 'rangeboard.analysis.v1'
 /** Pinned baseline save (`BaselineSave`): one laydown and its ensemble kept for Compare. */
 export const BOARD_BASELINE = 'rangeboard.baseline.v1'

@@ -1,15 +1,11 @@
-import type { ExecutionHorizon } from '../../../analysis/horizon'
-import type { TrialSelection } from '../../../state/trialSelectors'
-import { trialResultOf } from '../../../analysis/trialResult'
-import { formatTime } from '../../../geometry/geo'
-import { useTrialResult } from '../../../state/useTrialResult'
+import type { TrialSelection } from '../../state/trialSelectors'
+import { trialResultOf } from '../../analysis/trialResult'
+import { formatTime } from '../../geometry/geo'
+import { useTrialResult } from '../../state/useTrialResult'
 import { useMemo } from 'react'
-import type { Scenario } from '../../../model/types'
-import type { EngagementPicture } from '../../../analysis/impact'
-import { engagementPicture } from '../../../analysis/impact'
-import type { RunPhase } from '../../../state/runState'
-import { useStore } from '../../../state/store'
-import { durationOf, selectExecutionHorizon, selectSimTimeStep } from '../../../state/selectors'
+import type { Scenario } from '../../model/types'
+import type { EngagementPicture } from '../../analysis/impact'
+import { engagementPicture } from '../../analysis/impact'
 
 /**
  * Segmented control that carries a `data-role` for browser checks. The shared
@@ -42,41 +38,16 @@ export function RoleSeg<T extends string>({
   )
 }
 
-/** The forecast cursor quantized to the DT grid. */
-export function useSimTimeStep(): number {
-  return useStore(selectSimTimeStep)
-}
-
 /**
  * Refresh the view memo when scenario or run identity changes. The deterministic
  * engine cache is keyed by engine inputs and remains reusable across clean runs.
  */
+// oxlint-disable-next-line react/only-export-components -- Screen hooks share this module with RoleSeg.
 export function useForecastEngagement(scenario: Scenario, runId: string): EngagementPicture {
   return useMemo(() => {
     void runId
     return engagementPicture(scenario)
   }, [scenario, runId])
-}
-
-// oxlint-disable-next-line react/only-export-components -- Keep widget hooks in the shared controls module.
-export function useExecutionHorizon(): ExecutionHorizon {
-  return useStore(selectExecutionHorizon)
-}
-
-/** The clamped cursor and phase for forecast and transitional consumers. */
-export function useRunCursor(scenario: Scenario): {
-  t: number
-  horizon: ExecutionHorizon
-  durationS: number
-  phase: RunPhase
-  /** Phase 'ready': nothing observed yet. Counters read 0 and times read a dash. */
-  untouched: boolean
-} {
-  const horizon = useExecutionHorizon()
-  const tS = useSimTimeStep()
-  const phase = useStore((s) => s.playback.phase)
-  const durationS = durationOf(scenario)
-  return { horizon, t: Math.min(tS, durationS), durationS, phase, untouched: phase === 'ready' }
 }
 
 export { useTrialResult }

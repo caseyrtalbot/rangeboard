@@ -1,6 +1,6 @@
-import { mixedTrial } from '../../../playback/__fixtures__/trialFixture'
-import { freshPlayback, IDLE_TRIAL } from '../../../state/runState'
-import { useStore } from '../../../state/store'
+import { mixedTrial } from '../../playback/__fixtures__/trialFixture'
+import { freshPlayback, IDLE_TRIAL } from '../../state/runState'
+import { useStore } from '../../state/store'
 
 export function installTrial(horizonS = 3) {
   const fixture = mixedTrial()

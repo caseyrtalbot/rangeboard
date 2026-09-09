@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
-import type { SweepSummary } from '../../../playback/mcRun'
-import { IDLE_MC, IDLE_SWEEP } from '../../../state/runState'
+import type { SweepSummary } from '../../playback/mcRun'
+import { IDLE_MC, IDLE_SWEEP } from '../../state/runState'
 import { currentSweep } from './mc'
 
 const summary: SweepSummary = { factors: [], cells: [], responses: ['leakers'], replicatesPerCell: 40, seed: 1, elapsedMs: 100 }

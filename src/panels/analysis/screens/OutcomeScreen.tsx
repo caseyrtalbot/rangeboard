@@ -18,8 +18,8 @@ import {
 import { SystemStatus } from '../SystemStatus'
 import { trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow } from '../threatReadout'
-import { trialStateText, useTrialResult } from '../widgets/controls'
-import { VALIDITY_TEXT } from '../widgets/RunValidityWidget'
+import { trialStateText, useTrialResult } from '../controls'
+import { VALIDITY_TEXT } from '../runValidityText'
 
 type SortColumn = 'track' | 'detect' | 'identify' | 'engage' | 'effect' | 'salvos' | 'result'
 const columns: Array<{ key: SortColumn; label: string; title: string }> = [

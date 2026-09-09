@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../state/store'
 import { IDLE_TRIAL } from '../state/runState'
-import { installTrial } from './analysis/widgets/trialTestState'
+import { installTrial } from './analysis/trialTestState'
 import { TimelineBar } from './TimelineBar'
 
 function render() {

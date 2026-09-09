@@ -1,11 +1,32 @@
 /**
- * Analysis widget names.
+ * Analysis outcome names.
  *
  * The three survival words and the KPI tile names are written once here, so
  * the tiles, the threat picture, the projection and the gates cannot drift.
  */
 
-import type { KpiKey } from '../../../state/analysisLayout'
+/** KPI names the outcome summary can show. */
+export type KpiKey =
+  | 'detect' | 'trackNow' | 'idClass' | 'engaged' | 'killEk' | 'leakEn'
+  | 'lateEk' | 'salvos' | 'targetNow' | 'firstDetect' | 'firstEffect'
+  | 'detectToEffect' | 'minWarning'
+
+/** Every KPI key in display order. */
+export const KPI_KEYS: readonly KpiKey[] = [
+  'detect',
+  'trackNow',
+  'idClass',
+  'engaged',
+  'killEk',
+  'leakEn',
+  'lateEk',
+  'salvos',
+  'targetNow',
+  'firstDetect',
+  'firstEffect',
+  'detectToEffect',
+  'minWarning',
+]
 
 /** The outcome words: the tile, the per-track line and the effect gate. */
 export const SURVIVAL_LABELS = {

@@ -17,9 +17,9 @@ import { selectRunComplete } from '../../../state/selectors'
 import { useStore } from '../../../state/store'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
 import { State } from '../../../ui/kit'
-import { trialStateText, trialViewOf, useTrialResult } from '../widgets/controls'
-import { currentSummary, formatCount, statMean, timeStatSub } from '../widgets/mc'
-import { SEVERITY_PILL } from '../widgets/RunValidityWidget'
+import { trialStateText, trialViewOf, useTrialResult } from '../controls'
+import { currentSummary, formatCount, statMean, timeStatSub } from '../mc'
+import { SEVERITY_PILL } from '../runValidityText'
 
 type DeltaRow = { label: string; trial: number | null; mean: number | null; lo: number | null; hi: number | null; unit: string; note?: string }
 type MeanKey = 'kills' | 'leakers' | 'firstDetect' | 'minWarning' | 'salvos'

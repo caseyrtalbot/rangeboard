@@ -1,6 +1,6 @@
 import { FORECAST_IN_ANALYZE, FULL_RUN, type ExecutionHorizon } from '../../analysis/horizon'
 import type { RequirementGate, RequirementGateReport } from '../../analysis/requirements'
-import { SURVIVAL_LABELS } from './widgets/labels'
+import { SURVIVAL_LABELS } from './labels'
 import { State } from '../../ui/kit'
 
 const STATUS_LABEL: Record<RequirementGate['status'], string> = {

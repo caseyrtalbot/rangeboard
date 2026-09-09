@@ -13,9 +13,9 @@ import { SWEEP_DEFAULTS } from '../../../state/analysisRequests'
 import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
 import { PfTag } from '../../inspector/kit'
-import { useForecastEngagement } from '../widgets/controls'
-import { bandMean, countSub, currentSensitivity, currentSummary, currentSweep, formatCount, statMean, timeStatSub } from '../widgets/mc'
-import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from '../widgets/RunValidityWidget'
+import { useForecastEngagement } from '../controls'
+import { bandMean, countSub, currentSensitivity, currentSummary, currentSweep, formatCount, statMean, timeStatSub } from '../mc'
+import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from '../runValidityText'
 import { useEnsembleBasis } from './ensembleBasis'
 
 const wrap = { display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 'var(--space-2)' } as const

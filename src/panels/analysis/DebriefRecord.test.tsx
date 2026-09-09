@@ -8,7 +8,7 @@ import { IDLE_TRIAL } from '../../state/runState'
 import { runReplicates } from '../../playback/mcRun'
 import { scenarioDurationS } from '../../model/scenario'
 import { DebriefRecord } from './DebriefRecord'
-import { installTrial } from './widgets/trialTestState'
+import { installTrial } from './trialTestState'
 
 const actions = vi.hoisted(() => ({ export: undefined as (() => void) | undefined }))
 vi.mock('../../io/persist', async importOriginal => ({

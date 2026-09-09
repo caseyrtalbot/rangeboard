@@ -10,8 +10,8 @@ import {
   residualHeadline,
   totalSalvos,
 } from '../headlines'
-import { forecastKillLabel, KPI_LABELS, SURVIVAL_LABELS } from './widgets/labels'
-import { bandMean, countSub, statMean, timeStatSub } from './widgets/mc'
+import { forecastKillLabel, KPI_LABELS, SURVIVAL_LABELS } from './labels'
+import { bandMean, countSub, statMean, timeStatSub } from './mc'
 
 function Metric({
   label,

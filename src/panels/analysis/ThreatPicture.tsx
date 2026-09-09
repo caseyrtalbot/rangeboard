@@ -7,7 +7,7 @@ import type {
   TrialThreatRow,
 } from '../../analysis/threatAggregation'
 import { formatTime } from '../../geometry/geo'
-import { SURVIVAL_LABELS } from './widgets/labels'
+import { SURVIVAL_LABELS } from './labels'
 
 type Group = ThreatOperationalGroup | TrialThreatGroup
 type Row = ThreatOperationalRow | TrialThreatRow

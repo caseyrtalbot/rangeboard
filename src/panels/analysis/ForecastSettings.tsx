@@ -4,7 +4,7 @@ import type { RunMode, UncertaintyMode } from '../../model/types'
 import { runSettings } from '../../model/types'
 import type { StopRule } from '../../playback/mcRun'
 import { Field } from '../../ui/kit'
-import { RoleSeg } from './widgets/controls'
+import { RoleSeg } from './controls'
 
 const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
   { v: 'deterministic', label: 'Deterministic' },

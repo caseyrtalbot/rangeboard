@@ -18,7 +18,6 @@ import type { EntityWorkspaceSection } from './panels/EntityWorkspace'
 import { LibraryEditor } from './panels/LibraryEditor'
 import { BoardPreparation } from './panels/BoardPreparation'
 import type { AnalysisScreen } from './panels/analysis/screens/navigation'
-import type { WidgetProps } from './panels/analysis/widgets/registry'
 import { formatRunLabel } from './state/labels'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
@@ -222,7 +221,7 @@ function escapeState(libraryOpen: boolean, placementArmed: boolean, target: Even
   const ui = useStore.getState().ui
   return {
     ...IDLE_INTERACTION,
-    paletteOpen: !!document.querySelector('.cmdk-panel, .analysis-layout-popover'),
+    paletteOpen: !!document.querySelector('.cmdk-panel'),
     settingsOpen: !!document.querySelector('#settings-panel[open]'),
     roeMenuOpen: !!document.querySelector('#roe-menu-panel'),
     locationDialogOpen: ui.locationDialogOpen,
@@ -584,7 +583,7 @@ export default function App() {
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
   }, [hasObjectSelection, setRightTab])
-  const openPreparation = useCallback<NonNullable<WidgetProps['onOpenPreparation']>>((section) => {
+  const openPreparation = useCallback((section: 'run' | 'environment' | 'doctrine' | 'requirements') => {
     setPrepareScreen('inputs')
     setBoardPhase('prepare')
     setPlacement(null)

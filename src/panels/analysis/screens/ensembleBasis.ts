@@ -1,7 +1,7 @@
 import { formatTime } from '../../../geometry/geo'
 import { runSettings } from '../../../model/types'
 import { useStore } from '../../../state/store'
-import { currentSummary } from '../widgets/mc'
+import { currentSummary } from '../mc'
 
 export function useEnsembleBasis(): string {
   const mcState = useStore(state => state.mc)

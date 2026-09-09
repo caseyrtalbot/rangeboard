@@ -4,7 +4,7 @@ import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DT } from '../../../playback/clock'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
-import { installTrial, unstartTrial } from '../widgets/trialTestState'
+import { installTrial, unstartTrial } from '../trialTestState'
 import { CompareScreen } from './CompareScreen'
 
 const interaction = vi.hoisted(() => ({ buttons: new Map<string, () => void>() }))

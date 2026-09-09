@@ -2,19 +2,18 @@ import type { BasemapMode } from '../model/types'
 import type { DisplayUnits } from '../geometry/geo'
 import type { LayerVisibility } from '../state/layers'
 import { DEFAULT_LAYERS } from '../state/layers'
-import type { AnalysisViewState } from '../state/analysisLayout'
-import { defaultAnalysisView, sanitizeAnalysisView } from '../state/analysisLayout'
 import type { Camera, RightTab, Theme } from '../state/store'
 import type { RingKey, RingOverrides } from '../state/rings'
 import { RING_KEYS } from '../state/rings'
 import type { Workspace } from '../te/state/teStore'
-import { ANALYSIS_KEY, LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } from './storageKeys'
+import { LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } from './storageKeys'
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
  * basemap, right panel tab, workspace and theme. Written eagerly by the store
  * setters, read once at store construction. Every field is optional so a
- * partial or older record still loads.
+ * partial or older record still loads. An older record can also carry an
+ * `analysis` lens layout: it is read and dropped, never an error.
  */
 export interface SavedView {
   camera?: Camera
@@ -126,26 +125,6 @@ export function savedRingOverrides(): RingOverrides {
 /** Replace the stored ring overrides with the whole current map. */
 export function writeRingOverrides(overrides: RingOverrides): void {
   writeSetting(RINGS_KEY, JSON.stringify(overrides))
-}
-
-/**
- * Validated analysis lens layout and user presets from localStorage. Builtin
- * lenses are never stored: they come from `BUILTIN_LENSES` on every read.
- */
-export function savedAnalysis(): AnalysisViewState {
-  const raw = readSetting(ANALYSIS_KEY)
-  if (raw == null) return defaultAnalysisView()
-  try {
-    return sanitizeAnalysisView(JSON.parse(raw))
-  } catch {
-    return defaultAnalysisView()
-  }
-}
-
-/** Replace the stored analysis view with the whole current layout and preset list. */
-export function writeAnalysis(state: AnalysisViewState): void {
-  const { layout, userPresets } = state
-  writeSetting(ANALYSIS_KEY, JSON.stringify({ layout, userPresets }))
 }
 
 /** Trailing debounce for the camera, which changes on every drag and zoom event. */

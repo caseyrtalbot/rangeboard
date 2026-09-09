@@ -1,14 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { EMPTY_HORIZON, FULL_RUN } from '../../analysis/horizon'
-import { installTrial, observeTrial, unstartTrial } from './widgets/trialTestState'
+import { installTrial, observeTrial, unstartTrial } from './trialTestState'
 import { trialAssessment } from '../../playback/__fixtures__/trialFixture'
 import { createTrialManifest } from '../../playback/trialTypes'
 import { analysisBasisSignature } from '../../state/analysisBasis'
 import { useStore } from '../../state/store'
-import { selectExecutionHorizon } from '../../state/selectors'
 import { censorLane, EngagementStrip } from './EngagementStrip'
-import { EngagementLanesWidget } from './widgets/EngagementLanesWidget'
 
 const lane: Parameters<typeof censorLane>[0] = {
   key: 'threat', label: 'Threat 1', entityIds: ['threat'], groupKey: null,
@@ -117,14 +115,5 @@ describe('EngagementStrip execution scope', () => {
     expect(html).toContain('Raid ×15')
     expect(html.match(/<path /g)).toHaveLength(1)
     expect(html).toContain('fill="var(--danger)"')
-  })
-
-  it('passes scope to the widget frame meta', () => {
-    Object.assign(useStore.getInitialState(), useStore.getState())
-    const props = { id: 'lanes', params: {}, collapsed: false, customize: false, index: 0, count: 1 }
-    const scoped = renderToStaticMarkup(<EngagementLanesWidget {...props} horizon={selectExecutionHorizon(useStore.getState())} />)
-    expect(scoped).not.toContain('planning envelope · per threat')
-    const full = renderToStaticMarkup(<EngagementLanesWidget {...props} horizon={FULL_RUN} />)
-    expect(full).toContain('Simulated trial · T+0:03 observed')
   })
 })

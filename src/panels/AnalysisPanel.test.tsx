@@ -5,7 +5,7 @@ import { AnalysisPanel } from './AnalysisPanel'
 import { BoardPreparation } from './BoardPreparation'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
-import { installTrial, observeTrial, unstartTrial } from './analysis/widgets/trialTestState'
+import { installTrial, observeTrial, unstartTrial } from './analysis/trialTestState'
 import { runReplicates } from '../playback/mcRun'
 
 function render(props?: ComponentProps<typeof AnalysisPanel>): string {
@@ -23,8 +23,6 @@ const trialScreens = [
 describe('AnalysisPanel screens', () => {
   beforeEach(() => {
     useStore.getState().replaceScenario(emptyScenario())
-    useStore.getState().applyLens('run-summary')
-    useStore.getState().setAnalysisCustomize(false)
   })
 
   it('defaults each phase to its first screen and renders Inputs unchanged', () => {
@@ -75,15 +73,12 @@ describe('AnalysisPanel screens', () => {
     expect(render({ phase: 'analyze', screen: 'compare' })).toContain('No current ensemble result.')
   })
 
-  it('preserves saved layouts, customization, selection and run state while mounting screens', () => {
+  it('preserves selection and run state while mounting screens', () => {
     installTrial()
-    useStore.getState().applyLens('sensors')
-    useStore.getState().setAnalysisCustomize(true)
     const before = useStore.getState()
     for (const props of trialScreens) expect(render(props)).not.toContain('data-widget-type')
     const after = useStore.getState()
-    expect(after.ui.analysis).toBe(before.ui.analysis)
-    expect(after.ui.analysisCustomize).toBe(true)
+    expect(after.ui).toBe(before.ui)
     expect(after.selection).toBe(before.selection)
     expect(after.scenario).toBe(before.scenario)
     expect(after.playback).toBe(before.playback)

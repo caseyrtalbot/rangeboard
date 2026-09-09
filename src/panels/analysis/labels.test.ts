@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { KPI_KEYS } from '../../../state/analysisLayout'
-import { forecastKillLabel, KPI_LABELS, TRIAL_KPI_LABELS, SURVIVAL_LABELS } from './labels'
+import { forecastKillLabel, KPI_KEYS, KPI_LABELS, TRIAL_KPI_LABELS, SURVIVAL_LABELS } from './labels'
 
-describe('analysis widget labels', () => {
+describe('analysis labels', () => {
   it('names every KPI key with a label and a hint', () => {
     for (const key of KPI_KEYS) {
       expect(KPI_LABELS[key].label.length).toBeGreaterThan(0)

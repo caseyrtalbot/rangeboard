@@ -4,10 +4,10 @@
  * the run finished and it belongs to the run id on the playhead; a stale,
  * running or idle slice reads as no summary.
  */
-import type { BandSeries, McSummary, SensitivitySummary, Stat, SweepSummary } from '../../../playback/mcRun'
-import { BAND80_MIN_N, BAND95_MIN_N, STAT_CONF } from '../../../playback/mcRun'
-import { DT } from '../../../playback/clock'
-import type { McState } from '../../../state/runState'
+import type { BandSeries, McSummary, SensitivitySummary, Stat, SweepSummary } from '../../playback/mcRun'
+import { BAND80_MIN_N, BAND95_MIN_N, STAT_CONF } from '../../playback/mcRun'
+import { DT } from '../../playback/clock'
+import type { McState } from '../../state/runState'
 
 /** The summary of a finished run for `runId`, else null. */
 export function currentSummary(mc: McState, runId: string): McSummary | null {

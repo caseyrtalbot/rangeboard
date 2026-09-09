@@ -11,7 +11,7 @@ import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
 import { readSetting, writeSetting } from '../../io/viewState'
 import { tickStepS } from '../../charts/timeAxis'
 import type { TrialResultView } from '../../analysis/trialResult'
-import { useTrialResult, trialViewOf, trialStateText } from './widgets/controls'
+import { useTrialResult, trialViewOf, trialStateText } from './controls'
 import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
 
 const OPEN_KEY = ENGSTRIP_OPEN_KEY

@@ -1,6 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { BUILTIN_LENSES } from '../../state/analysisLayout'
 import { useStore } from '../../state/store'
 import { AnalysisNavigation } from './AnalysisNavigation'
 import { PHASE_SCREENS } from './screens/navigation'
@@ -18,18 +17,13 @@ describe('AnalysisNavigation', () => {
       for (const option of options) expect(html).toContain(`>${option.label}</button>`)
       expect(html).not.toContain('Layout')
       expect(html).not.toContain('Analysis lenses')
-      for (const lens of BUILTIN_LENSES) expect(html).not.toContain(`>${lens.label}</button>`)
     }
   })
 
-  it('keeps saved lens actions usable without exposing their controls', () => {
-    useStore.getState().applyLens(BUILTIN_LENSES[1].id)
-    useStore.getState().setAnalysisCustomize(true)
+  it('renders without touching ui state', () => {
     const before = useStore.getState().ui
     const html = renderToStaticMarkup(<AnalysisNavigation phase="prepare" screen="inputs" onNavigate={() => {}} />)
     expect(html).not.toContain('Layout')
     expect(useStore.getState().ui).toBe(before)
-    expect(before.analysis.layout.presetId).toBe(BUILTIN_LENSES[1].id)
-    expect(before.analysisCustomize).toBe(true)
   })
 })

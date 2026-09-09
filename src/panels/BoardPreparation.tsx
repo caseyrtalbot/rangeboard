@@ -10,10 +10,10 @@ import { useStore } from '../state/store'
 import { State } from '../ui/kit'
 import { Actions, ObjectHeader, Row, Section } from './inspector/kit'
 import { ForecastSettings } from './analysis/ForecastSettings'
-import { EnvironmentSettings } from './analysis/widgets/EnvironmentWidget'
-import { FireDoctrineSettings } from './analysis/widgets/FireDoctrineWidget'
-import { RequirementSettings } from './analysis/widgets/RequirementGatesWidget'
-import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from './analysis/widgets/RunValidityWidget'
+import { EnvironmentSettings } from './analysis/EnvironmentSettings'
+import { FireDoctrineSettings } from './analysis/FireDoctrineSettings'
+import { RequirementSettings } from './analysis/RequirementSettings'
+import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from './analysis/runValidityText'
 
 /** Select one placed entity and open its existing Inspector editor. */
 function openEntityInspector(entityId: string): void {

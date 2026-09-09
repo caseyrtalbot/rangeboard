@@ -10,7 +10,7 @@ import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
 import { emptyScenario } from '../model/seed'
 import { useStore } from './store'
 import { analysisBasisSignature } from './analysisBasis'
-import { currentSensitivity, currentSummary } from '../panels/analysis/widgets/mc'
+import { currentSensitivity, currentSummary } from '../panels/analysis/mc'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
 import { runTrial } from '../playback/trial'
 import type { TrialManifest } from '../playback/trialTypes'
@@ -365,7 +365,6 @@ describe('complete analysis basis and request ownership', () => {
     useStore.getState().setScenarioName('New title')
     useStore.getState().setCamera({ x: 40, y: 10, scale: 0.1 })
     useStore.getState().select({ entityIds: [] })
-    useStore.getState().applyLens('sensors')
     useStore.getState().saveFrame('evidence')
     useStore.getState().addCard()
     editModel((m) => ({ description: 'Updated description', provenance:

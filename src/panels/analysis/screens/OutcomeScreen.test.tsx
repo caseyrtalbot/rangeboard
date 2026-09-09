@@ -5,7 +5,7 @@ import { createTrialManifest } from '../../../playback/trialTypes'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
-import { installTrial, observeTrial, unstartTrial } from '../widgets/trialTestState'
+import { installTrial, observeTrial, unstartTrial } from '../trialTestState'
 import { OutcomeScreen } from './OutcomeScreen'
 
 const interaction = vi.hoisted(() => ({

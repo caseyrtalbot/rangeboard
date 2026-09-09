@@ -50,13 +50,11 @@ import type { DisplayUnits } from '../geometry/geo'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
 import {
-  savedAnalysis,
   savedLayers,
   savedRingOverrides,
   savedRunSeq,
   savedUnits,
   savedView,
-  writeAnalysis,
   writeLayers,
   writeRingOverrides,
   writeRunSeq,
@@ -64,20 +62,15 @@ import {
   writeView,
   writeViewCamera,
 } from '../io/viewState'
-import type { AnalysisViewState, WidgetType } from './analysisLayout'
-import {
-  addWidget,
-  applyPreset,
-  deletePreset,
-  moveWidget,
-  removeWidget,
-  saveAsPreset,
-  setWidgetParams,
-  toggleCollapsed,
-} from './analysisLayout'
 // Keep worker execution behind analysisRequests; summaries are types, not store runtime dependencies.
 import type { McSensitivityMessage, McSweepMessage, McWorkerMessage } from '../playback/mcRun'
 import type { AnalysisSinks, SweepSpec } from './analysisRequests'
+
+/**
+ * The lens system is gone, so every run is stamped with the old default lens
+ * id. `Scenario.observedPresetId` stays for saved-scenario compatibility.
+ */
+const OBSERVED_PRESET_ID = 'run-summary'
 import {
   acceptMcMessage,
   acceptSensitivityMessage,
@@ -156,14 +149,6 @@ export interface UiState {
   raidDraft: RaidDraft | null
   /** Sat basemap location dialog visibility. */
   locationDialogOpen: boolean
-  /**
-   * Analysis lens layout and user presets. Render state only: ui state, not
-   * undoable, kept in its own localStorage key. The builtin lenses come from
-   * `BUILTIN_LENSES` on every load and are never persisted.
-   */
-  analysis: AnalysisViewState
-  /** Analysis customize mode: remove and reorder handles on every widget. Not persisted. */
-  analysisCustomize: boolean
 }
 
 /**
@@ -326,16 +311,6 @@ export interface Store {
   /** Force one ring on or off for one entity; null drops back to the layer flag. */
   setRingOverride: (entityId: string, key: RingKey, on: boolean | null) => void
   setLocationDialogOpen: (v: boolean) => void
-  /** Replace the analysis widget stack with a lens; an unknown id gives run-summary. */
-  applyLens: (presetId: string) => void
-  addAnalysisWidget: (type: WidgetType, params?: Record<string, unknown>) => void
-  removeAnalysisWidget: (id: string) => void
-  moveAnalysisWidget: (id: string, toIndex: number) => void
-  toggleAnalysisWidget: (id: string) => void
-  setAnalysisWidgetParams: (id: string, params: Record<string, unknown>) => void
-  saveAnalysisPreset: (label: string) => void
-  deleteAnalysisPreset: (id: string) => void
-  setAnalysisCustomize: (on: boolean) => void
   setUnits: (v: DisplayUnits) => void
   setSaveState: (lastAutosaveAt: number | null, error: string | null) => void
 
@@ -480,12 +455,6 @@ export const useStore = create<Store>()((set, get) => {
     install({ op: 'edit', next: fn(get().scenario) })
   }
 
-  /** Install an analysis view: eager storage write, ui only, never undo history. */
-  function setAnalysis(analysis: AnalysisViewState) {
-    writeAnalysis(analysis)
-    set((st) => ({ ui: { ...st.ui, analysis } }))
-  }
-
   const view = savedView()
 
   return {
@@ -515,8 +484,6 @@ export const useStore = create<Store>()((set, get) => {
       connectSuggestion: null,
       raidDraft: null,
       locationDialogOpen: false,
-      analysis: savedAnalysis(),
-      analysisCustomize: false,
     },
     playback: freshPlayback(savedRunSeq()),
     mc: IDLE_MC,
@@ -1350,19 +1317,6 @@ export const useStore = create<Store>()((set, get) => {
     },
     setLocationDialogOpen: (v) => set((st) => ({ ui: { ...st.ui, locationDialogOpen: v } })),
 
-    // Lens actions write storage on every call, a no-op reducer result
-    // included, so the stored record matches what is on screen. A stack
-    // emptied in customize mode reloads as run-summary (sanitizeAnalysisView).
-    applyLens: (presetId) => setAnalysis(applyPreset(get().ui.analysis, presetId)),
-    addAnalysisWidget: (type, params) => setAnalysis(addWidget(get().ui.analysis, type, params)),
-    removeAnalysisWidget: (id) => setAnalysis(removeWidget(get().ui.analysis, id)),
-    moveAnalysisWidget: (id, toIndex) => setAnalysis(moveWidget(get().ui.analysis, id, toIndex)),
-    toggleAnalysisWidget: (id) => setAnalysis(toggleCollapsed(get().ui.analysis, id)),
-    setAnalysisWidgetParams: (id, params) =>
-      setAnalysis(setWidgetParams(get().ui.analysis, id, params)),
-    saveAnalysisPreset: (label) => setAnalysis(saveAsPreset(get().ui.analysis, label)),
-    deleteAnalysisPreset: (id) => setAnalysis(deletePreset(get().ui.analysis, id)),
-    setAnalysisCustomize: (on) => set((st) => ({ ui: { ...st.ui, analysisCustomize: on } })),
     setSaveState: (lastAutosaveAt, error) => set({ save: { lastAutosaveAt, error } }),
     setUnits: (v) => {
       writeUnits(v)
@@ -1392,7 +1346,7 @@ export const useStore = create<Store>()((set, get) => {
         scenario: st.scenario,
         playback: st.playback,
         trial: st.trial,
-        presetId: st.ui.analysis.layout.presetId,
+        presetId: OBSERVED_PRESET_ID,
         nowMs: Date.now(),
       })
       if (next.kind === 'none') return

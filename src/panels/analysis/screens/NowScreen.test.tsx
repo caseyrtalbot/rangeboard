@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
-import { installTrial, observeTrial, unstartTrial } from '../widgets/trialTestState'
+import { installTrial, observeTrial, unstartTrial } from '../trialTestState'
 import * as forecast from '../../../analysis/impact'
 import { NowScreen } from './NowScreen'
 
