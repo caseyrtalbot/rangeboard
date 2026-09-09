@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "e15483d0e8c7e4dcb7b14ea690071445d94194fc9987cece3a228940277e9878",
+      "sha256": "d9a389a7d28182cd50e728fd779e05394d981d8a16bbdfa5f4dc65cd77e6be9e",
       "reviewedAt": "2026-09-09",
-      "note": "Removed the T&E Ops features section and every T&E seam: boundaries, autosave lanes, refactor rows, placement cancel, test-card contrast."
+      "note": "compat.ts helpers made module-private; guide text unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "8d5fd93abc0b84d275ee461bc79fdb977163d1e56233ef60c35cdfe5ee79498a",
+      "sha256": "4e8b1e85734bebf164ef7b8755d6175e09901d82130872cd0692bef2b36645db",
       "reviewedAt": "2026-09-09",
-      "note": "Removed section 8 (T&E module) and renumbered standards to 8; storage keys list the orphaned te keys; map, boundary, keyboard and copy entries describe the Board alone."
+      "note": "compat.ts keeps one exported declaration and one derived omission set; reference text unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "5f17bf170f1a3ede37eb5610985078b09449cbd82196e45f2a6391f0877dd550",
+      "sha256": "691faf965a0864ccf20916eb486f34f7599fafd983df24cb44701c08ea7314cf",
       "reviewedAt": "2026-09-09",
-      "note": "Dev hook is window.__store alone; src/te/io input removed."
+      "note": "compat.ts export change; verification text unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
