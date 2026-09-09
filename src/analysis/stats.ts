@@ -1,17 +1,14 @@
 /**
- * Statistics engine for T&E measure computation.
- * Source: docs/te-compilation/MASTER-CALCULATIONS.md.
- * Pure functions only; no DOM, no React, no external libraries.
+ * Statistics shared by the analysis and playback engines: the Wilson
+ * interval, the beta quantile, the t-based mean interval and the type 7
+ * quantile. Pure functions only; no DOM, no React, no external libraries.
  */
 
 export interface Interval {
   lo: number
   hi: number
-  method: 'wilson' | 'exact' | 'bayes'
+  method: 'wilson'
 }
-
-/** Guard against float noise pushing an exact integer over the next ceil step. */
-const CEIL_EPS = 1e-9
 
 const LANCZOS = [
   676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059,
@@ -104,45 +101,6 @@ export function wilson(x: number, n: number, z = 1.96): Interval & { p: number }
   return { p, lo: Math.max(0, center - half), hi: Math.min(1, center + half), method: 'wilson' }
 }
 
-/** Exact Clopper-Pearson interval via the beta quantile. */
-export function clopperPearson(x: number, n: number, conf = 0.95): Interval & { p: number } {
-  const alpha = 1 - conf
-  const lo = x <= 0 ? 0 : betaQuantile(alpha / 2, x, n - x + 1)
-  const hi = x >= n ? 1 : betaQuantile(1 - alpha / 2, x + 1, n - x)
-  return { p: x / n, lo, hi, method: 'exact' }
-}
-
-/** Beta-binomial posterior with an equal-tailed credible interval. */
-export function betaPosterior(
-  priorA: number,
-  priorB: number,
-  x: number,
-  n: number,
-  conf = 0.95,
-): Interval & { mean: number; a: number; b: number } {
-  const a = priorA + x
-  const b = priorB + n - x
-  const alpha = 1 - conf
-  return {
-    a,
-    b,
-    mean: a / (a + b),
-    lo: betaQuantile(alpha / 2, a, b),
-    hi: betaQuantile(1 - alpha / 2, a, b),
-    method: 'bayes',
-  }
-}
-
-/** Precision-driven sample size for one proportion, rounded up. */
-export function sampleSizeProportion(p: number, halfWidth: number, z = 1.96): number {
-  return Math.ceil((z * z * p * (1 - p)) / (halfWidth * halfWidth) - CEIL_EPS)
-}
-
-/** Required attempts to yield the needed valid opportunities, rounded up. */
-export function attemptInflation(validNeeded: number, validFraction: number): number {
-  return Math.ceil(validNeeded / validFraction - CEIL_EPS)
-}
-
 /**
  * Mean with a t-based confidence interval. The t quantile is exact from the
  * regularized incomplete beta for every sample size.
@@ -173,4 +131,3 @@ export function quantile(values: number[], q: number): number {
   if (base + 1 >= n) return sorted[n - 1]
   return sorted[base] + frac * (sorted[base + 1] - sorted[base])
 }
-

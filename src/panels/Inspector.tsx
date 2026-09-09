@@ -1541,7 +1541,7 @@ export function Inspector({ entityId }: { entityId?: string } = {}) {
       <Section label="Selection">
         <EmptyState
           title="No object selected"
-          body="Select an entity on the board to inspect its configuration, operational parameters, relationships, and test state."
+          body="Select an object on the board to configure it."
         />
       </Section>
     </div>

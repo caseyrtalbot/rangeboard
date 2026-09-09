@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "69eae07785efedc38a091e81f848fe57861075b9016e9ce47de4b543df2ae6b0",
-      "reviewedAt": "2026-09-08",
-      "note": "Reviewed scoped npm test command; complete gate, browser and parity instructions remain accurate."
+      "sha256": "1471ae7366164b11a4fa3140fc26548fb081d04ee8adddceb1bcafba05669af5",
+      "reviewedAt": "2026-09-09",
+      "note": "T&E Ops removed: one store, no campaign guidance."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "bf464ff360b3a2778295a60caa6899332a93bca85350575b15c4d0e4bd00527f",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed the R2 instruction entry point and AGENTS.md; the shared-guidance redirect remains accurate."
+      "sha256": "7cc27f013d2735730eb45fa3736f392580b20a6d0850f3f1c7fc660ad46014ba",
+      "reviewedAt": "2026-09-09",
+      "note": "Redirect unchanged; AGENTS.md reviewed after the T&E Ops removal."
     },
     {
       "document": "README.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "fd7605de72fd38ef510d3429392f494cecf2c6571582e4b55d6484d7dbce1d1b",
+      "sha256": "00adf71c499ac4ff348bbe1577c5318f470590bf56b5e45478e443dc4017973c",
       "reviewedAt": "2026-09-09",
-      "note": "Reviewed App.tsx screen-state wiring for the four analysis screens; the introduction and setup text remain accurate without change."
+      "note": "Test cards dropped from the summary after the tab removal"
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "6b04690a98c3d0787772edf67739b1619f4bbee7713441dbf3632cc4f0e782b8",
+      "sha256": "6fa267d4cb50a7b6348ce84d4c7042578144d11f9f94c4b2bf8832ae6995e0f2",
       "reviewedAt": "2026-09-09",
-      "note": "Added the analysis rebuild completion evidence link under completion records."
+      "note": "te-plan index entry notes the module removal; historical folders unchanged."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "e1a64bf83ca059e873056ff5a236d29f0c64fb4cf4001ce61b3084c64a5eb267",
+      "sha256": "3c0ccb96dbe2753334bbfa93d44e24baf123e309871bfb0cff7902a980e3e04e",
       "reviewedAt": "2026-09-09",
-      "note": "S10: replaced the Analyze and lens paragraphs with the four analysis screens and their bases, the sweep, the pinned baseline and the forecast placement; rewrote the analysis activity rows; removed the widget boundary."
+      "note": "Prepare panel declutter: one validity list, no run-scope rows, Test cards tab removed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "93b4fd76c44cdf3c0e29f46bca4a187e20018cac8154834d9ca56819c9f434b5",
+      "sha256": "28977558ba03d87824a9abee640e3f0b94ec3b5e5568141526236f793bf87c30",
       "reviewedAt": "2026-09-09",
-      "note": "S10: added the factor sweep contract and applySweepValue rules, the five sensitivity responses, the storage key list with three recovery namespaces and the baseline validation; replaced the analysis layout bullet with analysis screens and pinned baseline; invariants unchanged."
+      "note": "TestCardsPanel removed from the panel and lazy boundary lists"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -63,16 +63,15 @@
         "vite.config.ts",
         "tsconfig.app.json",
         "src/io/",
-        "src/te/io/",
         "src/playback/__fixtures__/",
         "scripts/",
         ".github/workflows/quality.yml",
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "78eb5af9d946e75874885d350b7c835bf3db14df92238432e6c9169d0809d5e3",
+      "sha256": "8d26413ac95a4ff8975d21e54e589a659a6e365e6505d2260435388ab482003c",
       "reviewedAt": "2026-09-09",
-      "note": "Shell spec now checks the analysis screen control and no lens bar; the stale lens test is gone."
+      "note": "e2e phase test now resets from the library tab; verification text unchanged"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -89,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "76c88262ecadda54d17a945dd16eca762d712226d0cbdd01b0595acdc31ab69f",
+      "sha256": "8855db0835a873d38c4770cc0e4e68597e086964a0f07812d6409cbe5b2bf309",
       "reviewedAt": "2026-09-09",
-      "note": "Reviewed the e2e shell spec change (lens test replaced by a screens test); workflow text unchanged."
+      "note": "e2e phase test tab change reviewed; workflow text unchanged"
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "0a08acd15e3174c7c7c815ebf8fe62950ba11fb18ad50b52e1a52a8522155d39",
+      "sha256": "b590161b8618c1165d8df6d96cd062db28411be682716c2e2398ba47678b52fa",
       "reviewedAt": "2026-09-09",
-      "note": "Recorded the analysis rebuild as complete on branch analysis-rebuild with its follow-ups; no work selected."
+      "note": "Recorded the Test cards tab removal on remove-te-ops"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -108,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "3fe84a44bd19c0ad65dbcc463b072d7fd3242f7bdd44b0ec69f27b3c59f07493",
+      "sha256": "0966801c8d0e011b149929bc08f7d8d8dec0672a0ede3e4b071559ec3ba89908",
       "reviewedAt": "2026-09-09",
-      "note": "S10: added the per-threat table, inventory bar and sweep map components with their tokens; replaced the Layout and widget paragraph with the screen, band chart and delta table rules."
+      "note": "Reviewed the CSS removal of test-card chips and finding scope grid; design text unchanged"
     }
   ],
   "historical": [

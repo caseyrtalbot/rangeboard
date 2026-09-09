@@ -29,23 +29,24 @@ function ModelBasis({ entityId, model }: { entityId: string; model: SpecModel })
   return (
     <>
       <div className="inspector-body insp entity-model-scope">
-        <Section label="Shared model">
-          <p>{model.name}</p>
-          <p>Edits to this model affect all {linked.length} linked {linked.length === 1 ? 'instance' : 'instances'}.</p>
-          <ul aria-label="Linked instances">
-            {linked.map((item) => <li key={item.id}>{item.name || 'Unnamed entity'} · {item.id}</li>)}
-          </ul>
-          <p>Deleting this model removes the link from these instances. Their board configuration remains.</p>
-        </Section>
+        {linked.length > 1 && (
+          <Section label="Linked instances" note={linked.length}>
+            <p>Edits to this model affect all {linked.length} linked instances.</p>
+            <ul aria-label="Linked instances">
+              {linked.map((item) => <li key={item.id}>{item.name || 'Unnamed entity'}</li>)}
+            </ul>
+          </Section>
+        )}
         <Section label="Model fidelity">
-          {tags.length > 0 ? tags.map((tag) => (
-            <div key={tag.id}>
-              <span className="fid-tag" data-tier={tag.tier} data-validation={tag.validation} title={tag.note}>
-                {tag.label} · {tag.tier} · {tag.validation}
-              </span>
-              <p>{tag.note}</p>
+          {tags.length > 0 ? (
+            <div className="fid-tags">
+              {tags.map((tag) => (
+                <span key={tag.id} className="fid-tag" data-tier={tag.tier} data-validation={tag.validation} title={tag.note}>
+                  {tag.label} · {tag.tier} · {tag.validation}
+                </span>
+              ))}
             </div>
-          )) : <p>No active engine fidelity tags apply to this entity.</p>}
+          ) : <p>No engine model applies to this entity.</p>}
         </Section>
       </div>
       <LibraryEditor key={model.id} modelId={model.id} />

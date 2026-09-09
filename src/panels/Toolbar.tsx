@@ -6,15 +6,10 @@ import type { StateTone } from '../ui/kit'
 import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
 import type { Store } from '../state/store'
-import { defaultFrameName } from '../state/labels'
 import { assessRunValidity } from '../analysis/runValidity'
 import { Tip } from './Tooltip'
 import { DeclutterControl, ViewMenu } from './ViewMenu'
-import { THEMES } from '../state/themes'
 import { RangeSetupMenu } from './RangeSetupMenu'
-import { useTeStore } from '../te/state/teStore'
-import type { Workspace } from '../te/state/teStore'
-import { captureFrameToCampaign } from '../te/io/frameCapture'
 import type { BoundaryType, EnvironmentSpec, Roe, Scenario } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
@@ -156,10 +151,8 @@ function OverflowMenu() {
 }
 
 export function FileActions({ onRequestClose }: { onRequestClose: () => void }) {
-  const [captureError, setCaptureError] = useState<string | null>(null)
   const scenario = useStore((s) => s.scenario)
   const replaceScenario = useStore((s) => s.replaceScenario)
-  const hasCampaign = useTeStore((s) => s.activeCampaignId != null)
 
   return (
     <div
@@ -203,33 +196,6 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
       >
         Export
       </button>
-      {hasCampaign && (
-        <button
-          type="button"
-          className="tb-menu-item"
-          title="Save the current board view as a PNG frame on the active T&E campaign"
-          onClick={() => {
-            const st = useStore.getState()
-            const frameName = defaultFrameName(
-              st.scenario.name,
-              st.playback.simTimeS,
-              st.ui.basemap,
-            )
-            try {
-              if (!captureFrameToCampaign(frameName)) {
-                setCaptureError('Could not capture: no canvas or writable active campaign.')
-                return
-              }
-              onRequestClose()
-            } catch (error) {
-              setCaptureError(error instanceof Error ? error.message : 'Could not capture the board canvas.')
-            }
-          }}
-        >
-          Capture frame
-        </button>
-      )}
-      {captureError && <State tone="critical" role="status" style={{ whiteSpace: 'normal', padding: 'var(--space-2)' }}>{captureError}</State>}
     </div>
   )
 }
@@ -246,48 +212,11 @@ export const Toolbar = memo(function Toolbar() {
   const save = useStore((s) => s.save)
   const { setScenarioName } = useStore.getState()
 
-  const theme = useStore((s) => s.ui.theme)
-  const setTheme = useStore((s) => s.setTheme)
-  const workspace = useTeStore((s) => s.ui.workspace)
-  const setWorkspace = useTeStore((s) => s.setWorkspace)
-  const workspaces: Array<{ id: Workspace; label: string }> = [
-    { id: 'board', label: 'Board' },
-    { id: 'ops', label: 'T&E Ops' },
-  ]
-
   const derates = activeDerates(environment)
-
-  if (workspace === 'ops') {
-    return (
-      <header className="toolbar">
-        <div className="brand">Rangeboard</div>
-        <div className="seg" aria-label="Workspace">
-          {workspaces.map((w) => (
-            <button
-              key={w.id}
-              className={workspace === w.id ? 'active' : ''}
-              onClick={() => setWorkspace(w.id)}
-            >
-              {w.label}
-            </button>
-          ))}
-        </div>
-        <div className="spacer" />
-        <StorageMenu />
-        <Seg value={theme} options={THEMES} label="Theme" onChange={setTheme} />
-      </header>
-    )
-  }
 
   return (
     <header className="toolbar">
       <div className="brand">Rangeboard</div>
-      <Seg
-        value={workspace}
-        options={workspaces.map((w) => ({ v: w.id, label: w.label }))}
-        label="Workspace"
-        onChange={setWorkspace}
-      />
       <input
         className="scenario-name"
         value={scenarioName}

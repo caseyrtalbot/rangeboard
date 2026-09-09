@@ -7,10 +7,6 @@
 export const SCENARIO_KEY = 'rangeboard.scenario.v1'
 /** Copy of an unreadable scenario save; suffix is the epoch ms of the rescue. */
 export const SCENARIO_RECOVERY_PREFIX = 'rangeboard.scenario.recovered.'
-/** T&E campaign store (`TeState`, schemaVersion 1). */
-export const TE_KEY = 'rangeboard.te.v1'
-/** Copy of an unreadable T&E save; suffix is the epoch ms of the rescue. */
-export const TE_RECOVERY_PREFIX = 'rangeboard.te.recovered.'
 /** Canvas layer visibility (`LayerVisibility`). */
 export const LAYERS_KEY = 'rangeboard.layers.v1'
 /** Per-entity ring overrides (`RingOverrides`). */

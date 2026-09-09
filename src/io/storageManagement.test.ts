@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { allowAutosave, assertAutosaveAllowed, blockAutosave } from './recovery'
-import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY, TE_RECOVERY_PREFIX } from './storageKeys'
+import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 import { deleteRecoveryCopy, downloadRecoveryCopy, readStorageUsage } from './storageManagement'
 
 function storage(initial: Record<string, string>) {
@@ -19,12 +19,11 @@ afterEach(() => { allowAutosave(SCENARIO_KEY); vi.restoreAllMocks(); vi.unstubAl
 describe('storage management', () => {
   it('accounts for every documented live key and every recovery namespace in UTF-16 bytes', () => {
     const key = `${SCENARIO_RECOVERY_PREFIX}123`
-    storage({ [SCENARIO_KEY]: '😀', [key]: '{bad', [`${TE_RECOVERY_PREFIX}456`]: '', [`${BASELINE_RECOVERY_PREFIX}789`]: 'x', unrelated: 'secret' })
+    storage({ [SCENARIO_KEY]: '😀', [key]: '{bad', [`${SCENARIO_RECOVERY_PREFIX}456`]: '', [`${BASELINE_RECOVERY_PREFIX}789`]: 'x', unrelated: 'secret' })
     const result = readStorageUsage()
     expect(result.error).toBeNull()
     expect(result.entries.find(entry => entry.key === SCENARIO_KEY)?.bytes).toBe(2 * (SCENARIO_KEY.length + 2))
     expect(result.entries.find(entry => entry.key === key)).toEqual({ key, kind: 'recovery', bytes: 2 * (key.length + 4) })
-    expect(result.entries.find(entry => entry.key === TE_KEY)?.bytes).toBe(0)
     expect(result.entries.find(entry => entry.key === BOARD_BASELINE)).toEqual({ key: BOARD_BASELINE, kind: 'live', bytes: 0 })
     expect(result.entries.filter(entry => entry.kind === 'recovery')).toHaveLength(3)
     expect(result.entries.some(entry => entry.key === BASELINE_RECOVERY_PREFIX)).toBe(false)
@@ -32,7 +31,7 @@ describe('storage management', () => {
   })
 
   it.each(['', '{not json\nΩ'])('downloads recovery text exactly, including empty/malformed saves', async raw => {
-    const key = `${TE_RECOVERY_PREFIX}123`
+    const key = `${BASELINE_RECOVERY_PREFIX}123`
     const data = storage({ [key]: raw })
     let blob: Blob | undefined
     vi.spyOn(URL, 'createObjectURL').mockImplementation(value => { blob = value as Blob; return 'blob:test' })

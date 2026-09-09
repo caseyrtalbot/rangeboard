@@ -4,7 +4,7 @@ import type { Entity, Scenario, SpecModel } from '../model/types'
 import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
 import { mulberry32 } from '../geometry/prng'
-import { betaQuantile, meanInterval, quantile } from '../te/calc/stats'
+import { betaQuantile, meanInterval, quantile } from './stats'
 import {
   PF_SPREAD,
   normalQuantile,

@@ -4,7 +4,6 @@ import type { BoardPhase } from './state/runState'
 import { selectBoardPhase } from './state/selectors'
 import type { RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
-import { useTeStore } from './te/state/teStore'
 import { CanvasStage } from './canvas/CanvasStage'
 import { IDLE_INTERACTION, routeInteraction } from './canvas/interactionRouter'
 import type { Action, InteractionState } from './canvas/interactionRouter'
@@ -24,26 +23,14 @@ import { TimelineBar } from './panels/TimelineBar'
 import { toggleAnalysisRun } from './playback/runSession'
 import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
-import { exportCampaignJson, restoreTeAutosave } from './te/io/persistTe'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { State } from './ui/kit'
 import { nextTabIndex } from './ui/rovingTabs'
 
-// The T&E workspace and its seed tables load on the first switch to Ops, not at startup.
-// The saved campaigns are restored inside the boundary, so no Ops render reads an
-// unrestored store; main.tsx also schedules the same restore on idle, and it runs once.
-const OpsWorkspace = lazy(() =>
-  import('./te/ui/OpsWorkspace').then((m) => {
-    restoreTeAutosave()
-    return { default: m.OpsWorkspace }
-  }),
-)
-
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
 // LibraryEditor stays static: EntityWorkspace renders it inline, so a boundary here
 // moves no bytes and only makes rolldown report an ineffective dynamic import.
-const TestCardsPanel = lazy(() => import('./panels/TestCardsPanel').then((m) => ({ default: m.TestCardsPanel })))
 const AnalysisPanel = lazy(() => import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })))
 const CommandPalette = lazy(() => import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })))
 
@@ -69,7 +56,6 @@ const PHASES: { id: BoardPhase; label: string }[] = [
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'analysis', label: 'Overview' },
   { id: 'inspect', label: 'Selected object' },
-  { id: 'cards', label: 'Test cards' },
   { id: 'library', label: 'Model library' },
 ]
 
@@ -157,14 +143,12 @@ const ResourceRail = memo(function ResourceRail({
   libraryTrigger,
   onToggleLibrary,
   onOpenObjects,
-  onOpenCards,
   onOpenKeys,
 }: {
   libraryOpen: boolean
   libraryTrigger: React.RefObject<HTMLButtonElement | null>
   onToggleLibrary: () => void
   onOpenObjects: () => void
-  onOpenCards: () => void
   onOpenKeys: () => void
 }) {
   return (
@@ -175,7 +159,6 @@ const ResourceRail = memo(function ResourceRail({
       <button onClick={onOpenObjects} title="Board entity register">
         <span aria-hidden="true">⌖</span>Objects
       </button>
-      <button onClick={onOpenCards}><span aria-hidden="true">▤</span>Cards</button>
       <button className="board-keys" onClick={onOpenKeys} title="Command palette (⌘K)"><span aria-hidden="true">⌘</span>Keys</button>
     </nav>
   )
@@ -405,19 +388,10 @@ function LocationDialogForm({ geoRef }: { geoRef: GeoRef | null }) {
   )
 }
 
-function exportOpsRecord() {
-  restoreTeAutosave()
-  const state = useTeStore.getState()
-  const campaign = state.campaigns.find((item) => item.id === state.activeCampaignId)
-  if (!campaign) throw new Error('No active campaign is available to export.')
-  exportCampaignJson(campaign)
-}
-
 export default function App() {
   const rightTab = useStore((s) => s.ui.rightTab)
   const setRightTab = useStore((s) => s.setRightTab)
   const theme = useStore((s) => s.ui.theme)
-  const workspace = useTeStore((s) => s.ui.workspace)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [placement, setPlacement] = useState<LibraryPlacement | null>(null)
@@ -543,15 +517,8 @@ export default function App() {
         state.scenario.entities.length !== previous.scenario.entities.length ||
         state.scenario.systemPresets.length !== previous.scenario.systemPresets.length) setPlacement(null)
     })
-    const stopWorkspace = useTeStore.subscribe((state, previous) => {
-      if (state.ui.workspace !== previous.ui.workspace) {
-        setPlacement(null)
-        setLibraryOpen(false)
-      }
-    })
     return () => {
       stopBoard()
-      stopWorkspace()
     }
   }, [])
 
@@ -572,7 +539,6 @@ export default function App() {
     setPrepareScreen('inputs')
     requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView())
   }, [openPhase])
-  const openCards = useCallback(() => setRightTab('cards'), [setRightTab])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
   const navigateAnalysis = useCallback((screen: AnalysisScreen) => {
     if (screen === 'fragility' || screen === 'inputs') setPrepareScreen(screen)
@@ -651,16 +617,13 @@ export default function App() {
       if (document.querySelector('#settings-panel[open]')) return
       const mod = e.metaKey || e.ctrlKey
       // Cmd+K toggles the command palette. Deliberately ahead of the typing
-      // suppression so it opens from inside an input; Board workspace only
-      // because every palette command is scenario-scoped.
+      // suppression so it opens from inside an input.
       if (mod && e.key.toLowerCase() === 'k') {
-        if (useTeStore.getState().ui.workspace === 'ops') return
         e.preventDefault()
         setPaletteOpen((v) => !v)
         return
       }
       const st = useStore.getState()
-      if (useTeStore.getState().ui.workspace === 'ops') return
       if (e.key === 'Escape') {
         const { libraryOpen, placementArmed } = shell.current
         dispatchEscape(routeInteraction({ kind: 'escape' }, escapeState(libraryOpen, placementArmed, e.target)))
@@ -702,19 +665,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [dispatchEscape])
 
-  if (workspace === 'ops') {
-    return (
-      <ErrorBoundary key="ops" label="T&E Ops" onExport={exportOpsRecord}>
-        <div className="app">
-          <Toolbar />
-          <Suspense fallback={<PanelLoading label="Loading T&E Ops" />}>
-            <OpsWorkspace />
-          </Suspense>
-        </div>
-      </ErrorBoundary>
-    )
-  }
-
   const board = (
     <div className="app board-app" data-board-phase={boardPhase}>
       <Toolbar />
@@ -726,7 +676,6 @@ export default function App() {
           libraryTrigger={libraryTrigger}
           onToggleLibrary={toggleLibrary}
           onOpenObjects={openObjects}
-          onOpenCards={openCards}
           onOpenKeys={openKeys}
         />
         <div id="board-library-drawer" className="board-library-drawer" hidden={!libraryOpen}>
@@ -787,11 +736,6 @@ export default function App() {
                   }}
                 />
               : <Inspector />)}
-            {activeTab === 'cards' && (
-              <Suspense fallback={<PanelLoading label="Loading test cards" />}>
-                <TestCardsPanel />
-              </Suspense>
-            )}
             {activeTab === 'library' && <LibraryEditor />}
             {activeTab === 'analysis' && (analysisScreen === 'inputs'
               ? <BoardPreparation />

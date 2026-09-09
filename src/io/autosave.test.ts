@@ -2,15 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Scenario } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
-import type { TeState } from '../te/model/types'
-import { emptyCampaign } from '../te/model/empty'
-import { useTeStore } from '../te/state/teStore'
-import { teAutosaveAdapter } from '../te/io/persistTe'
 import type { BaselineSave } from './persist'
 import { baselineAutosaveAdapter, scenarioAutosaveAdapter } from './persist'
 import type { Autosave, AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
-import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY, TE_RECOVERY_PREFIX } from './storageKeys'
+import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 import { runReplicates } from '../playback/mcRun'
 import { buildBaseline } from '../state/baseline'
 import { IDLE_MC } from '../state/runState'
@@ -76,18 +72,6 @@ const board: Lane<Scenario> = {
   status: () => useStore.getState().save.error,
 }
 
-const te: Lane<TeState> = {
-  adapter: teAutosaveAdapter,
-  key: TE_KEY,
-  prefix: TE_RECOVERY_PREFIX,
-  raw: (label) => JSON.stringify({ schemaVersion: 1, campaigns: [emptyCampaign(label, 'CAMP')], activeCampaignId: null }),
-  corrupt: JSON.stringify({ schemaVersion: 1, campaigns: [{ cards: null }] }),
-  edit: (label) => { useTeStore.getState().createCampaign(label, 'CAMP') },
-  held: () => useTeStore.getState().campaigns.at(-1)?.name,
-  written: (raw) => (JSON.parse(raw) as TeState).campaigns.at(-1)!.name,
-  status: () => useTeStore.getState().saveError,
-}
-
 /** A finished ensemble on the empty scenario: its undefined statistics round-trip as null. */
 const summary = runReplicates({ ...emptyScenario(), replicates: 1 })
 const baseline: Lane<BaselineSave> = {
@@ -111,11 +95,10 @@ const running: Autosave<unknown>[] = []
 /** Run one lifecycle case against every adapter. Each lane keeps its own record type. */
 function eachLane(what: string, run: <R>(lane: Lane<R>) => void): void {
   it(`Board ${what}`, () => run(board))
-  it(`T&E ${what}`, () => run(te))
   it(`Baseline ${what}`, () => run(baseline))
 }
 
-/** Every instance is restored first: the T&E lane admits no write before that. */
+/** Every instance is restored first, then observed. */
 function started<R>(lane: Lane<R>): Autosave<R> {
   const autosave = createAutosave(lane.adapter)
   running.push(autosave)
@@ -127,7 +110,7 @@ function started<R>(lane: Lane<R>): Autosave<R> {
 afterEach(() => {
   running.splice(0).forEach(autosave => autosave.stop())
   getRecoveryNotices().forEach(notice => dismissRecoveryNotice(notice.id))
-  allowAutosave(SCENARIO_KEY); allowAutosave(TE_KEY); allowAutosave(BOARD_BASELINE)
+  allowAutosave(SCENARIO_KEY); allowAutosave(BOARD_BASELINE)
   useStore.setState({ baseline: null, mc: IDLE_MC, save: { lastAutosaveAt: null, error: null } })
   vi.restoreAllMocks(); vi.unstubAllGlobals()
 })
@@ -177,24 +160,6 @@ describe('autosave lifecycle', () => {
     timers.runTimers()
     expect(data.get(lane.key)).toBe(original)
     expect(lane.status()).toContain('Storage unavailable')
-  })
-
-  it('admits no T&E write before the restore, so an untouched store cannot overwrite a saved record', () => {
-    const saved = te.raw('saved')
-    const { data, setItem } = storage({ [TE_KEY]: saved })
-    const timers = browser()
-    const autosave = createAutosave(teAutosaveAdapter)
-    running.push(autosave)
-    autosave.observe()
-    te.edit('before restore')
-    expect(timers.scheduled()).toBe(0)
-    expect(setItem).not.toHaveBeenCalled()
-    autosave.restore()
-    // The adoption itself is not an edit: it must not schedule a write either.
-    expect(timers.scheduled()).toBe(0)
-    te.edit('after restore')
-    timers.runTimers()
-    expect(te.written(data.get(TE_KEY)!)).toBe('after restore')
   })
 
   it('writes a cleared baseline as null under the same key, so a pending pin cannot outlive a clear', () => {

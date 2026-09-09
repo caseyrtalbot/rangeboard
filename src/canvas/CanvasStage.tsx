@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Layer, Rect, Stage } from 'react-konva'
-import { registerStage } from '../te/io/frameCapture'
+import { registerStage } from './frameCapture'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../model/types'
@@ -48,7 +48,7 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
 
-  // Expose the stage to the T&E frame-capture module while mounted.
+  // Expose the stage to the frame-capture module while mounted.
   useEffect(() => {
     registerStage(stageRef.current)
     return () => registerStage(null)

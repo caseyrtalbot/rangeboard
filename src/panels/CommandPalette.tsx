@@ -111,10 +111,9 @@ const ACTIONS: Command[] = [
   { id: 'import-library', category: 'Library', label: 'Import library', run: importLibraryFile },
 ]
 
-/** Cmd+K command palette. Mounted only while open, Board workspace only. */
+/** Cmd+K command palette. Mounted only while open. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const library = useStore((s) => s.scenario.library)
-  const testCards = useStore((s) => s.scenario.testCards)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -130,18 +129,8 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         st.setRightTab('library')
       },
     }))
-    const cards: Command[] = testCards.map((c) => ({
-      id: `card-${c.id}`,
-      category: 'Card',
-      label: `${c.cardId} v${c.version}${c.purpose ? ` · ${c.purpose}` : ''}`,
-      run: () => {
-        const st = useStore.getState()
-        st.select({ cardId: c.id })
-        st.setRightTab('cards')
-      },
-    }))
-    return [...ACTIONS, ...models, ...cards]
-  }, [library, testCards])
+    return [...ACTIONS, ...models]
+  }, [library])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()

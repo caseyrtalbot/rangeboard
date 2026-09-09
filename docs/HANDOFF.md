@@ -15,6 +15,15 @@ it does not authorize an implementation stage, commit, push or merge.
   export use one retained trial, and numerical parity, gate, browser and paired timing
   checks passed on September 8, 2026.
 
+- The T&E Ops workspace was removed on 2026-09-09 on branch `remove-te-ops`: `src/te/`,
+  its Board seams, its CSS region and its storage keys are gone. The engine statistics
+  live in `src/analysis/stats.ts` and Board frame download in `src/canvas/frameCapture.ts`.
+  Saved `rangeboard.te.v1` records are left in browser storage and are no longer read.
+  `docs/te-plan.md` and `docs/te-compilation/` stay as historical source.
+- The Board Test cards tab, its rail button, command palette entries and
+  `TestCardsPanel.tsx` were removed on 2026-09-09 on the same branch. `Scenario.testCards`,
+  its store actions, seed card and validation stay, so saved scenarios still load.
+
 ## Selected work
 
 None selected. The [analysis rebuild plan](field-te/evidence/analysis-rebuild-plan-2026-09-08.md)

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX, TE_KEY } from './storageKeys'
+import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 import { allowAutosave, dismissRecoveryNotice, getRecoveryNotices, notifyRecovery,
   stashUnreadableSave, subscribeRecoveryNotices } from './recovery'
 
@@ -15,7 +15,7 @@ function storage(initial: Record<string, string> = {}) {
 
 afterEach(() => {
   getRecoveryNotices().forEach(notice => dismissRecoveryNotice(notice.id))
-  allowAutosave(SCENARIO_KEY); allowAutosave(TE_KEY)
+  allowAutosave(SCENARIO_KEY)
   vi.restoreAllMocks(); vi.unstubAllGlobals()
 })
 

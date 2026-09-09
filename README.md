@@ -1,10 +1,9 @@
 # RangeBoard
 
 RangeBoard is a local-first, single-user C-UAS test and evaluation planning web app. The
-Board workspace has a meter-scaled canvas, a system and threat library, flight paths,
-playback and deterministic and Monte Carlo analysis. T&E Ops carries campaign questions,
-measures, test cards, runs, findings and deliverables in its own store. React 19,
-TypeScript, Vite. No backend. Persistence is `localStorage`.
+Board has a meter-scaled canvas, a system and threat library, flight paths, playback,
+deterministic and Monte Carlo analysis. React 19, TypeScript, Vite. No
+backend. Persistence is `localStorage`.
 
 Every estimate carries its uncertainty, quantity, units, denominator and horizon. An
 unsourced number is a planning factor and is labeled as one.

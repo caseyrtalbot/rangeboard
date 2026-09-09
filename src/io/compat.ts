@@ -1,11 +1,11 @@
 /**
- * Schema-1 compatibility declarations. One module per domain names every field
- * a legacy save may omit together with the filler that supplies it, so an
- * accepted omission cannot exist without a fill. `runtimeValidation.ts` derives
- * its omission sets from these declarations and the domain fill paths
- * (`fillScenario`, `fillCampaign`) derive their fills from the same entries.
+ * Schema-1 compatibility declarations. This module names every field a legacy
+ * save may omit together with the filler that supplies it, so an accepted
+ * omission cannot exist without a fill. `runtimeValidation.ts` derives its
+ * omission sets from these declarations and `fillScenario` derives its fills
+ * from the same entries.
  *
- * This module is the Board owner. It holds no defaults of its own: values come
+ * The module holds no defaults of its own: values come
  * from `emptyScenario()` (`model/seed.ts`), which stays the source of top-level
  * defaults. Keep it free of runtime imports so the validator can read the
  * declarations without pulling in the seed library.
@@ -24,13 +24,13 @@ export interface LegacyFill {
 }
 
 /** Legacy-omission surface of one record type, keyed by field name. */
-export type LegacyFields = Record<string, LegacyFill>
+type LegacyFields = Record<string, LegacyFill>
 
 /** Accepted omissions, keyed by runtime shape name. 'all' accepts every field. */
 export type LegacyOmissions = Record<string, ReadonlySet<string> | 'all'>
 
 /** Derive the validator's accepted omissions from one domain declaration. */
-export function legacyOmissions(owner: string, fields: LegacyFields): LegacyOmissions {
+function legacyOmissions(owner: string, fields: LegacyFields): LegacyOmissions {
   const out: LegacyOmissions = { [owner]: new Set(Object.keys(fields)) }
   for (const field of Object.values(fields)) if (field.shape) out[field.shape] = 'all'
   return out

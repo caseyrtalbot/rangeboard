@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import fixture from './__fixtures__/detection-outside-rings.json'
 import { parseAutosave } from '../io/persist'
-import { wilson } from '../te/calc/stats'
+import { wilson } from '../analysis/stats'
 import { runSensitivity } from './mcRun'
 
 /**

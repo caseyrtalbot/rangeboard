@@ -82,9 +82,8 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 
 - Playwright is a devDependency for scripted checks only. It uses its own browser profile,
   so the user's autosave is never touched. Use an isolated context for every check.
-- Dev builds expose `window.__store` (the Board zustand hook) and `window.__teStore`.
-  Drive real store actions through them. Read the action interfaces in
-  `src/state/store.ts` and `src/te/state/teStore.ts` before you build a harness.
+- Dev builds expose `window.__store` (the Board zustand hook). Drive real store actions
+  through it. Read the action interfaces in `src/state/store.ts` before you build a harness.
 - Sampled Play calls `startTrialRun` and waits for preparation; `prepareTrial` prepares
   without playing. Check real-worker equality
   against `runTrial(trial.scenario, trial.manifest)`, cancellation and coexistence with
@@ -92,7 +91,7 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   prepares one retained trial; New run clears it and redraws on the next Play. Check that
   canvas, telemetry and charts agree with its ledger through the lesser of cursor and
   observation, and that completed exports retain the same manifest and ledger.
-- Inspect state with `window.__store.getState()` and `window.__teStore.getState()`; read a
+- Inspect state with `window.__store.getState()`; read a
   fresh snapshot after a mutation. Exercise real worker actions; never inject a success
   message to verify worker integration.
 - A Coyote under a fully typed route needs a fire-control source (KuRFS or TPQ-53) in the

@@ -23,7 +23,7 @@ import { effectiveDoctrine } from '../model/types'
 import { rcsM2For } from '../model/rcsFactors'
 import { bdaSFor, defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
 import { DEFAULT_PK } from '../playback/pk'
-import { betaQuantile } from '../te/calc/stats'
+import { betaQuantile } from './stats'
 
 import { FIELDS_BY_KIND, hasSpec, modelsInUse, PF_SPREAD, spreadFor } from './parameterBasis'
 export { PF_SPREAD, spreadFor, uncertainFields } from './parameterBasis'

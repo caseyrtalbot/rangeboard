@@ -1,9 +1,8 @@
 # RangeBoard project guide
 
-RangeBoard supports C-UAS test design and the evidence workflow around a test campaign.
-The Board explores a modeled laydown; T&E Ops organizes controlled campaign records.
-A model run can inform a test, but it does not automatically become an observed trial
-or an approved requirement. No future refactor is selected by this guide.
+RangeBoard supports C-UAS test design. The Board explores a modeled laydown. A model run
+can inform a test, but it does not automatically become an observed trial or an approved
+requirement. No future refactor is selected by this guide.
 
 Equations and implementation contracts live in the [engineering reference](ENGINEERING_REFERENCE.md).
 This guide maps user activities to source; the [verification guide](VERIFICATION.md)
@@ -17,12 +16,12 @@ cursor, observed horizon and analysis basis. Execute starts with engagement laye
 retains its own session-only layer override; Prepare and Analyze share the saved layers.
 Prepare composes the existing run inputs, validity findings and a
 keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPreparation.tsx).
-Setup findings that cost a measurement appear first, with a Select button for a threat
-that starts inside detection coverage; model caveats stay inside the disclosure.
+Each validity finding appears once with its gates. Setup findings that cost a measurement
+come first, with a Select button for a threat that starts inside detection coverage.
 The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is one segmented
 control of the current phase's screens. It stays outside the scrolling panel, including
-while an object is selected. Test cards, selected-object configuration and the model
-library remain available in the panel tabs.
+while an object is selected. Selected-object configuration and the model library remain
+available in the panel tabs.
 
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its
@@ -30,8 +29,8 @@ button. Prepare groups run configuration, environment, doctrine and requirement 
 The canvas toolbar separates View preferences (theme, layers, units and basemap) from
 Range setup (location, calibrated image, image movement and saved opacity). Existing
 scenario actions govern changes and undo; automatic documented connections remain their
-own undo step. Pending placement is cancelled by a competing tool, a change to the entity
-or system-preset count, or a workspace change. Escape closes an open dialog before it
+own undo step. Pending placement is cancelled by a competing tool or a change to the entity
+or system-preset count. Escape closes an open dialog before it
 cancels a placement. The calibrate tool shows a strip until Escape or Cancel ends it.
 
 A single selected entity opens [EntityWorkspace](../src/panels/EntityWorkspace.tsx):
@@ -60,9 +59,8 @@ numerical paths. Forecast uses the deterministic `engagementPicture`. It appears
 analysis screen. It remains in the run export and the requirement record, and the
 Outcome validity row falls back to forecast requirement validity when a trial captured
 none. Forecast/MC settings live under **Forecast and analysis** in Prepare and Settings.
-Where a forecast count still prints, as in the test-card headline, it reads as an
-expected value with two decimals below ten. No surface labels a forecast as a realized
-kill.
+Where a forecast count still prints, it reads as an expected value with two decimals
+below ten. No surface labels a forecast as a realized kill.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
@@ -114,53 +112,27 @@ screen changes preserve the result basis.
 | Read a completed trial | Outcome screen: count tiles, per-threat table, event ledger, manifest, validity and export | [OutcomeScreen](../src/panels/analysis/screens/OutcomeScreen.tsx), [trialResult](../src/analysis/trialResult.ts), [DebriefRecord](../src/panels/analysis/DebriefRecord.tsx) |
 | Compare against expectation | Compare screen: ensemble band with the trial marked, delta table, disagreement finding and a pinned baseline | [CompareScreen](../src/panels/analysis/screens/CompareScreen.tsx), [BandChart](../src/charts/BandChart.tsx), [runValidity](../src/analysis/runValidity.ts), [baseline](../src/state/baseline.ts) |
 | Find where a laydown fails | Fragility screen: Monte Carlo tiles, factor sweep map, ranked multi-response sensitivity and validity; aleatory/total uncertainty and run settings under Forecast and analysis | [FragilityScreen](../src/panels/analysis/screens/FragilityScreen.tsx), [SweepMap](../src/charts/SweepMap.tsx), [sweepFactors](../src/playback/sweepFactors.ts), [mcRun](../src/playback/mcRun.ts), [ForecastSettings](../src/panels/analysis/ForecastSettings.tsx) |
-| Retain work | Autosave, scenario/library/run JSON, saved Board frames, basic test cards and run logs | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [TestCardsPanel](../src/panels/TestCardsPanel.tsx) |
+| Retain work | Autosave, scenario/library/run JSON, saved Board frames and run logs | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts) |
 
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
 never advances observation or stamps a run start or analysis basis.
 
-Board test cards (`Scenario.testCards`) differ from controlled T&E cards
-(`TeCampaign.cards`). Board saved frames and T&E captured image records also have
-different purposes. Follow their types and import paths before changing either feature.
-
 The shared toolbar's Storage section shows estimated UTF-16 bytes per live and recovery key.
 It retains startup recovery notices and lets the user download the exact unreadable copy or
-explicitly delete one recovery key. Deletion does not resume a paused autosave. New campaign
-frames and Board config snapshots have a 5 MiB admission budget; refusals appear beside the
-capture action. Existing valid saved payloads remain loadable.
+explicitly delete one recovery key. Deletion does not resume a paused autosave. A new
+underlay image has a 5 MiB admission budget. Existing valid saved payloads remain loadable.
 
-The Board, T&E Ops and print boundaries isolate render failures. Their Export action
-reads the owning scenario or campaign, and Reload reloads the page. Both autosave
-subscriptions remain outside React and continue when a view fails; the Board subscription
-carries the scenario and the pinned baseline as two lanes.
-
-## T&E Ops features
-
-The [workspace](../src/te/ui/OpsWorkspace.tsx) presents six phases plus Products.
-
-| Phase | Records and behavior | Source |
-| --- | --- | --- |
-| Campaign | Decision/customer context, authorities, roles, claims/assumptions, questions, qualification and reusable campaign structure | [CampaignPanel](../src/te/ui/CampaignPanel.tsx), [CampaignGroups](../src/te/ui/CampaignGroups.tsx) |
-| Design | Hypotheses, measures, approved thresholds, configurations, threats, conditions, factors, matrix, sampling and readiness | [DesignPanel](../src/te/ui/DesignPanel.tsx), [calculations](../src/te/calc/) |
-| Cards | Templates, linked-record filling, draft/issue/revise lifecycle and frozen issued versions | [CardsPanel](../src/te/ui/CardsPanel.tsx), [store](../src/te/state/teStore.ts) |
-| Execute | Runs from issued cards, events, observations, adjudication, amendments, exclusions, deviations, anomalies, checklists and go/no-go records | [ExecutePanel](../src/te/ui/ExecutePanel.tsx), [ExecuteBlocks](../src/te/ui/ExecuteBlocks.tsx) |
-| Analyze | Inclusion by evidence purpose, measure statistics, findings and traceability | [AnalyzePanel](../src/te/ui/AnalyzePanel.tsx), [measures](../src/te/calc/measures.ts), [validation](../src/te/validate.ts) |
-| Deliver | Debriefs, findings/actions, decision package, delivery freeze and closeout | [DeliverPanel](../src/te/ui/DeliverPanel.tsx), [DeliverBlocks](../src/te/ui/DeliverBlocks.tsx) |
-| Products | Printable artifacts and CSV products | [ProductsPanel](../src/te/ui/ProductsPanel.tsx), [print](../src/te/print/), [CSV](../src/te/io/exportCsv.ts) |
-
-The JIATF-401 demo is illustrative. Gates run in store actions as well as UI feedback.
-T&E has no Board-style undo: issued cards and delivered evidence are protected, while
-corrections preserve history. Read [transition tests](../src/te/state/transitions.test.ts)
-before changing lifecycle behavior.
+The Board boundary isolates render failures. Its Export action reads the scenario, and
+Reload reloads the page. The autosave subscription remains outside React and continues
+when a view fails; it carries the scenario and the pinned baseline as two lanes.
 
 ## Execution and persistence
 
-1. [main.tsx](../src/main.tsx) restores the Board autosave synchronously, starts both
-   autosave subscriptions and schedules the T&E restore on idle; the first switch to Ops
-   runs that restore if idle has not. Both subscriptions are one
-   [autosave lifecycle](../src/io/autosave.ts) with a Board adapter and a T&E adapter.
-   [App.tsx](../src/App.tsx) switches workspaces and manages common interaction chrome. The Ops workspace, the analysis and test-card panels, the command
-   palette and the recharts plot load behind lazy boundaries.
+1. [main.tsx](../src/main.tsx) restores the Board autosave synchronously and starts the
+   autosave subscription, one [autosave lifecycle](../src/io/autosave.ts) with a scenario
+   adapter and a baseline adapter. [App.tsx](../src/App.tsx) manages the interaction
+   chrome. The analysis panel, the command palette and the recharts plot load behind
+   lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; explicit forecasts consume those results.
@@ -175,8 +147,6 @@ before changing lifecycle behavior.
 4. Runtime validation precedes default filling and adoption. Recovery preserves unreadable
    saves and suppresses autosave when preservation fails. The pinned baseline has its own
    key, parser, validation and recovery prefix beside the scenario autosave.
-5. T&E can retain Board snapshots and images. The Board engine's only T&E dependency is
-   shared statistics; campaign state never belongs in the worker graph.
 
 There is no backend, authentication or multi-user synchronization. Storage is per browser
 origin: another localhost port has another autosave. Export JSON before moving origins.
@@ -194,9 +164,8 @@ File size alone does not define a safe slice.
 | Sampled playback | `state/trialSelectors.ts`, `useTrialResult.ts`, `analysis/trialResult.ts`, `trialSeries.ts`, `playback/trialTrackState.ts`, `trialSweepAt.ts` | One retained draw, member identity, observation bounds and export agreement |
 | Numerical engine | `playback/sim.ts`, `attrition.ts`, `mcRun.ts`, `policy.ts`, `analysis/` | Fixed IDs/seeds; deterministic, both MC modes and sensitivity parity |
 | Workers | [workerGraph.test.ts](../src/playback/workerGraph.test.ts), [workerSlot.test.ts](../src/playback/workerSlot.test.ts), `mcClient.ts`, `mc.worker.ts` | Isolated dependencies; real-worker completion/cancellation |
-| Save shapes | `model/types.ts`, `te/model/types.ts`, `io/`, `te/io/` | Schema descriptors, legacy defaults, rejection and recovery |
-| T&E lifecycle | `te/state/teStore.ts`, `te/validate.ts`, `te/calc/` | Freeze guards, admissible evidence, observations and traceability |
-| Rendering | `canvas/`, `panels/`, `charts/`, `ui/`, `te/ui/`, `index.css` | Clock horizons, tokens, panel width, chart rendering and overflow |
+| Save shapes | `model/types.ts`, `io/` | Schema descriptors, legacy defaults, rejection and recovery |
+| Rendering | `canvas/`, `panels/`, `charts/`, `ui/`, `index.css` | Clock horizons, tokens, panel width, chart rendering and overflow |
 
 Paths in the last table are relative to `src/`. These are navigation boundaries, not
 permission to refactor them together. Use the [workflow](WORKFLOW.md) for a selected slice.
