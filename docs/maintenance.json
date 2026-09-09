@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "e1a64bf83ca059e873056ff5a236d29f0c64fb4cf4001ce61b3084c64a5eb267",
+      "sha256": "9b7e0b1684bedd1f2f9d0f3716e31675f55fba6b3ebc700f7e26131e788e7a68",
       "reviewedAt": "2026-09-09",
-      "note": "S10: replaced the Analyze and lens paragraphs with the four analysis screens and their bases, the sweep, the pinned baseline and the forecast placement; rewrote the analysis activity rows; removed the widget boundary."
+      "note": "Board statistics moved to src/analysis/stats.ts; guide text unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "93b4fd76c44cdf3c0e29f46bca4a187e20018cac8154834d9ca56819c9f434b5",
+      "sha256": "22fb91837ac09f72585d50f8234cb9fbfaf49724657e8e6298c2e3159d5a243d",
       "reviewedAt": "2026-09-09",
-      "note": "S10: added the factor sweep contract and applySweepValue rules, the five sensitivity responses, the storage key list with three recovery namespaces and the baseline validation; replaced the analysis layout bullet with analysis screens and pinned baseline; invariants unchanged."
+      "note": "Statistics entry now points at src/analysis/stats.ts; the engine no longer depends on src/te/."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "3fe84a44bd19c0ad65dbcc463b072d7fd3242f7bdd44b0ec69f27b3c59f07493",
+      "sha256": "71d04acf20783456855f152a2cc655b501e1cd6fe727fbe871b512e4d273c37f",
       "reviewedAt": "2026-09-09",
-      "note": "S10: added the per-threat table, inventory bar and sweep map components with their tokens; replaced the Layout and widget paragraph with the screen, band chart and delta table rules."
+      "note": "Field help dot, number-unit row and inventory bar rules moved into Board CSS sections; tokens and components unchanged."
     }
   ],
   "historical": [

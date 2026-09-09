@@ -4,7 +4,7 @@ import type { Connection, Entity, EntityKind, FlightPath, Scenario, SpecModel, V
 import { MOUNT_HEIGHT_M, newId } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { bandMean, countSub, statMean, timeStatSub } from '../panels/analysis/mc'
-import { wilson } from '../te/calc/stats'
+import { wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
 import { FALLOFF_AT_MAX } from './pk'
 import { runReplicates } from './mcRun'

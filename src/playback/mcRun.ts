@@ -17,7 +17,7 @@ import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
 import type { SweepFactor } from './sweepFactors'
 import { applySweepValue, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from './sweepFactors'
-import { meanInterval, quantile, wilson } from '../te/calc/stats'
+import { meanInterval, quantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
@@ -34,7 +34,7 @@ export interface Stat {
   se: number
   /**
    * Interval on the mean at conf, by `interval`. A time keeps the t-interval
-   * (meanInterval from src/te/calc/stats.ts). A count clamps it to the
+   * (meanInterval from src/analysis/stats.ts). A count clamps it to the
    * count's support. A 0/1 count (support {0, 1}) takes the Wilson interval.
    * A count with a finite support maximum that samples all zero reports the
    * rule-of-three upper bound 3 max / n (no independence between ships), and

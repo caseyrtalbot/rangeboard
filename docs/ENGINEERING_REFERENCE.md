@@ -540,8 +540,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
 - **Statistics** (`mcRun.ts`): `Stat` is the one statistic shape: mean, sd, se, the
   interval `lo` and `hi` at `conf` with its `interval` method, the quantiles, `n` finite
   samples of `total` run, and the `defined` fraction with a Wilson interval, built from
-  `meanInterval`, `quantile` and `wilson` in `src/te/calc/stats.ts` (the one engine
-  dependency on `src/te/`; import a statistic from there, never copy it). `statOf` takes
+  `meanInterval`, `quantile` and `wilson` in `src/analysis/stats.ts` (import a statistic
+  from there, never copy it). `statOf` takes
   the statistic's kind: a time keeps the t-interval; a count clamps it to
   [0, max] (ships, tracks, or unbounded for salvos); a 0/1 count (max 1) takes the Wilson
   interval; a count with a finite max at 0 of n reports the rule-of-three upper bound
