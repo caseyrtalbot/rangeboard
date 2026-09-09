@@ -1813,57 +1813,6 @@ p.muted.small {
   border-bottom: 1px solid var(--border-default);
 }
 
-.lens-b {
-  flex: 0 0 auto;
-  padding: var(--space-1) 7px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-dim);
-  font-family: var(--font-ui);
-  font-size: var(--type-meta-size);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.lens-b:hover {
-  color: var(--text);
-}
-
-.lens-b.on {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-}
-
-.lens-b.user {
-  color: var(--text-tertiary);
-  font-style: italic;
-}
-
-.lens-b.cust {
-  margin-left: auto;
-  color: var(--text-tertiary);
-}
-
-.lens-b.cust.on {
-  color: var(--warn);
-  border-bottom-color: var(--warn);
-}
-
-.lens-x {
-  margin-left: 5px;
-  color: var(--text-tertiary);
-  font-style: normal;
-}
-
-.lens-sp {
-  flex: none;
-  width: 1px;
-  height: 14px;
-  margin: 0 var(--space-1);
-  background: var(--border-default);
-}
-
 /* Widget frame */
 .wg {
   border-bottom: 1px solid var(--border-subtle);
@@ -5014,18 +4963,6 @@ select.nu-unit {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.board-app .right-panel > .lens .lens-builtins {
-  margin: 0;
-  border-bottom: 0;
-}
-
-.board-app .lens-b {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-  text-align: left;
-}
-
 .board-app .inspector-body > * {
   flex-shrink: 0;
   min-width: 0;
@@ -5056,18 +4993,6 @@ select.nu-unit {
   justify-content: space-between;
   gap: var(--space-3);
   white-space: normal;
-}
-
-.lens-builtins {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  min-width: 0;
-  gap: var(--space-1);
-}
-
-.board-app .right-panel > .lens .lens-builtins {
-  width: 100%;
 }
 
 .board-preparation .insp-row {
@@ -5566,94 +5491,6 @@ select.nu-unit {
   text-align: left;
 }
 
-/* Layout tools float below the persistent destination row. */
-.lens {
-  position: relative;
-}
-
-.lens-layout {
-  margin-left: auto;
-  display: contents;
-}
-
-.analysis-layout-popover {
-  position: absolute;
-  top: 100%;
-  right: var(--space-2);
-  z-index: 40;
-  width: min(380px, calc(100% - 16px));
-  max-height: calc(100dvh - 300px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--space-3);
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
-}
-
-.analysis-layout-head,
-.analysis-layout-preset,
-.analysis-layout-save > div {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.analysis-layout-head h3 {
-  flex: 1;
-  margin: 0;
-  font-size: var(--type-title-size);
-}
-
-.analysis-layout-section {
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.analysis-layout-section h4 {
-  margin: var(--space-2) 0;
-  font-size: var(--type-label-size);
-}
-
-.analysis-layout-presets {
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.analysis-layout-preset-apply {
-  flex: 1;
-  min-width: 0;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.analysis-layout-preset-apply[aria-pressed='true'] {
-  background: var(--surface-hover);
-}
-
-.analysis-layout-catalog {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
-}
-
-.analysis-layout-catalog button {
-  white-space: normal;
-}
-
-.analysis-layout-save {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  font-size: var(--type-meta-size);
-}
-
-.analysis-layout-save input {
-  flex: 1;
-  min-width: 0;
-}
-
 .board-app .right-panel .wg-toggle,
 .section-toggle {
   display: flex;
@@ -5715,19 +5552,6 @@ select.nu-unit {
 
 .analysis-settings-edit {
   margin: var(--space-2) 0;
-  white-space: normal;
-}
-
-/* Leave the second destination row available for Layout without another rail. */
-.board-app .right-panel > .lens .lens-builtins {
-  padding-right: 64px;
-}
-
-.lens-layout-trigger {
-  position: absolute;
-  right: var(--space-2);
-  bottom: var(--space-1);
-  max-width: 64px;
   white-space: normal;
 }
 

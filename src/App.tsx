@@ -583,22 +583,6 @@ export default function App() {
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
   }, [hasObjectSelection, setRightTab])
-  const openPreparation = useCallback((section: 'run' | 'environment' | 'doctrine' | 'requirements') => {
-    setPrepareScreen('inputs')
-    setBoardPhase('prepare')
-    setPlacement(null)
-    setLibraryOpen(false)
-    setRightTab('analysis')
-    requestAnimationFrame(() => {
-      const target = document.getElementById(`prepare-${section}`)
-      if (!target) return
-      if (target instanceof HTMLDetailsElement) target.open = true
-      const focusTarget = target.querySelector('summary') ?? target
-      focusTarget.focus()
-      target.scrollIntoView({ block: 'start' })
-    })
-  }, [setBoardPhase, setRightTab])
-
   const [rightW, setRightW] = useState(savedRightWidth)
 
   function setRightWidth(w: number) {
@@ -780,7 +764,6 @@ export default function App() {
                   entityId={selectedEntityId}
                   section={entitySection}
                   onSectionChange={setEntitySection}
-                  onOpenSettings={() => openPreparation('run')}
                   onOverview={() => {
                     setRightTab('analysis')
                     requestAnimationFrame(() => document.getElementById('insp-tab-analysis')?.focus())

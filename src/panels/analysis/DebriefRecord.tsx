@@ -3,7 +3,7 @@ import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
-import { trialResultOf, trialSnapshotAt, type TrialResultView } from '../../analysis/trialResult'
+import { trialResultOf, type TrialResultView } from '../../analysis/trialResult'
 import { selectTrialSelection } from '../../state/trialSelectors'
 import { selectRunComplete } from '../../state/selectors'
 import { useTrialResult, trialStateText } from './controls'
@@ -230,43 +230,6 @@ export function DebriefRecord({
         <RequirementGates report={requirements} />
       </details>
     </details>
-  )
-}
-
-/** Achieved observation for Analyze; the completed record supplies the final horizon. */
-export function TrialOutcomeSummary({ view, horizonS }: { view: TrialResultView; horizonS: number }) {
-  const snapshot = trialSnapshotAt(view, horizonS)
-  const t = snapshot.observedThroughS
-  const counts = snapshot.counts
-  const first = (values: Array<number | null>) => {
-    const reached = values.filter((value): value is number => value != null && value <= t)
-    return reached.length ? formatTime(Math.min(...reached)) : '—'
-  }
-  const warnings = view.assessments.filter(a => a.arrivalS != null && a.arrivalS <= t && a.warningS != null)
-  const metrics: Array<[string, string | number]> = [
-    ['Pre-arrival hard kills', counts.preArrivalHardKills],
-    ['Pre-arrival mission kills', counts.preArrivalSoftKills],
-    ['Late hard kills', counts.lateHardKills],
-    ['Late mission kills', counts.lateSoftKills],
-    ['Arrived undefeated', snapshot.reportedLeakers ?? '—'],
-    ['Active at horizon', counts.activeAtHorizon],
-    ['First detect', first(view.assessments.map(a => a.firstDetectS))],
-    ['First effect', first(view.attrition.events.filter(e => e.killDelta === 1).map(e => e.tEffectS))],
-    ['Min warning', view.hasActiveAsset && warnings.length ? formatTime(Math.min(...warnings.map(a => a.warningS!))) : '—'],
-  ]
-  return (
-    <div className="trial-summary">
-      <p className="analysis-scope">Simulated trial · {snapshot.summary ? 'complete' : 'bounded observation'} · T+{formatTime(t)} observed</p>
-      <div className="outcome-grid">
-        {metrics.map(([label, value]) => (
-          <div className="outcome-metric" key={label}>
-            <span>{label}</span><strong>{value}</strong>
-            <small>{value === '—' ? 'unavailable or not reached' : typeof value === 'number' ? 'trial count' : 'reached trial milestone'}</small>
-          </div>
-        ))}
-      </div>
-      {!view.hasActiveAsset && <p className="muted small">No defended asset · arrival and warning measures unavailable.</p>}
-    </div>
   )
 }
 

@@ -49,8 +49,6 @@ export type ScenarioInstall =
   | { op: 'undo' }
   | { op: 'redo' }
 
-export type InstallOp = ScenarioInstall['op']
-
 /**
  * Make one Scenario current and answer for every slice it governs. Returns
  * the input object when there is nothing to do (an edit that returned the
@@ -141,7 +139,7 @@ function pushSnapshot(past: Scenario[], snapshot: Scenario): Scenario[] {
  * current stamp forward. A stamp that already matches replaces nothing; a
  * new stamp is a presentation variant of the restored object.
  */
-export function withObservedLens(restored: Scenario, current: Scenario): Scenario {
+function withObservedLens(restored: Scenario, current: Scenario): Scenario {
   const stamp = current.observedPresetId ?? null
   if ((restored.observedPresetId ?? null) === stamp) return restored
   const stamped = { ...restored, observedPresetId: stamp }
@@ -150,7 +148,7 @@ export function withObservedLens(restored: Scenario, current: Scenario): Scenari
 }
 
 /** Drop selected ids the scenario no longer holds. */
-export function pruneSelection(sel: Selection, s: Scenario): Selection {
+function pruneSelection(sel: Selection, s: Scenario): Selection {
   const entityIds = sel.entityIds.filter((id) => s.entities.some((e) => e.id === id))
   const keep = <T extends { id: string }>(id: string | null, list: T[]) =>
     id != null && list.some((x) => x.id === id) ? id : null

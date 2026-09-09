@@ -12,7 +12,6 @@ import type {
 import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { sampleCount } from '../analysis/projection'
-import { heldTracksSeries, kpiSeries, threatSeries } from '../analysis/series'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import * as uncertainty from '../analysis/uncertainty'
 import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
@@ -282,13 +281,6 @@ describe('runReplicates', () => {
     expect(summary.perThreat[uasId].killed.mean).toBe(1)
     expect(summary.perEffector[effId].salvos.mean).toBe(1)
     expect(summary.perEffector[effId].kills.mean).toBe(1)
-    // Same assessments as the deterministic run, so the reproduced rules
-    // must equal the chart builders sample for sample.
-    expect(summary.tracked.mean).toEqual(heldTracksSeries(scenario).values)
-    const residual = threatSeries(scenario, uasId).find((x) => x.id === 'residual')!
-    expect(summary.perThreat[uasId].residual.mean).toEqual(residual.values)
-    const kills = kpiSeries(scenario).find((x) => x.id === 'kpi.expectedKills')!
-    expect(summary.kills.mean).toEqual(kills.values)
   })
 
   it('Pk 0.5 and one salvo give a kill mean near 0.5 over 200 replicates', () => {

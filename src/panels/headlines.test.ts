@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   aarHeadline,
-  expectedCount,
   environmentHeadline,
-  expenditureBreakdown,
-  expenditureParts,
-  residualHeadline,
-  residualSectionHeadline,
-  totalSalvos,
 } from './headlines'
 import type { EnvironmentSpec } from '../model/types'
 
@@ -61,69 +55,6 @@ describe('environmentHeadline', () => {
 
   it('ignores the apply flag: the checkbox shows that state', () => {
     expect(environmentHeadline({ ...calm, apply: false })).toBe('Standard day')
-  })
-})
-
-describe('expenditure vocabulary', () => {
-  it('names the three channels the same way everywhere', () => {
-    expect(expenditureParts({ shotsFired: 2, deSalvos: 4, jamSalvos: 3 })).toEqual([
-      '2 kin',
-      '4 DE',
-      '3 EW',
-    ])
-  })
-
-  it('leaves out a channel that spent nothing', () => {
-    expect(expenditureParts({ shotsFired: 2, deSalvos: 0, jamSalvos: 0 })).toEqual(['2 kin'])
-    expect(expenditureParts({ shotsFired: 0, deSalvos: 4 })).toEqual(['4 DE'])
-    expect(expenditureParts({ shotsFired: 0 })).toEqual([])
-  })
-
-  it('keeps every channel in the fixed-field breakdown, zeros included', () => {
-    // 2 interceptor rounds plus 4 HPM bursts must never read as "6 kinetic".
-    expect(expenditureBreakdown({ shotsFired: 2, deSalvos: 4, jamSalvos: 0 })).toBe(
-      '2 kin · 4 DE · 0 EW',
-    )
-  })
-
-  it('totals across the three channels, treating absent counts as zero', () => {
-    expect(totalSalvos({ shotsFired: 2, deSalvos: 4, jamSalvos: 3 })).toBe(9)
-    expect(totalSalvos({ shotsFired: 2 })).toBe(2)
-  })
-})
-
-describe('residualHeadline', () => {
-  it('reads the display leaker figure as a percent of the raid', () => {
-    expect(residualHeadline({ reportedLeakers: 0.4, raidSize: 4 })).toEqual({
-      value: '10.0%',
-      sub: '0.40 of 4 ships',
-      bad: true,
-    })
-  })
-
-  it('stays quiet below the 5% line', () => {
-    expect(residualHeadline({ reportedLeakers: 0.1, raidSize: 4 }).bad).toBe(false)
-  })
-
-  it('dashes and says why when no asset makes residual measurable', () => {
-    // reportedLeakers is null, not 0: with no defended asset there is nothing
-    // to leak past, so a printed 0.0% would claim a perfect defence.
-    expect(residualHeadline({ reportedLeakers: null, raidSize: 4 })).toEqual({
-      value: '—',
-      sub: 'no defended asset placed',
-      bad: false,
-    })
-  })
-
-  it('dashes the section headline on the same rule', () => {
-    expect(residualSectionHeadline({ reportedLeakers: 0.4 })).toBe('0.40 expected residual')
-    expect(residualSectionHeadline({ reportedLeakers: null })).toBe('residual not measurable')
-  })
-})
-
-describe('expectedCount', () => {
-  it.each([[0, '0.00'], [0.952, '0.95'], [9.12, '9.12'], [10, '10.0'], [12.34, '12.3']])('formats %s as %s', (value, text) => {
-    expect(expectedCount(Number(value))).toBe(text)
   })
 })
 

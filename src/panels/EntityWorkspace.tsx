@@ -59,13 +59,11 @@ export function EntityWorkspace({
   section,
   onSectionChange,
   onOverview,
-  onOpenSettings,
 }: {
   entityId: string
   section: EntityWorkspaceSection
   onSectionChange: (section: EntityWorkspaceSection) => void
   onOverview: () => void
-  onOpenSettings?: () => void
 }) {
   // The entity and the library are stable references between edits to them, so an
   // edit elsewhere on the board leaves this shell alone.
@@ -126,7 +124,7 @@ export function EntityWorkspace({
           </div>
         ) : (
           <>
-            <LiveStrip onOpenSettings={onOpenSettings} />
+            <LiveStrip />
             {hasTelemetry ? (
               <DetailOverviewContext.Provider value={onOverview}>
                 <DetailPane entityId={entity.id} />
