@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "8b699a665a139eedbdd9e7061809ce1552f8f27a509c6028771dabc6c2addb2b",
-      "reviewedAt": "2026-09-08",
-      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
+      "sha256": "fd7605de72fd38ef510d3429392f494cecf2c6571582e4b55d6484d7dbce1d1b",
+      "reviewedAt": "2026-09-09",
+      "note": "Reviewed App.tsx screen-state wiring for the four analysis screens; the introduction and setup text remain accurate without change."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "6c93fd2f57f03dae59f726348460c0fd7fd615c25eb76bcdd5456d58b6c1d8fc",
-      "reviewedAt": "2026-09-08",
-      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
+      "sha256": "e1a64bf83ca059e873056ff5a236d29f0c64fb4cf4001ce61b3084c64a5eb267",
+      "reviewedAt": "2026-09-09",
+      "note": "S10: replaced the Analyze and lens paragraphs with the four analysis screens and their bases, the sweep, the pinned baseline and the forecast placement; rewrote the analysis activity rows; removed the widget boundary."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "dd8cba9d17c967b349e513e6ede8cb9b06fdfb10d943279ea30e4d940ce1c1b4",
-      "reviewedAt": "2026-09-08",
-      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
+      "sha256": "93b4fd76c44cdf3c0e29f46bca4a187e20018cac8154834d9ca56819c9f434b5",
+      "reviewedAt": "2026-09-09",
+      "note": "S10: added the factor sweep contract and applySweepValue rules, the five sensitivity responses, the storage key list with three recovery namespaces and the baseline validation; replaced the analysis layout bullet with analysis screens and pinned baseline; invariants unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -70,9 +70,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "220f09928a688721ee4386887d28d507c66212cb14f315353fab99a6ebe28606",
-      "reviewedAt": "2026-09-08",
-      "note": "Bundle budget: DeliverPanel prepares delivery and link updates, teStore applies; teStore imports no calc or matrixPlan values"
+      "sha256": "1294c3be51df22867c3edb2412c472db075a26cf32aed8e0e670ea11d21215dc",
+      "reviewedAt": "2026-09-09",
+      "note": "S10: mapped each analysis screen and the baseline to its tests and browser check; added the sensitivity parity and sweep tests; removed the widget render probe and lens role guidance; noted the shell spec lens test targets removed markup."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -108,9 +108,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "4f7c353d60f501a224f9992a7226c891271476267e586e521ad6705a8f4a823e",
-      "reviewedAt": "2026-09-07",
-      "note": "Reviewed R2 forecast text, chart accessibility scope labels and Planned path reuse of existing detail and text tokens."
+      "sha256": "3fe84a44bd19c0ad65dbcc463b072d7fd3242f7bdd44b0ec69f27b3c59f07493",
+      "reviewedAt": "2026-09-09",
+      "note": "S10: added the per-threat table, inventory bar and sweep map components with their tokens; replaced the Layout and widget paragraph with the screen, band chart and delta table rules."
     }
   ],
   "historical": [

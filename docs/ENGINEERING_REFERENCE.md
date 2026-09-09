@@ -97,12 +97,30 @@ Breaking one of these breaks the app.
   is not size-capped. `loadScenario` is the one load path; `replaceScenario` clears
   history, selection, drafts and the tool, and prunes per-entity view state.
 - **Storage keys live in `src/io/storageKeys.ts`;** never rename one; add a new key
-  instead. The scenario and T&E autosaves have their own read and error paths; both run
-  through the one lifecycle in `src/io/autosave.ts`, and their adapters keep the keys,
-  the records and the save status separate. Every other
-  settings key (view, layers, rings, run sequence, analysis layout, units, panel widths,
+  instead. The live keys are `SCENARIO_KEY` (`rangeboard.scenario.v1`), `TE_KEY`
+  (`rangeboard.te.v1`), `BOARD_BASELINE` (`rangeboard.baseline.v1`), `LAYERS_KEY`,
+  `RINGS_KEY`, `UNITS_KEY`, `VIEW_KEY`, `RUNSEQ_KEY`, `RIGHT_PANEL_WIDTH_KEY`,
+  `PALETTE_WIDTH_KEY`, `PALETTE_COLLAPSED_KEY`, `ENGSTRIP_OPEN_KEY` and the retired
+  `ANALYSIS_KEY` (`rangeboard.analysis.v1`), which earlier builds wrote for the removed
+  lens layout and nothing reads now. Three recovery namespaces exist:
+  `SCENARIO_RECOVERY_PREFIX`, `TE_RECOVERY_PREFIX` and `BASELINE_RECOVERY_PREFIX`
+  (`rangeboard.baseline.recovered.`); `storageManagement.ts` derives the live-key list and
+  the namespace list from every export of `storageKeys.ts` by the `_RECOVERY_PREFIX` name
+  suffix. The scenario, baseline and T&E autosaves have their own read and error paths;
+  all three run through the one lifecycle in `src/io/autosave.ts`, and their adapters keep
+  the keys, the records and the save status separate. The baseline adapter
+  (`baselineAutosaveAdapter`, `src/io/persist.ts`) writes a `BaselineSave` (`schemaVersion`
+  1, `baseline` or null; a cleared baseline is written as null, never removed, so a
+  pending pin write cannot revive it). `parseBaselineSave` validates before adoption: the
+  scenario passes `parseScenarioData`, the `McSummary` passes `validateMcSummary`
+  (`src/state/baseline.ts`), and `label`, `pinnedAt` and `scenarioHash` must be nonempty
+  strings with an ISO time. JSON has no NaN, so a NaN statistic is saved as null and
+  restored as NaN; an arrival stays null. An unreadable copy goes to the baseline
+  recovery prefix through the same `recoverUnreadableSave`. Every other
+  settings key (view, layers, rings, run sequence, units, panel widths,
   collapse flags) is read and written through `readSetting` and `writeSetting` in
-  `src/io/viewState.ts`, the one guarded localStorage path for settings. The camera write
+  `src/io/viewState.ts`, the one guarded localStorage path for settings. An older saved
+  view can still carry an `analysis` lens layout; the reader drops it and never fails. The camera write
   is queued and flushed by `flushViewWrites` on pagehide and tab hide. `storageManagement.ts`
   guards enumeration, exact raw recovery downloads and per-key deletion; it cannot delete
   live keys or change autosave admission. `recovery.ts` retains startup notices in memory
@@ -129,21 +147,26 @@ Breaking one of these breaks the app.
   ownership), turns a synchronous construction or post failure into one terminal error in
   the protocol's own shape, and releases the worker on a terminal message before delivering
   it. `cancel` posts the protocol's stop request and terminates a worker silent for
-  `CANCEL_GRACE_MS`. `mcClient.ts` (two slots: replicates and sensitivity) and
+  `CANCEL_GRACE_MS`. `mcClient.ts` (two slots: replicates, and sensitivity shared with the
+  sweep) and
   `trialClient.ts` (one slot) are protocol adapters over it: they own the worker URL,
   the request envelope, decoding, identity checks (run id; for a trial also request token,
   basis and manifest) and their cancellation semantics (graceful with grace period for MC,
   immediate terminate for a trial). Above them, `src/state/analysisRequests.ts` owns what
-  a request is for the three kinds `mc`, `sensitivity` and `trial`: `requestAnalysis` builds
+  a request is for the four kinds `mc`, `sensitivity`, `sweep` and `trial`: `requestAnalysis` builds
   the identity (run id, analysis basis, trial token and manifest), publishes the pending
   slice state first and starts the worker second, so a synchronous startup error or a
   missing `Worker` lands as a terminal error on that state; `acceptMcMessage`,
-  `acceptSensitivityMessage` and `acceptTrialMessage` accept a message only while the
+  `acceptSensitivityMessage`, `acceptSweepMessage` and `acceptTrialMessage` accept a message only while the
   request is live, for the current playback id and analysis basis (and for a trial the
   token and manifest). Terminal states accept nothing. Store actions `runMonteCarlo`,
-  `runSensitivity` and `prepareTrial` request an analysis; the store's `mcMessage`,
-  `sensitivityMessage` and `trialMessage` sinks reduce through the accept functions. Adding
-  a fourth worker-backed analysis means one adapter and one launch/accept pair, not a new
+  `runSensitivity`, `runSweep` and `prepareTrial` request an analysis; the store's `mcMessage`,
+  `sensitivityMessage`, `sweepMessage` and `trialMessage` sinks reduce through the accept functions.
+  A sweep launch replaces a pending sensitivity run and a sensitivity launch replaces a
+  pending sweep, because they share one slot; `runSweep` takes a `SweepSpec` (factors,
+  `replicatesPerCell` and `responses`, defaults in `SWEEP_DEFAULTS`) and is refused
+  without it or under deterministic mode. Adding
+  another worker-backed analysis means one adapter and one launch/accept pair, not a new
   slot implementation.
 - **Monte Carlo worker:** `runMonteCarlo` requests the `mc` kind, which posts through
   `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`
@@ -154,8 +177,74 @@ Breaking one of these breaks the app.
   evidence metadata, resolves scenario/entity/link defaults, and uses `uncertainFields`
   for effective spreads and draw identities. Raw model specs are conservatively included;
   object key order is ignored and array order is preserved. See the input matrix in
-  `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` on demand.
+  `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` and
+  `runSweep` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
+- **Factor sweep** (`src/playback/sweepFactors.ts`, the sweep section of `mcRun.ts`):
+  one ensemble per grid cell over one or two scenario factors. The request is
+
+  ```ts
+  interface SweepFactor { id: SweepFactorId; values: number[] | string[] }
+  type SweepFactorId = 'threatAltitudeFt' | 'threatSpeedMps' | 'approachAzimuthDeg'
+    | 'raidSize' | 'environmentPreset'
+  interface McSweepRequest {
+    type: 'sweep'
+    runId: string
+    scenario: Scenario
+    factors: [SweepFactor] | [SweepFactor, SweepFactor]
+    replicatesPerCell: number
+    responses: SensitivityResponse[]
+  }
+  interface SweepCell {
+    index: number[]
+    values: (number | string)[]
+    summary: Pick<McSummary, 'kills' | 'leakers' | 'firstDetectS' | 'minWarningS' | 'perEffector' | 'replicates'>
+  }
+  interface SweepSummary {
+    factors: SweepFactor[]
+    responses: SensitivityResponse[]
+    cells: SweepCell[]
+    replicatesPerCell: number
+    seed: number
+    elapsedMs: number
+    stopped?: { rule: 'budget' | 'cancelled'; at: number }
+  }
+  ```
+
+  A factor takes `SWEEP_VALUES_MIN` 2 to `SWEEP_VALUES_MAX` 6 values; `assertSweepFactors`
+  refuses one or two factors outside that range and the UI caps the grid at 36 cells.
+  `SWEEP_REPLICATES_DEFAULT` is 40. `applySweepValue(scenario, factor, value)` is pure
+  and returns a new `Scenario`; a non-number for a numeric factor throws:
+  - `threatAltitudeFt` sets `altitudeFt` on every active UAS that flies a path.
+  - `threatSpeedMps` sets `speedMps` on every path of an active UAS.
+  - `approachAzimuthDeg` rotates every threat path and its entity about `approachCenter`
+    (the first active defended asset, else the centroid of the active non-threat,
+    non-marker entities, else the origin) so `approachAzimuthDeg(scenario)` (the bearing
+    from that center to the first point of the first threat's path) becomes the value.
+    One rotation moves the whole raid, so its relative geometry holds. A scenario with no
+    azimuth is returned unchanged.
+  - `raidSize` sets the first wave (`raid.waves[0]`, else every threat with a path) to the
+    value, a whole number of 1 or more. Fewer members drops the last ones with their
+    paths; more repeats the members in order with fresh ids from `newId`, so their draw
+    keys are their own, and appends them to the first wave.
+  - `environmentPreset` replaces the precipitation, light and EM background covariates
+    from `SWEEP_ENVIRONMENT_PRESETS` (six ids, `clear-day` to `urban-night`), sets
+    `visibilityM` to null and `apply` to true, and keeps wind, temperature and field
+    elevation. An unknown id throws.
+
+  `sweepCellScenario` applies each factor at its indexed value, sets `replicates` to
+  `replicatesPerCell` and turns `targetHalfWidth` off, so every cell runs the same
+  replicates from the scenario seed (common random numbers across cells) in the
+  scenario's own uncertainty mode. `sweepLoop` yields one checkpoint per cell in row-major
+  order (the first factor outermost), drives `replicateLoop` to the cell's replicate
+  count, applies `assertSummaryFits` per cell when a budget is given, and reports the
+  numbers the cell retained at its peak so the budget rule sees the next cell's cost. A
+  stop lands between cells and keeps the cells done under `stopped`; a full run has no
+  `stopped` key. The worker routes `type: 'sweep'` on the sensitivity slot and posts
+  `sweep-progress`, `sweep-done` and `sweep-error` with `done` and `total` in cells.
+  The store keeps the result in `mc.sweep` (`SweepState`) beside `mc.sensitivity`; a
+  basis change marks it stale and cancels it with the other analyses. The Fragility
+  screen reads it through `currentSweep` (`panels/analysis/mc.ts`).
 - **Sampled Play:** `trial.ts` runs nominal parameters with aleatory draws through
   `monteCarloPolicy` → `assessAllThreats` → `resolveEngagements`. Its complete assessments
   and event/attrition ledger remain separate from the deterministic picture and MC summaries.
@@ -234,12 +323,12 @@ src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.
 src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui +
                playback + mc + trial), playbackCommands.ts (store-free playback intents:
                play, pause, scrub, frame, publish, newRun and their transitions),
-               analysisLayout.ts (lens presets and pure layout reducers),
+               baseline.ts (PinnedBaseline, buildBaseline, validateMcSummary),
                layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
-               MC/trial state shapes), scenarioInstall.ts (installScenario: the per-operation
+               MC/sensitivity/sweep/trial state shapes), scenarioInstall.ts (installScenario: the per-operation
                edit/undo/redo/replace response of history, selection, ring overrides,
                playback, mc and trial), analysisRequests.ts (requestAnalysis and the accept
-               reducers for the mc, sensitivity and trial requests), analysisBasis.ts
+               reducers for the mc, sensitivity, sweep and trial requests), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
@@ -260,10 +349,11 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                (phase at t, trackTimelineOf), sweepAt.ts (the per-publication sweep memo:
                hits, track states, effector states, held sensors), tactics.ts (threat
                tactics), raid.ts, runSession.ts (thin adapter: toggle and reset commands),
-               policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, Stat,
-               McSummary; reduces analysis/projection.ts quantities into bands and
-               imports no chart file), workerSlot.ts (the one worker slot: start, cancel, dispose),
-               mc.worker.ts + mcClient.ts (the replicate and sensitivity protocol adapters),
+               policy.ts (DrawPolicy), mcRun.ts (runReplicates, runSensitivity, runSweep, Stat,
+               McSummary, SensitivitySummary, SweepSummary; reduces analysis/projection.ts quantities into bands and
+               imports no chart file), sweepFactors.ts (applySweepValue and the sweep
+               factor ids and presets), workerSlot.ts (the one worker slot: start, cancel, dispose),
+               mc.worker.ts + mcClient.ts (the replicate, sensitivity and sweep protocol adapters),
                trial.ts (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
                (the trial protocol adapter), controlledWorker.ts (the shared Worker test
@@ -291,7 +381,9 @@ src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark tha
 src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.ts (pure
                series helpers), TimeSeries (a lazy shell whose fallback holds the plot
                box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
-               render), Ladder and Tornado (plain SVG). Props only; never reads the store.
+               render), BandChart (the recharts ensemble band with the trial and a dashed
+               baseline), SweepMap (the CSS-grid factor sweep map), Ladder and Tornado
+               (plain SVG). Props only; never reads the store.
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Layers),
                interactionRouter.ts (store-free intent routing: Escape order, click
                precedence, drop, placement), StaticScene.tsx (boundaries, footprints, range rings and
@@ -305,8 +397,10 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                style source)
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
-               LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/, analysis/widgets/,
-               analysis/detail/, analysis/ForecastSettings.tsx for forecast/MC controls),
+               LibraryEditor, TestCardsPanel, AnalysisPanel (+ analysis/screens/ for the
+               Fragility, Now, Outcome and Compare screens and their phase map,
+               analysis/ for the shared readers, records and settings, analysis/detail/,
+               analysis/ForecastSettings.tsx for forecast/MC controls),
                TimelineBar (owns the rAF loop; publishes the clock only), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
@@ -463,9 +557,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (names the single-scan-hit basis, shows the defined fraction's Wilson interval, withholds
   the mean CI under `TIME_CI_MIN_N` 30 defined) and a band step through
   `countSub` (the interval as its two ends, since a count interval is not symmetric)
-  (`widgets/mc.ts`). Bands and tile subs read current `McSummary` through `withBands`
+  (`panels/analysis/mc.ts`). Bands and tile subs read current `McSummary` through `withBands`
   (`series.ts`) and `currentSummary`, only when `mc.status` is `done` for the current run
-  id. Covered chart lines become replicate means with 80/95 percent replicate-quantile
+  id; `currentSensitivity` and `currentSweep` apply the same rule to their slices. Covered chart lines become replicate means with 80/95 percent replicate-quantile
   bands, each drawn only when its quantiles are finite; `bandNote` words the rule. Tile
   intervals describe means, not those quantiles. Values and intervals share
   quantity/denominator; Defeat converts ship count and interval to percent by the same raid
@@ -512,19 +606,27 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (`UncertaintyMode`, `aleatory` or `total`, default `aleatory`) is what a replicate
   varies: under `total` the loop draws one `param` uniform per uncertain field through the
   policy and calls `sampleScenario` once per replicate before `assessAllThreats`, under
-  `aleatory` it never calls it. `runSensitivity` (`mcRun.ts`) is one-at-a-time on the
-  end-of-run leaker mean, the field at its p10 and at its p90 with every other field
-  nominal, paired by the same seed and replicate index, rows sorted by swing, each row
-  with `se`, the paired standard error of the per-replicate difference; the
-  `sensitivity` widget runs it on demand on its own worker slot into `mc.sensitivity`,
-  which a basis change marks stale. The sensitivity widget reads `currentSensitivity`
-  and hides stale rows and replicate metadata. `spreadText` (`src/panels/inspector/spreadText.ts`) is
+  `aleatory` it never calls it. `runSensitivity` (`mcRun.ts`) is one-at-a-time: for each
+  uncertain field it runs the replicates twice, the field at its p10 and at its p90 with
+  every other field nominal, paired by the same seed and replicate index (common random
+  numbers). Each `SensitivityRow` records five end-of-run responses under `responses`,
+  keyed by `SensitivityResponse` (`leakers`, `kills`, `firstDetectS`, `minWarningS`,
+  `salvos`, in `SENSITIVITY_RESPONSES` order): per response `lo` and `hi` (the mean over
+  the finite replicates on each side, NaN with none), `swing` (`|hi - lo|`), `se` (the
+  paired standard error of the per-replicate difference over the replicates finite on
+  both sides; 0 with one, NaN with none) and `defined` (each side's defined fraction, so
+  an undefined time keeps its definedness statistic). The row's `low`, `high`, `swing`
+  and `se` are aliases of `responses.leakers`; rows sort by the leaker swing, largest
+  first, ties in `uncertainFields` order. The Fragility screen runs it on demand on its
+  own worker slot into `mc.sensitivity`, which a basis change marks stale, reads
+  `currentSensitivity`, and ranks the bars of the selected response.
+  `spreadText` (`src/panels/inspector/spreadText.ts`) is
   the one spread wording, shown by the Sources table and appended to the `PfTag` title.
 - **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row
   for each of the fourteen model ids with a tier, a validation status and, where a
   published method applies, a `standard` that quotes a row of section 9. `modelsUsed
   (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
-  run-validity widget and the detail pane header show the tags, and the export carries
+  Outcome validity row and the detail pane header show the tags, and the export carries
   `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with
   `total` only. `radar-pd` is `datasheet`: `validation.verify.test.ts` checks the range law
   against the Blighter A400 and Echodyne sheets, and `convergence.verify.test.ts` holds the
@@ -574,38 +676,48 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in the danger
   red from `src/ui/ink.ts`, the one Konva ink table; a jammer keeps its entity-color
   cone. Only a selected-threat ring carries a label.
-- **Analysis layout** (`src/state/analysisLayout.ts`): `BUILTIN_LENSES` the five lenses,
-  `WIDGETS` (`src/panels/analysis/widgets/registry.ts`) the one type-to-component map,
-  `ui.analysis` view state under `ANALYSIS_KEY` written by every layout action, builtin
-  lenses never persisted. `Scenario.observedPresetId` is written on reset and first
-  play only and stays out of the basis signature. `SURVIVAL_LABELS` and `KPI_LABELS`
-  (`widgets/labels.ts`) are the one name table (Leakers, Survives, Survival limit; the
-  effect gate is relabeled at render); `useSimTimeStep` (`widgets/controls.tsx`) supplies
-  quantized forecast time; `useTrialResult` supplies trial cursor telemetry.
-  `AnalysisNavigation` keeps all five destinations outside the content scroller;
-  `AnalysisLayoutControls` owns view-only preset/add/edit/save controls. WidgetFrame and
-  AnalysisSection use keyboard-operable disclosure buttons with named content regions.
-  Analyze presents Trial results through observed time, with Trial cursor telemetry,
-  Forecast and Monte Carlo separately labeled; customized widgets keep their stored order
-  and parameters. Trial series remain cursor/observation-bounded in Analyze too.
-  DebriefRecord retains completion guards, current-result readers and exports
-  behind Evidence products, without rendering a second OutcomeSummary. Execute replaces
-  projection, requirement-gates and sensitivity bodies with “Forecast available in Analyze”
-  using the same instance controls without changing saved layouts. Registry horizon metadata
-  and WidgetProps carry the scope;
-  WidgetFrame hides meta when given a scoped horizon unless `metaWithinHorizon` is true.
-  Execute mounts DebriefRecord only when the horizon reaches duration; Analyze retains
-  full-run evidence while scrubbing. Cursor widgets sample within the execution horizon;
-  event counts include reached assignments, while effect times, Pk and kill deltas wait for
-  the effect. EngagementStrip clips windows and censors lane marks, tooltips and labels.
-  Environment, doctrine and thresholds route Board scenario edits to Prepare. Forecast/MC
-  controls live under Forecast and analysis in Prepare and Settings.
+- **Analysis screens** (`src/panels/AnalysisPanel.tsx`, `src/panels/analysis/screens/`):
+  `PHASE_SCREENS` (`screens/navigation.ts`) is the one phase-to-screen map: Prepare
+  `fragility` and `inputs`, Execute `now`, Analyze `outcome` and `compare`. `AnalysisPanel`
+  takes the phase and the screen, falls back to the phase's first screen, and renders
+  `BoardPreparation` for `inputs`. `AnalysisNavigation` is one `Seg` of the phase's
+  screens, kept outside the content scroller. Each screen has one owner component and one
+  result basis: Fragility the current `McSummary`, `SensitivitySummary` and `SweepSummary`
+  through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
+  trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon;
+  Outcome the completed `TrialResultView` through `trialResultOf`; Compare the completed
+  trial against the current `McSummary` and the pinned baseline. The deterministic
+  forecast appears on no screen; Outcome and Compare call `engagementPicture` only for
+  requirement validity and the `forecast-trial-disagreement` finding. Before the first
+  Play, Now, Outcome and Compare each render one placeholder line.
+  `Scenario.observedPresetId` is written on reset and first play only and stays out of
+  the basis signature. `SURVIVAL_LABELS`
+  and `KPI_LABELS` (`panels/analysis/labels.ts`) remain the one name table; `useTrialResult`
+  supplies trial cursor telemetry. AnalysisSection uses keyboard-operable disclosure
+  buttons with named content regions. Trial series remain cursor/observation-bounded in
+  Analyze too. DebriefRecord retains completion guards, current-result readers and exports
+  behind Evidence products and exports `TrialEventLedger` and `TrialManifestRecord`, which
+  the Outcome records rows open in place; the outcome tiles render once, on Outcome.
+  Now samples within the execution horizon: event counts include reached assignments,
+  while effect times, Pk and kill deltas wait for the effect. EngagementStrip clips
+  windows and censors lane marks, tooltips and labels. Compare findings route to Prepare.
+  Forecast/MC controls live under Forecast and analysis in Prepare and Settings.
+- **Pinned baseline** (`src/state/baseline.ts`): `PinnedBaseline` is `pinnedAt` (ISO),
+  `label`, `scenario`, `mc` (`McSummary`) and `scenarioHash` (the `analysisBasisSignature`
+  at the pin). `pinBaseline(label?)` needs a done summary for the current run and basis
+  and builds the record through `buildBaseline`; `defaultBaselineLabel` is the scenario
+  name and the local pin time. `clearBaseline` sets null; `restoreBaseline` is the
+  persistence-only install. The baseline is store state beside the scenario: never in
+  `Scenario`, `past` or a worker request, and never cleared by a scenario edit. Compare
+  draws its `mc.kills.mean` dashed on `BandChart` and adds Baseline and Current minus
+  Baseline columns to the delta table. Its storage key and validation are under
+  **Storage keys** above.
 - **Selection detail** (`src/panels/EntityWorkspace.tsx`): the Board shell routes one
   selected entity into Telemetry, Configure and Model basis. `DetailPane` is the one
   telemetry kind-to-pane map (sensor, effector, uas, c2); Inspector owns configuration
   and LibraryEditor owns shared model edits. Overview preserves entity selection and
   the preset id. Multi-selection, boundaries, connections and raid drafts retain the
-  existing Inspector. AnalysisPanel renders the widget stack alone; the Board shell owns
+  existing Inspector. AnalysisPanel renders the active screen alone; the Board shell owns
   selection detail.
   Trial series and ladder adapters memo on the retained result and observation horizon.
   `trialTelemetryAt` and `threatReadoutAt` (`panels/analysis/threatReadout.ts`) share
@@ -631,7 +743,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   placeholder for a scoped horizon. Builders and full-run numerical results stay intact.
   `src/analysis/trialSeries.ts` separately builds `simulated-trial` step series and ladders
   from retained observations and events. Samples, marks and spans end at the trial horizon;
-  `useTrialResult` supplies the same bounded series to execution widgets and detail panes.
+  `useTrialResult` supplies the same bounded series to the screens and detail panes.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed
@@ -716,11 +828,10 @@ exports and interfaces for object shapes, JSDoc on exported symbols, short ratio
 comments and lines near 100 characters. There is no source formatter. Do not add unused
 exports or TODO markers.
 
-`src/ui/ErrorBoundary.tsx` isolates Board and Ops roots, each analysis widget invocation
-and frame body, and print contents. Its fallback uses `State` with Export and Reload.
+`src/ui/ErrorBoundary.tsx` isolates the Board and Ops roots and print contents. Its
+fallback uses `State` with Export and Reload.
 Exports read the owning Board scenario or T&E campaign; a caught render error never clears
-records. `startAutosave` and `startTeAutosave` stay outside React in `main.tsx`. The widget
-render probe is dev-only and absent from the production bundle.
+records. `startAutosave` and `startTeAutosave` stay outside React in `main.tsx`.
 
 Konva conventions:
 
@@ -833,9 +944,9 @@ Design system (`src/index.css`):
   no vertex), then a plain select click on empty canvas clears the selection. An entity
   click is owned by connect and select; path owns only the UAS that starts a draft;
   boundary, calibrate and a raid draft bubble it to the stage. The matrix is
-  table-tested in `interactionRouter.test.ts`. The lens buttons in `AnalysisNavigation.tsx` are a `role="group"` of
-  `aria-pressed` buttons with one roving tab stop, since they stay rendered in every
-  phase and tab; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
+  table-tested in `interactionRouter.test.ts`. The screen control in `AnalysisNavigation.tsx`
+  is one `Seg` (`role="group"`, one pressed segment) that stays rendered in every phase
+  and tab; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 
 ## 8. T&E Operations module (`src/te/`)
 
