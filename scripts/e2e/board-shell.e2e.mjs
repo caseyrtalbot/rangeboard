@@ -144,24 +144,16 @@ test('debrief record opens on run completion with a status summary', async (t) =
   assert.deepEqual(errors, [])
 })
 
-test('lens buttons are a pressed group with one roving tab stop', async (t) => {
+test('analysis screens follow the phase and no lens bar renders', async (t) => {
   const { page, errors } = await open(t)
+  const labels = () => page.evaluate(() => [...document.querySelectorAll('[aria-label="Analysis screens"] button')].map((b) => b.textContent))
   await page.click('#board-phase-analyze')
-  await waitFor(page, () => document.querySelector('.lens-builtins'))
-  assert.equal(await page.getAttribute('.lens-builtins', 'role'), 'group')
-  const before = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.lens-builtins button[aria-pressed]')]
-    return { count: b.length, pressed: b.map((x) => x.getAttribute('aria-pressed')), tabbable: b.filter((x) => x.tabIndex === 0).length }
-  })
-  assert.equal(before.count, 5)
-  assert.equal(before.pressed.filter((v) => v === 'true').length, 1)
-  assert.equal(before.tabbable, 1)
-  const preset = await read(page, 'ui.analysis.layout.presetId')
-  const index = before.pressed.indexOf('true')
-  await page.focus('.lens-builtins button[aria-pressed="true"]')
-  await page.keyboard.press('ArrowRight')
-  await waitFor(page, (p) => window.__store.getState().ui.analysis.layout.presetId !== p, preset)
-  const pressedNow = await page.evaluate(() => [...document.querySelectorAll('.lens-builtins button[aria-pressed]')].map((x) => x.getAttribute('aria-pressed')))
-  assert.equal(pressedNow.indexOf('true'), (index + 1) % 5)
+  await waitFor(page, () => document.querySelector('[aria-label="Analysis screens"]'))
+  assert.deepEqual(await labels(), ['Outcome', 'Compare'])
+  await page.click('#board-phase-execute')
+  await waitFor(page, () => document.querySelectorAll('[aria-label="Analysis screens"] button').length === 1)
+  assert.deepEqual(await labels(), ['Now'])
+  assert.equal(await has(page, '.lens-builtins'), false)
+  assert.equal(await has(page, '.lens-layout'), false)
   assert.deepEqual(errors, [])
 })
