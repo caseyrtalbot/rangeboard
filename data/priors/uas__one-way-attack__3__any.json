@@ -1,0 +1,35 @@
+{
+  "class": "uas/one-way-attack/3/any",
+  "kind": "uas",
+  "type": "one-way-attack",
+  "band": "3",
+  "targetClass": "any",
+  "dataPackageVersion": 1,
+  "members": [
+    "lib-shahed136",
+    "lib-mugin5",
+    "lib-geran4"
+  ],
+  "fields": {
+    "spanM": {
+      "logMedian": 1.0986122886681096,
+      "sigmaDb": 3.120957072453383,
+      "n": 3,
+      "members": [
+        "lib-shahed136",
+        "lib-mugin5",
+        "lib-geran4"
+      ]
+    },
+    "cruiseSpeedMps": {
+      "logMedian": 3.912023005428146,
+      "sigmaDb": 5.110709766488624,
+      "n": 3,
+      "members": [
+        "lib-shahed136",
+        "lib-mugin5",
+        "lib-geran4"
+      ]
+    }
+  }
+}

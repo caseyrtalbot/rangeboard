@@ -1,0 +1,25 @@
+{
+  "class": "sensor/eo-ir/dual/any",
+  "kind": "sensor",
+  "type": "eo-ir",
+  "band": "dual",
+  "targetClass": "any",
+  "dataPackageVersion": 1,
+  "members": [
+    "lib-hdcmr",
+    "lib-mxgcs",
+    "lib-cm262"
+  ],
+  "fields": {
+    "sectorDeg": {
+      "mean": 360,
+      "sd": 0,
+      "n": 3,
+      "members": [
+        "lib-hdcmr",
+        "lib-mxgcs",
+        "lib-cm262"
+      ]
+    }
+  }
+}

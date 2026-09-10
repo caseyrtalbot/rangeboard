@@ -1,0 +1,25 @@
+{
+  "class": "sensor/acoustic/any/any",
+  "kind": "sensor",
+  "type": "acoustic",
+  "band": "any",
+  "targetClass": "any",
+  "dataPackageVersion": 1,
+  "members": [
+    "lib-discovair",
+    "lib-zvook",
+    "lib-zvooknw0"
+  ],
+  "fields": {
+    "sectorDeg": {
+      "mean": 221.66666666666666,
+      "sd": 128.87332281482205,
+      "n": 3,
+      "members": [
+        "lib-discovair",
+        "lib-zvook",
+        "lib-zvooknw0"
+      ]
+    }
+  }
+}
