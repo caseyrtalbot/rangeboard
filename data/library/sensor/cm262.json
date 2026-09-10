@@ -1,0 +1,98 @@
+{
+  "id": "lib-cm262",
+  "kind": "sensor",
+  "type": "eo-ir",
+  "version": 1,
+  "name": "CM262 EO/IR/SWIR gimbal (CACI)",
+  "description": "Four-sensor 16 kg gimbal on the L-MADIS sensor vehicle: HD EO, HD MWIR, SWIR and a laser rangefinder, 360 deg continuous in azimuth and +90 to -16 deg in elevation, with on-board C-UAS tracking. CACI publishes no detection or identification range against any target, so the ring is REPRESENTATIVE. The datasheet's 16 km is the laser rangefinder's ranging range, not a detection range.",
+  "color": "#a99fc6",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "5000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "identification range — REPRESENTATIVE, set equal to detectRangeM. Basis: this gimbal's role in L-MADIS is visual identification on a radar cue, so the detection event and the identification event are the same event. Matches the convention used for lib-wisp.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "CACI, 'CM262 ground system - Multi-mission ISR and C-sUAS' datasheet (PDF), linked from https://www.caci.com/eo-ir-imaging-systems",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-08-24",
+      "note": "Inventory records 5000 m at UNKNOWN REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg continuous in azimuth",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -16,
+        90
+      ],
+      "unit": "deg",
+      "condition": "-16 to 90 deg from the horizon",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "eo-ir",
+    "role": "classification",
+    "eoBand": "dual",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "eoBand",
+    "sectorDeg",
+    "elevationDeg"
+  ],
+  "attributeProvenance": {
+    "eoBand": {
+      "value": "dual: HD EO, HD MWIR, SWIR and a laser rangefinder",
+      "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "id": "lib-titan",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "Titan C-UAS RF sensor (BlueHalo / AeroVironment)",
+  "description": "Self-contained RF detection and direction-finding unit, up to 3 km horizontal across five bands from 433 MHz to 5.8 GHz. NOT receive-only: the same 20 lb unit jams to 1.5 km, which belongs in a separate effector record. US Army fielded.",
+  "color": "#bfa877",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "more than 3000 m horizontal radius, no target class stated",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "AeroVironment Titan C-UAS datasheet version 250501 (PDF)",
+      "url": "https://www.avinc.com/wp-content/uploads/2026/04/AV_TitanCUAS_Datasheet_250501.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "protocol identification range — BlueHalo: Titan 'classifies and mitigates multiple threats across five RF bands' and provides 'automated identification and mitigation of threats for all major commercial and hobbyist control protocols and frequency bands'. Classification is inherent to the detect event, so it is set equal to detect range. INFERRED.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "BlueHalo Titan brochure; BlueHalo/PRNewswire Army contract release",
+      "url": "https://www.prnewswire.com/news-releases/bluehalo-awarded-us-army-contract-for-titan-c-uas-301540340.html",
+      "date": "2022-05-05",
+      "note": "Inventory records 3000 m at INFERRED REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "azimuth coverage — NOT PUBLISHED. 360 is inferred from the datasheet quoting a bare 'horizontal' detection range with no sector limit, from Titan being described as 'autonomous, self-contained', and from the unit being sold as a single-box solution rather than as faces. If a user needs a sectored build they must override this.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "BlueHalo Titan brochure (Aug 2023)",
+      "url": "https://bssholland.com/wp-content/uploads/2023/11/BlueHalo_Titan_CUAS_202308.pdf",
+      "date": "2023-08",
+      "estimator": "planning-factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "classification",
+    "rfBands": [
+      "uhf-433",
+      "ism-915",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "rfBands"
+  ],
+  "attributeProvenance": {
+    "rfBands": {
+      "value": "2.4 and 5.8 GHz plus Wi-Fi (SF unit); 433, 868 and 915 MHz and 1.2 GHz (EF unit)",
+      "source": "AeroVironment Titan C-UAS datasheet version 250501 (PDF)",
+      "url": "https://www.avinc.com/wp-content/uploads/2026/04/AV_TitanCUAS_Datasheet_250501.pdf",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "id": "lib-discovair",
+  "kind": "sensor",
+  "type": "acoustic",
+  "version": 1,
+  "name": "Discovair G2 acoustic array (Squarehead)",
+  "description": "Passive 128-microphone array with ML classification. Tracks Group 1-2 UAS by sound, including RF-silent drones.",
+  "color": "#7fae94",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "refAcousticDb": {
+      "value": 75,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "detectRangeM": {
+      "value": 500,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "500 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": 400,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 105,
+      "unit": "deg",
+      "condition": "105 deg in directional mode; 360 deg in hemispheric mode",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Squarehead Technology drone detection page (Discovair G2+)",
+      "url": "https://www.sqhead.com/drone-detection",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 200,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "acoustic",
+    "role": "tracking"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

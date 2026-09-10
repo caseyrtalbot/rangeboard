@@ -1,0 +1,72 @@
+{
+  "id": "lib-spyglass",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Spyglass short-range radar (Anduril / Numerica)",
+  "description": "Ku-band phased array with simultaneous transmit and receive. Numerica states detection and track of small autonomous UAS beyond 3.5 km. Demonstrated in the JCO-recommended SAIC C-sUAS-as-a-Service at Yuma, Sep 2022. Now an Anduril product in Lattice.",
+  "color": "#7ea3bd",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 6000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "6000 m against Group 1 UAS (Group 3 12 km)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Anduril Spyglass product page",
+      "url": "https://www.anduril.com/spyglass",
+      "date": "2026-09-04",
+      "note": "Inventory records 3500 m (beyond three and a half km); the seed value is kept"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 90,
+      "unit": "deg",
+      "condition": "90 deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "datasheet",
+      "source": "Anduril Spyglass product page",
+      "url": "https://www.anduril.com/spyglass",
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "surveillance"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

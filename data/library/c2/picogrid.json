@@ -1,0 +1,13 @@
+{
+  "id": "lib-picogrid",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "Picogrid Legion edge node",
+  "description": "Vendor-neutral edge integration node (Legion with Helios/Portal hardware). Fuses local sensors into one picture.",
+  "color": "#c4c9c0",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

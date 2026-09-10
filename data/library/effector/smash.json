@@ -1,0 +1,81 @@
+{
+  "id": "lib-smash",
+  "kind": "effector",
+  "type": "gun",
+  "version": 1,
+  "name": "SMASH 2000L rifle fire control",
+  "description": "Computerized rifle sight for dismounted counter-drone fire. Group 1 quads inside 250 m.",
+  "color": "#b8934e",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 10,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 200,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "small UAS kinetic elimination up to 200 m in day mode",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "SMARTSHOOTER SMASH 3000 (SMASH 2000L) datasheet (PDF)",
+      "url": "https://www.smart-shooter.com/wp-content/uploads/2026/08/SMASH-3000.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": 800,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 8,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.7,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "magazineSize": {
+      "value": 24,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 10,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "gun"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "id": "lib-rps42",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "RPS-42 radar panel (RADA MHR)",
+  "description": "S-band AESA panel, one 90 deg face; four panels give 360 deg. Nano-UAS acquisition 3.5 km is published; the 8 km mini-UAS figure has no locatable source and is a planning figure.",
+  "color": "#7da7c4",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "5000 m against Group 1 (Raven, WASP, Puma class)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Breaking Defense, RADA sponsored post (2022-10-31)",
+      "url": "https://breakingdefense.com/2022/10/why-countering-small-uas-and-swarms-demands-highly-capable-radars/",
+      "date": "2026-09-04"
+    },
+    "refRcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "instrumentedRangeM": {
+      "value": 30000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "30000 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DRS MHR family datasheet (04-2017)",
+      "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 90,
+      "unit": "deg",
+      "condition": "90 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DRS MHR family datasheet (04-2017)",
+      "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -10,
+        70
+      ],
+      "unit": "deg",
+      "condition": "-10 to 70 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DRS MHR family datasheet (04-2017)",
+      "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": 30000,
+      "unit": "ft",
+      "condition": "30000 ft",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DRS MHR family datasheet (04-2017)",
+      "url": "https://electronics.leonardo.com/documents/16277707/18431169/mhr_datasheet.pdf",
+      "date": "2026-09-04"
+    },
+    "resolutionM": {
+      "value": 50,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "target-acquisition"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "elevationDeg",
+    "maxAltitudeFt",
+    "sectorDeg"
+  ]
+}

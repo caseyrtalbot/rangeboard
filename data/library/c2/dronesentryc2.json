@@ -1,0 +1,13 @@
+{
+  "id": "lib-dronesentryc2",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "DroneSentry-C2 (DroneShield)",
+  "description": "Commercial C-UAS C2 built on the SensorFusionAI 3D fusion engine. Fuses RF, radar, optical and ADS-B inputs from DroneShield and third-party sensors, drives DroneShield and partner effectors, and speaks SAPIENT and Cursor-on-Target.",
+  "color": "#9ca397",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

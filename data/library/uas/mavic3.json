@@ -1,0 +1,174 @@
+{
+  "id": "lib-mavic3",
+  "kind": "uas",
+  "type": "quad",
+  "version": 1,
+  "name": "Red air: DJI Mavic 3 (G1 quad)",
+  "description": "COTS quadcopter for recce and improvised drops. Launched 2-10 km out; ingress 100-400 ft AGL.",
+  "color": "#c98577",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 1,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "condition": "0.01 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 0.38,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "acousticDb": {
+      "value": 68,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 12,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxSpeedMps": {
+      "value": 21,
+      "unit": "mps",
+      "condition": "21 m/s at sea level with no wind (19 m/s in the EU)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Mavic 3 Classic specs page (same airframe)",
+      "url": "https://www.dji.com/mavic-3-classic/specs",
+      "date": "2026-09-04"
+    },
+    "enduranceMin": {
+      "value": 46,
+      "unit": "min",
+      "condition": "46 min maximum flight time",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Mavic 3 Classic specs page (same airframe)",
+      "url": "https://www.dji.com/mavic-3-classic/specs",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        50,
+        1200
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": 15000,
+      "unit": "m",
+      "condition": "15000 m maximum transmission distance (FCC)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Mavic 3 Classic specs page (same airframe)",
+      "url": "https://www.dji.com/mavic-3-classic/specs",
+      "date": "2026-09-04"
+    },
+    "operatingRadiusM": {
+      "value": 10000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 8000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "quad",
+    "navMode": "mixed",
+    "emissionsNote": "OcuSync 2.4/5.8 GHz link and video",
+    "oneWay": false,
+    "rangeNote": "Combat recon radius 5-10 km under EW; repeaters and directional antennas push toward 10-15 km.",
+    "weaponProfile": "none",
+    "jamBehavior": "return-home",
+    "linkBands": [
+      "gnss",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "maxSpeedMps",
+    "enduranceMin",
+    "linkBands",
+    "controlLinkRangeM"
+  ],
+  "attributeProvenance": {
+    "linkBands": {
+      "value": "link 2.4 and 5.8 GHz; GNSS from navMode",
+      "source": "DJI Mavic 3 Classic specs page (same airframe)",
+      "url": "https://www.dji.com/mavic-3-classic/specs",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  },
+  "threatProfile": {
+    "designator": "THR-G1-Q-01",
+    "routeIntent": "Low overwatch orbit, then drop or spot for fires",
+    "altitudeFt": 300,
+    "speedMps": 12,
+    "count": 1
+  }
+}

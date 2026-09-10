@@ -1,0 +1,82 @@
+{
+  "id": "lib-anvil",
+  "kind": "effector",
+  "type": "interceptor",
+  "version": 1,
+  "name": "Anvil interceptor (Anduril)",
+  "description": "Rotary-wing collision interceptor for Group 1-2 with low collateral effects. ~4 km planning value.",
+  "color": "#cd9674",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 100,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 4000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "4000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": 5000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 60,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.75,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "magazineSize": {
+      "value": 2,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 60,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "interceptor"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

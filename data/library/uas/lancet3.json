@@ -1,0 +1,157 @@
+{
+  "id": "lib-lancet3",
+  "kind": "uas",
+  "type": "one-way-attack",
+  "version": 1,
+  "name": "Red air: Lancet-3 loitering munition (G2)",
+  "description": "Rail-launched loitering munition cued by an ISR drone. Transits at 5000-15000 ft; fast terminal dive, up to 83 m/s.",
+  "color": "#b85a4a",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 2,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.05,
+      "unit": "m2",
+      "condition": "0.05 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 1.65,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "acousticDb": {
+      "value": 75,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 22,
+      "unit": "mps",
+      "condition": "80 to 110 km/h; the lower bound is 22 m/s",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition Lancet-3 data fact sheet (2026-05-24)",
+      "url": "https://www.armyrecognition.com/military-products/army/unmanned-systems/unmanned-aerial-vehicles/lancet-3-loitering-munition-kamikaze-drone-russia-data-fact-sheet",
+      "date": "2026-09-04"
+    },
+    "maxSpeedMps": {
+      "value": 83,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "enduranceMin": {
+      "value": 40,
+      "unit": "min",
+      "condition": "40 min endurance",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition Lancet-3 data fact sheet (2026-05-24)",
+      "url": "https://www.armyrecognition.com/military-products/army/unmanned-systems/unmanned-aerial-vehicles/lancet-3-loitering-munition-kamikaze-drone-russia-data-fact-sheet",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        1000,
+        15000
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": 50000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "operatingRadiusM": {
+      "value": 40000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 40000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": 5,
+      "unit": "kg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "effectRadiusM": {
+      "value": 30,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "irSignature": "low",
+    "airframe": "one-way-attack",
+    "navMode": "mixed",
+    "emissionsNote": "Video downlink until terminal; some variants autonomous",
+    "oneWay": true,
+    "rangeNote": "Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.",
+    "weaponProfile": "impact"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "cruiseSpeedMps",
+    "enduranceMin"
+  ],
+  "threatProfile": {
+    "designator": "THR-G2-LM-01",
+    "routeIntent": "ISR-cued strike, 20-40 km launch distance",
+    "altitudeFt": 8000,
+    "speedMps": 28,
+    "count": 1
+  }
+}

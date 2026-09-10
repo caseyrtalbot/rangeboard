@@ -1,0 +1,72 @@
+{
+  "id": "lib-rfone",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "RfOne Mk2 RF sensor (DroneShield)",
+  "description": "Passive, non-emitting RF direction finder for UAS control and video links. Four units give 360 deg; multiple sites triangulate a position. DroneShield publishes no detection range, so the 5 km ring is a planning figure.",
+  "color": "#cdb079",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "5000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 90,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 100,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "early-warning",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM"
+  ]
+}

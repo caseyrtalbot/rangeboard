@@ -1,0 +1,82 @@
+{
+  "id": "lib-zvooknw0",
+  "kind": "sensor",
+  "type": "acoustic",
+  "version": 1,
+  "name": "Zvook NW0 tactical FPV sensor",
+  "description": "Post-mounted 360 deg acoustic sensor for FPV drones, including fibre-optic FPV that emits no RF at all. Declared 150-450 m; the maker advises 400-600 m node spacing. IP67, 15-20 W.",
+  "color": "#87b89e",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "refAcousticDb": {
+      "value": 75,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "detectRangeM": {
+      "value": 150,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "150 to 450 m on FPV drones; the lower bound is 150 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi, Ukraine Develops Acoustic Detector for FPV Drones (ZVOOK NW0), quoting the company",
+      "url": "https://militarnyi.com/en/news/ukraine-develops-acoustic-detector-for-fpv-drones/",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "classification range — No separate classification range is published. The device's only output is an FPV-class decision (audible alarm plus a map symbol in the Zvook UI), so classification is modeled as available wherever detection is.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "Ukraine Develops Acoustic Detector for FPV Drones",
+      "url": "https://militarnyi.com/en/news/ukraine-develops-acoustic-detector-for-fpv-drones/",
+      "date": "2026-01-23",
+      "note": "Inventory records 450 m at INFERRED REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg coverage",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "dev.ua, Ukrainian company ZVOOK has created an acoustic sensor to detect FPV drones by sound",
+      "url": "https://dev.ua/en/news/ukrainska-kompaniia-zvook-stvoryla-akustychnyi-sensor-dlia-vyiavlennia-fpv-droniv-za-zvukom-1769187556",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "acoustic",
+    "role": "early-warning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

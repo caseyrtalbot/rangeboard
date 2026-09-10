@@ -1,0 +1,75 @@
+{
+  "id": "lib-cuaews-df",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "CUAEWS DF passive RF sensor (SRC)",
+  "description": "Passive find-and-fix half of the LIDS EW element. Searches the RF environment for signals of interest, direction-finds lines of bearing to both the UAS and its operator, and classifies each contact SUSPECT, NEUTRAL/UNKNOWN or FRIEND before the jammer half fires. No detection range is published: the ring is REPRESENTATIVE. The brochure's 8 km is the EW EFFECTS range and belongs to lib-cuaews.",
+  "color": "#c7a86f",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 6000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "6000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "classification range — REPRESENTATIVE, set equal to detectRangeM. Basis: for a passive RF set the detection event IS the classification event - the brochure states the system 'classifies SOI using combat ID matrix as SUSPECT, NEUTRAL/UNKNOWN, or FRIEND' as part of the FIND step. This matches the convention the RF-domain agent used for lib-wingman, lib-rfpatrol, lib-ardronis and lib-titan.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "SRC, LIDS Family of Systems brochure (marked Approved for Public Release), CUAEWS DF FIND sequence",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2026-08-24",
+      "note": "Inventory records 6000 m at UNKNOWN REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "azimuth coverage — INFERRED planning value, not a measured beam. Basis: the emplacement is a 156.5 in guyed tower, 38 in diameter, the DF works by 'capturing high-speed signals common to modern communications links using multiple detectors optimized for creating Lines of Bearing', and the system 'automatically resumes passive RF search upon cease fire' - all of which describe a persistent all-round posture. This matches the reasoning the EW-domain agent used for the jammer half.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "SRC, LIDS Family of Systems brochure (marked Approved for Public Release), CUAEWS DF physical characteristics and CAPABILITIES",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "classification",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM"
+  ]
+}

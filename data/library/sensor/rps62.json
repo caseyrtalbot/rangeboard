@@ -1,0 +1,81 @@
+{
+  "id": "lib-rps62",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "RPS-62 radar panel (RADA MHR)",
+  "description": "Larger S-band MHR-family panel. Northrop names MHR/RPS-42/62/82 among FAAD C2 supported sensors, but no range figure is published for the RPS-62: both rings are planning figures.",
+  "color": "#89b0c9",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "3000 m against nano-UAV (15 km medium UAV, 22 km fighter)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "EDR Magazine, DSEI 2019 RADA report",
+      "url": "https://www.edrmagazine.eu/dsei-2019-rada-two-new-radars-from-israel",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": 8000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 90,
+      "unit": "deg",
+      "condition": "90 deg",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "EDR Magazine, DSEI 2019 RADA report",
+      "url": "https://www.edrmagazine.eu/dsei-2019-rada-two-new-radars-from-israel",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        0,
+        90
+      ],
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxAltitudeFt": {
+      "value": 30000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "resolutionM": {
+      "value": 50,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "surveillance"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "id": "lib-rfpatrol",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "RfPatrol Mk2 body-worn RF detector (DroneShield)",
+  "description": "Body-worn, strictly non-emitting RF detector. 4 km in a low-RF (rural) background but only 1 km in a high-RF (urban) background. Directional and omnidirectional antennas give 360 deg cover. Alerts by sound, light and haptic.",
+  "color": "#c4a56b",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "urbanRangeM": {
+      "value": 1000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "detectRangeM": {
+      "value": 4000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "up to 4000 m in a rural environment, no target class stated",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition, Droneshield releases handheld RfPatrol Mk II drone detector (2020)",
+      "url": "https://www.armyrecognition.com/archives/archives-land-defense/land-defense-2020/droneshield-releases-handheld-rfpatrol-mk-ii-drone-detector",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": 4000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "protocol identification range — No separate classification range published. DroneShield states the device provides 'real-time drone signal detection, identification, and classification' from one receive event, so classify is set equal to the rural detect figure. INFERRED.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "DroneShield dismounted products page",
+      "url": "https://www.droneshield.com/products-dismounted",
+      "date": "2026-08",
+      "estimator": "planning-factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg detection coverage",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DroneShield dismounted products page (RfPatrol Mk2)",
+      "url": "https://www.droneshield.com/products-dismounted",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "early-warning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "id": "lib-modi",
+  "kind": "effector",
+  "type": "jammer",
+  "version": 1,
+  "name": "Modi II EW jammer",
+  "description": "Dismounted/vehicle EW system disrupting UAS communications and control links. Public sources describe control-link disruption, not GNSS denial. No range is published: the 2 km ring is a planning figure.",
+  "color": "#d2b884",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 0,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "2000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "engageTimeS": {
+      "value": 5,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.65,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 5,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "jammer",
+    "jamBands": [
+      "uhf-433",
+      "ism-915",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

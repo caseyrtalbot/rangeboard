@@ -1,0 +1,104 @@
+{
+  "id": "lib-iris",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "IRIS counter-drone radar (Robin)",
+  "description": "X-band FMCW 3D radar with micro-Doppler drone/bird classification. 5 km is the instrumented range, not a detection range against a stated target; a 12 km long-range mode is offered.",
+  "color": "#7395ad",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 3100,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "3100 m against C1 Micro 0.9 kg (nano 1100, mini 3700, small 7600)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Robin Radar IRIS product sheet (2026-04)",
+      "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+      "date": "2026-09-04"
+    },
+    "instrumentedRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "5000 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Robin Radar IRIS product sheet (2026-04)",
+      "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+      "date": "2026-09-04"
+    },
+    "updateRateS": {
+      "value": 1,
+      "unit": "s",
+      "condition": "1 s",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Robin Radar IRIS product sheet (2026-04)",
+      "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Robin Radar IRIS product sheet (2026-04)",
+      "url": "https://www.robinradar.com/hubfs/IRIS%20product%20sheet%20042026.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        0,
+        60
+      ],
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 50,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "classification"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "updateRateS",
+    "sectorDeg"
+  ]
+}

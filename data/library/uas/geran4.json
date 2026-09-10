@@ -1,0 +1,165 @@
+{
+  "id": "lib-geran4",
+  "kind": "uas",
+  "type": "one-way-attack",
+  "version": 1,
+  "name": "Red air: Geran-4 jet OWA (G3)",
+  "description": "Turbojet one-way-attack from the Geran-3/4/5 jet family, per threat study 5.2.1 [R03]: 450 kg MTOW, 89 m/s (320 km/h) cruise, 770 km range, thermobaric or HE-frag warhead types identified. The study fixes no Geran-3 numbers, so the exploited Geran-4 carries the jet-OWA class.",
+  "color": "#9c3f31",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 3,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.2,
+      "unit": "m2",
+      "condition": "0.2 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 3,
+      "unit": "m",
+      "condition": "about 3 m wingspan",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi",
+      "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+      "date": "2026-09-04"
+    },
+    "acousticDb": {
+      "value": 105,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 97,
+      "unit": "mps",
+      "condition": "350 to 500 km/h cruise; the lower bound is 97 m/s",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi",
+      "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+      "date": "2026-09-04"
+    },
+    "maxSpeedMps": {
+      "value": 97,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "enduranceMin": {
+      "value": 150,
+      "unit": "min",
+      "condition": "about 2.5 h flight duration (150 min)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi",
+      "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        328,
+        16404
+      ],
+      "unit": "ft",
+      "condition": "100 to 5000 m (328 to 16404 ft)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi",
+      "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+      "date": "2026-09-04"
+    },
+    "controlLinkRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "operatingRadiusM": {
+      "value": 770000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "warheadKg": {
+      "value": 50,
+      "unit": "kg",
+      "condition": "50 kg or more",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi",
+      "url": "https://militarnyi.com/en/news/production-of-the-geran-4-5-jet-drones-has-surpassed-that-of-the-geran-2/",
+      "date": "2026-09-04"
+    },
+    "effectRadiusM": {
+      "value": 80,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "one-way-attack",
+    "navMode": "mixed",
+    "emissionsNote": "SADRA INS + 16-element CRPA anti-jam satnav, camera, mesh modem (study [R03])",
+    "oneWay": true,
+    "rangeNote": "Declared range 770 km, ceiling 4000 m (study 5.2.1 [R03]).",
+    "weaponProfile": "impact",
+    "jamBehavior": "continue"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "spanM",
+    "cruiseSpeedMps",
+    "enduranceMin",
+    "altBandFt",
+    "warheadKg"
+  ],
+  "threatProfile": {
+    "designator": "THR-G3-JET-01",
+    "routeIntent": "High-speed deep strike; compressed detect-to-engage timeline",
+    "altitudeFt": 6000,
+    "speedMps": 89,
+    "count": 1
+  }
+}

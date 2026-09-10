@@ -1,0 +1,178 @@
+{
+  "id": "lib-m350",
+  "kind": "uas",
+  "type": "quad",
+  "version": 1,
+  "name": "Red air: DJI M350 class (G2 quad)",
+  "description": "Industrial quad with thermal payload. Standoff ISR orbits 5-15 km out at 500-3000 ft; also a light bomber.",
+  "color": "#c06e60",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 2,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.05,
+      "unit": "m2",
+      "condition": "0.05 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 0.895,
+      "unit": "m",
+      "condition": "0.895 m diagonal wheelbase",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Matrice 350 RTK specs page",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-04"
+    },
+    "acousticDb": {
+      "value": 78,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 15,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxSpeedMps": {
+      "value": 23,
+      "unit": "mps",
+      "condition": "23 m/s maximum horizontal speed",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Matrice 350 RTK specs page",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-04"
+    },
+    "enduranceMin": {
+      "value": 55,
+      "unit": "min",
+      "condition": "55 min maximum flight time with no payload",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Matrice 350 RTK specs page",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        100,
+        3500
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": 20000,
+      "unit": "m",
+      "condition": "20000 m maximum transmission distance (FCC)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Matrice 350 RTK specs page",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-04"
+    },
+    "operatingRadiusM": {
+      "value": 15000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 10000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "quad",
+    "navMode": "mixed",
+    "emissionsNote": "OcuSync 3 Enterprise, 2.4/5.8 GHz",
+    "oneWay": false,
+    "rangeNote": "Employed 8-12 km where EW permits; repeaters and elevated antennas hold the link.",
+    "weaponProfile": "none",
+    "jamBehavior": "return-home",
+    "linkBands": [
+      "gnss",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "spanM",
+    "maxSpeedMps",
+    "enduranceMin",
+    "linkBands",
+    "controlLinkRangeM"
+  ],
+  "attributeProvenance": {
+    "linkBands": {
+      "value": "link 2.4 and 5.8 GHz; GNSS from navMode",
+      "source": "DJI Matrice 350 RTK specs page",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  },
+  "threatProfile": {
+    "designator": "THR-G2-Q-01",
+    "routeIntent": "Night ISR orbit with thermal payload",
+    "altitudeFt": 1500,
+    "speedMps": 15,
+    "count": 1
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "lib-dedronetracker",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "DedroneTracker.AI C2 (Dedrone by Axon)",
+  "description": "Commercial airspace-security C2. Fuses RF, radar, camera, acoustic and Remote ID inputs into one risk-ranked track picture and runs jamming, cyber-takeover or kinetic mitigation from the same interface, where legally authorised.",
+  "color": "#949b8f",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

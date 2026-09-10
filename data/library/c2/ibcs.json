@@ -1,0 +1,13 @@
+{
+  "id": "lib-ibcs",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "IBCS battle command (Northrop Grumman)",
+  "description": "Army IAMD battle command. Fuses distributed sensor data into fire-control-quality tracks on the Integrated Fire Control Network; 'plug-and-fight' kits adapt sensors and weapons. Set to replace Patriot, THAAD and FAAD C2 C2 systems.",
+  "color": "#b4baaf",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

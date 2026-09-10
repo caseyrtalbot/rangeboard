@@ -1,0 +1,98 @@
+{
+  "id": "lib-spynel",
+  "kind": "sensor",
+  "type": "eo-ir",
+  "version": 1,
+  "name": "Spynel-S 6000 panoramic IR (HGH)",
+  "description": "Passive rotating MWIR sensor that rebuilds a 360 deg thermal panorama every 2 s and cues itself. Wide-area search, no radar needed. UAS ranges are planning figures: HGH publishes DRI for people and vehicles only.",
+  "color": "#c3bada",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "5000 m",
+      "grade": "REPORTED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "RECOGNITION range for a HUMAN target, used only as a bound — PROXY, NOT A UAS FIGURE. HGH publishes Spynel-S 6000 human recognition at 2 km (Johnson criterion, STANAG). No UAS recognition or identification range exists in any source. 2000 m is used as a representative classification ring because it is the OEM's own recognition figure for the smallest published target class, which bounds a Group 1 UAS from above.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "SPYNEL SERIES Wide Area Surveillance Solutions leaflet",
+      "url": "https://hgh-infrared.com/wp-content/uploads/2025/10/Leaflet_Spynel-Series_2025_LR.pdf",
+      "date": "2025-10",
+      "note": "Inventory records 2000 m (2 km) at MANUFACTURER_CLAIM (for the human figure) / INFERRED (as a UAS proxy) REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg horizontal field of view",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "HGH Spynel-S product page (curl), Spynel-S 6000 column",
+      "url": "https://hgh-infrared.com/was/products/spynel-s/",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -45,
+        45
+      ],
+      "unit": "deg",
+      "condition": "-45 to 45 deg motorised tilt",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "HGH Spynel-S product page (curl), Spynel-S 6000 column",
+      "url": "https://hgh-infrared.com/was/products/spynel-s/",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "eo-ir",
+    "role": "surveillance",
+    "eoBand": "thermal",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "eoBand",
+    "sectorDeg",
+    "elevationDeg"
+  ],
+  "attributeProvenance": {
+    "eoBand": {
+      "value": "thermal: MWIR 640 x 512 focal plane array",
+      "source": "HGH Spynel-S product page (curl), Spynel-S 6000 column",
+      "url": "https://hgh-infrared.com/was/products/spynel-s/",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

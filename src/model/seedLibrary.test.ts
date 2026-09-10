@@ -1,4 +1,7 @@
+// @ts-expect-error node types are not in the app tsconfig; vitest runs this file in node.
+import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import type { SpecModel } from './types'
 import { SEED_LIBRARY } from './seed'
 
 /**
@@ -105,6 +108,70 @@ describe('seed library provenance', () => {
       for (const row of model.provenance ?? []) {
         if (seen.has(row.field)) offenders.push(`${model.id} ${row.field}`)
         seen.add(row.field)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})
+
+/**
+ * The library is compiled from data/library/**.json by scripts/build-library.mjs.
+ * The fixture is the hand-written library at 8e9a0bc, so parity against it is
+ * what proves the migration changed no value. `npm run library:check` enforces
+ * the rest of the data health rules; the unit and grade check below repeats the
+ * two that would silently drop a value's meaning.
+ */
+
+const FIXTURE = JSON.parse(
+  readFileSync(new URL('./__fixtures__/seedLibrary.8e9a0bc.json', import.meta.url), 'utf8'),
+) as SpecModel[]
+
+/** The keys the data package adds to a provenance row; everything else is pre-migration. */
+const LINEAGE_KEYS = ['grade', 'layer', 'rangeType', 'condition', 'unit', 'estimator', 'comparisonSet', 'note']
+
+interface LibraryFileOnDisk {
+  name: string
+  fields: Record<string, { unit?: string; grade?: string }>
+}
+
+function libraryFiles(): LibraryFileOnDisk[] {
+  const base = new URL('../../data/library/', import.meta.url)
+  const out: LibraryFileOnDisk[] = []
+  for (const kind of ['sensor', 'effector', 'c2', 'uas', 'asset', 'marker']) {
+    const dir = new URL(`${kind}/`, base)
+    for (const name of readdirSync(dir)) {
+      const parsed = JSON.parse(readFileSync(new URL(name, dir), 'utf8'))
+      out.push({ name: `${kind}/${name}`, fields: parsed.fields ?? {} })
+    }
+  }
+  return out
+}
+
+describe('generated library parity', () => {
+  it('carries the same models, in the same order, as the pre-migration library', () => {
+    expect(SEED_LIBRARY).toHaveLength(FIXTURE.length)
+    expect(SEED_LIBRARY.map((m) => m.id)).toEqual(FIXTURE.map((m) => m.id))
+  })
+
+  it('every model equals its fixture once the added lineage keys are dropped', () => {
+    for (const [i, model] of SEED_LIBRARY.entries()) {
+      const rows = model.provenance?.map((row) => {
+        const copy: Record<string, unknown> = { ...row }
+        for (const key of LINEAGE_KEYS) delete copy[key]
+        return copy
+      })
+      expect(rows ? { ...model, provenance: rows } : model).toEqual(FIXTURE[i])
+    }
+  })
+})
+
+describe('library data package', () => {
+  it('gives every field a unit and a grade', () => {
+    const offenders: string[] = []
+    for (const file of libraryFiles()) {
+      for (const [key, field] of Object.entries(file.fields)) {
+        if (!field.unit) offenders.push(`${file.name} ${key}: no unit`)
+        if (!field.grade) offenders.push(`${file.name} ${key}: no grade`)
       }
     }
     expect(offenders).toEqual([])

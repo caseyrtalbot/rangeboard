@@ -1,0 +1,81 @@
+{
+  "id": "lib-sentinela4",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Sentinel A4 air defense radar (AN/MPQ-64A4)",
+  "description": "X-band digital AESA (GaN), 360 deg with stop-and-stare, -15 deg to zenith. Army SHORAD acquisition radar against FW/RW/CM/RAM and UAS. No public small-UAS detection range; ring is a role planning factor.",
+  "color": "#6d92ab",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 15000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "15000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Lockheed Martin Sentinel A4 product card (2024)",
+      "url": "https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -15,
+        90
+      ],
+      "unit": "deg",
+      "condition": "-15 to 90 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Lockheed Martin Sentinel A4 product card (2024)",
+      "url": "https://www.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/sentinel-a4/2315841_Sentinel_A4_Product_Card_Refresh_v2.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "target-acquisition",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "elevationDeg",
+    "sectorDeg"
+  ]
+}

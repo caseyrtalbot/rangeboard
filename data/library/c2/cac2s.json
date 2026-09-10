@@ -1,0 +1,13 @@
+{
+  "id": "lib-cac2s",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "CAC2S (USMC aviation C2)",
+  "description": "Marine Corps aviation command and control. Fuses expeditionary radar, weapon-system, UAS and ISR inputs into one MAGTF air picture and hosts the engage / do-not-engage decision. Named by CRS as the C2 element of the Marine MRIC air-defence system alongside G/ATOR.",
+  "color": "#c0c5bc",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

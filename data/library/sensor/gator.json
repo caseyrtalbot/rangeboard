@@ -1,0 +1,72 @@
+{
+  "id": "lib-gator",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "AN/TPS-80 G/ATOR multi-mission radar",
+  "description": "S-band GaN AESA expeditionary multi-mission radar, 360 deg. USMC air surveillance and air defense (Block 1) plus counterfire (Block 2); the sensor for MRIC. No public small-UAS range; ring is a role planning factor.",
+  "color": "#5f87a2",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 40000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "40000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Northrop Grumman G/ATOR product page",
+      "url": "https://www.northropgrumman.com/what-we-do/mission-solutions/radars/an-tps-80-ground-air-task-oriented-radar-g-ator",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "early-warning",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

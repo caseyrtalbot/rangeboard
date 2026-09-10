@@ -1,0 +1,60 @@
+{
+  "id": "lib-amphel",
+  "kind": "effector",
+  "type": "de",
+  "version": 1,
+  "name": "AMP-HEL 20 kW laser (LOCUST on ISV)",
+  "description": "Army RCCTO prototype: 20 kW-class LOCUST laser on an Infantry Squad Vehicle for maneuver-force C-UAS. Two ISV sets delivered Aug 2025; two JLTV sets with radar and C2 followed. Single-target hard kill by dwell. The engagement range is NOT published: this ring is a planning value, not a performance claim. Heavily degraded by fog, rain and dust.",
+  "color": "#ca90a2",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 100,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "3000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor",
+      "note": "Inventory records 5000 m; the seed value is kept"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "engageTimeS": {
+      "value": 15,
+      "unit": "s",
+      "condition": "dwell time to effect — NO PUBLIC VALUE. Dwell to effect varies with range, aspect and airframe. Representative value = app DE baseline (DEFAULT_SALVO_COOLDOWN_S.de = 15 s) and the existing library DE tier.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "RangeBoard src/playback/attrition.ts DEFAULT_SALVO_COOLDOWN_S, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "de"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "lib-lattice",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "Lattice C2 (Anduril)",
+  "description": "AI sensor-fusion and C2 platform. Autonomously detects, classifies, and tracks; cues Anvil and Roadrunner.",
+  "color": "#cdd1c9",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

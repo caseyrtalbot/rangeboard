@@ -1,0 +1,100 @@
+{
+  "id": "lib-cuaews",
+  "kind": "effector",
+  "type": "jammer",
+  "version": 1,
+  "name": "CUAEWS DF (SRC, LIDS EW)",
+  "description": "LIDS/M-LIDS electronic-attack element. Passively searches RF, direction-finds both aircraft and operator, then applies tailored non-kinetic defeat plus a NAVWAR effect against waypoint-guided threats. SRC states EW effects to 8 km. Man-in-the-loop fires; re-tasking is near instantaneous and indefinite.",
+  "color": "#c9ab72",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 0,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "minimum engagement range — No minimum standoff is published for an EW effector. 0 is the schema convention for 'no inner keep-out', not a measured value.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "SRC, LIDS Family of Systems brochure",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2021",
+      "estimator": "planning-factor"
+    },
+    "maxRangeM": {
+      "value": 8000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "EW effects ranging up to 8 km (8000 m)",
+      "grade": "VERIFIED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "SRC LIDS Family of Systems brochure (PDF)",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "condition": "engagement altitude ceiling — No altitude ceiling is published for CUAEWS. null, never 0.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "SRC, LIDS Family of Systems brochure",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2021"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "azimuth coverage — SRC publishes no azimuth sector. Basis for 360: the system is a guyed tower emplacement (156.5 in tower, 38 in diameter) with a multi-band direction finder using 'multiple detectors' and it 'automatically resumes passive RF search' after each engagement, which is a persistent all-round posture. This is INFERRED and must not be read as a measured beam.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "SRC, LIDS Family of Systems brochure, CUAEWS DF section",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2021",
+      "estimator": "planning-factor"
+    },
+    "engageTimeS": {
+      "value": 5,
+      "unit": "s",
+      "condition": "time from assignment to effect — No numeric figure published. SRC states 'Defeat techniques are automatically prepped and ready to fire', 'A man in the loop activates the defeat technique', and 'Re-load/re-tasking is near instantaneous and indefinite'. 5 s is the app's existing representative for a human-authorised RF engagement (matches lib-modi and lib-dronebuster). REPRESENTATIVE.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "SRC, LIDS Family of Systems brochure, CUAEWS DF section",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2021",
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.65,
+      "unit": "fraction",
+      "condition": "probability the jam produces the modelled effect — UNKNOWN. No public Pk, defeat rate, or test statistic exists for CUAEWS. 0.65 is a REPRESENTATIVE planning value carried over from the app's existing lib-modi jammer entry so the EW class stays internally consistent. It is not evidence.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "No source; representative value",
+      "url": null,
+      "estimator": "planning-factor"
+    },
+    "salvoCooldownS": {
+      "value": 5,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "jammer",
+    "jamBands": [
+      "gnss",
+      "uhf-433",
+      "ism-915",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

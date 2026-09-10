@@ -1,0 +1,95 @@
+{
+  "id": "lib-wingman",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "Wingman 103 wearable RF detector (MyDefence)",
+  "description": "Body-worn passive RF detector for dismounted troops. Up to 6 km on the drone or controller link, direction finding to within 30 deg, alert in under 10 s. 90 deg face as issued; omnidirectional with the wideband antenna. ATAK compatible.",
+  "color": "#dcc79c",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 6000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "up to 6000 m, no target class stated",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)",
+      "url": "https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "protocol identification range — No separate classification range is published. Datasheet claims an 'EXTENSIVE DRONE LIBRARY - Enables accurate classification and low false positives'; library matching in a passive receiver occurs at detection, so classify range is set equal to detect range. INFERRED, not stated.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "MyDefence, 'Wingman 103 & 105 RF Detectors' datasheet",
+      "url": "https://mydefence.com/wp-content/uploads/2025/08/Wingman_103-105_MyDefence_web.pdf",
+      "date": "2025-08",
+      "note": "Inventory records 6000 m at INFERRED REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 90,
+      "unit": "deg",
+      "condition": "90 deg horizontal as issued; 360 deg with the wideband antenna",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)",
+      "url": "https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "condition": "elevation coverage — Datasheet gives 'Vertical 90 deg' as a beamwidth, not as a min/max elevation pair. Converting it to [-45, 45] would assume a horizontal boresight the datasheet never states, so the field stays null.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "MyDefence, 'Wingman 103 & 105 RF Detectors' datasheet",
+      "url": "https://mydefence.com/wp-content/uploads/2025/08/Wingman_103-105_MyDefence_web.pdf",
+      "date": "2025-08",
+      "note": "Inventory records null deg (90 deg (vertical beamwidth)) at UNKNOWN L3; the seed leaves the field null"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "early-warning",
+    "rfBands": [
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "rfBands",
+    "sectorDeg"
+  ],
+  "attributeProvenance": {
+    "rfBands": {
+      "value": "2.4, 5.2 and 5.8 GHz as issued; 5.2 GHz has no band code",
+      "source": "MyDefence Wingman 103 & 105 RF Detectors sheet (PDF)",
+      "url": "https://mydefence.com/wp-content/uploads/2025/10/MyDefence_Wingman_103-105_Wearable.pdf",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

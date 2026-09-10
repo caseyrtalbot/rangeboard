@@ -1,0 +1,93 @@
+{
+  "id": "lib-merops",
+  "kind": "effector",
+  "type": "interceptor",
+  "version": 1,
+  "name": "MEROPS fixed-wing interceptor",
+  "description": "Fast fixed-wing interceptor with fragmentation warhead; Ukraine-proven vs Shahed-class OWA. 5-20 km envelope.",
+  "color": "#bd7350",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 1000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 20000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "range of roughly 5 to 20 km; 20000 m at the top of the envelope",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Defense News",
+      "url": "https://www.defensenews.com/unmanned/2026/04/20/us-army-turns-to-ukraine-tested-drones-to-counter-iranian-uav-threat/",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": 16000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 120,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.8,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "magazineSize": {
+      "value": 4,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 60,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "flyoutSpeedMps": {
+      "value": 78,
+      "unit": "mps",
+      "condition": "up to 280 km/h, a maximum (78 m/s)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Defense News",
+      "url": "https://www.defensenews.com/unmanned/2026/04/20/us-army-turns-to-ukraine-tested-drones-to-counter-iranian-uav-threat/",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "interceptor"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "flyoutSpeedMps"
+  ]
+}

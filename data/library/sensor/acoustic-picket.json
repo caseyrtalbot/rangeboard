@@ -1,0 +1,81 @@
+{
+  "id": "lib-acoustic-picket",
+  "kind": "sensor",
+  "type": "acoustic",
+  "version": 1,
+  "name": "Acoustic picket node (representative)",
+  "description": "REPRESENTATIVE acoustic picket node, not a named product. Cheap omnidirectional microphone node for a forward picket line. Ranges are planning figures for an engine-noise target; small electric quadcopters are detected at far shorter ranges.",
+  "color": "#6fa287",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "refAcousticDb": {
+      "value": 95,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "detectRangeM": {
+      "value": 4000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "4000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": 10000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "resolutionM": {
+      "value": 500,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "acoustic",
+    "role": "early-warning"
+  },
+  "provenanceOrder": [
+    "detectRangeM"
+  ]
+}

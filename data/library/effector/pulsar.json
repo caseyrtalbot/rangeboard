@@ -1,0 +1,99 @@
+{
+  "id": "lib-pulsar",
+  "kind": "effector",
+  "type": "jammer",
+  "version": 1,
+  "name": "Pulsar EW node (Anduril)",
+  "description": "Software-defined EW node: passive RF sense, classify and direction-find, then directed electronic attack on the control link. One panel covers a 90 deg sector; two panels make 360. Placard effective range 2 km against Group 1. Selectable bands and directional transmit to limit friendly interference. Lattice-managed.",
+  "color": "#bb9a62",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 0,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "2000 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "condition": "engagement altitude ceiling — Not published.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "Army Recognition, WDS 2026",
+      "url": "https://www.armyrecognition.com/archives/archives-defense-exhibitions/2026-archives-news-defense-exhibitions/world-defense-show-2026/u-s-anduril-reveals-pulsar-electronic-warfare-system-for-360-anti-drone-defense-at-wds-2026",
+      "date": "2026-02-11"
+    },
+    "sectorDeg": {
+      "value": 180,
+      "unit": "deg",
+      "condition": "180 deg coverage for detect and defeat",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Anduril Pulsar hardware page (embedded JSON via curl)",
+      "url": "https://www.anduril.com/hardware/pulsar/",
+      "date": "2026-09-04",
+      "note": "Inventory records 90 deg (90 deg); the seed value is kept"
+    },
+    "engageTimeS": {
+      "value": 5,
+      "unit": "s",
+      "condition": "time from assignment to effect — No assignment-to-effect figure published. The only published time is a SETUP time: Pulsar-L delivers 'detect, ID, track, and defeat capabilities at the tactical edge in just 2 minutes', which is emplacement, NOT engagement. 5 s is REPRESENTATIVE, matching the app's other directed jammers.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "Anduril, Introducing Pulsar-L (setup time only)",
+      "url": "https://www.anduril.com/news/introducing-pulsar-l-the-lightweight-ew-system-for-rapid-deployment",
+      "date": "2025-04-29",
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.6,
+      "unit": "fraction",
+      "condition": "probability the jam produces the modelled effect — UNKNOWN. No public Pk. 0.6 REPRESENTATIVE.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "No source; representative value",
+      "url": null,
+      "estimator": "planning-factor"
+    },
+    "salvoCooldownS": {
+      "value": 5,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "jammer",
+    "jamBands": [
+      "gnss",
+      "ism-915",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "sectorDeg"
+  ]
+}

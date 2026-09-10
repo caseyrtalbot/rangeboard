@@ -1,0 +1,112 @@
+{
+  "id": "lib-giraffe1x",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Giraffe 1X 3D radar (Saab)",
+  "description": "Compact 3D air surveillance radar; full search volume updated every second. Drone Tracker mode separates mini-UAV from birds. Saab states a UAV lighter than a milk carton at 4 km. Bought by the US Army-contracted for Estonia, Latvia and Lithuania.",
+  "color": "#7fa8c0",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 4000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "4000 m against a UAV lighter than a milk carton",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Saab Giraffe 1X product page",
+      "url": "https://www.saab.com/products/giraffe-1x",
+      "date": "2026-09-04"
+    },
+    "refRcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "instrumentedRangeM": {
+      "value": 75000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "75000 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Saab Giraffe 1X leaflet (2014), radartutorial.eu copy",
+      "url": "https://www.radartutorial.eu/19.kartei/04.battle/pubs/giraffe_1x.pdf",
+      "date": "2026-09-04"
+    },
+    "updateRateS": {
+      "value": 1,
+      "unit": "s",
+      "condition": "1 s",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Saab Giraffe 1X product page",
+      "url": "https://www.saab.com/products/giraffe-1x",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Saab layered-defence page",
+      "url": "https://www.saab.com/markets/eu-nato-affairs/layered-defence-against-the-drone-threat",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        0,
+        70
+      ],
+      "unit": "deg",
+      "condition": "0 to 70 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Saab Giraffe 1X leaflet (2014), radartutorial.eu copy",
+      "url": "https://www.radartutorial.eu/19.kartei/04.battle/pubs/giraffe_1x.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "surveillance"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "updateRateS",
+    "elevationDeg",
+    "sectorDeg"
+  ]
+}

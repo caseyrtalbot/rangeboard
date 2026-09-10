@@ -1,0 +1,94 @@
+{
+  "id": "lib-xm914",
+  "kind": "effector",
+  "type": "gun",
+  "version": 1,
+  "name": "XM914 30mm gun (M-LIDS)",
+  "description": "30x113mm chain gun on RIwP turret firing XM1223 proximity-airburst rounds. Group 1-2 out to ~2 km.",
+  "color": "#c9a05a",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 50,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "2000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": 5000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 10,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.75,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "magazineSize": {
+      "value": 30,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 10,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "flyoutSpeedMps": {
+      "value": 805,
+      "unit": "mps",
+      "condition": "XM1211 HEP/PROX muzzle velocity (805 m/s)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Northrop Grumman LW30x113 Ammunition Suite product brochure (PDF, 2020)",
+      "url": "https://media.northropgrumman.com/9f629332-bf99-4a89-bb0f-b3850037234a/LW30x113-Ammo-Suite-Product-Brochure_Original%20file.pdf",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "gun"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "flyoutSpeedMps"
+  ]
+}

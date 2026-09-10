@@ -1,0 +1,74 @@
+{
+  "id": "lib-kurfs",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "KuRFS fire-control radar (Raytheon)",
+  "description": "Precision 360 deg Ku-band AESA. Fire-control sensor for LIDS and Coyote; detects the smallest UAS class beyond 15 km.",
+  "color": "#6f9cba",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 15000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "15000 m against the smallest class of drones (beyond 15 km)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Defense News, Raytheon native content (2022-11-24)",
+      "url": "https://www.defensenews.com/native/raytheon-missiles-defense/2022/11/22/birds-planes-drones-kurfs-radar-can-spot-them-all/",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Raytheon KuRFS product page (rtx.com)",
+      "url": "https://www.rtx.com/raytheon/lang/ro/capabilities/products/counter-uas/sensors/kurfs",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 30,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "fire-control"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

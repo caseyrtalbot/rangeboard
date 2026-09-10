@@ -1,0 +1,13 @@
+{
+  "id": "lib-asset",
+  "kind": "asset",
+  "type": null,
+  "version": 1,
+  "name": "Defended asset",
+  "description": "Protected point. Warning time is measured to this location.",
+  "color": "#8fae7a",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

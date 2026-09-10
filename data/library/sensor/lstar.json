@@ -1,0 +1,94 @@
+{
+  "id": "lib-lstar",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "AN/TPQ-50 LSTAR air-surveillance radar (SRC)",
+  "description": "L-band 360 deg air-surveillance radar (AN/TPQ-50), the search sensor in the LIDS family. SRC publishes >35 km instrumented in air-surveillance mode and >15 km in counterfire mode, neither conditioned on a UAS class; the 10 km ring is a small-UAS planning figure.",
+  "color": "#9cc3d6",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "10000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "instrumentedRangeM": {
+      "value": 35000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "35000 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "SRC AN/TPQ-50 product sheet (2026)",
+      "url": "https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "SRC AN/TPQ-50 product sheet (2026)",
+      "url": "https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        0,
+        30
+      ],
+      "unit": "deg",
+      "condition": "0 to 30 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "SRC AN/TPQ-50 product sheet (2026)",
+      "url": "https://www.srcinc.com/pdf/an-tpq-50-multi-mission-radar.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "early-warning",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "elevationDeg",
+    "sectorDeg"
+  ]
+}

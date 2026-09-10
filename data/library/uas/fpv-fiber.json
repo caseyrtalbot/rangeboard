@@ -1,0 +1,153 @@
+{
+  "id": "lib-fpv-fiber",
+  "kind": "uas",
+  "type": "fpv",
+  "version": 1,
+  "name": "Red air: fiber-optic FPV (G1, jam-immune)",
+  "description": "FPV quad steered over a fiber-optic spool. No RF emissions; immune to jamming. Slower due to spool drag.",
+  "color": "#c87b6d",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 1,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "condition": "0.01 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 0.3,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "acousticDb": {
+      "value": 75,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 15,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxSpeedMps": {
+      "value": 17,
+      "unit": "mps",
+      "condition": "up to 60 km/h for the class (17 m/s)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "RFE/RL, Fiber-Optic Drones The New Must-Have In Ukraine War (2025-03-12), globalsecurity.org mirror, quoting Serhiy Beskrestnov",
+      "url": "https://www.globalsecurity.org/wmd/library/news/ukraine/2025/03/ukraine-250312-rferl03.htm",
+      "date": "2026-09-04"
+    },
+    "enduranceMin": {
+      "value": 20,
+      "unit": "min",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "altBandFt": {
+      "value": [
+        10,
+        300
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "condition": "10000 m of fibre for the class",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "RFE/RL, Fiber-Optic Drones The New Must-Have In Ukraine War (2025-03-12), globalsecurity.org mirror, quoting Serhiy Beskrestnov",
+      "url": "https://www.globalsecurity.org/wmd/library/news/ukraine/2025/03/ukraine-250312-rferl03.htm",
+      "date": "2026-09-04"
+    },
+    "operatingRadiusM": {
+      "value": 15000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 15000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "fpv",
+    "navMode": "fiber",
+    "emissionsNote": "None: fiber-optic control and video",
+    "oneWay": true,
+    "rangeNote": "Fielded fiber spools of 10, 15, and 20 km confirmed in combat; 41-50 km spools demonstrated on larger frames.",
+    "weaponProfile": "impact",
+    "jamBehavior": "continue"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "maxSpeedMps",
+    "controlLinkRangeM"
+  ],
+  "threatProfile": {
+    "designator": "THR-G1-FPV-02",
+    "routeIntent": "Terrain-hugging attack on rear-area targets, 5-20 km out",
+    "altitudeFt": 60,
+    "speedMps": 15,
+    "count": 1
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "id": "lib-helios",
+  "kind": "effector",
+  "type": "de",
+  "version": 1,
+  "name": "HELIOS 60 kW shipboard laser",
+  "description": "US Navy Mk 5 Mod 0 HELIOS: 60 kW-class laser plus optical dazzler, hosted by the Aegis Combat System, installed on USS Preble since 2022 and the only such installation. Engaged four UAS in one at-sea counter-UAS demonstration. Single target per engagement. Magazine is bounded by ship power and cooling, not by rounds. Engagement range and the deckhouse-restricted firing arcs are NOT published.",
+  "color": "#ac6e80",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 100,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "3000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor",
+      "note": "Inventory records 5000 m; the seed value is kept"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "engageTimeS": {
+      "value": 15,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "de"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

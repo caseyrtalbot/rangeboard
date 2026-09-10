@@ -1,0 +1,102 @@
+{
+  "id": "lib-r8ss",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Ranger R8SS-3D panel radar (FLIR)",
+  "description": "Compact perimeter panel radar; tracks up to 500 targets and cues EO/IR. Micro-UAS to 2-3 km per 120 deg face.",
+  "color": "#809fb5",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 1200,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "1200 m against MicroUAS (MiniUAS 2100, Small UAS 4000)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+      "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+      "date": "2026-09-04"
+    },
+    "instrumentedRangeM": {
+      "value": 7800,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "7800 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+      "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+      "date": "2026-09-04"
+    },
+    "updateRateS": {
+      "value": 0.5,
+      "unit": "s",
+      "condition": "0.5 s (2 Hz; 4 Hz mode stated)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+      "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 90,
+      "unit": "deg",
+      "condition": "90 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "FLIR R8SS-3D specsheet (2019), cctv-systems.se copy",
+      "url": "https://www.cctv-systems.se/sites/default/files/Ranger-R8SS-3D-Datasheet-A4.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -40,
+        40
+      ],
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 50,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "surveillance"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "updateRateS",
+    "sectorDeg"
+  ]
+}

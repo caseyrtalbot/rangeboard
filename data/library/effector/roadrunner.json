@@ -1,0 +1,82 @@
+{
+  "id": "lib-roadrunner",
+  "kind": "effector",
+  "type": "interceptor",
+  "version": 1,
+  "name": "Roadrunner-M interceptor (Anduril)",
+  "description": "Twin-turbojet reusable interceptor launched from a ground nest and managed through Lattice. Anduril publishes no range, speed, altitude or endurance figure: every number here is a planning figure.",
+  "color": "#c98a68",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 500,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 15000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "15000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": 20000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 45,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.85,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "magazineSize": {
+      "value": 4,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 30,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "interceptor"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

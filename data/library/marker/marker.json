@@ -1,0 +1,13 @@
+{
+  "id": "lib-marker",
+  "kind": "marker",
+  "type": null,
+  "version": 1,
+  "name": "Marker",
+  "description": "General annotation point.",
+  "color": "#b7bdb2",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}
