@@ -42,7 +42,11 @@ export type {
   McSensitivityRequest,
   McSummary,
   McSweepMessage,
+  McMorrisMessage,
+  McMorrisRequest,
   McPartial,
+  McSobolMessage,
+  McSobolRequest,
   McSweepRequest,
   McWorkerMessage,
   SensitivityResponse,
@@ -57,6 +61,7 @@ export {
   assertSummaryFits,
   DEFAULT_BUDGET,
   emptyPartial,
+  endOfRunResponses,
   finishSummary,
   halfWidthReached,
   overBudget,
@@ -75,6 +80,31 @@ export {
 } from '../playback/mcRun'
 export type { SweepFactor } from '../playback/sweepFactors'
 export { mergePartials } from '../playback/mergeSummaries'
+export { lhsPermutation, loopEnd, paramDraws } from '../playback/sampling'
+export type { MorrisDesign, MorrisEffects } from '../playback/morris'
+export {
+  fieldGroup,
+  keptFields,
+  MORRIS_KEPT,
+  MORRIS_LEVELS,
+  MORRIS_TRAJECTORIES,
+  morrisDesign,
+  morrisEffects,
+  morrisIndices,
+  morrisLoop,
+  morrisRanking,
+  QUANTILE_MARGIN,
+  rowScenario,
+  studyBase,
+} from '../playback/morris'
+export type { SobolIndices } from '../playback/sobol'
+export {
+  SOBOL_BOOTSTRAP,
+  sobolDesign,
+  sobolFromResponses,
+  sobolIndices,
+  sobolLoop,
+} from '../playback/sobol'
 
 // Phase 1 result and progress types.
 export type {
@@ -116,6 +146,7 @@ export type { ClassPrior, ClassPriorTable, FieldPrior } from '../analysis/classP
 export { CLASS_PRIORS, classOfModel, classPriorFor } from '../analysis/classPriors'
 export type { PfSpreadRow, SpreadBasis, UncertainField } from '../analysis/parameterBasis'
 export { PF_SPREAD, spreadBasisFor, spreadFor, uncertainFields } from '../analysis/parameterBasis'
+export type { ParamSampler } from '../analysis/uncertainty'
 export { sampleScenario, sampleSpread } from '../analysis/uncertainty'
 
 // The analysis basis signature a manifest and a run record carry.

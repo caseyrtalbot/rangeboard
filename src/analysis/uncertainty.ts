@@ -166,7 +166,7 @@ function isTableSpread(spread: Spread): boolean {
 }
 
 /** The parameter sampler: a uniform in [0, 1), or null to keep the field at its nominal. */
-type ParamSampler = (modelId: string, field: string) => number | null
+export type ParamSampler = (modelId: string, field: string) => number | null
 
 /** Draw-and-write for one library model; returns the same object when nothing changed. */
 function sampleModel(model: SpecModel, doctrine: FireDoctrine, u: ParamSampler): SpecModel {

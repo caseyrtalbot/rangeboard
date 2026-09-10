@@ -13,12 +13,16 @@
 import { heldTracksOnGrid, residualOnGrid, sampleCount } from '../analysis/projection'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import { sampleScenario, uncertainFields } from '../analysis/uncertainty'
+import type { UncertainField } from '../analysis/parameterBasis'
+import type { MorrisResult, SobolResult } from './mcTypes'
+import { loopEnd, paramDraws } from './sampling'
 import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
 import type { SweepFactor } from './sweepFactors'
 import { applySweepValue, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from './sweepFactors'
 import { meanInterval, quantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
+import type { DrawPolicy } from './policy'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
 import { DT } from './clock'
@@ -217,8 +221,29 @@ export interface McSweepRequest {
   responses: SensitivityResponse[]
 }
 
+/** One Morris screening request: every uncertain field of the scenario. */
+export interface McMorrisRequest {
+  type: 'morris'
+  runId: string
+  scenario: Scenario
+}
+
+/** One Sobol request over the fields Morris kept. */
+export interface McSobolRequest {
+  type: 'sobol'
+  runId: string
+  scenario: Scenario
+  kept: UncertainField[]
+}
+
 /** Every request the worker accepts; it dispatches on `type`. */
-export type McRequest = McRunRequest | McSensitivityRequest | McSweepRequest | McCancelRequest
+export type McRequest =
+  | McRunRequest
+  | McSensitivityRequest
+  | McSweepRequest
+  | McMorrisRequest
+  | McSobolRequest
+  | McCancelRequest
 
 /** Messages the worker posts back, tagged by the run they belong to. */
 export type McWorkerMessage =
@@ -237,6 +262,18 @@ export type McSweepMessage =
   | { type: 'sweep-progress'; runId: string; done: number; total: number }
   | { type: 'sweep-done'; runId: string; summary: SweepSummary }
   | { type: 'sweep-error'; runId: string; message: string }
+
+/** Messages of a Morris run; `done` and `total` count engine evaluations (rows). */
+export type McMorrisMessage =
+  | { type: 'morris-progress'; runId: string; done: number; total: number }
+  | { type: 'morris-done'; runId: string; result: MorrisResult }
+  | { type: 'morris-error'; runId: string; message: string }
+
+/** Messages of a Sobol run; `done` and `total` count engine evaluations (rows). */
+export type McSobolMessage =
+  | { type: 'sobol-progress'; runId: string; done: number; total: number }
+  | { type: 'sobol-done'; runId: string; result: SobolResult }
+  | { type: 'sobol-error'; runId: string; message: string }
 
 /**
  * The end-of-run responses a sensitivity row records per replicate: leaker
@@ -347,26 +384,30 @@ function intervalOf(
   return { lo: w.lo, hi: w.hi, interval: 'wilson' }
 }
 
-/** Stat over the finite entries of `samples`; `total` is the count before the finite filter. */
-function statOf(samples: number[], kind: StatKind): Stat {
+/**
+ * Stat over the finite entries of `samples`; `total` is the count before the
+ * finite filter. `conf` drives the t-interval and is reported as `conf`; the
+ * Wilson and rule-of-three paths keep their 0.95 forms (z 1.96, 3 / n).
+ */
+function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Stat {
   const total = samples.length
   const sorted = samples.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
   const n = sorted.length
   const defined = definedOf(n, total)
   if (n === 0) {
     return {
-      mean: NaN, sd: NaN, se: NaN, lo: NaN, hi: NaN, conf: STAT_CONF, interval: 'none',
+      mean: NaN, sd: NaN, se: NaN, lo: NaN, hi: NaN, conf, interval: 'none',
       p10: NaN, p90: NaN, p025: NaN, p975: NaN, n: 0, total, defined,
     }
   }
-  const { mean, sd, lo, hi } = meanInterval(sorted, STAT_CONF)
+  const { mean, sd, lo, hi } = meanInterval(sorted, conf)
   const q = (p: number, min: number) => (n < min ? NaN : quantile(sorted, p))
   return {
     mean,
     sd,
     se: sd / Math.sqrt(n),
     ...intervalOf(sorted, kind, { lo, hi }),
-    conf: STAT_CONF,
+    conf,
     p10: q(0.1, BAND80_MIN_N),
     p90: q(0.9, BAND80_MIN_N),
     p025: q(0.025, BAND95_MIN_N),
@@ -382,18 +423,18 @@ function statOf(samples: number[], kind: StatKind): Stat {
  * the same `statOf` path and ship support the leakers Stat uses,
  * so the stopping rule and the tile read one interval.
  */
-function halfWidthOf(values: number[], ships: number): number {
-  const { lo, hi } = statOf(values, count(ships))
+function halfWidthOf(values: number[], ships: number, conf: number): number {
+  const { lo, hi } = statOf(values, count(ships), conf)
   return (hi - lo) / 2
 }
 
 /** The same count Stat per step over `rows` (one row per replicate, one entry per step). */
-function bandOf(rows: number[][], n: number, max: number): BandSeries {
+function bandOf(rows: number[][], n: number, max: number, conf: number): BandSeries {
   const band: BandSeries = { mean: [], lo: [], hi: [], p10: [], p90: [], p025: [], p975: [] }
   const column = new Array<number>(rows.length)
   for (let k = 0; k < n; k += 1) {
     for (let i = 0; i < rows.length; i += 1) column[i] = rows[i][k]
-    const s = statOf(column, count(max))
+    const s = statOf(column, count(max), conf)
     band.mean.push(s.mean)
     band.lo.push(s.lo)
     band.hi.push(s.hi)
@@ -568,10 +609,12 @@ export function* replicateLoop(
   scenario: Scenario,
   onProgress?: (done: number, total: number) => void,
 ): Loop<McSummary> {
-  const { replicates, targetHalfWidth, stopFloor } = runSettings(scenario)
+  const settings = runSettings(scenario)
+  const { targetHalfWidth, stopFloor } = settings
+  const end = loopEnd(settings)
   const partial = emptyPartial()
-  const range = rangeLoopInto(scenario, 0, replicates, partial, onProgress)
-  let stopped: McSummary['stopped'] = { rule: 'replicates', at: replicates }
+  const range = rangeLoopInto(scenario, 0, end, partial, onProgress)
+  let stopped: McSummary['stopped'] = { rule: 'replicates', at: end }
   let next = range.next()
   while (!next.done) {
     const { done } = next.value
@@ -586,7 +629,7 @@ export function* replicateLoop(
     }
     const stop = yield next.value
     next = range.next(stop)
-    if (stop && next.done && done < replicates) stopped = { rule: stop, at: done }
+    if (stop && next.done && done < end) stopped = { rule: stop, at: done }
   }
   return finishSummary(scenario, partial, stopped, 0)
 }
@@ -620,8 +663,11 @@ function* rangeLoopInto(
   partial: McPartial,
   onProgress?: (done: number, total: number) => void,
 ): Loop<void> {
-  const { seed, uncertainty } = runSettings(scenario)
+  const settings = runSettings(scenario)
+  const { seed, uncertainty } = settings
   const total = uncertainty === 'total'
+  // The strata count is the loop end of the whole run, whatever range this is.
+  const draws = paramDraws(settings, loopEnd(settings))
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const n = sampleCount(scenario)
   const enabledSensorIds = new Set(
@@ -633,7 +679,7 @@ function* rangeLoopInto(
   for (let i = start; i < end; i += 1) {
     const policy = monteCarloPolicy(seed, i, thresholds)
     // Under aleatory the sampler never runs.
-    const s = total ? sampleScenario(scenario, (m, f) => policy.param(m, f)) : scenario
+    const s = total ? sampleScenario(scenario, draws(policy, i)) : scenario
     const assessments = assessAllThreats(s, policy)
     const report = resolveEngagements(s, assessments, policy)
     const tracks = assessments.filter((a) => a.status !== 'no-path')
@@ -714,11 +760,11 @@ function* rangeLoopInto(
  * still ends.
  */
 export function halfWidthReached(scenario: Scenario, partial: McPartial): boolean {
-  const { targetHalfWidth, stopFloor } = runSettings(scenario)
+  const { targetHalfWidth, stopFloor, confidence } = runSettings(scenario)
   if (targetHalfWidth == null || partial.indices.length < stopFloor) return false
   const n = sampleCount(scenario)
   const ends = partial.leakers.map((row) => row[n - 1])
-  return halfWidthOf(ends, raidSizeOf(partial.threatShips)) < targetHalfWidth
+  return halfWidthOf(ends, raidSizeOf(partial.threatShips), confidence) < targetHalfWidth
 }
 
 /** Ships over the raid: the support of the kills and leakers counts. */
@@ -738,7 +784,7 @@ export function finishSummary(
   stopped: { rule: StopRule; at: number },
   elapsedMs: number,
 ): McSummary {
-  const { seed } = runSettings(scenario)
+  const { seed, confidence: conf } = runSettings(scenario)
   const n = sampleCount(scenario)
   // Count supports: ships for kills, leakers and residual; tracks for the
   // detected, tracked and engaged counts; salvos are unbounded.
@@ -748,19 +794,19 @@ export function finishSummary(
   partial.threatIds.forEach((uasId, t) => {
     const ships = partial.threatShips[t]
     perThreat[uasId] = {
-      killed: statOf(partial.threatKilled[t], count(ships)),
-      leaked: statOf(partial.threatLeaked[t], count(ships)),
-      firstDetectS: statOf(partial.threatFirstDetect[t], TIME),
+      killed: statOf(partial.threatKilled[t], count(ships), conf),
+      leaked: statOf(partial.threatLeaked[t], count(ships), conf),
+      firstDetectS: statOf(partial.threatFirstDetect[t], TIME, conf),
       arrivalS: partial.threatArrival[t],
       shipCount: ships,
-      residual: bandOf(partial.threatResidual[t], n, ships),
+      residual: bandOf(partial.threatResidual[t], n, ships, conf),
     }
   })
   const perEffector: Record<string, McEffectorSummary> = {}
   partial.effectorIds.forEach((effectorId, e) => {
     perEffector[effectorId] = {
-      salvos: statOf(partial.effectorSalvos[e], count(Infinity)),
-      kills: statOf(partial.effectorKills[e], count(raidSize)),
+      salvos: statOf(partial.effectorSalvos[e], count(Infinity), conf),
+      kills: statOf(partial.effectorKills[e], count(raidSize), conf),
     }
   })
 
@@ -770,14 +816,14 @@ export function finishSummary(
     // The duration is an integer number of seconds and DT divides one, so
     // the grid recovers it exactly without a store import.
     durationS: (n - 1) * DT,
-    kills: bandOf(partial.kills, n, raidSize),
-    leakers: bandOf(partial.leakers, n, raidSize),
-    detected: bandOf(partial.detected, n, trackCount),
-    tracked: bandOf(partial.tracked, n, trackCount),
-    engaged: bandOf(partial.engaged, n, trackCount),
-    firstDetectS: statOf(partial.raidFirstDetect, TIME),
-    firmTrackS: statOf(partial.raidFirmTrack, TIME),
-    minWarningS: statOf(partial.raidMinWarning, TIME),
+    kills: bandOf(partial.kills, n, raidSize, conf),
+    leakers: bandOf(partial.leakers, n, raidSize, conf),
+    detected: bandOf(partial.detected, n, trackCount, conf),
+    tracked: bandOf(partial.tracked, n, trackCount, conf),
+    engaged: bandOf(partial.engaged, n, trackCount, conf),
+    firstDetectS: statOf(partial.raidFirstDetect, TIME, conf),
+    firmTrackS: statOf(partial.raidFirmTrack, TIME, conf),
+    minWarningS: statOf(partial.raidMinWarning, TIME, conf),
     perThreat,
     perEffector,
     elapsedMs,
@@ -805,28 +851,10 @@ type ResponseSamples = Record<SensitivityResponse, Samples>
 function* responseLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<ResponseSamples | null> {
   const { seed, replicates } = runSettings(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
-  const tEndS = (sampleCount(scenario) - 1) * DT
   const out: ResponseSamples = { leakers: [], kills: [], firstDetectS: [], minWarningS: [], salvos: [] }
   for (let i = 0; i < replicates; i += 1) {
-    const policy = monteCarloPolicy(seed, i, thresholds)
-    const assessments = assessAllThreats(scenario, policy)
-    const report = resolveEngagements(scenario, assessments, policy)
-    const kpi = liveKpisAt(buildLiveTimeline(assessments, report), tEndS)
-    out.leakers.push(kpi.leakerShips)
-    out.kills.push(kpi.expectedKills)
-    // The raid's first detect and minimum warning, as replicateLoop records them.
-    let firstDetect = NaN
-    let minWarning = NaN
-    for (const a of assessments) {
-      if (a.status === 'no-path') continue
-      if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
-      if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
-    }
-    out.firstDetectS.push(firstDetect)
-    out.minWarningS.push(minWarning)
-    let salvos = 0
-    for (const ef of report.effectors) salvos += ef.shotsFired + ef.deSalvos + ef.jamSalvos
-    out.salvos.push(salvos)
+    const row = endOfRunResponses(scenario, monteCarloPolicy(seed, i, thresholds))
+    for (const r of SENSITIVITY_RESPONSES) out[r].push(row[r])
     const stop = yield cp
     if (stop) {
       // The half-width rule never runs here, so a stop is a budget or a cancel.
@@ -835,6 +863,39 @@ function* responseLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<Res
     }
   }
   return out
+}
+
+/**
+ * The five end-of-run responses of one replicate of `scenario` under
+ * `policy`: the leaker ships and expected kills at the last grid step, the
+ * raid's first detect and minimum warning (NaN with none), and the salvos
+ * over every effector, as `replicateLoop` records them. The Morris and Sobol
+ * loops evaluate one row each through this.
+ */
+export function endOfRunResponses(
+  scenario: Scenario,
+  policy: DrawPolicy,
+): Record<SensitivityResponse, number> {
+  const tEndS = (sampleCount(scenario) - 1) * DT
+  const assessments = assessAllThreats(scenario, policy)
+  const report = resolveEngagements(scenario, assessments, policy)
+  const kpi = liveKpisAt(buildLiveTimeline(assessments, report), tEndS)
+  let firstDetect = NaN
+  let minWarning = NaN
+  for (const a of assessments) {
+    if (a.status === 'no-path') continue
+    if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
+    if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
+  }
+  let salvos = 0
+  for (const ef of report.effectors) salvos += ef.shotsFired + ef.deSalvos + ef.jamSalvos
+  return {
+    leakers: kpi.leakerShips,
+    kills: kpi.expectedKills,
+    firstDetectS: firstDetect,
+    minWarningS: minWarning,
+    salvos,
+  }
 }
 
 /** The mean of the finite per-replicate samples, summed in replicate order; NaN with none. */
