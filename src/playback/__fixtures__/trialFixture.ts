@@ -23,6 +23,11 @@ export function trialAssessment(uasId: string, over: Partial<ThreatAssessment> =
 
 export function mixedTrial() {
   const scenario = emptyScenario()
+  // The fresh scenario runs Monte Carlo; the fixture pins the envelope mode its
+  // readers assert on (aleatory labels, fixed replicate counts).
+  scenario.runMode = 'deterministic'
+  scenario.uncertainty = 'aleatory'
+  scenario.targetHalfWidth = null
   const entity = (id: string, kind: Entity['kind'], count = 1): Entity => ({
     id, name: id, kind, specId: null, pos: { x: 0, y: 0 }, headingDeg: 90, color: null, notes: '',
     ...(kind === 'uas' ? { formation: { count, shape: 'line' as const, spacingM: 20 } } : {}),

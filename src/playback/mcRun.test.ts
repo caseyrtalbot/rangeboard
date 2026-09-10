@@ -38,6 +38,11 @@ vi.mock('../analysis/uncertainty', { spy: true })
 function laydown(): Scenario {
   const common = { headingDeg: 0, color: null, notes: '' }
   const s = emptyScenario()
+  // The fresh scenario runs Monte Carlo under total uncertainty with a half-width
+  // stop; every number here is pinned on the aleatory, fixed-n run.
+  s.runMode = 'deterministic'
+  s.uncertainty = 'aleatory'
+  s.targetHalfWidth = null
   s.roe = 'free'
   // Fixed ids: the draw keys hash the ids, so a time-based id would give the
   // replicates a different sample set on every run.
@@ -185,6 +190,9 @@ function asset(pos: Vec2): Entity {
 
 function build(pk: number, from: Vec2 = { x: -1210, y: 0 }, withAsset = false): Built {
   const scenario = emptyScenario()
+  scenario.runMode = 'deterministic'
+  scenario.uncertainty = 'aleatory'
+  scenario.targetHalfWidth = null
   scenario.roe = 'free'
   const eff = interceptor(pk)
   scenario.library = [...scenario.library, RADAR, TARGET, eff]
@@ -902,6 +910,8 @@ describe('runSensitivity', () => {
     ]
     s.paths = [{ ...flight(uas.id, [{ x: -10000, y: 0 }, { x: 0, y: 0 }]), id: 'sens-path' }]
     s.runMode = 'monte-carlo'
+    s.uncertainty = 'aleatory'
+    s.targetHalfWidth = null
     s.seed = 4821
     s.replicates = 20
     return s

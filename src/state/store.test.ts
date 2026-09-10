@@ -36,7 +36,8 @@ function prepareReadyTrial() {
 
 function reset() {
   useStore.setState((st) => ({ ui: { ...st.ui, boardPhase: 'prepare', executeLayers: null } }))
-  useStore.getState().replaceScenario(emptyScenario())
+  // The fresh scenario runs Monte Carlo; the slices under test start from the envelope mode.
+  useStore.getState().replaceScenario({ ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory', targetHalfWidth: null })
 }
 
 describe('store scenario actions', () => {
@@ -1285,6 +1286,23 @@ describe('monte carlo slice', () => {
     expect(useStore.getState().mc.summary).toBeNull()
   })
 
+  it('starts with no pool, Morris or Sobol state and a run reset clears the three', () => {
+    expect([IDLE_MC.pool, IDLE_MC.morris, IDLE_MC.sobol]).toEqual([null, null, null])
+    const field = { modelId: 'lib-coyote', field: 'pk', spread: { kind: 'lognormal' as const, sigmaDb: 3 } }
+    const interval = { value: 0.5, lo: 0.4, hi: 0.6, bootstrap: 200, confidence: 0.95 }
+    useStore.getState().setPoolProgress({ workers: 2, done: 3, total: 4, stopRule: 'replicates', elapsedMs: 5, perWorkerDone: [2, 1] })
+    useStore.getState().setMorrisResult({ method: 'morris', trajectories: 10, fields: [{ field, mu: 1, muStar: 1, sigma: 0 }],
+      ranking: [0], kept: [0], response: 'leakers', seed: 4821, evaluations: 20 })
+    useStore.getState().setSobolResult({ method: 'saltelli', base: 256, evaluations: 768,
+      fields: [{ field, firstOrder: interval, total: interval }], ranking: [0], response: 'leakers', seed: 4821 })
+    const mc = useStore.getState().mc
+    expect(mc.pool?.done).toBe(3)
+    expect(mc.morris?.fields[0].muStar).toBe(1)
+    expect(mc.sobol?.fields[0].total.hi).toBe(0.6)
+    useStore.getState().resetRun('manual')
+    expect(useStore.getState().mc).toBe(IDLE_MC)
+  })
+
   it('a basis change marks the summary stale and keeps it', () => {
     const summary = primeDone()
     useStore.getState().patchScenario({ seed: 99 })
@@ -1370,7 +1388,7 @@ describe('monte carlo slice', () => {
   })
 
   it('the basis signature reads the run settings', () => {
-    const base = emptyScenario()
+    const base: Scenario = { ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory' }
     const sig = analysisBasisSignature(base)
     expect(analysisBasisSignature({ ...base, seed: base.seed! + 1 })).not.toBe(sig)
     expect(analysisBasisSignature({ ...base, replicates: 250 })).not.toBe(sig)

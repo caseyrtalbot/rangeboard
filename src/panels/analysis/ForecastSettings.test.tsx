@@ -4,6 +4,7 @@ import { emptyScenario } from '../../model/seed'
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { IDLE_MC } from '../../state/runState'
+import type { Scenario } from '../../model/types'
 import { runSettings } from '../../model/types'
 import { ForecastSettings, McPopover } from './ForecastSettings'
 
@@ -12,6 +13,11 @@ import { ForecastSettings, McPopover } from './ForecastSettings'
 function render(): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<ForecastSettings />)
+}
+
+/** The fresh scenario runs Monte Carlo; these tests start from the envelope mode and switch explicitly. */
+function deterministicScenario(): Scenario {
+  return { ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory', targetHalfWidth: null }
 }
 
 function setMc(patch: Partial<McState>): void {
@@ -38,7 +44,7 @@ function chip(html: string): string {
 describe('ForecastSettings mode metadata', () => {
   beforeEach(() => {
     const st = useStore.getState()
-    st.replaceScenario(emptyScenario())
+    st.replaceScenario(deterministicScenario())
     st.addEntityFromModel('lib-giraffe1x', { x: 0, y: 0 })
     st.addEntityFromModel('lib-mavic3', { x: 0, y: -3000 })
     const uas = useStore.getState().scenario.entities.find((e) => e.kind === 'uas')!
@@ -95,7 +101,7 @@ describe('ForecastSettings mode metadata', () => {
 
 describe('McPopover run button', () => {
   beforeEach(() => {
-    useStore.getState().replaceScenario(emptyScenario())
+    useStore.getState().replaceScenario(deterministicScenario())
     useStore.setState({ mc: IDLE_MC })
   })
 

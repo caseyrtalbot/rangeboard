@@ -3,7 +3,9 @@ import {
   DEFAULT_FIRE_DOCTRINE,
   DEFAULT_REPLICATES,
   DEFAULT_REQUIREMENT_THRESHOLDS,
+  DEFAULT_SAMPLING,
   DEFAULT_SEED,
+  DEFAULT_TARGET_HALF_WIDTH,
 } from './types'
 import { initialLibrary, initialSystemPresets } from './libraryLifecycle'
 
@@ -42,11 +44,15 @@ export function emptyScenario(): Scenario {
     systemPresets: initialSystemPresets(),
     deletedSeedIds: [],
     observedPresetId: null,
-    runMode: 'deterministic',
+    // A fresh scenario runs the real mode: Monte Carlo under total uncertainty,
+    // LHS draws, stopping on half-width. An old save without these fields
+    // still reads deterministic and aleatory through `runSettings`.
+    runMode: 'monte-carlo',
     seed: DEFAULT_SEED,
     replicates: DEFAULT_REPLICATES,
-    targetHalfWidth: null,
-    uncertainty: 'aleatory',
+    targetHalfWidth: DEFAULT_TARGET_HALF_WIDTH,
+    uncertainty: 'total',
+    sampling: DEFAULT_SAMPLING,
     environment: defaultEnvironment(),
 
     roe: 'tight',

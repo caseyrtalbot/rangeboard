@@ -65,6 +65,8 @@ function assessment(uasId: string, patch: Partial<ThreatAssessment> = {}): Threa
 /** Clean laydown: one asset, one threat spawning well outside every ring. */
 function cleanScenario(): Scenario {
   const s = emptyScenario()
+  // The fresh scenario runs Monte Carlo; these tests set the mode explicitly.
+  s.runMode = 'deterministic'
   s.entities.push(entity('a1', 'asset', null, { x: 0, y: 0 }))
   addThreat(s, 'u1', { x: 40000, y: 0 })
   return s
@@ -85,6 +87,7 @@ describe('assessRunValidity rollup', () => {
 
   it('reports valid-limited when only caveats apply', () => {
     const s = emptyScenario()
+    s.runMode = 'deterministic'
     addThreat(s, 'u1', { x: 40000, y: 0 })
     const result = assessRunValidity(s, [assessment('u1')])
     expect(result.validity).toBe('valid-limited')
@@ -140,6 +143,7 @@ describe('spawn-in-ring finding', () => {
 describe('limiting findings', () => {
   it('flags a laydown with no defended asset', () => {
     const s = emptyScenario()
+    s.runMode = 'deterministic'
     addThreat(s, 'u1', { x: 40000, y: 0 })
     const finding = assessRunValidity(s, [assessment('u1')]).findings.find(
       (f) => f.id === 'no-defended-asset',

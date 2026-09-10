@@ -21,6 +21,11 @@ import type { McSummary } from './mcRun'
 function laydown(): Scenario {
   const common = { headingDeg: 0, color: null, notes: '' }
   const s = emptyScenario()
+  // The fresh scenario runs Monte Carlo under total uncertainty with a half-width
+  // stop; every number here is pinned on the aleatory, fixed-n run.
+  s.runMode = 'deterministic'
+  s.uncertainty = 'aleatory'
+  s.targetHalfWidth = null
   s.roe = 'free'
   const ent = (kind: EntityKind, specId: string, pos: Vec2, extra?: Partial<Entity>) => {
     const id = newId('e')
@@ -124,6 +129,9 @@ function ent(kind: Entity['kind'], specId: string | null, pos: Vec2): Entity {
 
 function build(pk: number, from: Vec2 = { x: -1210, y: 0 }): { scenario: Scenario; uasId: string } {
   const scenario = emptyScenario()
+  scenario.runMode = 'deterministic'
+  scenario.uncertainty = 'aleatory'
+  scenario.targetHalfWidth = null
   scenario.roe = 'free'
   const eff = interceptor(pk)
   scenario.library = [...scenario.library, RADAR, TARGET, eff]

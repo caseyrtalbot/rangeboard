@@ -256,6 +256,7 @@ describe('run export Monte Carlo basis', () => {
     // sets it as a replicate run would.
     const scenario = emptyScenario()
     scenario.runMode = 'monte-carlo'
+    scenario.uncertainty = 'aleatory'
     const out = runExportObject(
       scenario,
       runMeta(),
@@ -300,6 +301,7 @@ describe('run export Monte Carlo basis', () => {
   it('records the aleatory mode with no sampled field list', () => {
     const scenario = emptyScenario()
     scenario.runMode = 'monte-carlo'
+    scenario.uncertainty = 'aleatory'
     const out = runExportObject(
       scenario,
       runMeta(),
@@ -380,6 +382,8 @@ describe('run settings load fill', () => {
     delete s.seed
     delete s.replicates
     delete s.uncertainty
+    delete s.targetHalfWidth
+    delete s.sampling
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
     expect(runSettings(out)).toEqual({
       runMode: 'deterministic',
@@ -387,6 +391,12 @@ describe('run settings load fill', () => {
       replicates: 100,
       targetHalfWidth: null,
       uncertainty: 'aleatory',
+      sampling: 'lhs',
+      sensitivityDepth: 'full',
+      sobolBase: 256,
+      stopFloor: 30,
+      stopCap: 2000,
+      confidence: 0.95,
     })
     expect(out.schemaVersion).toBe(1)
   })

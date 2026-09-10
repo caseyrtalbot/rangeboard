@@ -1,6 +1,7 @@
 import type { Scenario } from '../model/types'
 import { newId } from '../model/types'
 import type { McSummary, SensitivitySummary, SweepSummary } from '../playback/mcRun'
+import type { MorrisResult, PoolProgress, SobolResult } from '../playback/mcTypes'
 import type { TrialManifest, TrialResult } from '../playback/trialTypes'
 
 /** Board navigation only, independent of the playback lifecycle. */
@@ -98,6 +99,12 @@ export interface McState extends AnalysisRunState<McSummary> {
   sensitivity: SensitivityState
   /** The factor sweep. It shares the sensitivity worker slot, so the two replace each other. */
   sweep: SweepState
+  /** Progress of the worker pool behind the replicate run; null off the pool or before it starts. */
+  pool: PoolProgress | null
+  /** Morris screening of the finished replicate run; null until it runs. */
+  morris: MorrisResult | null
+  /** Sobol indices over the fields Morris kept; null until it runs. */
+  sobol: SobolResult | null
 }
 
 /** The Monte Carlo slice before any run: no summary, no signature, no error. */
@@ -111,6 +118,9 @@ export const IDLE_MC: McState = {
   error: null,
   sensitivity: IDLE_SENSITIVITY,
   sweep: IDLE_SWEEP,
+  pool: null,
+  morris: null,
+  sobol: null,
 }
 
 /** A clean run: new identity, clock at zero, nothing observed. */

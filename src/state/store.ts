@@ -25,6 +25,7 @@ import { LAYER_PRESETS } from './layers'
 import { selectEffectiveLayers } from './selectors'
 import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } from './runState'
 import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
+import type { MorrisResult, PoolProgress, SobolResult } from '../playback/mcTypes'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
 import type { PlaybackCommand } from './playbackCommands'
@@ -350,6 +351,12 @@ export interface Store {
   sensitivityMessage: (m: McSensitivityMessage) => void
   /** Ask a running sensitivity run to stop at its next checkpoint, as `cancelMonteCarlo`. */
   cancelSensitivityRun: () => void
+  /** Pool progress of the replicate run; null clears it. */
+  setPoolProgress: (pool: PoolProgress | null) => void
+  /** Morris screening result of the current run; null clears it. */
+  setMorrisResult: (morris: MorrisResult | null) => void
+  /** Sobol result of the current run; null clears it. */
+  setSobolResult: (sobol: SobolResult | null) => void
 
   // Baseline
   /**
@@ -1426,6 +1433,12 @@ export const useStore = create<Store>()((set, get) => {
         requestCancel('sensitivity', sensitivity.runId)
       }
     },
+
+    setPoolProgress: (pool) => set((st) => ({ mc: { ...st.mc, pool } })),
+
+    setMorrisResult: (morris) => set((st) => ({ mc: { ...st.mc, morris } })),
+
+    setSobolResult: (sobol) => set((st) => ({ mc: { ...st.mc, sobol } })),
 
     runSweep: (spec) => requestAnalysis('sweep', get(), set, sinks, spec),
 

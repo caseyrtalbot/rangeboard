@@ -92,6 +92,8 @@ describe('modelsUsed', () => {
 
   it('reads an empty laydown as environment and doctrine, and nothing with both off', () => {
     const s = emptyScenario()
+    // The fresh scenario runs Monte Carlo; the envelope reading is explicit here.
+    s.runMode = 'deterministic'
     expect(modelsUsed(s).map((t) => t.id)).toEqual(['environment', 'doctrine'])
     s.environment.apply = false
     s.doctrine = { ...DEFAULT_FIRE_DOCTRINE, enabled: false }

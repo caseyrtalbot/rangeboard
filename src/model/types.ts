@@ -948,6 +948,43 @@ export const DEFAULT_SEED = 4821
 /** Replicate count of a fresh scenario. */
 export const DEFAULT_REPLICATES = 100
 
+/**
+ * How the parameter draws of a replicate run are laid out across replicates:
+ * one Latin hypercube stratum per replicate index (`lhs`), or an independent
+ * uniform draw per replicate (`independent`).
+ */
+export type SamplingMode = 'lhs' | 'independent'
+
+/**
+ * How deep the sensitivity study goes after a replicate run: one-at-a-time
+ * swings only (`quick`), or Morris screening followed by Sobol indices (`full`).
+ */
+export type SensitivityDepth = 'quick' | 'full'
+
+/** Parameter sampling of a fresh scenario. */
+export const DEFAULT_SAMPLING: SamplingMode = 'lhs'
+
+/** Sensitivity depth of a fresh scenario. */
+export const DEFAULT_SENSITIVITY_DEPTH: SensitivityDepth = 'full'
+
+/** Sobol base sample size N of a fresh scenario; Saltelli runs N (k + 2) evaluations. */
+export const DEFAULT_SOBOL_BASE = 256
+
+/** Fewest replicates the half-width stop rule may stop at. */
+export const DEFAULT_STOP_FLOOR = 30
+
+/** Most replicates the half-width stop rule may run. */
+export const DEFAULT_STOP_CAP = 2000
+
+/** Confidence level of every reported interval. Equal to STAT_CONF in mcRun.ts. */
+export const DEFAULT_CONFIDENCE = 0.95
+
+/**
+ * Target half-width of a fresh scenario: the leaker mean known to within half
+ * a ship at DEFAULT_CONFIDENCE, on the count Stat the stop rule reads.
+ */
+export const DEFAULT_TARGET_HALF_WIDTH = 0.5
+
 export interface Scenario {
   schemaVersion: 1
   name: string
@@ -973,6 +1010,18 @@ export interface Scenario {
   targetHalfWidth?: number | null
   /** Replicate uncertainty mode. Absent on old saves = aleatory. */
   uncertainty?: UncertaintyMode
+  /** Parameter sampling layout. Absent on old saves = DEFAULT_SAMPLING. */
+  sampling?: SamplingMode
+  /** Sensitivity study depth. Absent on old saves = DEFAULT_SENSITIVITY_DEPTH. */
+  sensitivityDepth?: SensitivityDepth
+  /** Sobol base sample size. Absent on old saves = DEFAULT_SOBOL_BASE. */
+  sobolBase?: number
+  /** Fewest replicates before the half-width rule may stop. Absent on old saves = DEFAULT_STOP_FLOOR. */
+  stopFloor?: number
+  /** Most replicates the half-width rule may run. Absent on old saves = DEFAULT_STOP_CAP. */
+  stopCap?: number
+  /** Confidence level of reported intervals, in (0, 1). Absent on old saves = DEFAULT_CONFIDENCE. */
+  confidence?: number
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written. */
 
@@ -1000,24 +1049,51 @@ export interface Scenario {
   geoRef: GeoRef | null
 }
 
-/** The one reader of the run fields with their defaults applied. */
-export function runSettings(s: Scenario): {
+/** The run fields of a scenario with their defaults applied; the contract every runner reads. */
+export interface McSettings {
   runMode: RunMode
   seed: number
   replicates: number
   targetHalfWidth: number | null
   uncertainty: UncertaintyMode
-} {
+  sampling: SamplingMode
+  sensitivityDepth: SensitivityDepth
+  sobolBase: number
+  stopFloor: number
+  stopCap: number
+  confidence: number
+}
+
+/** A positive integer, else the default. */
+function positiveInt(v: number | undefined, fallback: number): number {
+  return Number.isInteger(v) && (v as number) >= 1 ? (v as number) : fallback
+}
+
+/** The one reader of the run fields with their defaults applied. */
+export function runSettings(s: Scenario): McSettings {
   const seed = s.seed
-  const reps = s.replicates
   const half = s.targetHalfWidth
+  const conf = s.confidence
+  // Floor and cap fall back together when the pair is inverted, so floor <= cap always holds.
+  let stopFloor = positiveInt(s.stopFloor, DEFAULT_STOP_FLOOR)
+  let stopCap = positiveInt(s.stopCap, DEFAULT_STOP_CAP)
+  if (stopFloor > stopCap) {
+    stopFloor = DEFAULT_STOP_FLOOR
+    stopCap = DEFAULT_STOP_CAP
+  }
   return {
     runMode: s.runMode ?? 'deterministic',
     seed: Number.isInteger(seed) ? (seed as number) : DEFAULT_SEED,
-    replicates:
-      Number.isInteger(reps) && (reps as number) >= 1 ? (reps as number) : DEFAULT_REPLICATES,
+    replicates: positiveInt(s.replicates, DEFAULT_REPLICATES),
     targetHalfWidth: typeof half === 'number' && Number.isFinite(half) && half > 0 ? half : null,
     uncertainty: s.uncertainty === 'total' ? 'total' : 'aleatory',
+    sampling: s.sampling === 'independent' ? 'independent' : DEFAULT_SAMPLING,
+    sensitivityDepth: s.sensitivityDepth === 'quick' ? 'quick' : DEFAULT_SENSITIVITY_DEPTH,
+    sobolBase: positiveInt(s.sobolBase, DEFAULT_SOBOL_BASE),
+    stopFloor,
+    stopCap,
+    confidence:
+      typeof conf === 'number' && Number.isFinite(conf) && conf > 0 && conf < 1 ? conf : DEFAULT_CONFIDENCE,
   }
 }
 

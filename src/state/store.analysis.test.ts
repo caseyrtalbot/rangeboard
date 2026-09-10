@@ -248,7 +248,8 @@ describe('complete analysis basis and request ownership', () => {
   })
 
   it('missing scenario defaults and explicit resolved entity/link defaults share one basis', () => {
-    const base = emptyScenario()
+    // An absent run field resolves to the compatibility default, not the fresh-scenario default.
+    const base: Scenario = { ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory', targetHalfWidth: null }
     const missing = { ...base, doctrine: undefined, requirements: undefined,
       roe: undefined, raid: undefined, seed: undefined, replicates: undefined,
       runMode: undefined, uncertainty: undefined, targetHalfWidth: undefined,

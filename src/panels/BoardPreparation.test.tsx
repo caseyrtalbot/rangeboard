@@ -14,7 +14,8 @@ function render(): string {
 describe('BoardPreparation', () => {
   beforeEach(() => {
     const store = useStore.getState()
-    store.replaceScenario(emptyScenario())
+    // The fresh scenario runs Monte Carlo; the envelope findings asserted here need the deterministic mode.
+    store.replaceScenario({ ...emptyScenario(), runMode: 'deterministic' })
     store.addEntityFromModel('lib-mavic3', { x: 0, y: -3000 })
     store.clearSelection()
     store.setRightTab('analysis')

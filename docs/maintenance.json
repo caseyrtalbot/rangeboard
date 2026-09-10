@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "a22bc6273ece6918e410176ff714f49bfd403926bf0ae52538e5e9bc8a8303cb",
+      "sha256": "18b90987d7fe9687f23501d3fce0cf065af0eef7dadaede428b85501fcbae7a4",
       "reviewedAt": "2026-09-10",
-      "note": "Systems tab CSS folded into index.css; no feature change."
+      "note": "Phase 1 contract: McSettings fields and defaults in types.ts, fresh scenario Monte Carlo defaults in seed.ts, mcTypes.ts result types, engine barrel; no engine behaviour change"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "cf2037ffc88ada4ef0e13a595123168f841f68956ff8c8e7c0db2b106e4aca19",
+      "sha256": "d3b5cbc363c2500dfeda4ebdefda437dc61e4389c0b4f2587e32e4272ece0b67",
       "reviewedAt": "2026-09-10",
-      "note": "Systems tab CSS folded into index.css; chunkSizeWarningLimit raised to 1200 with the measured entry."
+      "note": "Phase 1 contract: McState gains pool, morris, sobol; store setters; headless lint override for playback, analysis, geometry, engine"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4af2f46b6910a0d7ac30a1d9ce3b2c2f0c1ea16e3319f935a16707a54c945e27",
+      "sha256": "b30569ad122c3545dbc099f36013a5047aed0efa7821224784ec6d1fdfb35a85",
       "reviewedAt": "2026-09-10",
-      "note": "Bundle entry budget raised to 360 kB gzip at the Phase 0 gate (measured 335 kB); tests updated."
+      "note": "Phase 1 contract: runSettings.test.ts added; test fixtures pin the deterministic mode explicitly"
     },
     {
       "document": "docs/WORKFLOW.md",

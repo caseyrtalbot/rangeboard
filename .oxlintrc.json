@@ -4,5 +4,17 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/playback/**", "src/analysis/**", "src/geometry/**", "src/engine/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "paths": ["react", "react-dom", "konva", "react-konva"],
+          "patterns": ["react/*"]
+        }],
+        "no-restricted-globals": ["error", "window", "document"]
+      }
+    }
+  ]
 }
