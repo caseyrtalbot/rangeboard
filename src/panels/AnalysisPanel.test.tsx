@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { AnalysisPanel } from './AnalysisPanel'
-import { BoardPreparation } from './BoardPreparation'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { installTrial, observeTrial, unstartTrial } from './analysis/trialTestState'
@@ -25,11 +24,10 @@ describe('AnalysisPanel screens', () => {
     useStore.getState().replaceScenario(emptyScenario())
   })
 
-  it('defaults each phase to its first screen and renders Inputs unchanged', () => {
+  it('defaults each phase to its first screen and falls back when Inputs is requested directly', () => {
     expect(render({ phase: 'prepare' })).toContain('<h3>Fragility</h3>')
     expect(render({ phase: 'prepare' })).toContain('Monte Carlo · No current ensemble result.')
-    const inputs = render({ phase: 'prepare', screen: 'inputs' })
-    expect(inputs).toBe(renderToStaticMarkup(<BoardPreparation />))
+    expect(render({ phase: 'prepare', screen: 'inputs' })).toContain('<h3>Fragility</h3>')
     installTrial()
     expect(render()).toContain('aria-label="Now"')
     expect(render({ phase: 'analyze' })).toContain('aria-label="Outcome"')

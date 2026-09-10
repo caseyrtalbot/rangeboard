@@ -826,9 +826,6 @@ export function* sensitivityLoop(
   return summary(nominal)
 }
 
-/** Default replicates per sweep cell. */
-export const SWEEP_REPLICATES_DEFAULT = 40
-
 /**
  * One grid cell: its index per factor, the factor values it ran, and the
  * replicate summary reduced to what the map reads. `kills` and `leakers`

@@ -16,7 +16,6 @@ import {
   effectorRingStyle,
   envelopeBandM,
   releaseRangeM,
-  ringKindFor,
   sensorRingStyle,
 } from './footprintStyle'
 
@@ -144,11 +143,11 @@ describe('sensorRingStyle', () => {
   })
 
   it('maps every gate to one ring kind and one inspector word', () => {
-    expect(ringKindFor('ok')).toBe('held')
-    expect(ringKindFor('needs-cue')).toBe('cued')
-    expect(ringKindFor('rf-silent')).toBe('inert')
-    expect(ringKindFor('rf-band')).toBe('inert')
-    expect(ringKindFor('no-range')).toBe('inert')
+    expect(sensorRingStyle({ ...base, gate: 'ok' }).kind).toBe('held')
+    expect(sensorRingStyle({ ...base, gate: 'needs-cue' }).kind).toBe('cued')
+    expect(sensorRingStyle({ ...base, gate: 'rf-silent' }).kind).toBe('inert')
+    expect(sensorRingStyle({ ...base, gate: 'rf-band' }).kind).toBe('inert')
+    expect(sensorRingStyle({ ...base, gate: 'no-range' }).kind).toBe('inert')
     expect(Object.keys(GATE_WORD).sort()).toEqual(['needs-cue', 'no-range', 'rf-band', 'rf-silent'])
   })
 })

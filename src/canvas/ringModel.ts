@@ -410,7 +410,7 @@ function ringEdges(r: EntityRings): RingEdge[] {
 type EntityEdges = Array<[Entity, RingEdge[]]>
 
 /** Radial edge distance only; sector spokes are not ring edges. Ties keep draw order. */
-export function hitRing(rings: EntityRings[], worldPt: Vec2, toleranceM: number): RingHit | null {
+function hitRing(rings: EntityRings[], worldPt: Vec2, toleranceM: number): RingHit | null {
   return hitEdges(rings.map((r) => [r.entity, ringEdges(r)]), worldPt, toleranceM)
 }
 

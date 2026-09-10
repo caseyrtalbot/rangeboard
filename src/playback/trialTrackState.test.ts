@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mixedTrial } from './__fixtures__/trialFixture'
-import { trialMemberStatesAt, trialTrackStatesAt, trialTrackTimelineOf } from './trialTrackState'
+import { trialMemberStatesAt, trialTrackStatesAt } from './trialTrackState'
 import { memberPositions } from './tracks'
 import { posAtTime } from '../geometry/geo'
 
@@ -11,21 +11,18 @@ describe('sampled member tracks', () => {
     const path = scenario.paths.find(p => p.entityId === 'swarm')!
     const atEffect = posAtTime(path.points, 10, 0, 2)
     const terminal = memberPositions(entity, atEffect.pos, atEffect.headingDeg)[3]
-    const timeline = trialTrackTimelineOf(view, 'swarm')
-    expect(trialTrackTimelineOf(view, 'swarm')).toBe(timeline)
     for (const t of [7, 15]) {
-      const members = timeline.stateAtTime(t).members
+      const members = trialMemberStatesAt(view, 'swarm', t)
       expect(members.map(m => m.memberIdx)).toEqual([0, 1, 2, 3, 4])
       expect(members[3]).toMatchObject({ uasId: 'swarm', outcome: 'hard-kill', position: terminal,
         heading: atEffect.headingDeg, reachedEffectTimeS: 2, effectSourceIdx: 2 })
       expect(members[0].outcome).toBe('active')
     }
-    expect(timeline.stateAtTime(7).members[0].position).not.toEqual(timeline.stateAtTime(15).members[0].position)
-    expect(timeline.stateAtTime(1.9).members[3].outcome).toBe('active')
-    expect(timeline.stateAtTime(1.9).members[3].position).not.toEqual(terminal)
+    expect(trialMemberStatesAt(view, 'swarm', 7)[0].position).not.toEqual(trialMemberStatesAt(view, 'swarm', 15)[0].position)
+    expect(trialMemberStatesAt(view, 'swarm', 1.9)[3].outcome).toBe('active')
+    expect(trialMemberStatesAt(view, 'swarm', 1.9)[3].position).not.toEqual(terminal)
     expect(trialMemberStatesAt(view, 'moving', 7).map(m => m.outcome)).toEqual(['active', 'active', 'hard-kill'])
     expect(trialMemberStatesAt(view, 'parked', 15).every(m => m.outcome === 'active')).toBe(true)
-    expect(() => trialTrackTimelineOf(view)).toThrow('identity')
   })
 
   it('retains soft-kill motion and late effects independently from arrival credit', () => {

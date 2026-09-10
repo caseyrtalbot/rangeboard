@@ -32,7 +32,7 @@ import {
   rfDetectable,
   SENSOR_ENV_MODEL,
   sensorEnvFactor,
-  sensorGeometryGate,
+  sensorGeometryGateAt,
   sensorHoldGate,
   VISIBILITY_BY_PRECIP,
   visibilityMFor,
@@ -419,6 +419,13 @@ describe('cue rule and hold gate', () => {
 })
 
 describe('vertical geometry gates', () => {
+  const sensorGeometryGateAtEval = (
+    spec: SensorSpec,
+    sensorHeightM: number,
+    targetAltM: number,
+    groundM: number,
+  ) => sensorGeometryGateAt(spec, sensorHeightM, targetAltM)(groundM)
+
   const ACOUSTIC: SensorSpec = {
     sensorType: 'acoustic',
     detectRangeM: 4000,
@@ -429,49 +436,49 @@ describe('vertical geometry gates', () => {
   const HIGH_M = 14000 * FT_TO_M
 
   it('ceiling applies only when maxAltitudeFt is recorded', () => {
-    expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: 10000 }, 4, HIGH_M, 5000)).toBe('ceiling')
-    expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: null }, 4, HIGH_M, 5000)).toBe('ok')
-    expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: 20000 }, 4, HIGH_M, 5000)).toBe('ok')
+    expect(sensorGeometryGateAtEval({ ...RADAR, maxAltitudeFt: 10000 }, 4, HIGH_M, 5000)).toBe('ceiling')
+    expect(sensorGeometryGateAtEval({ ...RADAR, maxAltitudeFt: null }, 4, HIGH_M, 5000)).toBe('ok')
+    expect(sensorGeometryGateAtEval({ ...RADAR, maxAltitudeFt: 20000 }, 4, HIGH_M, 5000)).toBe('ok')
     // The ceiling is a coverage limit, so it gates acoustic sensors too.
-    expect(sensorGeometryGate({ ...ACOUSTIC, maxAltitudeFt: 10000 }, 4, HIGH_M, 500)).toBe('ceiling')
+    expect(sensorGeometryGateAtEval({ ...ACOUSTIC, maxAltitudeFt: 10000 }, 4, HIGH_M, 500)).toBe('ceiling')
   })
 
   it('a target beyond the 4/3 earth radio horizon is below-horizon', () => {
     // 4 m mast to a 2 m target: 4120 * (2 + 1.414) = 14.07 km.
-    expect(sensorGeometryGate(RADAR, 4, 2, 60000)).toBe('below-horizon')
-    expect(sensorGeometryGate(RADAR, 4, 2, 14000)).toBe('ok')
-    expect(sensorGeometryGate({ ...RADAR, sensorType: 'rf' }, 4, 2, 60000)).toBe('below-horizon')
-    expect(sensorGeometryGate(EO, 4, 2, 60000)).toBe('below-horizon')
+    expect(sensorGeometryGateAtEval(RADAR, 4, 2, 60000)).toBe('below-horizon')
+    expect(sensorGeometryGateAtEval(RADAR, 4, 2, 14000)).toBe('ok')
+    expect(sensorGeometryGateAtEval({ ...RADAR, sensorType: 'rf' }, 4, 2, 60000)).toBe('below-horizon')
+    expect(sensorGeometryGateAtEval(EO, 4, 2, 60000)).toBe('below-horizon')
   })
 
   it('acoustic sensors need no line of sight, so the horizon never gates them', () => {
-    expect(sensorGeometryGate(ACOUSTIC, 4, 2, 60000)).toBe('ok')
-    expect(sensorGeometryGate({ ...ACOUSTIC, elevationDeg: [0, 30] }, 4, 100, 10)).toBe('ok')
+    expect(sensorGeometryGateAtEval(ACOUSTIC, 4, 2, 60000)).toBe('ok')
+    expect(sensorGeometryGateAtEval({ ...ACOUSTIC, elevationDeg: [0, 30] }, 4, 100, 10)).toBe('ok')
   })
 
   it('elevation applies only when elevationDeg is recorded', () => {
     const limited: SensorSpec = { ...RADAR, elevationDeg: [0, 30] }
     // 104 m up at 100 m out: 45 deg, above the 30 deg limit (cone of silence).
-    expect(sensorGeometryGate(limited, 4, 104, 100)).toBe('elevation')
+    expect(sensorGeometryGateAtEval(limited, 4, 104, 100)).toBe('elevation')
     // 1 km out at ground level: -0.23 deg, below the 0 deg floor.
-    expect(sensorGeometryGate(limited, 4, 0, 1000)).toBe('elevation')
+    expect(sensorGeometryGateAtEval(limited, 4, 0, 1000)).toBe('elevation')
     // 100 m up at 1 km: 5.5 deg, inside the band.
-    expect(sensorGeometryGate(limited, 4, 100, 1000)).toBe('ok')
-    expect(sensorGeometryGate(RADAR, 4, 104, 100)).toBe('ok')
-    expect(sensorGeometryGate({ ...RADAR, elevationDeg: null }, 4, 0, 1000)).toBe('ok')
+    expect(sensorGeometryGateAtEval(limited, 4, 100, 1000)).toBe('ok')
+    expect(sensorGeometryGateAtEval(RADAR, 4, 104, 100)).toBe('ok')
+    expect(sensorGeometryGateAtEval({ ...RADAR, elevationDeg: null }, 4, 0, 1000)).toBe('ok')
   })
 
   it('the elevation gate carries a 0.001 degree tolerance at both edges', () => {
     const limited: SensorSpec = { ...RADAR, elevationDeg: [0, 30] }
     // 1e-9 m below the phase center at 1 km: about -6e-11 deg, inside the tolerance.
-    expect(sensorGeometryGate(limited, 4, 4 - 1e-9, 1000)).toBe('ok')
+    expect(sensorGeometryGateAtEval(limited, 4, 4 - 1e-9, 1000)).toBe('ok')
     // -0.01 deg at 1 km is 0.1745 m below: outside.
-    expect(sensorGeometryGate(limited, 4, 4 - 1000 * Math.tan((0.01 * Math.PI) / 180), 1000))
+    expect(sensorGeometryGateAtEval(limited, 4, 4 - 1000 * Math.tan((0.01 * Math.PI) / 180), 1000))
       .toBe('elevation')
     // The upper edge: 30 deg plus 1e-6 is inside the tolerance, 30.01 is not.
     const up = (deg: number) => 4 + 1000 * Math.tan((deg * Math.PI) / 180)
-    expect(sensorGeometryGate(limited, 4, up(30 + 1e-6), 1000)).toBe('ok')
-    expect(sensorGeometryGate(limited, 4, up(30.01), 1000)).toBe('elevation')
+    expect(sensorGeometryGateAtEval(limited, 4, up(30 + 1e-6), 1000)).toBe('ok')
+    expect(sensorGeometryGateAtEval(limited, 4, up(30.01), 1000)).toBe('elevation')
   })
 
   it('effectorGeometryGate is the ceiling alone', () => {

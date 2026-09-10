@@ -107,7 +107,7 @@ export const GATE_WORD: Record<Exclude<SensorHoldGate, 'ok'>, string> = {
 }
 
 /** Ring kind for a gate on an enabled sensor. */
-export function ringKindFor(gate: SensorHoldGate): Exclude<SensorRingKind, 'off'> {
+function ringKindFor(gate: SensorHoldGate): Exclude<SensorRingKind, 'off'> {
   if (gate === 'ok') return 'held'
   if (gate === 'needs-cue') return 'cued'
   return 'inert'

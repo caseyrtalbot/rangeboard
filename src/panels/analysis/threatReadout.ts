@@ -5,7 +5,6 @@ import { formatAxis, formatDistance, formatSpeed, formatTime } from '../../geome
 import { modelFor, pathSpeed } from '../../model/scenario'
 import type { Entity, Scenario } from '../../model/types'
 import type { ThreatAssessment } from '../../playback/sim'
-import type { Sweep } from '../../playback/sweepAt'
 import { threatAltitudeFt } from '../../playback/tracks'
 import { PHASE_STYLE } from '../../playback/trackState'
 import type { TrackPhase, TrackTimeline } from '../../playback/trackState'
@@ -199,7 +198,7 @@ interface ThreatReadoutInput {
   /** Transitional caller inputs; deliberately unused until those callers migrate. */
   timeline?: TrackTimeline
   assessments?: ThreatAssessment[]
-  sweep?: Pick<Sweep, 'hits' | 'states'>
+  sweep?: unknown
 }
 
 /** One source for the compact overlay and the full threat telemetry rows. */

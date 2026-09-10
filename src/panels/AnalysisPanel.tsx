@@ -1,5 +1,4 @@
 import type { BoardPhase } from '../state/runState'
-import { BoardPreparation } from './BoardPreparation'
 import { CompareScreen } from './analysis/screens/CompareScreen'
 import { FragilityScreen } from './analysis/screens/FragilityScreen'
 import { NowScreen } from './analysis/screens/NowScreen'
@@ -13,8 +12,8 @@ interface AnalysisPanelProps {
 }
 
 export function AnalysisPanel({ phase = 'execute', screen }: AnalysisPanelProps) {
-  const active = PHASE_SCREENS[phase].find(option => option.v === screen)?.v ?? PHASE_SCREENS[phase][0].v
-  if (active === 'inputs') return <BoardPreparation />
+  const requested = PHASE_SCREENS[phase].find(option => option.v === screen)?.v ?? PHASE_SCREENS[phase][0].v
+  const active = requested === 'inputs' ? 'fragility' : requested
 
   return (
     <div className="inspector-body analysis-panel">

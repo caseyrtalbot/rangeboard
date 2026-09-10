@@ -151,7 +151,7 @@ function timelinesOf(view: TrialResultView): Map<string, TrialTrackTimeline> {
 }
 
 /** A formation needs an identity when the captured trial contains multiple entities. */
-export function trialTrackTimelineOf(view: TrialResultView, uasId?: string): TrialTrackTimeline {
+function trialTrackTimelineOf(view: TrialResultView, uasId?: string): TrialTrackTimeline {
   const timelines = timelinesOf(view)
   const timeline = uasId == null && timelines.size === 1 ? timelines.values().next().value : timelines.get(uasId ?? '')
   if (!timeline) throw new Error('Select a trial threat identity for its member timeline')
