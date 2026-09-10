@@ -3189,6 +3189,21 @@ input[type='number'] {
   margin: 0;
 }
 
+.chart-sobol {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-sobol-svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* The method line aligns with the gutter label, not with the Recharts axis inset. */
+.chart-sobol > .chart-ylabel {
+  padding-left: 2px;
+}
+
 /* ---------- Analysis KPI tiles and run evidence ---------- */
 
 /* Remaining-capacity meter (NowScreen) */
