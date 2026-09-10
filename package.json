@@ -23,6 +23,9 @@
     "test:docs": "node --test scripts/test-docs.mjs",
     "test:e2e": "node --test scripts/e2e/board-shell.e2e.mjs",
     "test:bundle": "node --test scripts/test-bundle.mjs",
+    "engine:build": "vite build --config vite.engine.config.ts",
+    "engine": "node scripts/run-engine.mjs",
+    "test:engine": "node --test scripts/test-engine-cli.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
   },
