@@ -2,12 +2,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { restoreAutosave, startAutosave } from './io/persist'
+import { restoreOverrides, startOverridesAutosave } from './io/persistOverrides'
 import { useStore } from './state/store'
 import './index.css'
 
 restoreAutosave()
+restoreOverrides()
 
 startAutosave()
+startOverridesAutosave()
 
 // Dev-only hook for scripted verification.
 if (import.meta.env.DEV) {
