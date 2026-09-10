@@ -8,6 +8,12 @@ import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { trialResultOf } from '../../../analysis/trialResult'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { formatTime } from '../../../geometry/geo'
+import { saveRun } from '../../../io/runStore'
+import { createRunManifest } from '../../../model/runRecord'
+import type { RunRecord } from '../../../model/runRecord'
+import { newId } from '../../../model/types'
+import { analysisBasisSignature } from '../../../state/analysisBasis'
+import { defaultBaselineLabel } from '../../../state/baseline'
 import { useStore } from '../../../state/store'
 import { selectRunComplete } from '../../../state/selectors'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
@@ -15,6 +21,8 @@ import { State } from '../../../ui/kit'
 import {
   DebriefRecord, RunValidityBanner, TrialEventLedger, TrialManifestRecord,
 } from '../DebriefRecord'
+import type { RunHistorySave } from '../RunHistory'
+import { RunHistory } from '../RunHistory'
 import { SystemStatus } from '../SystemStatus'
 import { trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow } from '../threatReadout'
@@ -137,13 +145,54 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
   )
 }
 
+/**
+ * The Save to history contract. A save needs a finished ensemble for the
+ * current analysis basis; the sensitivity companion joins it only when it
+ * finished on the same basis. The record is built here, never in the store.
+ */
+function useRunHistorySave(): RunHistorySave {
+  const scenario = useStore(state => state.scenario)
+  const mc = useStore(state => state.mc)
+  const playbackRunId = useStore(state => state.playback.runId)
+  const signature = useMemo(() => analysisBasisSignature(scenario), [scenario])
+  const summary = mc.status === 'done' ? mc.summary : null
+  const enabled = summary != null && mc.basisSignature === signature
+  const reason = enabled ? 'Save this ensemble to the run history'
+    : mc.status === 'running' ? 'The ensemble is still running'
+    : summary == null ? 'No finished ensemble to save'
+    : 'The scenario changed after the ensemble ran'
+  return {
+    enabled,
+    reason,
+    run: () => {
+      if (!summary) return Promise.reject(new Error('No finished ensemble to save.'))
+      const savedAt = new Date().toISOString()
+      const sensitivity = mc.sensitivity.status === 'done' && mc.sensitivity.basisSignature === signature
+        ? mc.sensitivity.summary : null
+      const record: RunRecord = {
+        id: newId('run'),
+        savedAt,
+        label: defaultBaselineLabel(scenario.name, savedAt),
+        manifest: createRunManifest(scenario, mc.runId ?? playbackRunId, signature),
+        scenario,
+        scenarioHash: signature,
+        mc: summary,
+        sensitivity,
+      }
+      return saveRun(record)
+    },
+  }
+}
+
 export function OutcomeScreen() {
   const trial = useTrialResult()
   const { selection, snapshot } = trial
   const complete = useStore(selectRunComplete)
   const horizon = useStore(state => selectTrialHorizon(state, state.playback.observedThroughS))
+  const save = useRunHistorySave()
   if (selection.status === 'idle' || selection.status === 'cancelled' || (selection.status === 'ready' && !snapshot)) {
-    return <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
+    // The history does not depend on a trial, so it stays below the placeholder.
+    return <><p className="muted small">No trial yet. Press Play in Execute to run one.</p><RunHistory save={save} /></>
   }
   const view = selection.status === 'ready' && snapshot
     ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : null
@@ -155,6 +204,7 @@ export function OutcomeScreen() {
         : trialStateText(selection)}</p>
       {view && complete && horizon >= view.durationS ? <CompletedOutcome key={view.manifest.runId} view={view} />
         : <p className="muted small">{view ? 'Trial in progress. Complete playback in Execute to see the outcome.' : 'Outcome is waiting for a trial.'}</p>}
+      <RunHistory save={save} />
     </section>
   )
 }
