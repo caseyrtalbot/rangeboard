@@ -7,7 +7,7 @@ import { IDLE_MC } from './runState'
 import { useStore } from './store'
 
 /** A real summary with undefined statistics: no threat, so every time Stat has n = 0 and NaN. */
-const summary = runReplicates({ ...emptyScenario(), replicates: 2, seed: 3 })
+const summary = runReplicates({ ...emptyScenario(), replicates: 2, seed: 3, targetHalfWidth: null })
 const persisted = () => JSON.parse(JSON.stringify(summary)) as Record<string, unknown>
 
 describe('validateMcSummary', () => {

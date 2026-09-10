@@ -771,6 +771,8 @@ describe('runReplicates', () => {
       const { scenario, uasId } = build(0.5, { x: -1210, y: 0 }, true)
       scenario.replicates = 1000
       scenario.targetHalfWidth = TARGET_H
+      // Under a target the loop end is the cap; pinned to the count the test reports.
+      scenario.stopCap = 1000
       const calls: Array<[number, number]> = []
       const summary = runReplicates(scenario, (done, total) => calls.push([done, total]))
       expect(summary.stopped.rule).toBe('halfWidth')
@@ -807,6 +809,7 @@ describe('runReplicates', () => {
       const all = runReplicates(scenario)
       expect(all.stopped).toEqual({ rule: 'replicates', at: 40 })
       scenario.targetHalfWidth = 0.001
+      scenario.stopCap = 40
       const tight = runReplicates(scenario)
       expect(tight.stopped).toEqual({ rule: 'replicates', at: 40 })
       expect(tight.replicates).toBe(40)
