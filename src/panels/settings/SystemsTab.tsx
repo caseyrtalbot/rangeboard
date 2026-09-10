@@ -6,7 +6,6 @@ import { modelsInUse, spreadFor } from '../../analysis/parameterBasis'
 import { useOverrides } from '../../state/overrides'
 import { useStore } from '../../state/store'
 import { Field } from '../../ui/kit'
-import './systems.css'
 
 /** Columns of the field table; the edit form spans them. */
 const COLUMNS = 8

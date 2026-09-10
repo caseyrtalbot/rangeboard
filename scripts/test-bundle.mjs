@@ -38,19 +38,19 @@ test('counts entry, modulepreloads and CSS once; reports font and all-in totals,
 })
 
 test('budget boundaries use exact decimal bytes and allow equality', () => {
-  assert.deepEqual(budgetFailures({ entryBytes: 260_000, initialBytes: 400_000 }), [])
-  assert.equal(budgetFailures({ entryBytes: 260_001, initialBytes: 400_000 }).length, 1)
-  assert.match(budgetFailures({ entryBytes: 260_000, initialBytes: 400_001 })[0], /Initial JavaScript \+ CSS/)
+  assert.deepEqual(budgetFailures({ entryBytes: 360_000, initialBytes: 400_000 }), [])
+  assert.equal(budgetFailures({ entryBytes: 360_001, initialBytes: 400_000 }).length, 1)
+  assert.match(budgetFailures({ entryBytes: 360_000, initialBytes: 400_001 })[0], /Initial JavaScript \+ CSS/)
 })
 
 test('CLI passes a small bundle and fails an entry whose gzip size exceeds its budget', (t) => {
   const { root, put } = fixture(t)
   const run = () => spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], { encoding: 'utf8' })
   assert.equal(run().status, 0)
-  put('assets/index.js', randomBytes(280_000))
+  put('assets/index.js', randomBytes(380_000))
   const result = run()
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /Entry exceeds 260000/)
+  assert.match(result.stderr, /Entry exceeds 360000/)
 })
 
 test('CLI fails when shared JS and CSS push the initial set over budget', (t) => {

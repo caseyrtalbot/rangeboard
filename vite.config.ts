@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Just above the entry chunk (index-*.js, 818 kB raw after the T&E Ops removal folded
-    // the chunks it had shared with the entry back into the entry; initial gzip fell from
-    // 386 kB to 352 kB), the largest chunk the build emits. Raise it only with a measured reason.
-    chunkSizeWarningLimit: 820,
+    // Just above the entry chunk (index-*.js, 1,156 kB raw and 340 kB gzip at the
+    // calibration Phase 0 gate, 2026-09-10), the largest chunk the build emits. Raise it
+    // only with a measured reason.
+    chunkSizeWarningLimit: 1200,
   },
 })

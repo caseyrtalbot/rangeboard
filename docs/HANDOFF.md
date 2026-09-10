@@ -54,9 +54,10 @@ Phase 0, all on `main`, nothing pushed. Base `d518e42`.
 
 ## Open items
 
-- `npm run check:bundle` fails the 260 kB entry budget at 335 kB gzip. It already failed
-  at `d518e42` (336 kB); Phase 0 adds about 3 kB. `vite.config.ts` still describes an
-  818 kB entry. Decide the budget before Phase 1 adds the pool and Sobol code.
+- Bundle budget decided 2026-09-10 (Casey: go with the recommendation): the entry budget
+  in `scripts/check-bundle.mjs` is 360 kB gzip (measured 335 kB; 336 kB before Phase 0),
+  initial stays 400 kB (measured 350 kB); `vite.config.ts` warns above 1200 kB raw with
+  the measured entry in its comment. Held there until the engine additions load lazily.
 - Overrides and class priors are recorded, not applied: the engine still reads the scenario
   library and `spreadFor` without a priors table. Phase 1 wires both through `McSettings`.
   A scenario export does not carry its overrides yet (blueprint section D).
@@ -71,8 +72,8 @@ Phase 0, all on `main`, nothing pushed. Base `d518e42`.
 - Lane 0.2: `lib-gator` and `lib-gm200mmc` `detectRangeM` (40 km planning figures) sit
   3.5 spreads from the radar prior and carry a note. An additive prior with sd 0 gives a
   zero-width triangular, which samples the nominal. Tuple fields get no prior.
-- `src/panels/settings/systems.css` is the first component CSS file; every other rule is
-  in `src/index.css`. Fold or keep at the Phase 1 gate.
+- The Systems tab rules are folded into `src/index.css` after the settings block; there
+  is no component CSS file. Browser check: column widths and the group head apply.
 - `RunHistory` renders nothing until its first IndexedDB read settles, so the no-trial
   markup test in `OutcomeScreen.test.tsx` stays exact.
 - No pinned parity number moved in Phase 0.
@@ -82,8 +83,7 @@ Phase 0, all on `main`, nothing pushed. Base `d518e42`.
 The next task is the Phase 1 contract slice in
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#3-phase-1-real-mode-statistics): a
 `fable-medium` worker on `src/model/types.ts`, `src/state/store.ts` and
-`src/playback/mcTypes.ts`. Lanes 1.1 to 1.5 start only after it merges. The bundle budget
-decision above is a poll for Casey before the lanes start.
+`src/playback/mcTypes.ts`. Lanes 1.1 to 1.5 start only after it merges. No poll is open.
 
 ## Verification at the last gate
 

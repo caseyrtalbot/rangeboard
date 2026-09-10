@@ -13,6 +13,7 @@ the tree at the gate commit on `main`, not the current tree.
 | `1-systems-override.png` | Settings, Systems tab: KuRFS `detectRangeM` overridden to 3200 m with a reason |
 | `2-history-saved.png` | Analyze, Outcome: one saved run in the history list after Save to history |
 | `3-history-after-reload.png` | After a page reload: the saved run reopened in place with its tiles |
+| `4-systems-css-folded.png` | Systems tab after its rules moved into `index.css`: the eight-column widths and the group head still apply |
 
 ## Orchestrator browser check (firing scenario fixture, 1400 by 900, right panel 320 px)
 
