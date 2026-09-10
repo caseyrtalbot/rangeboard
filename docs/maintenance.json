@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "9cb0d13d8f9c6fdc4a66cb575fc365e8bbd0a41fd9f325226156ba7e146e429b",
+      "sha256": "724833d88dccee3a385ede7dc39d4e56daf7d732a86983a73b74ab1023b9d7d4",
       "reviewedAt": "2026-09-10",
-      "note": "Open items: bundle budget decided and applied, Systems CSS folded."
+      "note": "Phase 1 gate rewrite: phase status, completed lanes, open items, Phase 2 contract boundary"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
