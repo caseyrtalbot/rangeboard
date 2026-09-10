@@ -42,6 +42,7 @@ export type {
   McSensitivityRequest,
   McSummary,
   McSweepMessage,
+  McPartial,
   McSweepRequest,
   McWorkerMessage,
   SensitivityResponse,
@@ -55,8 +56,12 @@ export type {
 export {
   assertSummaryFits,
   DEFAULT_BUDGET,
+  emptyPartial,
+  finishSummary,
+  halfWidthReached,
   overBudget,
   replicateLoop,
+  replicateRangeLoop,
   runReplicates,
   runSensitivity,
   runSweep,
@@ -69,6 +74,7 @@ export {
   SWEEP_REPLICATES_DEFAULT,
 } from '../playback/mcRun'
 export type { SweepFactor } from '../playback/sweepFactors'
+export { mergePartials } from '../playback/mergeSummaries'
 
 // Phase 1 result and progress types.
 export type {

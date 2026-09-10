@@ -19,7 +19,15 @@ import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertai
 import { betaQuantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
 import { FALLOFF_AT_MAX } from './pk'
-import { replicateLoop, runReplicates, runSensitivity, sensitivityLoop, summaryNumbers } from './mcRun'
+import {
+  halfWidthReached,
+  replicateLoop,
+  replicateRangeLoop,
+  runReplicates,
+  runSensitivity,
+  sensitivityLoop,
+  summaryNumbers,
+} from './mcRun'
 import type { BandSeries, ExecutionBudget, McSummary } from './mcRun'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy, monteCarloPolicy } from './policy'
@@ -802,6 +810,42 @@ describe('runReplicates', () => {
       const tight = runReplicates(scenario)
       expect(tight.stopped).toEqual({ rule: 'replicates', at: 40 })
       expect(tight.replicates).toBe(40)
+    })
+
+    it('the floor from runSettings moves the first check: a loose target stops at the floor', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 1000
+      scenario.targetHalfWidth = 10
+      scenario.stopFloor = 50
+      expect(runReplicates(scenario).stopped).toEqual({ rule: 'halfWidth', at: 50 })
+      // The cadence stays every 10 after the floor.
+      scenario.stopFloor = 45
+      scenario.targetHalfWidth = TARGET_H
+      const at = runReplicates(scenario).stopped.at
+      expect(at).toBeGreaterThanOrEqual(45)
+      expect((at - 45) % 10).toBe(0)
+    })
+
+    it('halfWidthReached is false under the floor and true from the old stop point on', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      scenario.replicates = 1000
+      scenario.targetHalfWidth = TARGET_H
+      // The sequential loop stops at 70 on this fixture (mcRun.e3.test.ts pins it).
+      const at = runReplicates(scenario).stopped.at
+      expect(at).toBe(70)
+      const partialTo = (end: number) => {
+        const loop = replicateRangeLoop(scenario, 0, end)
+        let next = loop.next()
+        while (!next.done) next = loop.next()
+        return next.value
+      }
+      expect(halfWidthReached(scenario, partialTo(29))).toBe(false)
+      expect(halfWidthReached(scenario, partialTo(60))).toBe(false)
+      expect(halfWidthReached(scenario, partialTo(70))).toBe(true)
+      // Under the floor the rule is off whatever the target; without a target it never fires.
+      expect(halfWidthReached({ ...scenario, targetHalfWidth: 10 }, partialTo(29))).toBe(false)
+      expect(halfWidthReached({ ...scenario, targetHalfWidth: 10 }, partialTo(30))).toBe(true)
+      expect(halfWidthReached({ ...scenario, targetHalfWidth: null }, partialTo(70))).toBe(false)
     })
   })
 

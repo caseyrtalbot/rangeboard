@@ -74,8 +74,10 @@ type StatKind = { kind: 'time' } | { kind: 'count'; max: number }
 const TIME: StatKind = { kind: 'time' }
 const count = (max: number): StatKind => ({ kind: 'count', max })
 
-/** First replicate count the stopping rule checks, then every STOP_EVERY after it. */
-const STOP_FIRST = 30
+/**
+ * The sequential loop checks the half-width rule at `stopFloor` (runSettings)
+ * and every STOP_EVERY replicates after it; a pool checks whenever it merges.
+ */
 const STOP_EVERY = 10
 
 /**
@@ -385,13 +387,6 @@ function halfWidthOf(values: number[], ships: number): number {
   return (hi - lo) / 2
 }
 
-/** Ships over the raid: the support of the kills and leakers counts. */
-function raidSizeOf(threatShips: Map<string, number>): number {
-  let raidSize = 0
-  for (const ships of threatShips.values()) raidSize += ships
-  return raidSize
-}
-
 /** The same count Stat per step over `rows` (one row per replicate, one entry per step). */
 function bandOf(rows: number[][], n: number, max: number): BandSeries {
   const band: BandSeries = { mean: [], lo: [], hi: [], p10: [], p90: [], p025: [], p975: [] }
@@ -467,10 +462,83 @@ function drive<T>(loop: Loop<T>, budget?: ExecutionBudget): T {
 }
 
 /**
+ * What the replicate loop retains for a set of replicate indices: plain
+ * arrays and numbers, so a partial crosses a worker message (structuredClone)
+ * and a pool merges partials from several workers by index
+ * (`mergeSummaries.ts`). Every per-replicate array is aligned with `indices`,
+ * which is ascending. Per-threat arrays are aligned with `threatIds`, the
+ * track order of the first replicate run (the same in every replicate, since
+ * a path is geometry the sampler never moves); per-effector arrays with
+ * `effectorIds`, the scenario's effector order. An undefined time is NaN,
+ * which structuredClone keeps and JSON does not: a JSON transport must map it.
+ */
+export interface McPartial {
+  /** Replicate indices done, ascending. */
+  indices: number[]
+  /** Cumulative counts per grid step, one row per replicate (see McSummary). */
+  kills: number[][]
+  leakers: number[][]
+  detected: number[][]
+  tracked: number[][]
+  engaged: number[][]
+  /** Raid scalars per replicate; NaN when undefined. */
+  raidFirstDetect: number[]
+  raidFirmTrack: number[]
+  raidMinWarning: number[]
+  /** Tracks (threats with a path), in track order. */
+  threatIds: string[]
+  /** Per track, one sample per replicate. */
+  threatKilled: number[][]
+  threatLeaked: number[][]
+  threatFirstDetect: number[][]
+  /** Per track, one residual row (ships alive per step) per replicate. */
+  threatResidual: number[][][]
+  /** Per track: geometry, identical in every replicate. */
+  threatArrival: (number | null)[]
+  threatShips: number[]
+  /** Effectors, in scenario order. */
+  effectorIds: string[]
+  /** Per effector, one sample per replicate. */
+  effectorSalvos: number[][]
+  effectorKills: number[][]
+  /** Numbers retained for the bands over these replicates (the checkpoint measure). */
+  retained: number
+  /** Loop time on the thread that ran these replicates, ms. */
+  elapsedMs: number
+}
+
+/** A partial holding no replicates; the loop fills it and a merge starts from one. */
+export function emptyPartial(): McPartial {
+  return {
+    indices: [],
+    kills: [],
+    leakers: [],
+    detected: [],
+    tracked: [],
+    engaged: [],
+    raidFirstDetect: [],
+    raidFirmTrack: [],
+    raidMinWarning: [],
+    threatIds: [],
+    threatKilled: [],
+    threatLeaked: [],
+    threatFirstDetect: [],
+    threatResidual: [],
+    threatArrival: [],
+    threatShips: [],
+    effectorIds: [],
+    effectorSalvos: [],
+    effectorKills: [],
+    retained: 0,
+    elapsedMs: 0,
+  }
+}
+
+/**
  * Run `runSettings(scenario).replicates` replicates from the scenario's seed
  * and summarize them. With `targetHalfWidth` set, the loop checks the
  * half-width of the displayed interval on the end-of-run leaker mean (the
- * leakers Stat over the raid's ships) after 30 replicates and every 10
+ * leakers Stat over the raid's ships) at `stopFloor` replicates and every 10
  * after that, and stops once it is under the target; `replicates`
  * on the summary is then the count run. `onProgress` fires after every 10th
  * replicate and after the last, with the configured count as `total`.
@@ -488,49 +556,81 @@ export function runReplicates(
 }
 
 /**
- * The replicate loop behind `runReplicates`, one checkpoint after each
- * replicate. The half-width rule is checked before the checkpoint, so a stop
- * sent at the same replicate is never reported over it. The last replicate's
- * checkpoint accepts no stop: the run is complete. The worker drives this
- * loop asynchronously, yielding between replicates so a cancel can arrive.
+ * The replicate loop behind `runReplicates`: `replicateRangeLoop` over
+ * 0..replicates with the half-width rule applied at each checkpoint, then
+ * `finishSummary`. The rule is checked before the checkpoint is passed on,
+ * so a stop sent at the same replicate is never reported over it. The last
+ * replicate's checkpoint accepts no stop: the run is complete. The worker
+ * drives this loop asynchronously, yielding between replicates so a cancel
+ * can arrive.
  */
 export function* replicateLoop(
   scenario: Scenario,
   onProgress?: (done: number, total: number) => void,
 ): Loop<McSummary> {
-  const { seed, replicates, targetHalfWidth, uncertainty } = runSettings(scenario)
+  const { replicates, targetHalfWidth, stopFloor } = runSettings(scenario)
+  const partial = emptyPartial()
+  const range = rangeLoopInto(scenario, 0, replicates, partial, onProgress)
+  let stopped: McSummary['stopped'] = { rule: 'replicates', at: replicates }
+  let next = range.next()
+  while (!next.done) {
+    const { done } = next.value
+    if (
+      targetHalfWidth != null &&
+      done >= stopFloor &&
+      (done - stopFloor) % STOP_EVERY === 0 &&
+      halfWidthReached(scenario, partial)
+    ) {
+      stopped = { rule: 'halfWidth', at: done }
+      break
+    }
+    const stop = yield next.value
+    next = range.next(stop)
+    if (stop && next.done && done < replicates) stopped = { rule: stop, at: done }
+  }
+  return finishSummary(scenario, partial, stopped, 0)
+}
+
+/**
+ * The replicates `start..end-1` of `scenario` as a partial, one checkpoint
+ * after each replicate with `done` and `total` counted within the range. A
+ * stop sent at a checkpoint returns the partial so far; the last replicate's
+ * checkpoint accepts no stop. No half-width rule runs here: the driver
+ * applies `halfWidthReached` to the merged partials. Replicate i is a pure
+ * function of i (the keyed draw policy), so ranges run in any order and on
+ * any thread give the same rows. `onProgress` fires after every 10th
+ * replicate of the range and after its last.
+ */
+export function* replicateRangeLoop(
+  scenario: Scenario,
+  start: number,
+  end: number,
+  onProgress?: (done: number, total: number) => void,
+): Loop<McPartial> {
+  const partial = emptyPartial()
+  yield* rangeLoopInto(scenario, start, end, partial, onProgress)
+  return partial
+}
+
+/** The range loop, filling the caller's partial in place so the driver can read it at a checkpoint. */
+function* rangeLoopInto(
+  scenario: Scenario,
+  start: number,
+  end: number,
+  partial: McPartial,
+  onProgress?: (done: number, total: number) => void,
+): Loop<void> {
+  const { seed, uncertainty } = runSettings(scenario)
   const total = uncertainty === 'total'
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const n = sampleCount(scenario)
   const enabledSensorIds = new Set(
     scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e)).map((e) => e.id),
   )
+  const count = end - start
+  const t0 = performance.now()
 
-  const kills: number[][] = []
-  const leakers: number[][] = []
-  const detected: number[][] = []
-  const tracked: number[][] = []
-  const engaged: number[][] = []
-  const raidFirstDetect: Samples = []
-  const raidFirmTrack: Samples = []
-  const raidMinWarning: Samples = []
-  const threatKilled = new Map<string, Samples>()
-  const threatLeaked = new Map<string, Samples>()
-  const threatFirstDetect = new Map<string, Samples>()
-  const threatResidual = new Map<string, number[][]>()
-  const threatArrival = new Map<string, number | null>()
-  const threatShips = new Map<string, number>()
-  const effectorSalvos = new Map<string, Samples>()
-  const effectorKills = new Map<string, Samples>()
-  const sample = (map: Map<string, Samples>, id: string, v: number) => {
-    const list = map.get(id)
-    if (list) list.push(v)
-    else map.set(id, [v])
-  }
-
-  let stopped: McSummary['stopped'] = { rule: 'replicates', at: replicates }
-  let retained = 0
-  for (let i = 0; i < replicates; i += 1) {
+  for (let i = start; i < end; i += 1) {
     const policy = monteCarloPolicy(seed, i, thresholds)
     // Under aleatory the sampler never runs.
     const s = total ? sampleScenario(scenario, (m, f) => policy.param(m, f)) : scenario
@@ -550,102 +650,137 @@ export function* replicateLoop(
       detRow.push(kpi.detected)
       engRow.push(kpi.engaged)
     }
-    kills.push(killRow)
-    leakers.push(leakRow)
-    detected.push(detRow)
-    engaged.push(engRow)
-    tracked.push(heldTracksOnGrid(tracks, enabledSensorIds, n))
+    partial.indices.push(i)
+    partial.kills.push(killRow)
+    partial.leakers.push(leakRow)
+    partial.detected.push(detRow)
+    partial.engaged.push(engRow)
+    partial.tracked.push(heldTracksOnGrid(tracks, enabledSensorIds, n))
 
     let firstDetect = NaN
     let firmTrack = NaN
     let minWarning = NaN
-    for (const a of tracks) {
+    tracks.forEach((a, t) => {
       if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
       if (a.stableTrackAtS != null) firmTrack = minOf(firmTrack, a.stableTrackAtS)
       if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
       const att = report.threats.find((x) => x.uasId === a.uasId)
-      sample(threatKilled, a.uasId, att?.expectedKills ?? 0)
-      sample(threatLeaked, a.uasId, att?.expectedLeakers ?? 0)
-      sample(threatFirstDetect, a.uasId, a.firstDetectS ?? NaN)
-      const rows = threatResidual.get(a.uasId) ?? []
-      rows.push(residualOnGrid(report, a.uasId, n))
-      threatResidual.set(a.uasId, rows)
-      if (i === 0) {
-        threatArrival.set(a.uasId, a.arrivalS)
-        threatShips.set(a.uasId, att?.shipCount ?? 1)
+      if (i === start) {
+        // The first replicate of the range fixes the track order and the geometry.
+        partial.threatIds.push(a.uasId)
+        partial.threatKilled.push([])
+        partial.threatLeaked.push([])
+        partial.threatFirstDetect.push([])
+        partial.threatResidual.push([])
+        partial.threatArrival.push(a.arrivalS)
+        partial.threatShips.push(att?.shipCount ?? 1)
       }
-    }
-    raidFirstDetect.push(firstDetect)
-    raidFirmTrack.push(firmTrack)
-    raidMinWarning.push(minWarning)
+      partial.threatKilled[t].push(att?.expectedKills ?? 0)
+      partial.threatLeaked[t].push(att?.expectedLeakers ?? 0)
+      partial.threatFirstDetect[t].push(a.firstDetectS ?? NaN)
+      partial.threatResidual[t].push(residualOnGrid(report, a.uasId, n))
+    })
+    partial.raidFirstDetect.push(firstDetect)
+    partial.raidFirmTrack.push(firmTrack)
+    partial.raidMinWarning.push(minWarning)
 
-    for (const ef of report.effectors) {
-      sample(effectorSalvos, ef.effectorId, ef.shotsFired + ef.deSalvos + ef.jamSalvos)
+    report.effectors.forEach((ef, e) => {
+      if (i === start) {
+        partial.effectorIds.push(ef.effectorId)
+        partial.effectorSalvos.push([])
+        partial.effectorKills.push([])
+      }
+      partial.effectorSalvos[e].push(ef.shotsFired + ef.deSalvos + ef.jamSalvos)
       let killed = 0
       for (const ev of report.events) if (ev.effectorId === ef.effectorId) killed += ev.killDelta
-      sample(effectorKills, ef.effectorId, killed)
-    }
+      partial.effectorKills[e].push(killed)
+    })
 
-    const done = i + 1
-    if (done % 10 === 0 || done === replicates) onProgress?.(done, replicates)
-    if (
-      targetHalfWidth != null &&
-      done >= STOP_FIRST &&
-      (done - STOP_FIRST) % STOP_EVERY === 0 &&
-      halfWidthOf(leakers.map((row) => row[n - 1]), raidSizeOf(threatShips)) < targetHalfWidth
-    ) {
-      stopped = { rule: 'halfWidth', at: done }
-      break
-    }
-    retained += n * (5 + tracks.length)
-    const stop = yield { done, total: replicates, retained }
-    if (stop && done < replicates) {
-      stopped = { rule: stop, at: done }
-      break
-    }
+    const done = i - start + 1
+    if (done % 10 === 0 || done === count) onProgress?.(done, count)
+    partial.retained += n * (5 + tracks.length)
+    partial.elapsedMs = performance.now() - t0
+    const stop = yield { done, total: count, retained: partial.retained }
+    if (stop && done < count) return
   }
+}
 
+/**
+ * The half-width rule on a partial: true once the 95 percent half-width of
+ * the displayed interval on the end-of-run leaker mean (the leakers Stat
+ * over the raid's ships) is under `targetHalfWidth`, and never with fewer
+ * than `stopFloor` replicates or with no target. `stopCap` is the caller's
+ * own stop (the 'replicates' rule), so a pool that never reaches the target
+ * still ends.
+ */
+export function halfWidthReached(scenario: Scenario, partial: McPartial): boolean {
+  const { targetHalfWidth, stopFloor } = runSettings(scenario)
+  if (targetHalfWidth == null || partial.indices.length < stopFloor) return false
+  const n = sampleCount(scenario)
+  const ends = partial.leakers.map((row) => row[n - 1])
+  return halfWidthOf(ends, raidSizeOf(partial.threatShips)) < targetHalfWidth
+}
+
+/** Ships over the raid: the support of the kills and leakers counts. */
+function raidSizeOf(threatShips: number[]): number {
+  return threatShips.reduce((sum, ships) => sum + ships, 0)
+}
+
+/**
+ * The summary of a partial: the end-of-run statistics over its rows.
+ * `replicates` is the count of indices done; `stopped` and `elapsedMs` are
+ * the caller's, since a pool decides the stop and keeps its own clock.
+ * The rows are read in their stored order, so merge before finishing.
+ */
+export function finishSummary(
+  scenario: Scenario,
+  partial: McPartial,
+  stopped: { rule: StopRule; at: number },
+  elapsedMs: number,
+): McSummary {
+  const { seed } = runSettings(scenario)
+  const n = sampleCount(scenario)
   // Count supports: ships for kills, leakers and residual; tracks for the
   // detected, tracked and engaged counts; salvos are unbounded.
-  const raidSize = raidSizeOf(threatShips)
-  const trackCount = threatResidual.size
+  const raidSize = raidSizeOf(partial.threatShips)
+  const trackCount = partial.threatIds.length
   const perThreat: Record<string, McThreatSummary> = {}
-  for (const [uasId, rows] of threatResidual) {
-    const ships = threatShips.get(uasId) ?? 1
+  partial.threatIds.forEach((uasId, t) => {
+    const ships = partial.threatShips[t]
     perThreat[uasId] = {
-      killed: statOf(threatKilled.get(uasId) ?? [], count(ships)),
-      leaked: statOf(threatLeaked.get(uasId) ?? [], count(ships)),
-      firstDetectS: statOf(threatFirstDetect.get(uasId) ?? [], TIME),
-      arrivalS: threatArrival.get(uasId) ?? null,
+      killed: statOf(partial.threatKilled[t], count(ships)),
+      leaked: statOf(partial.threatLeaked[t], count(ships)),
+      firstDetectS: statOf(partial.threatFirstDetect[t], TIME),
+      arrivalS: partial.threatArrival[t],
       shipCount: ships,
-      residual: bandOf(rows, n, ships),
+      residual: bandOf(partial.threatResidual[t], n, ships),
     }
-  }
+  })
   const perEffector: Record<string, McEffectorSummary> = {}
-  for (const [effectorId, salvos] of effectorSalvos) {
+  partial.effectorIds.forEach((effectorId, e) => {
     perEffector[effectorId] = {
-      salvos: statOf(salvos, count(Infinity)),
-      kills: statOf(effectorKills.get(effectorId) ?? [], count(raidSize)),
+      salvos: statOf(partial.effectorSalvos[e], count(Infinity)),
+      kills: statOf(partial.effectorKills[e], count(raidSize)),
     }
-  }
+  })
 
   return {
     seed,
-    replicates: stopped.at,
+    replicates: partial.indices.length,
     // The duration is an integer number of seconds and DT divides one, so
     // the grid recovers it exactly without a store import.
     durationS: (n - 1) * DT,
-    kills: bandOf(kills, n, raidSize),
-    leakers: bandOf(leakers, n, raidSize),
-    detected: bandOf(detected, n, trackCount),
-    tracked: bandOf(tracked, n, trackCount),
-    engaged: bandOf(engaged, n, trackCount),
-    firstDetectS: statOf(raidFirstDetect, TIME),
-    firmTrackS: statOf(raidFirmTrack, TIME),
-    minWarningS: statOf(raidMinWarning, TIME),
+    kills: bandOf(partial.kills, n, raidSize),
+    leakers: bandOf(partial.leakers, n, raidSize),
+    detected: bandOf(partial.detected, n, trackCount),
+    tracked: bandOf(partial.tracked, n, trackCount),
+    engaged: bandOf(partial.engaged, n, trackCount),
+    firstDetectS: statOf(partial.raidFirstDetect, TIME),
+    firmTrackS: statOf(partial.raidFirmTrack, TIME),
+    minWarningS: statOf(partial.raidMinWarning, TIME),
     perThreat,
     perEffector,
-    elapsedMs: 0,
+    elapsedMs,
     stopped,
   }
 }
