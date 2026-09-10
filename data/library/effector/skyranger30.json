@@ -1,0 +1,123 @@
+{
+  "id": "lib-skyranger30",
+  "kind": "effector",
+  "type": "gun",
+  "version": 1,
+  "name": "Skyranger 30 (Rheinmetall)",
+  "description": "30x173 mm KCE-ABM revolver cannon with AHEAD programmable airburst on a 360-degree turret with organic AESA radar and EO/IR. Effective to 3 km. NATO mobile C-UAS.",
+  "color": "#d7b87e",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 200,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "minimum engagement range — no public figure; representative close-in limit for a programmable airburst round that must be fuze-set at the muzzle and needs flight time before the burst point",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "n/a — representative planning value, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "maxRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "effective range up to 3000 m with the gun",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+      "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "condition": "engagement altitude ceiling — UNKNOWN. Rheinmetall and secondary reporting describe 'low-altitude threats' and a large elevation span but publish no ceiling.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "Skyranger 30 Air Defense System, Explained",
+      "url": "https://thedefensepost.com/2026/08/10/skyranger-30-guide/",
+      "date": "2026-08-10"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg traverse arc",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+      "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+      "date": "2026-09-04"
+    },
+    "engageTimeS": {
+      "value": 8,
+      "unit": "s",
+      "condition": "assignment-to-effect time — DERIVED, not published. Arithmetic: 30x173 mm airburst projectile muzzle velocity is of order 1,000 m/s, so 3,000 m / 1,000 m/s = 3 s time of flight. Add about 5 s for turret slew, track settling and fuze programming: 3 + 5 = 8 s.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "Skyranger 30 Air Defense System, Explained",
+      "url": "https://thedefensepost.com/2026/08/10/skyranger-30-guide/",
+      "date": "2026-08-10",
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.8,
+      "unit": "fraction",
+      "condition": "single-shot probability of kill — UNKNOWN as a number. Rheinmetall claims 'an extremely high probability of hit against micro-drones' from AHEAD programmable airburst but publishes no figure. 0.8 is a representative planning value only, NOT tested performance. Note that a gun 'shot' here means a programmed burst, not a single projectile.",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L2",
+      "source": "Germany To Bet Big On Skyranger Gun System To Address Growing Drone Threat",
+      "url": "https://www.twz.com/land/germany-to-bet-big-on-skyranger-gun-system-to-address-growing-drone-threat",
+      "date": "2025",
+      "estimator": "planning-factor"
+    },
+    "magazineSize": {
+      "value": 252,
+      "unit": "count",
+      "condition": "252 rounds of 30 mm ready to fire",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+      "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+      "date": "2026-09-04",
+      "note": "Inventory records 300 ready rounds in the turret (300 rounds); the seed value is kept"
+    },
+    "salvoCooldownS": {
+      "value": 5,
+      "unit": "s",
+      "condition": "salvo cooldown — no public figure; representative re-slew and re-track interval for a revolver cannon on a stabilised turret",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "n/a — representative planning value, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "flyoutSpeedMps": {
+      "value": 1075,
+      "unit": "mps",
+      "condition": "mean muzzle velocity (1075 m/s)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Rheinmetall Oerlikon Skyranger 30 brochure D994e0222",
+      "url": "https://www.rheinmetall.com/Rheinmetall%20Group/brochure-download/Air-Defence/D994e0222-Oerlikon-Skyranger-30.pdf",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "gun"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "magazineSize",
+    "sectorDeg",
+    "flyoutSpeedMps"
+  ]
+}

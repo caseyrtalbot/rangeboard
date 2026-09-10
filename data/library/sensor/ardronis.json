@@ -1,0 +1,90 @@
+{
+  "id": "lib-ardronis",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "ARDRONIS Locate RF DF system (Rohde & Schwarz)",
+  "description": "Receive-only RF monitoring and direction finding on the control uplink, telemetry and video downlink. Locate Compact states more than 5 km. Warns while the drone is still on the ground. STANAG aligned and SAPIENT compliant.",
+  "color": "#e0cfab",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "more than 5000 m, no target class stated",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Rohde & Schwarz ARDRONIS Locate Compact solution page",
+      "url": "https://www.rohde-schwarz.com/us/solutions/critical-infrastructure/countering-drones/ardronis-locate-compact-solution_256824.html",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "protocol identification range — R&S headline the family as 'Detection, classification and identification of drone and remote-control type' from one receive chain ('RF Receiver - reliable signal classification (20 MHz - 6 GHz)'), so classification is not a separate, shorter range. Set equal to detect. INFERRED.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "Rohde & Schwarz ARDRONIS Detect page; JED counter-UAS survey table, May 2019",
+      "url": "https://www.rohde-schwarz.com/us/products/aerospace-defense-security/radio-frequency-solutions/ardronis-detect_63493-334548.html",
+      "date": "2026-08",
+      "note": "Inventory records 5000 m at INFERRED REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "azimuth coverage — R&S: '360 deg coverage or sector coverage depending on the antenna'. 360 encodes the DF-antenna configuration (ADD207 compact UHF/SHF DF antenna, or ADD557SR covering 20 MHz - 6 GHz with one antenna). A sector-antenna build would need a smaller sectorDeg.",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Rohde & Schwarz, 'ARDRONIS Detect' product page",
+      "url": "https://www.rohde-schwarz.com/us/products/aerospace-defense-security/radio-frequency-solutions/ardronis-detect_63493-334548.html",
+      "date": "2026-08"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "classification",
+    "rfBands": [
+      "uhf-433",
+      "ism-915",
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "rfBands"
+  ],
+  "attributeProvenance": {
+    "rfBands": {
+      "value": "400 MHz to 6 GHz monitored range",
+      "source": "Rohde & Schwarz ARDRONIS Locate Compact solution page",
+      "url": "https://www.rohde-schwarz.com/us/solutions/critical-infrastructure/countering-drones/ardronis-locate-compact-solution_256824.html",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "id": "lib-sentry-lr-fc",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Long Range Sentry Tower w/ fire control (Anduril)",
+  "description": "Autonomous Lattice-native tower carrying an ultra-high-powered 360 deg radar that Anduril states identifies, classifies and tracks Group 1-3 drones up to 15 km. SIMPLIFICATION: the real tower is a multi-sensor mast that fuses radar, visible and mid-wave IR on board; RangeBoard models one sensor per SpecModel, so only the radar is modelled because the radar is what gives the tower its C-UAS reach.",
+  "color": "#6b93b3",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "2000 m against Group 1 (2 to 4 km; 15 km for Group 3+)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Anduril Sentry product page",
+      "url": "https://www.anduril.com/sentry",
+      "date": "2026-09-04",
+      "note": "Inventory records 15000 m (15 km); the seed value is kept"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "classification range — UNKNOWN. Anduril states the radar is 'designed to identify, classify and track group 1-3 drone threats' but publishes no separate classification range, and the 15 km figure is written against detection and tracking only. null rather than a copy of detectRangeM, following the radar-domain agent's convention. Consequence in the engine: this sensor alone will not promote a track to hostile; the track reaches hostile when it enters an effector envelope.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "Anduril Industries, Sentry product page",
+      "url": "https://www.anduril.com/sentry",
+      "date": "2026-08-24"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Anduril Sentry product page",
+      "url": "https://www.anduril.com/sentry",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "fire-control"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

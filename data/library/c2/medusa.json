@@ -1,0 +1,13 @@
+{
+  "id": "lib-medusa",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "MEDUSA C2 (USAF)",
+  "description": "Air Force base-defense counter-sUAS C2, developed by Kongsberg Geospatial. Neither government ownership nor open standards is supported by any public source; its FAAD C2 interoperability is stated conditionally in the sources that mention it.",
+  "color": "#bcc1b8",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

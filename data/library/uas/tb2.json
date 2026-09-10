@@ -1,0 +1,161 @@
+{
+  "id": "lib-tb2",
+  "kind": "uas",
+  "type": "fixed-wing",
+  "version": 1,
+  "name": "Red air: Bayraktar TB2 UCAV (G4)",
+  "description": "MALE UCAV per threat study 15B [TUR02]: 700 kg MTOW, 150 kg payload, 46 m/s (90 kt) cruise, 16000 ft operational altitude, 20+ h endurance. Releases laser-, INS/GPS-, or IR-guided munitions and mini cruise missiles at standoff; the study publishes no release range, so the standoff value is a planning factor.",
+  "color": "#93483f",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 4,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 1,
+      "unit": "m2",
+      "condition": "1 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 12,
+      "unit": "m",
+      "condition": "12 m wingspan",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Baykar Technology TB2 page",
+      "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+      "date": "2026-09-04"
+    },
+    "acousticDb": {
+      "value": 100,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 46,
+      "unit": "mps",
+      "condition": "90 KTAS travel speed (46.3 m/s)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Baykar Technology TB2 page",
+      "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+      "date": "2026-09-04"
+    },
+    "maxSpeedMps": {
+      "value": 57,
+      "unit": "mps",
+      "condition": "110 KTAS maximum speed (56.6 m/s)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Baykar Technology TB2 page",
+      "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+      "date": "2026-09-04"
+    },
+    "enduranceMin": {
+      "value": 1080,
+      "unit": "min",
+      "condition": "18+ hours endurance (1080 min)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Baykar Technology TB2 page",
+      "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        16000,
+        20000
+      ],
+      "unit": "ft",
+      "condition": "16000 ft operational altitude, 20000 ft service ceiling",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Baykar Technology TB2 page",
+      "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+      "date": "2026-09-04"
+    },
+    "controlLinkRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "operatingRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "combatRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": 8000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "airframe": "fixed-wing",
+    "navMode": "mixed",
+    "emissionsNote": "LOS and BLOS datalinks; EO/IR/laser designator or surveillance radar (study [TUR02])",
+    "oneWay": false,
+    "rangeNote": "LOS and BLOS communications per the 2026 Baykar sheet; no public radius figure used.",
+    "weaponProfile": "standoff",
+    "jamBehavior": "return-home"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "spanM",
+    "cruiseSpeedMps",
+    "maxSpeedMps",
+    "enduranceMin",
+    "altBandFt"
+  ],
+  "threatProfile": {
+    "designator": "THR-G4-UCAV-01",
+    "routeIntent": "Persistent medium-altitude ISR/strike orbit with standoff munition release",
+    "altitudeFt": 16000,
+    "speedMps": 46,
+    "count": 1
+  }
+}

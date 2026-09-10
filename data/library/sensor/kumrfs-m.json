@@ -1,0 +1,73 @@
+{
+  "id": "lib-kumrfs-m",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "KuMRFS-M mobile fire-control radar (Raytheon)",
+  "description": "Mobile configuration of KuMRFS-T sized for an M-ATV or JLTV mast. Four independent AESA quadrants give 360 deg upper-hemisphere coverage, with quadrant arrays one quarter the size of the fixed -T. Government brochure: UAS Group 1-3 capability beyond 7 km. Air surveillance and fire control at the short halt, not on the move.",
+  "color": "#79a3c0",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 7000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "7000 m against UAS Group 1 to 3 (beyond 7 km)",
+      "grade": "VERIFIED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "SRC LIDS family brochure",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "classification range — UNKNOWN. No classification or identification range is published for any KuMRFS variant. null, never 0. This follows the radar-domain agent's convention of leaving classifyRangeM null when unpublished.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "SRC, LIDS Family of Systems brochure (marked Approved for Public Release)",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2026-08-24"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "VERIFIED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "SRC LIDS family brochure",
+      "url": "https://www.srcinc.com/pdf/lids-family-of-systems-brochure.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "fire-control"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

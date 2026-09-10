@@ -1,0 +1,87 @@
+{
+  "id": "lib-enforceair",
+  "kind": "effector",
+  "type": "jammer",
+  "version": 1,
+  "name": "EnforceAir2 RF takeover (D-Fend)",
+  "description": "RF cyber-takeover system: assumes control of the drone and lands it. No broadband jamming. ~3.5 km on supported protocols.",
+  "color": "#d8c19a",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 0,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 1200,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "typical mitigation range 1.2 to 4 km; the lower bound is 1200 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "D-Fend Solutions EnforceAir2 product page",
+      "url": "https://d-fendsolutions.com/enforceair2-next-gen-c-uas/",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "engageTimeS": {
+      "value": 20,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.7,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 20,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg omni coverage",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "D-Fend Solutions EnforceAir2 product page",
+      "url": "https://d-fendsolutions.com/enforceair2-next-gen-c-uas/",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "jammer",
+    "jamBands": [
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "sectorDeg"
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "id": "lib-gm200mmc",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Ground Master 200 MM/C radar (Thales)",
+  "description": "4D AESA multi-mission radar on a tactical truck; over 400 km instrumented for air surveillance and up to 100 km for weapon locating. NATO users NL, DK, LT. Thales claims drone detection but publishes no small-UAS range; ring is a role planning factor.",
+  "color": "#6b8fa8",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 40000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "40000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "instrumentedRangeM": {
+      "value": 400000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "400000 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition, GM200 MM/C Sweden (2025-04-08)",
+      "url": "https://www.armyrecognition.com/news/army-news/2025/sweden-becomes-fifth-nato-country-to-procure-the-french-thales-gm200-mm-c-radar",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": 100000,
+      "unit": "ft",
+      "condition": "100000 ft",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition, GM200 MM/C Sweden (2025-04-08)",
+      "url": "https://www.armyrecognition.com/news/army-news/2025/sweden-becomes-fifth-nato-country-to-procure-the-french-thales-gm200-mm-c-radar",
+      "date": "2026-09-04"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "early-warning",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "maxAltitudeFt"
+  ]
+}

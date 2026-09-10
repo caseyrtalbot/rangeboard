@@ -1,0 +1,89 @@
+{
+  "id": "lib-mxgcs",
+  "kind": "sensor",
+  "type": "eo-ir",
+  "version": 1,
+  "name": "WESCAM MX-GCS EO/IR sight (L3Harris)",
+  "description": "Stabilized cooled MWIR and HD colour sight with eyesafe laser rangefinder on SGT Stout M-SHORAD. Slews 360 deg independent of the turret to identify and track air threats for the 30 mm gun. Ranges are planning figures: none are published.",
+  "color": "#8f86ab",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 8000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "8000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "no published range — Planning value from SENSOR_ROLE_DEFAULT_RANGE_M['classification'] = 5000 m. Chosen because identification range is always shorter than detection range under DRI convention, and this keeps classify < detect.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "RangeBoard src/model/types.ts SENSOR_ROLE_DEFAULT_RANGE_M, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "note": "Inventory records 5000 m at UNKNOWN REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg scanning, independent of the gun turret",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "L3Harris WESCAM MX-GCS product page",
+      "url": "https://www.l3harris.com/all-capabilities/wescam-mx-gcs-independent-stabilized-sighting-system",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "eo-ir",
+    "role": "fire-control",
+    "eoBand": "dual",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "eoBand",
+    "sectorDeg"
+  ],
+  "attributeProvenance": {
+    "eoBand": {
+      "value": "dual: mid-wave cooled thermal imager plus an HD daylight sensor",
+      "source": "L3Harris WESCAM MX-GCS product page",
+      "url": "https://www.l3harris.com/all-capabilities/wescam-mx-gcs-independent-stabilized-sighting-system",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "id": "lib-zvook",
+  "kind": "sensor",
+  "type": "acoustic",
+  "version": 1,
+  "name": "Zvook acoustic station (Ukraine)",
+  "description": "Half-metre acoustic mirror over one microphone with edge ML. Tower-mounted at 10-12 m, about 200 deg coverage, 5 km on Shahed-type OWA and 7 km on cruise missiles. Passive: it cannot be jammed or homed on.",
+  "color": "#5f9880",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "refAcousticDb": {
+      "value": 100,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "up to 5000 m on a drone; 7000 m on a cruise missile",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi, NATO Shows Interest in Ukrainian Acoustic Detection Networks for Air Defense, citing The Times",
+      "url": "https://militarnyi.com/en/news/nato-shows-interest-in-ukrainian-acoustic-detection-networks-for-air-defense/",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "classification range — No separate classification range is published. Zvook runs a multiclass model that recognises Shaheds, cruise missiles, turboprop and propeller aircraft, jet engines and helicopters; the detection event IS the class decision, so classification is modeled as available wherever detection is.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "Ukraine develops acoustic system for determining azimuth of air targets / Militarnyi",
+      "url": "https://militarnyi.com/en/news/ukraine-develops-acoustic-detector-for-fpv-drones/",
+      "date": "2026-01-23",
+      "estimator": "planning-factor"
+    },
+    "sectorDeg": {
+      "value": 200,
+      "unit": "deg",
+      "condition": "about 200 deg coverage angle",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi, NATO Shows Interest in Ukrainian Acoustic Detection Networks for Air Defense",
+      "url": "https://militarnyi.com/en/news/nato-shows-interest-in-ukrainian-acoustic-detection-networks-for-air-defense/",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "acoustic",
+    "role": "early-warning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

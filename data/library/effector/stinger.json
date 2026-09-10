@@ -1,0 +1,112 @@
+{
+  "id": "lib-stinger",
+  "kind": "effector",
+  "type": "interceptor",
+  "version": 1,
+  "name": "FIM-92 Stinger (M-SHORAD / MADIS)",
+  "description": "IR-homing SHORAD missile on the M-SHORAD RIwP and MADIS Mk1 turrets. FIM-92J/K proximity fuze added for small UAS. 4.8 km weapon max; 4-round pod.",
+  "color": "#b06a4a",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 200,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "minimum engagement range — quoted minimum effective range for the FIM-92 family; not variant-specific",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "source": "Raytheon (General Dynamics) FIM-92 Stinger — Directory of U.S. Military Rockets and Missiles",
+      "url": "https://www.designation-systems.net/dusrm/m-92.html",
+      "date": "2024-12-15"
+    },
+    "maxRangeM": {
+      "value": 4800,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "outward targeting range up to 4800 m",
+      "grade": "CORROBORATED",
+      "layer": "L2",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": 12500,
+      "unit": "ft",
+      "condition": "12500 ft (3800 m) against low-altitude threats",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
+      "date": "2026-09-04"
+    },
+    "engageTimeS": {
+      "value": 15,
+      "unit": "s",
+      "condition": "assignment-to-effect time — DERIVED, not published. Arithmetic: Stinger flyout is quoted at Mach 2.2+ (about 750 m/s); 4,800 m / 750 m/s = 6.4 s time of flight. Add roughly 8 s for seeker cool-down, IR lock tone and launch sequence: 6.4 + 8 = 14.4 s, rounded to 15 s. No public assignment-to-effect figure exists.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "Raytheon (General Dynamics) FIM-92 Stinger — Directory of U.S. Military Rockets and Missiles",
+      "url": "https://www.designation-systems.net/dusrm/m-92.html",
+      "date": "2024-12-15",
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.7,
+      "unit": "fraction",
+      "condition": "0.7 (PF); 2 of 2 intercepts, 2017 Army test (two trials, so no spread)",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "RTX, Stinger page (rtx.com, integrated air and missile defense, Stinger missile)",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "magazineSize": {
+      "value": 4,
+      "unit": "count",
+      "condition": "ready rounds on the launcher — MADIS Mk1 turret carries a four-round Stinger ATAL pod; the Stryker M-SHORAD RIwP turret carries four Stingers. Reload is a manual crew task off the turret; reload time is not public.",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "source": "MADIS Marine Air Defense Integrated System",
+      "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/air-defense-vehicles/madis-marine-air-defense-integrated-system",
+      "date": "2025"
+    },
+    "salvoCooldownS": {
+      "value": 10,
+      "unit": "s",
+      "condition": "salvo cooldown — no public figure; representative turret re-slew and next-round tone time",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "n/a — representative planning value, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "flyoutSpeedMps": {
+      "value": 750,
+      "unit": "mps",
+      "condition": "Mach 2.2 maximum (750 m/s)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "interceptor"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "maxAltitudeFt",
+    "flyoutSpeedMps",
+    "pk"
+  ]
+}

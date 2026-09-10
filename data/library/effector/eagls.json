@@ -1,0 +1,117 @@
+{
+  "id": "lib-eagls",
+  "kind": "effector",
+  "type": "interceptor",
+  "version": 1,
+  "name": "EAGLS 70 mm APKWS launcher",
+  "description": "Four-round 70 mm APKWS II launcher on a CROWS II mount with organic RPS-40 radar and EO/IR laser designator. Fielded to CENTCOM base defence 2026.",
+  "color": "#d9a888",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 500,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "minimum engagement range — no public figure; representative value covering rocket boost, fin deployment and guidance-section settling before the semi-active laser seeker can command",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "n/a — representative planning value, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "maxRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "ranges up to about 10 km (10000 m)",
+      "grade": "REPORTED",
+      "layer": "L2",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/news/army-news/2026/u-s-army-live-fires-eagls-counter-drone-system-using-laser-guided-rockets-in-kuwait",
+      "date": "2026-09-04",
+      "estimator": "planning-factor",
+      "note": "Inventory records 5000 m (5 km); the seed value is kept"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "condition": "engagement altitude ceiling — UNKNOWN. Reporting says EAGLS engages Group 1 and Group 2 UAS 'at low altitude and moderate speeds' but gives no ceiling. Left null rather than substituting the Group 2 definitional altitude band, which describes the target class and not the weapon.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "U.S. Deploys EAGLS Counter-Drone Air Defense System to Protect Middle East Bases",
+      "url": "https://www.armyrecognition.com/news/army-news/2026/u-s-deploys-eagls-counter-drone-air-defense-system-to-protect-middle-east-bases",
+      "date": "2026-01-22"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 15,
+      "unit": "s",
+      "condition": "assignment-to-effect time — DERIVED, not published. Arithmetic: the Hydra 70 motor gives a burnout velocity near 700 m/s with an average velocity over a 5 km flight of roughly 500 m/s; 5,000 m / 500 m/s = 10 s time of flight. Add about 5 s for RWS slew, EO/IR handoff and laser designation settling: 10 + 5 = 15 s.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "Laser Rocket Anti-Drone Systems Being Rushed To U.S. Forces In The Middle East",
+      "url": "https://www.twz.com/land/laser-rocket-anti-drone-systems-being-rushed-to-u-s-forces-in-the-middle-east",
+      "date": "2024-04-15",
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.7,
+      "unit": "fraction",
+      "condition": "single-shot probability of kill — UNKNOWN in the public record. 0.7 is a representative planning value only, NOT tested performance. It is held below the interceptor-missile entries because semi-active laser guidance needs an unbroken designation line and is documented as degraded by weather, dust and obscurants.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "U.S. Deploys EAGLS Counter-Drone Air Defense System to Protect Middle East Bases",
+      "url": "https://www.armyrecognition.com/news/army-news/2026/u-s-deploys-eagls-counter-drone-air-defense-system-to-protect-middle-east-bases",
+      "date": "2026-01-22",
+      "estimator": "planning-factor"
+    },
+    "magazineSize": {
+      "value": 4,
+      "unit": "count",
+      "condition": "four-round 70 mm rocket launcher",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/news/army-news/2026/u-s-army-live-fires-eagls-counter-drone-system-using-laser-guided-rockets-in-kuwait",
+      "date": "2026-09-04"
+    },
+    "salvoCooldownS": {
+      "value": 5,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "flyoutSpeedMps": {
+      "value": 739,
+      "unit": "mps",
+      "condition": "Hydra 70 rocket, APKWS airframe (739 m/s)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Technology (Hydra 70 project page)",
+      "url": "https://www.army-technology.com/projects/hydra-70-rocket-system-us/",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "interceptor"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "magazineSize",
+    "flyoutSpeedMps"
+  ]
+}

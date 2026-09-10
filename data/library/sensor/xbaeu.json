@@ -1,0 +1,75 @@
+{
+  "id": "lib-xbaeu",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "XBAEU Ku720-2 mobile sensing radar (Raytheon)",
+  "description": "Scaled Ku720-2 distributed mobile sensing radar. CRS records it as the radar on the single-Stryker M-LIDS Increment 2.1, in place of KuMRFS. RTX states 360 deg persistent detection, identification and tracking. NO range figure of any type is published: the ring is a REPRESENTATIVE planning value from the app role-default table, not an XBAEU performance figure.",
+  "color": "#8fb3cb",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 8000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "8000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "classification range — UNKNOWN. null, never 0.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "RTX (Raytheon) news release, 'RTX's Raytheon demos KuRFS and Coyote performance against complex UAS threats'",
+      "url": "https://www.rtx.com/news/news-center/2024/10/14/rtxs-raytheon-demos-kurfs-and-coyote-performance-against-complex-uas-threats",
+      "date": "2024-10-14"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "RTX news release (2024-10-14)",
+      "url": "https://www.rtx.com/news/news-center/2024/10/14/rtxs-raytheon-demos-kurfs-and-coyote-performance-against-complex-uas-threats",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "fire-control",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

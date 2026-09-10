@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run --dir src",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "library:build": "node scripts/build-library.mjs",
+    "library:check": "node scripts/build-library.mjs --check && node scripts/check-library.mjs",
+    "check:library": "npm run library:check",
     "schema:generate": "node src/io/generateRuntimeSchema.mjs",
     "schema:check": "node src/io/generateRuntimeSchema.mjs --check",
     "docs:lint": "markdownlint-cli2",
@@ -20,7 +23,7 @@
     "test:e2e": "node --test scripts/e2e/board-shell.e2e.mjs",
     "test:bundle": "node --test scripts/test-bundle.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
-    "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
+    "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",

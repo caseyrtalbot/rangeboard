@@ -1,0 +1,151 @@
+{
+  "id": "lib-gerbera",
+  "kind": "uas",
+  "type": "one-way-attack",
+  "version": 1,
+  "name": "Red air: Gerbera decoy / light OWA (G2)",
+  "description": "Cheap foam decoy flown inside Shahed streams to saturate defenses. Same corridors and altitudes as the OWA it mimics.",
+  "color": "#c2705f",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 2,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.2,
+      "unit": "m2",
+      "condition": "0.2 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 2.5,
+      "unit": "m",
+      "condition": "2.5 m wingspan",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+      "url": "https://war-sanctions.gur.gov.ua/en/uav/329",
+      "date": "2026-09-04"
+    },
+    "acousticDb": {
+      "value": 90,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 33,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxSpeedMps": {
+      "value": 44,
+      "unit": "mps",
+      "condition": "160 km/h maximum speed (44.4 m/s)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Ukraine Defence Intelligence (HUR) War & Sanctions portal",
+      "url": "https://war-sanctions.gur.gov.ua/en/uav/329",
+      "date": "2026-09-04"
+    },
+    "enduranceMin": {
+      "value": 240,
+      "unit": "min",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "altBandFt": {
+      "value": [
+        500,
+        10000
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "operatingRadiusM": {
+      "value": 300000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 300000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "one-way-attack",
+    "navMode": "gps",
+    "emissionsNote": "Some carry emitters to mimic Shahed signatures",
+    "oneWay": true,
+    "rangeNote": "About 300 km with a combat payload; unarmed decoy flights reported to 600 km.",
+    "weaponProfile": "none",
+    "jamBehavior": "continue"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "spanM",
+    "maxSpeedMps"
+  ],
+  "threatProfile": {
+    "designator": "THR-G2-DEC-01",
+    "routeIntent": "Interleaved in OWA stream as decoy",
+    "altitudeFt": 4000,
+    "speedMps": 33,
+    "count": 1
+  }
+}

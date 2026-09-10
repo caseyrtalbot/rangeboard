@@ -1,0 +1,105 @@
+{
+  "id": "lib-hdcmr",
+  "kind": "sensor",
+  "type": "eo-ir",
+  "version": 1,
+  "name": "Ranger HDC MR EO/IR (FLIR)",
+  "description": "Mid-range pan-tilt thermal and color imager for visual identification of radar-cued tracks. 360 deg slewable.",
+  "color": "#a49bc4",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "refSpanM": {
+      "value": 0.4,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "detectRangeM": {
+      "value": 3000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "3000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": 1500,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg azimuth range",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -35,
+        90
+      ],
+      "unit": "deg",
+      "condition": "-35 to 90 deg elevation range",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 20,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "eo-ir",
+    "role": "classification",
+    "eoBand": "dual"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "eoBand",
+    "sectorDeg",
+    "elevationDeg"
+  ],
+  "attributeProvenance": {
+    "eoBand": {
+      "value": "dual: HD thermal imager plus a 1920 x 1080 HD colour TV camera",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet (rev 08/31/21), mirror host atline.pl",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
+  }
+}

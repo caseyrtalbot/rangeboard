@@ -1,0 +1,87 @@
+{
+  "id": "lib-leonidas",
+  "kind": "effector",
+  "type": "hpm",
+  "version": 1,
+  "name": "Leonidas HPM (Epirus)",
+  "description": "Software-defined high-power microwave array; defeats swarms in a sector. ~1 km planning value, 120 deg beam.",
+  "color": "#a48ac4",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 0,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 1000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "1000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": 3000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 120,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 3,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.7,
+      "unit": "fraction",
+      "condition": "0.7 (PF); 61 of 61 drones disabled, 49-drone swarm in one pulse (counts outside their trial domain, so no spread)",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "Epirus press release, 10 Sep 2025 (epirusinc.com, \"Leonidas high power microwave defeats 49-drone swarm\")",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "salvoCooldownS": {
+      "value": 5,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "hpm"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "pk"
+  ]
+}

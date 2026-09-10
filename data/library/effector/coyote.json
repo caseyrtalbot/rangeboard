@@ -1,0 +1,93 @@
+{
+  "id": "lib-coyote",
+  "kind": "effector",
+  "type": "interceptor",
+  "version": 1,
+  "name": "Coyote Block 2 interceptor",
+  "description": "Rocket-boosted turbojet kinetic interceptor with a tungsten fragmentation warhead, fired from a 4-pack palletized launcher. The RF seeker belongs to Block 1B, not Block 2. Reach is reported at about 15 km.",
+  "color": "#c47f5c",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 500,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "interception range 10 to 15 km; the lower bound is 10000 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars",
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": 20000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 60,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "pk": {
+      "value": 0.85,
+      "unit": "fraction",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "magazineSize": {
+      "value": 4,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 30,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "flyoutSpeedMps": {
+      "value": 154,
+      "unit": "mps",
+      "condition": "about 555 to 595 km/h; the lower bound is 154 m/s",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "interceptor"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "flyoutSpeedMps"
+  ]
+}

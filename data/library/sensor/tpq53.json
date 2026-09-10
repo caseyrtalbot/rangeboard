@@ -1,0 +1,72 @@
+{
+  "id": "lib-tpq53",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "AN/TPQ-53 multi-mission radar",
+  "description": "S-band counterfire radar with a simultaneous air-surveillance and C-UAS mode, running a 90 deg sector at longer range or 360 deg rotating. Lockheed publishes no range against a UAS class; the ring is a planning figure. Cues LIDS effectors.",
+  "color": "#86aac2",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 15000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "15000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "360 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Lockheed Martin TPQ-53 product page",
+      "url": "https://www.lockheedmartin.com/en-us/products/tpq-53.html",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "early-warning",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "sectorDeg"
+  ]
+}

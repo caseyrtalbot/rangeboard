@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rangeboard.local/schema/library.schema.json",
+  "title": "LibraryFile",
+  "description": "One model of the RangeBoard library, as stored under data/library/<kind>/<slug>.json. Mirrors LibraryFile in src/model/libraryField.ts. scripts/check-library.mjs enforces these rules by hand; no validator dependency ships with the app.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "type", "version", "name", "description", "color", "builtin", "spec", "fields", "attributes"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^lib-[a-z0-9-]+$" },
+    "kind": { "enum": ["sensor", "effector", "c2", "uas", "asset", "marker"] },
+    "type": {
+      "description": "sensorType, effector type or uas airframe, whichever the kind has; null for kinds without one.",
+      "type": ["string", "null"]
+    },
+    "version": { "description": "Per-file revision; bump on any edit.", "type": "integer", "minimum": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "builtin": { "type": "boolean" },
+    "spec": {
+      "description": "Which spec block the fields and attributes compile into; null for c2, asset and marker.",
+      "enum": ["sensor", "uas", "effector", null]
+    },
+    "fields": {
+      "description": "Every spec key whose value is a number, a tuple of numbers, or null.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/field" }
+    },
+    "attributes": {
+      "description": "Every other spec key, bare: strings, enums, booleans and string arrays.",
+      "type": "object"
+    },
+    "provenanceOrder": {
+      "description": "Beyond LibraryFile: the spec keys that carried a provenance row in the hand-written library, in row order. scripts/build-library.mjs emits exactly these rows, in this order, so the compiled model reproduces the old provenance array element for element.",
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "attributeProvenance": {
+      "description": "Beyond LibraryFile: lineage for a provenance row that names a non-numeric spec key (eoBand, rfBands, jamBands, linkBands). Attributes stay bare, so their evidence is recorded here.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "source", "date", "basis", "grade", "layer"],
+        "properties": {
+          "value": { "type": "string" },
+          "source": { "type": "string" },
+          "url": { "type": ["string", "null"] },
+          "date": { "$ref": "#/$defs/date" },
+          "basis": { "$ref": "#/$defs/basis" },
+          "grade": { "$ref": "#/$defs/grade" },
+          "layer": { "$ref": "#/$defs/layer" },
+          "condition": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "threatProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["designator", "routeIntent", "altitudeFt", "speedMps", "count"],
+      "properties": {
+        "designator": { "type": "string" },
+        "routeIntent": { "type": "string" },
+        "altitudeFt": { "type": "number" },
+        "speedMps": { "type": "number" },
+        "count": { "type": "integer" }
+      }
+    }
+  },
+  "$defs": {
+    "grade": {
+      "description": "Evidence grade, from docs/inventory/provenance.md.",
+      "enum": ["VERIFIED", "CORROBORATED", "REPORTED", "MANUFACTURER_CLAIM", "INFERRED", "UNKNOWN"]
+    },
+    "layer": {
+      "description": "L1 a public value with its condition, L2 a representative planning figure, L3 left to the user (value null).",
+      "enum": ["L1", "L2", "L3"]
+    },
+    "rangeType": {
+      "enum": ["detection", "instrumented", "track", "classification", "effective-engagement"]
+    },
+    "estimator": { "enum": ["class-median", "planning-factor", "analyst"] },
+    "basis": {
+      "description": "Beyond LibraryField: the basis of the pre-migration provenance row this field carried. Its presence marks the field as one the build emits a row for.",
+      "enum": ["datasheet", "reference", "pf"]
+    },
+    "date": {
+      "description": "ISO date the source was read. A partial date (year, or year and month) is allowed where the citation gives no day.",
+      "type": "string",
+      "pattern": "^\\d{4}(-\\d{2}(-\\d{2})?)?$"
+    },
+    "spread": {
+      "description": "Epistemic spread around the nominal. Absent: the fallback spread table by field. Null: fixed.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sigmaDb"],
+          "properties": { "kind": { "const": "lognormal" }, "sigmaDb": { "type": "number" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "lo", "hi"],
+          "properties": { "kind": { "const": "triangular" }, "lo": { "type": "number" }, "hi": { "type": "number" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "successes", "trials"],
+          "properties": {
+            "kind": { "const": "beta" },
+            "successes": { "type": "number" },
+            "trials": { "type": "number" },
+            "pseudo": { "const": true }
+          }
+        }
+      ]
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "unit", "grade", "layer"],
+      "properties": {
+        "value": {
+          "description": "Null on an L3 field: no value, nothing drawn.",
+          "oneOf": [
+            { "type": "null" },
+            { "type": "number" },
+            { "type": "array", "items": { "type": "number" }, "minItems": 1 }
+          ]
+        },
+        "unit": {
+          "description": "SI unit string, 'fraction' for a probability, 'count' for a count. The unit of a field name is fixed by UNIT_BY_FIELD in scripts/build-library.mjs.",
+          "type": "string",
+          "minLength": 1
+        },
+        "rangeType": { "$ref": "#/$defs/rangeType" },
+        "condition": {
+          "description": "The circumstance the value holds under (target class, weather, mode). Required on a range field.",
+          "type": "string"
+        },
+        "grade": { "$ref": "#/$defs/grade" },
+        "layer": { "$ref": "#/$defs/layer" },
+        "basis": { "$ref": "#/$defs/basis" },
+        "source": { "type": "string" },
+        "url": { "type": ["string", "null"] },
+        "date": { "$ref": "#/$defs/date" },
+        "spread": { "$ref": "#/$defs/spread" },
+        "estimator": { "$ref": "#/$defs/estimator" },
+        "comparisonSet": {
+          "description": "Model ids an estimator drew on. Required when estimator is 'class-median'.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "note": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "layer": { "const": "L1" } }, "required": ["layer"] },
+          "then": { "required": ["source", "date"] }
+        },
+        {
+          "if": { "properties": { "layer": { "const": "L2" } }, "required": ["layer"] },
+          "then": { "required": ["estimator"] }
+        },
+        {
+          "if": { "properties": { "estimator": { "const": "class-median" } }, "required": ["estimator"] },
+          "then": { "properties": { "comparisonSet": { "minItems": 1 } }, "required": ["comparisonSet"] }
+        },
+        {
+          "if": { "required": ["rangeType"] },
+          "then": { "required": ["condition"] }
+        }
+      ]
+    }
+  }
+}

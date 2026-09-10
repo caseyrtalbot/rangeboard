@@ -1,0 +1,98 @@
+{
+  "id": "lib-echoguard",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "EchoGuard 4D radar (Echodyne)",
+  "description": "K-band MESA ESA panel, 120 x 80 deg field of view, 6 km instrumented. Datasheet: sUAV over 1 km (Phantom 4), over 1.4 km (Matrice 600), vehicle 3.5 km. Up to 20 tracks at 10 Hz.",
+  "color": "#a3c3d8",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 1000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "1000 m against sUAV Phantom 4 (Matrice 600 1400 m)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Echodyne EchoGuard spec sheet (6JL, 2026)",
+      "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+      "date": "2026-09-04"
+    },
+    "refRcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "instrumentedRangeM": {
+      "value": 6000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "6000 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Echodyne EchoGuard spec sheet (6JL, 2026)",
+      "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 120,
+      "unit": "deg",
+      "condition": "120 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Echodyne EchoGuard spec sheet (6JL, 2026)",
+      "url": "https://cdn.prod.website-files.com/69148cb0d4c3689c365788f0/6a55591add6872e68b75655d_TS-EchoGuard-Echodyne_6JL.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        -40,
+        40
+      ],
+      "unit": "deg",
+      "condition": "elevation field of view — Datasheet gives an 80 deg elevation SPAN only. Splitting it symmetrically about boresight is INFERRED, matching how lib-echoshield already models a 90 deg span as [-45,45].",
+      "grade": "INFERRED",
+      "layer": "L1",
+      "source": "Echodyne EchoGuard technical specification sheet",
+      "url": "https://www.echodyne.com/radar-systems/echoguard",
+      "date": "2026"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "tracking"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "sectorDeg"
+  ]
+}

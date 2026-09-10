@@ -1,0 +1,13 @@
+{
+  "id": "lib-adsi",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "ADSI data link gateway (Ultra)",
+  "description": "Joint-certified tactical data link forwarding and control gateway. Correlates and forwards tracks across Link 16, Link 11, JREAP, the FAAD data link and Cursor-on-Target. It bridges pictures rather than running a C-UAS engagement itself.",
+  "color": "#acb2a7",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

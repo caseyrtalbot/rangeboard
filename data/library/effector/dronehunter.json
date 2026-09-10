@@ -1,0 +1,96 @@
+{
+  "id": "lib-dronehunter",
+  "kind": "effector",
+  "type": "net",
+  "version": 1,
+  "name": "DroneHunter F700 net interceptor",
+  "description": "Reusable radar-guided multirotor interceptor that captures Group 1-2 UAS with a tethered net or DrogueChute. First Replicator 2 purchase, Jan 2026. 5 km air-vehicle range.",
+  "color": "#6fb3a0",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 100,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "minimum engagement range — no public figure; representative launch-and-climb distance before a net shot is possible",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "n/a — representative planning value, 2026-08-24",
+      "url": null,
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "maxRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "5000 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "condition": "engagement altitude ceiling — UNKNOWN. Fortem states only that the F700 does 'not fly at the same high altitudes of larger drones'.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "DroneHunter F700 (Fortem Technologies product page)",
+      "url": "https://fortemtech.com/products/dronehunter-f700/",
+      "date": "2026-08-24"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 150,
+      "unit": "s",
+      "condition": "assignment-to-effect time — DERIVED, not published. Arithmetic: reported speed is above 100 km/h, i.e. about 27.8 m/s. Full envelope 5,000 m / 27.8 m/s = 180 s. A typical intercept nearer 3,500 m gives 3,500 / 27.8 = 126 s; adding about 20 s for launch, climb and radar lock gives 146 s, rounded to 150 s. Fortem states the aircraft 'launches in seconds', which is consistent with the 20 s allowance.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "DroneHunter Counter Unmanned Aerial System (C-UAS), US",
+      "url": "https://www.army-technology.com/projects/dronehunter-counter-unmanned-aerial-system-c-uas/",
+      "date": "2024",
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.85,
+      "unit": "fraction",
+      "condition": "85 percent success rate on mid-air captures",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Fortem Technologies blog (F700)",
+      "url": "https://fortemtech.com/blog/discussions/2022-10-11-f700-building-the-worlds-best-drone-interceptor/",
+      "date": "2026-09-04"
+    },
+    "salvoCooldownS": {
+      "value": 180,
+      "unit": "s",
+      "condition": "reloaded for back-to-back sorties in under 3 minutes (180 s)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Fortem Technologies F700 product page",
+      "url": "https://fortemtech.com/products/dronehunter-f700/",
+      "date": "2026-09-04"
+    }
+  },
+  "attributes": {
+    "effectorType": "net"
+  },
+  "provenanceOrder": [
+    "maxRangeM",
+    "pk",
+    "salvoCooldownS"
+  ]
+}

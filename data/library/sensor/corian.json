@@ -1,0 +1,74 @@
+{
+  "id": "lib-corian",
+  "kind": "sensor",
+  "type": "rf",
+  "version": 1,
+  "name": "CORIAN passive RF array (CACI)",
+  "description": "Fixed-site networked passive RF sensor array. TDOA multilateration across nodes geolocates the Group 1-2 sUAS AND its ground operator; positive ID by an unclassified signal library. JCO fixed/semi-fixed interim selection. Range is a planning figure, not a published one.",
+  "color": "#b99a5f",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "5000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "protocol identification range (representative) — Set equal to detect range because protocol/library identification in a passive RF receiver happens at the moment of detection: the signal must be demodulated far enough to match the library entry. No separate classification range is published.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "CACI, Fixed Site C-UAS (CORIAN datasheet F539 02/25)",
+      "url": "https://www.caci.com/sites/default/files/2025-02/F539_2502_CORIAN.pdf",
+      "date": "2025-02",
+      "note": "Inventory records 5000 m at INFERRED REPRESENTATIVE; the seed leaves the field null"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "azimuth coverage — Datasheet: CORIAN 'utilizes a sensor array' and is 'Modular and scalable for geographically compact or wide-area defense'. A distributed multi-node array has no single boresight, so 360 is the honest encoding. Per-node antenna pattern is not published.",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "CACI, Fixed Site C-UAS (CORIAN datasheet F539 02/25)",
+      "url": "https://www.caci.com/sites/default/files/2025-02/F539_2502_CORIAN.pdf",
+      "date": "2025-02"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "rf",
+    "role": "classification",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM"
+  ]
+}

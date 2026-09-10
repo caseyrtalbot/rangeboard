@@ -1,0 +1,148 @@
+{
+  "id": "lib-fpv7",
+  "kind": "uas",
+  "type": "fpv",
+  "version": 1,
+  "name": "Red air: FPV 7-inch OWA (G1)",
+  "description": "Racing-style FPV one-way-attack quad, 1-2 kg payload. Terrain-masked ingress at 10-100 ft AGL; terminal dive.",
+  "color": "#c46a5a",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 1,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "condition": "0.01 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 0.3,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "acousticDb": {
+      "value": 75,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 25,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxSpeedMps": {
+      "value": 45,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "enduranceMin": {
+      "value": 15,
+      "unit": "min",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "altBandFt": {
+      "value": [
+        10,
+        400
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "operatingRadiusM": {
+      "value": 8000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 10000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": 4,
+      "unit": "kg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "effectRadiusM": {
+      "value": 30,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "fpv",
+    "navMode": "rf-manual",
+    "emissionsNote": "Analog 5.8 GHz video, ELRS 900 MHz control",
+    "oneWay": true,
+    "rangeNote": "Strikes 5-15 km; relay drones and high-gain video links push 20-30 km. Extended packs and wing kits reported.",
+    "weaponProfile": "impact"
+  },
+  "provenanceOrder": [
+    "rcsM2"
+  ],
+  "threatProfile": {
+    "designator": "THR-G1-FPV-01",
+    "routeIntent": "Terrain-masked attack along roads and treelines, 3-8 km launch",
+    "altitudeFt": 80,
+    "speedMps": 25,
+    "count": 1
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "id": "lib-mugin5",
+  "kind": "uas",
+  "type": "one-way-attack",
+  "version": 1,
+  "name": "Red air: Mugin-5 converted strike (G3)",
+  "description": "COTS fixed-wing conversion launched from improvised strips 200-400 km out. Autonomous GNSS waypoint ingress.",
+  "color": "#a54737",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 3,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.2,
+      "unit": "m2",
+      "condition": "0.2 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 5,
+      "unit": "m",
+      "condition": "5 m wingspan (5000 mm)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Mugin UAV product page (Mugin-5 Pro carbon fiber)",
+      "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+      "date": "2026-09-04"
+    },
+    "acousticDb": {
+      "value": 95,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 30,
+      "unit": "mps",
+      "condition": "30 to 35 m/s cruise speed; the lower bound is 30 m/s",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Mugin UAV product page",
+      "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+      "date": "2026-09-04"
+    },
+    "maxSpeedMps": {
+      "value": 40,
+      "unit": "mps",
+      "condition": "40 m/s maximum speed",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Mugin UAV product page",
+      "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+      "date": "2026-09-04"
+    },
+    "enduranceMin": {
+      "value": 300,
+      "unit": "min",
+      "condition": "5 to 7.5 h endurance; the lower bound is 300 min",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Mugin UAV product page",
+      "url": "https://www.muginuav.com/product/mugin-5-pro-5000mm-carbon-fiber-uav-platform/",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        1000,
+        12000
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "operatingRadiusM": {
+      "value": 400000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 400000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "airframe": "one-way-attack",
+    "navMode": "gps",
+    "emissionsNote": "RF silent on ingress",
+    "oneWay": true,
+    "rangeNote": "Early conversions flew about 500 km with 25 kg of explosives; MICH 2000 derivative extends the class.",
+    "weaponProfile": "impact"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "spanM",
+    "cruiseSpeedMps",
+    "maxSpeedMps",
+    "enduranceMin"
+  ],
+  "threatProfile": {
+    "designator": "THR-G3-OWA-02",
+    "routeIntent": "Autonomous waypoint attack at 1000-8000 ft",
+    "altitudeFt": 4000,
+    "speedMps": 32,
+    "count": 1
+  }
+}

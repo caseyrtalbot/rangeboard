@@ -1,0 +1,59 @@
+{
+  "id": "lib-ironbeam",
+  "kind": "effector",
+  "type": "de",
+  "version": 1,
+  "name": "Iron Beam 100 kW laser (Rafael)",
+  "description": "Rafael Iron Beam ('Or Eitan'), 100 kW-class laser handed to the Israeli Air Force 28 Dec 2025: the first high-energy laser air-defence system declared operationally mature. Reported to burn rockets, mortars and UAS at about 10 km in clear air; interception takes seconds. Fires from a static emplacement and degrades badly in cloud, fog and low visibility, which is why Iron Dome remains the all-weather layer.",
+  "color": "#9e6274",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 100,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 7000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "7000 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "note": "Inventory records 10000 m (10 km); the seed value is kept"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "engageTimeS": {
+      "value": 5,
+      "unit": "s",
+      "condition": "dwell time to effect — An Israeli defence official said 'the interception takes seconds'. A separate lower-tier report gives about five seconds. Five is used as the representative reading of 'seconds'; it is target-dependent and not a published threshold.",
+      "grade": "REPORTED",
+      "layer": "L2",
+      "source": "Breaking Defense, 'Lasers in the field: Iron Beam clears last test before operational use'",
+      "url": "https://breakingdefense.com/2025/09/lasers-iron-beam-iron-dome-israel-pew-pew/",
+      "date": "2025-09-17",
+      "estimator": "planning-factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "de"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

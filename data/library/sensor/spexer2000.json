@@ -1,0 +1,101 @@
+{
+  "id": "lib-spexer2000",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "SPEXER 2000 3D radar (HENSOLDT)",
+  "description": "X-band pulse-Doppler AESA, 120 deg per antenna (MkIII builds to 360 deg with more antennas), elevation to 90 deg. Datasheet maxima: UAV 9 km, micro-UAV 6 km. Over 300 tracks per 120 deg sector.",
+  "color": "#8fb4cb",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 6000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "6000 m against Micro UAV (UAV 9 km)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "HENSOLDT SPEXER 2000 datasheet (2020)",
+      "url": "https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf",
+      "date": "2026-09-04"
+    },
+    "refRcsM2": {
+      "value": 0.04,
+      "unit": "m2",
+      "condition": "0.04 m2 (PF): back-solved from the datasheet 6 km Micro UAV and 9 km UAV lines by the fourth-root law, taking UAV as the 0.2 m2 Group 3 tier",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor from the HENSOLDT SPEXER 2000 datasheet (2020) range lines",
+      "url": null,
+      "date": "2026-09-05",
+      "estimator": "planning-factor"
+    },
+    "instrumentedRangeM": {
+      "value": 40000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "40000 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "EDR Magazine, SPEXER 2000 3rd Gen (2020-06-22)",
+      "url": "https://www.edrmagazine.eu/hensoldt-unveils-its-new-spexer-2000-3rd-gen-radar-for-c-uas-and-not-only",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 120,
+      "unit": "deg",
+      "condition": "120 deg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "HENSOLDT SPEXER 2000 datasheet (2020)",
+      "url": "https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "condition": "elevation coverage — MkIII 'up to 90 deg'; MkII is 15 deg. Datasheet gives a span, not signed limits; [0,90] is the reading for a ground-based VSHORAD antenna.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "HENSOLDT SPEXER 2000 3D datasheet",
+      "url": "https://dam.hensoldt.net/m/59f155d472802b78/original/SPEXER-2000-3D-Radar-Datasheet-English.pdf",
+      "date": "2020-08-25",
+      "note": "Inventory records 0,90 deg (up to 90 (MkIII); 15 (MkII) deg) at MANUFACTURER_CLAIM L1; the seed leaves the field null"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "target-acquisition"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "instrumentedRangeM",
+    "sectorDeg",
+    "refRcsM2"
+  ]
+}

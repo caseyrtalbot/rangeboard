@@ -1,0 +1,73 @@
+{
+  "id": "lib-teleidoscope",
+  "kind": "sensor",
+  "type": "eo-ir",
+  "version": 1,
+  "name": "Teleidoscope ML auto-track camera",
+  "description": "Machine-learning EO/IR auto-track gimbal. The fielded program is the NCR-IADS airspace-warning camera modernization; no source places Teleidoscope in FS-LIDS or M-LIDS, and no source supports a fire-control role. Ranges are planning figures.",
+  "color": "#b0a8cc",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "2000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "classifyRangeM": {
+      "value": 1500,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "elevationDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": 15,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "sensorType": "eo-ir",
+    "role": "classification",
+    "eoBand": "dual",
+    "rangeBasis": "planning"
+  },
+  "provenanceOrder": [
+    "detectRangeM"
+  ]
+}

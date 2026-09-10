@@ -1,0 +1,157 @@
+{
+  "id": "lib-cw15",
+  "kind": "uas",
+  "type": "vtol",
+  "version": 1,
+  "name": "Red air: CW-15 class VTOL ISR (G2)",
+  "description": "VTOL fixed-wing ISR. Launches from any clearing 20-50 km out; long racetrack orbits at 1500-5000 ft.",
+  "color": "#bd6355",
+  "builtin": true,
+  "spec": "uas",
+  "fields": {
+    "group": {
+      "value": 2,
+      "unit": "uas-group",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "rcsM2": {
+      "value": 0.05,
+      "unit": "m2",
+      "condition": "0.05 m2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "spanM": {
+      "value": 3.54,
+      "unit": "m",
+      "condition": "3.54 m wingspan",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "JOUAV CW-15 product page",
+      "url": "https://www.jouav.com/products/cw-15.html",
+      "date": "2026-09-04"
+    },
+    "acousticDb": {
+      "value": 80,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "cruiseSpeedMps": {
+      "value": 17,
+      "unit": "mps",
+      "condition": "61 km/h cruise speed (16.9 m/s)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "JOUAV CW-15 product page",
+      "url": "https://www.jouav.com/products/cw-15.html",
+      "date": "2026-09-04"
+    },
+    "maxSpeedMps": {
+      "value": 25,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "enduranceMin": {
+      "value": 180,
+      "unit": "min",
+      "condition": "180 min empty",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "JOUAV CW-15 product page",
+      "url": "https://www.jouav.com/products/cw-15.html",
+      "date": "2026-09-04"
+    },
+    "altBandFt": {
+      "value": [
+        1000,
+        6000
+      ],
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "controlLinkRangeM": {
+      "value": 50000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "operatingRadiusM": {
+      "value": 50000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "combatRadiusM": {
+      "value": 50000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "warheadKg": {
+      "value": null,
+      "unit": "kg",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "effectRadiusM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "standoffRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "irSignature": "low",
+    "airframe": "vtol",
+    "navMode": "mixed",
+    "emissionsNote": "Digital datalink, directional antenna",
+    "oneWay": false,
+    "rangeNote": "Legs beyond 100 km reported for the class; combat ISR bounded by ~50 km datalink.",
+    "weaponProfile": "none"
+  },
+  "provenanceOrder": [
+    "rcsM2",
+    "spanM",
+    "cruiseSpeedMps",
+    "enduranceMin"
+  ],
+  "threatProfile": {
+    "designator": "THR-G2-V-01",
+    "routeIntent": "Persistent standoff ISR racetrack",
+    "altitudeFt": 3000,
+    "speedMps": 17,
+    "count": 1
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "id": "lib-ninja",
+  "kind": "effector",
+  "type": "jammer",
+  "version": 1,
+  "name": "NINJA RF-cyber defeat (AFRL)",
+  "description": "Air Force fixed-site RF-cyber C-sUAS. Software-defined radios intercept the drone-operator link and take control of or disable Group 1-2 UAS without the indiscriminate interference of broadband jamming; friendly drones can be whitelisted. NO PUBLIC DEFEAT RANGE: the 2 km ring is a representative planning figure.",
+  "color": "#c4a069",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 0,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 2000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "2000 m",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "condition": "engagement altitude ceiling — Not published. null, never 0.",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "source": "Black River Systems, Fixed-Site C-UAS",
+      "url": "https://www.blackriversystems.com/c-uas-systems-fixed-site/",
+      "date": "2026-08-24"
+    },
+    "sectorDeg": {
+      "value": 360,
+      "unit": "deg",
+      "condition": "azimuth coverage — No azimuth sector is published for the fixed-site defeat function. Basis for 360: the fixed-site build is a distributed array of software-defined radios with optional range-extension nodes (Ninja TRx, Ninja 4925 RFFE, Ninja Sentinel), which is a site-perimeter architecture rather than a pointed beam. INFERRED.",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "source": "Black River Systems, Fixed-Site C-UAS",
+      "url": "https://www.blackriversystems.com/c-uas-systems-fixed-site/",
+      "date": "2026-08-24",
+      "estimator": "planning-factor"
+    },
+    "engageTimeS": {
+      "value": 20,
+      "unit": "s",
+      "condition": "time from assignment to effect — Not published. 20 s is the app's existing representative for an RF-cyber takeover effect (lib-enforceair) and is deliberately longer than the 5 s used for broadband jamming, because a takeover must acquire, identify the protocol and then command the airframe. REPRESENTATIVE.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "No source; representative value consistent with lib-enforceair",
+      "url": null,
+      "estimator": "planning-factor"
+    },
+    "pk": {
+      "value": 0.6,
+      "unit": "fraction",
+      "condition": "probability the effect is produced — UNKNOWN. No public Pk. 0.6 is REPRESENTATIVE and set slightly below the broadband jammers because a protocol-specific effect only works on a supported airframe: AFRL's own framing is 'capable of taking control of OR disabling' commercially available drones, i.e. the effect is not uniform across the threat set.",
+      "grade": "UNKNOWN",
+      "layer": "L2",
+      "source": "Unmanned Airspace, US Air Force expands counter UAS research",
+      "url": "https://www.unmannedairspace.info/counter-uas-systems-and-policies/us-air-force-expands-counter-uas-research-with-addition-of-dds-sense-and-detect-know-how/",
+      "date": "2021-09-14",
+      "estimator": "planning-factor"
+    },
+    "salvoCooldownS": {
+      "value": 20,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "jammer",
+    "jamBands": [
+      "ism-2400",
+      "ism-5800"
+    ]
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

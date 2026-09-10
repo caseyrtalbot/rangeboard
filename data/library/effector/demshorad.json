@@ -1,0 +1,66 @@
+{
+  "id": "lib-demshorad",
+  "kind": "effector",
+  "type": "de",
+  "version": 1,
+  "name": "DE M-SHORAD 50 kW laser",
+  "description": "Stryker-mounted 50 kW-class laser prototype. GAO found the prototype not mature enough to transition; production slipped to FY2027 and the enduring path is now E-HEL. Four prototypes deployed to CENTCOM. No engagement range is published: the ring is a planning figure.",
+  "color": "#c08698",
+  "builtin": true,
+  "spec": "effector",
+  "fields": {
+    "minRangeM": {
+      "value": 100,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "planning figure",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "maxRangeM": {
+      "value": 5000,
+      "unit": "m",
+      "rangeType": "effective-engagement",
+      "condition": "5000 m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "basis": "pf",
+      "source": "planning factor",
+      "url": null,
+      "date": "2026-09-04",
+      "estimator": "planning-factor"
+    },
+    "maxAltitudeFt": {
+      "value": 10000,
+      "unit": "ft",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "engageTimeS": {
+      "value": 15,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    },
+    "salvoCooldownS": {
+      "value": 10,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "note": "No provenance row; planning factor"
+    }
+  },
+  "attributes": {
+    "effectorType": "de"
+  },
+  "provenanceOrder": [
+    "maxRangeM"
+  ]
+}

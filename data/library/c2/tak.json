@@ -1,0 +1,13 @@
+{
+  "id": "lib-tak",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "TAK / CoT node (Team Awareness Kit)",
+  "description": "Government-owned situational-awareness and C2 client family built on the Cursor-on-Target message standard. It forwards and displays C-UAS detections and alerts to dismounted teams and operations centres. It is not a track-fusion or fire-control system and carries no engagement authority.",
+  "color": "#a4ab9f",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

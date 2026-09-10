@@ -1,0 +1,13 @@
+{
+  "id": "lib-faadc2",
+  "kind": "c2",
+  "type": null,
+  "version": 1,
+  "name": "FAAD C2 (Northrop Grumman)",
+  "description": "DoD-designated C2 for C-sUAS. Fuses sensor tracks, correlates the air picture, and manages engagements.",
+  "color": "#d6d9d2",
+  "builtin": true,
+  "spec": null,
+  "fields": {},
+  "attributes": {}
+}

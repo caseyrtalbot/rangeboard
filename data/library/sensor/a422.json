@@ -1,0 +1,102 @@
+{
+  "id": "lib-a422",
+  "kind": "sensor",
+  "type": "radar",
+  "version": 1,
+  "name": "Blighter A422 air security radar",
+  "description": "Ku-band FMCW e-scan radar, 180 deg per unit, elevation to 30 deg with W20S antennas, 20 km instrumented. Free-space detection 2.73 km at 0.01 m2 RCS, 4.87 km at 0.1 m2. UK-supplied to Ukraine in 2022.",
+  "color": "#94b7cd",
+  "builtin": true,
+  "spec": "sensor",
+  "fields": {
+    "detectRangeM": {
+      "value": 2730,
+      "unit": "m",
+      "rangeType": "detection",
+      "condition": "2730 m at 0.01 m2 RCS, free space, M10S antennas",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+      "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+      "date": "2026-09-04"
+    },
+    "refRcsM2": {
+      "value": 0.01,
+      "unit": "m2",
+      "condition": "0.01 m2",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+      "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+      "date": "2026-09-04"
+    },
+    "instrumentedRangeM": {
+      "value": 20000,
+      "unit": "m",
+      "rangeType": "instrumented",
+      "condition": "20000 m",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+      "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+      "date": "2026-09-04"
+    },
+    "classifyRangeM": {
+      "value": null,
+      "unit": "m",
+      "rangeType": "classification",
+      "condition": "planning figure",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "sectorDeg": {
+      "value": 180,
+      "unit": "deg",
+      "condition": "180 deg",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Blighter A400 series datasheet (BSS-1311, 2025)",
+      "url": "https://blighter.com/wp-content/uploads/2025/10/blighter-a400-series-radars-datasheet-bss-1311.pdf",
+      "date": "2026-09-04"
+    },
+    "elevationDeg": {
+      "value": [
+        0,
+        30
+      ],
+      "unit": "deg",
+      "condition": "elevation coverage — The published figure is an antenna elevation BEAMWIDTH, not a signed coverage sector. [0,30] is the ground-based reading of 'wide vertical elevation coverage up to 30 deg'.",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "ATRI A400 series page; Joint Forces A422 report",
+      "url": "https://www.joint-forces.com/defence-equipment-news/52885-new-blighter-a422-radar-in-rapidly-deployable-configuration",
+      "date": "2026-08-24"
+    },
+    "maxAltitudeFt": {
+      "value": null,
+      "unit": "ft",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    },
+    "resolutionM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3"
+    }
+  },
+  "attributes": {
+    "sensorType": "radar",
+    "role": "surveillance"
+  },
+  "provenanceOrder": [
+    "detectRangeM",
+    "refRcsM2",
+    "instrumentedRangeM",
+    "sectorDeg"
+  ]
+}
