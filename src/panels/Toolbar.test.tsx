@@ -142,7 +142,8 @@ describe('Settings sections', () => {
 
   it('opens Run directly with the canonical run controls', () => {
     const html = render(<SettingsPanel initialSection="run" onRequestClose={() => {}} />)
-    for (const control of ['Deterministic', 'Monte Carlo', 'Uncertainty', 'Seed', 'Replicates']) {
+    // The Run tab replaced the popover, so the controls carry their plain-language names.
+    for (const control of ['Deterministic', 'Monte Carlo', 'What varies', 'Repeat key · seed', 'How many runs · replicates']) {
       expect(html).toContain(control)
     }
     expect(html).not.toContain('aria-label="Fire doctrine"')

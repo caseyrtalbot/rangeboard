@@ -5,8 +5,7 @@ import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { IDLE_MC } from '../../state/runState'
 import type { Scenario } from '../../model/types'
-import { runSettings } from '../../model/types'
-import { ForecastSettings, McPopover } from './ForecastSettings'
+import { ForecastSettings } from './ForecastSettings'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading panel needs the two in step.
@@ -22,18 +21,6 @@ function deterministicScenario(): Scenario {
 
 function setMc(patch: Partial<McState>): void {
   useStore.setState({ mc: { ...IDLE_MC, runId: useStore.getState().playback.runId, ...patch } })
-}
-
-/** Render the editable controls independently of their forecast metadata. */
-function renderPopover(): string {
-  Object.assign(useStore.getInitialState(), useStore.getState())
-  const st = useStore.getState()
-  return renderToStaticMarkup(<McPopover run={runSettings(st.scenario)} mc={st.mc} />)
-}
-
-/** The run button of the popover. */
-function runButton(html: string): string {
-  return html.match(/<button class="mc-run"[^>]*>[^<]*<\/button>/)?.[0] ?? ''
 }
 
 /** The forecast mode metadata chip. */
@@ -99,22 +86,27 @@ describe('ForecastSettings mode metadata', () => {
   })
 })
 
-describe('McPopover run button', () => {
+describe('ForecastSettings run control', () => {
   beforeEach(() => {
     useStore.getState().replaceScenario(deterministicScenario())
     useStore.setState({ mc: IDLE_MC })
   })
 
-  it('offers a run while idle and a stop while a run is live', () => {
+  // The popover is gone: the settings are in the Run tab and the header carries
+  // the one Run button beside its Deterministic switch. RunControl.test.tsx owns
+  // the button's own behaviour.
+  it('renders the one run control and no popover', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
-    expect(runButton(renderPopover())).toContain('>Run replicates<')
-    setMc({ status: 'running', progress: 40, total: 100 })
-    const live = runButton(renderPopover())
-    expect(live).toContain('>Stop<')
-    expect(live).not.toContain('disabled')
+    const html = render()
+    expect(html).toContain('class="run-control"')
+    expect(html).toContain('>Run<')
+    expect(html).toContain('Deterministic')
+    expect(html).not.toContain('mc-pop')
+    expect(html).not.toContain('Run replicates')
+    expect(html).not.toContain('Target half-width')
   })
 
-  it('stays disabled under the deterministic mode', () => {
-    expect(runButton(renderPopover())).toContain('disabled')
+  it('closes the run button under the deterministic mode', () => {
+    expect(render()).toContain('<button type="button" class="mc-run" disabled=""')
   })
 })

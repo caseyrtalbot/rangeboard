@@ -13,6 +13,7 @@ import { SWEEP_DEFAULTS } from '../../../state/analysisRequests'
 import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
 import { PfTag } from '../../inspector/kit'
+import { SENSITIVITY_DEPTH_NAME, SENSITIVITY_DEPTH_SENTENCE } from '../../settings/inputs'
 import { useForecastEngagement } from '../controls'
 import { bandMean, countSub, currentSensitivity, currentSummary, currentSweep, formatCount, statMean, timeStatSub } from '../mc'
 import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from '../runValidityText'
@@ -131,7 +132,10 @@ export function FragilityScreen() {
   const count = factors?.reduce((n, f) => n * f.values.length, 1) ?? 0
   const durationS = scenarioDurationS(scenario)
   const hasAsset = scenario.entities.some(e => e.kind === 'asset' && entityActive(e))
-  const enabled = runSettings(scenario).runMode !== 'deterministic'
+  const run = runSettings(scenario)
+  const enabled = run.runMode !== 'deterministic'
+  // The Run tab sets the depth; the button and the sentence above it name what it will do.
+  const depth = run.sensitivityDepth
   const sweeping = mc.sweep.status === 'running' && mc.sweep.runId === runId
   const sharedBusy = sweeping || mc.sensitivity.status === 'running'
   const mapFactors = sweep?.factors ?? (requestedRunId === runId && sweeping ? requested : factors)
@@ -214,7 +218,8 @@ export function FragilityScreen() {
       {fields.length === 0 && !sensitivity && <p className="muted small">No field carries a spread.</p>}
       {sensitivity?.stopped && <p className="muted small">Sensitivity {sensitivity.stopped.rule} · {sensitivity.rows.length} fields retained.</p>}
       {mc.sensitivity.status === 'running' && <p role="status">{mc.sensitivity.progress} of {mc.sensitivity.total} fields</p>}
-      <button type="button" disabled={!enabled || sharedBusy || fields.length === 0} onClick={() => startSensitivity()}>Run sensitivity</button>
+      <p className="muted small">{SENSITIVITY_DEPTH_SENTENCE[depth]}</p>
+      <button type="button" disabled={!enabled || sharedBusy || fields.length === 0} onClick={() => startSensitivity()}>{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
       {mc.sensitivity.error && <p role="alert">{mc.sensitivity.error}</p>}
     </section>
     <section aria-label="Validity">

@@ -27,7 +27,10 @@ describe('BoardPreparation', () => {
 
     expect(html).toContain('inspector-body board-preparation')
     expect(html).toContain('Forecast and analysis')
-    expect(html).toContain('Run replicates')
+    // The run popover is gone: the header carries the one Run button and its switch.
+    expect(html).toContain('class="run-control"')
+    expect(html).toContain('>Run<')
+    expect(html).toContain('Deterministic')
     expect(html).toContain('RUN-0001')
     expect(html).not.toContain(useStore.getState().playback.runId)
     expect(html).not.toContain('Scenario and run scope')

@@ -2631,17 +2631,6 @@ button.chip {
   white-space: nowrap;
 }
 
-/* Run mode, seed and replicate count. Opens under the run header. */
-.mc-pop {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  max-width: 100%;
-  padding: var(--panel-pad);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-panel);
-}
-
 .mc-run {
   align-self: flex-start;
   border-color: var(--border-control);
@@ -4090,10 +4079,6 @@ input[type='number'] {
   font-size: var(--type-title-size);
 }
 
-.board-preparation .mc-pop {
-  margin: 0;
-}
-
 .board-preparation .board-object {
   display: flex;
   width: 100%;
@@ -4870,11 +4855,6 @@ input[type='number'] {
   width: fit-content;
 }
 
-.settings-block .mc-pop {
-  padding: 0;
-  border: 0;
-}
-
 .board-declutter {
   display: flex;
   align-items: center;
@@ -4978,4 +4958,93 @@ input[type='number'] {
 .systems-edit {
   flex-wrap: wrap;
   padding-block: var(--space-2);
+}
+
+/* Run tab. Two shapes the panel rules do not carry: a group head, and a row
+   that puts the control, its default and the reset on one baseline. The
+   Systems tab sets the precedent; both tabs fold into this sheet, so neither
+   has a component CSS file. Tokens only. */
+
+.run-group + .run-group {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.run-head h4 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+}
+
+/* The control keeps its own label above it, so the row aligns on the bottom
+   edge and wraps whole items when the dialog narrows. */
+.run-row {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+}
+
+.run-row + .run-row {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* The control keeps a readable width instead of stretching the dialog, so the
+   default and the reset stay near it. */
+.run-row .field {
+  flex: 0 1 340px;
+  min-width: 0;
+}
+
+/* `button.mini` floats to the top of its flex line elsewhere; here it belongs on
+   the control baseline at the right edge, as the Systems tab resets do. */
+.run-row button.mini {
+  align-self: end;
+  margin-left: auto;
+}
+
+/* The default sits on the control baseline, not under the label. */
+.run-default {
+  padding-bottom: var(--space-1);
+  color: var(--text-tertiary);
+  font-size: var(--type-meta-size);
+  white-space: nowrap;
+}
+
+/* Run control: the Deterministic switch, the Run button and the progress line.
+   Prepare renders it under the mode chip; Analyze renders it in the .lens row,
+   where the margin-left pushes it to the right edge beside the screens. */
+.run-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block: var(--space-1);
+}
+
+.lens .run-control {
+  margin-left: auto;
+  padding-block: 0;
+}
+
+.run-det {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: var(--type-meta-size);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Replicates done, the stop rule and the pool size. It wraps rather than
+   pushing the button out of a 320 px panel. */
+.run-progress {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  overflow-wrap: anywhere;
 }
