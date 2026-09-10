@@ -1,59 +1,43 @@
 # RangeBoard continuation status
 
-The user's current request selects the work. This file records completion and navigation;
-it does not authorize an implementation stage, commit, push or merge.
+One handoff for the calibration plan. It is rewritten in place at each phase gate of
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), from the Phase 0 gate through the Phase 4
+gate. It records verified completion and the next boundary. It does not authorize a
+commit, push or merge, and it never becomes a task list. Old handoffs are cancelled and
+live only in Git history.
 
-## Completed work
+Rules for each rewrite: keep this shape, replace the content, and keep only the current
+phase and the one before it. Every claim names a commit, a test or a browser check. Prose
+about an unfinished lane goes in Open items, not in Completed.
 
-- The performance and quality refactor completed Waves 0–5 on September 6–7, 2026.
-  Its [original handoff](field-te/performance-refactor-handoff-2026-09-07.md) is archived
-  unchanged, including measurements, decisions and proposed follow-ups. Its named-library
-  task and later wave instructions are historical proposals, not the current queue.
-- Playback realism R0–R5 is implemented. [R4 evidence](field-te/evidence/r4-trial-lifecycle-2026-09-07/README.md)
-  records trial infrastructure; [R5 evidence](field-te/evidence/r5-sampled-experience-2026-09-08/README.md)
-  records the integrated sampled experience: sampled Play is the default, Execute and
-  export use one retained trial, and numerical parity, gate, browser and paired timing
-  checks passed on September 8, 2026.
+## Phase status
 
-- The T&E Ops workspace was removed on 2026-09-09 on branch `remove-te-ops`: `src/te/`,
-  its Board seams, its CSS region and its storage keys are gone. The engine statistics
-  live in `src/analysis/stats.ts` and Board frame download in `src/canvas/frameCapture.ts`.
-  Saved `rangeboard.te.v1` records are left in browser storage and are no longer read.
-  `docs/te-plan.md` and `docs/te-compilation/` stay as historical source.
-- The Board Test cards tab, its rail button, command palette entries and
-  `TestCardsPanel.tsx` were removed on 2026-09-09 on the same branch. `Scenario.testCards`,
-  its store actions, seed card and validation stay, so saved scenarios still load.
+| Phase | Gate | Merge commit | Date |
+| --- | --- | --- | --- |
+| 0 Data foundation | not started | | |
+| 1 Real-mode statistics | not started | | |
+| 2 Tracks and kill chain | not started | | |
+| 3 Sensor and effector physics | not started | | |
+| 4 Hypothesis tools | not started | | |
 
-## Selected work
+## Completed
 
-None selected. The [analysis rebuild plan](field-te/evidence/analysis-rebuild-plan-2026-09-08.md)
-completed on 2026-09-08. Its section 7 records each slice's commit and gate, and the
-[evidence folder](field-te/evidence/analysis-rebuild-2026-09-08/README.md) records the
-worker assignment, the gate results after every merge and the browser checks. The work
-sits on branch `analysis-rebuild` from `77c225e`, with `npm run check`, `check:bundle` and
-`test:e2e` green at its head. Merge to `main` and push need explicit authorization.
+Nothing yet. This section is written at the Phase 0 gate. For each lane: branch, merge
+commit, the stop condition met, the test or browser check that shows it.
 
-Recorded follow-ups from the rebuild, none selected:
+## Open items
 
-- Monte Carlo first detect on the detection fixture is about 2 s while the deterministic
-  first detect is over 100 s; the new `forecast-trial-disagreement` finding fires on the
-  JIATF-401 laydown for the same reason. Inspect the Pd draw in `detection.ts`.
-- Compare prints times in seconds; Outcome prints m:ss. Align the formatters.
-- The Outcome screen scrolls in a 552 px panel with eight threats.
-- Dead code after S9: `.lens-*` and `.wg-*` CSS rules, `OutcomeSummary.tsx`,
-  `TrialOutcomeSummary` in `DebriefRecord.tsx`, the `observedPresetId` stamp now a constant.
-- Sweep progress carries no partial cell summaries; cells paint at completion.
-- Raid-size sweep cells take fresh ids from the time-based allocator, so they are not
-  draw-reproducible across runs.
-- `SensitivityRow.responses` is optional until the store and widget test fixtures carry it.
+Nothing yet. Findings a lane reported outside its scope, deferred choices, and pinned
+numbers that moved with their hand-derived replacement.
 
 ## Continuation boundary
 
-The playback realism proposal is complete through R5. Its recorded follow-ups (R1
-disabled-asset definedness, R2 horizon captions, preparation latency, axis label clipping)
-and the named scenario library are not a queue; each requires a task selecting that work.
+The next task is the Phase 0 contract slice in
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#2-phase-0-data-foundation). A lane starts
+only after its contract merges. The orchestrator runs `npm run check` at each gate and
+rewrites this file before the next phase starts.
 
-Before a new slice, inspect current source, tests and `git status`; read
-[AGENTS.md](../AGENTS.md), [verification](VERIFICATION.md), and the
-[workflow](WORKFLOW.md#handoffs-and-orchestration). Historical test counts, environment
-restrictions and branch names describe their recorded run rather than the current workspace.
+## Verification at the last gate
+
+Nothing yet. At each gate: `npm run check` output, parity fixture status, browser checks
+recorded under `docs/field-te/evidence/`, and the timing measured against blueprint section J.

@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "6fa267d4cb50a7b6348ce84d4c7042578144d11f9f94c4b2bf8832ae6995e0f2",
-      "reviewedAt": "2026-09-09",
-      "note": "te-plan index entry notes the module removal; historical folders unchanged."
+      "sha256": "ec25b6ad4afba3cfe33b82acb83c7435bfced3b95e168300da1315a774558da4",
+      "reviewedAt": "2026-09-10",
+      "note": "Added the implementation plan to the current references"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "b590161b8618c1165d8df6d96cd062db28411be682716c2e2398ba47678b52fa",
-      "reviewedAt": "2026-09-09",
-      "note": "Recorded the Test cards tab removal on remove-te-ops"
+      "sha256": "da3f260136de1df078443024a5f278059f93482124280f39745010cbb07ec328",
+      "reviewedAt": "2026-09-10",
+      "note": "Rewritten 2026-09-10 as the single per-phase handoff for the calibration plan"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -110,6 +110,13 @@
       "sha256": "0966801c8d0e011b149929bc08f7d8d8dec0672a0ede3e4b071559ec3ba89908",
       "reviewedAt": "2026-09-09",
       "note": "Reviewed the CSS removal of test-card chips and finding scope grid; design text unchanged"
+    },
+    {
+      "document": "docs/IMPLEMENTATION_PLAN.md",
+      "inputs": [],
+      "sha256": "4f1a8077c258c9f81e6fe1854e3ab5e3b90debd03124e446682c93d027a17389",
+      "reviewedAt": "2026-09-10",
+      "note": "Added the per-gate handoff rewrite rule to section 8"
     }
   ],
   "historical": [

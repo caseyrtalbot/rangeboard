@@ -18,6 +18,7 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
 | [HANDOFF.md](HANDOFF.md) | Completed work, continuation references and unstarted-stage boundaries |
+| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Calibration blueprint implementation: phases, lanes, owners, file sets and stop conditions |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when
