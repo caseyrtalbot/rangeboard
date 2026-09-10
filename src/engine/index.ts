@@ -151,3 +151,6 @@ export { sampleScenario, sampleSpread } from '../analysis/uncertainty'
 
 // The analysis basis signature a manifest and a run record carry.
 export { analysisBasisSignature } from '../state/analysisBasis'
+
+// The headless load boundary (lane 1.1): the Board's fill without the store.
+export { loadScenario, parseScenarioJson } from './loadScenario'
