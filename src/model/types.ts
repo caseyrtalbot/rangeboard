@@ -5,6 +5,7 @@
  */
 
 import type { IntegrationConfidence, LinkMedium } from './integration'
+import type { FieldEstimator, LibraryGrade, LibraryLayer, RangeType } from './libraryField'
 
 export interface Vec2 {
   x: number
@@ -392,6 +393,16 @@ export interface Provenance {
   basis: 'datasheet' | 'reference' | 'pf'
   /** Spread of the value. Absent: the PF spread table by field. Null: fixed (pinned). */
   spread?: Spread | null
+  // Lineage carried from the data package (libraryField.ts). All optional so
+  // old saves and hand-written seed rows stay valid.
+  grade?: LibraryGrade
+  layer?: LibraryLayer
+  rangeType?: RangeType
+  condition?: string
+  unit?: string
+  estimator?: FieldEstimator
+  comparisonSet?: string[]
+  note?: string
 }
 
 /** A library model. Exactly one of sensor/uas/effector is set (c2/asset/marker have none). */

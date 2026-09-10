@@ -1,6 +1,6 @@
 import type { Scenario } from '../model/types'
 import type { TrialManifest, TrialResult } from '../playback/trialTypes'
-import { createTrialManifest } from '../playback/trialTypes'
+import { createTrialManifest, sameManifest } from '../playback/trialTypes'
 import { analysisBasisSignature } from './analysisBasis'
 import type { PlaybackState, TrialState } from './runState'
 import { trialResultOf } from '../analysis/trialResult'
@@ -30,7 +30,7 @@ export function selectTrialSelection(state: State): TrialSelection {
     }
     if (manifest.basisSignature !== signature) return idle
     const expected = createTrialManifest(scenario, playback.runId, signature)
-    if (Object.keys(expected).some(key => key !== 'buildRevision' && expected[key as keyof TrialManifest] !== manifest[key as keyof TrialManifest]) ||
+    if (!sameManifest(expected, manifest, ['buildRevision']) ||
       !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')) return idle
     if (trial.status === 'cancelled') return { status: 'cancelled', runId: manifest.runId }
     if (trial.error != null) return { status: 'error', runId: manifest.runId, message: trial.error }

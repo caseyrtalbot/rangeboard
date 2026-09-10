@@ -31,3 +31,9 @@ export const ANALYSIS_KEY = 'rangeboard.analysis.v1'
 export const BOARD_BASELINE = 'rangeboard.baseline.v1'
 /** Copy of an unreadable baseline save; suffix is the epoch ms of the rescue. */
 export const BASELINE_RECOVERY_PREFIX = 'rangeboard.baseline.recovered.'
+/** Library field overrides (`OverrideSet`): every user replacement of a library value, with its reason. */
+export const OVERRIDES_KEY = 'rangeboard.overrides.v1'
+/** Copy of an unreadable overrides save; suffix is the epoch ms of the rescue. */
+export const OVERRIDES_RECOVERY_PREFIX = 'rangeboard.overrides.recovered.'
+/** IndexedDB database name for the run store (`RunRecord` records). Not a localStorage key. */
+export const RUNS_DB_NAME = 'rangeboard.runs.v1'

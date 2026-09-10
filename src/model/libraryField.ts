@@ -1,0 +1,116 @@
+/**
+ * Contract for the JSON data package under `data/library/<kind>/<slug>.json`.
+ * Lane 0.1 writes these files and compiles them into the runtime library;
+ * lane 0.2 reads the L1 entries to derive class priors. Every number the
+ * board draws carries its grade, layer and lineage here, so the app can
+ * always say what a value is and where it came from.
+ */
+
+import type { EntityKind, Spread, ThreatProfile } from './types'
+
+/** Evidence grade of one value, from `docs/inventory/provenance.md`. */
+export type LibraryGrade =
+  /** Authoritative documentation. */
+  | 'VERIFIED'
+  /** Two or more credible independent sources. */
+  | 'CORROBORATED'
+  /** Credible single reporting. */
+  | 'REPORTED'
+  /** OEM datasheet or product page. */
+  | 'MANUFACTURER_CLAIM'
+  /** Reasonable but not documented. */
+  | 'INFERRED'
+  /** No public evidence. */
+  | 'UNKNOWN'
+
+/**
+ * What the value is: L1 a public value with its condition, L2 a representative
+ * planning figure with a stated basis (never measured performance), L3 left to
+ * the user (`value` null, the app draws nothing).
+ */
+export type LibraryLayer = 'L1' | 'L2' | 'L3'
+
+/**
+ * Which range a distance is. Detection, instrumented, track, classification
+ * and effective engagement ranges are different quantities and are never
+ * substituted for one another.
+ */
+export type RangeType = 'detection' | 'instrumented' | 'track' | 'classification' | 'effective-engagement'
+
+/** How an L2 figure was produced when no public value exists. */
+export type FieldEstimator = 'class-median' | 'planning-factor' | 'analyst'
+
+/**
+ * One numeric spec field with its lineage. `unit` is an SI unit string
+ * ('m', 's', 'deg', 'm2', 'ft', 'kg', 'W', 'dB'), 'fraction' for a
+ * probability, or 'count' for a count. `spread` reuses the runtime Spread:
+ * absent means the fallback spread table by field, null means fixed.
+ */
+export interface LibraryField<T> {
+  /** Null on an L3 field: no value, nothing drawn. */
+  value: T | null
+  unit: string
+  rangeType?: RangeType
+  /** The circumstance the value holds under (target class, weather, mode). */
+  condition?: string
+  grade: LibraryGrade
+  layer: LibraryLayer
+  source?: string
+  url?: string | null
+  /** ISO date the source was read. */
+  date?: string
+  spread?: Spread | null
+  estimator?: FieldEstimator
+  /** Model ids an estimator drew on, so a class median can be traced. */
+  comparisonSet?: string[]
+  note?: string
+}
+
+/**
+ * One library file. Split rule: a spec key whose value is a number, a tuple
+ * of numbers, or null goes under `fields` as a LibraryField; every other spec
+ * key (strings, enums, booleans, string arrays) goes under `attributes` as a
+ * bare value. `type` is the sensorType, effector type or uas airframe,
+ * whichever the kind has; null for kinds without one.
+ */
+export interface LibraryFile {
+  id: string
+  kind: EntityKind
+  type: string | null
+  /** Per-file revision; bump on any edit. */
+  version: number
+  name: string
+  description: string
+  color: string
+  builtin: boolean
+  /** Which spec block the fields and attributes compile into; null for c2/asset/marker. */
+  spec: 'sensor' | 'uas' | 'effector' | null
+  fields: Record<string, LibraryField<unknown>>
+  attributes: Record<string, unknown>
+  threatProfile?: ThreatProfile
+}
+
+/** A user's replacement of one library field value, with the reason on record. */
+export interface Override {
+  modelId: string
+  /** The spec key, as in `LibraryFile.fields`. */
+  field: string
+  value: unknown
+  reason: string
+  /** ISO date of the override. */
+  date: string
+}
+
+/** Persisted shape under `OVERRIDES_KEY`. */
+export interface OverrideSet {
+  overrides: Override[]
+}
+
+/** Engine simplifications a run may switch on; each is recorded in the manifest. */
+export type PhysicsSwitch = 'truthTracks' | 'noFalseTracks' | 'noOperatorQueue' | 'singlePulseRadar'
+
+/** Lowest model fidelity a run accepted, best to worst. */
+export type FidelityTier = 'analytic' | 'datasheet' | 'calibrated' | 'fallback'
+
+/** Current data package version. Every library change bumps it. */
+export const DATA_PACKAGE_VERSION = 1

@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "3c0ccb96dbe2753334bbfa93d44e24baf123e309871bfb0cff7902a980e3e04e",
-      "reviewedAt": "2026-09-09",
-      "note": "Prepare panel declutter: one validity list, no run-scope rows, Test cards tab removed"
+      "sha256": "9f74fb0b223cf0a7fe728c0d146f2b0c78860cd7a7beff22219ba003bbccacbd",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 contract: lineage types only (libraryField.ts, runRecord.ts, Provenance keys); guide text updated at the Phase 0 gate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "28977558ba03d87824a9abee640e3f0b94ec3b5e5568141526236f793bf87c30",
-      "reviewedAt": "2026-09-09",
-      "note": "TestCardsPanel removed from the panel and lazy boundary lists"
+      "sha256": "12d14b989a9b5c6606858496cac020fca9fec973ef3c4a0772cf740b97e96ea8",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 contract: lineage types only (libraryField.ts, runRecord.ts, Provenance keys, sameManifest); reference updated at the Phase 0 gate."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "8d26413ac95a4ff8975d21e54e589a659a6e365e6505d2260435388ab482003c",
-      "reviewedAt": "2026-09-09",
-      "note": "e2e phase test now resets from the library tab; verification text unchanged"
+      "sha256": "72e1ff96dcc40a2e61c9b2fd03a85dbad0d946d6ad63a961f2b406316a3f53bd",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 contract: no check changed; guide updated at the Phase 0 gate."
     },
     {
       "document": "docs/WORKFLOW.md",

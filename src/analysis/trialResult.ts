@@ -7,6 +7,7 @@ import type { AttritionReport } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
 import type { SensorScanObservation } from '../playback/detection'
 import type { TrialJamDecision, TrialManifest, TrialResult } from '../playback/trialTypes'
+import { sameManifest } from '../playback/trialTypes'
 import { TRIAL_DRAW_POLICY_VERSION, TRIAL_ENGINE_REVISION } from '../playback/trialTypes'
 import type { RunValidityAssessment } from './runValidity'
 
@@ -82,7 +83,7 @@ function countAt(times: number[], t: number): number {
 
 export function trialResultOf(scenario: Scenario, manifest: TrialManifest, result: CapturedResult): TrialResultView {
   const cached = views.get(result)?.get(scenario)
-  if (cached && Object.keys(cached.manifest).every(key => cached.manifest[key as keyof TrialManifest] === manifest[key as keyof TrialManifest])) return cached
+  if (cached && sameManifest(cached.manifest, manifest)) return cached
   let signature = signatures.get(scenario)
   if (signature == null) {
     signature = analysisBasisSignature(scenario)
@@ -92,7 +93,7 @@ export function trialResultOf(scenario: Scenario, manifest: TrialManifest, resul
     manifest.replicateIndex !== idHash(manifest.runId) || manifest.basis !== 'nominal-aleatory' ||
     manifest.engineRevision !== TRIAL_ENGINE_REVISION || manifest.drawPolicyVersion !== TRIAL_DRAW_POLICY_VERSION ||
     !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')) throw new Error('Invalid trial manifest or scenario basis')
-  if (!result?.manifest || Object.keys(manifest).some(key => manifest[key as keyof TrialManifest] !== result.manifest[key as keyof TrialManifest]) ||
+  if (!result?.manifest || !sameManifest(manifest, result.manifest) ||
     !Array.isArray(result.assessments) || !Array.isArray(result.observations) || !Array.isArray(result.jamDecisions) ||
     !result.report?.totals || !Array.isArray(result.report.events) || !Array.isArray(result.report.threats) ||
     !Array.isArray(result.report.effectors)) throw new Error('Incomplete or mismatched trial result')
