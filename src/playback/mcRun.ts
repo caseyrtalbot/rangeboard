@@ -226,6 +226,8 @@ export interface McMorrisRequest {
   type: 'morris'
   runId: string
   scenario: Scenario
+  /** The response the effects read; 'leakers' when absent. */
+  response?: SensitivityResponse
 }
 
 /** One Sobol request over the fields Morris kept. */
@@ -234,6 +236,8 @@ export interface McSobolRequest {
   runId: string
   scenario: Scenario
   kept: UncertainField[]
+  /** The response the indices read; 'leakers' when absent. */
+  response?: SensitivityResponse
 }
 
 /** Every request the worker accepts; it dispatches on `type`. */

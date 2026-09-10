@@ -1,0 +1,28 @@
+Phase 1 integration browser check, 2026-09-10
+Branch calib/p1-integration on base 3891fcb. Dev build on port 5384, Playwright 1.62.1
+headless Chromium, script kept outside the repo. Machine: 14 logical cores
+(navigator.hardwareConcurrency 14), pool of 8 workers (MAX_POOL_WORKERS).
+Wall time is measured from the button click to mc.status 'done' (or to the Sobol svg),
+so it includes worker startup and the store round trip; elapsedMs is the pool's own clock.
+
+Default run (fresh scenario, no setting touched; 100 replicates, half-width target 0.5,
+floor 30, cap 2000, total uncertainty, LHS)
+  progress line during the run: "12 replicates · stop on half-width, floor 30, cap 2000 · 8 workers"
+  wall 126 ms; elapsedMs 85; stopped halfWidth at 144 replicates
+  mc.pool: workers 8, done 144, total null, perWorkerDone [44,8,8,24,4,16,8,32]
+
+JIATF-401 fixture (src/playback/__fixtures__/detection-outside-rings.json) with
+targetHalfWidth null, replicates 1000, uncertainty 'total'
+  wall 2166 ms; elapsedMs 611; stopped replicates at 1000
+  mc.pool: workers 8, perWorkerDone [150,150,150,100,150,100,100,100]
+  progress line after the run: "1000 of 1000 replicates · stop on the replicate count"
+
+Fragility > Run sensitivity · Morris then Sobol on the same fixture (depth full, default)
+  running lines: "n of N evaluations · Morris screening", then "n of N evaluations · Sobol on 8 fields"
+  Morris: 380 ms wall to the Sobol stage; 140 evaluations over 13 fields; kept 8
+  Morris then Sobol: 5935 ms wall to the Sobol chart; Sobol base 256, 2560 evaluations over 8 fields
+  mc.sensitivity status done, summary null; svg aria-label "Sobol first-order and total indices ·
+  Saltelli, base 256, 8 fields, 2560 runs · bootstrap 200 resamples, 95 percent. 8 fields ranked
+  by the total index; the ranking follows as text."
+
+Page errors: 0.

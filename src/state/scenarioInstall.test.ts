@@ -8,9 +8,9 @@ import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioSlices } from './scenarioInstall'
 import { EMPTY_SELECTION, HISTORY_LIMIT, installScenario } from './scenarioInstall'
 
-vi.mock('../playback/mcClient', () => ({ cancelMcRun: vi.fn(), cancelSensitivity: vi.fn(), cancelSweep: vi.fn() }))
+vi.mock('../playback/mcClient', () => ({ cancelPooledRun: vi.fn(), cancelSensitivity: vi.fn(), cancelSweep: vi.fn() }))
 vi.mock('../playback/trialClient', () => ({ cancelTrial: vi.fn() }))
-import { cancelMcRun, cancelSensitivity, cancelSweep } from '../playback/mcClient'
+import { cancelPooledRun, cancelSensitivity, cancelSweep } from '../playback/mcClient'
 import { cancelTrial } from '../playback/trialClient'
 
 const sensor = (id: string, x = 0): Entity => ({
@@ -82,7 +82,7 @@ describe('installScenario operation matrix', () => {
     expect(out.playback.resetReason).toBe(op === 'replace' ? 'scenario-loaded' : 'configuration-changed')
     expect(out.trial).toBe(IDLE_TRIAL)
     expect(cancelTrial).toHaveBeenCalledTimes(1)
-    expect(cancelMcRun).toHaveBeenCalledTimes(1)
+    expect(cancelPooledRun).toHaveBeenCalledTimes(1)
     expect(cancelSensitivity).toHaveBeenCalledTimes(1)
     expect(cancelSweep).toHaveBeenCalledTimes(1)
     if (op === 'replace') {
@@ -141,7 +141,7 @@ describe('installScenario operation matrix', () => {
     expect(out.mc).toBe(st.mc)
     expect(out.trial).toBe(st.trial)
     expect(out.ringOverrides).toBe(st.ringOverrides)
-    expect(cancelMcRun).not.toHaveBeenCalled()
+    expect(cancelPooledRun).not.toHaveBeenCalled()
     expect(cancelTrial).not.toHaveBeenCalled()
   })
 

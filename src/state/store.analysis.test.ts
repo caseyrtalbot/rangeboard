@@ -11,15 +11,41 @@ import { emptyScenario } from '../model/seed'
 import { useStore } from './store'
 import { analysisBasisSignature } from './analysisBasis'
 import { currentSensitivity, currentSummary } from '../panels/analysis/mc'
+import type { McWorkerMessage } from '../playback/mcRun'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
+import type { PoolProgress } from '../playback/mcTypes'
+import { startPooledRun } from '../playback/mcClient'
+import { MORRIS_FIXTURE, SOBOL_FIXTURE } from '../charts/__fixtures__/sobolFixture'
 import { runTrial } from '../playback/trial'
 import type { TrialManifest } from '../playback/trialTypes'
 import { CANCEL_GRACE_MS } from '../playback/workerSlot'
 import { ControlledWorker } from '../playback/controlledWorker'
 import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 
+/**
+ * The replicate run goes through the pool, which merges range partials into
+ * `done`. These tests drive the ownership rules with one controlled worker per
+ * slot, so the pooled start is routed to the single-worker transport and the
+ * pool callback is kept for the pool tests below.
+ */
+const pooled = vi.hoisted(() => ({ onPool: null as ((p: PoolProgress) => void) | null }))
+vi.mock('../playback/mcClient', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../playback/mcClient')>()
+  return {
+    ...actual,
+    startPooledRun: vi.fn((scenario: Scenario, runId: string, deliver: (m: McWorkerMessage) => void,
+      onPool: (p: PoolProgress) => void) => {
+      pooled.onPool = onPool
+      return actual.startMcRun(scenario, runId, deliver)
+    }),
+    cancelPooledRun: vi.fn(() => actual.cancelMcRun()),
+    requestPooledCancel: vi.fn((runId: string) => actual.requestMcCancel(runId)),
+  }
+})
+
+/** One-at-a-time depth: the Morris and Sobol stages have their own block below. */
 function scenario(): Scenario {
-  return { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', replicates: 1 }
+  return { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', replicates: 1, sensitivityDepth: 'quick' }
 }
 const mcSummary = runReplicates(scenario())
 const sensSummary = { ...runSensitivity({ ...emptyScenario(), replicates: 1 }), rows: [] }
@@ -378,5 +404,119 @@ describe('complete analysis basis and request ownership', () => {
     expect(tag).toContain('Updated source')
     expect(tag).toContain('2026-09-05')
     expectCurrent(true)
+  })
+})
+
+describe('the pooled replicate run and the Morris then Sobol stages', () => {
+  beforeEach(() => {
+    ControlledWorker.install()
+    pooled.onPool = null
+    vi.mocked(startPooledRun).mockClear()
+    useStore.getState().replaceScenario(scenario())
+  })
+  afterEach(() => {
+    useStore.getState().replaceScenario(emptyScenario())
+    vi.unstubAllGlobals()
+  })
+
+  const progress = (done: number): PoolProgress =>
+    ({ workers: 3, done, total: 1, stopRule: 'replicates', elapsedMs: 5, perWorkerDone: [done, 0, 0] })
+
+  it('the Run button starts the pool and its sink writes mc.pool only while the run is live', () => {
+    useStore.getState().runMonteCarlo()
+    const { playback, scenario: current } = useStore.getState()
+    expect(startPooledRun).toHaveBeenCalledOnce()
+    expect(vi.mocked(startPooledRun).mock.calls[0].slice(0, 2)).toEqual([current, playback.runId])
+    expect(useStore.getState().mc.pool).toBeNull()
+    pooled.onPool!(progress(1))
+    expect(useStore.getState().mc.pool).toEqual(progress(1))
+    ControlledWorker.latest().send({ type: 'done', runId: playback.runId, summary: mcSummary })
+    expect(useStore.getState().mc.status).toBe('done')
+    // The finished run keeps the last pool line; a late message cannot change it.
+    expect(useStore.getState().mc.pool).toEqual(progress(1))
+    pooled.onPool!(progress(2))
+    expect(useStore.getState().mc.pool).toEqual(progress(1))
+    useStore.getState().resetRun('manual')
+    pooled.onPool!(progress(3))
+    expect(useStore.getState().mc.pool).toBeNull()
+  })
+
+  it('a pool error clears the pool line; the pending total is the stop cap under a half-width target', () => {
+    useStore.getState().runMonteCarlo()
+    const runId = useStore.getState().playback.runId
+    pooled.onPool!(progress(1))
+    ControlledWorker.latest().send({ type: 'error', runId, message: 'worker failed' })
+    expect(useStore.getState().mc).toMatchObject({ status: 'error', error: 'worker failed', pool: null })
+    useStore.getState().patchScenario({ targetHalfWidth: 0.1, stopFloor: 40, stopCap: 700, replicates: 10 })
+    useStore.getState().runMonteCarlo()
+    expect(useStore.getState().mc.total).toBe(700)
+  })
+
+  function launchFull(response?: 'kills') {
+    useStore.getState().patchScenario({ sensitivityDepth: 'full' })
+    useStore.getState().runSensitivity(response)
+    const morris = ControlledWorker.latest()
+    const runId = useStore.getState().playback.runId
+    return { morris, runId }
+  }
+
+  it('a full run drives Morris then Sobol on the kept fields and ends with the Sobol result', () => {
+    const { morris, runId } = launchFull('kills')
+    expect(morris.request).toMatchObject({ type: 'morris', runId, response: 'kills' })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'running', runId, progress: 0, total: 0 })
+    morris.send({ type: 'morris-progress', runId, done: 7, total: 70 })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({ progress: 7, total: 70 })
+    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
+    expect(morris.terminated).toBe(true)
+    const sobol = ControlledWorker.latest()
+    expect(sobol).not.toBe(morris)
+    expect(sobol.request).toMatchObject({ type: 'sobol', runId, response: 'leakers',
+      kept: MORRIS_FIXTURE.kept.map((i) => MORRIS_FIXTURE.fields[i].field) })
+    const mid = useStore.getState().mc
+    expect(mid.morris).toBe(MORRIS_FIXTURE)
+    expect(mid.sensitivity).toMatchObject({ status: 'running', runId, progress: 0, total: 0, summary: null })
+    sobol.send({ type: 'sobol-progress', runId, done: 3, total: 1536 })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({ progress: 3, total: 1536 })
+    sobol.send({ type: 'sobol-done', runId, result: SOBOL_FIXTURE })
+    const { mc } = useStore.getState()
+    expect(mc.sobol).toBe(SOBOL_FIXTURE)
+    expect(mc.sensitivity).toMatchObject({ status: 'done', progress: 1536, total: 1536, summary: null, error: null })
+    expect(sobol.terminated).toBe(true)
+    // A replicate run keeps both results; the next sensitivity launch clears them.
+    useStore.getState().runMonteCarlo()
+    expect(useStore.getState().mc.morris).toBe(MORRIS_FIXTURE)
+    expect(useStore.getState().mc.sobol).toBe(SOBOL_FIXTURE)
+    useStore.getState().runSensitivity()
+    expect(useStore.getState().mc.morris).toBeNull()
+    expect(useStore.getState().mc.sobol).toBeNull()
+  })
+
+  it('a screening that keeps nothing ends the run done with no Sobol result and no error', () => {
+    const { morris, runId } = launchFull()
+    const count = ControlledWorker.instances.length
+    morris.send({ type: 'morris-done', runId, result: { ...MORRIS_FIXTURE, kept: [] } })
+    expect(ControlledWorker.instances).toHaveLength(count)
+    const { mc } = useStore.getState()
+    expect(mc.morris?.kept).toEqual([])
+    expect(mc.sobol).toBeNull()
+    expect(mc.sensitivity).toMatchObject({ status: 'done', error: null, summary: null })
+  })
+
+  it('a Morris or Sobol error marks the run; a message from another run is ignored', () => {
+    const { morris, runId } = launchFull()
+    morris.send({ type: 'morris-done', runId: 'other', result: MORRIS_FIXTURE })
+    expect(useStore.getState().mc.morris).toBeNull()
+    morris.send({ type: 'morris-error', runId, message: 'stopped early' })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'error', error: 'stopped early' })
+    const next = launchFull()
+    next.morris.send({ type: 'morris-done', runId: next.runId, result: MORRIS_FIXTURE })
+    ControlledWorker.latest().send({ type: 'sobol-error', runId: next.runId, message: 'Sobol cancelled' })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'error', error: 'Sobol cancelled' })
+    expect(useStore.getState().mc.morris).toBe(MORRIS_FIXTURE)
+  })
+
+  it('the quick depth still starts the one-at-a-time run', () => {
+    useStore.getState().runSensitivity()
+    expect(ControlledWorker.latest().request).toMatchObject({ type: 'sensitivity' })
   })
 })

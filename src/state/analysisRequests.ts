@@ -1,23 +1,32 @@
 import type { Scenario } from '../model/types'
 import { newId, runSettings } from '../model/types'
 import type {
+  McMorrisMessage,
+  McMorrisRequest,
   McSensitivityMessage,
+  McSobolMessage,
+  McSobolRequest,
   McSweepMessage,
   McSweepRequest,
   McWorkerMessage,
   SensitivityResponse,
 } from '../playback/mcRun'
+import type { MorrisResult, PoolProgress } from '../playback/mcTypes'
 import {
-  cancelMcRun,
+  cancelPooledRun,
   cancelSensitivity,
   cancelSweep,
-  requestMcCancel,
+  requestPooledCancel,
   requestSensitivityCancel,
   requestSweepCancel,
-  startMcRun,
+  startMorris,
+  startPooledRun,
   startSensitivity,
+  startSobol,
   startSweep,
 } from '../playback/mcClient'
+// The replicate count the loop ends at; sampling.ts brings only the prng into the store.
+import { loopEnd } from '../playback/sampling'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { createTrialManifest, sameManifest } from '../playback/trialTypes'
@@ -61,10 +70,15 @@ export interface AnalysisSlices {
 
 export type AnalysisPatch = Partial<Pick<AnalysisSlices, 'playback' | 'mc' | 'trial'>>
 
+/** Every message the sensitivity slot posts: one-at-a-time, Morris, then Sobol. */
+export type SensitivityMessage = McSensitivityMessage | McMorrisMessage | McSobolMessage
+
 /** Where each kind's worker messages go; the store points these at its sinks. */
 export interface AnalysisSinks {
   mc: (m: McWorkerMessage) => void
-  sensitivity: (m: McSensitivityMessage) => void
+  /** The per-worker counts of the pooled replicate run, beside its `mc` messages. */
+  pool: (p: PoolProgress) => void
+  sensitivity: (m: SensitivityMessage) => void
   sweep: (m: McSweepMessage) => void
   trial: (m: TrialWorkerMessage) => void
 }
@@ -85,7 +99,9 @@ const UNAVAILABLE = 'Web Worker unavailable'
  * state, then starts the worker; the environment without a Worker and every
  * synchronous startup failure end the request through its sink. Nothing is
  * requested for replicates, sensitivity or a sweep under deterministic mode,
- * nor for a sweep without its spec.
+ * nor for a sweep without its spec. A sensitivity request reads the scenario's
+ * depth: 'quick' is the one-at-a-time run, 'full' is Morris on `response`
+ * (leakers by default), and the Sobol stage follows through `requestSobol`.
  */
 export function requestAnalysis(
   kind: AnalysisKind,
@@ -93,12 +109,13 @@ export function requestAnalysis(
   publish: (patch: AnalysisPatch) => void,
   sinks: AnalysisSinks,
   sweep?: SweepSpec,
+  response: SensitivityResponse = 'leakers',
 ): void {
   switch (kind) {
     case 'mc':
-      return launch(mcLaunch(st), publish, sinks.mc)
+      return launch(mcLaunch(st, sinks.pool), publish, sinks.mc)
     case 'sensitivity':
-      return launch(sensitivityLaunch(st), publish, sinks.sensitivity)
+      return launch(sensitivityLaunch(st, response), publish, sinks.sensitivity)
     case 'sweep':
       return launch(sweep ? sweepLaunch(st, sweep) : null, publish, sinks.sweep)
     case 'trial':
@@ -115,7 +132,7 @@ export function requestAnalysis(
 export function cancelAnalysis(kind: AnalysisKind): void {
   switch (kind) {
     case 'mc':
-      return cancelMcRun()
+      return cancelPooledRun()
     case 'sensitivity':
       return cancelSensitivity()
     case 'sweep':
@@ -132,7 +149,7 @@ export function cancelAnalysis(kind: AnalysisKind): void {
  * graceful stop; cancel it through `cancelAnalysis`.
  */
 export function requestCancel(kind: 'mc' | 'sensitivity' | 'sweep', runId: string): boolean {
-  if (kind === 'mc') return requestMcCancel(runId)
+  if (kind === 'mc') return requestPooledCancel(runId)
   return kind === 'sweep' ? requestSweepCancel(runId) : requestSensitivityCancel(runId)
 }
 
@@ -146,37 +163,86 @@ function launch<M>(
   if (!spec.start(deliver)) deliver(spec.unavailable)
 }
 
-function mcLaunch(st: AnalysisSlices): Launch<McWorkerMessage> | null {
-  const { runMode, replicates } = runSettings(st.scenario)
-  if (runMode === 'deterministic') return null
+function mcLaunch(
+  st: AnalysisSlices,
+  onPool: (p: PoolProgress) => void,
+): Launch<McWorkerMessage> | null {
+  const settings = runSettings(st.scenario)
+  if (settings.runMode === 'deterministic') return null
   const runId = st.playback.runId
   return {
     pending: { mc: {
-      ...pendingRun(st, replicates),
-      // A new replicate run starts with no pool progress and no Morris or Sobol result.
+      // The total is where the loop ends: the cap under a half-width target.
+      ...pendingRun(st, loopEnd(settings)),
+      // A new replicate run starts with no pool progress. The Morris and Sobol
+      // results describe the same board until its basis changes, so they stay.
       pool: null,
-      morris: null,
-      sobol: null,
+      morris: st.mc.morris,
+      sobol: st.mc.sobol,
       // The sensitivity run and the sweep have their own worker and lifecycle.
       sensitivity: st.mc.sensitivity,
       sweep: st.mc.sweep,
     } },
-    start: (deliver) => startMcRun(st.scenario, runId, deliver),
+    start: (deliver) => startPooledRun(st.scenario, runId, deliver, onPool),
     unavailable: { type: 'error', runId, message: UNAVAILABLE },
   }
 }
 
-function sensitivityLaunch(st: AnalysisSlices): Launch<McSensitivityMessage> | null {
-  if (runSettings(st.scenario).runMode === 'deterministic') return null
+function sensitivityLaunch(
+  st: AnalysisSlices,
+  response: SensitivityResponse,
+): Launch<SensitivityMessage> | null {
+  const { runMode, sensitivityDepth } = runSettings(st.scenario)
+  if (runMode === 'deterministic') return null
   const runId = st.playback.runId
-  return {
-    // The field count arrives with the first progress message: a value
-    // import of uncertainFields would pull attrition.ts into the store.
-    // A sweep on the shared slot is replaced; its pending state goes with it.
-    pending: { mc: { ...st.mc, sensitivity: pendingRun(st, 0), sweep: replaced(st.mc.sweep, IDLE_SWEEP) } },
-    start: (deliver) => startSensitivity(st.scenario, runId, deliver),
-    unavailable: { type: 'sens-error', runId, message: UNAVAILABLE },
+  // The unit count arrives with the first progress message: a value import of
+  // uncertainFields would pull attrition.ts into the store. A sweep on the
+  // shared slot is replaced; its pending state goes with it. A new sensitivity
+  // run clears the Morris and Sobol results of the last one.
+  const pending: AnalysisPatch = { mc: {
+    ...st.mc, sensitivity: pendingRun(st, 0), sweep: replaced(st.mc.sweep, IDLE_SWEEP), morris: null, sobol: null,
+  } }
+  if (sensitivityDepth === 'quick') {
+    return {
+      pending,
+      start: (deliver) => startSensitivity(st.scenario, runId, deliver),
+      unavailable: { type: 'sens-error', runId, message: UNAVAILABLE },
+    }
   }
+  const request: McMorrisRequest = { type: 'morris', runId, scenario: st.scenario, response }
+  return {
+    pending,
+    start: (deliver) => startMorris(request, deliver),
+    unavailable: { type: 'morris-error', runId, message: UNAVAILABLE },
+  }
+}
+
+/**
+ * The Sobol stage of a full sensitivity run, after `morris-done` was accepted:
+ * the fields Morris kept, on the response it read, on the same slot and run
+ * identity. A screening that kept nothing ends the run done with no Sobol
+ * result. The caller passes the state after the Morris patch was applied.
+ */
+export function requestSobol(
+  st: AnalysisSlices,
+  publish: (patch: AnalysisPatch) => void,
+  sinks: AnalysisSinks,
+  morris: MorrisResult,
+): void {
+  const sens = st.mc.sensitivity
+  const kept = morris.kept.map((i) => morris.fields[i].field)
+  if (kept.length === 0) {
+    publish({ mc: { ...st.mc, sensitivity: { ...sens, status: 'done', error: null } } })
+    return
+  }
+  const runId = st.playback.runId
+  const request: McSobolRequest = { type: 'sobol', runId, scenario: st.scenario, kept, response: morris.response }
+  launch<SensitivityMessage>({
+    // The run stays live on its identity; the evaluation count starts over.
+    pending: { mc: { ...st.mc, sensitivity: { ...sens, progress: 0, total: 0 } } },
+    start: (deliver) => startSobol(request, deliver),
+    unavailable: { type: 'sobol-error', runId, message: UNAVAILABLE },
+  }, publish, sinks.sensitivity)
 }
 
 /** The state of the run the shared slot drops: a running one goes idle, a finished one stays. */
@@ -260,21 +326,86 @@ function owns(
     request.basisSignature === analysisBasisSignature(st.scenario)
 }
 
-/** Accept a replicate-run message; null when it belongs to no live request. */
+/**
+ * Accept a replicate-run message; null when it belongs to no live request. An
+ * error clears the pool progress; `done` keeps its last value for the line
+ * that reads it after the run.
+ */
 export function acceptMcMessage(st: AnalysisSlices, m: McWorkerMessage): AnalysisPatch | null {
   const next = acceptRun(st, st.mc, m, (summary) => summary.replicates)
-  return next == null ? null : { mc: { ...st.mc, ...next } }
+  if (next == null) return null
+  return { mc: { ...st.mc, ...next, ...(m.type === 'error' ? { pool: null } : {}) } }
 }
 
-/** Accept a sensitivity-run message; null when it belongs to no live request. */
+/**
+ * Accept the pool's progress; null unless a replicate run is live. A late
+ * message after a reset must not revive the slice. The pool carries no run
+ * id of its own: the coordinator already drops a replaced run's callbacks.
+ */
+export function acceptPoolProgress(st: AnalysisSlices, p: PoolProgress): AnalysisPatch | null {
+  return st.mc.status === 'running' ? { mc: { ...st.mc, pool: p } } : null
+}
+
+/** Accept a message of the sensitivity slot, whichever stage posted it. */
 export function acceptSensitivityMessage(
   st: AnalysisSlices,
-  m: McSensitivityMessage,
+  m: SensitivityMessage,
 ): AnalysisPatch | null {
+  switch (m.type) {
+    case 'morris-progress':
+    case 'morris-done':
+    case 'morris-error':
+      return acceptMorrisMessage(st, m)
+    case 'sobol-progress':
+    case 'sobol-done':
+    case 'sobol-error':
+      return acceptSobolMessage(st, m)
+    default:
+      return acceptOatMessage(st, m)
+  }
+}
+
+/** Accept a one-at-a-time sensitivity message; null when it belongs to no live request. */
+function acceptOatMessage(st: AnalysisSlices, m: McSensitivityMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
   // A run with no progress message (one field, or none) has no total yet.
   const next = acceptRun(st, sens, m, (summary) => sens.total > 0 ? sens.total : summary.rows.length)
   return next == null ? null : { mc: { ...st.mc, sensitivity: { ...sens, ...next } } }
+}
+
+/**
+ * Accept a Morris message on the sensitivity run's identity. `morris-done`
+ * records the result and keeps the run live with its count reset, so the
+ * Sobol stage can follow on the same identity (see `requestSobol`).
+ */
+export function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPatch | null {
+  const sens = st.mc.sensitivity
+  if (!owns(st, { live: sens.status === 'running', ...sens }, m)) return null
+  switch (m.type) {
+    case 'morris-progress':
+      return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
+    case 'morris-done':
+      return { mc: { ...st.mc, morris: m.result, sensitivity: { ...sens, progress: 0, total: 0 } } }
+    case 'morris-error':
+      return { mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } } }
+  }
+}
+
+/**
+ * Accept a Sobol message on the sensitivity run's identity. `sobol-done`
+ * records the result and ends the run; the one-at-a-time summary stays null.
+ */
+export function acceptSobolMessage(st: AnalysisSlices, m: McSobolMessage): AnalysisPatch | null {
+  const sens = st.mc.sensitivity
+  if (!owns(st, { live: sens.status === 'running', ...sens }, m)) return null
+  switch (m.type) {
+    case 'sobol-progress':
+      return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
+    case 'sobol-done':
+      return { mc: { ...st.mc, sobol: m.result, sensitivity: { ...sens, status: 'done', progress: sens.total, error: null } } }
+    case 'sobol-error':
+      return { mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } } }
+  }
 }
 
 /** Accept a sweep message; null when it belongs to no live request. */

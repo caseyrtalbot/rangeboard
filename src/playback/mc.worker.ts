@@ -4,17 +4,21 @@
  * `progress` and posts `done`; one chunk of a pooled run streams
  * `range-progress` and posts `range-done` with its partial; a sensitivity run
  * streams `sens-progress` and posts `sens-done`; a sweep streams
- * `sweep-progress` and posts `sweep-done`;
- * a throw posts the error message. Loops run under
- * `DEFAULT_BUDGET` and stop at a checkpoint with `stopped.rule` 'budget'. The
+ * `sweep-progress` and posts `sweep-done`; a Morris screening streams
+ * `morris-progress` and posts `morris-done`; a Sobol run streams
+ * `sobol-progress` and posts `sobol-done`; a throw posts the error message.
+ * Loops run under `DEFAULT_BUDGET` and stop at a checkpoint with
+ * `stopped.rule` 'budget'. The
  * driver yields every YIELD_MS so a `cancel` request ends the run at the next
  * checkpoint with 'cancelled'.
  */
 import type {
   Checkpoint,
   Loop,
+  McMorrisMessage,
   McRequest,
   McSensitivityMessage,
+  McSobolMessage,
   McSweepMessage,
   McWorkerMessage,
   StopRule,
@@ -28,6 +32,8 @@ import {
   sensitivityLoop,
   sweepLoop,
 } from './mcRun'
+import { morrisLoop } from './morris'
+import { sobolLoop } from './sobol'
 import type { PoolMessage, PoolRequest } from './workerPool'
 
 /** Longest stretch of replicates run before the driver lets a message in. */
@@ -38,8 +44,14 @@ const PROGRESS_MS = 250
 let runId: string | null = null
 let cancelled = false
 
-const post = (m: McWorkerMessage | McSensitivityMessage | McSweepMessage | PoolMessage): void =>
-  self.postMessage(m)
+type Posted =
+  | McWorkerMessage
+  | McSensitivityMessage
+  | McSweepMessage
+  | McMorrisMessage
+  | McSobolMessage
+  | PoolMessage
+const post = (m: Posted): void => self.postMessage(m)
 const yieldToEvents = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
 /** Post progress at a checkpoint when its count is new and due. */
@@ -125,6 +137,43 @@ self.onmessage = async (e: MessageEvent<McRequest | PoolRequest>) => {
     } catch (err) {
       post({
         type: 'sweep-error',
+        runId: id,
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+    return
+  }
+  if (e.data.type === 'morris') {
+    const response = e.data.response ?? 'leakers'
+    try {
+      // The loop reports every row, the last one included; the driver only
+      // yields and reads the cancel at each checkpoint.
+      const loop = morrisLoop(scenario, response, (done, total) =>
+        post({ type: 'morris-progress', runId: id, done, total }),
+      )
+      const result = await drive(loop, 1, () => {})
+      post({ type: 'morris-done', runId: id, result })
+    } catch (err) {
+      post({
+        type: 'morris-error',
+        runId: id,
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+    return
+  }
+  if (e.data.type === 'sobol') {
+    const { kept } = e.data
+    const response = e.data.response ?? 'leakers'
+    try {
+      const loop = sobolLoop(scenario, kept, response, (done, total) =>
+        post({ type: 'sobol-progress', runId: id, done, total }),
+      )
+      const result = await drive(loop, 1, () => {})
+      post({ type: 'sobol-done', runId: id, result })
+    } catch (err) {
+      post({
+        type: 'sobol-error',
         runId: id,
         message: err instanceof Error ? err.message : String(err),
       })

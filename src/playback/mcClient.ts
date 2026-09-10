@@ -1,8 +1,12 @@
 import type { Scenario } from '../model/types'
 import type {
+  McMorrisMessage,
+  McMorrisRequest,
   McRequest,
   McSensitivityMessage,
   McSensitivityRequest,
+  McSobolMessage,
+  McSobolRequest,
   McSweepMessage,
   McSweepRequest,
   McWorkerMessage,
@@ -21,19 +25,26 @@ const run = createWorkerSlot()
 /**
  * The sensitivity run, on its own slot. A sensitivity run is many replicate
  * loops, so it runs beside a replicate run: neither start cancels the other.
- * A sweep shares this slot: a sweep and a sensitivity run replace each other.
+ * A sweep, a Morris screening and a Sobol run share this slot: any start on
+ * it replaces what runs there.
  */
 const sens = createWorkerSlot()
 
 /**
  * The pooled replicate run, on its own coordinator. It speaks the same
  * `McWorkerMessage` protocol as `startMcRun` and adds `PoolProgress`, so a
- * caller reads either the single worker or the pool with one handler. Nothing
- * calls it yet: the store switch is integration work.
+ * caller reads either the single worker or the pool with one handler. The
+ * store's Run button starts here; `startMcRun` stays for the single-worker
+ * transport tests.
  */
 const pool = createWorkerPool()
 
-type McMessage = McWorkerMessage | McSensitivityMessage | McSweepMessage
+type McMessage =
+  | McWorkerMessage
+  | McSensitivityMessage
+  | McSweepMessage
+  | McMorrisMessage
+  | McSobolMessage
 
 /** The Monte Carlo protocol: messages are tagged by run id; `done` and `error` end the run. */
 function protocol<M extends McMessage>(
@@ -52,7 +63,7 @@ function protocol<M extends McMessage>(
       return data as M
     },
     errorOf,
-    terminal: (m) => m.type !== 'progress' && m.type !== 'sens-progress' && m.type !== 'sweep-progress',
+    terminal: (m) => !m.type.endsWith('progress'),
     onMessage,
   }
 }
@@ -162,6 +173,40 @@ export function startSweep(
     request,
     ['sweep-progress', 'sweep-done', 'sweep-error'],
     (message) => ({ type: 'sweep-error', runId: request.runId, message }),
+    onMessage,
+  ))
+}
+
+/**
+ * Start a Morris screening on the sensitivity slot; a run already there is
+ * terminated. Returns false when the environment has no Worker, as
+ * `startMcRun` does.
+ */
+export function startMorris(
+  request: McMorrisRequest,
+  onMessage: (m: McMorrisMessage) => void,
+): boolean {
+  return sens.start(protocol<McMorrisMessage>(
+    request,
+    ['morris-progress', 'morris-done', 'morris-error'],
+    (message) => ({ type: 'morris-error', runId: request.runId, message }),
+    onMessage,
+  ))
+}
+
+/**
+ * Start a Sobol run on the sensitivity slot; a run already there is
+ * terminated. Returns false when the environment has no Worker, as
+ * `startMcRun` does.
+ */
+export function startSobol(
+  request: McSobolRequest,
+  onMessage: (m: McSobolMessage) => void,
+): boolean {
+  return sens.start(protocol<McSobolMessage>(
+    request,
+    ['sobol-progress', 'sobol-done', 'sobol-error'],
+    (message) => ({ type: 'sobol-error', runId: request.runId, message }),
     onMessage,
   ))
 }

@@ -14,6 +14,7 @@ import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
 import { PfTag } from '../../inspector/kit'
 import { SENSITIVITY_DEPTH_NAME, SENSITIVITY_DEPTH_SENTENCE } from '../../settings/inputs'
+import { SensitivityWidget } from '../SensitivityWidget'
 import { useForecastEngagement } from '../controls'
 import { bandMean, countSub, currentSensitivity, currentSummary, currentSweep, formatCount, statMean, timeStatSub } from '../mc'
 import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from '../runValidityText'
@@ -138,6 +139,13 @@ export function FragilityScreen() {
   const depth = run.sensitivityDepth
   const sweeping = mc.sweep.status === 'running' && mc.sweep.runId === runId
   const sharedBusy = sweeping || mc.sensitivity.status === 'running'
+  // The Morris and Sobol results ride the sensitivity run's identity: a basis
+  // change marks that slice stale and a reset clears it, so they read through it.
+  const stageResults = mc.sensitivity.status === 'stale' || mc.sensitivity.runId !== runId ? null : mc
+  const sensitivityRunning = mc.sensitivity.status === 'running'
+  const stageLine = sensitivityRunning && depth === 'full'
+    ? `${mc.sensitivity.progress} of ${mc.sensitivity.total} evaluations · ${mc.morris ? `Sobol on ${mc.morris.kept.length} fields` : 'Morris screening'}`
+    : `${mc.sensitivity.progress} of ${mc.sensitivity.total} fields`
   const mapFactors = sweep?.factors ?? (requestedRunId === runId && sweeping ? requested : factors)
   const responseAvailable = hasAsset || (response !== 'leakers' && response !== 'minWarningS')
   const ranked = [...(responseAvailable ? sensitivity?.rows ?? [] : [])].sort((a, b) =>
@@ -194,9 +202,10 @@ export function FragilityScreen() {
         <Field label="Sensitivity response"><select value={response} onChange={e => setResponse(e.target.value as SensitivityResponse)}>
           {SENSITIVITY_RESPONSES.map(r => <option key={r} value={r}>{SWEEP_RESPONSE_LABELS[r]}</option>)}
         </select></Field>
-        <p className="muted small">Each perturbation’s full run · MC mean swing at parameter p10/p90, not an uncertainty interval · paired SE.
-          {sensitivity && <> {sensitivity.replicates} paired replicates · seed {sensitivity.seed}.</>}</p>
+        {sensitivity && <p className="muted small">Each perturbation’s full run · MC mean swing at parameter p10/p90, not an uncertainty interval · paired SE.
+          {' '}{sensitivity.replicates} paired replicates · seed {sensitivity.seed}.</p>}
       </header>
+      <SensitivityWidget scenario={scenario} morris={stageResults?.morris ?? null} sobol={stageResults?.sobol ?? null} />
       {!responseAvailable && <p className="muted small">No defended asset; response unavailable.</p>}
       {ranked.map(row => {
         const value = row.responses?.[response]
@@ -217,9 +226,9 @@ export function FragilityScreen() {
       })}
       {fields.length === 0 && !sensitivity && <p className="muted small">No field carries a spread.</p>}
       {sensitivity?.stopped && <p className="muted small">Sensitivity {sensitivity.stopped.rule} · {sensitivity.rows.length} fields retained.</p>}
-      {mc.sensitivity.status === 'running' && <p role="status">{mc.sensitivity.progress} of {mc.sensitivity.total} fields</p>}
+      {sensitivityRunning && <p role="status">{stageLine}</p>}
       <p className="muted small">{SENSITIVITY_DEPTH_SENTENCE[depth]}</p>
-      <button type="button" disabled={!enabled || sharedBusy || fields.length === 0} onClick={() => startSensitivity()}>{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
+      <button type="button" disabled={!enabled || sharedBusy || fields.length === 0} onClick={() => startSensitivity(response)}>{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
       {mc.sensitivity.error && <p role="alert">{mc.sensitivity.error}</p>}
     </section>
     <section aria-label="Validity">

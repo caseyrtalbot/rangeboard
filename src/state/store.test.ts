@@ -1427,9 +1427,9 @@ describe('sensitivity slice', () => {
     }
   }
 
-  /** Start a sensitivity run on the controlled worker, then progress and completion. */
+  /** Start a one-at-a-time sensitivity run on the controlled worker, then progress and completion. */
   function primeSensitivity(): SensitivitySummary {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    useStore.getState().patchScenario({ runMode: 'monte-carlo', sensitivityDepth: 'quick' })
     useStore.getState().runSensitivity()
     expect(useStore.getState().mc.sensitivity.status).toBe('running')
     const runId = useStore.getState().mc.sensitivity.runId as string
@@ -1443,7 +1443,8 @@ describe('sensitivity slice', () => {
   function markMcDone(): void {
     useStore.getState().runMonteCarlo()
     const runId = useStore.getState().playback.runId
-    ControlledWorker.latest().send({ type: 'done', runId, summary: { replicates: 1 } })
+    // The pool merges partials into `done`; the sink is driven directly here.
+    useStore.getState().mcMessage({ type: 'done', runId, summary: { replicates: 1 } as McSummary })
     expect(useStore.getState().mc.status).toBe('done')
   }
 
@@ -1524,14 +1525,16 @@ describe('sensitivity slice', () => {
   })
 
   it('stays out of the scenario and the history', () => {
-    useStore.getState().patchScenario({ runMode: 'monte-carlo' })
+    useStore.getState().patchScenario({ runMode: 'monte-carlo', sensitivityDepth: 'quick' })
     const past = useStore.getState().past.length
     useStore.getState().runSensitivity()
     const runId = useStore.getState().mc.sensitivity.runId as string
     useStore.getState().sensitivityMessage({ type: 'sens-done', runId, summary: fakeSensitivity() })
     const st = useStore.getState()
     expect(st.past.length).toBe(past)
-    expect(JSON.stringify(st.scenario)).not.toContain('sensitivity')
+    // The depth setting is a scenario field; the run slice is not.
+    expect('sensitivity' in st.scenario).toBe(false)
+    expect(JSON.stringify(st.scenario)).not.toContain('"sensitivity"')
   })
 })
 

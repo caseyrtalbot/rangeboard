@@ -64,8 +64,8 @@ import {
   writeViewCamera,
 } from '../io/viewState'
 // Keep worker execution behind analysisRequests; summaries are types, not store runtime dependencies.
-import type { McSensitivityMessage, McSweepMessage, McWorkerMessage } from '../playback/mcRun'
-import type { AnalysisSinks, SweepSpec } from './analysisRequests'
+import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
+import type { AnalysisSinks, SensitivityMessage, SweepSpec } from './analysisRequests'
 
 /**
  * The lens system is gone, so every run is stamped with the old default lens
@@ -74,12 +74,14 @@ import type { AnalysisSinks, SweepSpec } from './analysisRequests'
 const OBSERVED_PRESET_ID = 'run-summary'
 import {
   acceptMcMessage,
+  acceptPoolProgress,
   acceptSensitivityMessage,
   acceptSweepMessage,
   acceptTrialMessage,
   cancelAnalysis,
   requestAnalysis,
   requestCancel,
+  requestSobol,
 } from './analysisRequests'
 
 
@@ -345,10 +347,14 @@ export interface Store {
    * which arrives as `done` with `stopped.rule` 'cancelled'.
    */
   cancelMonteCarlo: () => void
-  /** Launch the sensitivity run for the current scenario and run id (cancels an older one). */
-  runSensitivity: () => void
-  /** Sensitivity worker message sink; a message from another run is ignored. */
-  sensitivityMessage: (m: McSensitivityMessage) => void
+  /**
+   * Launch the sensitivity run for the current scenario and run id (cancels an
+   * older one). Under the full depth it is Morris on `response` (leakers by
+   * default), then Sobol on the fields Morris kept.
+   */
+  runSensitivity: (response?: SensitivityResponse) => void
+  /** Sensitivity slot message sink; a message from another run is ignored. */
+  sensitivityMessage: (m: SensitivityMessage) => void
   /** Ask a running sensitivity run to stop at its next checkpoint, as `cancelMonteCarlo`. */
   cancelSensitivityRun: () => void
   /** Pool progress of the replicate run; null clears it. */
@@ -428,6 +434,8 @@ export const useStore = create<Store>()((set, get) => {
   /** Worker messages reach the store through its sinks, never a slot directly. */
   const sinks: AnalysisSinks = {
     mc: (m) => get().mcMessage(m),
+    // Pool progress lands only on a live run; a late message cannot revive one.
+    pool: (p) => set((st) => acceptPoolProgress(st, p) ?? st),
     sensitivity: (m) => get().sensitivityMessage(m),
     sweep: (m) => get().sweepMessage(m),
     trial: (m) => get().trialMessage(m),
@@ -1423,9 +1431,15 @@ export const useStore = create<Store>()((set, get) => {
       if (mc.status === 'running' && mc.runId != null) requestCancel('mc', mc.runId)
     },
 
-    runSensitivity: () => requestAnalysis('sensitivity', get(), set, sinks),
+    runSensitivity: (response) => requestAnalysis('sensitivity', get(), set, sinks, undefined, response),
 
-    sensitivityMessage: (m) => set((st) => acceptSensitivityMessage(st, m) ?? st),
+    sensitivityMessage: (m) => {
+      const patch = acceptSensitivityMessage(get(), m)
+      if (patch == null) return
+      set(patch)
+      // An accepted screening hands its kept fields to the Sobol stage.
+      if (m.type === 'morris-done') requestSobol(get(), set, sinks, m.result)
+    },
 
     cancelSensitivityRun: () => {
       const { sensitivity } = get().mc

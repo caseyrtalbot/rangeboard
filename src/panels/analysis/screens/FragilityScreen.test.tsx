@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../../../model/seed'
 import type { BandSeries, McSummary, SensitivityResponseStat, SensitivitySummary, Stat, SweepSummary } from '../../../playback/mcRun'
 import { SENSITIVITY_RESPONSES } from '../../../playback/mcRun'
+import { MORRIS_FIXTURE, SOBOL_FIXTURE } from '../../../charts/__fixtures__/sobolFixture'
 import { IDLE_MC, IDLE_SENSITIVITY, IDLE_SWEEP } from '../../../state/runState'
 import { useStore } from '../../../state/store'
 import { FragilityScreen } from './FragilityScreen'
@@ -108,6 +109,45 @@ describe('FragilityScreen', () => {
     expect(start).toHaveBeenCalledOnce()
     expect(html).toContain('Run sensitivity · Morris then Sobol')
     expect(html).toContain('Morris screening, then Sobol indices on the fields it keeps')
+  })
+
+  it('mounts the Sobol chart on the Morris and Sobol results of the current sensitivity run', () => {
+    const runId = useStore.getState().playback.runId
+    const done = { ...IDLE_SENSITIVITY, status: 'done' as const, runId }
+    useStore.setState({ mc: { ...IDLE_MC, sensitivity: done, morris: MORRIS_FIXTURE, sobol: SOBOL_FIXTURE } })
+    const html = render()
+    expect(html).toContain('data-sensitivity-widget="sobol"')
+    expect(html).toContain('4 fields ranked by the total index')
+    expect(html).toContain('kept 4 for Sobol')
+    // No one-at-a-time summary: no rows and no paired-replicate sentence.
+    expect(html).not.toContain('data-sensitivity-row=')
+    expect(html).not.toContain('paired replicates')
+    // A stale sensitivity run withholds both results.
+    useStore.setState({ mc: { ...useStore.getState().mc, sensitivity: { ...done, status: 'stale' } } })
+    expect(render()).not.toContain('data-sensitivity-widget=')
+  })
+
+  it('names the stage on the running line under the full depth', () => {
+    const runId = useStore.getState().playback.runId
+    const running = { ...IDLE_SENSITIVITY, status: 'running' as const, runId, progress: 7, total: 70 }
+    useStore.setState({ mc: { ...IDLE_MC, sensitivity: running } })
+    expect(render()).toContain('7 of 70 evaluations · Morris screening')
+    useStore.setState({ mc: { ...IDLE_MC, sensitivity: { ...running, progress: 3, total: 1536 }, morris: MORRIS_FIXTURE } })
+    const html = render()
+    expect(html).toContain('3 of 1536 evaluations · Sobol on 4 fields')
+    expect(html).toContain('data-sensitivity-widget="morris"')
+    useStore.getState().patchScenario({ sensitivityDepth: 'quick' })
+    useStore.setState({ mc: { ...IDLE_MC, sensitivity: { ...running, progress: 1, total: 2 } } })
+    expect(render()).toContain('1 of 2 fields')
+  })
+
+  it('passes the selected response to the sensitivity launch', () => {
+    const start = vi.fn()
+    useStore.setState({ runSensitivity: start })
+    render()
+    change('Sensitivity response', 'kills')
+    interaction.buttons.get('Run sensitivity · Morris then Sobol')!.onClick()
+    expect(start).toHaveBeenCalledWith('kills')
   })
 
   it('names the quick depth in the sensitivity button and the sentence above it', () => {
