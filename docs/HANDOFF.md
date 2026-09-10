@@ -15,7 +15,7 @@ about an unfinished lane goes in Open items, not in Completed.
 | Phase | Gate | Merge commit | Date |
 | --- | --- | --- | --- |
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
-| 1 Real-mode statistics | passed, one exit item open | `70a7a0e` | 2026-09-10 |
+| 1 Real-mode statistics | passed | `70a7a0e` | 2026-09-10 |
 | 2 Tracks and kill chain | not started | | |
 | 3 Sensor and effector physics | not started | | |
 | 4 Hypothesis tools | not started | | |
@@ -78,11 +78,11 @@ Phase 1, all on `main`, nothing pushed. Base `7f2997d`.
 
 ## Open items
 
-- Phase 1 exit item not met: the runner cannot complete 10 000 replicates on the largest
-  fixture (`layered-acoustic-merops.json`, 37 002 retained numbers per replicate) because
-  `DEFAULT_BUDGET.retainedNumbers` (96 million, a browser-worker limit) refuses it; 2594
-  replicates fit and ran in 21.6 s on 14 threads. Decision for Casey; recommendation: give
-  the Node runner its own budget from the machine's memory and keep the browser budget.
+- The blueprint exit item on 10 000 command-line replicates was dropped on 2026-09-10
+  (Casey): the retained-numbers budget (96 million, a browser-worker guard in
+  `DEFAULT_BUDGET`) refuses that count on `layered-acoustic-merops.json`; 2594 replicates
+  fit and ran in 21.6 s on 14 threads. Section J targets are reference values; a
+  performance problem is noted when it appears.
 - The Morris `'leakers'` response on the JIATF-401 laydown is 0 in every row at ten
   trajectories, so every mu star is 0 there; `'firstDetectS'` screens well. The Fragility
   response selector picks the response; no default change made.
@@ -118,8 +118,7 @@ Phase 1, all on `main`, nothing pushed. Base `7f2997d`.
 The next task is the Phase 2 contract slice in
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#4-phase-2-tracks-and-kill-chain): a
 `fable-medium` worker on `src/model/types.ts`, `src/playback/trackTypes.ts` and
-`src/analysis/fidelity.ts`. Wave one (2.1 to 2.3) starts only after it merges. One poll
-is open: the runner budget decision above.
+`src/analysis/fidelity.ts`. Wave one (2.1 to 2.3) starts only after it merges. No poll is open.
 
 ## Verification at the last gate
 
@@ -132,5 +131,5 @@ is open: the runner budget decision above.
   [the gate evidence](field-te/evidence/p1-gate-2026-09-10/README.md): Run tab defaults,
   default run on the pool, 1000 replicates, Morris then Sobol to the chart, 0 page errors.
 - Timing against blueprint section J: default run 0.13 s, 1000 replicates 2.2 s,
-  sensitivity 5.9 s, all inside target; the 10 000 replicate command-line target is
-  blocked by the budget (open item).
+  sensitivity 5.9 s, all inside the reference values; 2594 command-line replicates in
+  21.6 s on the largest fixture (the 10 000 item is dropped).

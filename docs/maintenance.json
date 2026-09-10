@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "63bd833750b6d908a69aa42193badd8c3207c0abdccffc22b421fa6db4c8b31c",
+      "sha256": "78b9d9d3531f60da736fd26da4d2da01606433d0f9c4372e56e2a8ff9cc88b37",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate rewrite; lane worktrees removed after the gate"
+      "note": "Phase 1 gate passed in full; the runner budget poll closed by dropping the exit item; no poll open"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "3a061ef862aea0519ee9d9ecc0e16fd440a612b8c4758f908373dc0db0b7f923",
+      "sha256": "a48957356f88334832284e3b47fccaa636b24085eb603703ac5a5adca67e474f",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 1 complete mark with the merge and gate commits; deviations recorded"
+      "note": "Blueprint version 4: the Phase 1 exit item on 10 000 command-line replicates dropped on Casey's decision"
     }
   ],
   "historical": [

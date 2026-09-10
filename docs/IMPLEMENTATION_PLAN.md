@@ -1,7 +1,7 @@
 # RangeBoard calibration implementation plan
 
 Current reference. Written 2026-09-10 against `ffde21b`. The design it implements is the
-RangeBoard Calibration Blueprint (artifact, version 3, 2026-09-10). Source and tests decide
+RangeBoard Calibration Blueprint (artifact, version 4, 2026-09-10). Source and tests decide
 what is built; this plan sequences the work and assigns each slice to an owner. Old plans
 remain cancelled.
 
@@ -101,7 +101,7 @@ Orchestrator: wire the Run button to the pool; Fragility runs Morris then Sobol 
 Monte Carlo run finishes; `npm run check`; record pool timing on the largest fixture
 against blueprint section J. Exit: blueprint Phase 1 exit.
 
-**Phase 1 complete, 2026-09-10, with one exit item open.** Contract `64c9f83` and `c4473e7`;
+**Phase 1 complete, 2026-09-10.** Contract `64c9f83` and `c4473e7`;
 range primitive `ec80ac0` (lane 1.3 part A, sequential before 1.1 and 1.2); lane merges
 `570ada4` (1.5), `abf332f` (1.4), `ac8343d` (1.2), `3891fcb` (1.3), `4f0730f` (1.1);
 integration `0f5231a`; gate commit `70a7a0e`. Deviations: the replicate loop was split into a range loop, a partial
@@ -109,8 +109,9 @@ merge and a finish step before the pool and the runner lanes started; `mergeSumm
 was created by lane 1.3 and extended by 1.2; the Sobol chart lives in a new
 `SensitivityWidget.tsx` that integration mounted on Fragility; the Run tab lane also owned
 `SettingsPanel.tsx`; the runner keeps its own `loadScenario.ts` because `persist.ts` pulls
-the store. Open exit item: the runner cannot complete 10 000 replicates on the largest
-fixture under the retained-numbers budget. Evidence and open items are in
+the store. The blueprint exit item on 10 000 command-line replicates was dropped on
+2026-09-10 (Casey): section J targets are reference values, and a performance problem is
+noted when it appears. Evidence and open items are in
 [HANDOFF.md](HANDOFF.md).
 
 ## 4. Phase 2: tracks and kill chain

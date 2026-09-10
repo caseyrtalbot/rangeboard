@@ -17,7 +17,7 @@ the tree at the gate commit on `main`, not the current tree.
 | Exit item | Result |
 | --- | --- |
 | Pooled, single-worker and command-line summaries identical at one seed | Met: `workerPool.test.ts` (1, 3 and 7 workers, aleatory and total) and `scripts/test-engine-cli.mjs` (3 workers and 1 worker against `runReplicates`) |
-| The runner completes 10 000 replicates on the largest fixture | Not met: `DEFAULT_BUDGET.retainedNumbers` (96 million) refuses the run; 2594 replicates fit and ran in 21.6 s on 14 threads (120 per second, about 146 s projected for 10 000 on 8 threads) |
+| The runner completes 10 000 replicates on the largest fixture | Dropped 2026-09-10 (Casey): `DEFAULT_BUDGET.retainedNumbers` (96 million, a browser guard) refuses the run; 2594 replicates fit and ran in 21.6 s on 14 threads (120 per second). Section J targets are reference values |
 | Sobol on a fixture with a known analytic ranking recovers it | Met: Ishigami at base 1024 inside every bootstrap interval, ranking (2, 1, 3) by first order and (1, 2, 3) by total (`sobol.test.ts`) |
 | The parity fixtures do not move in aleatory mode | Met: `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`, `convergence.verify.test.ts` unchanged inside `check.txt` |
 
@@ -28,7 +28,7 @@ the tree at the gate commit on `main`, not the current tree.
 | Default run | 10 s | 0.13 s wall, stopped by the half-width rule at 144 replicates |
 | 1000 replicates, total | 20 s | 2.2 s wall (0.6 s pool clock) on JIATF-401 |
 | Sensitivity, Morris then Sobol on eight fields, base 256 | 60 s | 5.9 s wall to the Sobol chart |
-| 10 000 replicates, command line | 3 min | refused by the budget; 2594 in 21.6 s |
+| 10 000 replicates, command line | 3 min (dropped as a gate) | refused by the budget; 2594 in 21.6 s |
 
 ## Lane browser checks (reported by the lane workers, scripts kept outside the repo)
 
