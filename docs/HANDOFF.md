@@ -15,7 +15,7 @@ about an unfinished lane goes in Open items, not in Completed.
 | Phase | Gate | Merge commit | Date |
 | --- | --- | --- | --- |
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
-| 1 Real-mode statistics | passed, one exit item open | see the next commit | 2026-09-10 |
+| 1 Real-mode statistics | passed, one exit item open | `70a7a0e` | 2026-09-10 |
 | 2 Tracks and kill chain | not started | | |
 | 3 Sensor and effector physics | not started | | |
 | 4 Hypothesis tools | not started | | |
@@ -70,7 +70,7 @@ Phase 1, all on `main`, nothing pushed. Base `7f2997d`.
   `scripts/test-engine-cli.mjs` (the record equals `runReplicates` at one seed, 3 workers
   and 1 worker); timing in
   [p1-runner-2026-09-10](field-te/evidence/p1-runner-2026-09-10/timing.txt).
-- 1.c Integration, `0f5231a`, plus the gate commit. The Run button runs on the pool
+- 1.c Integration, `0f5231a`, and the gate commit `70a7a0e`. The Run button runs on the pool
   (`mcLaunch` through `startPooledRun`, the pool sink writes `mc.pool` while running);
   `sensitivityDepth: 'full'` runs Morris then Sobol on the sensitivity slot with the kept
   fields; Fragility mounts `SensitivityWidget`; `RunControl` and the chip read the loop end

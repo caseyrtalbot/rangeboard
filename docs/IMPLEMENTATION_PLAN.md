@@ -104,7 +104,7 @@ against blueprint section J. Exit: blueprint Phase 1 exit.
 **Phase 1 complete, 2026-09-10, with one exit item open.** Contract `64c9f83` and `c4473e7`;
 range primitive `ec80ac0` (lane 1.3 part A, sequential before 1.1 and 1.2); lane merges
 `570ada4` (1.5), `abf332f` (1.4), `ac8343d` (1.2), `3891fcb` (1.3), `4f0730f` (1.1);
-integration `0f5231a`. Deviations: the replicate loop was split into a range loop, a partial
+integration `0f5231a`; gate commit `70a7a0e`. Deviations: the replicate loop was split into a range loop, a partial
 merge and a finish step before the pool and the runner lanes started; `mergeSummaries.ts`
 was created by lane 1.3 and extended by 1.2; the Sobol chart lives in a new
 `SensitivityWidget.tsx` that integration mounted on Fragility; the Run tab lane also owned
