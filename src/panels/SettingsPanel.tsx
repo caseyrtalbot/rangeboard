@@ -4,12 +4,14 @@ import { FireDoctrineSettings } from './analysis/FireDoctrineSettings'
 import { EnvironmentSettings } from './analysis/EnvironmentSettings'
 import { RequirementSettings } from './analysis/RequirementSettings'
 import { ThemeSettings, UnitsSettings, BasemapSettings, LayerSettings } from './ViewMenu'
+import { SystemsTab } from './settings/SystemsTab'
 
-export type SettingsSection = 'scenario' | 'run' | 'view'
+export type SettingsSection = 'scenario' | 'run' | 'systems' | 'view'
 
 const SECTIONS: { id: SettingsSection; label: string }[] = [
   { id: 'scenario', label: 'Scenario' },
   { id: 'run', label: 'Forecast and analysis' },
+  { id: 'systems', label: 'Systems' },
   { id: 'view', label: 'View' },
 ]
 
@@ -85,6 +87,13 @@ export function SettingsPanel({
             <section className="settings-block prepare-setting-body" aria-label="Forecast and analysis">
               <h3>Forecast and analysis</h3>
               <ForecastSettings />
+            </section>
+          )}
+          {section === 'systems' && (
+            <section className="settings-block prepare-setting-body" aria-label="Systems">
+              <h3>Systems</h3>
+              <p>Every library field the placed systems use, with its grade, layer, source and spread. An override replaces a value on this board only and records why.</p>
+              <SystemsTab />
             </section>
           )}
           {section === 'view' && (
