@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "a66f1d185c864e654191ade603228aedfad593c2ea3cf7cc6113d9c578ec900b",
+      "sha256": "c6f7165a35bfb9121c0e36ecb632dd99da42d42f73d9261ec17b73aabc82b8b5",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 0 gate evidence added to the completion records."
+      "note": "Phase 1 gate evidence indexed under historical evidence"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
