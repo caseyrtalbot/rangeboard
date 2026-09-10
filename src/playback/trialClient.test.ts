@@ -53,6 +53,12 @@ describe('single-trial worker ownership', () => {
     expect(callback).toHaveBeenCalledOnce()
   })
 
+  it('accepts a structured clone of the result, whose manifest arrays share no identity', () => {
+    const { req, callback, worker } = start()
+    worker.send(structuredClone(done(req)))
+    expect(callback).toHaveBeenCalledExactlyOnceWith(done(req))
+  })
+
   it('rejects old queued callbacks even when a replacement has identical run and request identities', () => {
     const old = start()
     const queued = old.worker.onmessage!

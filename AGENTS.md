@@ -20,6 +20,8 @@ One zustand store holds the Board; persistence is localStorage.
   Preserve quantity, units, denominator, horizon, definedness and each statistic's
   own interval. Never invent missing data or turn source context into a requirement.
 - Preserve recovery copies, storage keys and compatibility defaults.
+- The library is the JSON package under `data/library`. Edit the JSON, then run
+  `npm run library:build`; never hand-edit a generated file.
 - Reuse existing resolvers, statistics and UI tokens. Follow the
   [design system](docs/design/DESIGN_SYSTEM.md) and existing code style: two spaces,
   no semicolons, single quotes, named exports, short rationale comments.

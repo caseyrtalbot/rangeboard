@@ -18,12 +18,15 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run build` | TypeScript project build and Vite production bundle |
 | `npm run schema:generate` | Regenerate runtime descriptors after domain type changes |
 | `npm run schema:check` | Reject descriptors that differ from current types |
+| `npm run library:build` | Compile `data/library` into `src/model/seedLibrary.generated.ts` after a library edit |
+| `npm run priors:build` | Derive `data/priors` and `src/analysis/classPriors.generated.ts` from the L1 entries |
+| `npm run library:check` | Reject a stale generated library or prior file and run the data health check |
 | `npm run docs:check` | Lint Markdown, validate local links, placement and source review |
 | `npm run test:docs` | Exercise documentation maintenance failure paths |
 | `npm run test:bundle` | Test bundle accounting and over-budget rejection |
 | `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
-| `npm run check` | Complete documentation, type, schema, test, lint and build gate |
+| `npm run check` | Complete documentation, type, library, schema, test, lint and build gate |
 
 Run the complete gate for source changes and after integrating lanes. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`. Update a
@@ -115,7 +118,8 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   | --- | --- | --- |
   | Fragility | `panels/analysis/screens/FragilityScreen.test.tsx`, `charts/SweepMap.test.tsx` | Run a sweep from the screen; the map paints cell by cell as it completes |
   | Now | `panels/analysis/screens/NowScreen.test.tsx` | Play at 30x; the run line, kill chain, bars and sensor rows update with no dropped canvas frame and no scenario input shown |
-  | Outcome | `panels/analysis/screens/OutcomeScreen.test.tsx`, `panels/analysis/DebriefRecord.test.tsx` | A completed run; the tiles render once, the table sorts, the records open in place |
+  | Outcome | `panels/analysis/screens/OutcomeScreen.test.tsx`, `panels/analysis/DebriefRecord.test.tsx`, `panels/analysis/RunHistory.test.tsx`, `io/runStore.test.ts` | A completed run; the tiles render once, the table sorts, the records open in place; Save to history lists the ensemble, the row survives a reload and opens in place |
+  | Settings Systems | `panels/settings/SystemsTab.test.tsx`, `state/overrides.test.ts`, `state/trialManifestOverrides.test.ts` | Edit a field with a reason; the override shows beside the source value, `rangeboard.overrides.v1` holds it across a reload, a sampled trial's manifest lists it, reset clears it |
   | Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `charts/BandChart.test.tsx`, `analysis/runValidity.test.ts` | A completed run with an ensemble; the band chart, delta table and disagreement finding render |
   | Baseline | `state/baseline.test.ts`, the persistence tests above | Pin, reload, compare against the dashed baseline, clear; the Storage section lists `rangeboard.baseline.v1` |
 

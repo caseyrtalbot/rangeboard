@@ -21,7 +21,7 @@
       "url": null,
       "date": "2026-09-04",
       "estimator": "planning-factor",
-      "note": "Outside the sensor/radar/any/any prior by 3.5 spreads; kept as sourced"
+      "note": "Outside the sensor/radar/any/any prior by 3.5 spreads; kept as a planning figure"
     },
     "classifyRangeM": {
       "value": null,

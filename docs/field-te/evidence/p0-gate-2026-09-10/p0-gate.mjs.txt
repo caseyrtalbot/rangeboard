@@ -1,0 +1,87 @@
+// Phase 0 gate browser check: override in a trial manifest, Systems tab, run history across a reload.
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+const { chromium } = createRequire('/Users/caseytalbot/Projects/rangeboard/package.json')('playwright')
+const BASE_URL = 'http://localhost:5391'
+const ROOT = '/Users/caseytalbot/Projects/rangeboard'
+const SHOTS = `${ROOT}/docs/field-te/evidence/p0-gate-2026-09-10`
+const RAW = readFileSync(`${ROOT}/docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`, 'utf8')
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+await ctx.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 300)) })
+const read = (path) => page.evaluate((p) => p.split('.').reduce((o, k) => o?.[k], window.__store.getState()), path)
+const waitFor = (fn, arg) => page.waitForFunction(fn, arg, { timeout: 60000 })
+async function boot() {
+  await page.goto(BASE_URL, { waitUntil: 'load' })
+  await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, { timeout: 60000 })
+}
+await boot()
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  window.__store.getState().loadScenario(parseAutosave(raw))
+}, RAW)
+// 1. Systems tab: override KuRFS detectRangeM with a reason.
+await page.click('button[aria-controls="settings-panel"]')
+await page.waitForSelector('#settings-panel[open]')
+await page.click('.settings-nav button:has-text("Systems")')
+await page.waitForSelector('#settings-body table.systems-tb')
+console.log('systems head:', await page.textContent('#settings-body .systems-count'))
+await page.click('#settings-body button[aria-label="Edit detectRangeM on KuRFS Ku-band fire-control radar (Raytheon)"]').catch(async () => {
+  const labels = await page.$$eval('#settings-body button[aria-label^="Edit detectRangeM"]', (ns) => ns.map((n) => n.getAttribute('aria-label')))
+  console.log('edit labels:', labels)
+  await page.click(`#settings-body button[aria-label="${labels[0]}"]`)
+})
+await page.waitForSelector('#settings-body form.systems-edit')
+await page.fill('#settings-body form.systems-edit input[type="number"]', '3200')
+await page.fill('#settings-body form.systems-edit input[type="text"]', 'gate check 2026-09-10')
+await page.click('#settings-body form.systems-edit button[type="submit"]')
+await waitFor(() => document.querySelector('#settings-body td')?.closest('table') && [...document.querySelectorAll('#settings-body td')].some((td) => td.textContent.startsWith('override')))
+await page.screenshot({ path: `${SHOTS}/1-systems-override.png` })
+console.log('storage:', await page.evaluate(() => localStorage.getItem('rangeboard.overrides.v1')))
+await page.click('#settings-panel button[aria-label="Close Settings"]')
+// 2. Sampled trial: the manifest lists the override.
+await page.evaluate(() => window.__store.getState().startTrialRun())
+await waitFor(() => ['ready', 'error'].includes(window.__store.getState().trial.status))
+console.log('trial status:', await read('trial.status'))
+const manifestOverrides = await read('trial.manifest.overrides')
+console.log('manifest overrides:', JSON.stringify(manifestOverrides))
+assert.equal(manifestOverrides.length, 1)
+assert.equal(manifestOverrides[0].value, 3200)
+await page.evaluate(() => window.__store.getState().setPlaying(false))
+// 3. Run the ensemble and save it to history.
+await page.evaluate(() => window.__store.getState().patchScenario({ runMode: 'monte-carlo', replicates: 4 }))
+await page.evaluate(() => window.__store.getState().runMonteCarlo())
+await waitFor(() => window.__store.getState().mc.status === 'done')
+await page.click('#board-phase-analyze')
+await waitFor(() => document.querySelector('section[aria-label="Run history"]'))
+await page.locator('section[aria-label="Run history"] button:has-text("Save to history")').click()
+await waitFor(() => document.querySelector('table[aria-label="Saved runs"] tbody tr'))
+await page.screenshot({ path: `${SHOTS}/2-history-saved.png` })
+// 4. Reload: override and history survive.
+await boot()
+console.log('overrides after reload:', await page.evaluate(() => localStorage.getItem('rangeboard.overrides.v1')))
+await page.click('#board-phase-analyze')
+await waitFor(() => document.querySelector('table[aria-label="Saved runs"] tbody tr'))
+await page.click('table[aria-label="Saved runs"] tbody tr button:has-text("Open")')
+await waitFor(() => document.querySelector('div[aria-label="Saved run outcomes"]'))
+console.log('saved record tiles:', await page.locator('div[aria-label="Saved run outcomes"] .tile').count())
+await page.locator('div[aria-label="Saved run outcomes"]').scrollIntoViewIfNeeded()
+await page.screenshot({ path: `${SHOTS}/3-history-after-reload.png` })
+// 5. Reset the override to source.
+await page.click('button[aria-controls="settings-panel"]')
+await page.waitForSelector('#settings-panel[open]')
+await page.click('.settings-nav button:has-text("Systems")')
+await page.waitForSelector('#settings-body table.systems-tb')
+await page.click('#settings-body button[aria-label="Reset every override"]')
+await waitFor(() => JSON.parse(localStorage.getItem('rangeboard.overrides.v1')).overrides.length === 0)
+console.log('overrides after reset:', await page.evaluate(() => localStorage.getItem('rangeboard.overrides.v1')))
+await page.evaluate(() => indexedDB.deleteDatabase('rangeboard.runs.v1'))
+console.log('page errors:', errors.length, errors)
+await ctx.close(); await browser.close()
+assert.deepEqual(errors, [])
+console.log('OK')

@@ -63,6 +63,14 @@ Orchestrator: wire the run manifest to list overrides and the data package versi
 library; `npm run check`; browser check of Settings and history. Exit: blueprint Phase 0
 exit.
 
+**Phase 0 complete, 2026-09-10.** Contract `8e9a0bc`; lane merges `ff24472` (0.1),
+`e48b3ab` (0.3), `a56291c` (0.4), `b1493ec` (0.2); integration `248f4ca` and the gate
+commit. Deviations: `src/playback/trialTypes.ts` joined the contract set because the
+manifest lives there; lane 0.3 added two calls to `src/main.tsx`; the orchestrator fixed
+the per-key manifest comparators in `trialClient.ts`, `analysisRequests.ts`,
+`trialResult.ts` and `trialSelectors.ts`. Evidence and open items are in
+[HANDOFF.md](HANDOFF.md).
+
 ## 3. Phase 1: real-mode statistics
 
 Goal: one Run button with real defaults, a worker pool, a headless runner, Morris and

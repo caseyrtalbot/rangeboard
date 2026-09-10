@@ -102,7 +102,11 @@ Breaking one of these breaks the app.
   `RINGS_KEY`, `UNITS_KEY`, `VIEW_KEY`, `RUNSEQ_KEY`, `RIGHT_PANEL_WIDTH_KEY`,
   `PALETTE_WIDTH_KEY`, `PALETTE_COLLAPSED_KEY`, `ENGSTRIP_OPEN_KEY` and the retired
   `ANALYSIS_KEY` (`rangeboard.analysis.v1`), which earlier builds wrote for the removed
-  lens layout and nothing reads now. The removed T&E Ops workspace wrote
+  lens layout and nothing reads now, and `OVERRIDES_KEY` (`rangeboard.overrides.v1`), an
+  `OverrideSet` written by `overridesAutosaveAdapter` (`src/io/persistOverrides.ts`) from
+  the separate `useOverrides` store with its own `OVERRIDES_RECOVERY_PREFIX`. Run history
+  is not a localStorage key: `RUNS_DB_NAME` (`rangeboard.runs.v1`) names the IndexedDB
+  database `src/io/runStore.ts` owns, with a 64 MiB cap and oldest-first eviction. The removed T&E Ops workspace wrote
   `rangeboard.te.v1` and `rangeboard.te.recovered.*`; nothing reads or lists them now,
   and no code deletes them. Two recovery namespaces exist: `SCENARIO_RECOVERY_PREFIX` and
   `BASELINE_RECOVERY_PREFIX` (`rangeboard.baseline.recovered.`); `storageManagement.ts`
@@ -255,7 +259,13 @@ Breaking one of these breaks the app.
   policy. Continue-jam outcomes are retained separately because ledger `killDelta` does not
   encode that draw. Default and ensemble sweeps collect no new observation histories.
   `trialTypes.ts` freezes the run id, configuration basis, seed, `idHash(runId)` numeric
-  replicate index, nominal/aleatory basis and compatibility versions. Build provenance is
+  replicate index, nominal/aleatory basis and compatibility versions, plus the record
+  keys `dataPackageVersion`, `overrides` (the active overrides at launch, from
+  `activeOverrides`), `physicsSwitches`, `fidelityFloor` and `producer`. Every manifest
+  comparison goes through `sameManifest`, which compares the array keys by value because
+  a structured clone from a worker never shares array identity; `trialClient.ts` carries
+  its own copy so it never imports the engine. The selector skips the record keys, so an
+  override edit after launch never orphans a ready trial. Build provenance is
   explicitly null until a build revision is supplied; the version tag is not a commit hash.
   `trialClient.ts` owns a third independent worker slot (over `workerSlot.ts`), released at
   completion, error, replacement or cancellation. Adapter and `acceptTrialMessage` require
@@ -312,15 +322,19 @@ Breaking one of these breaks the app.
 src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basisFor),
                scenario.ts (modelFor index, pathSpeed, scenarioDurationS, engineKeyOf and
                markPresentationVariant), seed.ts (emptyScenario, DEFAULT_SEED),
-               seedLibrary.ts (builtin specs with
-               provenance rows), libraryLifecycle.ts (the one seed library lifecycle:
+               seedLibrary.ts (re-export of seedLibrary.generated.ts, which
+               scripts/build-library.mjs compiles from the data/library JSON package),
+               libraryField.ts (LibraryFile and LibraryField, the grade, layer and range
+               type enums, Override, PhysicsSwitch, FidelityTier, DATA_PACKAGE_VERSION),
+               runRecord.ts (RunManifest, RunRecord, createRunManifest), libraryLifecycle.ts (the one seed library lifecycle:
                initial library and presets, load reconcile, import merge, reset to seed,
                provenance adoption), integrationData.ts (researched pairings and profiles),
                seedSystems.ts (system presets), seedCards.ts,
                rcsFactors / signatureFactors / weaponFactors (PF tiers)
 src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant
                range, horizon), prng.ts (mulberry32, idHash, hashU01), webmerc.ts
-src/state/     store.ts: one zustand store (scenario + history + selection + camera + ui +
+src/state/     overrides.ts (useOverrides: the separate override store, activeOverrides),
+               store.ts: one zustand store (scenario + history + selection + camera + ui +
                playback + mc + trial), playbackCommands.ts (store-free playback intents:
                play, pause, scrub, frame, publish, newRun and their transitions),
                baseline.ts (PinnedBaseline, buildBaseline, validateMcSummary),
@@ -359,7 +373,8 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                (the trial protocol adapter), controlledWorker.ts (the shared Worker test
                double), trialTrackState.ts (retained member
                outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector state)
-src/analysis/  sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
+src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CLASS_PRIORS),
+               sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), projection.ts
                (pure named quantities on the DT grid: sampleCount, hold and residual
@@ -416,9 +431,13 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
                runtimeValidation.ts + validateScenario.ts (runtime semantics),
                viewState.ts (readSetting and writeSetting over every settings key),
-               storageKeys.ts, recovery.ts
+               persistOverrides.ts (overridesAutosaveAdapter, restoreOverrides,
+               startOverridesAutosave), runStore.ts (IndexedDB run history: saveRun,
+               listRuns, getRun, deleteRun, clearRuns, RUN_STORE_CAP_BYTES) with
+               fakeIndexedDb.ts for tests, storageKeys.ts, recovery.ts
 src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
-               the autosave subscription, exposes window.__store in dev
+               the autosave subscription, then does the same for the overrides,
+               exposes window.__store in dev
 src/App.tsx    right panel tabs, keyboard map, resizer; lazy boundaries for
                AnalysisPanel and CommandPalette
 ```
@@ -562,8 +581,21 @@ Each fact below has exactly one definition. Read it there; never add a second co
   size. Missing/zero-sample estimates remain unavailable and n=1 carries no claimed mean
   CI. Full-run conditional time means are labeled; quantities without a replicate
   statistic retain an individual planning-envelope label.
+- **Data package** (`data/library/<kind>/<slug>.json`, one file per model, `index.json`
+  for order and version): every numeric spec field is a `LibraryField` with value, unit,
+  grade, layer, range type, condition, source and spread; categorical spec keys are bare
+  `attributes`. `scripts/build-library.mjs` compiles the package into
+  `src/model/seedLibrary.generated.ts`; `scripts/check-library.mjs` is the health check
+  (grade, layer, unit, range type and condition, L1 source and date, L2 estimator, index
+  and version agreement, and a value more than three spreads from its class prior with no
+  note). `scripts/derive-priors.mjs` writes `data/priors/<class>.json` and
+  `src/analysis/classPriors.generated.ts` from the L1 entries only, with the member list
+  per field. `npm run library:check` runs all three in the gate. A library edit is a JSON
+  edit followed by `npm run library:build`; the generated file is never hand-edited.
 - **Provenance** (`Provenance` in `src/model/types.ts`): a `SpecModel` carries one row per
-  field (field, value, source, url, date, basis, spread); `basisFor(model, field)` is the
+  field (field, value, source, url, date, basis, spread, and the optional lineage keys
+  grade, layer, rangeType, condition, unit, estimator, comparisonSet, note the package
+  supplies); `basisFor(model, field)` is the
   one basis resolver and answers `pf` when the field has no row. `PfTag`
   (`src/panels/inspector/kit.tsx`) is the one tag: `.pf` for a planning factor, `.pf.src`
   for a sourced value, hover title `basis · source · date`. Every sensor, effector and
@@ -590,9 +622,15 @@ Each fact below has exactly one definition. Read it there; never add a second co
   Inspector pass the raw control value and carry no field rules. `updateModel` stays the
   whole-patch action for the model name, description, color and provenance rows.
 - **Parameter uncertainty** (`src/analysis/parameterBasis.ts`, re-exported by
-  `uncertainty.ts`): `spreadFor(model, field)` is
-  the one spread resolver: the row's spread, else `PF_SPREAD` by field, else null; a row
-  with `spread: null` is pinned and fixed. `sampleSpread` is the one inverse-CDF sample
+  `uncertainty.ts`): `spreadFor(model, field, priors?)` is
+  the one spread resolver: the row's spread, else the class prior when a `priors` table
+  is passed, else `PF_SPREAD` by field, else null; a row
+  with `spread: null` is pinned and fixed. No caller passes `priors` yet, so every
+  existing result is unchanged; `spreadBasisFor` names the step that answered. An
+  override (`useOverrides`, `src/state/overrides.ts`) never edits the scenario library:
+  it is a separate record with a reason and a date, listed in the trial manifest, and
+  the Settings Systems tab (`src/panels/settings/SystemsTab.tsx`) shows it beside the
+  source value with reset per field, per system and all. `sampleSpread` is the one inverse-CDF sample
   (lognormal `sigmaDb` a power ratio, triangular bounds fractions of the nominal, a beta
   with `pseudo` the PF table rescaled to the nominal, a beta without it the row's stated
   counts under a Jeffreys prior). `sampleScenario` is pure and returns a new scenario, and

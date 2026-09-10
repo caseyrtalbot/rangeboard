@@ -1388,6 +1388,7 @@ export const SEED_LIBRARY: SpecModel[] = [
         unit: 'm',
         rangeType: 'detection',
         estimator: 'planning-factor',
+        note: 'Outside the sensor/radar/any/any prior by 3.5 spreads; kept as a planning figure',
       },
       {
         field: 'sectorDeg',
@@ -1753,6 +1754,7 @@ export const SEED_LIBRARY: SpecModel[] = [
         unit: 'm',
         rangeType: 'detection',
         estimator: 'planning-factor',
+        note: 'Outside the sensor/radar/any/any prior by 3.5 spreads; kept as a planning figure',
       },
       {
         field: 'instrumentedRangeM',

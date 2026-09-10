@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "1471ae7366164b11a4fa3140fc26548fb081d04ee8adddceb1bcafba05669af5",
-      "reviewedAt": "2026-09-09",
-      "note": "T&E Ops removed: one store, no campaign guidance."
+      "sha256": "635a5044d5a3a0354e4c8d6568654677c068480b2a96391c7ff3774adcedad39",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 gate: package.json gains library:build, priors:build and library:check in the gate; scripts/ gains build-library, check-library and derive-priors. AGENTS.md names the data package; README and WORKFLOW text unchanged."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "7cc27f013d2735730eb45fa3736f392580b20a6d0850f3f1c7fc660ad46014ba",
-      "reviewedAt": "2026-09-09",
-      "note": "Redirect unchanged; AGENTS.md reviewed after the T&E Ops removal."
+      "sha256": "85367ad053859cdd97e2cbafcc7d487ed0ffe7250542a855fe3cec0a2a41c81f",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 gate: AGENTS.md gained the data package line; the redirect is unchanged."
     },
     {
       "document": "README.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "00adf71c499ac4ff348bbe1577c5318f470590bf56b5e45478e443dc4017973c",
-      "reviewedAt": "2026-09-09",
-      "note": "Test cards dropped from the summary after the tab removal"
+      "sha256": "971fde62d67014aedefe9c1dc3fbe82e0a0394eeb53421938d5d1a8c999ce409",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 gate: package.json gains library:build, priors:build and library:check in the gate; scripts/ gains build-library, check-library and derive-priors. AGENTS.md names the data package; README and WORKFLOW text unchanged."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "ec25b6ad4afba3cfe33b82acb83c7435bfced3b95e168300da1315a774558da4",
+      "sha256": "a66f1d185c864e654191ade603228aedfad593c2ea3cf7cc6113d9c578ec900b",
       "reviewedAt": "2026-09-10",
-      "note": "Added the implementation plan to the current references"
+      "note": "Phase 0 gate evidence added to the completion records."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9f74fb0b223cf0a7fe728c0d146f2b0c78860cd7a7beff22219ba003bbccacbd",
+      "sha256": "13bbd728ae625d63af3784eced8c7cb0c5b47d32ec885e6f6096957839450eea",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 0 contract: lineage types only (libraryField.ts, runRecord.ts, Provenance keys); guide text updated at the Phase 0 gate."
+      "note": "Phase 0 gate: Settings Systems tab, overrides, data package and run history rows added."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "12d14b989a9b5c6606858496cac020fca9fec973ef3c4a0772cf740b97e96ea8",
+      "sha256": "61b2b71cf30ed6640c3fe36934287cbd46716eb0ec7eb12f55d9a2ef5fe00af5",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 0 contract: lineage types only (libraryField.ts, runRecord.ts, Provenance keys, sameManifest); reference updated at the Phase 0 gate."
+      "note": "Phase 0 gate: data package, class priors, overrides store and key, run store, manifest record keys and sameManifest documented."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "72e1ff96dcc40a2e61c9b2fd03a85dbad0d946d6ad63a961f2b406316a3f53bd",
+      "sha256": "73dbb059991f6f8813670fb22f9462430f7c11f0df981056eedf44e8c5962466",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 0 contract: no check changed; guide updated at the Phase 0 gate."
+      "note": "Phase 0 gate: library and priors commands, Outcome history and Settings Systems browser checks added."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "8855db0835a873d38c4770cc0e4e68597e086964a0f07812d6409cbe5b2bf309",
-      "reviewedAt": "2026-09-09",
-      "note": "e2e phase test tab change reviewed; workflow text unchanged"
+      "sha256": "efb736a3ee652e5a99ae07b2cc0186d706da44447e0819cca6f31340b36d5df8",
+      "reviewedAt": "2026-09-10",
+      "note": "Phase 0 gate: package.json gains library:build, priors:build and library:check in the gate; scripts/ gains build-library, check-library and derive-priors. AGENTS.md names the data package; README and WORKFLOW text unchanged."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "da3f260136de1df078443024a5f278059f93482124280f39745010cbb07ec328",
+      "sha256": "9eefd4aaaa1220bd0296702bf2ad946a6bf16de011c7d6d742a5e825a3af46e9",
       "reviewedAt": "2026-09-10",
-      "note": "Rewritten 2026-09-10 as the single per-phase handoff for the calibration plan"
+      "note": "Rewritten at the Phase 0 gate: lanes, commits, open items, Phase 1 boundary."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "4f1a8077c258c9f81e6fe1854e3ab5e3b90debd03124e446682c93d027a17389",
+      "sha256": "bec983ffa0d9e389ec8bc7ac02fc5e23781384a2bf47e0530438264443ffba06",
       "reviewedAt": "2026-09-10",
-      "note": "Added the per-gate handoff rewrite rule to section 8"
+      "note": "Phase 0 marked complete with its merge commits and deviations."
     }
   ],
   "historical": [

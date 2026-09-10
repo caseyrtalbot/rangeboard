@@ -1,0 +1,191 @@
+
+> rangeboard@0.0.0 check
+> npm run docs:check && npm run test:docs && npm run test:bundle && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build
+
+
+> rangeboard@0.0.0 docs:check
+> npm run docs:lint && node scripts/check-docs.mjs
+
+
+> rangeboard@0.0.0 docs:lint
+> markdownlint-cli2
+
+markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)
+Finding: **/*.md !node_modules/** !dist/** !.claude/** !.git/**
+Linting: 78 files
+Summary: 0 issues in 0 files
+Documentation placement and source review passed (11 current references).
+
+> rangeboard@0.0.0 test:docs
+> node --test scripts/test-docs.mjs
+
+TAP version 13
+# Subtest: review detects changed source, edited prose, additions, deletions and moves
+ok 1 - review detects changed source, edited prose, additions, deletions and moves
+  ---
+  duration_ms: 94.949416
+  type: 'test'
+  ...
+# Subtest: untracked inputs count, ignored scratch files do not, ordering is stable
+ok 2 - untracked inputs count, ignored scratch files do not, ordering is stable
+  ---
+  duration_ms: 47.483625
+  type: 'test'
+  ...
+# Subtest: orphan documents, missing index links and oversized agent guidance fail
+ok 3 - orphan documents, missing index links and oversized agent guidance fail
+  ---
+  duration_ms: 44.375667
+  type: 'test'
+  ...
+# Subtest: historical placement does not grant an exemption from indexing
+ok 4 - historical placement does not grant an exemption from indexing
+  ---
+  duration_ms: 20.621792
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 242.254959
+
+> rangeboard@0.0.0 test:bundle
+> node --test scripts/test-bundle.mjs
+
+TAP version 13
+# Subtest: counts entry, modulepreloads and CSS once; reports font and all-in totals, excludes lazy assets
+ok 1 - counts entry, modulepreloads and CSS once; reports font and all-in totals, excludes lazy assets
+  ---
+  duration_ms: 18.402583
+  type: 'test'
+  ...
+# Subtest: budget boundaries use exact decimal bytes and allow equality
+ok 2 - budget boundaries use exact decimal bytes and allow equality
+  ---
+  duration_ms: 0.1045
+  type: 'test'
+  ...
+# Subtest: CLI passes a small bundle and fails an entry whose gzip size exceeds its budget
+ok 3 - CLI passes a small bundle and fails an entry whose gzip size exceeds its budget
+  ---
+  duration_ms: 72.325583
+  type: 'test'
+  ...
+# Subtest: CLI fails when shared JS and CSS push the initial set over budget
+ok 4 - CLI fails when shared JS and CSS push the initial set over budget
+  ---
+  duration_ms: 37.030542
+  type: 'test'
+  ...
+# Subtest: missing entry, missing assets and external initial assets fail closed
+ok 5 - missing entry, missing assets and external initial assets fail closed
+  ---
+  duration_ms: 1.608292
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 161.95375
+
+> rangeboard@0.0.0 library:check
+> node scripts/build-library.mjs --check && node scripts/check-library.mjs && node scripts/derive-priors.mjs --check
+
+src/model/seedLibrary.generated.ts is current (90 models).
+Library health check passed: 90 models, 633 fields.
+data/priors and src/analysis/classPriors.generated.ts are current (6 classes).
+
+> rangeboard@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.app.json
+
+
+> rangeboard@0.0.0 schema:check
+> node src/io/generateRuntimeSchema.mjs --check
+
+
+> rangeboard@0.0.0 test
+> vitest run --dir src
+
+
+ RUN  v4.1.11 /Users/caseytalbot/Projects/rangeboard
+
+
+ Test Files  148 passed (148)
+      Tests  1757 passed (1757)
+   Start at  12:38:00
+   Duration  6.01s (transform 6.11s, setup 0ms, import 18.27s, tests 40.37s, environment 7ms)
+
+
+> rangeboard@0.0.0 lint
+> oxlint
+
+src/charts/ChartFrame.tsx:9:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/SystemStatus.tsx:12:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/SystemStatus.tsx:24:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/SweepMap.tsx:8:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/SweepMap.tsx:15:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/SweepMap.tsx:20:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/TimeSeries.tsx:5:3: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/TimeSeries.tsx:5:16: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/TimeSeries.tsx:5:33: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/TimeSeries.tsx:5:50: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/TimeSeries.tsx:5:63: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/charts/TimeSeries.tsx:5:75: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/state/useTrialResult.test.ts:18:5: warning react(globals): Cannot reassign variables declared outside of the component/hook help: Variable `value` is declared outside of the component/hook. Reassigning this value during render is a side effect which can cause unpredictable behavior. If this variable is used in rendering, use useState instead. Otherwise, update it in an effect
+src/panels/inspector/kit.tsx:135:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/Glyph.tsx:20:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/Glyph.tsx:30:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/runValidityText.tsx:7:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/runValidityText.tsx:31:14: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/canvas/layers/UnderlayLayer.tsx:15:7: warning react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+src/panels/analysis/controls.tsx:53:10: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/controls.tsx:56:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/controls.tsx:63:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/detail/detailRows.tsx:14:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/detail/detailRows.tsx:32:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/panels/analysis/detail/detailRows.tsx:97:17: warning react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+src/App.tsx:467:8: warning react(refs): Cannot access refs during render help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+src/App.tsx:239:17: warning react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+
+> rangeboard@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.1 building client environment for production...
+transforming...
+✓ 854 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.95 kB │ gzip:   0.51 kB
+dist/assets/JetBrainsMono-Regular-DhGaPbHz.woff2     35.78 kB
+dist/assets/JetBrainsMono-Medium-Dk4jEEJd.woff2      36.64 kB
+dist/assets/Archivo-Medium-Cr1wtuHD.woff2            52.20 kB
+dist/assets/Archivo-Regular-CpqDCVrH.woff2           52.34 kB
+dist/assets/trial.worker-DQg5pOb-.js                113.13 kB
+dist/assets/mc.worker-CsS-VD1g.js                   137.78 kB
+dist/assets/SettingsPanel-C8qOlOJa.css                1.01 kB │ gzip:   0.40 kB
+dist/assets/index-Hq177z1X.css                       67.52 kB │ gzip:  11.98 kB
+dist/assets/CommandPalette-Dg60Qkrp.js                3.62 kB │ gzip:   1.51 kB
+dist/assets/StoragePanel-DeTbFPWC.js                  4.34 kB │ gzip:   1.73 kB
+dist/assets/SettingsPanel-BRq_g43H.js                 8.01 kB │ gzip:   2.67 kB
+dist/assets/jsx-runtime-B-hcVAMW.js                   8.55 kB │ gzip:   3.26 kB
+dist/assets/TimeSeriesChart-D4NasTyp.js              43.87 kB │ gzip:  12.24 kB
+dist/assets/AnalysisPanel-DyPiT5hJ.js                64.13 kB │ gzip:  19.09 kB
+dist/assets/ChartFrame-CwKpzk66.js                  334.11 kB │ gzip:  97.86 kB
+dist/assets/index-Cn-itf9Q.js                     1,155.66 kB │ gzip: 339.77 kB
+
+✓ built in 238ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 820 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
