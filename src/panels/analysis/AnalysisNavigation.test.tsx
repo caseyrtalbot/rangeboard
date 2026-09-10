@@ -11,12 +11,24 @@ describe('AnalysisNavigation', () => {
     for (const selected of options) {
       const html = renderToStaticMarkup(<AnalysisNavigation phase={phase} screen={selected.v} onNavigate={() => {}} />)
       expect(html).toContain('aria-label="Analysis screens"')
-      expect(html.match(/<button /g)).toHaveLength(options.length)
+      // Analyze also carries the Run control, so its nav holds one button more.
+      expect(html.match(/<button /g)).toHaveLength(options.length + (phase === 'analyze' ? 1 : 0))
       expect(html.match(/aria-pressed="true"/g)).toHaveLength(1)
       expect(html).toContain(`class="active">${selected.label}</button>`)
       for (const option of options) expect(html).toContain(`>${option.label}</button>`)
       expect(html).not.toContain('Layout')
       expect(html).not.toContain('Analysis lenses')
+    }
+  })
+
+  it('puts the one Run control beside the Analyze screens and nowhere else', () => {
+    const analyze = renderToStaticMarkup(<AnalysisNavigation phase="analyze" screen="outcome" onNavigate={() => {}} />)
+    expect(analyze).toContain('class="run-control"')
+    expect(analyze).toContain('>Run<')
+    expect(analyze).toContain('Deterministic')
+    for (const phase of ['prepare', 'execute'] as BoardPhase[]) {
+      const html = renderToStaticMarkup(<AnalysisNavigation phase={phase} screen={PHASE_SCREENS[phase][0].v} onNavigate={() => {}} />)
+      expect(html).not.toContain('class="run-control"')
     }
   })
 

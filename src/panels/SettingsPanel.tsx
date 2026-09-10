@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { ForecastSettings } from './analysis/ForecastSettings'
 import { FireDoctrineSettings } from './analysis/FireDoctrineSettings'
 import { EnvironmentSettings } from './analysis/EnvironmentSettings'
 import { RequirementSettings } from './analysis/RequirementSettings'
 import { ThemeSettings, UnitsSettings, BasemapSettings, LayerSettings } from './ViewMenu'
+import { RunTab } from './settings/RunTab'
 import { SystemsTab } from './settings/SystemsTab'
 
 export type SettingsSection = 'scenario' | 'run' | 'systems' | 'view'
@@ -86,7 +86,8 @@ export function SettingsPanel({
           {section === 'run' && (
             <section className="settings-block prepare-setting-body" aria-label="Forecast and analysis">
               <h3>Forecast and analysis</h3>
-              <ForecastSettings />
+              <p>Every setting a replicate run reads, with its default beside it. The Run button itself sits on Prepare and on Analyze.</p>
+              <RunTab />
             </section>
           )}
           {section === 'systems' && (

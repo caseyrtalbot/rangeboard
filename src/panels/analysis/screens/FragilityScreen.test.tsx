@@ -106,7 +106,16 @@ describe('FragilityScreen', () => {
     expect(html).toContain('disabled="" title="Pin this laydown and ensemble for Compare">Pin as baseline')
     interaction.buttons.get('Run Monte Carlo')!.onClick()
     expect(start).toHaveBeenCalledOnce()
-    expect(html).toContain('Run sensitivity')
+    expect(html).toContain('Run sensitivity · Morris then Sobol')
+    expect(html).toContain('Morris screening, then Sobol indices on the fields it keeps')
+  })
+
+  it('names the quick depth in the sensitivity button and the sentence above it', () => {
+    useStore.getState().patchScenario({ sensitivityDepth: 'quick' })
+    const html = render()
+    expect(html).toContain('Run sensitivity · one-at-a-time')
+    expect(html).toContain('One-at-a-time at p10 and p90')
+    expect(html).not.toContain('Morris screening')
   })
 
   it('renders the current tiles, own intervals, map, ranked responses and validity rows', () => {
