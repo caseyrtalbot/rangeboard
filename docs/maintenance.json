@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "724833d88dccee3a385ede7dc39d4e56daf7d732a86983a73b74ab1023b9d7d4",
+      "sha256": "63bd833750b6d908a69aa42193badd8c3207c0abdccffc22b421fa6db4c8b31c",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate rewrite: phase status, completed lanes, open items, Phase 2 contract boundary"
+      "note": "Phase 1 gate rewrite; lane worktrees removed after the gate"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

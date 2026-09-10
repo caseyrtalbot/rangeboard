@@ -110,8 +110,8 @@ Phase 1, all on `main`, nothing pushed. Base `7f2997d`.
 - No pinned parity number moved in Phase 1. `convergence.verify.test.ts` and
   `mcRun.test.ts` fixtures pin aleatory, a null target or `stopCap` where they read the
   loop end.
-- Seven agent worktrees under `.claude/worktrees/` hold the lane branches; every commit is
-  merged.
+- The seven `calib/p1-*` lane branches remain; every commit is merged and the worktrees
+  are removed.
 
 ## Continuation boundary
 
