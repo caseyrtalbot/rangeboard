@@ -64,6 +64,8 @@ export interface LibraryField<T> {
   /** Model ids an estimator drew on, so a class median can be traced. */
   comparisonSet?: string[]
   note?: string
+  /** The old provenance basis of the row, kept so the build reconstructs the row byte for byte. */
+  basis?: 'datasheet' | 'reference' | 'pf'
 }
 
 /**
@@ -88,6 +90,23 @@ export interface LibraryFile {
   fields: Record<string, LibraryField<unknown>>
   attributes: Record<string, unknown>
   threatProfile?: ThreatProfile
+  /** Spec keys that carried a provenance row in the seed library, in row order; the build emits exactly these. */
+  provenanceOrder?: string[]
+  /** Lineage of a categorical attribute (a band list, for example), which the split rule keeps bare. */
+  attributeProvenance?: Record<string, AttributeProvenance>
+}
+
+/** A provenance row on an attribute: the quoted value text and its source, never a numeric field. */
+export interface AttributeProvenance {
+  value: string
+  source: string
+  url?: string | null
+  date: string
+  basis: 'datasheet' | 'reference' | 'pf'
+  grade: LibraryGrade
+  layer: LibraryLayer
+  condition?: string
+  note?: string
 }
 
 /** A user's replacement of one library field value, with the reason on record. */

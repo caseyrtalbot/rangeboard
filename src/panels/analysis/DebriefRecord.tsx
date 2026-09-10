@@ -274,7 +274,9 @@ export function TrialManifestRecord({ view }: { view: TrialResultView }) {
   return (
     <dl style={{ overflowWrap: 'anywhere' }}>
       {Object.entries(view.manifest).map(([key, value]) => (
-        <div key={key}><dt>{key}</dt><dd>{value ?? 'Build revision unavailable'}</dd></div>
+        <div key={key}><dt>{key}</dt><dd>{Array.isArray(value)
+          ? value.length === 0 ? 'none' : <code>{JSON.stringify(value)}</code>
+          : value ?? 'Build revision unavailable'}</dd></div>
       ))}
     </dl>
   )

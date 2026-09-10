@@ -20,7 +20,8 @@ import {
 } from '../playback/mcClient'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
-import { createTrialManifest } from '../playback/trialTypes'
+import { createTrialManifest, sameManifest } from '../playback/trialTypes'
+import { activeOverrides, useOverrides } from './overrides'
 import type { AnalysisRunState, McState, PlaybackState, TrialState } from './runState'
 import { IDLE_SENSITIVITY, IDLE_SWEEP } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
@@ -217,8 +218,10 @@ function pendingRun<S>(st: AnalysisSlices, total: number): AnalysisRunState<S> {
  */
 function trialLaunch(st: AnalysisSlices): Launch<TrialWorkerMessage> {
   const basisSignature = analysisBasisSignature(st.scenario)
+  // The record names the overrides in force at launch; a later edit never rewrites it.
   const manifest = st.trial.manifest ?? createTrialManifest(
     st.scenario, st.playback.runId, basisSignature,
+    { overrides: activeOverrides(useOverrides.getState().overrides, st.scenario) },
   )
   const scenario = st.trial.scenario ?? structuredClone(st.scenario)
   const requestToken = newId('trialrequest')
@@ -325,10 +328,7 @@ export function acceptTrialMessage(st: AnalysisSlices, m: TrialWorkerMessage): A
   if (m.type === 'trial-error') return failed(m.message)
   // The envelope and retained manifest must identify the very same draw.
   const received = m.result.manifest
-  if (Object.keys(manifest).some((key) =>
-    manifest[key as keyof typeof manifest] !== received[key as keyof typeof received])) {
-    return failed('Trial manifest mismatch')
-  }
+  if (!sameManifest(manifest, received)) return failed('Trial manifest mismatch')
   const ready: TrialState = {
     ...trial, status: 'ready', error: null, startWhenReady: false,
     result: { ...m.result, manifest },

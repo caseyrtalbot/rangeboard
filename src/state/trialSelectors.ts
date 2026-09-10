@@ -30,7 +30,8 @@ export function selectTrialSelection(state: State): TrialSelection {
     }
     if (manifest.basisSignature !== signature) return idle
     const expected = createTrialManifest(scenario, playback.runId, signature)
-    if (!sameManifest(expected, manifest, ['buildRevision']) ||
+    // Record-only keys never decide whether a trial still belongs to this run.
+    if (!sameManifest(expected, manifest, ['buildRevision', 'overrides', 'physicsSwitches', 'fidelityFloor', 'dataPackageVersion', 'producer']) ||
       !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')) return idle
     if (trial.status === 'cancelled') return { status: 'cancelled', runId: manifest.runId }
     if (trial.error != null) return { status: 'error', runId: manifest.runId, message: trial.error }

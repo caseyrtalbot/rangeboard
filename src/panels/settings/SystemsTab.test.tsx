@@ -82,6 +82,6 @@ describe('SystemsTab', () => {
     // The scenario library keeps the sourced value: an override never edits it.
     const model = useStore.getState().scenario.library.find((m) => m.id === SENSOR)
     expect(model?.sensor?.detectRangeM).toBe(4000)
-    expect(html).toContain('>4000<')
+    expect(html).toContain('>4000 m<')
   })
 })

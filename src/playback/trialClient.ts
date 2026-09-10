@@ -5,6 +5,16 @@ import { createWorkerSlot } from './workerSlot'
 /** Independent of the Monte Carlo and sensitivity slots. */
 const slot = createWorkerSlot()
 
+/**
+ * Transport-level twin of `sameManifest` (trialTypes.ts): the client must not import
+ * the engine at runtime, so it carries its own value comparison for the array keys.
+ */
+function sameManifestRecord(expected: Record<string, unknown>, received: Record<string, unknown>): boolean {
+  return Object.entries(expected).every(([key, value]) => Array.isArray(value)
+    ? JSON.stringify(value) === JSON.stringify(received[key])
+    : received[key] === value)
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
@@ -43,7 +53,7 @@ function protocol(
       if (data.type !== 'trial-done') return null
       const result = data.result
       if (!record(result) || !record(result.manifest) ||
-        Object.entries(manifest).some(([key, value]) => (result.manifest as Record<string, unknown>)[key] !== value) ||
+        !sameManifestRecord(manifest, result.manifest) ||
         !Array.isArray(result.assessments) || !record(result.report) ||
         !Array.isArray(result.report.events) || !Array.isArray(result.report.threats) ||
         !Array.isArray(result.report.effectors) || !record(result.report.totals) ||
