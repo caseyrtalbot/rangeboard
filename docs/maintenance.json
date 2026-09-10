@@ -43,9 +43,9 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "18b90987d7fe9687f23501d3fce0cf065af0eef7dadaede428b85501fcbae7a4",
+      "sha256": "01b47c42b6ca6fc23950c887075b3010a75dfd45cab1cccd8b1bcc2b7a126196",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 1 contract: McSettings fields and defaults in types.ts, fresh scenario Monte Carlo defaults in seed.ts, mcTypes.ts result types, engine barrel; no engine behaviour change"
+      "note": "Phase 1 contract: run settings gain sampling, sensitivity depth, Sobol base, stop floor and cap, confidence; old saves keep deterministic"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
