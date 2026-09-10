@@ -65,6 +65,11 @@ export function fillScenario(parsed: unknown): Scenario {
     // emptyScenario() always sets doctrine; the Scenario type keeps it optional for old saves.
     doctrine: fillDoctrine(empty.doctrine as FireDoctrine, parsed.doctrine),
     roe,
+    // A save that predates a run field keeps the compatibility default, not the
+    // fresh-scenario default: an old board stays deterministic and aleatory.
+    runMode: parsed.runMode ?? 'deterministic',
+    uncertainty: parsed.uncertainty ?? 'aleatory',
+    targetHalfWidth: parsed.targetHalfWidth === undefined ? null : parsed.targetHalfWidth,
   }
   validateScenarioReferences(filled)
   return filled

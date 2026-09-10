@@ -52,9 +52,9 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "d3b5cbc363c2500dfeda4ebdefda437dc61e4389c0b4f2587e32e4272ece0b67",
+      "sha256": "d5ddf29b06243dd37d411614f500a6e216519b6608bce8f6c56177627d8be7a6",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 1 contract: McState gains pool, morris, sobol; store setters; headless lint override for playback, analysis, geometry, engine"
+      "note": "Phase 1 contract: old saves keep deterministic and aleatory through fillScenario; McState gains pool, morris, sobol"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b30569ad122c3545dbc099f36013a5047aed0efa7821224784ec6d1fdfb35a85",
+      "sha256": "536ca929129038e0fc701190822637a262b6022277146e63950cce2272b62ae0",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 1 contract: runSettings.test.ts added; test fixtures pin the deterministic mode explicitly"
+      "note": "Phase 1 contract: convergence fixture pins aleatory and a null half-width; no pinned number moved"
     },
     {
       "document": "docs/WORKFLOW.md",

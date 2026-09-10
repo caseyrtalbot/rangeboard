@@ -73,6 +73,9 @@ function baseScenario(): Scenario {
   s.requirements = { ...s.requirements, pdDetect: 0.1, pdTrackCumulative: 0.01 }
   s.seed = SEED
   s.replicates = REPLICATES
+  // Fixed-n aleatory ensembles: the fresh-scenario half-width stop and total mode are off.
+  s.uncertainty = 'aleatory'
+  s.targetHalfWidth = null
   return s
 }
 

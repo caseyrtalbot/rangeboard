@@ -153,6 +153,10 @@ function mcLaunch(st: AnalysisSlices): Launch<McWorkerMessage> | null {
   return {
     pending: { mc: {
       ...pendingRun(st, replicates),
+      // A new replicate run starts with no pool progress and no Morris or Sobol result.
+      pool: null,
+      morris: null,
+      sobol: null,
       // The sensitivity run and the sweep have their own worker and lifecycle.
       sensitivity: st.mc.sensitivity,
       sweep: st.mc.sweep,
