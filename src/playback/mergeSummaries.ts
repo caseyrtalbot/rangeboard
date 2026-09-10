@@ -14,6 +14,41 @@ function sameIds(a: string[], b: string[]): boolean {
 }
 
 /**
+ * The rows of `partial` for the replicates 0..m-1, where m is the first index
+ * the partial is missing. A pool that stops on the half-width rule or on a
+ * cancel has chunks in flight past the stop, so the merged partial can hold
+ * indices beyond a gap; a summary must read a run with no holes, so the
+ * coordinator finishes on this prefix. The partial itself is returned when it
+ * has no gap. `retained` and `elapsedMs` are carried over unchanged: they
+ * measure what the workers did, not what the summary reads, and the pool
+ * passes its own wall clock to `finishSummary`.
+ */
+export function contiguousPrefix(partial: McPartial): McPartial {
+  let m = 0
+  while (m < partial.indices.length && partial.indices[m] === m) m += 1
+  if (m === partial.indices.length) return partial
+  const rows = <T>(list: T[][]): T[][] => list.map((row) => row.slice(0, m))
+  return {
+    ...partial,
+    indices: partial.indices.slice(0, m),
+    kills: partial.kills.slice(0, m),
+    leakers: partial.leakers.slice(0, m),
+    detected: partial.detected.slice(0, m),
+    tracked: partial.tracked.slice(0, m),
+    engaged: partial.engaged.slice(0, m),
+    raidFirstDetect: partial.raidFirstDetect.slice(0, m),
+    raidFirmTrack: partial.raidFirmTrack.slice(0, m),
+    raidMinWarning: partial.raidMinWarning.slice(0, m),
+    threatKilled: rows(partial.threatKilled),
+    threatLeaked: rows(partial.threatLeaked),
+    threatFirstDetect: rows(partial.threatFirstDetect),
+    threatResidual: partial.threatResidual.map((row) => row.slice(0, m)),
+    effectorSalvos: rows(partial.effectorSalvos),
+    effectorKills: rows(partial.effectorKills),
+  }
+}
+
+/**
  * One partial over every replicate of `parts`, rows in ascending index
  * order. Throws on an empty list, on an index present twice, and when two
  * non-empty partials disagree on their track or effector lists (they ran

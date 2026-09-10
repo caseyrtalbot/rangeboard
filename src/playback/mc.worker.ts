@@ -1,8 +1,10 @@
 /// <reference lib="webworker" />
 /**
  * Monte Carlo worker: one run per worker instance. A replicate run streams
- * `progress` and posts `done`; a sensitivity run streams `sens-progress` and
- * posts `sens-done`; a sweep streams `sweep-progress` and posts `sweep-done`;
+ * `progress` and posts `done`; one chunk of a pooled run streams
+ * `range-progress` and posts `range-done` with its partial; a sensitivity run
+ * streams `sens-progress` and posts `sens-done`; a sweep streams
+ * `sweep-progress` and posts `sweep-done`;
  * a throw posts the error message. Loops run under
  * `DEFAULT_BUDGET` and stop at a checkpoint with `stopped.rule` 'budget'. The
  * driver yields every YIELD_MS so a `cancel` request ends the run at the next
@@ -22,9 +24,11 @@ import {
   DEFAULT_BUDGET,
   overBudget,
   replicateLoop,
+  replicateRangeLoop,
   sensitivityLoop,
   sweepLoop,
 } from './mcRun'
+import type { PoolMessage, PoolRequest } from './workerPool'
 
 /** Longest stretch of replicates run before the driver lets a message in. */
 const YIELD_MS = 50
@@ -34,7 +38,8 @@ const PROGRESS_MS = 250
 let runId: string | null = null
 let cancelled = false
 
-const post = (m: McWorkerMessage | McSensitivityMessage | McSweepMessage): void => self.postMessage(m)
+const post = (m: McWorkerMessage | McSensitivityMessage | McSweepMessage | PoolMessage): void =>
+  self.postMessage(m)
 const yieldToEvents = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
 /** Post progress at a checkpoint when its count is new and due. */
@@ -76,7 +81,7 @@ async function drive<T>(
   }
 }
 
-self.onmessage = async (e: MessageEvent<McRequest>) => {
+self.onmessage = async (e: MessageEvent<McRequest | PoolRequest>) => {
   if (e.data.type === 'cancel') {
     if (e.data.runId === runId) cancelled = true
     return
@@ -86,6 +91,24 @@ self.onmessage = async (e: MessageEvent<McRequest>) => {
   cancelled = false
   const id = runId
   const t0 = performance.now()
+  if (e.data.type === 'run-range') {
+    // One chunk of a pooled run: no half-width rule and no summary here, the
+    // coordinator merges the partials and finishes (see `workerPool.ts`).
+    const { start, end } = e.data
+    try {
+      const partial = await drive(replicateRangeLoop(scenario, start, end), 10, (cp) =>
+        post({ type: 'range-progress', runId: id, done: cp.done, total: cp.total }),
+      )
+      post({ type: 'range-done', runId: id, partial })
+    } catch (err) {
+      post({
+        type: 'range-error',
+        runId: id,
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+    return
+  }
   if (e.data.type === 'sweep') {
     const { factors, replicatesPerCell, responses } = e.data
     try {
