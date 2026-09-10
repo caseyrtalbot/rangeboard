@@ -1,0 +1,25 @@
+{
+  "class": "sensor/rf/any/any",
+  "kind": "sensor",
+  "type": "rf",
+  "band": "any",
+  "targetClass": "any",
+  "dataPackageVersion": 1,
+  "members": [
+    "lib-rf360",
+    "lib-corian",
+    "lib-rfpatrol"
+  ],
+  "fields": {
+    "sectorDeg": {
+      "mean": 360,
+      "sd": 0,
+      "n": 3,
+      "members": [
+        "lib-rf360",
+        "lib-corian",
+        "lib-rfpatrol"
+      ]
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "class": "sensor/radar/any/any",
+  "kind": "sensor",
+  "type": "radar",
+  "band": "any",
+  "targetClass": "any",
+  "dataPackageVersion": 1,
+  "members": [
+    "lib-rps42",
+    "lib-rps62",
+    "lib-kurfs",
+    "lib-echoshield",
+    "lib-iris",
+    "lib-r8ss",
+    "lib-kumrfs-m",
+    "lib-sentry-lr-fc",
+    "lib-giraffe1x",
+    "lib-spexer2000",
+    "lib-echoguard",
+    "lib-spyglass",
+    "lib-a422",
+    "lib-lstar",
+    "lib-gm200mmc",
+    "lib-tpq53",
+    "lib-xbaeu",
+    "lib-sentinela4",
+    "lib-gator"
+  ],
+  "fields": {
+    "detectRangeM": {
+      "logMedian": 8.039157390473237,
+      "sigmaDb": 6.380310455990521,
+      "n": 13,
+      "members": [
+        "lib-rps42",
+        "lib-rps62",
+        "lib-kurfs",
+        "lib-echoshield",
+        "lib-iris",
+        "lib-r8ss",
+        "lib-kumrfs-m",
+        "lib-sentry-lr-fc",
+        "lib-giraffe1x",
+        "lib-spexer2000",
+        "lib-echoguard",
+        "lib-spyglass",
+        "lib-a422"
+      ]
+    },
+    "instrumentedRangeM": {
+      "logMedian": 10.308952660644293,
+      "sigmaDb": 12.001729861290332,
+      "n": 9,
+      "members": [
+        "lib-rps42",
+        "lib-lstar",
+        "lib-iris",
+        "lib-r8ss",
+        "lib-giraffe1x",
+        "lib-spexer2000",
+        "lib-echoguard",
+        "lib-a422",
+        "lib-gm200mmc"
+      ]
+    },
+    "sectorDeg": {
+      "mean": 260,
+      "sd": 124.79983974348686,
+      "n": 17,
+      "members": [
+        "lib-rps42",
+        "lib-rps62",
+        "lib-kurfs",
+        "lib-echoshield",
+        "lib-lstar",
+        "lib-tpq53",
+        "lib-iris",
+        "lib-r8ss",
+        "lib-kumrfs-m",
+        "lib-xbaeu",
+        "lib-sentry-lr-fc",
+        "lib-sentinela4",
+        "lib-gator",
+        "lib-giraffe1x",
+        "lib-spexer2000",
+        "lib-echoguard",
+        "lib-a422"
+      ]
+    },
+    "updateRateS": {
+      "mean": 0.8333333333333334,
+      "sd": 0.28867513459481287,
+      "n": 3,
+      "members": [
+        "lib-iris",
+        "lib-r8ss",
+        "lib-giraffe1x"
+      ]
+    }
+  }
+}

@@ -1,5 +1,7 @@
 import type { Entity, Scenario, SpecModel, Spread } from '../model/types'
 import { effectiveDoctrine, entityActive } from '../model/types'
+import { classPriorFor } from './classPriors'
+import type { ClassPriorTable } from './classPriors'
 
 /** One PF spread row: the spread and its provenance-style source and date. */
 export interface PfSpreadRow {
@@ -30,15 +32,34 @@ export const PF_SPREAD: Record<string, PfSpreadRow> = {
   bdaS: pf({ kind: 'triangular', lo: -0.3, hi: 0.5 }), // PF
 }
 
+/** Where a field's spread came from: a provenance row, its class prior, the PF table, or none (fixed). */
+export type SpreadBasis = 'row' | 'class-prior' | 'pf' | 'fixed'
+
 /**
- * The one spread resolver: the row's spread, else PF_SPREAD by field, else null (fixed).
- * A row with `spread: null` is pinned by the user and is fixed.
+ * The one spread resolver: the row's spread, else the class prior when a `priors`
+ * table is given, else PF_SPREAD by field, else null (fixed). A row with
+ * `spread: null` is pinned by the user and is fixed. No caller passes `priors`
+ * yet, so every existing result is unchanged; Phase 1 wires the table through
+ * McSettings.
  */
-export function spreadFor(model: SpecModel, field: string): Spread | null {
+export function spreadFor(model: SpecModel, field: string, priors?: ClassPriorTable): Spread | null {
   const row = model.provenance?.find((r) => r.field === field)
   if (row?.spread) return row.spread
   if (row && row.spread === null) return null
+  if (priors) {
+    const prior = classPriorFor(model, field, priors)
+    if (prior) return prior
+  }
   return PF_SPREAD[field]?.spread ?? null
+}
+
+/** The step of `spreadFor` that answered, for the Systems tab and the run record. */
+export function spreadBasisFor(model: SpecModel, field: string, priors?: ClassPriorTable): SpreadBasis {
+  const row = model.provenance?.find((r) => r.field === field)
+  if (row?.spread) return 'row'
+  if (row && row.spread === null) return 'fixed'
+  if (priors && classPriorFor(model, field, priors)) return 'class-prior'
+  return PF_SPREAD[field]?.spread ? 'pf' : 'fixed'
 }
 
 /** One uncertain (modelId, field) pair. `modelId` is a connection id or 'doctrine' off-library. */

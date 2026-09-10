@@ -1,0 +1,27 @@
+{
+  "class": "effector/interceptor/any/any",
+  "kind": "effector",
+  "type": "interceptor",
+  "band": "any",
+  "targetClass": "any",
+  "dataPackageVersion": 1,
+  "members": [
+    "lib-coyote",
+    "lib-merops",
+    "lib-stinger",
+    "lib-eagls"
+  ],
+  "fields": {
+    "flyoutSpeedMps": {
+      "logMedian": 5.8211252616809155,
+      "sigmaDb": 9.9059448831965,
+      "n": 4,
+      "members": [
+        "lib-coyote",
+        "lib-merops",
+        "lib-stinger",
+        "lib-eagls"
+      ]
+    }
+  }
+}
