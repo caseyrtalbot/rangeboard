@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "9eefd4aaaa1220bd0296702bf2ad946a6bf16de011c7d6d742a5e825a3af46e9",
+      "sha256": "3e44575228184a7b5c2d7babff8ce2f64bd84260f9624117dbb01431c1dff3e3",
       "reviewedAt": "2026-09-10",
-      "note": "Rewritten at the Phase 0 gate: lanes, commits, open items, Phase 1 boundary."
+      "note": "Phase 0 gate commit hash recorded."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "bec983ffa0d9e389ec8bc7ac02fc5e23781384a2bf47e0530438264443ffba06",
+      "sha256": "f07a8cab0aa80266cb1a49b6d4077a83d30773d3558ca549858cee88c467c2a6",
       "reviewedAt": "2026-09-10",
-      "note": "Phase 0 marked complete with its merge commits and deviations."
+      "note": "Phase 0 gate commit hash recorded."
     }
   ],
   "historical": [

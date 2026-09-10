@@ -65,7 +65,7 @@ exit.
 
 **Phase 0 complete, 2026-09-10.** Contract `8e9a0bc`; lane merges `ff24472` (0.1),
 `e48b3ab` (0.3), `a56291c` (0.4), `b1493ec` (0.2); integration `248f4ca` and the gate
-commit. Deviations: `src/playback/trialTypes.ts` joined the contract set because the
+commit `f024709`. Deviations: `src/playback/trialTypes.ts` joined the contract set because the
 manifest lives there; lane 0.3 added two calls to `src/main.tsx`; the orchestrator fixed
 the per-key manifest comparators in `trialClient.ts`, `analysisRequests.ts`,
 `trialResult.ts` and `trialSelectors.ts`. Evidence and open items are in
