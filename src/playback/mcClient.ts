@@ -7,6 +7,8 @@ import type {
   McSweepRequest,
   McWorkerMessage,
 } from './mcRun'
+import type { PoolProgress } from './mcTypes'
+import { createWorkerPool } from './workerPool'
 import type { SlotProtocol } from './workerSlot'
 import { createWorkerSlot } from './workerSlot'
 
@@ -22,6 +24,14 @@ const run = createWorkerSlot()
  * A sweep shares this slot: a sweep and a sensitivity run replace each other.
  */
 const sens = createWorkerSlot()
+
+/**
+ * The pooled replicate run, on its own coordinator. It speaks the same
+ * `McWorkerMessage` protocol as `startMcRun` and adds `PoolProgress`, so a
+ * caller reads either the single worker or the pool with one handler. Nothing
+ * calls it yet: the store switch is integration work.
+ */
+const pool = createWorkerPool()
 
 type McMessage = McWorkerMessage | McSensitivityMessage | McSweepMessage
 
@@ -77,6 +87,37 @@ export function cancelMcRun(): void {
  */
 export function requestMcCancel(runId: string): boolean {
   return run.cancel({ type: 'cancel', runId })
+}
+
+/**
+ * Start a pooled replicate run: `min(hardwareConcurrency - 1, 8)` workers over
+ * contiguous replicate ranges, merged by index. A pooled run already running
+ * is terminated. `onMessage` reads the same protocol as `startMcRun`;
+ * `onPool` adds the per-worker counts and the stop rule. Returns false when
+ * the environment has no Worker, as `startMcRun` does.
+ */
+export function startPooledRun(
+  scenario: Scenario,
+  runId: string,
+  onMessage: (m: McWorkerMessage) => void,
+  onPool: (p: PoolProgress) => void,
+): boolean {
+  return pool.start(scenario, runId, onMessage, onPool)
+}
+
+/** Terminate every worker of the pooled run if one is running. */
+export function cancelPooledRun(): void {
+  pool.dispose()
+}
+
+/**
+ * Ask the pooled run to stop at the next checkpoint of each worker; its `done`
+ * message then carries the summary over the replicates 0..m-1 that finished,
+ * with `stopped.rule` 'cancelled'. A pool silent past the grace period is
+ * terminated and the run reports an error (see `requestMcCancel`).
+ */
+export function requestPooledCancel(runId: string): boolean {
+  return pool.cancel(runId)
 }
 
 /**

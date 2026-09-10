@@ -3,7 +3,7 @@ import fixture from './__fixtures__/detection-outside-rings.json'
 import { parseAutosave } from '../io/persist'
 import type { McPartial, McSummary, UncertaintyMode } from '../engine'
 import { finishSummary, replicateRangeLoop, runReplicates } from './mcRun'
-import { mergePartials } from './mergeSummaries'
+import { contiguousPrefix, mergePartials } from './mergeSummaries'
 
 /**
  * Merged ranges of the JIATF-401 laydown (sensitivity.parity.test.ts) give
@@ -73,5 +73,36 @@ describe('mergePartials', () => {
     expect(() => mergePartials([range(scenario, 0, 5), range(scenario, 4, 8)]))
       .toThrow(/replicate 4 is present twice/)
     expect(() => mergePartials([])).toThrow(/at least one partial/)
+  })
+})
+
+describe('contiguousPrefix', () => {
+  it('drops the rows past the first gap and keeps a gapless partial as it is', () => {
+    const scenario = base('aleatory')
+    const whole = range(scenario, 0, 20)
+    expect(contiguousPrefix(whole)).toBe(whole)
+    expect(contiguousPrefix(mergePartials([range(scenario, 0, 0)]))).toEqual(mergePartials([range(scenario, 0, 0)]))
+    // A pool that stops at 7 with a chunk in flight at 12 keeps 0..6 only.
+    const gapped = mergePartials([range(scenario, 0, 7), range(scenario, 12, 15)])
+    const prefix = contiguousPrefix(gapped)
+    expect(prefix.indices).toEqual([0, 1, 2, 3, 4, 5, 6])
+    const { retained: _r, elapsedMs: _e, ...prefixRows } = prefix
+    const { retained: _r2, elapsedMs: _e2, ...sevenRows } = range(scenario, 0, 7)
+    expect(prefixRows).toEqual(sevenRows)
+    // The summary of the prefix is the summary of the sequential run of 0..6.
+    const stopped = { rule: 'halfWidth' as const, at: 7 }
+    expect(timeless(finishSummary(scenario, prefix, stopped, 0)))
+      .toEqual(timeless(finishSummary(scenario, range(scenario, 0, 7), stopped, 0)))
+  })
+
+  it('a partial that starts past zero has an empty prefix', () => {
+    const scenario = base('aleatory')
+    const late = contiguousPrefix(range(scenario, 3, 8))
+    expect(late.indices).toEqual([])
+    expect(late.leakers).toEqual([])
+    expect(late.threatKilled.every((row) => row.length === 0)).toBe(true)
+    // The track and effector lists survive: they are geometry, not replicate rows.
+    expect(late.threatIds).toEqual(range(scenario, 3, 8).threatIds)
+    expect(late.effectorIds).toEqual(range(scenario, 3, 8).effectorIds)
   })
 })

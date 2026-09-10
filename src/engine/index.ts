@@ -74,7 +74,7 @@ export {
   SWEEP_REPLICATES_DEFAULT,
 } from '../playback/mcRun'
 export type { SweepFactor } from '../playback/sweepFactors'
-export { mergePartials } from '../playback/mergeSummaries'
+export { contiguousPrefix, mergePartials } from '../playback/mergeSummaries'
 
 // Phase 1 result and progress types.
 export type {
