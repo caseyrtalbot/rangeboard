@@ -101,6 +101,18 @@ Orchestrator: wire the Run button to the pool; Fragility runs Morris then Sobol 
 Monte Carlo run finishes; `npm run check`; record pool timing on the largest fixture
 against blueprint section J. Exit: blueprint Phase 1 exit.
 
+**Phase 1 complete, 2026-09-10, with one exit item open.** Contract `64c9f83` and `c4473e7`;
+range primitive `ec80ac0` (lane 1.3 part A, sequential before 1.1 and 1.2); lane merges
+`570ada4` (1.5), `abf332f` (1.4), `ac8343d` (1.2), `3891fcb` (1.3), `4f0730f` (1.1);
+integration `0f5231a`. Deviations: the replicate loop was split into a range loop, a partial
+merge and a finish step before the pool and the runner lanes started; `mergeSummaries.ts`
+was created by lane 1.3 and extended by 1.2; the Sobol chart lives in a new
+`SensitivityWidget.tsx` that integration mounted on Fragility; the Run tab lane also owned
+`SettingsPanel.tsx`; the runner keeps its own `loadScenario.ts` because `persist.ts` pulls
+the store. Open exit item: the runner cannot complete 10 000 replicates on the largest
+fixture under the retained-numbers budget. Evidence and open items are in
+[HANDOFF.md](HANDOFF.md).
+
 ## 4. Phase 2: tracks and kill chain
 
 Goal: tracks carry an estimated state; fusion, classification and the operator read it.

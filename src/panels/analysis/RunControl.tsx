@@ -24,6 +24,11 @@ function settingsStopRule(run: McSettings): StopRule {
   return run.targetHalfWidth == null ? 'replicates' : 'halfWidth'
 }
 
+/** Where the loop ends: the cap under a half-width target, else the replicate count. */
+function loopEndOf(run: McSettings): number {
+  return run.targetHalfWidth == null ? run.replicates : run.stopCap
+}
+
 /**
  * The progress line: replicates done, the stop rule and the pool size. A
  * pooled run reports its own rule and worker count through `mc.pool`; the
@@ -44,7 +49,7 @@ function progressText(run: McSettings, mc: McState): string | null {
   // A finished run keeps the line, so the rule that ended it stays readable.
   const summary = mc.status === 'done' ? mc.summary : null
   if (!summary) return null
-  return `${summary.replicates} of ${run.replicates} replicates · ${stopRuleText(summary.stopped.rule, run)}`
+  return `${summary.replicates} of ${loopEndOf(run)} replicates · ${stopRuleText(summary.stopped.rule, run)}`
 }
 
 /** Deterministic mode runs no replicates, so the button says why it is closed. */

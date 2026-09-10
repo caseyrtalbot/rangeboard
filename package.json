@@ -27,7 +27,7 @@
     "engine": "node scripts/run-engine.mjs",
     "test:engine": "node --test scripts/test-engine-cli.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
-    "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
+    "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",

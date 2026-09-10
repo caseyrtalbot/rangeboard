@@ -15,84 +15,122 @@ about an unfinished lane goes in Open items, not in Completed.
 | Phase | Gate | Merge commit | Date |
 | --- | --- | --- | --- |
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
-| 1 Real-mode statistics | not started | | |
+| 1 Real-mode statistics | passed, one exit item open | see the next commit | 2026-09-10 |
 | 2 Tracks and kill chain | not started | | |
 | 3 Sensor and effector physics | not started | | |
 | 4 Hypothesis tools | not started | | |
 
 ## Completed
 
-Phase 0, all on `main`, nothing pushed. Base `d518e42`.
+Phase 0, gate `f024709` on `main`, nothing pushed. Contract `8e9a0bc`, lanes merged at
+`ff24472`, `b1493ec`, `e48b3ab`, `a56291c`, integration `248f4ca`. Data package under
+`data/library` with schema, build and health check; class priors; overrides store and the
+Systems tab; IndexedDB run store with history. Evidence in
+[p0-gate-2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md).
 
-- 0.a Contract, `calib/p0-contract`, fast-forwarded as `8e9a0bc`. `libraryField.ts`,
-  `runRecord.ts`, Provenance lineage keys, TrialManifest record keys with defaults,
-  `sameManifest`, overrides and runs storage names. Stop condition: typecheck and the full
-  suite (141 files, 1710 tests) unchanged. The manifest lives in `src/playback/trialTypes.ts`,
-  so that file joined the contract set.
-- 0.1 Data package, `calib/p0-data` (`8e31556`), merged `ff24472`. 90 files under
-  `data/library`, schema, build and health check, generated library, golden fixture
-  `src/model/__fixtures__/seedLibrary.8e9a0bc.json`. Stop condition: the parity test in
-  `seedLibrary.test.ts` (generated library equals the fixture after the lineage keys are
-  removed) and `npm run library:check` (90 models, 633 fields).
-- 0.2 Class priors, `calib/p0-priors` (`05bdbe9`), merged `b1493ec`. Six classes with a
-  prior from L1 entries only; `spreadFor(model, field, priors?)` with PF_SPREAD as the
-  fallback; no caller passes priors yet. Stop condition: `classPriors.test.ts` hand
-  computation for `sensor/radar/any/any detectRangeM` (n 13) and the three parity files
-  unchanged.
-- 0.3 Overrides and Systems tab, `calib/p0-overrides` (`97b4d26`), merged `e48b3ab`.
-  Separate `useOverrides` store, autosave under `rangeboard.overrides.v1`, Systems tab.
-  Stop condition: lane browser check on port 5381 (edit, storage, reload, reset, 0 page
-  errors) and the gate browser check below (override in a trial manifest).
-- 0.4 Run store, `calib/p0-runstore` (`943d77b`), merged `a56291c`. IndexedDB store with a
-  64 MiB cap and oldest-first eviction, Save to history, history list that opens a record
-  in place. Stop condition: lane browser check on port 5382 (save, reload, open) with
-  `runStore.test.ts` on the in-memory fake.
-- 0.c Integration, `248f4ca` and the gate commit `f024709`. Overrides recorded in the trial manifest
-  at launch (`trialManifestOverrides.test.ts`); every manifest comparison by value on the
-  array keys; manifest record renders arrays; contract type gains the keys the package
-  writes; docs updated and reviewed.
+Phase 1, all on `main`, nothing pushed. Base `7f2997d`.
+
+- 1.a Contract, `calib/p1-contract`, `64c9f83` plus the orchestrator's `c4473e7`.
+  `McSettings` is the return type of `runSettings` and gains `sampling`,
+  `sensitivityDepth`, `sobolBase`, `stopFloor`, `stopCap`, `confidence` with `DEFAULT_*`
+  constants; a fresh scenario is Monte Carlo, total, LHS, half-width 0.5 with floor 30 and
+  cap 2000; a save without the run fields stays deterministic and aleatory through
+  `runSettings` and `fillScenario`. `PoolProgress`, `MorrisResult`, `SobolResult` in
+  `src/playback/mcTypes.ts`; `McState` gains `pool`, `morris`, `sobol`; `src/engine/index.ts`
+  barrel; `.oxlintrc.json` forbids react, konva, `window`, `document` under `src/playback`,
+  `src/analysis`, `src/geometry`, `src/engine`. Stop condition: `runSettings.test.ts`,
+  the lint proof in the report, full suite 149 files and 1763 tests.
+- 1.3 part A, `calib/p1-range`, `ec80ac0`, fast-forwarded. `McPartial`,
+  `replicateRangeLoop`, `halfWidthReached` (floor from the settings), `finishSummary`,
+  `mergePartials` (`mergeSummaries.ts`). Stop condition: `mergeSummaries.test.ts` (two
+  ranges in either order equal `runReplicates`, aleatory and total); parity files unchanged.
+- 1.5 Sobol chart, `calib/p1-sobolchart` (`652a028`), merged `570ada4`. `SobolChart.tsx`
+  (two bars per row with bootstrap whiskers, 0 to 1 scale, hidden ranking text),
+  `SensitivityWidget.tsx`, `charts/__fixtures__/sobolFixture.ts`. Stop condition: 71 tests
+  under `src/charts` and the widget.
+- 1.4 Run tab, `calib/p1-runtab` (`3e38201`), merged `abf332f`. `settings/RunTab.tsx` with
+  every field, its default and a reset; `RunControl.tsx` (Deterministic switch, Run or Stop,
+  progress line with the stop rule and the pool size) on Prepare and Analyze; the popover
+  is gone. Stop condition: browser check on port 5383, 0 page errors.
+- 1.2 Browser pool, `calib/p1-pool` (`201d7c3`), merged `ac8343d`. `workerPool.ts`:
+  `min(hardwareConcurrency - 1, 8)` workers, chunks by index, half-width rule on the
+  contiguous prefix from the floor, cap, slot cancel semantics; `run-range` in
+  `mc.worker.ts`; `startPooledRun` in `mcClient.ts`. Stop condition: `workerPool.test.ts`
+  (pooled equals `runReplicates` at 1, 3 and 7 workers, aleatory and total);
+  `workerGraph.test.ts` and `workerSlot.test.ts` unchanged.
+- 1.3 part B, `calib/p1-sampling` (`8fff845`), merged `3891fcb`. `sampling.ts` (LHS stratum
+  per replicate index from a keyed permutation over the loop end), `morris.ts`,
+  `sobol.ts`, Morris and Sobol requests and messages, loop end `stopCap` under a target.
+  Stop condition: Ishigami inside every bootstrap interval at base 1024; a range slice
+  equals the full loop's slice under LHS; parity files unchanged.
+- 1.1 Headless runner, `calib/p1-runner` (`9fc436e`), merged `4f0730f`.
+  `vite.engine.config.ts` builds `dist-engine/engine.js`; `scripts/run-engine.mjs` with
+  `scripts/engine-worker.mjs` over `worker_threads`; `src/engine/loadScenario.ts`;
+  `npm run engine`, `engine:build`, `test:engine` (now inside `check`). Stop condition:
+  `scripts/test-engine-cli.mjs` (the record equals `runReplicates` at one seed, 3 workers
+  and 1 worker); timing in
+  [p1-runner-2026-09-10](field-te/evidence/p1-runner-2026-09-10/timing.txt).
+- 1.c Integration, `0f5231a`, plus the gate commit. The Run button runs on the pool
+  (`mcLaunch` through `startPooledRun`, the pool sink writes `mc.pool` while running);
+  `sensitivityDepth: 'full'` runs Morris then Sobol on the sensitivity slot with the kept
+  fields; Fragility mounts `SensitivityWidget`; `RunControl` and the chip read the loop end
+  after a half-width stop; docs updated and reviewed.
 
 ## Open items
 
-- Bundle budget decided 2026-09-10 (Casey: go with the recommendation): the entry budget
-  in `scripts/check-bundle.mjs` is 360 kB gzip (measured 335 kB; 336 kB before Phase 0),
-  initial stays 400 kB (measured 350 kB); `vite.config.ts` warns above 1200 kB raw with
-  the measured entry in its comment. Held there until the engine additions load lazily.
-- Overrides and class priors are recorded, not applied: the engine still reads the scenario
-  library and `spreadFor` without a priors table. Phase 1 wires both through `McSettings`.
-  A scenario export does not carry its overrides yet (blueprint section D).
-- Sampled trials in the browser failed after the contract until integration fixed the
-  five per-key manifest comparators; the controlled worker in tests never clones. The
-  clone test in `trialClient.test.ts` now covers the transport.
-- Data findings from lane 0.1, all kept as seed values with a note: eight seed and
-  inventory value disagreements (`lib-sentry-lr-fc`, `lib-spyglass`, `lib-amphel`,
-  `lib-helios`, `lib-ironbeam`, `lib-pulsar`, `lib-eagls`, `lib-skyranger30`); three L2
-  fields with a source and no date (`lib-cuaews.pk`, `lib-ninja.engageTimeS`,
-  `lib-pulsar.pk`); 13 null fields whose inventory grade is recorded in a note.
-- Lane 0.2: `lib-gator` and `lib-gm200mmc` `detectRangeM` (40 km planning figures) sit
-  3.5 spreads from the radar prior and carry a note. An additive prior with sd 0 gives a
-  zero-width triangular, which samples the nominal. Tuple fields get no prior.
-- The Systems tab rules are folded into `src/index.css` after the settings block; there
-  is no component CSS file. Browser check: column widths and the group head apply.
-- `RunHistory` renders nothing until its first IndexedDB read settles, so the no-trial
-  markup test in `OutcomeScreen.test.tsx` stays exact.
-- No pinned parity number moved in Phase 0.
+- Phase 1 exit item not met: the runner cannot complete 10 000 replicates on the largest
+  fixture (`layered-acoustic-merops.json`, 37 002 retained numbers per replicate) because
+  `DEFAULT_BUDGET.retainedNumbers` (96 million, a browser-worker limit) refuses it; 2594
+  replicates fit and ran in 21.6 s on 14 threads. Decision for Casey; recommendation: give
+  the Node runner its own budget from the machine's memory and keep the browser budget.
+- The Morris `'leakers'` response on the JIATF-401 laydown is 0 in every row at ten
+  trajectories, so every mu star is 0 there; `'firstDetectS'` screens well. The Fragility
+  response selector picks the response; no default change made.
+- A Sobol response with zero variance over the base rows gives NaN indices, which JSON
+  writes as null.
+- Wilson intervals keep z 1.96 and the rule of three keeps 3 / n; the t interval follows
+  `confidence`. `DEFAULT_CONFIDENCE` and `STAT_CONF` are equal and not linked.
+- `RunManifest` and `McSummary` do not record the sampling mode; `RunRecord` does not
+  carry `morris` or `sobol`.
+- `src/state/analysisBasis.ts` excludes the five old raw run keys from the signature but
+  not the six new ones (the resolved settings already carry them, so the keys appear twice).
+- `src/engine/loadScenario.ts` repeats `fillScenario` from its pieces because `persist.ts`
+  imports the store; no drift test yet.
+- The worker applies `DEFAULT_BUDGET` per range chunk; a chunk stopped on budget would
+  leave a hole and the pool would finish on a shorter prefix. Not reachable at today's chunk
+  sizes.
+- `PoolProgress.perWorkerDone` includes in-flight range progress, so its sum can exceed
+  `done` between merges.
+- Bundle: entry 344.62 kB gzip against the 360 kB budget after the pool joined the entry
+  chunk; the engine additions do not load lazily yet.
+- The CLI sets `runMode: 'monte-carlo'` on the loaded scenario so the manifest matches its
+  summary; the fill default for a file without run fields is deterministic.
+- The Run tab names the fresh-scenario mode and uncertainty as defaults with local
+  constants; `types.ts` has no `DEFAULT_RUN_MODE` or `DEFAULT_UNCERTAINTY`.
+- No pinned parity number moved in Phase 1. `convergence.verify.test.ts` and
+  `mcRun.test.ts` fixtures pin aleatory, a null target or `stopCap` where they read the
+  loop end.
+- Seven agent worktrees under `.claude/worktrees/` hold the lane branches; every commit is
+  merged.
 
 ## Continuation boundary
 
-The next task is the Phase 1 contract slice in
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#3-phase-1-real-mode-statistics): a
-`fable-medium` worker on `src/model/types.ts`, `src/state/store.ts` and
-`src/playback/mcTypes.ts`. Lanes 1.1 to 1.5 start only after it merges. No poll is open.
+The next task is the Phase 2 contract slice in
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#4-phase-2-tracks-and-kill-chain): a
+`fable-medium` worker on `src/model/types.ts`, `src/playback/trackTypes.ts` and
+`src/analysis/fidelity.ts`. Wave one (2.1 to 2.3) starts only after it merges. One poll
+is open: the runner budget decision above.
 
 ## Verification at the last gate
 
-- `npm run check` at the gate: exit 0; 148 test files, 1757 tests; library check 90 models
-  and 633 fields, 6 prior classes current; build entry 1,155.66 kB (339.77 kB gzip).
-  Output in [check.txt](field-te/evidence/p0-gate-2026-09-10/check.txt).
+- `npm run check` at the gate: exit 0; 159 test files, 1853 tests; engine CLI test 2 of 2;
+  library check 90 models and 633 fields; build entry 1,170.44 kB (344.62 kB gzip).
+  Output in [check.txt](field-te/evidence/p1-gate-2026-09-10/check.txt).
 - Parity: `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`,
   `convergence.verify.test.ts` unchanged and passing inside that run.
 - Browser checks recorded in
-  [the gate evidence](field-te/evidence/p0-gate-2026-09-10/README.md): Settings Systems
-  override, trial manifest with the override, run history across a reload, 0 page errors.
-- Timing against blueprint section J: not measured in Phase 0; no target applies to it.
+  [the gate evidence](field-te/evidence/p1-gate-2026-09-10/README.md): Run tab defaults,
+  default run on the pool, 1000 replicates, Morris then Sobol to the chart, 0 page errors.
+- Timing against blueprint section J: default run 0.13 s, 1000 replicates 2.2 s,
+  sensitivity 5.9 s, all inside target; the 10 000 replicate command-line target is
+  blocked by the budget (open item).

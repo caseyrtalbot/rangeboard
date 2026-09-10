@@ -58,7 +58,10 @@ Forecast and Monte Carlo remain separate, explicitly labeled analyses with uncha
 numerical paths. Forecast uses the deterministic `engagementPicture`. It appears on no
 analysis screen. It remains in the run export and the requirement record, and the
 Outcome validity row falls back to forecast requirement validity when a trial captured
-none. Forecast/MC settings live under **Forecast and analysis** in Prepare and Settings.
+none. Run settings (mode, uncertainty, seed, replicates, stop rule, confidence, sampling,
+sensitivity depth, Sobol base) live on the **Run** tab of Settings, each with its default and
+a reset. One Run button with a Deterministic switch sits on Prepare and Analyze; a run uses
+the worker pool and its progress line names the stop rule and the pool size.
 Where a forecast count still prints, it reads as an expected value with two decimals
 below ten. No surface labels a forecast as a realized kill.
 
@@ -112,7 +115,8 @@ screen changes preserve the result basis.
 | Watch a trial | Now screen: run line, kill chain at the cursor, effector inventory bars and sensor rows | [NowScreen](../src/panels/analysis/screens/NowScreen.tsx), [trialSweepAt](../src/playback/trialSweepAt.ts), [systemTelemetry](../src/analysis/systemTelemetry.ts) |
 | Read a completed trial | Outcome screen: count tiles, per-threat table, event ledger, manifest, validity and export | [OutcomeScreen](../src/panels/analysis/screens/OutcomeScreen.tsx), [trialResult](../src/analysis/trialResult.ts), [DebriefRecord](../src/panels/analysis/DebriefRecord.tsx) |
 | Compare against expectation | Compare screen: ensemble band with the trial marked, delta table, disagreement finding and a pinned baseline | [CompareScreen](../src/panels/analysis/screens/CompareScreen.tsx), [BandChart](../src/charts/BandChart.tsx), [runValidity](../src/analysis/runValidity.ts), [baseline](../src/state/baseline.ts) |
-| Find where a laydown fails | Fragility screen: Monte Carlo tiles, factor sweep map, ranked multi-response sensitivity and validity; aleatory/total uncertainty and run settings under Forecast and analysis | [FragilityScreen](../src/panels/analysis/screens/FragilityScreen.tsx), [SweepMap](../src/charts/SweepMap.tsx), [sweepFactors](../src/playback/sweepFactors.ts), [mcRun](../src/playback/mcRun.ts), [ForecastSettings](../src/panels/analysis/ForecastSettings.tsx) |
+| Find where a laydown fails | Fragility screen: Monte Carlo tiles, factor sweep map, Morris screening then Sobol first-order and total indices with bootstrap intervals under the full sensitivity depth (one-at-a-time under quick) and validity; run settings on the Run tab | [FragilityScreen](../src/panels/analysis/screens/FragilityScreen.tsx), [SweepMap](../src/charts/SweepMap.tsx), [SobolChart](../src/charts/SobolChart.tsx), [morris](../src/playback/morris.ts), [sobol](../src/playback/sobol.ts), [mcRun](../src/playback/mcRun.ts), [RunTab](../src/panels/settings/RunTab.tsx) |
+| Run outside the browser | `npm run engine -- scenario.json --replicates N --seed S --out run.json` builds the headless engine bundle and spreads a fixed replicate count over worker threads; the run record equals the browser summary at one seed | [run-engine](../scripts/run-engine.mjs), [engine barrel](../src/engine/index.ts), [workerPool](../src/playback/workerPool.ts) |
 | Retain work | Autosave, scenario/library/run JSON, saved Board frames and run logs; Save to history keeps a finished ensemble in IndexedDB with its manifest, and the history list opens any record in place | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [runStore](../src/io/runStore.ts), [RunHistory](../src/panels/analysis/RunHistory.tsx) |
 
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It

@@ -26,7 +26,10 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run test:bundle` | Test bundle accounting and over-budget rejection |
 | `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
-| `npm run check` | Complete documentation, type, library, schema, test, lint and build gate |
+| `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
+| `npm run engine -- <scenario.json> --replicates N --seed S --out run.json` | Run a fixed replicate count over worker threads and write a run record |
+| `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
+| `npm run check` | Complete documentation, type, library, schema, engine, test, lint and build gate |
 
 Run the complete gate for source changes and after integrating lanes. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`. Update a
@@ -35,6 +38,13 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 
 ## Test conventions
 
+- Phase 1 statistics: `workerPool.test.ts` proves the pooled summary equals `runReplicates`
+  at one seed (1, 3 and 7 workers, aleatory and total); `mergeSummaries.test.ts` proves the
+  range merge in either order; `sampling.test.ts` proves a range slice equals the same slice
+  of the full loop under LHS; `sobol.test.ts` recovers the Ishigami indices inside their
+  bootstrap intervals at base 1024; `mc.worker.stages.test.ts` drives the Morris and Sobol
+  routes. The parity files are aleatory and do not move under LHS. A fixture that sets a
+  half-width target pins `stopCap` when it reads the loop end.
 - `npm test` scopes discovery to `src/`, excluding ignored historical checkouts such as
   `.claude/plans/`. Bare `npx vitest run` can still discover those copies; use the npm command
   or pass `--dir src` when selecting files. Record the scope with a test count.
@@ -83,6 +93,10 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 
 ## Browser checks
 
+- Phase 1 gate checks (`docs/field-te/evidence/p1-gate-2026-09-10/`): the Run tab lists
+  every run setting with its default; Run on Prepare with nothing touched finishes on the
+  pool with the stop rule and the pool size in the progress line; Fragility under the full
+  depth renders the Sobol chart after Morris; 0 page errors.
 - Playwright is a devDependency for scripted checks only. It uses its own browser profile,
   so the user's autosave is never touched. Use an isolated context for every check.
 - Dev builds expose `window.__store` (the Board zustand hook). Drive real store actions

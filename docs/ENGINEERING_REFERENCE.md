@@ -152,8 +152,8 @@ Breaking one of these breaks the app.
   ownership), turns a synchronous construction or post failure into one terminal error in
   the protocol's own shape, and releases the worker on a terminal message before delivering
   it. `cancel` posts the protocol's stop request and terminates a worker silent for
-  `CANCEL_GRACE_MS`. `mcClient.ts` (two slots: replicates, and sensitivity shared with the
-  sweep) and
+  `CANCEL_GRACE_MS`. `mcClient.ts` (a worker pool for replicates, `workerPool.ts`, and one slot for
+  sensitivity shared with the sweep, Morris and Sobol) and
   `trialClient.ts` (one slot) are protocol adapters over it: they own the worker URL,
   the request envelope, decoding, identity checks (run id; for a trial also request token,
   basis and manifest) and their cancellation semantics (graceful with grace period for MC,
@@ -174,8 +174,12 @@ Breaking one of these breaks the app.
   another worker-backed analysis means one adapter and one launch/accept pair, not a new
   slot implementation.
 - **Monte Carlo worker:** `runMonteCarlo` requests the `mc` kind, which posts through
-  `src/playback/mcClient.ts` to `mc.worker.ts`, which runs `runReplicates`
-  (`src/playback/mcRun.ts`). The result lives in the
+  `src/playback/mcClient.ts` to a pool of `min(hardwareConcurrency - 1, 8)` `mc.worker.ts`
+  instances (`workerPool.ts`), each running `replicateRangeLoop` (`mcRun.ts`) over a chunk
+  of replicate indices. The coordinator merges the partials by index (`mergeSummaries.ts`),
+  applies the half-width rule on the contiguous prefix from `stopFloor`, stops at `stopCap`
+  and finishes with `finishSummary`, so the pooled summary equals the single-worker
+  `runReplicates` at one seed (`workerPool.test.ts`). The result lives in the
   `mc` slice: view state, never persisted, never in `past`. `resetRun` and `replaceScenario`
   clear it; edits, undo and redo use `analysisBasisSignature` to mark mismatched results
   stale. The signature includes domain fields by default, removes named presentation and
@@ -285,7 +289,8 @@ Breaking one of these breaks the app.
   and observed horizon; unavailable trials never substitute a forecast.
   `useForecastEngagement` retains the deterministic `engagementPicture` path. Forecast
   and Monte Carlo are separately labeled, numerically unchanged analyses; their controls
-  live in `panels/analysis/ForecastSettings.tsx` under **Forecast and analysis**.
+  live on the Run tab (`panels/settings/RunTab.tsx`) and in the run control
+  (`panels/analysis/RunControl.tsx`) on Prepare and Analyze.
   Completed-run export adds `TrialResultGroup` under `resultGroups.trial`, with captured
   scenario, manifest, ledger, observations, jam decisions, members and integer counts.
   Its basis is `simulated-trial`, with no ensemble confidence interval or independently
@@ -306,6 +311,17 @@ Breaking one of these breaks the app.
   `mcClient.ts` to the slot, which terminates a worker silent for `CANCEL_GRACE_MS`
   (`workerSlot.ts`). Measurements:
   `docs/field-te/evidence/rf31-budget-2026-09-05/`.
+- **Real-mode statistics:** under `uncertainty: 'total'` and `sampling: 'lhs'`
+  replicate i draws each uncertain field from stratum `perm(i)` of N strata, N the loop end
+  (`stopCap` under a half-width target, else `replicates`; `sampling.ts`), so a replicate
+  is a pure function of (seed, i, N) and the pool, the Node runner and the single worker
+  agree. `sensitivityDepth: 'full'` runs Morris (`morris.ts`, ten trajectories over every
+  uncertain field) then Saltelli Sobol (`sobol.ts`, base `sobolBase`, Jansen total index,
+  bootstrap intervals at `confidence`) on the eight kept fields, each design row one
+  aleatory replicate under common random numbers; 'quick' keeps the one-at-a-time loop.
+  `src/engine/index.ts` is the headless barrel; `.oxlintrc.json` forbids react, konva,
+  `window` and `document` under `src/playback`, `src/analysis`, `src/geometry` and
+  `src/engine`; `scripts/run-engine.mjs` runs the Vite library bundle over `worker_threads`.
 - **Thresholds are test-defined:** `Scenario.requirements` (`RequirementThresholds`,
   defaults in `DEFAULT_REQUIREMENT_THRESHOLDS`) holds what the test asks the system to
   meet. Every reader spreads `{ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }`.
@@ -367,7 +383,9 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                McSummary, SensitivitySummary, SweepSummary; reduces analysis/projection.ts quantities into bands and
                imports no chart file), sweepFactors.ts (applySweepValue and the sweep
                factor ids and presets), workerSlot.ts (the one worker slot: start, cancel, dispose),
-               mc.worker.ts + mcClient.ts (the replicate, sensitivity and sweep protocol adapters),
+               mc.worker.ts + mcClient.ts + workerPool.ts (the replicate pool, sensitivity, sweep,
+               Morris and Sobol protocol adapters), mergeSummaries.ts (partial merge by
+               replicate index), sampling.ts (LHS strata), morris.ts, sobol.ts,
                trial.ts (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
                (the trial protocol adapter), controlledWorker.ts (the shared Worker test
@@ -735,7 +753,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   Now samples within the execution horizon: event counts include reached assignments,
   while effect times, Pk and kill deltas wait for the effect. EngagementStrip clips
   windows and censors lane marks, tooltips and labels. Compare findings route to Prepare.
-  Forecast/MC controls live under Forecast and analysis in Prepare and Settings.
+  Run settings live on the Run tab; the Run button and the Deterministic switch sit on
+  Prepare and Analyze.
 - **Pinned baseline** (`src/state/baseline.ts`): `PinnedBaseline` is `pinnedAt` (ISO),
   `label`, `scenario`, `mc` (`McSummary`) and `scenarioHash` (the `analysisBasisSignature`
   at the pin). `pinBaseline(label?)` needs a done summary for the current run and basis

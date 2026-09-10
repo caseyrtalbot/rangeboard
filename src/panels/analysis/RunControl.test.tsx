@@ -118,8 +118,10 @@ describe('RunControl', () => {
 
   it('keeps the line after the run, naming the rule that ended it', () => {
     setMc({ status: 'done', summary: summary(46, 'halfWidth') })
-    expect(render()).toContain('46 of 100 replicates · stop on half-width, floor 30, cap 2000')
+    expect(render()).toContain('46 of 2000 replicates · stop on half-width, floor 30, cap 2000')
 
+    // A fixed count ends at the replicate count; the loop end follows the cleared rule.
+    useStore.getState().patchScenario({ targetHalfWidth: null })
     setMc({ status: 'done', summary: summary(100, 'replicates') })
     expect(render()).toContain('100 of 100 replicates · stop on the replicate count')
   })

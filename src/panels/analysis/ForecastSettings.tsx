@@ -60,7 +60,7 @@ function modeChip(
       const early = summary != null && summary.stopped.rule !== 'replicates'
       return {
         cls: 'chip mc',
-        text: early ? `MC ${summary.replicates} of ${run.replicates} · seed ${run.seed}` : seeded,
+        text: early ? `MC ${summary.replicates} of ${run.targetHalfWidth == null ? run.replicates : run.stopCap} · seed ${run.seed}` : seeded,
         title: early
           ? `${basis}, stopped at ${summary.replicates} by ${STOP_BY[summary.stopped.rule]}, ${Math.round(
               summary.elapsedMs,
