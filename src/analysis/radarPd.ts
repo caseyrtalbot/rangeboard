@@ -4,11 +4,12 @@
  * A radar placard says "detects the reference target at r0". The engine
  * reads that as one point on a Pd-versus-SNR curve: at r0 the reference
  * target returns the SNR that gives pd0 at pfa for the reference
- * fluctuation case. The radar range equation then carries that SNR to any
- * other target and range (SNR scales with RCS and with the inverse fourth
- * power of range), and the target's own fluctuation case turns the SNR back
- * into a Pd. Single scan, square-law detector, one pulse: no pulse
- * integration, clutter, MTI or Doppler gating.
+ * fluctuation case. When a pulse count is present the calibrated SNR is the
+ * mean SNR per pulse required for the integrated dwell; otherwise it is the
+ * historical single-pulse SNR. The radar range equation then carries that
+ * SNR to any other target and range (SNR scales with RCS and with the inverse
+ * fourth power of range), and the target's own fluctuation case turns the SNR
+ * back into an integrated single-scan Pd.
  *
  * Sources: Mahafza, Radar Systems Analysis and Design Using MATLAB, 3rd ed.,
  * CRC Press 2013, section 13.5 (Swerling I Eq. 13.45, Swerling III
@@ -18,6 +19,7 @@
  * Signal Processing, chapter 6.
  */
 import type { SwerlingCase } from '../model/types'
+import { shnidmanPdFromSnr, shnidmanSnrForPd } from '../playback/radarDwell'
 
 /** The placard as one point on the Pd curve. r0M is the placard SLANT range. */
 export interface RadarCalibration {
@@ -31,6 +33,8 @@ export interface RadarCalibration {
   pfa: number
   /** Fluctuation case of the reference target. */
   swerling0: SwerlingCase
+  /** Noncoherently integrated pulses per dwell; null keeps the exact legacy single-pulse path. */
+  pulsesPerDwell?: number | null
 }
 
 /**
@@ -151,16 +155,41 @@ export function snrForPd(pd: number, pfa: number, swerling: SwerlingCase): numbe
   return hi
 }
 
-/** SNR the reference target returns at the placard range. */
+/** Required per-pulse SNR for one Pd under this calibration's dwell model. */
+function snrForCalibratedPd(
+  cal: RadarCalibration,
+  pd: number,
+  swerling: SwerlingCase,
+): number {
+  const pulses = cal.pulsesPerDwell
+  return pulses != null
+    ? shnidmanSnrForPd(pd, cal.pfa, pulses, swerling)
+    : snrForPd(pd, cal.pfa, swerling)
+}
+
+/** Pd from one per-pulse SNR under this calibration's dwell model. */
+function pdFromCalibratedSnr(
+  cal: RadarCalibration,
+  snr: number,
+  swerling: SwerlingCase,
+): number {
+  const pulses = cal.pulsesPerDwell
+  return pulses != null
+    ? shnidmanPdFromSnr(snr, cal.pfa, pulses, swerling)
+    : pdFromSnr(snr, cal.pfa, swerling)
+}
+
+/** Per-pulse SNR the reference target returns at the placard range. */
 function snr0Of(cal: RadarCalibration): number {
-  return snrForPd(cal.pd0, cal.pfa, cal.swerling0)
+  return snrForCalibratedPd(cal, cal.pd0, cal.swerling0)
 }
 
 /**
- * Calibrated SNR at range R: snr0 * (rcs / rcs0) * (r0 / R)^4 * envRangeFactor^4,
- * where snr0 = snrForPd(pd0, pfa, swerling0) and r0 is the placard slant range
- * (radar range equation, Mahafza chapter 1). The environment multiplier is a
- * range factor, so it enters the SNR as the fourth power.
+ * Calibrated mean per-pulse SNR at range R:
+ * snr0 * (rcs / rcs0) * (r0 / R)^4 * envRangeFactor^4, where snr0 is the
+ * calibrated requirement for pd0 and r0 is the placard slant range (radar
+ * range equation, Mahafza chapter 1). The environment multiplier is a range
+ * factor, so it enters the SNR as the fourth power.
  *
  * rangeM <= 0 returns Infinity (the target sits on the antenna). r0M <= 0
  * returns 0 (a placard of zero range sees nothing). rcs0M2 <= 0 reads as
@@ -175,7 +204,7 @@ export function snrAtRange(cal: RadarCalibration, rcsM2: number, rangeM: number,
   return snr0Of(cal) * rcsRatio * Math.pow(rangeRatio, 4)
 }
 
-/** Single-scan Pd for a target of `rcsM2` and case `swerling` at `rangeM`. */
+/** Integrated single-scan Pd for a target of `rcsM2` and case `swerling` at `rangeM`. */
 export function pdAtRange(
   cal: RadarCalibration,
   rcsM2: number,
@@ -183,14 +212,18 @@ export function pdAtRange(
   envRangeFactor: number,
   swerling: SwerlingCase,
 ): number {
-  return pdFromSnr(snrAtRange(cal, rcsM2, rangeM, envRangeFactor), cal.pfa, swerling)
+  const snr = snrAtRange(cal, rcsM2, rangeM, envRangeFactor)
+  // Keep the calibration anchor exact so a deterministic Pd threshold at
+  // the placard cannot move by numerical inversion error.
+  if (swerling === cal.swerling0 && snr === snr0Of(cal)) return cal.pd0
+  return pdFromCalibratedSnr(cal, snr, swerling)
 }
 
 /**
  * Largest range at which pdAtRange >= pd. Closed form from the fourth-root law:
- * R = r0 * m * ((rcs / rcs0) * (snr0 / snrForPd(pd))) ^ (1/4). When the target
- * case matches swerling0 and pd equals pd0 the SNR ratio is exactly 1 and this
- * is r0 * m * (rcs / rcs0) ^ (1/4), the rcsRangeFactor law.
+ * R = r0 * m * ((rcs / rcs0) * (snr0 / requiredSnr(pd))) ^ (1/4). When the
+ * target case matches swerling0 and pd equals pd0 the SNR ratio is exactly 1
+ * and this is r0 * m * (rcs / rcs0) ^ (1/4), the rcsRangeFactor law.
  *
  * pd >= 1 returns 0. pd <= 0, or a pd the case reaches at zero SNR, returns
  * Infinity: every range satisfies it, so no bound exists. Callers that draw
@@ -206,7 +239,7 @@ export function rangeForPd(
   if (pd >= 1) return 0
   if (!(pd > 0)) return Infinity
   if (!(cal.r0M > 0)) return 0
-  const need = snrForPd(pd, cal.pfa, swerling)
+  const need = snrForCalibratedPd(cal, pd, swerling)
   if (need === Infinity) return 0
   if (!(need > 0)) return Infinity
   const rcsRatio = cal.rcs0M2 > 0 && rcsM2 > 0 ? rcsM2 / cal.rcs0M2 : 1

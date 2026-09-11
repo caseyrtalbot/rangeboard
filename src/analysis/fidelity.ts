@@ -12,12 +12,13 @@ import type {
 } from '../model/types'
 import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
 import { expenditureChannel } from '../playback/pk'
+import { radarDwellPulses } from '../playback/radarDwell'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
 
 /** Every model the engine runs. */
 export type ModelId =
-  | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'jam'
+  | 'radar-pd' | 'radar-dwell' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'jam'
   | 'environment' | 'horizon' | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
   | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
@@ -54,6 +55,16 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
       'Closed-form Pd. Marcum-Q values are pinned in radarPd.test.ts. The range law is ' +
       'checked against the Blighter A400 series datasheet and the Echodyne EchoShield ' +
       'and EchoGuard sheets in validation.verify.test.ts.',
+  },
+  'radar-dwell': {
+    id: 'radar-dwell',
+    label: 'Radar dwell',
+    tier: 'physics',
+    validation: 'analytic',
+    standard: 'Radar: Swerling cases evaluated with Marcum-Q and Shnidman',
+    note:
+      'Noncoherent pulse integration uses Shnidman required-SNR equations and preserves ' +
+      'the placard calibration. Three hand-derived cases are pinned in radarDwell.verify.test.ts.',
   },
   'radar-scan': {
     id: 'radar-scan',
@@ -203,11 +214,11 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
 /** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
 const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
   sensor: [
-    'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect',
+    'radar-pd', 'radar-dwell', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect',
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
   effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
-  uas: ['radar-pd', 'environment', 'kinetic-pk'],
+  uas: ['radar-pd', 'radar-dwell', 'environment', 'kinetic-pk'],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
 
@@ -271,6 +282,11 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
     if (when) out.add(id)
   }
   add('radar-pd', sensors.some((s) => targets.some((t) => radarPdModeled(s, t))))
+  add(
+    'radar-dwell',
+    !physicsSwitches(scenario).includes('singlePulseRadar')
+      && sensors.some((s) => radarDwellPulses(s) != null && targets.some((t) => radarPdModeled(s, t))),
+  )
   add('radar-scan', sensors.some((s) => scanPeriods(s, targets).some((p) => p != null)))
   add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
   add('acoustic-range', sensors.some((s) => s.sensorType === 'acoustic'))

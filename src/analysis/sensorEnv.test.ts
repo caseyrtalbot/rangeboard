@@ -502,6 +502,7 @@ describe('radar Pd model', () => {
       pd0: 0.5,
       pfa: 1e-6,
       swerling0: 1,
+      pulsesPerDwell: null,
     })
     expect(radarCalibration({ ...RADAR, refRcsM2: 0.1, placardPd: 0.8, pfa: 1e-4 })).toEqual({
       r0M: 10000,
@@ -509,9 +510,30 @@ describe('radar Pd model', () => {
       pd0: 0.8,
       pfa: 1e-4,
       swerling0: 1,
+      pulsesPerDwell: null,
     })
     // A Pd or Pfa outside (0, 1) is not a probability: the planning factor stands in.
     expect(radarCalibration({ ...RADAR, placardPd: 1, pfa: 0 })).toMatchObject({ pd0: 0.5, pfa: 1e-6 })
+  })
+
+  it('recalibrates per-pulse SNR so an integrated dwell preserves the placard point', () => {
+    const integrated: SensorSpec = { ...RADAR, pulsesPerDwell: 100, dwellTimeS: 0.02 }
+    const cal = radarCalibration(integrated)
+    expect(cal.pulsesPerDwell).toBe(100)
+    expect(radarPdAt(integrated, clear, uas({ group: 1 }), integrated.detectRangeM))
+      .toBeCloseTo(cal.pd0, 10)
+    expect(rangeForPd(cal, cal.rcs0M2, cal.pd0, 1, cal.swerling0)).toBeCloseTo(cal.r0M, 9)
+  })
+
+  it('keeps the null-field and singlePulseRadar fallbacks bit-identical', () => {
+    const integrated: SensorSpec = { ...RADAR, pulsesPerDwell: 100, dwellTimeS: 0.02 }
+    const target = uas({ group: 3, airframe: 'fixed-wing' })
+    for (const rangeM of [1000, 5000, 10000, 20000, 1e9]) {
+      const legacy = radarPdAt(RADAR, clear, target, rangeM)
+      expect(radarPdAt({ ...RADAR, pulsesPerDwell: null, dwellTimeS: null }, clear, target, rangeM))
+        .toBe(legacy)
+      expect(radarPdAt(integrated, clear, target, rangeM, true)).toBe(legacy)
+    }
   })
 
   it('with defaults, a Swerling 1 target returns the pre-slice fourth-root value to 1e-9 relative', () => {
@@ -573,32 +595,36 @@ describe('radar Pd model', () => {
   })
 
   it('pdContoursM: Giraffe 1X vs Mohajer-6 at Pd 0.5 and 0.9', () => {
-    // Placard 4000 m at 0.01 m2, Pd 0.5, Pfa 1e-6, case 1: snr0 = ln(1e-6) / ln(0.5) - 1 = 18.9316.
-    // Mohajer-6: 1 m2 (ratio 100), fixed-wing so Swerling 3.
-    //   Pd 0.5 case 3 needs SNR 15.6809 (11.954 dB): R = 4000 * (100 * 18.9316 / 15.6809)^0.25 = 13,259.09 m.
-    //   Pd 0.9 case 3 needs SNR 53.6532 (17.296 dB): R = 4000 * (100 * 18.9316 / 53.6532)^0.25 = 9,748.95 m.
+    // Placard 4000 m at 0.01 m2, Pd 0.5, Pfa 1e-6, case 1, 11 pulses:
+    // Shnidman requires mean per-pulse SNR 2.96512. Mohajer-6 is 1 m2
+    // (ratio 100), fixed-wing case 3. Case 3 requires 2.54060 per pulse at
+    // Pd 0.5 and 8.10265 at Pd 0.9:
+    // R50 = 4000 * (100 * 2.96512 / 2.54060)^0.25 = 13,147.30 m;
+    // R90 = 4000 * (100 * 2.96512 / 8.10265)^0.25 = 9,838.15 m.
     expect(swerlingFor(MOHAJER)).toBe(3)
     const [r50, r90] = pdContoursM(GIRAFFE, clear, MOHAJER, [0.5, 0.9])
-    expect(r50).toBeCloseTo(13259.09, 2)
-    expect(r90).toBeCloseTo(9748.95, 2)
+    expect(r50).toBeCloseTo(13147.30, 2)
+    expect(r90).toBeCloseTo(9838.15, 2)
     expect(snrForPd(0.5, 1e-6, 3)).toBeCloseTo(15.6809, 4)
     expect(snrForPd(0.9, 1e-6, 3)).toBeCloseTo(53.6532, 4)
-    // Ground projection from a 4 m mast to 14,000 ft: 12,555.02 m and 8,767.39 m.
+    // Ground projection from a 4 m mast to 14,000 ft: 12,436.91 m and 8,866.48 m.
     const dAlt = 14000 * FT_TO_M - 4
-    expect(groundRangeM(r50, dAlt)).toBeCloseTo(12555.02, 2)
-    expect(groundRangeM(r90, dAlt)).toBeCloseTo(8767.39, 2)
-    // Forced to the placard case the 0.5 contour is the fourth-root value, 12,649.11 m; 0.9 is 7,812.06 m.
+    expect(groundRangeM(r50, dAlt)).toBeCloseTo(12436.91, 2)
+    expect(groundRangeM(r90, dAlt)).toBeCloseTo(8866.48, 2)
+    // Forced to the placard case the 0.5 contour is the fourth-root value,
+    // 12,649.11 m; the integrated case-1 Pd 0.9 contour is 7,758.83 m.
     const [c50, c90] = pdContoursM(GIRAFFE, clear, { ...MOHAJER, swerling: 1 }, [0.5, 0.9])
     expect(c50).toBeCloseTo(4000 * Math.pow(100, 0.25), 9)
-    expect(c90).toBeCloseTo(7812.06, 2)
+    expect(c90).toBeCloseTo(7758.83, 2)
     // EO/IR has no Pd model: every contour is the one effective range.
     const eoM = effectiveDetectRangeM(EO, clear, MOHAJER)
     expect(pdContoursM(EO, clear, MOHAJER, [0.5, 0.9])).toEqual([eoM, eoM])
   })
 
   it('a fixed-wing target (Swerling 3) reads 4.8 percent farther than the fourth-root law at Pd 0.5', () => {
-    // The placard is quoted for a case 1 target, and a case 3 target needs 11.954 dB
-    // instead of 12.772 dB for Pd 0.5 at Pfa 1e-6, so (18.9316 / 15.6809)^0.25 = 1.04822.
+    // This synthetic radar has no dwell fields and stays on the single-pulse fallback.
+    // Its case 3 target needs 11.954 dB instead of 12.772 dB at Pd 0.5,
+    // so (18.9316 / 15.6809)^0.25 = 1.04822.
     const fw = uas({ group: 3, airframe: 'fixed-wing' })
     const ratio = effectiveDetectRangeM(RADAR, clear, fw) / fourthRoot(fw, 1)
     expect(ratio).toBeCloseTo(1.04822, 5)
