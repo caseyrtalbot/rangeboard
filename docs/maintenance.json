@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "c6f7165a35bfb9121c0e36ecb632dd99da42d42f73d9261ec17b73aabc82b8b5",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate evidence indexed under historical evidence"
+      "sha256": "e2f0f44a298061abf596b5a8ae4f1373448786c56be036531b8d8f038999db95",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c5e070de0a34bf37c6061053195118598fb78b086904d97b4b3c6df0a673ea0d",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: Run tab, one Run button on the pool, Morris then Sobol on Fragility, headless runner row"
+      "sha256": "6a7d06b452df07bce724449cd7b1a0ae8a8ba90cf8623b446ce37e27f6af76a2",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "3bbfa6f67a66fddba2ec221ea6ca1b456da7fd7af60dd0faba1c353482a0f16a",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: worker pool and range merge, LHS strata, Morris and Sobol, engine barrel and lint rule, Run tab controls"
+      "sha256": "15e4c44231a2134d3dc562a1f88baac15bc9aa62b59446198217bd731b636153",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "49ffdc452b6818fb645365680c109eae387a9c6a424d67da0a9451dfb90077bf",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: engine commands, Phase 1 test conventions and browser checks"
+      "sha256": "35e4f1afe61c93be17dbf010ded1ac03f44f5acfaa442d9cd31c8c96ab64e05f",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "5402952e51d9237bb3039fcf21e0185c80d95f0dd408d837f1a9d7234b6df336",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: package.json gains engine:build, engine and test:engine; check runs test:engine; no guidance change"
+      "sha256": "68b48d4478b530ba97b52a0bc824672a3bde1870f51a5bdc8442331f2a2d75be",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
     },
     {
       "document": "docs/HANDOFF.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "61ab7d37fef71bb369e9e54c247ea368d809ba6d053c4fd0ebdd97132cd06fab",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: Run tab, run control and Sobol chart rules folded into index.css beside their neighbours; no token or rule change"
+      "sha256": "4a5c63820f8ef4c6acdae71fa24142da9de2922f68891e1d1ae79ddeb3defa5a",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",

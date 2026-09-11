@@ -48,6 +48,15 @@ telemetry pane distinguishes assignment, release and effect marks and preparatio
 spans. Exported events retain assignment accounting in `tS` and add `tReleaseS`; legacy
 launch timing stays unavailable when the captured effector delay cannot resolve it.
 
+Sensor tracks carry an estimated state. Each holding sensor runs its own constant-velocity
+Kalman filter from the range and azimuth accuracy of its model, and the board draws the
+estimated position with a 1 sigma error ellipse. The ellipse shrinks on a measurement and
+grows while the track coasts. A coasting track dashes, a truth track carries no error and
+draws its marker alone, a false track draws in a muted ink, and nothing draws past the
+observation horizon. A C2 node fuses the sensor tracks that reach it after link latency;
+the fused track sets the firm-track time and, on the estimate path, predicts the intercept
+point. A sensor whose model states no accuracy reports the truth position instead.
+
 Play prepares one sampled trial in its own worker slot, using nominal parameters,
 aleatory draws and a frozen manifest, then starts playback when that trial is ready.
 Execute surfaces share its retained ledger and observations. Replay keeps the run identity,
@@ -62,6 +71,10 @@ none. Run settings (mode, uncertainty, seed, replicates, stop rule, confidence, 
 sensitivity depth, Sobol base) live on the **Run** tab of Settings, each with its default and
 a reset. One Run button with a Deterministic switch sits on Prepare and Analyze; a run uses
 the worker pool and its progress line names the stop rule and the pool size.
+`Scenario.physics` holds the engine simplifications a run switched on: `truthTracks`,
+`noFalseTracks`, `noOperatorQueue` and `singlePulseRadar`. No control sets them yet; a
+fixture or a script writes the field. Every run and trial manifest records the list and
+lowers its fidelity floor to `fallback` while the list is not empty.
 Where a forecast count still prints, it reads as an expected value with two decimals
 below ten. No surface labels a forecast as a realized kill.
 
@@ -110,7 +123,8 @@ screen changes preserve the result basis.
 | Represent an architecture | Sensor/C2/effector links, integration profiles, suggested pairings, typed routes and fire-control eligibility | [integration](../src/model/integration.ts), [killChain](../src/playback/killChain.ts) |
 | Represent a threat | Paths, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON; the Systems tab lists every field of every system in use with grade, layer, source and spread, and an edit there is an override with a reason, reset per field, per system or all | [LibraryEditor](../src/panels/LibraryEditor.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx), [overrides](../src/state/overrides.ts), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |
-| Trace a value | The library is a JSON data package, one file per model, with grade, layer, range type, condition, source and spread on every numeric field; class priors are derived from the sourced entries | [data package](../data/library/), [libraryField](../src/model/libraryField.ts), [classPriors](../src/analysis/classPriors.ts) |
+| Trace a value | The library is a JSON data package, one file per model, with grade, layer, range type, condition, source and spread on every numeric field; every sensor carries range, azimuth and elevation accuracy and a radar false-alarm rate, every C2 model carries decision latency, its sigma and an operator track capacity; class priors are derived from the sourced entries | [data package](../data/library/), [libraryField](../src/model/libraryField.ts), [classPriors](../src/analysis/classPriors.ts) |
+| Follow a track | Per-sensor Kalman track estimates with covariance ellipses on the board, track-to-track fusion at the C2 after link latency, confusion-matrix classification where a sensor states one, false tracks from the radar false-alarm rate and an operator decision queue at the C2 | [kalman](../src/playback/kalman.ts), [tracker](../src/playback/tracker.ts), [fusion](../src/playback/fusion.ts), [classification](../src/playback/classification.ts), [falseTracks](../src/playback/falseTracks.ts), [operator](../src/playback/operator.ts), [TrackLayer](../src/canvas/layers/TrackLayer.tsx) |
 | Play a scenario | Sampled trial preparation, retained Replay, New run, speed, cursor and observation-bounded track/engagement display | [TimelineBar](../src/panels/TimelineBar.tsx), [trialSelectors](../src/state/trialSelectors.ts), [useTrialResult](../src/state/useTrialResult.ts), [trialTrackState](../src/playback/trialTrackState.ts), [trialSweepAt](../src/playback/trialSweepAt.ts), [frameClock](../src/canvas/frameClock.ts) |
 | Watch a trial | Now screen: run line, kill chain at the cursor, effector inventory bars and sensor rows | [NowScreen](../src/panels/analysis/screens/NowScreen.tsx), [trialSweepAt](../src/playback/trialSweepAt.ts), [systemTelemetry](../src/analysis/systemTelemetry.ts) |
 | Read a completed trial | Outcome screen: count tiles, per-threat table, event ledger, manifest, validity and export | [OutcomeScreen](../src/panels/analysis/screens/OutcomeScreen.tsx), [trialResult](../src/analysis/trialResult.ts), [DebriefRecord](../src/panels/analysis/DebriefRecord.tsx) |
@@ -168,6 +182,7 @@ File size alone does not define a safe slice.
 | Board actions/history | `state/store.ts`, `scenarioInstall.ts`, `runState.ts`, `analysisBasis.ts`, `store*.test.ts` | Edits, undo/redo, load/reset, stale callbacks and cancellation |
 | Sampled playback | `state/trialSelectors.ts`, `useTrialResult.ts`, `analysis/trialResult.ts`, `trialSeries.ts`, `playback/trialTrackState.ts`, `trialSweepAt.ts` | One retained draw, member identity, observation bounds and export agreement |
 | Numerical engine | `playback/sim.ts`, `attrition.ts`, `mcRun.ts`, `policy.ts`, `analysis/` | Fixed IDs/seeds; deterministic, both MC modes and sensitivity parity |
+| Tracks and kill chain | `playback/kalman.ts`, `tracker.ts`, `fusion.ts`, `classification.ts`, `falseTracks.ts`, `operator.ts`, `sweep.ts`, `sim.ts`, `attrition.ts` | Draw keys per kind; the truth path under `truthTracks`; the switched fixtures unchanged |
 | Workers | [workerGraph.test.ts](../src/playback/workerGraph.test.ts), [workerSlot.test.ts](../src/playback/workerSlot.test.ts), `mcClient.ts`, `mc.worker.ts` | Isolated dependencies; real-worker completion/cancellation |
 | Save shapes | `model/types.ts`, `io/` | Schema descriptors, legacy defaults, rejection and recovery |
 | Rendering | `canvas/`, `panels/`, `charts/`, `ui/`, `index.css` | Clock horizons, tokens, panel width, chart rendering and overflow |

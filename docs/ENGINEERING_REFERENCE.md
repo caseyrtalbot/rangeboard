@@ -335,7 +335,8 @@ Breaking one of these breaks the app.
 ## 4. Architecture map
 
 ```text
-src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basisFor),
+src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basisFor,
+               physicsSwitches; C2Spec and the ClassificationMatrix),
                scenario.ts (modelFor index, pathSpeed, scenarioDurationS, engineKeyOf and
                markPresentationVariant), seed.ts (emptyScenario, DEFAULT_SEED),
                seedLibrary.ts (re-export of seedLibrary.generated.ts, which
@@ -344,7 +345,8 @@ src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basi
                type enums, Override, PhysicsSwitch, FidelityTier, DATA_PACKAGE_VERSION),
                runRecord.ts (RunManifest, RunRecord, createRunManifest), libraryLifecycle.ts (the one seed library lifecycle:
                initial library and presets, load reconcile, import merge, reset to seed,
-               provenance adoption), integrationData.ts (researched pairings and profiles),
+               provenance adoption, ADOPTED_SEED_KEYS field adoption),
+               integrationData.ts (researched pairings and profiles),
                seedSystems.ts (system presets), seedCards.ts,
                rcsFactors / signatureFactors / weaponFactors (PF tiers)
 src/geometry/  geo.ts (bearings, wedges, path interpolation, formatters), slant.ts (slant
@@ -368,11 +370,22 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                (prepareSweep: per-sensor terms resolved once per threat; sweepSensorHits,
                detectionsAt, spawn ring check), sweep.ts (the temporal sweep of one
                threat: prepareSweepRun, stepSweep, finishSweep own scan scheduling,
-               holds, cue order, coast and M-of-N; SensorObservation), killChain.ts
-               (kill-chain routes), sim.ts (assessThreat consumes sweep step results,
-               assessThreatReusing, assessAllThreats), pk.ts (Pk model and
-               expenditure channels), intercept.ts (time of flight, intercept, launch
-               releases), shot.ts (evaluateShot: per-ship shot eligibility shared by both
+               holds, cue order, coast and M-of-N; SensorObservation), trackTypes.ts
+               (TrackState, Covariance4, TrackEstimate, FusedTrack, TrackMeasurement,
+               TrackEstimateSink), kalman.ts (predict, update, initFromMeasurement,
+               positionSigmaM, quality), tracker.ts (createTrackManager: one track per
+               sensor and threat, polarMeasurement, truthPathFor), killChain.ts
+               (kill-chain routes, KillChainRoute), sim.ts (assessThreat consumes sweep
+               step results, assessThreatReusing, assessAllThreats), fusion.ts
+               (fuseTracks in information form, createFusionStage: the per-sensor ring,
+               the link latency and FC_QUALITY_MIN), classification.ts (matrixFor,
+               bandFor, classifyByMatrix), falseTracks.ts (prepareFalseTracks: Poisson
+               false tracks per radar scan), operator.ts (createOperatorQueue: the C2
+               decision latency and its overload factor), pk.ts (Pk model,
+               expenditure channels, missDistanceSigmaM), intercept.ts (time of flight,
+               intercept, launch releases, predictedStateAt, interceptFromEstimate and
+               the interceptFor selector),
+               shot.ts (evaluateShot: per-ship shot eligibility shared by both
                firing passes), attritionReport.ts (report types), sweepState.ts (sweep
                state types), attrition.ts (resolveEngagements: fire distribution,
                expected kills, events), trackState.ts
@@ -390,7 +403,9 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
                (the trial protocol adapter), controlledWorker.ts (the shared Worker test
                double), trialTrackState.ts (retained member
-               outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector state)
+               outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector
+               state), trackEstimateView.ts (latestEstimatesAt and positionEllipse over
+               a trial's track history)
 src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CLASS_PRIORS),
                sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts
@@ -518,6 +533,66 @@ Each fact below has exactly one definition. Read it there; never add a second co
   measurement: it holds continuity and never moves the classification ladder, and it
   exists only after the track has initiated; a missed scan before `trackInitAtS` ends the
   hold while the M-of-N window keeps counting.
+- **Track estimate** (`src/playback/kalman.ts`, `tracker.ts`): a constant-velocity Kalman
+  filter over (x, y, vx, vy) in board meters, with continuous white-noise acceleration at
+  `PROCESS_NOISE_Q` (1 m^2/s^3, PF). `Covariance4` is the flat row-major 4x4 of
+  `trackTypes.ts`. `createTrackManager` keeps one track per (sensor, threat); a formation
+  is one track on its nearest detected member. The sweep's hold decides the step:
+  `measure` updates from the truth position plus polar noise, `carry` and `coast` predict
+  only, and a sensor the sweep does not hold this step loses its track.
+  `polarMeasurement` is the one polar-to-Cartesian noise conversion: `rangeAccuracyM`
+  along the ground line of sight, `slantM * azimuthAccuracyDeg` across it, rotated into
+  the board frame; `elevationAccuracyDeg` is carried by the library and not modeled in
+  this phase. `quality(cov)` is the one quality map, the position 1 sigma through
+  `QUALITY_SCALE_M` (50 m, PF): 1 at zero covariance, 0.5 at the scale.
+  `INIT_SPEED_SIGMA_MPS` (20 m/s, PF) opens the velocity block of a new track.
+  `truthPathFor` is the one truth-path test: a sensor missing `rangeAccuracyM` or
+  `azimuthAccuracyDeg`, or any sensor under the `truthTracks` switch, reports the true
+  state with `ZERO_COVARIANCE` and quality 1 and takes no draw. Capture is opt-in:
+  `runTrial` attaches the sink that fills `TrialResult.tracks`, so the ensemble path
+  allocates no estimate history.
+- **Fusion and classification** (`src/playback/fusion.ts`, `classification.ts`, `sim.ts`):
+  `fuseTracks` is information-form track-to-track fusion, the sum of the member inverse
+  covariances inverted, with the covariance-weighted mean as the state; two equal members
+  halve the covariance. `createFusionStage` runs it once per sweep step for one threat:
+  each sensor's estimates enter a short ring, the C2 holds the entry one link latency old
+  (`delayedMember`) and dead-reckons it forward with the same `predict`, and the reports
+  that have arrived fuse at that node. A truth member bypasses the latency and makes the
+  fused track the truth at t, so a `truthTracks` run is unchanged by fusion. With no C2
+  node every live track fuses at the sensors with no latency (`NO_C2`). `assessThreat`
+  keeps the per-step fused tracks on `ThreatAssessment.fusedTracks` (per replicate, never
+  summarized) and the stable track now needs both `trackInitAtS` and a fused quality at
+  or above `FC_QUALITY_MIN` (0.5, the quality of a 50 m position sigma). Classification
+  reads `SensorSpec.classification` when the sensor states one: `bandFor` picks the first
+  band whose `maxRangeM` exceeds the range and `classifyByMatrix` draws the declaration,
+  which lands `timeToDeclareS` later in place of the sweep's classified flag. A sensor
+  with no matrix leaves the rule ladder of `sim.ts` in charge; no library sensor states
+  one yet.
+- **False tracks and the operator queue** (`src/playback/falseTracks.ts`, `operator.ts`,
+  `attrition.ts`): each active radar with a stated `falseAlarmRatePerScan` (lambda per
+  scan over the whole coverage) runs a truth-free per-scan process. The confirmed rate is
+  the closed form `FALSE_TRACK_CELLS * mOfN(lambda / FALSE_TRACK_CELLS, M, N)` over the
+  radar's own initiation rule, with `FALSE_TRACK_CELLS` 1e4 (PF); the per-scan count is
+  Poisson by inversion from one uniform. A false track holds for `trackDropMisses` scans
+  at a position uniform in area over the radar's coverage, a speed in
+  `FALSE_TRACK_SPEED_MPS` and a uniform heading, and carries `uasId: null` with
+  `source: 'false'`. The `noFalseTracks` switch disables it. `createOperatorQueue` charges
+  the C2's own decisions: `decisionLatencyS` is lognormal with median
+  `C2Spec.decisionLatencyS` and `decisionLatencySigmaDb` (10 log10 of the ratio to the
+  median, the `Spread` convention), multiplied by `overloadFactor`, the linear
+  load / capacity above `operatorTrackCapacity`. The doctrine dwells already charge the
+  planning decision time, so the queue adds only the excess over the median, at the
+  declare gate and again at the assignment; `firstC2Of` is the node of a route. It is
+  inactive, with no draw and no delay, without a C2 spec that states a median, under the
+  `noOperatorQueue` switch, or on a route with no C2 node.
+- **Physics switches** (`PhysicsSwitch` in `src/model/libraryField.ts`,
+  `physicsSwitches(scenario)` in `types.ts`): `Scenario.physics` lists the engine
+  simplifications a run switched on, and `physicsSwitches` is the one reader: deduplicated
+  and in the declaration order `truthTracks, noFalseTracks, noOperatorQueue,
+  singlePulseRadar`, empty on an old save. `createRunManifest` (`runRecord.ts`) and
+  `createTrialManifest` (`trialTypes.ts`) both default `physicsSwitches` from the scenario
+  and drop `fidelityFloor` from `datasheet` to `fallback` when any switch is on, because a
+  switch runs a model on its fallback.
 - **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
@@ -535,7 +610,17 @@ Each fact below has exactly one definition. Read it there; never add a second co
   the slant to the credited point exceeds the reach `v * (tEffectS - release)` by
   more than one DT of flight, which with the exact solution happens only at a cap or when
   no meeting exists; both selection passes decline such a shot (no event, no round, no
-  cooldown). `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
+  cooldown). `interceptFor` is the one intercept selector both firing passes reach
+  through `evaluateShot`: with no estimate, or a truth-source one, it is `interceptAt`
+  with the same arguments and the same result; with a Kalman estimate it is
+  `interceptFromEstimate`, the closed-form meeting against the constant-velocity
+  prediction of `predictedStateAt`, under the same cap, `capped` and `infeasible` rules.
+  `attrition.ts` supplies the fused track the shooter holds at t from
+  `ThreatAssessment.fusedTracks` through a per-threat cursor. `ShotAccepted` carries
+  `predictionSigmaM` (the predicted position 1 sigma at the effect time, null on the
+  truth path) and `interceptSource`; `missDistanceSigmaM` (`pk.ts`) roots them with a
+  guidance error for Phase 3 and no Pk reads it in this phase.
+  `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
   kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
   commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy
@@ -548,9 +633,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   connections are untyped and the gate does not bind; UI-drawn connections are typed by
   `completeConnect` when `evaluateIntegration` finds a researched pairing.
 - **Draw policy** (`src/playback/policy.ts`): `DrawPolicy` is the one draw point. The
-  engine draws in exactly five places (`sensorHit` detect, `applyEffect` kill,
-  `applyEffect` continue-jam, `phase`, drawn once per scan state, and `param`, drawn once
-  per uncertain field per replicate under `total`), through a policy passed as the
+  engine draws in exactly nine places (`sensorHit` detect, `applyEffect` kill,
+  `applyEffect` continue-jam, `phase`, drawn once per scan state, `param`, drawn once
+  per uncertain field per replicate under `total`, `noise`, drawn twice per measured
+  scan in `tracker.ts`, `classify`, drawn once per declaration attempt in
+  `classification.ts`, `falseAlarm`, drawn once per radar scan for the Poisson count and
+  once per state uniform of a false track in `falseTracks.ts`, and `latency`, drawn once
+  per operator decision in `operator.ts`), through a policy passed as the
   defaulted last parameter of `sweepSensorHits`, `assessThreat`, `assessAllThreats` and
   `resolveEngagements`; a bare call is the deterministic policy, so its output is unchanged
   by construction (a test pins it). `detect` carries the `memberIdx` of the admitted
@@ -562,7 +651,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (`src/geometry/prng.ts`), keyed detect by sensor, threat, member and `stepIndex(tS)`,
   kill by effector, threat, ship and `salvoIdx`, the salvos that effector already committed
   at that ship, jam by effector, threat and step, phase by sensor, param by model id and
-  field. `DRAW_KIND` names the kinds and `stepIndex` (`clock.ts`, beside `DT`) is the one
+  field, noise by sensor, threat, axis and step, classify by sensor, threat and step,
+  falseAlarm by sensor, draw index and step, latency by C2, threat and step.
+  `DRAW_KIND` names the kinds (1 to 5 and 7 to 10; kind 6 is the LHS stratum shuffle in
+  `sampling.ts`) and `stepIndex` (`clock.ts`, beside `DT`) is the one
   draw-step index, so common random numbers hold across laydowns. A change to a key part
   (`memberIdx`, `salvoIdx`, `stepIndex`) silently breaks pairing; only the CRN tests in
   `mcRun.test.ts` and `policy.test.ts` catch it. Ships are discrete (`killDelta` 0 or 1).
@@ -600,9 +692,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   CI. Full-run conditional time means are labeled; quantities without a replicate
   statistic retain an individual planning-envelope label.
 - **Data package** (`data/library/<kind>/<slug>.json`, one file per model, `index.json`
-  for order and version): every numeric spec field is a `LibraryField` with value, unit,
+  for order and version, `DATA_PACKAGE_VERSION` 2): every numeric spec field is a
+  `LibraryField` with value, unit,
   grade, layer, range type, condition, source and spread; categorical spec keys are bare
-  `attributes`. `scripts/build-library.mjs` compiles the package into
+  `attributes`. A file's `spec` names the block its fields compile into and now admits
+  `'c2'`: eight C2 models carry `decisionLatencyS`, `decisionLatencySigmaDb` and
+  `operatorTrackCapacity`, and all 38 sensors carry the four tracker accuracy fields.
+  `scripts/build-library.mjs` compiles the package into
   `src/model/seedLibrary.generated.ts`; `scripts/check-library.mjs` is the health check
   (grade, layer, unit, range type and condition, L1 source and date, L2 estimator, index
   and version agreement, and a value more than three spreads from its class prior with no
@@ -675,8 +771,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `spreadText` (`src/panels/inspector/spreadText.ts`) is
   the one spread wording, shown by the Sources table and appended to the `PfTag` title.
 - **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row
-  for each of the fourteen model ids with a tier, a validation status and, where a
-  published method applies, a `standard` that quotes a row of section 8. `modelsUsed
+  for each of the nineteen model ids with a tier, a validation status and, where a
+  published method applies, a `standard` that quotes a row of section 8. Phase 2 added
+  `tracker`, `fusion`, `classification`, `operator` and `false-tracks`; a sensor reports
+  the tracker and false tracks, a C2 node fusion, classification and the operator.
+  `modelsUsed
   (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
   Outcome validity row and the detail pane header show the tags, and the export carries
   `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with
@@ -727,7 +826,18 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `ringVisible(ui, entityId, key)` is the one resolver, `RING_STYLE` the one style source,
   `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in the danger
   red from `src/ui/ink.ts`, the one Konva ink table; a jammer keeps its entity-color
-  cone. Only a selected-threat ring carries a label.
+  cone. Only a selected-threat ring carries a label. `footprintStyle.ts` also holds the
+  track style: `TRACK_ESTIMATE_INK`, `TRACK_FALSE_INK`, `TRACK_ELLIPSE_DASH` and
+  `TRACK_MARKER_PX`, which `TrackLayer` reads.
+- **Track picture** (`src/playback/trackEstimateView.ts`,
+  `src/canvas/layers/TrackLayer.tsx`): `latestEstimatesAt` is the one reader of a trial's
+  track history, the latest entry per track id at or before the horizon and nothing past
+  it; `positionEllipse` is the one error ellipse, the eigenpair of the position block of
+  a `Covariance4`. `TrackLayer` draws the 1 sigma ellipse and a position marker on the
+  live Layer: a coasting track dashes, an updated track draws solid, a truth track has no
+  error so it draws the marker alone, and a false track takes the muted ink. The ellipse
+  radii are distances and ride the world transform; the stroke and the marker hold their
+  pixel size.
 - **Analysis screens** (`src/panels/AnalysisPanel.tsx`, `src/panels/analysis/screens/`):
   `PHASE_SCREENS` (`screens/navigation.ts`) is the one phase-to-screen map: Prepare
   `fragility` and `inputs`, Execute `now`, Analyze `outcome` and `compare`. `AnalysisPanel`
@@ -805,7 +915,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   and `resetBuiltin` for "Reset to seed". Saved-id precedence is one rule everywhere: the
   entry the user holds wins over the seed of the same id, and `Scenario.deletedSeedIds`
   keeps the reconcile from resurrecting a deleted builtin. A seed field change does not
-  reach an existing save's copy of a builtin model; "Reset to seed" does.
+  reach an existing save's copy of a builtin model; "Reset to seed" does. The one
+  exception is `ADOPTED_SEED_KEYS`, the migration path a new spec field takes into an
+  existing board: `adoptSeedFields` gives a saved builtin only the listed keys it does
+  not hold (`'*'` adopts a whole block the save lacks), so a key the save holds, null
+  included, stays the user's. Phase 2 lists the four sensor accuracy fields and the whole
+  `c2` block.
 - **Other:** kill chain = `Connection` list, sensor to C2 to effector or direct. Threat
   tactics live in `src/playback/tactics.ts`; the raid builder commits entities, paths and
   waves in one `mutate`. Threat WEZ geometry is `src/analysis/impact.ts`; `effectRadiusM`
@@ -830,7 +945,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `altBandFt` midpoint; pin `altitudeFt` where slant must equal ground range; pin
   `swerling` on a fixed-wing fixture that feeds a Pd expectation; pin `rangeBasis:
   'planning'` on a radar whose scan time must not move a hand-derived latency; pin
-  `doctrine.enabled = false` on a legacy fixture.
+  `doctrine.enabled = false` on a legacy fixture; pin `physics` on a golden fixture whose
+  timeline must not move with a new engine model. `detection-outside-rings.json` and
+  `layered-acoustic-merops.json` pin `['truthTracks', 'noFalseTracks',
+  'noOperatorQueue']`, so they hold the pre-Phase-2 kill chain.
 - **Deterministic versus stochastic.** The deterministic run is the *planning envelope*:
   threshold detection at `pdDetect`, kills as mass, phases at 0. It carries a `limiting`
   finding on every gate. The Monte Carlo run is the *estimate*: every headline number is a
@@ -907,8 +1025,8 @@ Konva conventions:
   imports a drawing file. Spoke callout geometry snaps to whole pixels in `labelLayout.ts`, so a
   sub-pixel centroid drift does not change a placement's identity.
 - Two scene Layers, in this order: `StaticScene` (boundaries, footprints, range rings,
-  connections) and `LiveScene` (WEZ, paths, engagements, entities, system handles,
-  callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
+  connections) and `LiveScene` (WEZ, paths, track estimates, engagements, entities,
+  system handles, callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
   live canvas alone and the dashed rings stay untouched between publications. The frame
   clock is mounted once, in `LiveScene`; the static scene reads the published `simTimeS`
   and re-renders only when the held-sensor set changes.
@@ -1017,6 +1135,6 @@ code implements the method in full.
 | EO/IR | NVESD NV-IPM methodology and the Targeting Task Performance metric; Johnson criteria retained as a legacy cross-check |
 | Acoustic | ISO 9613-2 outdoor attenuation; ANSI/ASA S1.26 atmospheric absorption |
 | Navigation | GPS SPS Performance Standard; INS error as random walk plus bias |
-| Tracking | Bar-Shalom and Li, estimation and data association; Blackman and Popoli, multi-target tracking |
+| Tracking | Bar-Shalom and Li, estimation and data association: the constant-velocity Kalman filter and track-to-track fusion are textbook methods there, not a numbered standard; Blackman and Popoli, multi-target tracking |
 | Terrain data | DTED (MIL-PRF-89020B), SRTM, USGS 3DEP |
 | Symbology | MIL-STD-2525 (already in use) |

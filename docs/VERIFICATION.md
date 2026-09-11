@@ -45,6 +45,42 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   bootstrap intervals at base 1024; `mc.worker.stages.test.ts` drives the Morris and Sobol
   routes. The parity files are aleatory and do not move under LHS. A fixture that sets a
   half-width target pins `stopCap` when it reads the loop end.
+- Phase 2 tracks and kill chain, one file per model:
+  - `playback/kalman.test.ts`: the steady-state gain against the closed form of the CWNA
+    tracking index, symmetry after 1000 predict and update steps, the coast growing and
+    an update lowering the position sigma, and the quality map at 0 and at the scale.
+  - `playback/tracker.test.ts`: the truth path on a null accuracy field and under the
+    `truthTracks` switch, both consuming no draw; two kind-7 noise draws per measured
+    scan keyed by sensor, threat, axis and time; the ellipse shrinking over hits and
+    growing over misses; `polarMeasurement` along and across the line of sight; and
+    `TrialResult.tracks` on both paths.
+  - `playback/fusion.test.ts`: `invert4`, two equal members halving the covariance, the
+    information weighting of an unequal pair, the truth member dominating, the
+    regularization floor, `delayedMember` over the latency ring and `FC_QUALITY_MIN` as
+    the quality of a 50 m position sigma.
+  - `playback/classification.test.ts`: band selection, the deterministic declaration at
+    `pCorrect > 0.5`, the false-hostile branch and the kind-8 draw keys.
+  - `playback/falseTracks.test.ts`: the closed-form rate, the Poisson inversion, a
+    convergence check of the mean count per scan, the truth-free state inside the radar
+    coverage, the `noFalseTracks` switch and the trial integration.
+  - `playback/operator.test.ts` and `playback/attrition.operator.test.ts`: the lognormal
+    latency and the linear overload factor with the kind-10 key, then the two decisions
+    at the declare and assignment gates on the legacy and doctrine paths, with the
+    `noOperatorQueue` switch restoring the baseline timeline.
+  - `playback/trackEstimateView.test.ts` and `canvas/layers/TrackLayer.test.tsx`: the
+    ellipse eigenpair, horizon censoring, the latest entry per track id, and the dashed
+    coast, solid update, marker-only truth and muted false styles. Both read the shared
+    history in `playback/__fixtures__/trackEstimateFixture.ts`.
+  - Wiring: `playback/sim.test.ts` holds the declaration times of the laydowns with no
+    confusion matrix; `playback/intercept.test.ts` and `shot.test.ts` hold `interceptFor`
+    equal to `interceptAt` on the truth path and the closed-form intercept on the
+    predicted path; `playback/policy.test.ts` holds kinds 7 to 10 apart from every other
+    kind; `model/libraryLifecycle.test.ts` holds `adoptSeedFields`; and
+    `analysis/fidelity.test.ts` holds which laydown reports each Phase 2 tag.
+- The golden fixtures `playback/__fixtures__/detection-outside-rings.json` and
+  `layered-acoustic-merops.json` pin `physics: ['truthTracks', 'noFalseTracks',
+  'noOperatorQueue']`. They hold the pre-Phase-2 kill chain, so removing a pin changes
+  their numbers; capture a timeline comparison before and after such a change.
 - `npm test` scopes discovery to `src/`, excluding ignored historical checkouts such as
   `.claude/plans/`. Bare `npx vitest run` can still discover those copies; use the npm command
   or pass `--dir src` when selecting files. Record the scope with a test count.

@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 const root = process.cwd()
 const dir = process.argv[2]
+// Optional third argument: a directory of fixture copies to run the trial on (the CLI records in `dir` came from the same copies).
+const fixtureDir = process.argv[3] ?? `${root}/src/playback/__fixtures__`
 const engine = await import(pathToFileURL(`${root}/dist-engine/engine.js`).href)
 const fixtures = ['detection-outside-rings', 'layered-acoustic-merops']
 const prim = (o) => Object.fromEntries(Object.entries(o ?? {}).filter(([, v]) => v == null || ['number', 'string', 'boolean'].includes(typeof v)))
@@ -19,7 +21,7 @@ for (const f of fixtures) {
     perThreat: Object.fromEntries(Object.entries(s.perThreat).map(([id, t]) => [id, Object.fromEntries(Object.entries(t).map(([k, v]) => [k, stat(v)]))])),
     perEffector: Object.fromEntries(Object.entries(s.perEffector).map(([id, t]) => [id, Object.fromEntries(Object.entries(t).map(([k, v]) => [k, stat(v)]))])),
   }
-  const scenario = engine.parseScenarioJson(readFileSync(`${root}/src/playback/__fixtures__/${f}.json`, 'utf8'))
+  const scenario = engine.parseScenarioJson(readFileSync(`${fixtureDir}/${f}.json`, 'utf8'))
   const manifest = engine.createTrialManifest(scenario, `p2-gate-${f}`, 'p2-gate')
   const r = engine.runTrial(scenario, manifest)
   out.trial[f] = {

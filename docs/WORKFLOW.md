@@ -11,6 +11,9 @@ in Git history. Historical phase labels and proposed actions do not authorize ne
    changes. Use a `codex/` branch for an isolated slice when appropriate.
 3. Capture a baseline before refactoring. Read both producers and consumers; preserve
    public interfaces, save compatibility and numerical behavior unless the task changes them.
+   A new engine model that would move a golden fixture is pinned on the fixture, with the
+   physics switch that holds the old path, and its timeline is captured before and after
+   under [evidence](field-te/evidence/). Never tune the model to the fixture.
 4. Make the bounded change and run focused checks. Run `npm run check` for the complete
    local gate. Add browser or parity evidence as described in [verification](VERIFICATION.md).
 5. Update affected references, review source fingerprints, inspect the diff and report
@@ -27,7 +30,10 @@ pushed commit; local checks do not establish GitHub status. Remote branch protec
 a separate repository setting.
 
 `npm test` discovers only current tests under `src/`; ignored historical checkouts are
-outside that scope. Documentation, bundle and browser checks use their separate commands.
+outside that scope. A lane worktree inside the repository is another such checkout, so
+while one exists select a file with `npx vitest run --dir src <file>` and never a bare
+`npx vitest run`, which walks the copies too. Documentation, bundle and browser checks
+use their separate commands.
 
 ## Documentation maintenance
 
@@ -86,7 +92,9 @@ instead of copying them. For a selected implementation task, include:
 - One next action, completion checks and a stop condition.
 
 For requested parallel work, give each lane a bounded task with disjoint file ownership.
-One integrator owns shared types, stores, schema generation, shared docs and integration.
+A lane may run in its own worktree; tell it to scope test selection with `--dir src` and
+to remove the worktree at the merge. One integrator owns shared types, stores, schema
+generation, shared docs and integration.
 Tell workers they share the tree and must preserve others' edits. Each lane returns its
 diff, checks and unresolved findings. After the batch, independently review consistency
 and run the integrated checks. Do not infer that a lane's green test proves the whole change.
