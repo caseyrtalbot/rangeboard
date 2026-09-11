@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "d7313d831b7bddbafdd3ddf9c60038bcc73ac68c857a33d1ab7dbc9d6cee2c56",
+      "sha256": "a60cba0e32365e2532a3783a2e1f839253d36f45670acfc7f7549f71d98e37c2",
       "reviewedAt": "2026-09-11",
-      "note": "Post-gate 2026-09-10: estimate.parity.test.ts added under src/playback (a test file, no engine change); tip-timing evidence indexed"
+      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "62be713990eb33b804217f1faf3154157e86746acc3a3427284699745b3be734",
+      "sha256": "7d146aac8241532614c2f812f4b348f120e8fb5e45738418e6cc1093d5cb20e5",
       "reviewedAt": "2026-09-11",
-      "note": "Post-gate 2026-09-10: estimate.parity.test.ts added under src/playback (a test file, no engine change); tip-timing evidence indexed"
+      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "07e4c3478fad8465d187d3c02c382b4a2d89418c593d6508a97a7569df0cf5dc",
+      "sha256": "ee62e8e860565d07da1360524da0eb2449da0445bf3b4e8bb3be5bbebe54453b",
       "reviewedAt": "2026-09-11",
-      "note": "Post-gate 2026-09-10: estimate.parity.test.ts added under src/playback (a test file, no engine change); tip-timing evidence indexed"
+      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "59132a63f9b6aa126924110262a7ecb7cda1bcb727041d88f1f4388e27dc3d55",
+      "sha256": "5d5672e6f2273e2aba511e0f459aa0e78f023a7263feac54279fe8cdfb94700d",
       "reviewedAt": "2026-09-11",
-      "note": "Post-gate 2026-09-10: Casey's six verdicts, estimate.parity.test.ts in the parity rule, slice 3.0 stamps, 3.a row names the Phase 2 surface, tip timing and legacy-board evidence"
+      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
     },
     {
       "document": "docs/WORKFLOW.md",

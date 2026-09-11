@@ -81,7 +81,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
     confusion matrix; `playback/intercept.test.ts` and `shot.test.ts` hold `interceptFor`
     equal to `interceptAt` on the truth path and the closed-form intercept on the
     predicted path; `playback/policy.test.ts` holds kinds 7 to 10 apart from every other
-    kind; `model/libraryLifecycle.test.ts` holds `adoptSeedFields`; and
+    kind; `model/libraryLifecycle.test.ts` holds `adoptSeedFields` and the adoption
+    report; `playback/attrition.operator.test.ts` counts floored decisions on a fixture
+    that floors and 0 on the deterministic policy; and
     `analysis/fidelity.test.ts` holds which laydown reports each Phase 2 tag.
 - The golden fixtures `playback/__fixtures__/detection-outside-rings.json` and
   `layered-acoustic-merops.json` pin `physics: ['truthTracks', 'noFalseTracks',
