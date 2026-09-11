@@ -3,6 +3,7 @@ import { JAM_BANDS } from '../model/types'
 import { angleDiffDeg, bearingDeg, dist } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { jammable } from './sensorEnv'
+import { linkBudgetRangeM, receivedPowerDbm } from './rfLink'
 
 /**
  * EW effectiveness physics (planning factors, expected-value scale). A jammer
@@ -11,9 +12,9 @@ import { jammable } from './sensorEnv'
  *   2. the jammer's transmit bands cover the target's link bands,
  *   3. the target sits inside the transmit cone, discounted off boresight
  *      (directional antennas have mainbeam gain rolloff), and
- *   4. the power out closes the range: jam power density falls with 1/R^2, so
- *      a derated transmitter shrinks the effective range by sqrt(EIRP ratio),
- *      and the target's own link margin (jamResistDb) pushes it back out.
+ *   4. the power out closes the range: when both radios state power, the
+ *      jammer received power must exceed the target link signal plus its
+ *      jamResistDb margin. Incomplete radios keep the placard power law.
  * The factors multiply into one Pk multiplier that replaces the kinetic
  * distance/size/evasion penalties for jammers in attrition.ts: airframe size
  * and jinking are aiming problems, not link-denial problems.
@@ -92,12 +93,21 @@ export function jamBandsOverlap(spec: EffectorSpec, uas: UasSpec): boolean {
 }
 
 /**
- * Power-scaled effective jam range. The placard maxRangeM holds at rated
- * EIRP; jam power density falls with 1/R^2, so the range scales with the
- * square root of the power ratio. The target's link margin costs range the
- * same way: +6 dB of resistance halves the power ratio twice.
+ * Effective jam range. Complete radios use a received-power J/S closure,
+ * bounded by the placard range. The legacy path scales the placard by the
+ * square root of EIRP ratio and target resistance exactly as before.
  */
 export function effectiveJamRangeM(spec: EffectorSpec, uas?: UasSpec): number {
+  const jsRangeM = uas ? jamToSignalRangeM(spec, uas) : null
+  if (jsRangeM != null) {
+    // Keep the stated jammer envelope as an upper bound. Resistance is
+    // already applied as the required J/S margin, so do not charge it twice.
+    let placardRatio = 1
+    if (spec.eirpW != null && spec.ratedEirpW != null && spec.ratedEirpW > 0) {
+      placardRatio = Math.max(0, spec.eirpW / spec.ratedEirpW)
+    }
+    return Math.min(spec.maxRangeM * Math.sqrt(placardRatio), jsRangeM)
+  }
   let ratio = 1
   if (spec.eirpW != null && spec.ratedEirpW != null && spec.ratedEirpW > 0) {
     ratio = Math.max(0, spec.eirpW / spec.ratedEirpW)
@@ -105,6 +115,40 @@ export function effectiveJamRangeM(spec: EffectorSpec, uas?: UasSpec): number {
   const resistDb = uas?.jamResistDb ?? 0
   if (resistDb !== 0) ratio /= Math.pow(10, resistDb / 10)
   return spec.maxRangeM * Math.sqrt(ratio)
+}
+
+/**
+ * Jammer closure range from J/S at the target receiver. The desired signal
+ * is the UAS transmitter's received power at its stated control-link range;
+ * the jammer must equal that signal plus the target's resistance margin.
+ * Both sides use rfLink.ts, hence the same ITU-R P.525 free-space equation
+ * and the same band centres. Null means an incomplete radio and selects the
+ * exact legacy placard path in effectiveJamRangeM.
+ */
+export function jamToSignalRangeM(spec: EffectorSpec, uas: UasSpec): number | null {
+  const jammerPowerW = spec.eirpW ?? spec.ratedEirpW
+  if (!(jammerPowerW != null && Number.isFinite(jammerPowerW) && jammerPowerW > 0)) return null
+  if (!(uas.radiatedPowerW != null
+    && Number.isFinite(uas.radiatedPowerW)
+    && uas.radiatedPowerW > 0)) return null
+  if (!(uas.controlLinkRangeM != null
+    && Number.isFinite(uas.controlLinkRangeM)
+    && uas.controlLinkRangeM > 0)) return null
+  const tx = new Set(jammerBands(spec))
+  const covered = targetLinkBands(uas).filter((band) => tx.has(band))
+  if (covered.length === 0) return null
+  const resistDb = uas.jamResistDb ?? 0
+  let rangeM = Number.POSITIVE_INFINITY
+  for (const band of covered) {
+    const linkSignalDbm = receivedPowerDbm(
+      uas.radiatedPowerW,
+      uas.controlLinkRangeM,
+      band,
+    )
+    const bandRangeM = linkBudgetRangeM(jammerPowerW, band, linkSignalDbm + resistDb)
+    rangeM = Math.min(rangeM, bandRangeM)
+  }
+  return Number.isFinite(rangeM) ? rangeM : null
 }
 
 /**

@@ -41,6 +41,7 @@ import type { FalseTrackLoad } from './falseTracks'
 import type { OperatorQueue } from './operator'
 import { createOperatorQueue, firstC2Of } from './operator'
 import type { KillChainRoute } from './killChain'
+import { opticalDwellModelApplies } from './directedEnergy'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls in
@@ -465,6 +466,9 @@ export function resolveEngagements(
     if (es.rounds != null) es.rounds -= 1
     es.nextReadyS = t + es.cooldownS
     // Fine-step hook (clock.ts): a burst or dwell lane requests its window here.
+    if (opticalDwellModelApplies(es.spec, scenario.physics?.includes('legacyBeamPk'))) {
+      clock.requestFineStep(es.entity.id, t, tEffect, 0.1)
+    }
   }
 
   // The fused track a shooter holds on each threat at t (sim.ts fusedTracks,

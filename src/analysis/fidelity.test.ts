@@ -7,7 +7,7 @@ import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelit
 const IDS: ModelId[] = [
   'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range',
   'rf-detect', 'rf-link', 'jam', 'environment', 'threat-flight', 'horizon',
-  'track-init', 'doctrine', 'kinetic-pk', 'flyout',
+  'track-init', 'doctrine', 'kinetic-pk', 'de-dwell', 'hpm-field', 'flyout',
   'draw-policy', 'parameter-spread',
   'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
 ]
@@ -75,12 +75,44 @@ describe('modelsUsed', () => {
     expect(ids).not.toContain('kinetic-pk')
   })
 
-  it('reads a directed-energy laydown as Kinetic Pk with no flyout', () => {
+  it('reads a physical directed-energy laydown as optical dwell with no kinetic Pk', () => {
     const s = radarLaydown()
     s.entities.push(entity('e1', 'effector', 'lib-phel'))
     const ids = modelsUsed(s).map((t) => t.id)
-    expect(ids).toContain('kinetic-pk')
+    expect(ids).toContain('de-dwell')
+    expect(ids).not.toContain('kinetic-pk')
     expect(ids).not.toContain('flyout')
+    expect(modelsForEntity(s, 'e1').map((t) => t.id)).toContain('de-dwell')
+  })
+
+  it('tags beam fallbacks as kinetic Pk', () => {
+    const s = radarLaydown()
+    s.entities.push(entity('e1', 'effector', 'lib-phel'))
+    s.physics = ['legacyBeamPk']
+    expect(modelsUsed(s).map((t) => t.id)).toContain('kinetic-pk')
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('de-dwell')
+    s.physics = []
+    const model = s.library.find((entry) => entry.id === 'lib-phel')!
+    model.effector = { ...model.effector!, outputPowerKw: null }
+    expect(modelsUsed(s).map((t) => t.id)).toContain('kinetic-pk')
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('de-dwell')
+  })
+
+  it('reads a complete RF-field effector and falls back with a null field', () => {
+    const s = radarLaydown()
+    s.entities.push(entity('e1', 'effector', 'lib-thor'))
+    const model = s.library.find((entry) => entry.id === 'lib-thor')!
+    model.effector = {
+      ...model.effector!,
+      fieldStrengthVm: 200,
+      fieldStrengthRangeM: 100,
+      beamwidthDeg: 60,
+    }
+    expect(modelsUsed(s).map((t) => t.id)).toContain('hpm-field')
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('kinetic-pk')
+    model.effector = { ...model.effector, fieldStrengthVm: null }
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('hpm-field')
+    expect(modelsUsed(s).map((t) => t.id)).toContain('kinetic-pk')
   })
 
   it('reads an acoustic-only laydown without the horizon model', () => {
