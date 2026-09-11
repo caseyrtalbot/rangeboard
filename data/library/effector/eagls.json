@@ -2,7 +2,7 @@
   "id": "lib-eagls",
   "kind": "effector",
   "type": "interceptor",
-  "version": 1,
+  "version": 2,
   "name": "EAGLS 70 mm APKWS launcher",
   "description": "Four-round 70 mm APKWS II launcher on a CROWS II mount with organic RPS-40 radar and EO/IR laser designator. Fielded to CENTCOM base defence 2026.",
   "color": "#d9a888",
@@ -104,6 +104,74 @@
       "source": "Army Technology (Hydra 70 project page)",
       "url": "https://www.army-technology.com/projects/hydra-70-rocket-system-us/",
       "date": "2026-09-04"
+    },
+    "seekerAcquisitionRangeM": {
+      "value": 10000,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the distributed-aperture semi-active laser seeker homes on the spot the CROWS II designator places on the target, so acquisition is bounded by the designation range, taken as the placarded 10 km engagement range in this file. BAE publishes no seeker acquisition range."
+    },
+    "lethalRadiusM": {
+      "value": 10,
+      "unit": "m",
+      "condition": "M151 high-explosive warhead, burst radius about 10 m; the greater than 50 m figure quoted in the same sources is the personnel casualty radius, not an airframe lethal radius",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Hydra 70 open references (Wikipedia and aircav.com), quoted from the search index; the pages were not opened",
+      "url": "https://en.wikipedia.org/wiki/Hydra_70",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "guidanceNoiseM": {
+      "value": 1,
+      "unit": "m",
+      "condition": "accuracy better than 1 m CEP; the vendor bound is taken as the 1 sigma miss contribution",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Designation-Systems APKWS II (AGR-20) entry",
+      "url": "https://www.designation-systems.net/dusrm/r-19.html",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "maxFlyoutSpeedMps": {
+      "value": 1000,
+      "unit": "mps",
+      "condition": "maximum speed 1000 m/s (3280 fps); flyoutSpeedMps keeps the 739 m/s average",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Designation-Systems APKWS II (AGR-20) entry",
+      "url": "https://www.designation-systems.net/dusrm/r-19.html",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "boostTimeS": {
+      "value": 1.1,
+      "unit": "s",
+      "condition": "MK 66 MOD 4 motor, 6.7 kN for 1.1 s; peak speed is reached at burnout",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Designation-Systems APKWS II (AGR-20) entry",
+      "url": "https://www.designation-systems.net/dusrm/r-19.html",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {

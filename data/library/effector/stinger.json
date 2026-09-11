@@ -2,7 +2,7 @@
   "id": "lib-stinger",
   "kind": "effector",
   "type": "interceptor",
-  "version": 1,
+  "version": 2,
   "name": "FIM-92 Stinger (M-SHORAD / MADIS)",
   "description": "IR-homing SHORAD missile on the M-SHORAD RIwP and MADIS Mk1 turrets. FIM-92J/K proximity fuze added for small UAS. 4.8 km weapon max; 4-round pod.",
   "color": "#b06a4a",
@@ -98,6 +98,73 @@
       "source": "Army Recognition",
       "url": "https://www.armyrecognition.com/military-products/army/air-defense-systems/man-portable-air-defense-systems/stinger-fim-92-united-states-uk",
       "date": "2026-09-04"
+    },
+    "seekerAcquisitionRangeM": {
+      "value": 4800,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the cooled conical-scan IR seeker locks on before launch, so acquisition is bounded by the 4.8 km maximum engagement range of the weapon, which this file carries as maxRangeM. No lock-on range is published."
+    },
+    "lethalRadiusM": {
+      "value": 10,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-eagls"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the one sourced interceptor warhead radius: the APKWS M151 burst radius of 10 m (lib-eagls). The 3 kg Stinger blast-fragmentation warhead is the closest in the set to the 3.95 kg M151. No lethal radius is published for the FIM-92. A one-member median is thin; it is recorded as such so a later source replaces it cleanly."
+    },
+    "guidanceNoiseM": {
+      "value": 2,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: 2 m 1 sigma terminal guidance noise for a proximity-fuzed interceptor. The one sourced member of the class, the semi-active laser APKWS at better than 1 m CEP, sits at the accurate end; this seeker's accuracy is not published."
+    },
+    "maxFlyoutSpeedMps": {
+      "value": 884,
+      "unit": "mps",
+      "condition": "top speed at motor burnout reported as high as Mach 2.6, taken at a sea-level Mach 1 of 340 m/s; flyoutSpeedMps keeps the Mach 2.2 figure of 750 m/s",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Designation-Systems FIM-92 Stinger entry",
+      "url": "https://www.designation-systems.net/dusrm/m-92.html",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "boostTimeS": {
+      "value": 2,
+      "unit": "s",
+      "condition": "the boost phase accelerates the missile to Mach 2.2 within 2 s",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Designation-Systems FIM-92 Stinger entry",
+      "url": "https://www.designation-systems.net/dusrm/m-92.html",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {

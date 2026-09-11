@@ -2,7 +2,7 @@
   "id": "lib-thor",
   "kind": "effector",
   "type": "hpm",
-  "version": 1,
+  "version": 2,
   "name": "THOR HPM (AFRL)",
   "description": "AFRL high-power microwave counter-swarm demonstrator in a shipping container. AFRL has never published an engagement range or a dwell time; both the ring and the engage time are planning figures.",
   "color": "#ae96ce",
@@ -63,6 +63,39 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "fieldStrengthVm": {
+      "value": null,
+      "unit": "V/m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "AFRL publishes no field strength, no radiated power and no engagement range for THOR. Not established by the public record."
+    },
+    "fieldStrengthRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "The reference range for a field strength that is not published. Not established by the public record."
+    },
+    "beamwidthDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "AFRL describes a wide beam and a fast-moving gimbal and publishes no beamwidth. Not established by the public record."
+    },
+    "rechargeS": {
+      "value": 1,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: AFRL describes near-continuous firing through the swarm demonstration and publishes no recharge time. 1 s is the planning value for the gap between shots."
     }
   },
   "attributes": {

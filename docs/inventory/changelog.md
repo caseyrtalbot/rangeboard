@@ -678,3 +678,168 @@ Per-field record (value, layer, source or comparison set):
 - `lib-xbaeu` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
 - `lib-zvook` `noiseFloorDb` 26 dB, L2, INFERRED planning-factor; basis in the field note
 - `lib-zvooknw0` `noiseFloorDb` 32 dB, L2, INFERRED planning-factor; basis in the field note
+
+## 2026-09-10, Phase 3 effector fields
+
+Eighteen effector files gain the Phase 3 fields of the orchestrator contract.
+Interceptors gain `seekerAcquisitionRangeM`, `lethalRadiusM`, `guidanceNoiseM`,
+`maxFlyoutSpeedMps` and `boostTimeS`. Guns gain `dispersionMils`,
+`fireControlErrorMils`, `burstRounds`, `rateOfFireRpm` and `muzzleVelocityMps`.
+Lasers gain `outputPowerKw`, `beamQualityM2`, `jitterUrad`, `apertureM` and
+`dwellToEffectS`. The two high-power microwave systems gain `fieldStrengthVm`,
+`fieldStrengthRangeM`, `beamwidthDeg` and `rechargeS`. The net interceptor gains
+`lethalRadiusM` alone. The seven jammer files gain nothing, because no key in the
+contract applies to them. No existing value changed; every edited file has its
+`version` bumped. 84 fields: 23 L1, 42 L2, 19 L3.
+
+Priority of evidence is the Phase 2 order: the OEM sheet with its condition
+(L1 MANUFACTURER_CLAIM where the sheet was opened, REPORTED where the figure
+reached us through the search index or a mirror), then an independent open
+reference (L1 REPORTED), then a class median or a planning factor (L2 INFERRED),
+then `value: null` (L3 UNKNOWN) with a note that says why. Every L1 field carries
+a 2 dB lognormal spread and every L2 field a 4 dB one. Per the contract,
+`seekerAcquisitionRangeM`, `lethalRadiusM` and `fieldStrengthRangeM` carry no
+`rangeType`.
+
+Comparison sets: this section uses one class median, the interceptor warhead
+radius. Only one member of the class is sourced, `lib-eagls`, whose APKWS M151
+warhead has a published burst radius of about 10 m; the greater than 50 m figure
+in the same references is the personnel casualty radius and was not used. That
+10 m carries to `lib-coyote`, `lib-merops`, `lib-roadrunner` and `lib-stinger`,
+whose own lethal radii are not published. Warhead masses across the set span
+1.8 kg (Coyote, tungsten fragmentation) to 3.95 kg (M151), so the value sits at
+the generous end for the lighter rounds, and each note says so. A one-member
+median is thin; it is recorded as such so a later source replaces it cleanly.
+`lib-anvil` is not in the set: it kills by collision with no warhead, so its
+radius is a contact envelope, not a burst radius. No other class median was
+defensible, because no second system in any effector class publishes the same
+quantity.
+
+Method notes:
+
+- Guns: no vendor and no open source publishes a dispersion or a fire control
+  error for any of the four guns. Both are planning factors at 1.0 mil, 1 sigma.
+  `lib-lpws` and `lib-smash` carry 0.5 mil fire control error instead, because
+  Phalanx closed-loop spotting corrects the aim inside the burst and the SMASH
+  sight releases the shot only when the computed aim is on the locked target.
+- `burstRounds` is sourced only on `lib-lpws` (bursts of 60 or 100 rounds,
+  documented for Block 0; Block 1 matches burst length to the target and
+  publishes none, so the shorter burst is taken). The others are planning
+  factors: one second of automatic fire at the cyclic rate for `lib-skyranger30`
+  (20 rounds), three seconds for `lib-xm914` (10 rounds at 200 rounds/min), and
+  one round for `lib-smash`, whose engagement is a single computer-released shot.
+- Lasers: the output power is the only published number on all five, and it is
+  the number in each system's name. Beam quality 2.0, jitter 10 urad and a 0.30 m
+  aperture are one flat planning factor across the class, so the physics lane
+  sees one consistent optical train and only the laser power separates the
+  systems. The Rafael claim of a coin-sized spot at 10 km would imply an aperture
+  nearer 1 m if taken literally; `lib-ironbeam` says so in its note and keeps the
+  class value.
+- `lib-ironbeam` carries the one published dwell, 2 s, the lower bound of a
+  reported 2 to 5 s burn-through at up to 10 km. The figure is quoted for the
+  Iron Beam 450 beam director against rockets, mortars and UAS, not against a
+  Group 1 quadcopter, and the note says so. No other laser programme publishes a
+  dwell time, so `lib-amphel`, `lib-phel`, `lib-demshorad` and `lib-helios` are
+  L3 on `dwellToEffectS`.
+- High-power microwave: neither Epirus nor AFRL publishes a field strength, a
+  radiated power or a reference range, so `fieldStrengthVm` and
+  `fieldStrengthRangeM` are L3 on both systems. No number was invented for them,
+  and none was back-derived from the placarded ring, which would have made the
+  library circular with the susceptibility constants in the physics lane.
+  `lib-thor` is L3 on `beamwidthDeg` as well; `lib-leonidas` takes its 120 deg
+  sector placard as the half-power beamwidth, the widest reading.
+- `seekerAcquisitionRangeM` is a planning factor equal to the placarded
+  engagement range on the two lock-before-launch seekers, `lib-eagls` (the
+  semi-active laser seeker homes on the designated spot) and `lib-stinger` (the
+  IR seeker locks on before launch). The four systems that publish no seeker
+  figure are L3.
+- Anduril publishes nothing numeric for `lib-anvil` and `lib-roadrunner`, which
+  their file descriptions already say. Between them they take six of the
+  nineteen L3 fields.
+
+Per-field record (value, layer, source or comparison set):
+
+- `lib-amphel` `apertureM` 0.3 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-amphel` `beamQualityM2` 2.0 ratio, L2, INFERRED planning-factor; basis in the field note
+- `lib-amphel` `dwellToEffectS` null, L3, UNKNOWN; No dwell time to defeat a drone is published for this system. The programme has released engagement results but no engagement timeline; not established by the public record.
+- `lib-amphel` `jitterUrad` 10 urad, L2, INFERRED planning-factor; basis in the field note
+- `lib-amphel` `outputPowerKw` 20 kW, L1, REPORTED, AeroVironment press release, 3 September 2025, quoted from the search index, 20 kW-class LOCUST laser weapon system on the Infantry Squad Vehicle, first AMP-HEL increment
+- `lib-anvil` `boostTimeS` null, L3, UNKNOWN; Anvil is a multirotor interceptor with no boost motor, and no acceleration profile is published.
+- `lib-anvil` `guidanceNoiseM` 0.5 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-anvil` `lethalRadiusM` 0.3 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-anvil` `maxFlyoutSpeedMps` null, L3, UNKNOWN; Anduril publishes no speed for Anvil; the engagement ring in this file is itself a planning value. Not established by the public record.
+- `lib-anvil` `seekerAcquisitionRangeM` null, L3, UNKNOWN; Anduril publishes no seeker and no acquisition figure for Anvil; the interceptor is cued through Lattice and closes autonomously. Not established by the public record.
+- `lib-coyote` `boostTimeS` null, L3, UNKNOWN; Coyote launches on a rocket booster and then cruises on a turbojet, but no booster burn time and no acceleration profile are published.
+- `lib-coyote` `guidanceNoiseM` 2 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-coyote` `lethalRadiusM` 10 m, L2, INFERRED class-median of lib-eagls
+- `lib-coyote` `maxFlyoutSpeedMps` 165 mps, L1, REPORTED, Army Recognition, upper bound of the reported 555 to 595 km/h band (595 km/h = 165 m/s); flyoutSpeedMps keeps the 555 km/h lower bound as the average
+- `lib-coyote` `seekerAcquisitionRangeM` null, L3, UNKNOWN; The Block 2 seeker type and its acquisition range are not published; the RF seeker described in open sources belongs to Block 1B. Not established by the public record.
+- `lib-demshorad` `apertureM` 0.3 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-demshorad` `beamQualityM2` 2.0 ratio, L2, INFERRED planning-factor; basis in the field note
+- `lib-demshorad` `dwellToEffectS` null, L3, UNKNOWN; No dwell time to defeat a drone is published for this system. The programme has released engagement results but no engagement timeline; not established by the public record.
+- `lib-demshorad` `jitterUrad` 10 urad, L2, INFERRED planning-factor; basis in the field note
+- `lib-demshorad` `outputPowerKw` 50 kW, L1, REPORTED, RTX news release, 26 October 2021, quoted from the search index, 50 kW-class laser on the Stryker A1 for DE M-SHORAD
+- `lib-dronehunter` `lethalRadiusM` 2 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-eagls` `boostTimeS` 1.1 s, L1, REPORTED, Designation-Systems APKWS II (AGR-20) entry, MK 66 MOD 4 motor, 6.7 kN for 1.1 s; peak speed is reached at burnout
+- `lib-eagls` `guidanceNoiseM` 1 m, L1, REPORTED, Designation-Systems APKWS II (AGR-20) entry, accuracy better than 1 m CEP; the vendor bound is taken as the 1 sigma miss contribution
+- `lib-eagls` `lethalRadiusM` 10 m, L1, REPORTED, Hydra 70 open references (Wikipedia and aircav.com), quoted from the search index; the pages were not opened, M151 high-explosive warhead, burst radius about 10 m; the greater than 50 m figure quoted in the same sources is the personnel casualty radius, not an airframe lethal radius
+- `lib-eagls` `maxFlyoutSpeedMps` 1000 mps, L1, REPORTED, Designation-Systems APKWS II (AGR-20) entry, maximum speed 1000 m/s (3280 fps); flyoutSpeedMps keeps the 739 m/s average
+- `lib-eagls` `seekerAcquisitionRangeM` 10000 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-helios` `apertureM` 0.3 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-helios` `beamQualityM2` 2.0 ratio, L2, INFERRED planning-factor; basis in the field note
+- `lib-helios` `dwellToEffectS` null, L3, UNKNOWN; No dwell time to defeat a drone is published for this system. The programme has released engagement results but no engagement timeline; not established by the public record. The Navy has released the result of the USS Preble engagements but neither the target profiles nor the engagement timeline.
+- `lib-helios` `jitterUrad` 10 urad, L2, INFERRED planning-factor; basis in the field note
+- `lib-helios` `outputPowerKw` 60 kW, L1, REPORTED, Navy Times, 4 February 2025, quoted from the search index, 60 kW-class laser, Mk 5 Mod 0 HELIOS installed on USS Preble
+- `lib-ironbeam` `apertureM` 0.3 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-ironbeam` `beamQualityM2` 2.0 ratio, L2, INFERRED planning-factor; basis in the field note
+- `lib-ironbeam` `dwellToEffectS` 2 s, L1, REPORTED, Defense Update, Iron Beam 450 report, 17 September 2025, quoted from the search index; the page returned HTTP 403 on read, reported burn-through in 2 to 5 s at up to 10 km; the lower bound is taken
+- `lib-ironbeam` `jitterUrad` 10 urad, L2, INFERRED planning-factor; basis in the field note
+- `lib-ironbeam` `outputPowerKw` 100 kW, L1, REPORTED, Army Recognition, AUSA 2025 Iron Beam report, 100 kW-class laser with a 10 km engagement envelope
+- `lib-leonidas` `beamwidthDeg` 120 deg, L2, INFERRED planning-factor; basis in the field note
+- `lib-leonidas` `fieldStrengthRangeM` null, L3, UNKNOWN; The reference range for a field strength that is not published. Not established by the public record.
+- `lib-leonidas` `fieldStrengthVm` null, L3, UNKNOWN; Epirus publishes no field strength, no radiated power and no range for Leonidas; the product page carries qualitative claims only. Not established by the public record.
+- `lib-leonidas` `rechargeS` 1 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-lpws` `burstRounds` 60 count, L1, REPORTED, NavWeaps 20 mm Phalanx CIWS page, bursts of 60 or 100 rounds; the shorter burst is taken
+- `lib-lpws` `dispersionMils` 1.0 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-lpws` `fireControlErrorMils` 0.5 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-lpws` `muzzleVelocityMps` 1113 mps, L1, REPORTED, NavWeaps 20 mm Phalanx CIWS page, Mark 149 round, 3,650 fps (1,113 m/s)
+- `lib-lpws` `rateOfFireRpm` 4500 rpm, L1, REPORTED, NavWeaps 20 mm Phalanx CIWS page, Block 1 and Block 1B, selectable 3,000 or 4,500 rounds per minute cyclic; the high rate is taken
+- `lib-merops` `boostTimeS` null, L3, UNKNOWN; A propeller-driven fixed-wing interceptor with no boost motor; no acceleration profile is published.
+- `lib-merops` `guidanceNoiseM` 2 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-merops` `lethalRadiusM` 10 m, L2, INFERRED class-median of lib-eagls
+- `lib-merops` `maxFlyoutSpeedMps` 78 mps, L1, REPORTED, Inside Unmanned Systems, quoted from the search index, speeds up to 280 km/h (77.8 m/s); the average flyoutSpeedMps carries the same figure because only the maximum is reported
+- `lib-merops` `seekerAcquisitionRangeM` null, L3, UNKNOWN; Open reporting says the interceptor acquires on radio frequency, radar or thermal sensors but gives no acquisition range. Not established by the public record.
+- `lib-phel` `apertureM` 0.3 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-phel` `beamQualityM2` 2.0 ratio, L2, INFERRED planning-factor; basis in the field note
+- `lib-phel` `dwellToEffectS` null, L3, UNKNOWN; No dwell time to defeat a drone is published for this system. The programme has released engagement results but no engagement timeline; not established by the public record.
+- `lib-phel` `jitterUrad` 10 urad, L2, INFERRED planning-factor; basis in the field note
+- `lib-phel` `outputPowerKw` 20 kW, L1, REPORTED, AeroVironment press release on the JLTV-mounted LOCUST, quoted from the search index, 20 kW-class LOCUST laser weapon system; P-HEL is the palletized fielding of the same laser
+- `lib-roadrunner` `boostTimeS` null, L3, UNKNOWN; No boost and no acceleration profile is published for Roadrunner-M. Not established by the public record.
+- `lib-roadrunner` `guidanceNoiseM` 2 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-roadrunner` `lethalRadiusM` 10 m, L2, INFERRED class-median of lib-eagls
+- `lib-roadrunner` `maxFlyoutSpeedMps` null, L3, UNKNOWN; Anduril publishes no range, speed, altitude or endurance figure for Roadrunner-M; every number in this file is a planning figure. Not established by the public record.
+- `lib-roadrunner` `seekerAcquisitionRangeM` null, L3, UNKNOWN; Anduril publishes no seeker and no acquisition figure for Roadrunner-M. Not established by the public record.
+- `lib-skyranger30` `burstRounds` 20 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-skyranger30` `dispersionMils` 1.0 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-skyranger30` `fireControlErrorMils` 1.0 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-skyranger30` `muzzleVelocityMps` 1075 mps, L1, MANUFACTURER_CLAIM, Rheinmetall Oerlikon Skyranger 30 brochure (PDF, D994e0222), mean muzzle velocity ABM (V0) 1,075 m/s, the same figure as full calibre
+- `lib-skyranger30` `rateOfFireRpm` 1200 rpm, L1, MANUFACTURER_CLAIM, Rheinmetall Oerlikon Skyranger 30 brochure (PDF, D994e0222), nominal rate of fire 1,200 rounds/min; rapid single shot mode is 200 rounds/min
+- `lib-smash` `burstRounds` 1 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-smash` `dispersionMils` 1.0 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-smash` `fireControlErrorMils` 0.5 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-smash` `muzzleVelocityMps` 880 mps, L1, REPORTED, M4 carbine open reference, quoted from the search index; the page was not opened, M855 from the 14.5 in M4A1 barrel, 2,887 ft/s (880 m/s); the SMASH sight mounts on the host rifle and does not change the round
+- `lib-smash` `rateOfFireRpm` 800 rpm, L1, REPORTED, M4 carbine open reference, quoted from the search index; the page was not opened, host M4A1 carbine cyclic rate of 700 to 970 rounds/min; the midpoint is taken, and the SMASH engagement is single aimed shots rather than automatic fire
+- `lib-stinger` `boostTimeS` 2 s, L1, REPORTED, Designation-Systems FIM-92 Stinger entry, the boost phase accelerates the missile to Mach 2.2 within 2 s
+- `lib-stinger` `guidanceNoiseM` 2 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-stinger` `lethalRadiusM` 10 m, L2, INFERRED class-median of lib-eagls
+- `lib-stinger` `maxFlyoutSpeedMps` 884 mps, L1, REPORTED, Designation-Systems FIM-92 Stinger entry, top speed at motor burnout reported as high as Mach 2.6, taken at a sea-level Mach 1 of 340 m/s; flyoutSpeedMps keeps the Mach 2.2 figure of 750 m/s
+- `lib-stinger` `seekerAcquisitionRangeM` 4800 m, L2, INFERRED planning-factor; basis in the field note
+- `lib-thor` `beamwidthDeg` null, L3, UNKNOWN; AFRL describes a wide beam and a fast-moving gimbal and publishes no beamwidth. Not established by the public record.
+- `lib-thor` `fieldStrengthRangeM` null, L3, UNKNOWN; The reference range for a field strength that is not published. Not established by the public record.
+- `lib-thor` `fieldStrengthVm` null, L3, UNKNOWN; AFRL publishes no field strength, no radiated power and no engagement range for THOR. Not established by the public record.
+- `lib-thor` `rechargeS` 1 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-xm914` `burstRounds` 10 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-xm914` `dispersionMils` 1.0 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-xm914` `fireControlErrorMils` 1.0 mil, L2, INFERRED planning-factor; basis in the field note
+- `lib-xm914` `muzzleVelocityMps` 805 mps, L1, MANUFACTURER_CLAIM, Northrop Grumman LW30x113 Ammunition Suite product brochure (PDF, 2020), XM1211 HEP/PROX muzzle velocity 805 m/s
+- `lib-xm914` `rateOfFireRpm` 200 rpm, L1, REPORTED, EDR Magazine, Northrop Grumman: new life to the M230LF, quoted from the search index, M230LF, fielded as the XM914, 200 rounds/min in full automatic; single shot and controlled burst are also selectable

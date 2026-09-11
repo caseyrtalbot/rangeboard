@@ -2,7 +2,7 @@
   "id": "lib-xm914",
   "kind": "effector",
   "type": "gun",
-  "version": 1,
+  "version": 2,
   "name": "XM914 30mm gun (M-LIDS)",
   "description": "30x113mm chain gun on RIwP turret firing XM1223 proximity-airburst rounds. Group 1-2 out to ~2 km.",
   "color": "#c9a05a",
@@ -82,6 +82,70 @@
       "source": "Northrop Grumman LW30x113 Ammunition Suite product brochure (PDF, 2020)",
       "url": "https://media.northropgrumman.com/9f629332-bf99-4a89-bb0f-b3850037234a/LW30x113-Ammo-Suite-Product-Brochure_Original%20file.pdf",
       "date": "2026-09-04"
+    },
+    "dispersionMils": {
+      "value": 1.0,
+      "unit": "mil",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no vendor and no open source publishes a round-to-round dispersion for this gun. 1.0 mil at 1 sigma is the planning value for a stabilised automatic cannon, and it is a factor, not a measurement."
+    },
+    "fireControlErrorMils": {
+      "value": 1.0,
+      "unit": "mil",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: 1.0 mil at 1 sigma aim error for the radar-cued RIwP mount. No fire control error is published for the M-LIDS turret."
+    },
+    "burstRounds": {
+      "value": 10,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: three seconds of automatic fire at the 200 rounds/min rate of the M230LF. The published duty cycle of six 50-round bursts belongs to the 625 rounds/min aviation M230, not to this mount, and no burst length is published for the XM914."
+    },
+    "rateOfFireRpm": {
+      "value": 200,
+      "unit": "rpm",
+      "condition": "M230LF, fielded as the XM914, 200 rounds/min in full automatic; single shot and controlled burst are also selectable",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "EDR Magazine, Northrop Grumman: new life to the M230LF, quoted from the search index",
+      "url": "https://www.edrmagazine.eu/northrop-grumman-new-life-to-the-m230lf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "muzzleVelocityMps": {
+      "value": 805,
+      "unit": "mps",
+      "condition": "XM1211 HEP/PROX muzzle velocity 805 m/s",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Northrop Grumman LW30x113 Ammunition Suite product brochure (PDF, 2020)",
+      "url": "https://media.northropgrumman.com/9f629332-bf99-4a89-bb0f-b3850037234a/LW30x113-Ammo-Suite-Product-Brochure_Original%20file.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {
