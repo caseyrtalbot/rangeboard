@@ -412,3 +412,269 @@ C2 files:
 - `lib-picogrid` `spec: 'c2'`; `decisionLatencyS` 10 s, `decisionLatencySigmaDb` 3 dB, `operatorTrackCapacity` 6 count, all L2 INFERRED planning-factor (basis in the field notes)
 - `lib-adsi` `spec: null` kept: data-link gateway, no engagement decision
 - `lib-tak` `spec: null` kept: the record says it carries no engagement authority
+
+## 2026-09-10, Phase 3 sensor and threat fields
+
+Every radar gains `pulsesPerDwell` and `dwellTimeS`; every EO/IR sensor gains
+`pixelPitchUm`, `focalLengthMm`, `detectorPixelsH`, `fovDeg` and `mrtdMk` (the
+thermal channel is the band of record on every dual-band gimbal); every RF
+sensor gains `receiverSensitivityDbm` and `geolocationMinNodes`; every acoustic
+sensor gains `noiseFloorDb`. Every threat gains `maxTurnRateDegS`,
+`climbRateMps`, `maxAccelMps2`, `radiatedPowerW` and the `linkProtocol`
+attribute with its lineage in `attributeProvenance`. 53 files, 168 entries:
+42 L1, 117 L2, 9 L3. No existing value changed; every edited file has its
+`version` bumped. Every L1 field carries a 2 dB lognormal spread and every L2
+field a 4 dB one, except exact counts (`detectorPixelsH`,
+`geolocationMinNodes`) and the 0 W radiated power of link-less airframes,
+which carry none.
+
+Priority of evidence as in Phase 2: (1) OEM sheet or page with its condition,
+L1 MANUFACTURER_CLAIM, or REPORTED where the figure reached us through a
+mirror, reseller copy or the search index; (2) independent open reference, L1
+REPORTED, CORROBORATED with two; (3) class median of the sourced systems with
+the same `sensorType` and `role`, L2 with a `comparisonSet`; (4) planning
+factor with its derivation in the field note; (5) L3 `null` with the reason.
+Where the OEM publishes the inputs but not the quantity (focal length from
+pitch, pixel count and field of view; acceleration from tilt angle; beam time
+on target from beamwidth and scan rate) the result is recorded as L2
+planning-factor with the arithmetic in the note, not as L1.
+
+Method notes:
+
+- Radar dwell: no vendor publishes a dwell, CPI, PRF or pulse count, and zero
+  explicit statements were found across 19 radars (9 OEM PDFs opened). The
+  electronically scanned C-UAS panels and AESAs (13 radars plus Sentinel A4 with
+  its electronic back-scan and the non-rotating TPQ-50) carry the open
+  literature CPI for X/Ku-band drone-detection AESAs, 20 ms at 5 kHz PRF, 100
+  pulses (arXiv 2307.10326; MDPI Drones 7(5):316 gives 30 ms and 180). The
+  TPQ-50 carries 50 pulses at a 2.5 kHz PRF for its 35 km range. The mechanical
+  rotators use beam time on target = beamwidth / scan rate and a PRF bounded by
+  the unambiguous range: IRIS from its own 6° beam and 30 rpm (33 ms; FMCW
+  chirp count L3), Giraffe 1X 60 rpm and an assumed 2° beam (6 ms, 10 pulses
+  at 2 kHz), G/ATOR 30 rpm (11 ms, 10 pulses at 1 kHz), GM200 MM/C 40 rpm
+  (8 ms, 8 pulses at 1 kHz), TPQ-53 an assumed 30 rpm and 5 kHz for the 20 km
+  360° mode (11 ms, 50 pulses).
+- EO/IR: CM262 (FS576a), DRS S3 and MX-GCS (2016 PDS) publish focal length or
+  field of view and pixel count; only the S3 publishes a pitch (6 µm). Missing
+  pitches are the HD MWIR class figure (10 or 12 µm) or the 640 x 512 class
+  figure (15 µm). MRTD is published by no vendor; the HexaBlu 1280-MW core's
+  <30 mK NETD is carried on the S3 (pitch and format match; REPORTED) and the
+  25 mK median of three cooled MWIR core NETDs (Lynred Daphnis-HD 20, FLIR
+  Neutrino SX12 <25, DRS HexaBlu <30) is the planning MRTD elsewhere. Spynel-S
+  6000 is a rotating line scanner: `detectorPixelsH` 512 and `fovDeg` 4.4° are
+  the instantaneous horizontal field of the 640 x 512 array mounted with 640 px
+  vertical, from HGH's 0.15 mrad IFOV; the 360° panorama stays in `sectorDeg`.
+  Wisp publishes nothing at sensor level, so all five are L3. Teleidoscope
+  publishes no hardware; it carries the classification-role class medians.
+- RF: no passive RF detector publishes a sensitivity in dBm. R&S publishes the
+  ADD557SR DF sensitivity as a field strength (10 to 20 µV/m, 1 kHz, 1 s),
+  which needs an antenna factor and bandwidth scaling to reach dBm, so it is a
+  cross-check only. Every RF sensor carries the same planning factor, -90 dBm
+  channel-integrated at 2.4 GHz: kTB for a 10 MHz OcuSync-class channel
+  (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS
+  application note). Against a 2 W DJI link this falls at about 6 km free
+  space, consistent with the RF-360's 2 km normal / 5 km ideal. The node count
+  follows the documented method: 2 for the AOA systems (ARDRONIS, Whisper
+  Hunter, RF-360, RfOne), 3 for TDOA (CORIAN); L3 for the signal-strength or
+  bearing-only units (RfPatrol, Wingman, Titan base unit).
+- Acoustic: no vendor publishes a threshold. `noiseFloorDb` is the threshold
+  implied by each record's own `refAcousticDb` and `detectRangeM` under
+  spherical spreading (21 to 32 dB re 20 µPa), so the range already carried
+  is reproduced; the notes explain why it sits below the 30 to 35 dBA rural
+  ambient (array gain, tonal processing). This is a modelling decision to
+  revisit if the acoustic lane adds an ambient term.
+- Threats: DJI publishes ascent speed, pitch angle and per-band EIRP, so those
+  are L1 and the acceleration (g tan tilt) and path turn rate (g tan tilt / V
+  at the record's cruise speed) are L2 from DJI inputs. Body yaw-rate caps are
+  not used as turn limits. Fixed-wing turn rates use g tan(bank) / V with the
+  ArduPlane 45° roll limit (30° for the two MALE airframes); climb 5 m/s is
+  the ArduPlane TECS_CLMB_MAX and PX4 FW_T_CLMB_MAX default; acceleration 2 m/s²
+  for propeller airframes and 3 m/s² for the Geran-4 turbojet from its
+  reported 160 kgf thrust. Multirotor class airframes use PX4 tilt defaults
+  (45° FPV, 35° loaded heavy). Radiated power on proprietary links is the
+  SprintLink class from Mugin's OEM page (2 W small UAS, 10 W MALE). Link-less
+  airframes (fibre FPV, Shahed-136 baseline, Geran-4, RF-silent Mugin-5) carry
+  0 W and `linkProtocol: 'none'` or `'fiber'`; the Shahed and Gerbera notes
+  record the cellular and mesh modems seen on current Geran airframes.
+
+Comparison sets: `lib-teleidoscope` `detectorPixelsH` and `fovDeg` take the
+class median of the sourced classification-role EO/IR gimbals, `lib-cm262`
+(1280 px, 2.4°) and `lib-hdcmr` (1280 px, 3.0°); its `focalLengthMm` takes the
+one-member median of `lib-cm262` (300 mm), recorded as thin. No other role
+class had two sourced members for a new field, so every other estimate is a
+planning factor with its basis in the note. Open items: the R8SS-3D OEM sheet
+states X-band where the record says Ku (band is not a field in this lane); the
+Blighter A422 180° scan time is not published (only the 90° 1.0 s); the 3.a
+contract adds the six new units (`deg/s`, `mps2`, `um`, `mm`, `mK`, `dBm`)
+before the library builds.
+
+Per-field record (value, layer, source or comparison set):
+
+- `lib-a422` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-a422` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-acoustic-picket` `noiseFloorDb` 23 dB, L2, INFERRED planning-factor; basis in the field note
+- `lib-ardronis` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-ardronis` `geolocationMinNodes` 2 count, L1, MANUFACTURER_CLAIM, Rohde & Schwarz ARDRONIS brochure and datasheet page; ADD557SR brochure 3608-8534-12
+- `lib-babayaga` `maxTurnRateDegS` 33 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-babayaga` `climbRateMps` 3 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-babayaga` `maxAccelMps2` 6.9 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-babayaga` `radiatedPowerW` 2 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-babayaga` `linkProtocol` 'proprietary', L1, CORROBORATED, Defence Express (radio control in the 700 to 900 MHz band through a marine-drone repeater) and Kyiv Post (mothership signal repeater, Starlink control on some); Custom UHF control links, not a named COTS protocol.
+- `lib-cm262` `pixelPitchUm` 10 um, L2, INFERRED planning-factor; basis in the field note
+- `lib-cm262` `focalLengthMm` 300 mm, L1, MANUFACTURER_CLAIM, CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF
+- `lib-cm262` `detectorPixelsH` 1280 count, L1, MANUFACTURER_CLAIM, CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF
+- `lib-cm262` `fovDeg` 2.4 deg, L1, MANUFACTURER_CLAIM, CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF
+- `lib-cm262` `mrtdMk` 25 mK, L2, INFERRED planning-factor; basis in the field note
+- `lib-corian` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-corian` `geolocationMinNodes` 3 count, L1, REPORTED, CACI CORIAN flyer (F424, 2023-03), 'signal time difference of arrival (TDOA) at multiple sensors', quoted from the search index; the PDF returned 404 on read
+- `lib-cuaews-df` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-cuaews-df` `geolocationMinNodes` 2 count, L1, MANUFACTURER_CLAIM, SRC Whisper Hunter direction finder product sheet (PDF)
+- `lib-cw15` `maxTurnRateDegS` 33 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-cw15` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-cw15` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-cw15` `radiatedPowerW` 2 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-cw15` `linkProtocol` 'proprietary', L1, MANUFACTURER_CLAIM, JOUAV long-range drone article: CW-15 1.4 GHz data link held at over 47 km
+- `lib-discovair` `noiseFloorDb` 21 dB, L2, INFERRED planning-factor; basis in the field note
+- `lib-drs-s3` `pixelPitchUm` 6 um, L1, MANUFACTURER_CLAIM, Leonardo DRS S3 datasheet (2022 PDF)
+- `lib-drs-s3` `focalLengthMm` 275 mm, L2, INFERRED planning-factor; basis in the field note
+- `lib-drs-s3` `detectorPixelsH` 1280 count, L1, MANUFACTURER_CLAIM, Leonardo DRS S3 datasheet (2022 PDF)
+- `lib-drs-s3` `fovDeg` 1.6 deg, L1, MANUFACTURER_CLAIM, Leonardo DRS S3 datasheet (2022 PDF)
+- `lib-drs-s3` `mrtdMk` 30 mK, L1, REPORTED, Leonardo DRS HexaBlu 1280-MW datasheet (PDF)
+- `lib-echoguard` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-echoguard` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-echoshield` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-echoshield` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv-fiber` `maxTurnRateDegS` 37 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv-fiber` `climbRateMps` 10 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv-fiber` `maxAccelMps2` 9.8 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv-fiber` `radiatedPowerW` 0 W, L1, REPORTED, Militarnyi, Chinese drone maker introduces UAV controlled by fiber optics
+- `lib-fpv-fiber` `linkProtocol` 'fiber', L1, CORROBORATED, Militarnyi (Skywalker fibre-optic FPV) and Wikipedia, Fiber optic drone
+- `lib-fpv7` `maxTurnRateDegS` 22 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv7` `climbRateMps` 10 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv7` `maxAccelMps2` 9.8 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv7` `radiatedPowerW` 1.6 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-fpv7` `linkProtocol` 'elrs', L1, CORROBORATED, Documented combat build (ELRS 915 MHz Nano receiver, RadioMaster Bandit ELRS 915 MHz, analog 5.8 GHz video; github.com/wvrld/fpv-combat-drone) and Blue Bird Zhakh 7 product page (ELRS 400 to 960 MHz control, analog 4.9 to 6.1 GHz video); Control link ELRS at 900 MHz; the video link is analog 5.8 GHz FPV.
+- `lib-gator` `dwellTimeS` 0.011 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-gator` `pulsesPerDwell` 11 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-geran4` `maxTurnRateDegS` 6 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-geran4` `climbRateMps` 20 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-geran4` `maxAccelMps2` 3 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-geran4` `radiatedPowerW` 0 W, L1, REPORTED, CSIS Missile Threat, Shahed-238
+- `lib-geran4` `linkProtocol` 'none', L1, REPORTED, CSIS Missile Threat, Shahed-238: autonomous INS/GPS guidance
+- `lib-gerbera` `maxTurnRateDegS` 17 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-gerbera` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-gerbera` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-gerbera` `radiatedPowerW` 2 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-gerbera` `linkProtocol` 'proprietary', L1, CORROBORATED, Wikipedia, Gerbera (drone): XK-F358 mesh modem relays operator signals; CSIS, Shahed/Geran: mesh radio XK-F358 and ZTE 3G/LTE modems; Mesh radio relay; cellular modems on some airframes.
+- `lib-giraffe1x` `dwellTimeS` 0.0056 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-giraffe1x` `pulsesPerDwell` 11 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-gm200mmc` `dwellTimeS` 0.0083 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-gm200mmc` `pulsesPerDwell` 8 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-hdcmr` `pixelPitchUm` 12 um, L2, INFERRED planning-factor; basis in the field note
+- `lib-hdcmr` `focalLengthMm` 290 mm, L2, INFERRED planning-factor; basis in the field note
+- `lib-hdcmr` `detectorPixelsH` 1280 count, L1, REPORTED, Teledyne FLIR Ranger HDC MR datasheet 21-0714 (mirror at atline.pl; defense.flir.com returned 403)
+- `lib-hdcmr` `fovDeg` 3 deg, L1, REPORTED, Teledyne FLIR Ranger HDC MR datasheet 21-0714 (mirror at atline.pl; defense.flir.com returned 403)
+- `lib-hdcmr` `mrtdMk` 25 mK, L2, INFERRED planning-factor; basis in the field note
+- `lib-iris` `dwellTimeS` 0.033 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-iris` `pulsesPerDwell` null, L3, UNKNOWN; FMCW radar: the count is chirps per coherent processing interval, and Robin publishes no sweep repetition rate; not established by the public record. The dwell is given.
+- `lib-kumrfs-m` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-kumrfs-m` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-kurfs` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-kurfs` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-lancet3` `maxTurnRateDegS` 26 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-lancet3` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-lancet3` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-lancet3` `radiatedPowerW` 2 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-lancet3` `linkProtocol` 'proprietary', L1, CORROBORATED, Wikipedia, ZALA Lancet (868 to 870 and 902 to 928 MHz, relay UAVs) and Armada International, Russian UAV operating frequencies
+- `lib-lstar` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-lstar` `pulsesPerDwell` 50 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-m350` `maxTurnRateDegS` 22 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-m350` `climbRateMps` 6 mps, L1, MANUFACTURER_CLAIM, DJI Matrice 350 RTK specs page
+- `lib-m350` `maxAccelMps2` 5.7 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-m350` `radiatedPowerW` 2 W, L1, MANUFACTURER_CLAIM, DJI Matrice 350 RTK specs page, O3 Enterprise transmitter power
+- `lib-m350` `linkProtocol` 'ocusync', L1, MANUFACTURER_CLAIM, DJI Matrice 350 RTK specs page, DJI O3 Enterprise Transmission
+- `lib-mavic3` `maxTurnRateDegS` 33 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-mavic3` `climbRateMps` 8 mps, L1, MANUFACTURER_CLAIM, DJI Mavic 3 Classic specs page (same airframe)
+- `lib-mavic3` `maxAccelMps2` 6.9 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-mavic3` `radiatedPowerW` 0.4 W, L1, MANUFACTURER_CLAIM, DJI Mavic 3 Classic specs page (same airframe), O3+ transmitter power
+- `lib-mavic3` `linkProtocol` 'ocusync', L1, MANUFACTURER_CLAIM, DJI Mavic 3 Classic specs page (same airframe), video transmission system O3+
+- `lib-mini4` `maxTurnRateDegS` 39 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-mini4` `climbRateMps` 5 mps, L1, MANUFACTURER_CLAIM, DJI Mini 4 Pro specs page
+- `lib-mini4` `maxAccelMps2` 6.9 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-mini4` `radiatedPowerW` 2 W, L1, MANUFACTURER_CLAIM, DJI Mini 4 Pro specs page, O4 transmitter power
+- `lib-mini4` `linkProtocol` 'ocusync', L1, MANUFACTURER_CLAIM, DJI Mini 4 Pro specs page, video transmission system O4
+- `lib-mohajer6` `maxTurnRateDegS` 8 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-mohajer6` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-mohajer6` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-mohajer6` `radiatedPowerW` 10 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-mohajer6` `linkProtocol` 'proprietary', L1, REPORTED, Wikipedia, Qods Mohajer-6: direct line-of-sight data link 200 to 500 km
+- `lib-mugin5` `maxTurnRateDegS` 19 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-mugin5` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-mugin5` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-mugin5` `radiatedPowerW` 0 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-mugin5` `linkProtocol` 'none', L2, INFERRED; Converted strike flies without a control link; the OEM platform offers proprietary 1.4 GHz links.
+- `lib-mxgcs` `pixelPitchUm` 15 um, L2, INFERRED planning-factor; basis in the field note
+- `lib-mxgcs` `focalLengthMm` 275 mm, L2, INFERRED planning-factor; basis in the field note
+- `lib-mxgcs` `detectorPixelsH` 640 count, L1, REPORTED, L3 WESCAM MX-GCS product data sheet (November 2016, reseller-hosted PDF)
+- `lib-mxgcs` `fovDeg` 2 deg, L1, REPORTED, L3 WESCAM MX-GCS product data sheet (November 2016, reseller-hosted PDF)
+- `lib-mxgcs` `mrtdMk` 25 mK, L2, INFERRED planning-factor; basis in the field note
+- `lib-orlan10` `maxTurnRateDegS` 19 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-orlan10` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-orlan10` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-orlan10` `radiatedPowerW` 2 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-orlan10` `linkProtocol` 'proprietary', L1, CORROBORATED, Wikipedia, Orlan-10 (850 to 930 MHz command, 3/4/8 GHz payload downlinks) and Armada International, Russian UAV operating frequencies; Cellular modems on some payload variants.
+- `lib-r8ss` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-r8ss` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-rf360` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-rf360` `geolocationMinNodes` 2 count, L1, REPORTED, Dedrone RF-360 datasheet V2.0 (AoA) and RF-360 manual as quoted by the search index of manualslib (page returned 403)
+- `lib-rfone` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-rfone` `geolocationMinNodes` 2 count, L1, REPORTED, Army Technology, DroneShield RfOne MkII long-range sensors for Australia
+- `lib-rfpatrol` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-rfpatrol` `geolocationMinNodes` null, L3, UNKNOWN; Omnidirectional body-worn detector: alarm by signal strength, no bearing and no multi-node geolocation documented (DroneShield dismounted products page); bearing-only at best, so no node count applies.
+- `lib-rps42` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-rps42` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-rps62` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-rps62` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-sentinela4` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-sentinela4` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-sentry-lr-fc` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-sentry-lr-fc` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-shahed136` `maxTurnRateDegS` 11 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-shahed136` `climbRateMps` 5 mps, L2, INFERRED planning-factor; basis in the field note
+- `lib-shahed136` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-shahed136` `radiatedPowerW` 0 W, L1, CORROBORATED, The War Zone, Shahed-136 with cellular modem found in Ukraine; Luftlage, Networking the Shahed
+- `lib-shahed136` `linkProtocol` 'none', L1, CORROBORATED, The War Zone (pre-programmed, little emission) and Luftlage (cellular antennas on nearly all observed Geran-2); Baseline has no control link; cellular telemetry on many current Geran-2.
+- `lib-spexer2000` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-spexer2000` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-spyglass` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-spyglass` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-spynel` `pixelPitchUm` 15 um, L2, INFERRED planning-factor; basis in the field note
+- `lib-spynel` `focalLengthMm` 100 mm, L2, INFERRED planning-factor; basis in the field note
+- `lib-spynel` `detectorPixelsH` 512 count, L1, MANUFACTURER_CLAIM, HGH Spynel-S leaflet (SPS-Len-al1, PDF), Spynel-S 6000 column
+- `lib-spynel` `fovDeg` 4.4 deg, L1, MANUFACTURER_CLAIM, HGH Spynel-S leaflet (SPS-Len-al1, PDF), Spynel-S 6000 column
+- `lib-spynel` `mrtdMk` 25 mK, L2, INFERRED planning-factor; basis in the field note
+- `lib-tb2` `maxTurnRateDegS` 7 deg/s, L2, INFERRED planning-factor; basis in the field note
+- `lib-tb2` `climbRateMps` 6.1 mps, L1, REPORTED, Wikipedia, Baykar Bayraktar TB2 (TB2T-AI climb)
+- `lib-tb2` `maxAccelMps2` 2 mps2, L2, INFERRED planning-factor; basis in the field note
+- `lib-tb2` `radiatedPowerW` 10 W, L2, INFERRED planning-factor; basis in the field note
+- `lib-tb2` `linkProtocol` 'proprietary', L1, MANUFACTURER_CLAIM, Baykar Bayraktar TB2 page: LOS and BLOS communication, triple bands for LOS control and video
+- `lib-teleidoscope` `pixelPitchUm` 10 um, L2, INFERRED planning-factor; basis in the field note
+- `lib-teleidoscope` `focalLengthMm` 300 mm, L2, INFERRED class-median of lib-cm262
+- `lib-teleidoscope` `detectorPixelsH` 1280 count, L2, INFERRED class-median of lib-cm262, lib-hdcmr
+- `lib-teleidoscope` `fovDeg` 2.7 deg, L2, INFERRED class-median of lib-cm262, lib-hdcmr
+- `lib-teleidoscope` `mrtdMk` 25 mK, L2, INFERRED planning-factor; basis in the field note
+- `lib-titan` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-titan` `geolocationMinNodes` null, L3, UNKNOWN; The Titan datasheet (AV 250501) states no direction-finding method and no multi-node geolocation; the 1° azimuth and elevation tracking belongs to the Titan SV LOB variant, which is bearing only. Not established by the public record.
+- `lib-tpq53` `dwellTimeS` 0.011 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-tpq53` `pulsesPerDwell` 56 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-wingman` `receiverSensitivityDbm` -90 dBm, L2, INFERRED planning-factor; basis in the field note
+- `lib-wingman` `geolocationMinNodes` null, L3, UNKNOWN; Signal-strength direction finding to ±30° by sweeping the 90° internal antenna (MyDefence Wingman 103/105 sheet); bearing only, no multi-node geolocation documented, so no node count applies.
+- `lib-wisp` `pixelPitchUm` null, L3, UNKNOWN; Anduril publishes no detector, band, pitch or head count for Wisp (product page is a script shell; trade press gives only 360° x 125° system coverage and DRI ranges); not established by the public record.
+- `lib-wisp` `focalLengthMm` null, L3, UNKNOWN; Anduril publishes no optics figures for Wisp; not established by the public record.
+- `lib-wisp` `detectorPixelsH` null, L3, UNKNOWN; Anduril publishes no detector format for Wisp's Computational Pixel Imager; not established by the public record.
+- `lib-wisp` `fovDeg` null, L3, UNKNOWN; Only the whole-system coverage (360° horizontal, 125° vertical; Military Aerospace and the COBBS reseller page) is published; the per-head instantaneous field and the head count are not. The 360° coverage is already in sectorDeg.
+- `lib-wisp` `mrtdMk` null, L3, UNKNOWN; Anduril publishes no MRTD or NETD and does not state the band; not established by the public record.
+- `lib-xbaeu` `dwellTimeS` 0.02 s, L2, INFERRED planning-factor; basis in the field note
+- `lib-xbaeu` `pulsesPerDwell` 100 count, L2, INFERRED planning-factor; basis in the field note
+- `lib-zvook` `noiseFloorDb` 26 dB, L2, INFERRED planning-factor; basis in the field note
+- `lib-zvooknw0` `noiseFloorDb` 32 dB, L2, INFERRED planning-factor; basis in the field note

@@ -2,7 +2,7 @@
   "id": "lib-m350",
   "kind": "uas",
   "type": "quad",
-  "version": 1,
+  "version": 2,
   "name": "Red air: DJI M350 class (G2 quad)",
   "description": "Industrial quad with thermal payload. Standoff ISR orbits 5-15 km out at 500-3000 ft; also a light bomber.",
   "color": "#c06e60",
@@ -133,6 +133,60 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 22,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the flight-path turn rate a multirotor can hold at its cruise speed is g tan(tilt) / V. DJI publishes a 30° max pitch angle for the Matrice 350 RTK (25° in N mode with forward vision on). At the record's cruise speed 15 m/s: 5.7 / 15 rad/s = 22°/s. The body yaw-rate cap (DJI publishes 100 to 300°/s; PX4 MC_YAWRATE_MAX 200°/s) is not a path turn limit and is not used."
+    },
+    "climbRateMps": {
+      "value": 6,
+      "unit": "mps",
+      "condition": "6 m/s max ascent speed",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Matrice 350 RTK specs page",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "maxAccelMps2": {
+      "value": 5.7,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a multirotor's horizontal acceleration is g tan(tilt). DJI publishes a 30° max pitch angle on the Matrice 350 RTK specs page. 9.81 × tan 30° = 5.7 m/s²."
+    },
+    "radiatedPowerW": {
+      "value": 2,
+      "unit": "W",
+      "condition": "<33 dBm EIRP (FCC) at 2.4 GHz and FCC/SRRC at 5.725 to 5.850 GHz; <20 dBm CE/SRRC/MIC at 2.4 GHz, <14 dBm CE at 5.8 GHz, <23 dBm CE at 5.15 to 5.25 GHz",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Matrice 350 RTK specs page, O3 Enterprise transmitter power",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {
@@ -147,7 +201,8 @@
       "gnss",
       "ism-2400",
       "ism-5800"
-    ]
+    ],
+    "linkProtocol": "ocusync"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -163,6 +218,15 @@
       "source": "DJI Matrice 350 RTK specs page",
       "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
       "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    },
+    "linkProtocol": {
+      "value": "ocusync",
+      "source": "DJI Matrice 350 RTK specs page, DJI O3 Enterprise Transmission",
+      "url": "https://enterprise.dji.com/matrice-350-rtk/specs",
+      "date": "2026-09-10",
       "basis": "datasheet",
       "grade": "MANUFACTURER_CLAIM",
       "layer": "L1"

@@ -2,7 +2,7 @@
   "id": "lib-lancet3",
   "kind": "uas",
   "type": "one-way-attack",
-  "version": 1,
+  "version": 2,
   "name": "Red air: Lancet-3 loitering munition (G2)",
   "description": "Rail-launched loitering munition cued by an ISR drone. Transits at 5000-15000 ft; fast terminal dive, up to 83 m/s.",
   "color": "#b85a4a",
@@ -131,6 +131,54 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 26,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: coordinated-turn rate g tan(bank) / V. The 45° roll limit is the ArduPlane default (ROLL_LIMIT_DEG 45; PX4 FW_R_LIM 50°), the autopilot class these small fixed-wing UAS fly with. At the record's cruise speed 22 m/s: 26°/s. No turn rate, bank limit or g limit is published for this airframe."
+    },
+    "climbRateMps": {
+      "value": 5,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: ZALA publishes no climb rate. The ArduPlane TECS_CLMB_MAX default and the PX4 FW_T_CLMB_MAX default are both 5.0 m/s for a small fixed-wing UAS."
+    },
+    "maxAccelMps2": {
+      "value": 2,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: ZALA publishes no acceleration. MTOW 12 kg on an AXI 5330 electric motor (Army Technology). A propeller airframe with thrust-to-weight near 0.3 and cruise drag near 0.1 of weight accelerates at about 0.2 g = 2 m/s² in level flight."
+    },
+    "radiatedPowerW": {
+      "value": 2,
+      "unit": "W",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: ZALA publishes no link power. Lancet runs two channels plus a reserve in the 868 to 870 and 902 to 928 MHz bands with Orlan-10 as a relay (Wikipedia; Armada International). The only OEM-published link power in this threat set is Mugin's SprintLink family (2 W, 5 W, 10 W at 1.4 GHz for 30 to 150 km); the 2 W entry-level class is used for a small-UAS command and video link."
     }
   },
   "attributes": {
@@ -140,7 +188,8 @@
     "emissionsNote": "Video downlink until terminal; some variants autonomous",
     "oneWay": true,
     "rangeNote": "Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.",
-    "weaponProfile": "impact"
+    "weaponProfile": "impact",
+    "linkProtocol": "proprietary"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -153,5 +202,16 @@
     "altitudeFt": 8000,
     "speedMps": 28,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "proprietary",
+      "source": "Wikipedia, ZALA Lancet (868 to 870 and 902 to 928 MHz, relay UAVs) and Armada International, Russian UAV operating frequencies",
+      "url": "https://www.armadainternational.com/2024/12/russian-uav-operating-frequencies-electronic-warfare/",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "CORROBORATED",
+      "layer": "L1"
+    }
   }
 }

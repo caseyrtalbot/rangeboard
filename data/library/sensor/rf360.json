@@ -2,7 +2,7 @@
   "id": "lib-rf360",
   "kind": "sensor",
   "type": "rf",
-  "version": 2,
+  "version": 3,
   "name": "RF-360 passive RF sensor (Dedrone)",
   "description": "Omnidirectional passive RF sensor (Dedrone by Axon). Detects, classifies and direction-finds drones and controllers by protocol signature. 2 km is the normal-conditions figure; up to 5 km is claimed in ideal conditions against specific drones. One unit gives angle of arrival only.",
   "color": "#d6bf8e",
@@ -89,6 +89,29 @@
       "grade": "UNKNOWN",
       "layer": "L3",
       "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
+    },
+    "receiverSensitivityDbm": {
+      "value": -90,
+      "unit": "dBm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor, 2.4 GHz band, channel-integrated: kTB for a 10 MHz OcuSync-class channel (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS application note) gives -92 dBm, recorded as -90 dBm. Cross-check: against a 2 W (33 dBm) EIRP DJI link with a 0 dBi receive antenna this threshold falls at about 6 km free space, consistent with the RF-360 datasheet's 2 km normal to 5 km ideal. Dedrone publishes no sensitivity (RF-360 datasheet V2.0)."
+    },
+    "geolocationMinNodes": {
+      "value": 2,
+      "unit": "count",
+      "condition": "angle-of-arrival localisation (datasheet); 'in combination with two or more RF-360 sensors, it is able to determine the position of a drone' (manual)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Dedrone RF-360 datasheet V2.0 (AoA) and RF-360 manual as quoted by the search index of manualslib (page returned 403)",
+      "url": "https://l.dedrone.com/hubfs/Downloads%20-%20PDFs/DS_RF360-360T_en_web.pdf",
+      "date": "2026-09-10"
     }
   },
   "attributes": {

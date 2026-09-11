@@ -2,7 +2,7 @@
   "id": "lib-mxgcs",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "WESCAM MX-GCS EO/IR sight (L3Harris)",
   "description": "Stabilized cooled MWIR and HD colour sight with eyesafe laser rangefinder on SGT Stout M-SHORAD. Slews 360 deg independent of the turret to identify and track air threats for the 30 mm gun. Ranges are planning figures: none are published.",
   "color": "#8f86ab",
@@ -98,6 +98,68 @@
         "sigmaDb": 4
       },
       "note": "Planning factor: a stabilised sighting gimbal reports its line of sight to about 0.5 mrad (0.03°); L3Harris and Leonardo DRS state high-accuracy position feedback without a figure. The sourced HDC MR pan-tilt (0.5 mrad) and CM262 gimbal (80 µrad) bracket it."
+    },
+    "pixelPitchUm": {
+      "value": 15,
+      "unit": "um",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the 2016 PDS gives a 640 x 512 3 to 5 µm staring array and no pitch; 640 x 512 cooled MWIR cores of that generation are a 15 µm format. The current L3Harris page says only 'mid-wave large-format cooled thermal imager', so a newer core may have replaced it."
+    },
+    "focalLengthMm": {
+      "value": 275,
+      "unit": "mm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: L3Harris publishes no focal length. From the PDS 2.0° narrow field and an assumed 15 µm × 640 px = 9.6 mm array width: 9.6 / (2 tan 1.0°) = 275 mm."
+    },
+    "detectorPixelsH": {
+      "value": 640,
+      "unit": "count",
+      "condition": "thermal imager, 3 to 5 µm staring array, 640 x 512",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "L3 WESCAM MX-GCS product data sheet (November 2016, reseller-hosted PDF)",
+      "url": "https://www.militarysystems-tech.com/sites/militarysystems/files/supplier_docs/PDS-MX-GCS-November-2016.pdf",
+      "date": "2026-09-10"
+    },
+    "fovDeg": {
+      "value": 2,
+      "unit": "deg",
+      "condition": "thermal imager dual field of view 2.0° and 10.0°, narrow field",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "L3 WESCAM MX-GCS product data sheet (November 2016, reseller-hosted PDF)",
+      "url": "https://www.militarysystems-tech.com/sites/militarysystems/files/supplier_docs/PDS-MX-GCS-November-2016.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "mrtdMk": {
+      "value": 25,
+      "unit": "mK",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: L3Harris publishes no MRTD or NETD. Cooled MWIR cores publish NETD of 20 mK (Lynred Daphnis-HD MW), <25 mK (Teledyne FLIR Neutrino SX12) and <30 mK (DRS HexaBlu 1280-MW); the 25 mK median is used as the low-spatial-frequency MRTD."
     }
   },
   "attributes": {

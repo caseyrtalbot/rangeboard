@@ -2,7 +2,7 @@
   "id": "lib-geran4",
   "kind": "uas",
   "type": "one-way-attack",
-  "version": 1,
+  "version": 2,
   "name": "Red air: Geran-4 jet OWA (G3)",
   "description": "Turbojet one-way-attack from the Geran-3/4/5 jet family, per threat study 5.2.1 [R03]: 450 kg MTOW, 89 m/s (320 km/h) cruise, 770 km range, thermobaric or HE-frag warhead types identified. The study fixes no Geran-3 numbers, so the exploited Geran-4 carries the jet-OWA class.",
   "color": "#9c3f31",
@@ -136,6 +136,53 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 6,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: coordinated-turn rate g tan(bank) / V. The 45° roll limit is the ArduPlane default (ROLL_LIMIT_DEG 45; PX4 FW_R_LIM 50°), the autopilot class these small fixed-wing UAS fly with. At the record's cruise speed 97 m/s: 6°/s. No turn rate, bank limit or g limit is published for this airframe."
+    },
+    "climbRateMps": {
+      "value": 20,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no climb rate is published (altitude up to 5000 m, Kyiv Post; 9000 m for the Shahed-238, CSIS Missile Threat). Energy bound from the reported 160 kgf turbojet on a 250 to 370 kg airframe: (T/W - D/W) × V with T/W about 0.5, D/W about 0.3 at 97 m/s gives about 20 m/s."
+    },
+    "maxAccelMps2": {
+      "value": 3,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no acceleration is published. The reported 160 kgf turbojet on a 250 to 370 kg airframe (Kyiv Post; CSIS Missile Threat) gives thrust-to-weight near 0.5; less cruise drag near 0.2 of weight leaves about 0.3 g = 3 m/s²."
+    },
+    "radiatedPowerW": {
+      "value": 0,
+      "unit": "W",
+      "condition": "autonomous INS/GPS guidance, no control link on the baseline airframe; seeker variants reported",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "CSIS Missile Threat, Shahed-238",
+      "url": "https://missilethreat.csis.org/missile/shahed-238/",
+      "date": "2026-09-10"
     }
   },
   "attributes": {
@@ -145,7 +192,8 @@
     "oneWay": true,
     "rangeNote": "Declared range 770 km, ceiling 4000 m (study 5.2.1 [R03]).",
     "weaponProfile": "impact",
-    "jamBehavior": "continue"
+    "jamBehavior": "continue",
+    "linkProtocol": "none"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -161,5 +209,16 @@
     "altitudeFt": 6000,
     "speedMps": 89,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "none",
+      "source": "CSIS Missile Threat, Shahed-238: autonomous INS/GPS guidance",
+      "url": "https://missilethreat.csis.org/missile/shahed-238/",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "REPORTED",
+      "layer": "L1"
+    }
   }
 }

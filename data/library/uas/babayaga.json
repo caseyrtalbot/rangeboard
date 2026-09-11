@@ -2,7 +2,7 @@
   "id": "lib-babayaga",
   "kind": "uas",
   "type": "quad",
-  "version": 1,
+  "version": 2,
   "name": "Red air: heavy multirotor bomber (G2)",
   "description": "Baba Yaga class agricultural conversion. Night bombing from 5-12 km standoff; drops several munitions and returns.",
   "color": "#b95e4d",
@@ -121,6 +121,54 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 33,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the flight-path turn rate a multirotor can hold at its cruise speed is g tan(tilt) / V. No tilt limit is published for the Vampire or R18 class; the PX4 MPC_MAN_TILT_MAX default of 35° is used for a loaded heavy multirotor. At the record's cruise speed 12 m/s: 6.9 / 12 rad/s = 33°/s. The body yaw-rate cap (DJI publishes 100 to 300°/s; PX4 MC_YAWRATE_MAX 200°/s) is not a path turn limit and is not used."
+    },
+    "climbRateMps": {
+      "value": 3,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no climb rate is published for the Vampire or R18 (Army Recognition and Kyiv Post give 80 km/h top speed, 15 kg payload, 400 m operating altitude). The PX4 MPC_Z_VEL_MAX_UP default of 3.0 m/s is used for a loaded heavy multirotor."
+    },
+    "maxAccelMps2": {
+      "value": 6.9,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a multirotor's horizontal acceleration is g tan(tilt). No tilt limit is published; the PX4 MPC_MAN_TILT_MAX default of 35° is used for a loaded heavy multirotor. 9.81 × tan 35° = 6.9 m/s²."
+    },
+    "radiatedPowerW": {
+      "value": 2,
+      "unit": "W",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Vampire or R18 source publishes no link power. The class flies on 700 to 900 MHz UHF control through airborne or marine repeaters (Defence Express; Kyiv Post). The only OEM-published link power in this threat set is Mugin's SprintLink family (2 W, 5 W, 10 W at 1.4 GHz for 30 to 150 km); the 2 W entry-level class is used for a small-UAS command and video link."
     }
   },
   "attributes": {
@@ -130,7 +178,8 @@
     "oneWay": false,
     "rangeNote": "Night sorties 10-20 km with ~15 kg payload; Starlink-relay control reported on some airframes.",
     "weaponProfile": "none",
-    "jamBehavior": "return-home"
+    "jamBehavior": "return-home",
+    "linkProtocol": "proprietary"
   },
   "provenanceOrder": [
     "rcsM2"
@@ -141,5 +190,17 @@
     "altitudeFt": 600,
     "speedMps": 12,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "proprietary",
+      "source": "Defence Express (radio control in the 700 to 900 MHz band through a marine-drone repeater) and Kyiv Post (mothership signal repeater, Starlink control on some)",
+      "url": "https://en.defence-ua.com/news/unidentified_ukrainian_marine_drones_launch_the_baba_yaga_bombers_on_russian_radar_targets-15032.html",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "note": "Custom UHF control links, not a named COTS protocol."
+    }
   }
 }

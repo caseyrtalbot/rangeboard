@@ -2,7 +2,7 @@
   "id": "lib-drs-s3",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "DRS S3 stabilised sight (RIwP turret)",
   "description": "EO/IR sight integrated in the Moog RIwP turret with a built-in auto-tracker. Provides the detect / recognise / identify chain and holds track through kinetic engagements against ground and air targets. The M-LIDS brochure gives the vehicle EO/IR camera gun system a target acquisition range greater than 2 km.",
   "color": "#b8b0d4",
@@ -109,6 +109,75 @@
         "sigmaDb": 4
       },
       "note": "Planning factor: a stabilised sighting gimbal reports its line of sight to about 0.5 mrad (0.03°); L3Harris and Leonardo DRS state high-accuracy position feedback without a figure. The sourced HDC MR pan-tilt (0.5 mrad) and CM262 gimbal (80 µrad) bracket it."
+    },
+    "pixelPitchUm": {
+      "value": 6,
+      "unit": "um",
+      "condition": "cooled HD MWIR option, pixel pitch 6 µm (LWIR option 10 µm)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Leonardo DRS S3 datasheet (2022 PDF)",
+      "url": "https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "focalLengthMm": {
+      "value": 275,
+      "unit": "mm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor derived from the S3 sheet's own MWIR figures: 1280 px × 6 µm = 7.68 mm of array width across a 1.6° narrow HFOV gives 7.68 / (2 tan 0.8°) = 275 mm. DRS publishes no focal length."
+    },
+    "detectorPixelsH": {
+      "value": 1280,
+      "unit": "count",
+      "condition": "MWIR 1280 x 960",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Leonardo DRS S3 datasheet (2022 PDF)",
+      "url": "https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf",
+      "date": "2026-09-10"
+    },
+    "fovDeg": {
+      "value": 1.6,
+      "unit": "deg",
+      "condition": "MWIR 1.6° to 16° HFOV continuous zoom, narrow end",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Leonardo DRS S3 datasheet (2022 PDF)",
+      "url": "https://www.leonardodrs.com/wp-content/uploads/2023/09/s3-datasheet.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "mrtdMk": {
+      "value": 30,
+      "unit": "mK",
+      "condition": "NETD <30 mK typical, f/2.6, 3.4 to 4.8 µm, for the DRS HexaBlu 1280-MW core (6 µm, 1280 x 960), matched to the S3 by pitch and format; the S3 sheet names no core and no MRTD",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Leonardo DRS HexaBlu 1280-MW datasheet (PDF)",
+      "url": "https://www.leonardodrs.com/wp-content/uploads/2023/08/hexablu_datasheet.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      },
+      "note": "Vendor bound recorded as the value; NETD stands in for the low-spatial-frequency MRTD."
     }
   },
   "attributes": {

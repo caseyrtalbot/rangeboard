@@ -2,7 +2,7 @@
   "id": "lib-spynel",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "Spynel-S 6000 panoramic IR (HGH)",
   "description": "Passive rotating MWIR sensor that rebuilds a 360 deg thermal panorama every 2 s and cues itself. Wide-area search, no radar needed. UAS ranges are planning figures: HGH publishes DRI for people and vehicles only.",
   "color": "#c3bada",
@@ -101,6 +101,68 @@
         "sigmaDb": 4
       },
       "note": "Planning factor: about two IFOV of the Spynel-S 6000 (0.15 x 0.15 mrad per the HGH Spynel-S leaflet), 0.3 mrad or 0.017°, rounded to 0.02°; HGH publishes no angular accuracy."
+    },
+    "pixelPitchUm": {
+      "value": 15,
+      "unit": "um",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the HGH leaflet gives a cooled MWIR 640 x 512 FPA and no pitch; 640 x 512 cooled MWIR cores are a 15 µm format."
+    },
+    "focalLengthMm": {
+      "value": 100,
+      "unit": "mm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: HGH publishes the IFOV (0.15 mrad, Spynel-S 6000) but no focal length. With the assumed 15 µm pitch, 15 µm / 0.15 mrad = 100 mm. Fixed lens; there is no zoom stop on this rotating sensor."
+    },
+    "detectorPixelsH": {
+      "value": 512,
+      "unit": "count",
+      "condition": "MWIR 640 x 512 FPA mounted with the 640 px column vertical (panorama 46 000 H x 640 V), so 512 px span the instantaneous horizontal field",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "HGH Spynel-S leaflet (SPS-Len-al1, PDF), Spynel-S 6000 column",
+      "url": "https://hgh-infrared.com/wp-content/uploads/2020/12/Leaflet_Spynel-S_maritime-VLRF_HGH_HR.pdf",
+      "date": "2026-09-10"
+    },
+    "fovDeg": {
+      "value": 4.4,
+      "unit": "deg",
+      "condition": "instantaneous horizontal field of the rotating head: 512 px × 0.15 mrad IFOV = 77 mrad = 4.4°; VFOV 5°; the head rotates at 0.5 rps for the 360° panorama recorded in sectorDeg",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "HGH Spynel-S leaflet (SPS-Len-al1, PDF), Spynel-S 6000 column",
+      "url": "https://hgh-infrared.com/wp-content/uploads/2020/12/Leaflet_Spynel-S_maritime-VLRF_HGH_HR.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "mrtdMk": {
+      "value": 25,
+      "unit": "mK",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: HGH publishes no MRTD or NETD. Cooled MWIR cores publish NETD of 20 mK (Lynred Daphnis-HD MW), <25 mK (Teledyne FLIR Neutrino SX12) and <30 mK (DRS HexaBlu 1280-MW); the 25 mK median is used as the low-spatial-frequency MRTD."
     }
   },
   "attributes": {

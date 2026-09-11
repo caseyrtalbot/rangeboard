@@ -2,7 +2,7 @@
   "id": "lib-teleidoscope",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "Teleidoscope ML auto-track camera",
   "description": "Machine-learning EO/IR auto-track gimbal. The fielded program is the NCR-IADS airspace-warning camera modernization; no source places Teleidoscope in FS-LIDS or M-LIDS, and no source supports a fire-control role. Ranges are planning figures.",
   "color": "#b0a8cc",
@@ -98,6 +98,73 @@
         "sigmaDb": 4
       },
       "note": "Class median of the sourced classification EO/IR gimbals: lib-hdcmr 0.029, lib-cm262 0.0046; median 0.017 deg."
+    },
+    "pixelPitchUm": {
+      "value": 10,
+      "unit": "um",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Teleidoscope publishes no camera hardware figures (teleidoscope.com lists software only; the DIU award names 'upgraded EO/IR cameras' without numbers). No sourced classification-role EO/IR in the library publishes a pitch, so the HD MWIR class figure of 10 µm (Lynred Daphnis-HD MW) is used."
+    },
+    "focalLengthMm": {
+      "value": 300,
+      "unit": "mm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-cm262"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced classification-role EO/IR gimbals: lib-cm262 300 mm is the only published focal length in the role. A one-member median; recorded as such."
+    },
+    "detectorPixelsH": {
+      "value": 1280,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-cm262",
+        "lib-hdcmr"
+      ],
+      "note": "Class median of the sourced classification-role EO/IR gimbals: lib-cm262 1280, lib-hdcmr 1280; median 1280."
+    },
+    "fovDeg": {
+      "value": 2.7,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-cm262",
+        "lib-hdcmr"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced classification-role EO/IR gimbals' narrow thermal field: lib-cm262 2.4°, lib-hdcmr 3.0°; median 2.7°."
+    },
+    "mrtdMk": {
+      "value": 25,
+      "unit": "mK",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no MRTD or NETD is published. Cooled MWIR cores publish NETD of 20 mK (Lynred Daphnis-HD MW), <25 mK (Teledyne FLIR Neutrino SX12) and <30 mK (DRS HexaBlu 1280-MW); the 25 mK median is used as the low-spatial-frequency MRTD."
     }
   },
   "attributes": {

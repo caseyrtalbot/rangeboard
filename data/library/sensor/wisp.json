@@ -2,7 +2,7 @@
   "id": "lib-wisp",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "Wisp wide-area IR sensor (Anduril)",
   "description": "Passive 360 deg wide-area infrared sensor with on-edge AI. Searches for low, slow, small UAS without a radar cue and feeds Lattice. Detection band 3-10 miles; 4.8 km is the low end.",
   "color": "#9b92ba",
@@ -120,6 +120,41 @@
         "sigmaDb": 4
       },
       "note": "Planning factor: a wide-area staring LWIR panorama (360° x 125°) with no published pixel count; a few pixels of such a panorama is about 2 mrad, so 0.1°. Anduril publishes no angular accuracy."
+    },
+    "pixelPitchUm": {
+      "value": null,
+      "unit": "um",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anduril publishes no detector, band, pitch or head count for Wisp (product page is a script shell; trade press gives only 360° x 125° system coverage and DRI ranges); not established by the public record."
+    },
+    "focalLengthMm": {
+      "value": null,
+      "unit": "mm",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anduril publishes no optics figures for Wisp; not established by the public record."
+    },
+    "detectorPixelsH": {
+      "value": null,
+      "unit": "count",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anduril publishes no detector format for Wisp's Computational Pixel Imager; not established by the public record."
+    },
+    "fovDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Only the whole-system coverage (360° horizontal, 125° vertical; Military Aerospace and the COBBS reseller page) is published; the per-head instantaneous field and the head count are not. The 360° coverage is already in sectorDeg."
+    },
+    "mrtdMk": {
+      "value": null,
+      "unit": "mK",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anduril publishes no MRTD or NETD and does not state the band; not established by the public record."
     }
   },
   "attributes": {

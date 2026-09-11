@@ -2,7 +2,7 @@
   "id": "lib-titan",
   "kind": "sensor",
   "type": "rf",
-  "version": 2,
+  "version": 3,
   "name": "Titan C-UAS RF sensor (BlueHalo / AeroVironment)",
   "description": "Self-contained RF detection and direction-finding unit, up to 3 km horizontal across five bands from 433 MHz to 5.8 GHz. NOT receive-only: the same 20 lb unit jams to 1.5 km, which belongs in a separate effector record. US Army fielded.",
   "color": "#bfa877",
@@ -96,6 +96,25 @@
         "kind": "lognormal",
         "sigmaDb": 2
       }
+    },
+    "receiverSensitivityDbm": {
+      "value": -90,
+      "unit": "dBm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor, 2.4 GHz band, channel-integrated: kTB for a 10 MHz OcuSync-class channel (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS application note) gives -92 dBm, recorded as -90 dBm. The AV Titan datasheet 250501 gives the bands (2.4 / 5.8 GHz and Wi-Fi on the SF unit; 433 / 868 / 915 MHz, 1.2 GHz and GNSS on the EF unit) and a >3 km detection radius but no sensitivity."
+    },
+    "geolocationMinNodes": {
+      "value": null,
+      "unit": "count",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "The Titan datasheet (AV 250501) states no direction-finding method and no multi-node geolocation; the 1° azimuth and elevation tracking belongs to the Titan SV LOB variant, which is bearing only. Not established by the public record."
     }
   },
   "attributes": {

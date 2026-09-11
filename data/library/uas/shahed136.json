@@ -2,7 +2,7 @@
   "id": "lib-shahed136",
   "kind": "uas",
   "type": "one-way-attack",
-  "version": 1,
+  "version": 2,
   "name": "Red air: Shahed-136 / Geran-2 OWA (G3)",
   "description": "Delta-wing one-way-attack, launched in salvos hundreds of km out. Low river-valley ingress or 10-16 kft cruise with terminal dive.",
   "color": "#ab4c3e",
@@ -129,6 +129,53 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 11,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: coordinated-turn rate g tan(bank) / V. The 45° roll limit is the ArduPlane default (ROLL_LIMIT_DEG 45; PX4 FW_R_LIM 50°), the autopilot class these small fixed-wing UAS fly with. At the record's cruise speed 50 m/s: 11°/s. No turn rate, bank limit or g limit is published for this airframe."
+    },
+    "climbRateMps": {
+      "value": 5,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Shahed-136 source publishes no climb rate. The ArduPlane TECS_CLMB_MAX default and the PX4 FW_T_CLMB_MAX default are both 5.0 m/s for a small fixed-wing UAS."
+    },
+    "maxAccelMps2": {
+      "value": 2,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Shahed-136 source publishes no acceleration. About 200 kg (Geran-2 up to 240 kg) on a 50 hp MD-550 piston engine (CSIS). A propeller airframe with thrust-to-weight near 0.3 and cruise drag near 0.1 of weight accelerates at about 0.2 g = 2 m/s² in level flight."
+    },
+    "radiatedPowerW": {
+      "value": 0,
+      "unit": "W",
+      "condition": "baseline airframe flies a pre-programmed route and gives off little electromagnetic radiation; many current Geran-2 add 2G/3G/4G cellular modems (about 0.2 W class) and some a Starlink terminal",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "The War Zone, Shahed-136 with cellular modem found in Ukraine; Luftlage, Networking the Shahed",
+      "url": "https://www.twz.com/shahed-136-with-cellular-modem-found-in-ukraine-what-it-means",
+      "date": "2026-09-10"
     }
   },
   "attributes": {
@@ -141,7 +188,8 @@
     "jamBehavior": "continue",
     "linkBands": [
       "gnss"
-    ]
+    ],
+    "linkProtocol": "none"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -158,6 +206,16 @@
       "basis": "reference",
       "grade": "REPORTED",
       "layer": "L1"
+    },
+    "linkProtocol": {
+      "value": "none",
+      "source": "The War Zone (pre-programmed, little emission) and Luftlage (cellular antennas on nearly all observed Geran-2)",
+      "url": "https://www.twz.com/shahed-136-with-cellular-modem-found-in-ukraine-what-it-means",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "note": "Baseline has no control link; cellular telemetry on many current Geran-2."
     }
   },
   "threatProfile": {

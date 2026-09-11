@@ -2,7 +2,7 @@
   "id": "lib-zvooknw0",
   "kind": "sensor",
   "type": "acoustic",
-  "version": 2,
+  "version": 3,
   "name": "Zvook NW0 tactical FPV sensor",
   "description": "Post-mounted 360 deg acoustic sensor for FPV drones, including fibre-optic FPV that emits no RF at all. Declared 150-450 m; the maker advises 400-600 m node spacing. IP67, 15-20 W.",
   "color": "#87b89e",
@@ -90,6 +90,18 @@
       "grade": "UNKNOWN",
       "layer": "L3",
       "note": "No elevation measurement is published for this acoustic node; not established by the public record."
+    },
+    "noiseFloorDb": {
+      "value": 32,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the detection threshold implied by this record's own refAcousticDb (75 dB at 1 m, FPV) and detectRangeM (150 m lower bound) under spherical spreading, 75 - 20 log10(150) = 31.5 dB re 20 µPa, recorded as 32 dB, so the reported 150 to 450 m is reproduced at its lower bound. Consistent with a bare omnidirectional node working at the 30 to 35 dBA rural ambient (Passmore, engrxiv preprint). Zvook publishes no threshold or ambient condition."
     }
   },
   "attributes": {

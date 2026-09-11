@@ -2,7 +2,7 @@
   "id": "lib-mohajer6",
   "kind": "uas",
   "type": "fixed-wing",
-  "version": 1,
+  "version": 2,
   "name": "Red air: Mohajer-6 ISR/strike (G4)",
   "description": "Runway-launched MALE-lite. Cruises 10000-18000 ft inside ~200 km line-of-sight C2; releases small PGMs.",
   "color": "#9e4a44",
@@ -132,6 +132,54 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "maxTurnRateDegS": {
+      "value": 8,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: coordinated-turn rate g tan(bank) / V. A 30° bank is used for a MALE-class airframe flown like a light aircraft; the ArduPlane small-UAS default is 45°. At the record's cruise speed 40 m/s: 8°/s. No turn rate, bank limit or g limit is published for this airframe."
+    },
+    "climbRateMps": {
+      "value": 5,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Mohajer-6 source publishes no climb rate. The ArduPlane TECS_CLMB_MAX default and the PX4 FW_T_CLMB_MAX default are both 5.0 m/s for a small fixed-wing UAS."
+    },
+    "maxAccelMps2": {
+      "value": 2,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Mohajer-6 source publishes no acceleration. MTOW 600 to 670 kg on a 115 hp Rotax 914-class engine (Wikipedia). A propeller airframe with thrust-to-weight near 0.3 and cruise drag near 0.1 of weight accelerates at about 0.2 g = 2 m/s² in level flight."
+    },
+    "radiatedPowerW": {
+      "value": 10,
+      "unit": "W",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Mohajer-6 source publishes no link power. Mohajer-6 carries a 200 km direct line-of-sight datalink (Wikipedia). Mugin's OEM SprintLink family pairs 10 W at 1.4 GHz with a 150 km line-of-sight link, the class of a MALE airframe's 200 to 300 km LOS datalink."
     }
   },
   "attributes": {
@@ -141,7 +189,8 @@
     "oneWay": false,
     "rangeNote": "Bounded by line-of-sight datalink, about 200 km from the control station; up to 500 km claimed.",
     "weaponProfile": "standoff",
-    "jamBehavior": "return-home"
+    "jamBehavior": "return-home",
+    "linkProtocol": "proprietary"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -155,5 +204,16 @@
     "altitudeFt": 14000,
     "speedMps": 40,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "proprietary",
+      "source": "Wikipedia, Qods Mohajer-6: direct line-of-sight data link 200 to 500 km",
+      "url": "https://en.wikipedia.org/wiki/Qods_Mohajer-6",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "REPORTED",
+      "layer": "L1"
+    }
   }
 }

@@ -2,7 +2,7 @@
   "id": "lib-tb2",
   "kind": "uas",
   "type": "fixed-wing",
-  "version": 1,
+  "version": 2,
   "name": "Red air: Bayraktar TB2 UCAV (G4)",
   "description": "MALE UCAV per threat study 15B [TUR02]: 700 kg MTOW, 150 kg payload, 46 m/s (90 kt) cruise, 16000 ft operational altitude, 20+ h endurance. Releases laser-, INS/GPS-, or IR-guided munitions and mini cruise missiles at standoff; the study publishes no release range, so the standoff value is a planning factor.",
   "color": "#93483f",
@@ -132,6 +132,57 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "maxTurnRateDegS": {
+      "value": 7,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: coordinated-turn rate g tan(bank) / V. A 30° bank is used for a MALE-class airframe flown like a light aircraft; the ArduPlane small-UAS default is 45°. At the record's cruise speed 46 m/s: 7°/s. No turn rate, bank limit or g limit is published for this airframe."
+    },
+    "climbRateMps": {
+      "value": 6.1,
+      "unit": "mps",
+      "condition": "TB2T-AI variant: 30 000 ft in 25 min, an average 6.1 m/s; Baykar publishes no climb rate for the baseline TB2",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Wikipedia, Baykar Bayraktar TB2 (TB2T-AI climb)",
+      "url": "https://en.wikipedia.org/wiki/Baykar_Bayraktar_TB2",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "maxAccelMps2": {
+      "value": 2,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Baykar publishes no acceleration. MTOW 700 kg (Baykar) on a 100 hp engine (Wikipedia). A propeller airframe with thrust-to-weight near 0.3 and cruise drag near 0.1 of weight accelerates at about 0.2 g = 2 m/s² in level flight."
+    },
+    "radiatedPowerW": {
+      "value": 10,
+      "unit": "W",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Baykar publishes no link power. Baykar names triple-band LOS control and video plus BLOS SATCOM; LOS reach is about 300 km (Wikipedia). Mugin's OEM SprintLink family pairs 10 W at 1.4 GHz with a 150 km line-of-sight link, the class of a MALE airframe's 200 to 300 km LOS datalink."
     }
   },
   "attributes": {
@@ -141,7 +192,8 @@
     "oneWay": false,
     "rangeNote": "LOS and BLOS communications per the 2026 Baykar sheet; no public radius figure used.",
     "weaponProfile": "standoff",
-    "jamBehavior": "return-home"
+    "jamBehavior": "return-home",
+    "linkProtocol": "proprietary"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -157,5 +209,16 @@
     "altitudeFt": 16000,
     "speedMps": 46,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "proprietary",
+      "source": "Baykar Bayraktar TB2 page: LOS and BLOS communication, triple bands for LOS control and video",
+      "url": "https://baykartech.com/en/uav/bayraktar-tb2/",
+      "date": "2026-09-10",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    }
   }
 }

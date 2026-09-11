@@ -2,7 +2,7 @@
   "id": "lib-rfpatrol",
   "kind": "sensor",
   "type": "rf",
-  "version": 2,
+  "version": 3,
   "name": "RfPatrol Mk2 body-worn RF detector (DroneShield)",
   "description": "Body-worn, strictly non-emitting RF detector. 4 km in a low-RF (rural) background but only 1 km in a high-RF (urban) background. Directional and omnidirectional antennas give 360 deg cover. Alerts by sound, light and haptic.",
   "color": "#c4a56b",
@@ -100,6 +100,25 @@
       "grade": "UNKNOWN",
       "layer": "L3",
       "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
+    },
+    "receiverSensitivityDbm": {
+      "value": -90,
+      "unit": "dBm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor, 2.4 GHz band, channel-integrated: kTB for a 10 MHz OcuSync-class channel (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS application note) gives -92 dBm, recorded as -90 dBm. The body-worn unit's smaller antenna lowers its gain, not its receiver sensitivity. DroneShield publishes no sensitivity (droneshield.com/products-dismounted)."
+    },
+    "geolocationMinNodes": {
+      "value": null,
+      "unit": "count",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Omnidirectional body-worn detector: alarm by signal strength, no bearing and no multi-node geolocation documented (DroneShield dismounted products page); bearing-only at best, so no node count applies."
     }
   },
   "attributes": {
