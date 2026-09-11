@@ -65,6 +65,22 @@ export function kineticPk(
 }
 
 /**
+ * Miss-distance 1 sigma, meters: the root sum square of the track prediction
+ * error at the intercept time (`ShotAccepted.predictionSigmaM`) and the
+ * effector's own guidance noise. Null on the truth path (no prediction
+ * error), so the caller keeps the Phase 2 Pk unchanged. A pure hook for
+ * Phase 3 lane 3.5, which maps the miss distance to a Pk; kineticPk does not
+ * read it in this phase.
+ */
+export function missDistanceSigmaM(
+  predictionSigmaM: number | null,
+  guidanceNoiseM: number,
+): number | null {
+  if (predictionSigmaM == null) return null
+  return Math.hypot(predictionSigmaM, guidanceNoiseM)
+}
+
+/**
  * Kill-shot Pk penalty against a ship inbound under a 'continue' jam: the
  * denied GNSS/RF link silences emissions and degrades the track, so the
  * firing solution suffers. Planning factor on the source's 30% falloff scale.

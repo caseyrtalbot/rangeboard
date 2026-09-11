@@ -5,6 +5,8 @@ import { memberPositions } from './tracks'
 import { expenditureChannel } from './pk'
 import type { EffectorState, ThreatState } from './sweepState'
 import { DT } from './clock'
+import type { Covariance4, TrackEstimate } from './trackTypes'
+import { positionSigmaM, predict, PROCESS_NOISE_Q } from './kalman'
 
 /** Time tolerance for interval and release comparisons, seconds. */
 export const EPS = 1e-9
@@ -143,6 +145,31 @@ function analyticTofS(
   return still(rel(last, headingEnd), Math.max(0, tStart - releaseS), INF)
 }
 
+/** The truth-path intercept result (interceptAt). */
+export interface InterceptResult {
+  pos: Vec2
+  slantM: number
+  tEffectS: number
+  capped: boolean
+  infeasible: boolean
+}
+
+/** Which path solved the intercept point. */
+export type InterceptSource = 'truth' | 'estimate'
+
+/** An intercept solved from a track estimate: the truth shape plus the prediction error. */
+export interface EstimateIntercept extends InterceptResult {
+  /** Predicted position 1 sigma at the intercept time, meters (positionSigmaM of the propagated covariance). */
+  predictionSigmaM: number
+}
+
+/** interceptFor result: the truth shape plus the prediction error and its source. */
+export interface SelectedIntercept extends InterceptResult {
+  /** Null on the truth path. */
+  predictionSigmaM: number | null
+  interceptSource: InterceptSource
+}
+
 /**
  * Predicted intercept for one ship: position and slant sampled at the returned
  * tEffectS = tS + engageTimeS + flight time (analyticTofS; 0 with no stated
@@ -160,7 +187,7 @@ export function interceptAt(
   memberIdx: number,
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
   capS = Number.POSITIVE_INFINITY,
-): { pos: Vec2; slantM: number; tEffectS: number; capped: boolean; infeasible: boolean } {
+): InterceptResult {
   const dAltM = ts.altM - es.mountM
   const sampleAt = (tEffectS: number) => {
     const members = membersAt(ts, tEffectS)
@@ -187,6 +214,107 @@ export function interceptAt(
   const at = sampleAt(tEffectS)
   const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * DT
   return { ...at, tEffectS, capped, infeasible }
+}
+
+/**
+ * The estimate propagated to tS under constant velocity with the CWNA process
+ * noise of `kalman.predict` (PROCESS_NOISE_Q), so the covariance grows with
+ * the lead time tS - estimate.state.tS. The caller passes tS at or after the
+ * estimate time; the state is a straight-line extrapolation either way.
+ */
+export function predictedStateAt(
+  estimate: TrackEstimate,
+  tS: number,
+): { x: number; y: number; vx: number; vy: number; cov: Covariance4 } {
+  const { state, cov } = predict(
+    estimate.state,
+    estimate.covariance,
+    tS - estimate.state.tS,
+    PROCESS_NOISE_Q,
+  )
+  return { x: state.x, y: state.y, vx: state.vx, vy: state.vy, cov }
+}
+
+/**
+ * Intercept solved against the PREDICTED straight-line path of a track
+ * estimate: the estimate is propagated to `releaseS`, and the interceptor,
+ * flying the slant at constant `flyoutMps` (the average flyout speed, 0 for
+ * a beam) from the launcher at `launcherPos`, meets the constant-velocity
+ * prediction at the smallest non-negative root of the closed-form quadratic
+ * (meetTau). The cap, `capped` and `infeasible` rules match interceptAt, so
+ * a caller can swap one result for the other. The estimate stands for the
+ * tracked ship; a formation member index does not apply. `predictionSigmaM`
+ * is the position 1 sigma of the covariance propagated to the effect time.
+ */
+export function interceptFromEstimate(
+  estimate: TrackEstimate,
+  launcherPos: Vec2,
+  flyoutMps: number,
+  releaseS: number,
+  dAltM: number,
+  capS = Number.POSITIVE_INFINITY,
+): EstimateIntercept {
+  const v = flyoutMps
+  const sampleAt = (tEffectS: number) => {
+    const p = predictedStateAt(estimate, tEffectS)
+    const pos = { x: p.x, y: p.y }
+    return {
+      pos,
+      slantM: slantRangeM(dist(launcherPos, pos), dAltM),
+      predictionSigmaM: positionSigmaM(p.cov),
+    }
+  }
+  let tofS: number | null = 0
+  if (v > 0) {
+    const at = predictedStateAt(estimate, releaseS)
+    const C = { x: at.x - launcherPos.x, y: at.y - launcherPos.y }
+    const B = { x: at.vx, y: at.vy }
+    tofS = meetTau(C, B, dAltM, v, 0, Number.POSITIVE_INFINITY)
+  }
+  if (tofS == null) {
+    const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
+    return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
+  }
+  const capped = releaseS <= capS && releaseS + tofS > capS
+  const tEffectS = capped ? capS : releaseS + tofS
+  const at = sampleAt(tEffectS)
+  const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * DT
+  return { ...at, tEffectS, capped, infeasible }
+}
+
+/**
+ * Intercept selector. With no estimate, or a truth-source estimate
+ * (`source: 'truth'`, zero covariance), this is interceptAt with the same
+ * arguments and the same result, plus `predictionSigmaM: null` and
+ * `interceptSource: 'truth'`. With a Kalman estimate it is
+ * interceptFromEstimate at the release time tS + engageTimeS, against the
+ * launcher of `es` and the altitude difference of `ts`.
+ */
+export function interceptFor(
+  ts: ThreatState,
+  es: EffectorState,
+  tS: number,
+  memberIdx: number,
+  membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
+  capS = Number.POSITIVE_INFINITY,
+  estimate: TrackEstimate | null = null,
+): SelectedIntercept {
+  if (estimate == null || estimate.source === 'truth') {
+    return {
+      ...interceptAt(ts, es, tS, memberIdx, membersAt, capS),
+      predictionSigmaM: null,
+      interceptSource: 'truth',
+    }
+  }
+  const ic = interceptFromEstimate(
+    estimate,
+    es.entity.pos,
+    averageFlyoutMps(es.spec),
+    tS + es.engageTimeS,
+    ts.altM - es.mountM,
+    capS,
+  )
+  return { ...ic, interceptSource: 'estimate' }
 }
 
 /**
