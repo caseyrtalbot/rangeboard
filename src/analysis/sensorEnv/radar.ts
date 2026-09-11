@@ -3,6 +3,7 @@ import { PLACARD_PD, PLACARD_PFA, PLACARD_SWERLING } from '../../model/types'
 import { RADAR_REF_RCS_M2, rcsM2For, swerlingFor } from '../../model/rcsFactors'
 import type { RadarCalibration } from '../radarPd'
 import { pdAtRange } from '../radarPd'
+import { radarDwellPulses } from '../../playback/radarDwell'
 import { probabilityOr, sensorEnvFactor, targetScaled } from './common'
 
 /**
@@ -46,16 +47,19 @@ export function capInstrumented(spec: SensorSpec, rangeM: number): number {
 /**
  * Placard calibration of one radar: r0M = detectRangeM, rcs0M2 =
  * refRcsM2For(spec), pd0 = placardPd ?? PLACARD_PD, pfa = pfa ?? PLACARD_PFA,
- * swerling0 = PLACARD_SWERLING. A recorded Pd or Pfa outside (0, 1) falls
- * back to the planning factor.
+ * swerling0 = PLACARD_SWERLING, and pulsesPerDwell resolves from the stated
+ * count or the dwell-time planning PRF. A recorded Pd or Pfa outside (0, 1)
+ * falls back to the planning factor. `singlePulseRadar` forces the legacy
+ * calibration for the scenario switch without changing existing call sites.
  */
-export function radarCalibration(spec: SensorSpec): RadarCalibration {
+export function radarCalibration(spec: SensorSpec, singlePulseRadar = false): RadarCalibration {
   return {
     r0M: spec.detectRangeM,
     rcs0M2: refRcsM2For(spec),
     pd0: probabilityOr(spec.placardPd, PLACARD_PD),
     pfa: probabilityOr(spec.pfa, PLACARD_PFA),
     swerling0: PLACARD_SWERLING,
+    pulsesPerDwell: singlePulseRadar ? null : radarDwellPulses(spec),
   }
 }
 
@@ -80,8 +84,9 @@ export function radarPdAt(
   env: EnvironmentSpec,
   target: UasSpec | undefined,
   slantM: number,
+  singlePulseRadar = false,
 ): number | null {
-  return radarPdCurve(spec, env, target)?.(slantM) ?? null
+  return radarPdCurve(spec, env, target, singlePulseRadar)?.(slantM) ?? null
 }
 
 /**
@@ -93,10 +98,11 @@ export function radarPdCurve(
   spec: SensorSpec,
   env: EnvironmentSpec,
   target: UasSpec | undefined,
+  singlePulseRadar = false,
 ): ((slantM: number) => number) | null {
   if (!radarPdModeled(spec, target)) return null
   const cap = instrumentedM(spec)
-  const cal = radarCalibration(spec)
+  const cal = radarCalibration(spec, singlePulseRadar)
   const rcsM2 = rcsM2For(target)
   const envFactor = sensorEnvFactor('radar', env)
   const swerling = swerlingFor(target)

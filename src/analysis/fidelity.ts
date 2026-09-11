@@ -12,6 +12,7 @@ import type {
 } from '../model/types'
 import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
 import { expenditureChannel } from '../playback/pk'
+import { radarDwellPulses } from '../playback/radarDwell'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
 import { eoIfovRadFor } from './sensorEnv/eoir'
@@ -19,7 +20,7 @@ import { rfLinkModelApplies } from './sensorEnv/rf'
 
 /** Every model the engine runs. */
 export type ModelId =
-  | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'eoir-dri' | 'acoustic-range'
+  | 'radar-pd' | 'radar-dwell' | 'radar-scan' | 'eoir-range' | 'eoir-dri' | 'acoustic-range'
   | 'rf-detect' | 'rf-link' | 'jam' | 'environment' | 'threat-flight' | 'horizon'
   | 'track-init' | 'doctrine' | 'kinetic-pk' | 'interceptor-miss' | 'gun-burst' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
@@ -57,6 +58,16 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
       'Closed-form Pd. Marcum-Q values are pinned in radarPd.test.ts. The range law is ' +
       'checked against the Blighter A400 series datasheet and the Echodyne EchoShield ' +
       'and EchoGuard sheets in validation.verify.test.ts.',
+  },
+  'radar-dwell': {
+    id: 'radar-dwell',
+    label: 'Radar dwell',
+    tier: 'physics',
+    validation: 'analytic',
+    standard: 'Radar: Swerling cases evaluated with Marcum-Q and Shnidman',
+    note:
+      'Noncoherent pulse integration uses Shnidman required-SNR equations and preserves ' +
+      'the placard calibration. Three hand-derived cases are pinned in radarDwell.verify.test.ts.',
   },
   'radar-scan': {
     id: 'radar-scan',
@@ -259,12 +270,13 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
 /** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
 const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
   sensor: [
-    'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range', 'rf-detect', 'rf-link',
+    'radar-pd', 'radar-dwell', 'radar-scan', 'eoir-range', 'eoir-dri',
+    'acoustic-range', 'rf-detect', 'rf-link',
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
   effector: ['jam', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst', 'flyout'],
   uas: [
-    'radar-pd', 'rf-link', 'environment', 'threat-flight', 'kinetic-pk',
+    'radar-pd', 'radar-dwell', 'rf-link', 'environment', 'threat-flight', 'kinetic-pk',
     'interceptor-miss', 'gun-burst',
   ],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
@@ -330,6 +342,11 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
     if (when) out.add(id)
   }
   add('radar-pd', sensors.some((s) => targets.some((t) => radarPdModeled(s, t))))
+  add(
+    'radar-dwell',
+    !physicsSwitches(scenario).includes('singlePulseRadar')
+      && sensors.some((s) => radarDwellPulses(s) != null && targets.some((t) => radarPdModeled(s, t))),
+  )
   add('radar-scan', sensors.some((s) => scanPeriods(s, targets).some((p) => p != null)))
   add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
   add(

@@ -5,7 +5,7 @@ import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelity'
 
 const IDS: ModelId[] = [
-  'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range',
+  'radar-pd', 'radar-dwell', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range',
   'rf-detect', 'rf-link', 'jam', 'environment', 'threat-flight', 'horizon',
   'track-init', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst', 'flyout',
   'draw-policy', 'parameter-spread',
@@ -69,10 +69,23 @@ describe('modelsUsed', () => {
   it('reads a radar laydown as Pd-modeled and scanning, with no EO/IR model', () => {
     const ids = modelsUsed(radarLaydown()).map((t) => t.id)
     expect(ids).toContain('radar-pd')
+    expect(ids).toContain('radar-dwell')
     expect(ids).toContain('radar-scan')
     expect(ids).toContain('horizon')
     expect(ids).not.toContain('eoir-range')
     expect(ids).not.toContain('kinetic-pk')
+  })
+
+  it('reads radar dwell only with pulse data and the integrated model enabled', () => {
+    const s = radarLaydown()
+    const radar = s.library.find((m) => m.id === 'lib-echoguard')!
+    radar.sensor = { ...radar.sensor!, pulsesPerDwell: null, dwellTimeS: null }
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('radar-dwell')
+    radar.sensor = { ...radar.sensor, dwellTimeS: 0.02 }
+    expect(modelsUsed(s).map((t) => t.id)).toContain('radar-dwell')
+    s.physics = ['singlePulseRadar']
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('radar-dwell')
+    expect(modelsUsed(s).map((t) => t.id)).toContain('radar-pd')
   })
 
   it('reads a directed-energy laydown as Kinetic Pk with no flyout', () => {
