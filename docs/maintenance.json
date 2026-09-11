@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "78b9d9d3531f60da736fd26da4d2da01606433d0f9c4372e56e2a8ff9cc88b37",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate passed in full; the runner budget poll closed by dropping the exit item; no poll open"
+      "sha256": "75097ca6029cd98aea6948246493e57214c3eff592e4586fdf53049df8cb81fd",
+      "reviewedAt": "2026-09-11",
+      "note": "Phase 2 gate handoff: completion, decisions to poll, open items, continuation boundary"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
