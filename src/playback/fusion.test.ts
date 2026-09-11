@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { predict, PROCESS_NOISE_Q, quality, ZERO_COVARIANCE } from './kalman'
 import {
+  admitMembers,
   COVARIANCE_FLOOR,
   createFusionStage,
   delayedMember,
@@ -204,12 +205,15 @@ describe('createFusionStage', () => {
     expect(stage.fuse(2)).toBeNull()
   })
 
-  it('a truth member reaches the node at once; the node with the best quality wins', () => {
-    const stage = createFusionStage([
-      { c2Id: 'far', sensorId: 'a', latencyS: 2 },
-      { c2Id: 'near', sensorId: 'a', latencyS: 0 },
-      { c2Id: 'near', sensorId: 't', latencyS: 3 },
-    ])
+  it('with truthTracks on a truth member reaches the node at once; the node with the best quality wins', () => {
+    const stage = createFusionStage(
+      [
+        { c2Id: 'far', sensorId: 'a', latencyS: 2 },
+        { c2Id: 'near', sensorId: 'a', latencyS: 0 },
+        { c2Id: 'near', sensorId: 't', latencyS: 3 },
+      ],
+      true,
+    )
     stage.begin()
     stage.observe(estimate({ id: 'a:u', sensorId: 'a' }))
     stage.observe(estimate({ id: 't:u', sensorId: 't', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' }))
@@ -217,5 +221,64 @@ describe('createFusionStage', () => {
     expect(fused.c2Id).toBe('near')
     expect(fused.source).toBe('truth')
     expect(fused.quality).toBe(1)
+  })
+
+  it('drops a truth member beside an estimate member when truthTracks is off; all-truth stands; on, truth dominates', () => {
+    const est = estimate({ id: 'a:u', sensorId: 'a' })
+    const truth = estimate({ id: 't:u', sensorId: 't', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' })
+    const truth2 = estimate({ id: 'r:u', sensorId: 'r', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' })
+    expect(admitMembers([est, truth], false)).toEqual([est])
+    expect(admitMembers([est, truth], true)).toEqual([est, truth])
+    expect(admitMembers([truth, truth2], false)).toEqual([truth, truth2])
+    const off = createFusionStage([], false)
+    off.begin()
+    off.observe(est)
+    off.observe(truth)
+    const fusedOff = off.fuse(4)!
+    expect(fusedOff.source).toBe('estimate')
+    expect(fusedOff.memberTrackIds).toEqual(['a:u'])
+    close(fusedOff.covariance, est.covariance)
+    const on = createFusionStage([], true)
+    on.begin()
+    on.observe(est)
+    on.observe(truth)
+    const fusedOn = on.fuse(4)!
+    expect(fusedOn.source).toBe('truth')
+    expect(fusedOn.memberTrackIds).toEqual(['a:u', 't:u'])
+    const allTruth = createFusionStage([], false)
+    allTruth.begin()
+    allTruth.observe(truth)
+    allTruth.observe(truth2)
+    const fusedTruth = allTruth.fuse(4)!
+    expect(fusedTruth.source).toBe('truth')
+    expect(fusedTruth.quality).toBe(1)
+    expect(fusedTruth.memberTrackIds).toEqual(['t:u', 'r:u'])
+  })
+
+  it('a sensor with no C2 link fuses at the sensors and wins the pick on quality', () => {
+    const stage = createFusionStage([{ c2Id: 'c2', sensorId: 'a', latencyS: 0 }])
+    stage.begin()
+    stage.observe(estimate({ id: 'a:u', sensorId: 'a', covariance: diag(400, 400, 25, 25), quality: quality(diag(400, 400, 25, 25)) }))
+    stage.observe(estimate({ id: 'b:u', sensorId: 'b' }))
+    const fused = stage.fuse(4)!
+    expect(fused.c2Id).toBe(NO_C2)
+    expect(fused.memberTrackIds).toEqual(['b:u'])
+    close(fused.covariance, diag(100, 100, 25, 25))
+    // The linked sensor alone: the node's picture stands.
+    stage.begin()
+    stage.observe(estimate({ id: 'a:u', sensorId: 'a' }))
+    expect(stage.fuse(4.5)!.c2Id).toBe('c2')
+  })
+
+  it('duplicate links from one sensor to one node count the member once', () => {
+    const stage = createFusionStage([
+      { c2Id: 'c2', sensorId: 'a', latencyS: 0 },
+      { c2Id: 'c2', sensorId: 'a', latencyS: 0 },
+    ])
+    stage.begin()
+    stage.observe(estimate({ id: 'a:u', sensorId: 'a' }))
+    const fused = stage.fuse(4)!
+    expect(fused.memberTrackIds).toEqual(['a:u'])
+    close(fused.covariance, diag(100, 100, 25, 25))
   })
 })

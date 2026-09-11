@@ -1,5 +1,5 @@
 import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf, physicsSwitches } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
@@ -258,7 +258,10 @@ export function assessThreat(
   // Fusion (fusion.ts) reads the tracker's estimates through the sink and
   // fuses them at the C2 nodes the sensors link to, after link latency.
   const activeSensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
-  const fusion = createFusionStage(c2LinksFor(scenario, new Set(activeSensors.map((e) => e.id))))
+  const fusion = createFusionStage(
+    c2LinksFor(scenario, new Set(activeSensors.map((e) => e.id))),
+    physicsSwitches(scenario).includes('truthTracks'),
+  )
   const fusionSink: TrackEstimateSink = trackSink
     ? (estimate) => {
         fusion.observe(estimate)
@@ -617,13 +620,20 @@ export function assessThreat(
 }
 
 /**
- * First fused-track time at or after `fromS` (within half a step) whose
- * quality reaches FC_QUALITY_MIN; null when the fused track never does.
+ * Time the fused track reaches FC_QUALITY_MIN at or after `fromS`: `fromS`
+ * itself when the first fused entry at or after it (within half a step)
+ * already has the quality, else that later entry's time; null when the
+ * fused track never does. A quality condition, not an existence condition
+ * at `fromS`: when the M-of-N rule fires on a missed scan the sweep never
+ * steps the tracker on that step, so no fused entry carries the firm time
+ * and the next entry stands in for it.
  */
 function fcQualityAtS(fusedTracks: readonly FusedTrack[], fromS: number): number | null {
+  let first = true
   for (const f of fusedTracks) {
     if (f.fusedAtS < fromS - DT / 2) continue
-    if (f.quality >= FC_QUALITY_MIN) return f.fusedAtS
+    if (f.quality >= FC_QUALITY_MIN) return first ? fromS : f.fusedAtS
+    first = false
   }
   return null
 }

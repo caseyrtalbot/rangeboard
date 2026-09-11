@@ -25,6 +25,8 @@ import { parseAutosave } from '../io/persist'
 import jiatfFixture from './__fixtures__/detection-outside-rings.json'
 import layeredFixture from './__fixtures__/layered-acoustic-merops.json'
 import { assessAllThreats, assessThreat, DEFAULT_DEFENDED_RADIUS_M } from './sim'
+import { runTrial } from './trial'
+import { createTrialManifest } from './trialTypes'
 import { memberPositions, threatAltitudeFt } from './tracks'
 import { detectionsAt } from './detection'
 
@@ -1856,6 +1858,35 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
     expect(fused.length).toBeGreaterThan(0)
     expect(fused.every((f) => f.source === 'truth' && f.quality === 1 && f.c2Id === c2.id)).toBe(true)
     expect(fused[0].fusedAtS).toBe(250.5)
+  })
+
+  // Stable track times pinned from the Phase 2 gate `before` capture
+  // (docs/field-te/evidence/p2-gate-2026-09-10/before/timeline.json). Under
+  // the trial policy the M-of-N rule can fire on a missed scan, so no fused
+  // entry carries the firm time; the FC quality gate must still return it.
+  it('trial policy: the FC quality gate keeps the firm time when the firm step is a missed scan', () => {
+    const gate = (fixture: unknown, runId: string) => {
+      const s = parseAutosave(JSON.stringify(fixture))
+      return runTrial(s, createTrialManifest(s, runId, 'p2-gate')).assessments.map((a) => [
+        a.uasId,
+        a.stableTrackAtS,
+        a.declaredHostileAtS,
+        a.engageGateS,
+      ])
+    }
+    expect(gate(jiatfFixture, 'p2-gate-detection-outside-rings')).toEqual([['ent-mtnvzhmr-25', 509.5, 547.5, 547.5]])
+    expect(gate(layeredFixture, 'p2-gate-layered-acoustic-merops')).toEqual([
+      ['ent-mt5bofdd-2q', 783.5, 793.5, 793.5],
+      ['ent-mt5bofdd-2s', 903, 913, 913],
+      ['ent-mt5bq0rc-2u', null, null, null],
+      ['ent-mt5bqja3-2v', 352, 362, 362],
+      ['ent-mt5bqnfg-2x', 1.5, 11.5, 11.5],
+      ['ent-mt5bqnfg-2z', 1.5, 11.5, 11.5],
+      ['ent-mt5bqnfg-31', 1.5, 11.5, 11.5],
+      ['ent-mt5bqnfg-33', 1.5, 11.5, 11.5],
+      ['ent-mt5bqnfg-35', 1.5, 11.5, 11.5],
+      ['ent-mt5bqnfg-37', 1.5, 11.5, 11.5],
+    ])
   })
 
   it('layered acoustic laydown (no C2 links)', () => {
