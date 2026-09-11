@@ -585,7 +585,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   declare gate and again at the assignment; `firstC2Of` is the node of a route. It is
   inactive, with no draw and no delay, without a C2 spec that states a median, under the
   `noOperatorQueue` switch, or on a route with no C2 node. `delayS` returns `{ extraS,
-  floored }`: floored when the raw excess was below 0 (the deterministic median draw gives
+  floored, decided }`: decided only when that C2 drew a latency (a C2 with no median is no
+  decision), floored when the raw excess was below 0 (the deterministic median draw gives
   exactly 0 and is not floored). `AttritionTotals.operatorDecisions` and
   `operatorFlooredDecisions` count them per run; `McSummary` carries their per-replicate
   means through the merge and `validateMcSummary`; the Run progress line and the Outcome
@@ -926,9 +927,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   not hold (`'*'` adopts a whole block the save lacks), so a key the save holds, null
   included, stays the user's. Phase 2 lists the four sensor accuracy fields and the whole
   `c2` block. `reconcileLibraryReport` returns the adopted (model, block, keys) list;
-  `fillScenario` keeps it as a module-level load notice (`lastLoadNotice`, never
-  persisted) and the Systems tab prints it with a `seed v<N>` chip, N the data package
-  version, on each adopted field (slice 3.0).
+  `fillScenario` keeps it in a WeakMap by model object (`seedAdoptionOf`, never persisted),
+  so the stamp follows the installed library and a baseline parse, a rejected import or
+  New leaves no stale stamp; the Systems tab reads `loadNoticeFor(scenario.library)` and
+  prints a `seed v<N>` chip, N the data package version, on each adopted field (slice 3.0).
 - **Other:** kill chain = `Connection` list, sensor to C2 to effector or direct. Threat
   tactics live in `src/playback/tactics.ts`; the raid builder commits entities, paths and
   waves in one `mutate`. Threat WEZ geometry is `src/analysis/impact.ts`; `effectRadiusM`

@@ -92,13 +92,13 @@ describe('operator queue', () => {
     const policy = spy(monteCarloPolicy(1, 0, T))
     const q = createOperatorQueue(fixture(null), [tracked('u1', 0, 100)], policy)
     expect(q.active).toBe(false)
-    expect(q.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false })
+    expect(q.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false, decided: false })
     expect(q.loadAt('c2', 10)).toBe(0)
     expect(policy.latencyCalls).toEqual([])
     // A spec with no median is the same as no spec.
     const capacityOnly = createOperatorQueue(fixture({ operatorTrackCapacity: 4 }), [tracked('u1', 0, 100)], policy)
     expect(capacityOnly.active).toBe(false)
-    expect(capacityOnly.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false })
+    expect(capacityOnly.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false, decided: false })
   })
 
   it('the noOperatorQueue switch adds zero and consumes no draw', () => {
@@ -107,7 +107,7 @@ describe('operator queue', () => {
     const policy = spy(monteCarloPolicy(1, 0, T))
     const q = createOperatorQueue(scenario, [tracked('u1', 0, 100)], policy)
     expect(q.active).toBe(false)
-    expect(q.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false })
+    expect(q.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false, decided: false })
     expect(policy.latencyCalls).toEqual([])
   })
 
@@ -128,12 +128,13 @@ describe('operator queue', () => {
     const first = q.delayS('c2', 'u1', tS, 0)
     expect(first.extraS).toBeCloseTo(Math.max(0, raw), 12)
     expect(first.floored).toBe(raw < 0)
+    expect(first.decided).toBe(true)
     const second = q.delayS('c2', 'u1', tS, 1)
     expect(second.extraS).toBeCloseTo(Math.max(0, raw1), 12)
     expect(second.floored).toBe(raw1 < 0)
     expect(policy.latencyCalls).toEqual([['c2', 'u1', tS, 0], ['c2', 'u1', tS, 1]])
-    // A c2 that is not on the map adds zero.
-    expect(q.delayS('nobody', 'u1', tS, 0)).toEqual({ extraS: 0, floored: false })
+    // A c2 that is not on the map adds zero and is no decision.
+    expect(q.delayS('nobody', 'u1', tS, 0)).toEqual({ extraS: 0, floored: false, decided: false })
   })
 
   it('the deterministic policy adds nothing at the median; overload adds (load / capacity - 1) medians', () => {
@@ -142,15 +143,15 @@ describe('operator queue', () => {
     // Two tracks at t 10 (capacity 2): the median, so no extra. Four at t 60: twice the median, one median extra.
     expect(q.loadAt('c2', 10)).toBe(2)
     // The median draw gives a raw excess of exactly 0, which is not a floor.
-    expect(q.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false })
+    expect(q.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false, decided: true })
     expect(q.loadAt('c2', 60)).toBe(4)
     expect(q.delayS('c2', 'u1', 60, 0).extraS).toBeCloseTo(6, 12)
     expect(q.delayS('c2', 'u1', 60, 0).floored).toBe(false)
     // Nothing tracked after the last held sample.
     expect(q.loadAt('c2', 101)).toBe(0)
-    // The other c2 has no feeding radar: no load and no extra.
+    // The other c2 has no feeding radar: no load and no extra, but it states a median, so it decides.
     expect(q.loadAt('other-c2', 60)).toBe(0)
-    expect(q.delayS('other-c2', 'u1', 60, 0)).toEqual({ extraS: 0, floored: false })
+    expect(q.delayS('other-c2', 'u1', 60, 0)).toEqual({ extraS: 0, floored: false, decided: true })
   })
 
   it('a threat with no detection is not a track', () => {

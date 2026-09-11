@@ -174,7 +174,7 @@ function operatorDelayS(
   const assign = queue.delayS(c2Id, a.uasId, gateS + declare.extraS + route.latencyS, 1)
   return {
     extraS: declare.extraS + assign.extraS,
-    decisions: 2,
+    decisions: (declare.decided ? 1 : 0) + (assign.decided ? 1 : 0),
     floored: (declare.floored ? 1 : 0) + (assign.floored ? 1 : 0),
   }
 }

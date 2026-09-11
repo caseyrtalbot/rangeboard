@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "7d146aac8241532614c2f812f4b348f120e8fb5e45738418e6cc1093d5cb20e5",
+      "sha256": "344d84b6eaa322fefbf073b251cce417f3b3ae8dd03365b109c39d2439873360",
       "reviewedAt": "2026-09-11",
-      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
+      "note": "Codex review fixes on slice 3.0: no text change; inputs SystemsTab.tsx and persist.ts changed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "ee62e8e860565d07da1360524da0eb2449da0445bf3b4e8bb3be5bbebe54453b",
+      "sha256": "d58e54b6a363e4d375aabf4caceb388493eca7b830feaa745739b0cc13488a94",
       "reviewedAt": "2026-09-11",
-      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
+      "note": "Codex review fixes on slice 3.0: decided flag on the operator delay, adoption stamp keyed by model object"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "5d5672e6f2273e2aba511e0f459aa0e78f023a7263feac54279fe8cdfb94700d",
+      "sha256": "d9bc808b29a6f682dbac446b03a1895ff7874d57ae0e37d3142357036b4e6f8f",
       "reviewedAt": "2026-09-11",
-      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
+      "note": "Codex review fixes on slice 3.0: the attrition operator test gains the no-median C2 case, the Systems tab test gains the New and uninstalled-parse case"
     },
     {
       "document": "docs/WORKFLOW.md",

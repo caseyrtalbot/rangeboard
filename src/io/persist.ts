@@ -51,9 +51,9 @@ import { validateMcSummary } from '../state/baseline'
  * migrates to an ROE posture ('detected' -> 'free', 'confirmed' -> 'tight').
  */
 /**
- * What the last load adopted from the seed library: the stamp the Systems tab
- * prints. Never persisted and never part of the Scenario: a save records the
- * filled library, not the fact that a fill happened.
+ * What a load adopted from the seed library: the stamp the Systems tab prints.
+ * Never persisted and never part of the Scenario: a save records the filled
+ * library, not the fact that a fill happened.
  */
 export interface LoadNotice {
   /** Builtin models that took at least one seed key. */
@@ -66,15 +66,29 @@ export interface LoadNotice {
   adopted: SeedAdoption[]
 }
 
-let loadNotice: LoadNotice | null = null
-
 /**
- * The notice of the last `fillScenario` call, or null when that load adopted
- * nothing. Every load sets it, so a board that adopts nothing clears the stamp
- * the previous load left.
+ * Adoption by the model object `fillScenario` built, so the stamp follows the
+ * installed library and nothing else: a baseline parse, a rejected import or a
+ * New scenario builds other objects and leaves the Board's stamp alone, and an
+ * edit that replaces a model object drops its stamp with it.
  */
-export function lastLoadNotice(): LoadNotice | null {
-  return loadNotice
+const SEED_ADOPTION = new WeakMap<SpecModel, SeedAdoption[]>()
+
+/** The seed adoptions of one model object from the load that built it, else []. */
+export function seedAdoptionOf(model: SpecModel): SeedAdoption[] {
+  return SEED_ADOPTION.get(model) ?? []
+}
+
+/** The load notice over a library as installed, or null when no model in it adopted a key. */
+export function loadNoticeFor(library: readonly SpecModel[]): LoadNotice | null {
+  const adopted = library.flatMap(seedAdoptionOf)
+  if (adopted.length === 0) return null
+  return {
+    models: new Set(adopted.map((a) => a.modelId)).size,
+    fields: adopted.reduce((sum, a) => sum + a.keys.length, 0),
+    dataPackageVersion: DATA_PACKAGE_VERSION,
+    adopted,
+  }
 }
 
 export function fillScenario(parsed: unknown): Scenario {
@@ -85,11 +99,9 @@ export function fillScenario(parsed: unknown): Scenario {
     (parsed.engageOn === 'detected' ? 'free' : parsed.engageOn === 'confirmed' ? 'tight' : empty.roe)
   const deletedSeedIds = Array.isArray(parsed.deletedSeedIds) ? parsed.deletedSeedIds : []
   const reconciled = reconcileLibraryReport(parsed.library, empty.library, deletedSeedIds)
-  loadNotice = reconciled.adopted.length === 0 ? null : {
-    models: new Set(reconciled.adopted.map((a) => a.modelId)).size,
-    fields: reconciled.adopted.reduce((sum, a) => sum + a.keys.length, 0),
-    dataPackageVersion: DATA_PACKAGE_VERSION,
-    adopted: reconciled.adopted,
+  for (const model of reconciled.library) {
+    const mine = reconciled.adopted.filter((a) => a.modelId === model.id)
+    if (mine.length > 0) SEED_ADOPTION.set(model, mine)
   }
   const filled: Scenario = {
     ...empty,

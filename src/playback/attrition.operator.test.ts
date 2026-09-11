@@ -160,6 +160,15 @@ describe('operator queue at the gates (attrition.ts)', () => {
     expect(switched.totals.operatorFlooredDecisions).toBe(0)
   })
 
+  it('a C2 on the route that states no median counts no decision, even when another C2 activates the queue', () => {
+    const scenario = build(null, false)
+    scenario.library = [...scenario.library, { ...c2Model({ decisionLatencyS: 5 }), id: 'tst-c2-other', name: 'other c2' }]
+    scenario.entities = [...scenario.entities, ent('c2-other', 'c2', 'tst-c2-other', { x: 500, y: 0 })]
+    const report = resolveEngagements(scenario, undefined, monteCarloPolicy(7, 0, DEFAULT_REQUIREMENT_THRESHOLDS))
+    expect(report.totals.operatorDecisions).toBe(0)
+    expect(report.totals.operatorFlooredDecisions).toBe(0)
+  })
+
   it('a route with no C2 node adds nothing', () => {
     const withC2 = build({ decisionLatencyS: 5, decisionLatencySigmaDb: null }, false)
     // Bypass the c2: radar -> interceptor direct.

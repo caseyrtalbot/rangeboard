@@ -76,10 +76,12 @@ export interface OperatorDelay {
   readonly extraS: number
   /** True when the raw excess was below 0 and the floor discarded it. */
   readonly floored: boolean
+  /** True when this C2 drew a latency: the decision the stamp counts. False for a C2 the queue does not model. */
+  readonly decided: boolean
 }
 
 /** No charge and no floor: an inactive queue, or a C2 the queue does not know. */
-const NO_DELAY: OperatorDelay = Object.freeze({ extraS: 0, floored: false })
+const NO_DELAY: OperatorDelay = Object.freeze({ extraS: 0, floored: false, decided: false })
 
 /** The operator queue of one replicate. */
 export interface OperatorQueue {
@@ -88,7 +90,8 @@ export interface OperatorQueue {
   /**
    * Extra latency of one decision (0 declare, 1 assign) on `uasId` at `c2Id` taken at
    * `tS`, seconds, over the doctrine dwell: the drawn latency times the overload factor, less the median, floored
-   * at 0, with the floor reported. extraS 0 and floored false when inactive.
+   * at 0, with the floor reported. extraS 0, floored false and decided false when
+   * inactive or when `c2Id` states no median: only a C2 that drew is a decision.
    */
   delayS(c2Id: string, uasId: string, tS: number, decision: number): OperatorDelay
   /** Live tracks at the C2 at `tS`: real threats tracked plus the false tracks of its feeding radars. */
@@ -185,7 +188,7 @@ export function createOperatorQueue(
       // timeline holds; a decision faster than the median never shortens a
       // doctrine dwell, and the floor that drops it is reported.
       const raw = base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity) - medianS
-      return raw < 0 ? { extraS: 0, floored: true } : { extraS: raw, floored: false }
+      return raw < 0 ? { extraS: 0, floored: true, decided: true } : { extraS: raw, floored: false, decided: true }
     },
   }
 }

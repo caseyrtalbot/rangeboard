@@ -96,6 +96,20 @@ describe('SystemsTab', () => {
     expect(html).not.toMatch(/detectRangeM<\/td><td>[^<]*<span class="chip det"/)
   })
 
+  it('a New scenario and a parse that is not installed leave no stale stamp', () => {
+    load('rangeAccuracyM')
+    useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
+    // Parsing another record (a baseline, an import) does not touch the Board's stamp.
+    fillScenario(JSON.parse(JSON.stringify(emptyScenario())))
+    expect(render()).toContain('Load adopted 1 seed field')
+    // New builds fresh seed objects: no stamp follows them.
+    useStore.getState().replaceScenario(emptyScenario())
+    useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
+    const html = render()
+    expect(html).not.toContain('Load adopted')
+    expect(html).not.toContain('seed v2')
+  })
+
   it('shows no notice and no chip when the save already holds every seed key', () => {
     useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
     const html = render()

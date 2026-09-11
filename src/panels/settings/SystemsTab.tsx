@@ -4,7 +4,7 @@ import type { Provenance, SpecModel, Spread } from '../../model/types'
 import { basisFor, specFields } from '../../model/types'
 import { modelsInUse, spreadFor } from '../../analysis/parameterBasis'
 import type { LoadNotice } from '../../io/persist'
-import { lastLoadNotice } from '../../io/persist'
+import { loadNoticeFor } from '../../io/persist'
 import { useOverrides } from '../../state/overrides'
 import { useStore } from '../../state/store'
 import { Field } from '../../ui/kit'
@@ -66,8 +66,8 @@ function valueText(value: unknown, unit?: string): string {
 }
 
 /**
- * The fields the last load filled from the seed library, as `modelId/field`
- * keys (`lastLoadNotice`). Each one gets a chip naming the data package the
+ * The fields the load filled from the seed library, as `modelId/field`
+ * keys (`loadNoticeFor`). Each one gets a chip naming the data package the
  * value came from, so an adopted value is never read as the user's own.
  */
 function adoptedFields(notice: LoadNotice | null): Set<string> {
@@ -259,9 +259,9 @@ export function SystemsTab() {
   const resetAll = useOverrides((s) => s.resetAll)
   const inUse = modelsInUse(scenario)
   const models = scenario.library.filter((m) => inUse.has(m.id))
-  // The load notice is not scenario state: the load that filled the library
-  // recorded it in persist.ts, and it is read here rather than stored.
-  const notice = lastLoadNotice()
+  // The load notice is not scenario state: persist.ts keeps it by model object,
+  // so it follows the installed library and clears with New or another load.
+  const notice = loadNoticeFor(scenario.library)
 
   return (
     <>
