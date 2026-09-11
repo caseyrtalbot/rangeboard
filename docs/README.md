@@ -41,6 +41,7 @@ Proposals preserve design decisions for review; implementation requires separate
 
 ### Completion and integration records
 
+- [Phase 3 integration code review, 2026-09-11](CodeReview.md)
 - [Analysis rebuild completion evidence, 2026-09-08](field-te/evidence/analysis-rebuild-2026-09-08/README.md)
 - [Calibration Phase 0 gate evidence, 2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md)
 - [Calibration Phase 1 gate evidence, 2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md)

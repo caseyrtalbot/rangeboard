@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "d24e3f4e5e18181744e500b4105ebdf5dfdedadd7160c663b9e6efbf3b5a5606",
+      "sha256": "c1e38da79c52b11bae3fa2ec635cb98c12542d1ebed0f993c9b7fd0e2570fabb",
       "reviewedAt": "2026-09-11",
-      "note": "Reviewed the documentation index and added the Phase 3 gate and estimate comparison records."
+      "note": "Indexed the dated Phase 3 integration code review."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "8c3d283dec0ce919e449fe1f5fe713a38202bdc8d06b9b9f1eaec201d0a62e43",
+      "sha256": "986321c69abd286a5afd979310847bf75c6b3325a60acce7ee5e8749a5054469",
       "reviewedAt": "2026-09-11",
-      "note": "Recorded the final gzip-9 bundle measurements after the gate build."
+      "note": "Recorded four open review findings and distinguished the historical gate publication status from the committed integration."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -120,6 +120,7 @@
     }
   ],
   "historical": [
+    "docs/CodeReview.md",
     "docs/field-te/",
     "docs/te-compilation/",
     "docs/inventory/",

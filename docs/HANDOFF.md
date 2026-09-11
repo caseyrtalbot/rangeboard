@@ -94,8 +94,14 @@ reported zero console warnings and zero errors.
 
 ## Continuation boundary
 
-Phase 3 is complete locally through the merged lane tip `576371e` plus the orchestrator's
-integration working tree. Nothing was pushed and the Phase 3 lane branches were not
+The 2026-09-11 [code review](CodeReview.md) of `1803900` records four open integration
+defects: unconverged optical dwell, overlapping optical engagements, stale assessments
+after sensor movement near drifted paths, and fallback intercept timing inconsistent
+with limited flight. The review's 2,069 tests, typecheck and documentation checks passed;
+targeted probes reproduced these gaps. This documentation update implements no fixes.
+
+Phase 3 integration was committed as `1803900` after the merged lane tip `576371e`.
+At the Phase 3 gate, nothing had been pushed and the lane branches had not been
 cleaned up. Phase 4 begins at section 6 of
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). It remains unstarted and is not current
 tasking.
