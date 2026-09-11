@@ -2,7 +2,7 @@
   "id": "lib-rf360",
   "kind": "sensor",
   "type": "rf",
-  "version": 1,
+  "version": 2,
   "name": "RF-360 passive RF sensor (Dedrone)",
   "description": "Omnidirectional passive RF sensor (Dedrone by Axon). Detects, classifies and direction-finds drones and controllers by protocol signature. 2 km is the normal-conditions figure; up to 5 km is claimed in ideal conditions against specific drones. One unit gives angle of arrival only.",
   "color": "#d6bf8e",
@@ -61,6 +61,34 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single-site RF direction finder measures bearing, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 5,
+      "unit": "deg",
+      "condition": "direction finding ±5° (mean error)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Dedrone RF-360 installation manual (IM-Inst-RF360en, FCC filing 2AO3N-TH87P6EROZ): '±5° (mean error)', quoted from the search index; the v2.0 datasheet carries no accuracy line",
+      "url": "https://fcc.report/FCC-ID/2AO3N-TH87P6EROZ/4447961.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
     }
   },
   "attributes": {

@@ -2,7 +2,7 @@
   "id": "lib-corian",
   "kind": "sensor",
   "type": "rf",
-  "version": 1,
+  "version": 2,
   "name": "CORIAN passive RF array (CACI)",
   "description": "Fixed-site networked passive RF sensor array. TDOA multilateration across nodes geolocates the Group 1-2 sUAS AND its ground operator; positive ID by an unclassified signal library. JCO fixed/semi-fixed interim selection. Range is a planning figure, not a published one.",
   "color": "#b99a5f",
@@ -61,6 +61,36 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single-site RF direction finder measures bearing, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 3,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-titan",
+        "lib-rf360"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced classification RF sensors: lib-titan 1, lib-rf360 5; median 3 deg. CORIAN geolocates by TDOA across nodes; a per-node bearing figure is the nearest planning quantity and no CEP is published."
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
     }
   },
   "attributes": {

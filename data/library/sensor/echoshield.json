@@ -2,7 +2,7 @@
   "id": "lib-echoshield",
   "kind": "sensor",
   "type": "radar",
-  "version": 1,
+  "version": 2,
   "name": "EchoShield tracking radar (Echodyne)",
   "description": "Ku-band pulse-Doppler ESA panel, 130 x 90 deg field of regard. Group 1 UAS at 3-4 km, larger UAS to 11 km.",
   "color": "#93b9d1",
@@ -74,6 +74,61 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": 3,
+      "unit": "m",
+      "condition": "range accuracy 0.75-6 m, waveform dependent; 3 m is the band midpoint",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Echodyne EchoShield product page and spec sheet (22m1a)",
+      "url": "https://www.echodyne.com/radar-systems/echoshield",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      },
+      "note": "Vendor gives a waveform-dependent band, not one figure; the midpoint is recorded so the C-UAS waveform is neither flattered nor penalised."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.5,
+      "unit": "deg",
+      "condition": "track accuracy <0.5° azimuth (vendor bound taken as 1 sigma)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Echodyne EchoShield product page and spec sheet (22m1a)",
+      "url": "https://www.echodyne.com/radar-systems/echoshield",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.5,
+      "unit": "deg",
+      "condition": "track accuracy <0.5° elevation (vendor bound taken as 1 sigma)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Echodyne EchoShield product page and spec sheet (22m1a)",
+      "url": "https://www.echodyne.com/radar-systems/echoshield",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "falseAlarmRatePerScan": {
+      "value": 0.5,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: PLACARD_PFA 1e-6 (src/model/types.ts) times about 1e6 range-azimuth-Doppler cells per scan of a 360° surveillance volume gives about one false alarm per scan over the whole coverage; this 130° sector panel searches about half the cells and is recorded at 0.5. No vendor publishes a false-alarm rate."
     }
   },
   "attributes": {

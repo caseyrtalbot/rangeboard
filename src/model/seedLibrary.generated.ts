@@ -35,6 +35,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-10, 70],
       maxAltitudeFt: 30000,
       resolutionM: 50,
+      rangeAccuracyM: 50,
+      azimuthAccuracyDeg: 0.5,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -112,6 +116,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [0, 90],
       maxAltitudeFt: 30000,
       resolutionM: 50,
+      rangeAccuracyM: 3,
+      azimuthAccuracyDeg: 0.8,
+      elevationAccuracyDeg: 3,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -155,6 +163,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: 30,
+      rangeAccuracyM: 10,
+      azimuthAccuracyDeg: 0.2,
+      elevationAccuracyDeg: 0.2,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -199,6 +211,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-45, 45],
       maxAltitudeFt: null,
       resolutionM: 30,
+      rangeAccuracyM: 3,
+      azimuthAccuracyDeg: 0.5,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -244,6 +260,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [0, 30],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 30,
+      azimuthAccuracyDeg: 0.3,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -312,6 +332,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 30,
+      azimuthAccuracyDeg: 0.3,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -358,6 +382,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [0, 60],
       maxAltitudeFt: null,
       resolutionM: 50,
+      rangeAccuracyM: 0.6,
+      azimuthAccuracyDeg: 0.75,
+      elevationAccuracyDeg: 1,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -426,6 +454,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-40, 40],
       maxAltitudeFt: null,
       resolutionM: 50,
+      rangeAccuracyM: 3,
+      azimuthAccuracyDeg: 0.8,
+      elevationAccuracyDeg: 3,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -493,6 +525,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: 100,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 5,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -526,6 +561,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: 100,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 5,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -570,6 +608,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: 200,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 10,
+      elevationAccuracyDeg: 10,
     },
     provenance: [
       {
@@ -615,6 +656,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: 10000,
       resolutionM: 500,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: null,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -650,6 +694,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-35, 90],
       maxAltitudeFt: null,
       resolutionM: 20,
+      rangeAccuracyM: 5,
+      azimuthAccuracyDeg: 0.029,
+      elevationAccuracyDeg: 0.029,
     },
     provenance: [
       {
@@ -717,6 +764,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: 15,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 0.017,
+      elevationAccuracyDeg: 0.017,
     },
     provenance: [
       {
@@ -753,6 +803,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 0.1,
+      elevationAccuracyDeg: 0.1,
     },
     provenance: [
       {
@@ -808,6 +861,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 5,
+      azimuthAccuracyDeg: 0.03,
+      elevationAccuracyDeg: 0.03,
     },
     provenance: [
       {
@@ -864,6 +920,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-45, 45],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 0.02,
+      elevationAccuracyDeg: 0.02,
     },
     provenance: [
       {
@@ -930,6 +989,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 15,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -974,6 +1036,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: null,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -1017,6 +1082,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 10,
+      azimuthAccuracyDeg: 0.2,
+      elevationAccuracyDeg: 0.2,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1061,6 +1130,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 10,
+      azimuthAccuracyDeg: 0.2,
+      elevationAccuracyDeg: 0.2,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1106,6 +1179,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 3,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -1141,6 +1217,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-16, 90],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 5,
+      azimuthAccuracyDeg: 0.0046,
+      elevationAccuracyDeg: 0.0046,
     },
     provenance: [
       {
@@ -1208,6 +1287,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-45, 85],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 0.03,
+      elevationAccuracyDeg: 0.03,
     },
     provenance: [
       {
@@ -1273,6 +1355,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 10,
+      azimuthAccuracyDeg: 0.2,
+      elevationAccuracyDeg: 0.2,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1318,6 +1404,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-15, 90],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 50,
+      azimuthAccuracyDeg: 0.5,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1374,6 +1464,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 30,
+      azimuthAccuracyDeg: 0.3,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1422,6 +1516,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [0, 70],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 3,
+      azimuthAccuracyDeg: 0.8,
+      elevationAccuracyDeg: 3,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1501,6 +1599,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 50,
+      azimuthAccuracyDeg: 0.5,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -1570,6 +1672,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [-40, 40],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 3.25,
+      azimuthAccuracyDeg: 1,
+      elevationAccuracyDeg: 1.5,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -1625,6 +1731,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 3,
+      azimuthAccuracyDeg: 0.8,
+      elevationAccuracyDeg: 3,
+      falseAlarmRatePerScan: 0.5,
     },
     provenance: [
       {
@@ -1672,6 +1782,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: [0, 30],
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: 3,
+      azimuthAccuracyDeg: 0.8,
+      elevationAccuracyDeg: 3,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1740,6 +1854,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: 100000,
       resolutionM: null,
+      rangeAccuracyM: 30,
+      azimuthAccuracyDeg: 0.3,
+      elevationAccuracyDeg: 0.5,
+      falseAlarmRatePerScan: 1,
     },
     provenance: [
       {
@@ -1798,6 +1916,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 3,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -1835,6 +1956,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 30,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -1889,6 +2013,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 30,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -1938,6 +2065,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 3,
+      elevationAccuracyDeg: null,
     },
     provenance: [
       {
@@ -1986,6 +2116,9 @@ export const SEED_LIBRARY: SpecModel[] = [
       elevationDeg: null,
       maxAltitudeFt: null,
       resolutionM: null,
+      rangeAccuracyM: null,
+      azimuthAccuracyDeg: 1,
+      elevationAccuracyDeg: 1,
     },
     provenance: [
       {
@@ -3069,6 +3202,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'DoD-designated C2 for C-sUAS. Fuses sensor tracks, correlates the air picture, and manages engagements.',
     color: '#d6d9d2',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-lattice',
@@ -3077,6 +3215,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'AI sensor-fusion and C2 platform. Autonomously detects, classifies, and tracks; cues Anvil and Roadrunner.',
     color: '#cdd1c9',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-picogrid',
@@ -3085,6 +3228,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'Vendor-neutral edge integration node (Legion with Helios/Portal hardware). Fuses local sensors into one picture.',
     color: '#c4c9c0',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-medusa',
@@ -3093,6 +3241,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'Air Force base-defense counter-sUAS C2, developed by Kongsberg Geospatial. Neither government ownership nor open standards is supported by any public source; its FAAD C2 interoperability is stated conditionally in the sources that mention it.',
     color: '#bcc1b8',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-ibcs',
@@ -3101,6 +3254,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'Army IAMD battle command. Fuses distributed sensor data into fire-control-quality tracks on the Integrated Fire Control Network; \'plug-and-fight\' kits adapt sensors and weapons. Set to replace Patriot, THAAD and FAAD C2 C2 systems.',
     color: '#b4baaf',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-adsi',
@@ -3125,6 +3283,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'Commercial C-UAS C2 built on the SensorFusionAI 3D fusion engine. Fuses RF, radar, optical and ADS-B inputs from DroneShield and third-party sensors, drives DroneShield and partner effectors, and speaks SAPIENT and Cursor-on-Target.',
     color: '#9ca397',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-dedronetracker',
@@ -3133,6 +3296,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'Commercial airspace-security C2. Fuses RF, radar, camera, acoustic and Remote ID inputs into one risk-ranked track picture and runs jamming, cyber-takeover or kinetic mitigation from the same interface, where legally authorised.',
     color: '#949b8f',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-cac2s',
@@ -3141,6 +3309,11 @@ export const SEED_LIBRARY: SpecModel[] = [
     description: 'Marine Corps aviation command and control. Fuses expeditionary radar, weapon-system, UAS and ISR inputs into one MAGTF air picture and hosts the engage / do-not-engage decision. Named by CRS as the C2 element of the Marine MRIC air-defence system alongside G/ATOR.',
     color: '#c0c5bc',
     builtin: true,
+    c2: {
+      decisionLatencyS: 10,
+      decisionLatencySigmaDb: 3,
+      operatorTrackCapacity: 6,
+    },
   },
   {
     id: 'lib-mavic3',

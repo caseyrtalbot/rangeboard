@@ -2,7 +2,7 @@
   "id": "lib-teleidoscope",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 1,
+  "version": 2,
   "name": "Teleidoscope ML auto-track camera",
   "description": "Machine-learning EO/IR auto-track gimbal. The fielded program is the NCR-IADS airspace-warning camera modernization; no source places Teleidoscope in FS-LIDS or M-LIDS, and no source supports a fire-control role. Ranges are planning figures.",
   "color": "#b0a8cc",
@@ -59,6 +59,45 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Passive imager with no rangefinder documented: bearing only; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.017,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-hdcmr",
+        "lib-cm262"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced classification EO/IR gimbals: lib-hdcmr 0.029, lib-cm262 0.0046; median 0.017 deg."
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.017,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-hdcmr",
+        "lib-cm262"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced classification EO/IR gimbals: lib-hdcmr 0.029, lib-cm262 0.0046; median 0.017 deg."
     }
   },
   "attributes": {

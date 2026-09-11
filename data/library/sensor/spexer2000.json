@@ -2,7 +2,7 @@
   "id": "lib-spexer2000",
   "kind": "sensor",
   "type": "radar",
-  "version": 1,
+  "version": 2,
   "name": "SPEXER 2000 3D radar (HENSOLDT)",
   "description": "X-band pulse-Doppler AESA, 120 deg per antenna (MkIII builds to 360 deg with more antennas), elevation to 90 deg. Datasheet maxima: UAV 9 km, micro-UAV 6 km. Over 300 tracks per 120 deg sector.",
   "color": "#8fb4cb",
@@ -86,6 +86,63 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": 50,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-rps42"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced target-acquisition radars: lib-rps42 50; median 50 m."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.5,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-rps42"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced target-acquisition radars: lib-rps42 0.5; median 0.5 deg."
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.5,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-rps42"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced target-acquisition radars: lib-rps42 0.5; median 0.5 deg."
+    },
+    "falseAlarmRatePerScan": {
+      "value": 0.5,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: PLACARD_PFA 1e-6 (src/model/types.ts) times about 1e6 range-azimuth-Doppler cells per scan of a 360° surveillance volume gives about one false alarm per scan over the whole coverage; this 120° sector panel searches about half the cells and is recorded at 0.5. No vendor publishes a false-alarm rate."
     }
   },
   "attributes": {

@@ -174,6 +174,42 @@ export const CLASS_PRIORS: ClassPriorTable = {
           'lib-a422',
         ],
       },
+      rangeAccuracyM: {
+        logMedian: 1.0986122886681096,
+        sigmaDb: 13.858171503019342,
+        n: 5,
+        members: [
+          'lib-rps42',
+          'lib-echoshield',
+          'lib-iris',
+          'lib-r8ss',
+          'lib-echoguard',
+        ],
+      },
+      azimuthAccuracyDeg: {
+        mean: 0.71,
+        sd: 0.2133072900770154,
+        n: 5,
+        members: [
+          'lib-rps42',
+          'lib-echoshield',
+          'lib-iris',
+          'lib-r8ss',
+          'lib-echoguard',
+        ],
+      },
+      elevationAccuracyDeg: {
+        mean: 1.3,
+        sd: 1.036822067666386,
+        n: 5,
+        members: [
+          'lib-rps42',
+          'lib-echoshield',
+          'lib-iris',
+          'lib-r8ss',
+          'lib-echoguard',
+        ],
+      },
       updateRateS: {
         mean: 0.8333333333333334,
         sd: 0.28867513459481287,

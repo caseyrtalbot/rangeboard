@@ -2,7 +2,7 @@
   "id": "lib-zvook",
   "kind": "sensor",
   "type": "acoustic",
-  "version": 1,
+  "version": 2,
   "name": "Zvook acoustic station (Ukraine)",
   "description": "Half-metre acoustic mirror over one microphone with edge ML. Tower-mounted at 10-12 m, about 200 deg coverage, 5 km on Shahed-type OWA and 7 km on cruise missiles. Passive: it cannot be jammed or homed on.",
   "color": "#5f9880",
@@ -69,6 +69,32 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single acoustic node measures bearing at best, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 15,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a single microphone behind a half-metre mirror is a bearing-class station whose beam is tens of degrees wide; 15° is recorded, coarser than the 128-microphone Discovair G2 (<10°), the only sourced acoustic figure. No Zvook bearing accuracy is published."
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "No elevation measurement is published for this acoustic node; not established by the public record."
     }
   },
   "attributes": {
