@@ -210,6 +210,7 @@ describe('false-track process', () => {
 describe('trial integration', () => {
   function laydown(): Scenario {
     const scenario = emptyScenario()
+    scenario.physics = ['noFlightLimits']
     scenario.roe = 'free'
     scenario.seed = 4821
     scenario.doctrine!.enabled = false

@@ -504,9 +504,18 @@ describe('engagementPicture incremental assessments', () => {
   })
 
   it('reuses every assessment when a sensor the technology gate refuses is moved', () => {
-    // The harness scenario: its RF sensors hear none of its threats, so the
-    // first sensor the harness moves is no input to any assessment.
-    const scenario = fillScenario(harness as unknown as Scenario)
+    // Pin the first RF model to GNSS reception only. GNSS is received by a
+    // target rather than emitted, so this sensor is no input to any assessment.
+    const loaded = fillScenario(harness as unknown as Scenario)
+    const firstRf = loaded.entities.find((e) => e.kind === 'sensor')!
+    const scenario = {
+      ...loaded,
+      library: loaded.library.map((model) =>
+        model.id === firstRf.specId
+          ? { ...model, sensor: { ...model.sensor!, rfBands: ['gnss' as const] } }
+          : model,
+      ),
+    }
     const prev = engagementPicture(scenario)
     const rf = firstOf(scenario, (e) => e.kind === 'sensor')
     expect(scenario.entities.find((e) => e.id === rf)!.name.startsWith('RfOne')).toBe(true)

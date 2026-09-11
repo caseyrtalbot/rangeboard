@@ -1,8 +1,10 @@
-import type { Entity, Scenario, SensorSpec, Vec2 } from '../model/types'
+import type { Entity, Scenario, SensorSpec, UasSpec, Vec2 } from '../model/types'
 import { mountHeightOf, physicsSwitches } from '../model/types'
+import { modelFor } from '../model/scenario'
 import { dist } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { normalQuantile } from '../analysis/uncertainty'
+import { rfLinkModelApplies } from '../analysis/sensorEnv'
 import type { DetectionHit } from './detection'
 import type { DrawPolicy } from './policy'
 import type { Covariance4, TrackEstimateSink, TrackMeasurement, TrackState } from './trackTypes'
@@ -70,7 +72,14 @@ export interface TrackManager {
    * otherwise; `misses` is the sweep's consecutive missed-scan count, 0 when
    * it keeps none. A sensor not stepped before `endStep` loses its track.
    */
-  step(sensorId: string, t: number, hold: TrackHold, hit: DetectionHit | undefined, misses: number): void
+  step(
+    sensorId: string,
+    t: number,
+    hold: TrackHold,
+    hit: DetectionHit | undefined,
+    misses: number,
+    accuracy?: { rangeSigmaM: number; azimuthSigmaRad: number },
+  ): void
   /** Once per step, after every sensor: drop untouched tracks and emit the rest to the sink. */
   endStep(t: number): void
   /** Live tracks by id, read between steps. */
@@ -85,8 +94,13 @@ export function trackId(sensorId: string, uasId: string): string {
 }
 
 /** True when this sensor takes the truth path: no accuracy pair, or the truthTracks switch. */
-export function truthPathFor(scenario: Scenario, spec: SensorSpec): boolean {
+export function truthPathFor(scenario: Scenario, spec: SensorSpec, target?: UasSpec): boolean {
   if (physicsSwitches(scenario).includes('truthTracks')) return true
+  if (
+    target
+    && spec.azimuthAccuracyDeg != null
+    && rfLinkModelApplies(spec, target, physicsSwitches(scenario).includes('rfBandGate'))
+  ) return false
   return spec.rangeAccuracyM == null || spec.azimuthAccuracyDeg == null
 }
 
@@ -151,13 +165,15 @@ export function createTrackManager(
   policy: DrawPolicy,
   sink?: TrackEstimateSink,
 ): TrackManager {
+  const target = scenario.entities.find((entity) => entity.id === uasId)
+  const targetSpec = target ? modelFor(scenario, target)?.uas : undefined
   const bySensor = new Map<string, TrackerSensor>()
   for (const { sensor, spec } of sensors) {
     bySensor.set(sensor.id, {
       sensor,
       spec,
       heightM: mountHeightOf(spec),
-      truth: truthPathFor(scenario, spec),
+      truth: truthPathFor(scenario, spec, targetSpec),
       rangeSigmaM: spec.rangeAccuracyM ?? 0,
       azimuthSigmaRad: (spec.azimuthAccuracyDeg ?? 0) * DEG,
     })
@@ -185,12 +201,21 @@ export function createTrackManager(
     return best
   }
 
-  const measure = (ts: TrackerSensor, hit: DetectionHit, t: number): TrackMeasurement => {
+  const measure = (
+    ts: TrackerSensor,
+    hit: DetectionHit,
+    t: number,
+    accuracy?: { rangeSigmaM: number; azimuthSigmaRad: number },
+  ): TrackMeasurement => {
     const truth = nearestMember(ts, hit)
     const u1 = policy.noise ? policy.noise(ts.sensor.id, uasId, t, 0) : 0.5
     const u2 = policy.noise ? policy.noise(ts.sensor.id, uasId, t, 1) : 0.5
     return polarMeasurement(
-      ts.sensor.pos, truth, hit.slantM, ts.rangeSigmaM, ts.azimuthSigmaRad,
+      ts.sensor.pos,
+      truth,
+      hit.slantM,
+      accuracy?.rangeSigmaM ?? ts.rangeSigmaM,
+      accuracy?.azimuthSigmaRad ?? ts.azimuthSigmaRad,
       normalQuantile(u1), normalQuantile(u2), ts.sensor.id, uasId, t,
     )
   }
@@ -207,7 +232,7 @@ export function createTrackManager(
       prevLead = lead ?? null
       prevT = t
     },
-    step(sensorId, t, hold, hit, misses) {
+    step(sensorId, t, hold, hit, misses, accuracy) {
       const ts = bySensor.get(sensorId)
       if (!ts) return
       const id = trackId(sensorId, uasId)
@@ -236,7 +261,7 @@ export function createTrackManager(
         return
       }
       if (hold === 'measure' && hit) {
-        const m = measure(ts, hit, t)
+        const m = measure(ts, hit, t, accuracy)
         if (!track) {
           const init = initFromMeasurement(m, INIT_SPEED_SIGMA_MPS)
           track = {

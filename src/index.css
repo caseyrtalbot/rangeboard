@@ -5063,3 +5063,21 @@ input[type='number'] {
   font-size: var(--type-dense-size);
   overflow-wrap: anywhere;
 }
+
+.physics-settings {
+  margin-top: var(--space-3);
+}
+
+.physics-row {
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.physics-row .field {
+  margin: 0 0 var(--space-1);
+}
+
+.physics-row p {
+  margin: 0;
+  white-space: normal;
+}

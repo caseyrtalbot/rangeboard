@@ -4,6 +4,7 @@ import {
   effectiveDoctrine,
   entityActive,
   mountHeightOf,
+  physicsSwitches,
 } from '../model/types'
 import { modelFor } from '../model/scenario'
 import type { LayerVisibility } from '../state/layers'
@@ -124,6 +125,7 @@ export type EntityRings = SensorRings | EffectorRings | JammerRings | AssetRings
  */
 function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | null): EntityRings[] {
   const env = scenario.environment
+  const physics = physicsSwitches(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const pdLow = thresholds.pdDetect
   const doctrine = effectiveDoctrine(scenario)
@@ -149,7 +151,7 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
     for (const t of threats) {
       const gate = sensorHoldGate(spec, t.spec)
       if (gate !== 'ok' && gate !== 'needs-cue') continue
-      const r = effectiveDetectRangeM(spec, env, t.spec, pdLow)
+      const r = effectiveDetectRangeM(spec, env, t.spec, pdLow, physics)
       rs.push(groundRangeM(r, t.altM - mountHeightOf(spec)))
     }
     return envelopeBandM(rs)
@@ -172,19 +174,19 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       let pdLowM: number | null = null
       let pdHighM: number | null = null
       if (target) {
-        const [low, high] = pdContoursM(spec, env, target, [pdLow, PD_CONTOUR_HIGH])
+        const [low, high] = pdContoursM(spec, env, target, [pdLow, PD_CONTOUR_HIGH], physics)
         pdLowM = project(low)
         // Only a radar under the Pd model has a second contour. Every other
         // sensor keeps its scaled range as the lower contour.
         pdHighM = radarPdModeled(spec, target) ? project(high) : null
       }
-      const classifySlantM = effectiveClassifyRangeM(spec, env, target)
+      const classifySlantM = effectiveClassifyRangeM(spec, env, target, physics)
       const style = sensorRingStyle({
         gate: sensorHoldGate(spec, target),
         on: entityActive(e),
         // The placard is a reference condition, so it is never target scaled
         // and never projected.
-        placardM: effectiveDetectRangeM(spec, env),
+        placardM: effectiveDetectRangeM(spec, env, undefined, undefined, physics),
         pdLowM,
         pdHighM,
         classifyM: classifySlantM == null ? null : project(classifySlantM),

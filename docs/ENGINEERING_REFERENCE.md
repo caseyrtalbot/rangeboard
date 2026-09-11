@@ -512,18 +512,23 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `TrialManifest.sweepStepS` and `RunManifest.sweepStepS` record it. A lane requests a finer
   step for one effector inside a burst or dwell window with `clock.requestFineStep`; with no
   request `next(t)` is `t + baseS` and the 0.5 s sample times are bit-identical to the old
-  loop (`clock.test.ts`). Draw keys still use `stepIndex` (the DT grid): two fine ticks in
-  one DT step share a key until the policy learns a sub-step (open, Phase 3).
+  loop (`clock.test.ts`). Ordinary temporal draws still use `stepIndex` (the DT grid).
+  Optical fluence is keyed once per committed salvo, including effector, target, ship,
+  salvo and commit step, so fine ticks reuse the one sampled damage threshold.
 - **Altitude and geometry:** `threatAltitudeFt(scenario, uas)` (entity value, else the
   threat profile, else the `altBandFt` midpoint) and `mountHeightOf(spec)` are the
   resolvers. Slant range, not ground range, feeds every sensor and effector range test; the
   azimuth wedge stays a ground-plane bearing test. Board rings against a selected threat
   ground-project through `groundRangeM`; the placard ring is unprojected. Terrain,
   per-waypoint altitude and refraction beyond the 4/3 horizon stay out.
-- **Sensor physics** (`src/analysis/sensorEnv.ts`): a placard range is quoted against a
-  reference target and scales to another target by a physical law per technology (radar
-  fourth root of RCS, EO/IR Johnson linear, acoustic transmission-loss solve, RF none).
-  `rangeBasis: 'planning'` turns scaling off. `sensorHoldGate` is the one hold gate,
+- **Sensor physics** (`src/analysis/sensorEnv.ts`): the barrel dispatches by technology.
+  Radar keeps its placard calibration while Shnidman noncoherent pulse integration changes
+  Pd by the stated dwell. EO/IR derives Johnson detect, recognize and identify ranges from
+  detector optics and applies Beer-Lambert extinction. Passive RF solves a link budget from
+  target EIRP, free-space loss, the fixed urban margin and receiver sensitivity. Acoustic
+  keeps the transmission-loss solve. A missing physical input, or its checked fallback,
+  selects the earlier placard model. `rangeBasis: 'planning'` turns target scaling off.
+  `sensorHoldGate` is the one hold gate,
   `sensorGeometryGate` the one vertical gate, with a 0.001 degree tolerance (PF) at both
   elevation edges, `radarPdAt` the one Pd evaluation, `effectiveDetectRangeM` the one
   range. The environment multiplier enters radar SNR as the fourth power.
@@ -558,9 +563,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   this phase. `quality(cov)` is the one quality map, the position 1 sigma through
   `QUALITY_SCALE_M` (50 m, PF): 1 at zero covariance, 0.5 at the scale.
   `INIT_SPEED_SIGMA_MPS` (20 m/s, PF) opens the velocity block of a new track.
-  `truthPathFor` is the one truth-path test: a sensor missing `rangeAccuracyM` or
-  `azimuthAccuracyDeg`, or any sensor under the `truthTracks` switch, reports the true
-  state with `ZERO_COVARIANCE` and quality 1 and takes no draw. Capture is opt-in:
+  `truthPathFor` is the one truth-path test: any sensor under the `truthTracks` switch,
+  or a non-RF sensor missing `rangeAccuracyM` or `azimuthAccuracyDeg`, reports the true
+  state with `ZERO_COVARIANCE` and quality 1 and takes no draw. A physically modeled RF
+  sensor may enter the estimate path with azimuth only: one node receives a broad range
+  sigma equal to its detect range, while simultaneous nodes of the same model derive a
+  cross-bearing range sigma from their maximum baseline and signal-to-noise. Capture is opt-in:
   `runTrial` attaches the sink that fills `TrialResult.tracks`, so the ensemble path
   allocates no estimate history.
 - **Fusion and classification** (`src/playback/fusion.ts`, `classification.ts`, `sim.ts`):
@@ -607,10 +615,17 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `physicsSwitches(scenario)` in `types.ts`): `Scenario.physics` lists the engine
   simplifications a run switched on, and `physicsSwitches` is the one reader: deduplicated
   and in the declaration order `truthTracks, noFalseTracks, noOperatorQueue,
-  singlePulseRadar`, empty on an old save. `createRunManifest` (`runRecord.ts`) and
+  singlePulseRadar, noFlightLimits, rfBandGate, eoirSpanRatio, legacyKineticPk,
+  legacyBeamPk`, empty on an old save. The Settings Physics section
+  (`panels/settings/PhysicsTab.tsx`) edits the list through `patchScenario` and resets
+  it to `[]`; it uses the same reader to keep checkbox state and writes canonical.
+  `createRunManifest` (`runRecord.ts`) and
   `createTrialManifest` (`trialTypes.ts`) both default `physicsSwitches` from the scenario
-  and drop `fidelityFloor` from `datasheet` to `fallback` when any switch is on, because a
-  switch runs a model on its fallback.
+  and drop `fidelityFloor` from `datasheet` to `fallback` when any switch is on.
+  Every switch selects an alternate engine path. The Phase 3 fallbacks select single-pulse
+  radar, unlimited waypoint motion, band-gated placard RF, span-ratio EO/IR, the legacy
+  kinetic Pk curve, and the legacy beam Pk curve respectively. Clearing them selects the
+  corresponding physical model when its required fields are complete.
 - **Fire doctrine** (`Scenario.doctrine`, enabled by default): the gate is per effector and
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
@@ -636,11 +651,17 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `attrition.ts` supplies the fused track the shooter holds at t from
   `ThreatAssessment.fusedTracks` through a per-threat cursor. `ShotAccepted` carries
   `predictionSigmaM` (the predicted position 1 sigma at the effect time, null on the
-  truth path) and `interceptSource`; `missDistanceSigmaM` (`pk.ts`) roots them with a
-  guidance error for Phase 3 and no Pk reads it in this phase.
-  `kineticPk(basePk, maxRangeM, uas, slantM)` is the one
-  kinetic per-shot Pk, at the intercept slant; `footprintStyle.ts` imports it to invert the
-  commit ring. `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
+  truth path) and `interceptSource`; `missDistanceSigmaM` (`pk.ts`) roots it with the
+  interceptor's guidance error for the physical probability of effect.
+  Kinetic shots use `kineticEffectProbability`: interceptors combine predicted track error
+  with guidance error and integrate the Rayleigh miss distribution inside effective radius;
+  guns compound independent projectile hits from pointing error, dispersion, rate and burst
+  size. `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
+  `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,
+  jitter, atmospheric transmission and a sampled fluence threshold; their effect time includes
+  settle and dwell. HPM compares inverse-distance field strength with an airframe threshold
+  inside beamwidth and uses the stated recharge. `legacyBeamPk` restores the prior curve.
+  `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy
   ungated assignment path; keep it for regression and pin legacy fixtures with
   `doctrine.enabled = false`. Route latency is charged from the ROE gate, not from T0.
@@ -651,13 +672,14 @@ Each fact below has exactly one definition. Read it there; never add a second co
   connections are untyped and the gate does not bind; UI-drawn connections are typed by
   `completeConnect` when `evaluateIntegration` finds a researched pairing.
 - **Draw policy** (`src/playback/policy.ts`): `DrawPolicy` is the one draw point. The
-  engine draws in exactly nine places (`sensorHit` detect, `applyEffect` kill,
+  engine draws in exactly ten places (`sensorHit` detect, `applyEffect` kill,
   `applyEffect` continue-jam, `phase`, drawn once per scan state, `param`, drawn once
   per uncertain field per replicate under `total`, `noise`, drawn twice per measured
   scan in `tracker.ts`, `classify`, drawn once per declaration attempt in
   `classification.ts`, `falseAlarm`, drawn once per radar scan for the Poisson count and
-  once per state uniform of a false track in `falseTracks.ts`, and `latency`, drawn once
-  per operator decision in `operator.ts`), through a policy passed as the
+  once per state uniform of a false track in `falseTracks.ts`, `latency`, drawn once
+  per operator decision in `operator.ts`, and `fluence`, drawn once per optical salvo
+  commitment in `shot.ts`), through a policy passed as the
   defaulted last parameter of `sweepSensorHits`, `assessThreat`, `assessAllThreats` and
   `resolveEngagements`; a bare call is the deterministic policy, so its output is unchanged
   by construction (a test pins it). `detect` carries the `memberIdx` of the admitted
@@ -793,9 +815,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `spreadText` (`src/panels/inspector/spreadText.ts`) is
   the one spread wording, shown by the Sources table and appended to the `PfTag` title.
 - **Fidelity** (`src/analysis/fidelity.ts`): `MODEL_TAGS` is the one tag table, one row
-  for each of the nineteen model ids with a tier, a validation status and, where a
+  for each of the twenty-seven model ids with a tier, a validation status and, where a
   published method applies, a `standard` that quotes a row of section 8. Phase 2 added
-  `tracker`, `fusion`, `classification`, `operator` and `false-tracks`; a sensor reports
+  `tracker`, `fusion`, `classification`, `operator` and `false-tracks`; Phase 3 adds
+  `radar-dwell`, `eoir-dri`, `rf-link`, `threat-flight`, `interceptor-miss`, `gun-burst`,
+  `de-dwell` and `hpm-field`. A sensor reports
   the tracker and false tracks, a C2 node fusion, classification and the operator.
   `modelsUsed
   (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
@@ -1165,3 +1189,13 @@ code implements the method in full.
 | Tracking | Bar-Shalom and Li, estimation and data association: the constant-velocity Kalman filter and track-to-track fusion are textbook methods there, not a numbered standard; Blackman and Popoli, multi-target tracking |
 | Terrain data | DTED (MIL-PRF-89020B), SRTM, USGS 3DEP |
 | Symbology | MIL-STD-2525 (already in use) |
+
+Phase 3 validation anchors are executable and dated. `flight.verify.test.ts` checks the
+seeded DJI Mavic 3 climb figure while `flight.test.ts` pins the hand-derived turn arc and
+wind vector. `rfLink.verify.test.ts` checks Mavic 3 links against RF-360 and ARDRONIS
+published ranges. `eoir.verify.test.ts` reproduces the Spynel-S 6000 detect point and
+records the vendor recognize-ratio mismatch; identification remains analytic because the
+sheet omits it. `radarDwell.verify.test.ts` pins three Shnidman integration cases while
+the older Marcum-Q pins remain unchanged. `kinetic.verify.test.ts` checks the APKWS
+effective-radius table and the Rheinmetall burst timeline. `beam.verify.test.ts` checks
+the Iron Beam power/range/dwell anchor and a hand-derived HPM field threshold.

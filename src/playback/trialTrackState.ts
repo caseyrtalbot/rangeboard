@@ -1,11 +1,8 @@
 import type { Entity, Vec2 } from '../model/types'
 import { entityActive } from '../model/types'
-import { pathSpeed } from '../model/scenario'
-import { posAtTime } from '../geometry/geo'
 import type { TrialResultView } from '../analysis/trialResult'
 import type { EngagementEvent } from './attritionReport'
-import { memberPositions } from './tracks'
-import { effectivePathDelayS } from './raid'
+import { memberPositions, sampleFlightPath } from './tracks'
 import { intervalIndexAt } from './intercept'
 
 export interface TrialMemberState {
@@ -72,10 +69,10 @@ function timelinesOf(view: TrialResultView): Map<string, TrialTrackTimeline> {
     const a = assessments.get(entity.id)
     const memberCount = Math.max(1, entity.formation?.count ?? 1)
     const path = view.scenario.paths.find(p => p.entityId === entity.id && p.points.length >= 2)
-    const speed = path ? pathSpeed(view.scenario, path) : 0
-    const delay = path ? effectivePathDelayS(view.scenario, path) : 0
     const geometryAt = (t: number) => {
-      const sample = path ? posAtTime(path.points, speed, delay, t) : { pos: entity.pos, headingDeg: entity.headingDeg }
+      const sample = path
+        ? sampleFlightPath(view.scenario, path, t)
+        : { pos: entity.pos, headingDeg: entity.headingDeg }
       return { positions: memberPositions(entity, sample.pos, sample.headingDeg), heading: sample.headingDeg }
     }
     const effects = new Map<number, Effect>()

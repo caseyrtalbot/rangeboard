@@ -1,7 +1,7 @@
 import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
 import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf, physicsSwitches, runSettings } from '../model/types'
 import { profileFor } from '../model/integration'
-import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
+import { dist, formationOffsets, pointInWedge } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
 import { effectivePathDelayS } from './raid'
@@ -19,7 +19,7 @@ import {
 import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
 import { CONFIRMED_DECLARE_FACTOR, targetSFor } from '../analysis/doctrineFactors'
 import { createSweepClock } from './clock'
-import { memberPositions, threatAltitudeFt } from './tracks'
+import { memberPositions, sampleFlightPath, threatAltitudeFt } from './tracks'
 import type { SensorObservationSink } from './detection'
 import type { FusedTrack, TrackEstimate, TrackEstimateSink } from './trackTypes'
 import { resolvedThresholds } from './detection'
@@ -328,7 +328,7 @@ export function assessThreat(
   let connectedCacheSize = -1
 
   for (let t = delayS; t <= duration; t = clock.next(t)) {
-    const sample = posAtTime(path.points, speed, delayS, t)
+    const sample = sampleFlightPath(scenario, path, t)
     const pos = sample.pos
     const members = memberPositions(uas, pos, sample.headingDeg)
 
@@ -670,8 +670,9 @@ function distToSegment(p: Vec2, a: Vec2, b: Vec2): number {
  * so a member farther than this on the ground is never detected.
  */
 function sensorReachM(spec: SensorSpec, scenario: Scenario, uasSpec: UasSpec | undefined): number | null {
-  if (radarPdCurve(spec, scenario.environment, uasSpec)) return instrumentedM(spec)
-  return effectiveDetectRangeM(spec, scenario.environment, uasSpec)
+  const physics = physicsSwitches(scenario)
+  if (radarPdCurve(spec, scenario.environment, uasSpec, physics.includes('singlePulseRadar'))) return instrumentedM(spec)
+  return effectiveDetectRangeM(spec, scenario.environment, uasSpec, undefined, physics)
 }
 
 /**
@@ -735,6 +736,7 @@ function threatAssessmentInputs(scenario: Scenario, uasId: string): unknown[] {
     scenario.roe,
     scenario.doctrine,
     scenario.raid,
+    scenario.physics,
     scenarioDurationS(scenario),
   ]
   const uas = scenario.entities.find((e) => e.id === uasId)

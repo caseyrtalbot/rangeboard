@@ -215,6 +215,16 @@ Orchestrator: `npm run check`; each lane's validation test named in
 `docs/ENGINEERING_REFERENCE.md` section 8; fidelity tags all `datasheet` or `analytic`.
 Exit: blueprint Phase 3 exit.
 
+**Phase 3 complete, 2026-09-10.** Lanes 3.1 through 3.6 merged through `576371e`:
+bounded point-mass target flight, passive-RF link budget and bearing geolocation,
+EO/IR DRI, radar dwell integration, physical kinetic effects, and optical/HPM effects.
+The previously completed Physics tab now controls every fallback: clearing a box selects
+the physical model and checking it selects the prior planning path. The three protected
+truth-path parity suites remain unchanged. The estimate-path fixture was deliberately
+recaptured after all six models were integrated; the before/after numbers and their
+interpretation are in
+[the Phase 3 gate record](field-te/evidence/p3-gate-2026-09-10/README.md).
+
 ## 6. Phase 4: hypothesis tools
 
 Goal: placement optimization, calibration from typed counts, compare and export. Two to

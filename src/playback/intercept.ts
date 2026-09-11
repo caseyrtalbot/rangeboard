@@ -182,7 +182,8 @@ function seekerAcquisitionAfterEnd(
 
 /** Formation member positions of a threat at one sim time. */
 export function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
-  const s = posAtTime(ts.path!.points, ts.speedMps, ts.delayS, tS)
+  const s = ts.sampleFlightAt?.(tS)
+    ?? posAtTime(ts.path!.points, ts.speedMps, ts.delayS, tS)
   return memberPositions(ts.entity, s.pos, s.headingDeg)
 }
 

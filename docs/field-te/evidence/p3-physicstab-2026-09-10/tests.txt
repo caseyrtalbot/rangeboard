@@ -1,0 +1,8 @@
+
+ RUN  v4.1.11 /Users/caseytalbot/.codex/worktrees/rangeboard-p3-physicstab
+
+
+ Test Files  3 passed (3)
+      Tests  18 passed (18)
+   Start at  20:55:05
+   Duration  841ms (transform 980ms, setup 0ms, import 1.29s, tests 392ms, environment 0ms)

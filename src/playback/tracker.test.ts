@@ -45,6 +45,37 @@ function fixture(radar: Partial<SensorSpec>): { scenario: Scenario; uas: Entity 
   return { scenario, uas }
 }
 
+function rfFixture(nodes: number): { scenario: Scenario; uas: Entity } {
+  const scenario = emptyScenario()
+  scenario.environment = { ...scenario.environment, apply: false }
+  const sensorYs = nodes === 1 ? [0] : [-500, 500]
+  for (let i = 0; i < sensorYs.length; i += 1) {
+    scenario.entities.push({
+      id: `rf-${i + 1}`,
+      name: `RF ${i + 1}`,
+      kind: 'sensor',
+      specId: 'lib-rf360',
+      pos: { x: 0, y: sensorYs[i] },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    })
+  }
+  const uas: Entity = {
+    id: 'rf-uas',
+    name: 'Mavic',
+    kind: 'uas',
+    specId: 'lib-mavic3',
+    pos: { x: 1000, y: 0 },
+    headingDeg: 0,
+    color: null,
+    notes: '',
+    altitudeFt: MOUNT_HEIGHT_M / FT_TO_M,
+  }
+  scenario.entities.push(uas)
+  return { scenario, uas }
+}
+
 /** The deterministic policy with a counter on the noise draw. */
 function spyPolicy(scenario: Scenario): DrawPolicy & { noiseCalls: Array<[string, string, number, number]> } {
   const base = deterministicPolicy(resolvedThresholds(scenario))
@@ -125,6 +156,36 @@ describe('tracker truth path', () => {
 })
 
 describe('tracker estimate path', () => {
+  it('models one RF node as a broad bearing-only estimate and two nodes as tighter geolocation', () => {
+    const one = rfFixture(1)
+    const onePolicy = spyPolicy(one.scenario)
+    const oneTracks = sweep(one.scenario, one.uas, onePolicy, () => [{ x: 1000, y: 0 }], 0)
+    expect(oneTracks).toHaveLength(1)
+    expect(oneTracks[0].source).toBe('estimate')
+    expect(onePolicy.noiseCalls).toHaveLength(2)
+
+    const two = rfFixture(2)
+    const twoPolicy = spyPolicy(two.scenario)
+    const twoTracks = sweep(two.scenario, two.uas, twoPolicy, () => [{ x: 1000, y: 0 }], 0)
+    expect(twoTracks).toHaveLength(2)
+    expect(twoTracks.every((track) => track.source === 'estimate')).toBe(true)
+    expect(twoPolicy.noiseCalls).toHaveLength(4)
+    expect(positionSigmaM(twoTracks[0].covariance)).toBeLessThan(
+      positionSigmaM(oneTracks[0].covariance) / 10,
+    )
+  })
+
+  it('the RF fallback switch restores the exact truth-track path', () => {
+    const { scenario, uas } = rfFixture(1)
+    scenario.physics = ['rfBandGate']
+    const policy = spyPolicy(scenario)
+    const tracks = sweep(scenario, uas, policy, () => [{ x: 1000, y: 0 }], 0)
+    expect(tracks).toHaveLength(1)
+    expect(tracks[0].source).toBe('truth')
+    expect(tracks[0].covariance).toEqual(new Array(16).fill(0))
+    expect(policy.noiseCalls).toEqual([])
+  })
+
   it('draws two noise uniforms per measured scan, keyed by sensor, threat, time and axis', () => {
     const { scenario, uas } = fixture({ updateRateS: 1, ...ACCURATE })
     const policy = spyPolicy(scenario)

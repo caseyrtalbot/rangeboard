@@ -1,9 +1,17 @@
 import type { Entity, Scenario, SensorSpec, SensorType, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, runSettings } from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
 import { modelFor } from '../model/scenario'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
-import { FT_TO_M, radarPdModeled } from '../analysis/sensorEnv'
+import {
+  effectiveDetectRangeM,
+  FT_TO_M,
+  radarPdModeled,
+  rfLinkModelApplies,
+  rfMeasurementAccuracy,
+  rfSnrOverReference,
+} from '../analysis/sensorEnv'
+import { dist } from '../geometry/geo'
 import { mOfN } from '../analysis/radarPd'
 import {
   scanPeriodS,
@@ -345,7 +353,52 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
     scan.hit = undefined
     if (!scanDue(scan, t)) idleScans.add(sensorId)
   }
-  for (const { spec, hit } of run.sweep.hits(members, run.uasId, t, run.steering)) {
+  const hits = run.sweep.hits(members, run.uasId, t, run.steering)
+  const targetEntity = run.scenario.entities.find((entity) => entity.id === run.uasId)
+  const targetSpec = targetEntity ? modelFor(run.scenario, targetEntity)?.uas : undefined
+  const physics = physicsSwitches(run.scenario)
+  const rfFallback = physics.includes('rfBandGate')
+  const rfAccuracy = new Map<string, { rangeSigmaM: number; azimuthSigmaRad: number }>()
+  if (targetSpec && !rfFallback) {
+    const groups = new Map<string, Array<{ sensor: Entity; spec: SensorSpec; hit: DetectionHit }>>()
+    for (const item of hits) {
+      if (item.hit.sensorType !== 'rf' || !rfLinkModelApplies(item.spec, targetSpec)) continue
+      const sensor = run.scenario.entities.find((entity) => entity.id === item.hit.sensorId)
+      if (!sensor) continue
+      const key = sensor.specId ?? sensor.id
+      const group = groups.get(key) ?? []
+      group.push({ sensor, ...item })
+      groups.set(key, group)
+    }
+    for (const group of groups.values()) {
+      let baselineM = 0
+      for (let i = 0; i < group.length; i += 1) {
+        for (let j = i + 1; j < group.length; j += 1) {
+          baselineM = Math.max(baselineM, dist(group[i].sensor.pos, group[j].sensor.pos))
+        }
+      }
+      for (const { spec, hit } of group) {
+        const snr = rfSnrOverReference(spec, targetSpec, run.scenario.environment, hit.slantM)
+        if (snr == null) continue
+        const accuracy = rfMeasurementAccuracy(spec, snr, group.length, hit.slantM, baselineM)
+        if (accuracy.azimuthAccuracyDeg == null) continue
+        const detectRangeM = effectiveDetectRangeM(
+          spec,
+          run.scenario.environment,
+          targetSpec,
+          undefined,
+          physics,
+        )
+        rfAccuracy.set(hit.sensorId, {
+          // A single DF node supplies a bearing but no triangulated range.
+          // Represent that bearing-only ambiguity as one full detect-range sigma.
+          rangeSigmaM: accuracy.rangeAccuracyM ?? detectRangeM,
+          azimuthSigmaRad: accuracy.azimuthAccuracyDeg * Math.PI / 180,
+        })
+      }
+    }
+  }
+  for (const { spec, hit } of hits) {
     // A scan radar's hit is a scan result only at its scan step.
     const scan = scanStates.get(hit.sensorId)
     if (scan) {
@@ -367,7 +420,7 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
     recordDetection(observation, hit, t)
     observation.heldSamples += 1
     extendIntervals(observation.intervals, t, run.stepS)
-    tracks.step(hit.sensorId, t, 'measure', hit, 0)
+    tracks.step(hit.sensorId, t, 'measure', hit, 0, rfAccuracy.get(hit.sensorId))
     const role = defaultSensorRole(spec)
     if (hit.classified && (role === 'fire-control' || role === 'classification')) {
       fcClassifiedNow = true
@@ -436,7 +489,7 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
       observation.heldSamples += 1
       extendIntervals(observation.intervals, t, run.stepS)
       // A scan step with a hit measures; the steps between scans carry the estimate.
-      tracks.step(sensorId, t, hit ? 'measure' : 'carry', hit, 0)
+      tracks.step(sensorId, t, hit ? 'measure' : 'carry', hit, 0, rfAccuracy.get(sensorId))
     } else if (scan.hold === 'coast') {
       coastHeld = true
       observation.heldSamples += 1

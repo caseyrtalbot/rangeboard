@@ -51,6 +51,28 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   `analysis/uncertainty.test.ts` samples a c2 median and an accuracy field at their own
   nominals and leaves a null nominal null; `model/seedLibrary.test.ts` drops the Phase 3
   keys before the fixture comparison, the way it drops the Phase 2 keys.
+- Phase 3 physical models:
+  - `playback/flight.test.ts` pins unlimited-path identity, the hand-derived bounded turn,
+    acceleration and wind drift; `playback/flight.verify.test.ts` checks the seeded DJI
+    Mavic 3 figure.
+  - `analysis/rfLink.test.ts`, `analysis/sensorEnv/rf.test.ts` and
+    `playback/tracker.test.ts` cover the link budget, signal-to-noise direction finding,
+    one-node bearing uncertainty and tighter multi-node geolocation;
+    `analysis/rfLink.verify.test.ts` checks RF-360 and ARDRONIS ranges.
+  - `analysis/sensorEnv/eoir.test.ts` covers DRI and extinction;
+    `analysis/sensorEnv/eoir.verify.test.ts` checks the Spynel-S 6000 detect point and
+    records its recognize-ratio mismatch.
+  - `playback/radarDwell.test.ts` covers pulse counts and inverse Shnidman evaluation;
+    `playback/radarDwell.verify.test.ts` pins three hand-derived integration cases while
+    `analysis/radarPd.test.ts` keeps the Marcum-Q values unchanged.
+  - `playback/ballistics.test.ts`, `playback/pk.test.ts` and
+    `playback/shot.test.ts` cover interceptor miss, projectile compounding, burst timing
+    and magazine use; `playback/kinetic.verify.test.ts` checks the APKWS radius table and
+    Rheinmetall burst timeline.
+  - `playback/directedEnergy.test.ts`, `playback/hpm.test.ts`,
+    `playback/pk/beam.test.ts` and `playback/shot.test.ts` cover optical dwell, keyed
+    fluence, HPM field/beamwidth and recharge; `playback/pk/beam.verify.test.ts` checks
+    the Iron Beam anchor and a hand-derived HPM threshold.
 - Phase 2 tracks and kill chain, one file per model, plus the estimate-path parity file:
   - `playback/estimate.parity.test.ts`: both golden fixtures with their physics switches
     removed, so the Kalman estimate, fusion, false tracks and the operator queue run; pins
@@ -86,15 +108,16 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   - Wiring: `playback/sim.test.ts` holds the declaration times of the laydowns with no
     confusion matrix; `playback/intercept.test.ts` and `shot.test.ts` hold `interceptFor`
     equal to `interceptAt` on the truth path and the closed-form intercept on the
-    predicted path; `playback/policy.test.ts` holds kinds 7 to 10 apart from every other
+    predicted path; `playback/policy.test.ts` holds kinds 7 to 11 apart from every other
     kind; `model/libraryLifecycle.test.ts` holds `adoptSeedFields` and the adoption
     report; `playback/attrition.operator.test.ts` counts floored decisions on a fixture
     that floors and 0 on the deterministic policy; and
     `analysis/fidelity.test.ts` holds which laydown reports each Phase 2 tag.
 - The golden fixtures `playback/__fixtures__/detection-outside-rings.json` and
-  `layered-acoustic-merops.json` pin `physics: ['truthTracks', 'noFalseTracks',
-  'noOperatorQueue']`. They hold the pre-Phase-2 kill chain, so removing a pin changes
-  their numbers; capture a timeline comparison before and after such a change.
+  `layered-acoustic-merops.json` pin the three Phase 2 fallbacks plus `noFlightLimits`,
+  `rfBandGate`, `eoirSpanRatio`, `legacyKineticPk` and `legacyBeamPk`. Radar dwell keeps
+  its placard calibration, so `singlePulseRadar` is not needed for protected parity.
+  Removing a pin changes their numbers; capture a timeline comparison before and after.
 - `npm test` scopes discovery to `src/`, excluding ignored historical checkouts such as
   `.claude/plans/`. Bare `npx vitest run` can still discover those copies; use the npm command
   or pass `--dir src` when selecting files. Record the scope with a test count.
@@ -184,6 +207,7 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   | Now | `panels/analysis/screens/NowScreen.test.tsx` | Play at 30x; the run line, kill chain, bars and sensor rows update with no dropped canvas frame and no scenario input shown |
   | Outcome | `panels/analysis/screens/OutcomeScreen.test.tsx`, `panels/analysis/DebriefRecord.test.tsx`, `panels/analysis/RunHistory.test.tsx`, `io/runStore.test.ts` | A completed run; the tiles render once, the table sorts, the records open in place; Save to history lists the ensemble, the row survives a reload and opens in place |
   | Settings Systems | `panels/settings/SystemsTab.test.tsx`, `state/overrides.test.ts`, `state/trialManifestOverrides.test.ts` | Edit a field with a reason; the override shows beside the source value, `rangeboard.overrides.v1` holds it across a reload, a sampled trial's manifest lists it, reset clears it |
+  | Settings Physics | `panels/settings/PhysicsTab.test.tsx` | Toggle two fallbacks, reload and check persistence; inspect the completed trial's Manifest for the switch list and fallback floor; Reset physics clears the list; all six Phase 3 controls describe the active physical model selected when cleared |
   | Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `charts/BandChart.test.tsx`, `analysis/runValidity.test.ts` | A completed run with an ensemble; the band chart, delta table and disagreement finding render |
   | Baseline | `state/baseline.test.ts`, the persistence tests above | Pin, reload, compare against the dashed baseline, clear; the Storage section lists `rangeboard.baseline.v1` |
 

@@ -1,0 +1,13 @@
+
+> rangeboard@0.0.0 docs:check
+> npm run docs:lint && node scripts/check-docs.mjs
+
+
+> rangeboard@0.0.0 docs:lint
+> markdownlint-cli2
+
+markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)
+Finding: **/*.md !node_modules/** !dist/** !.claude/** !.git/**
+Linting: 94 files
+Summary: 0 issues in 0 files
+Documentation placement and source review passed (11 current references).

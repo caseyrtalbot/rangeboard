@@ -1,4 +1,4 @@
-import type { EffectorSpec, Entity, FlightPath, JamBehavior, UasSpec } from '../model/types'
+import type { EffectorSpec, Entity, FlightPath, JamBehavior, UasSpec, Vec2 } from '../model/types'
 import type { ThreatAssessment } from './sim'
 import type { EngagementEvent } from './attritionReport'
 
@@ -55,6 +55,8 @@ export interface ThreatState {
   /** Flight altitude, meters AGL (threatAltitudeFt), constant along the path. */
   altM: number
   path: FlightPath | undefined
+  /** Scenario-aware flight sampler; absent on legacy unit fixtures. */
+  sampleFlightAt?: (tS: number) => { pos: Vec2; headingDeg: number }
   speedMps: number
   /** Effective path start delay, seconds (effectivePathDelayS). */
   delayS: number

@@ -21,6 +21,10 @@ import type { McSummary } from './mcRun'
 function laydown(): Scenario {
   const common = { headingDeg: 0, color: null, notes: '' }
   const s = emptyScenario()
+  s.physics = [
+    'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
+    'legacyKineticPk', 'legacyBeamPk',
+  ]
   // The fresh scenario runs Monte Carlo under total uncertainty with a half-width
   // stop; every number here is pinned on the aleatory, fixed-n run.
   s.runMode = 'deterministic'

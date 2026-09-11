@@ -42,8 +42,8 @@ import type { FalseTrackLoad } from './falseTracks'
 import type { OperatorQueue } from './operator'
 import { createOperatorQueue, firstC2Of } from './operator'
 import type { KillChainRoute } from './killChain'
-import { opticalDwellModelApplies } from './directedEnergy'
 import { projectileCount } from './ballistics'
+import { hpmRechargeS } from './hpm'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls in
@@ -215,6 +215,7 @@ export function resolveEngagements(
   const doctrine = effectiveDoctrine(scenario)
   const physics = physicsSwitches(scenario)
   const legacyKineticPk = physics.includes('legacyKineticPk')
+  const legacyBeamPk = physics.includes('legacyBeamPk')
   // Operator queue: inactive (no draw, zero delay) with no c2 spec that
   // states a median or with the noOperatorQueue switch, so today's timings hold.
   const operator = createOperatorQueue(scenario, assessments, draw, falseLoad)
@@ -297,12 +298,16 @@ export function resolveEngagements(
     if (e.kind !== 'effector' || !entityActive(e)) continue
     const spec = specFor(scenario, e)?.effector
     if (!spec) continue
+    const legacyCooldownS = Math.max(
+      spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType],
+      clock.baseS,
+    )
     effectors.set(e.id, {
       entity: e,
       spec,
       mountM: mountHeightOf(spec),
       pk: spec.pk ?? DEFAULT_PK[spec.effectorType],
-      cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], clock.baseS),
+      cooldownS: legacyBeamPk ? legacyCooldownS : hpmRechargeS(spec, legacyCooldownS),
       engageTimeS: spec.engageTimeS ?? 0,
       rounds: spec.magazineSize ?? null,
       // Route latency is charged per threat from its gate, so the battery starts ready.
@@ -404,6 +409,9 @@ export function resolveEngagements(
     tEffect: number,
     continueJam: boolean,
     capped: boolean,
+    releaseDelayS: number,
+    dwellS: number,
+    cooldownS: number,
   ) => {
     const softShot = !isHardKill(es.spec.effectorType)
     // Kill draw key: an added threat never shifts the key of a shot at another one.
@@ -412,7 +420,7 @@ export function resolveEngagements(
     salvoCounts.set(salvoKey, salvoIdx + 1)
     const event: EngagementEvent = {
       tS: t,
-      tReleaseS: t + es.engageTimeS,
+      tReleaseS: t + releaseDelayS,
       tEffectS: tEffect,
       effectorId: es.entity.id,
       uasId: target.a.uasId,
@@ -480,10 +488,10 @@ export function resolveEngagements(
           : 1
       es.rounds -= burstRounds
     }
-    es.nextReadyS = t + es.cooldownS
+    es.nextReadyS = t + cooldownS
     // Fine-step hook (clock.ts): a burst or dwell lane requests its window here.
-    if (opticalDwellModelApplies(es.spec, scenario.physics?.includes('legacyBeamPk'))) {
-      clock.requestFineStep(es.entity.id, t, tEffect, 0.1)
+    if (dwellS > 0) {
+      clock.requestFineStep(es.entity.id, t, t + dwellS, 0.1)
     }
     if (
       es.spec.effectorType === 'gun'
@@ -532,6 +540,12 @@ export function resolveEngagements(
       membersAt,
       stepS: clock.baseS,
       legacyKineticPk,
+      legacyBeamPk,
+      environment: scenario.environment,
+      beamFluenceDraw: (effectorId, uasId, shipIdx, tS) => {
+        const salvoIdx = salvoCounts.get(`${effectorId}:${uasId}:${shipIdx}`) ?? 0
+        return draw.fluence?.(effectorId, uasId, shipIdx, salvoIdx, tS) ?? 0.5
+      },
     }
     const doctrineShot: ShotContext = {
       t,
@@ -539,6 +553,12 @@ export function resolveEngagements(
       membersAt,
       stepS: clock.baseS,
       legacyKineticPk,
+      legacyBeamPk,
+      environment: scenario.environment,
+      beamFluenceDraw: (effectorId, uasId, shipIdx, tS) => {
+        const salvoIdx = salvoCounts.get(`${effectorId}:${uasId}:${shipIdx}`) ?? 0
+        return draw.fluence?.(effectorId, uasId, shipIdx, salvoIdx, tS) ?? 0.5
+      },
     }
 
     for (const es of effectors.values()) {
@@ -599,7 +619,19 @@ export function resolveEngagements(
       if (target == null || shipIdx < 0 || hit == null) continue
       const continueJam = softShot && target.jamBehavior === 'continue'
       const ic = hit.intercept
-      commitSalvo(es, target, shipIdx, hit.pk, t, ic.tEffectS, continueJam, ic.capped)
+      commitSalvo(
+        es,
+        target,
+        shipIdx,
+        hit.pk,
+        t,
+        ic.tEffectS,
+        continueJam,
+        ic.capped,
+        hit.releaseDelayS,
+        hit.dwellS,
+        hit.cooldownS,
+      )
     }
 
     // Doctrine assignment pass (kinetic and DE). Shoot-look-shoot: a ship with
@@ -619,6 +651,9 @@ export function resolveEngagements(
         /** interceptAt effect time of this ship, and its flight-time cap flag. */
         tEffectS: number
         capped: boolean
+        releaseDelayS: number
+        dwellS: number
+        cooldownS: number
       }
       const candidates: Candidate[] = []
       for (const es of effectors.values()) {
@@ -668,6 +703,9 @@ export function resolveEngagements(
               arrivalS,
               tEffectS: tEffect,
               capped: ic.capped,
+              releaseDelayS: shot.releaseDelayS,
+              dwellS: shot.dwellS,
+              cooldownS: shot.cooldownS,
             })
           }
         }
@@ -690,7 +728,19 @@ export function resolveEngagements(
         const ship = c.ts.ships[c.shipIdx]
         if (t + EPS < ship.holdUntilS) continue
         if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
-        commitSalvo(c.es, c.ts, c.shipIdx, c.pk, t, c.tEffectS, false, c.capped)
+        commitSalvo(
+          c.es,
+          c.ts,
+          c.shipIdx,
+          c.pk,
+          t,
+          c.tEffectS,
+          false,
+          c.capped,
+          c.releaseDelayS,
+          c.dwellS,
+          c.cooldownS,
+        )
         ship.holdUntilS = c.tEffectS + bdaSFor(c.es.spec, doctrine)
         firedThisTick.add(c.es)
       }

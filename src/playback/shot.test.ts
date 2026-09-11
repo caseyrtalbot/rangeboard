@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { EffectorSpec, UasSpec } from '../model/types'
+import { defaultEnvironment } from '../model/seed'
 import type { EffectorState, ThreatState } from './sweepState'
 import type { TrackEstimate } from './trackTypes'
 import { ZERO_COVARIANCE } from './kalman'
@@ -21,13 +22,16 @@ function states(
   windows: Array<[number, number]>,
   uasSpec?: UasSpec,
 ): { ts: ThreatState; es: EffectorState } {
-  const ts = { altM: 4, uasSpec, windows: new Map([['eff', windows]]) } as ThreatState
+  const ts = {
+    a: { uasId: 'uas' }, altM: 4, uasSpec, windows: new Map([['eff', windows]]),
+  } as ThreatState
   const es = {
     entity: { id: 'eff', pos: { x: 0, y: 0 }, headingDeg: 0 },
     spec,
     mountM: 4,
     pk: 0.8,
     engageTimeS: 5,
+    cooldownS: 10,
   } as EffectorState
   return { ts, es }
 }
@@ -138,5 +142,52 @@ describe('evaluateShot', () => {
     expect(shot.intercept.tEffectS).toBe(15)
     expect(shot.pk).toBeGreaterThan(0)
     expect(shot.pk).toBeLessThan(0.8)
+  })
+
+  it('uses the optical dwell as effect timing and preserves the independent fluence draw', () => {
+    const de = {
+      effectorType: 'de', minRangeM: 0, maxRangeM: 12000, engageTimeS: 5, sectorDeg: 360,
+      outputPowerKw: 100, beamQualityM2: 2, apertureM: 0.3, jitterUrad: 10,
+    } as EffectorSpec
+    const quad = { navMode: 'gps', group: 1, airframe: 'quad' } as UasSpec
+    const { ts, es } = states(de, [[0, 30]], quad)
+    const draws: Array<[string, string, number, number]> = []
+    const shot = evaluateShot({
+      ...ctx(),
+      membersAt: () => [{ x: 10000, y: 0 }],
+      legacyBeamPk: false,
+      environment: {
+        ...defaultEnvironment(), apply: true, visibilityM: 20000, precipitation: 'clear',
+      },
+      beamFluenceDraw: (effectorId, uasId, shipIdx, tS) => {
+        draws.push([effectorId, uasId, shipIdx, tS])
+        return 0.5
+      },
+    }, es, ts, 0)
+    if (shot.rejected) throw new Error(shot.rejected)
+    expect(draws).toEqual([['eff', ts.a.uasId, 0, 10]])
+    expect(shot.dwellS).toBeCloseTo(2, 9)
+    expect(shot.releaseDelayS).toBeCloseTo(1, 9)
+    expect(shot.intercept.tEffectS).toBeCloseTo(13, 9)
+    expect(shot.pk).toBe(0.8)
+  })
+
+  it('uses HPM field and recharge at the final target angle', () => {
+    const hpm = {
+      effectorType: 'hpm', minRangeM: 0, maxRangeM: 10000, engageTimeS: 5, sectorDeg: 360,
+      fieldStrengthVm: 200, fieldStrengthRangeM: 1000, beamwidthDeg: 30, rechargeS: 3,
+    } as EffectorSpec
+    const quad = { navMode: 'gps', group: 1, airframe: 'quad' } as UasSpec
+    const { ts, es } = states(hpm, [[0, 30]], quad)
+    const base = { ...ctx(), legacyBeamPk: false, environment: defaultEnvironment() }
+    const outside = evaluateShot(base, es, ts, 0)
+    if (outside.rejected) throw new Error(outside.rejected)
+    expect(outside.pk).toBe(0)
+    es.entity.headingDeg = 90
+    const inside = evaluateShot(base, es, ts, 0)
+    if (inside.rejected) throw new Error(inside.rejected)
+    expect(inside.pk).toBe(0.8)
+    expect(inside.cooldownS).toBe(3)
+    expect(inside.intercept.tEffectS).toBe(15)
   })
 })

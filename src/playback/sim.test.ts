@@ -1204,6 +1204,10 @@ describe('arrival versus closest approach', () => {
 function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }
+  s.physics = [
+    'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
+    'legacyKineticPk', 'legacyBeamPk',
+  ]
   return s
 }
 
@@ -1251,7 +1255,7 @@ describe('probability of detection', () => {
 
   it('forced to the placard case, the detect boundary is the fourth-root slant range', () => {
     const { spec } = placeGiraffe()
-    const cal = radarCalibration(spec)
+    const cal = radarCalibration(spec, true)
     // 4000 * 100^0.25 = 12,649.11 m slant, 11,909.04 m of ground at 4,263.2 m of height difference.
     const slantB = rangeForPd(cal, 1, 0.5, 1, 1)
     expect(slantB).toBeCloseTo(4000 * Math.pow(100, 0.25), 9)
@@ -1268,7 +1272,7 @@ describe('probability of detection', () => {
   it('with the model default (Swerling 3) the boundary moves out to rangeForPd at case 3', () => {
     const { spec } = placeGiraffe()
     // Fixed-wing resolves to case 3: 13,259.09 m slant, 12,555.02 m of ground.
-    const groundB = groundRangeM(rangeForPd(radarCalibration(spec), 1, 0.5, 1, 3), D_ALT)
+    const groundB = groundRangeM(rangeForPd(radarCalibration(spec, true), 1, 0.5, 1, 3), D_ALT)
     expect(groundB).toBeCloseTo(12555.02, 2)
     const inside = placeMohajer(groundB - 20)
     const outside = placeMohajer(groundB + 20)
@@ -1280,7 +1284,7 @@ describe('probability of detection', () => {
 
   it('requirements.pdDetect = 0.9 shrinks the detect range to rangeForPd at 0.9', () => {
     const { spec } = placeGiraffe()
-    const cal = radarCalibration(spec)
+    const cal = radarCalibration(spec, true)
     // Case 1: Pd 0.9 needs SNR 130.126 vs 18.932 at the placard, so
     // 12,649.11 / (130.126 / 18.932)^0.25 = 7,812.06 m slant, 6,546.25 m of ground.
     const slant1 = rangeForPd(cal, 1, 0.9, 1, 1)
@@ -1298,7 +1302,7 @@ describe('probability of detection', () => {
   it('requirements.pdDetect = 0.9 at the model default case 3', () => {
     const { spec } = placeGiraffe()
     // Case 3: Pd 0.9 needs SNR 53.653: 9,748.95 m slant, 8,767.39 m of ground.
-    const slant3 = rangeForPd(radarCalibration(spec), 1, 0.9, 1, 3)
+    const slant3 = rangeForPd(radarCalibration(spec, true), 1, 0.9, 1, 3)
     expect(slant3).toBeCloseTo(9748.95, 2)
     const ground3 = groundRangeM(slant3, D_ALT)
     expect(ground3).toBeCloseTo(8767.39, 2)
@@ -1317,7 +1321,7 @@ describe('probability of detection', () => {
     for (const pdDetect of [0.5, 0.6, 0.75]) {
       const s = { ...scenario, requirements: { ...scenario.requirements, pdDetect } }
       const hit = detectionsAt(s, 0).get(uasId)![0]
-      expect(hit.pd).toBe(radarPdAt(spec, scenario.environment, uas, hit.slantM))
+      expect(hit.pd).toBe(radarPdAt(spec, scenario.environment, uas, hit.slantM, true))
       expect(hit.pd!).toBeGreaterThanOrEqual(pdDetect)
     }
     // No Pd model: an acoustic sensor and a planning-basis radar hit on range alone.
@@ -1468,7 +1472,7 @@ describe('scan-model track initiation, coast and drop', () => {
 
   /** Ground range at which the fixture radar reads single-scan Pd `pd` against the Mavic. */
   const rangeAtPd = (spec: SpecModel['sensor'], pd: number) =>
-    rangeForPd(radarCalibration(spec!), 0.01, pd, 1, 1)
+    rangeForPd(radarCalibration(spec!, true), 0.01, pd, 1, 1)
 
   it('initiates at the third detecting scan when Pd holds at 0.85: firstDetectS + 2 s at rate 1', () => {
     const { sensorId, spec } = placeScanRadar({ updateRateS: 1 })
@@ -1760,7 +1764,7 @@ describe('one draw per scan', () => {
     // 20 s, so the sweep runs t = 0 .. 20 and the 4 s period lands scans at
     // 0, 4, 8, 12, 16, 20: six scans. Three ships in line abreast.
     const spec = scanScenario({ path: [{ x: 0, y: 0 }], speedMps: 1 }).spec
-    const r45 = rangeForPd(radarCalibration(spec), 0.01, 0.45, 1, 1)
+    const r45 = rangeForPd(radarCalibration(spec, true), 0.01, 0.45, 1, 1)
     const { scenario, uasId } = scanScenario({
       path: [
         { x: r45, y: -50 },
@@ -1844,9 +1848,17 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
       t.stableTrackAtS,
       t.declaredHostileAtS,
     ])
+  const phase2Scenario = (fixture: unknown) => {
+    const s = parseAutosave(JSON.stringify(fixture))
+    s.physics = [
+      'truthTracks', 'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
+      'legacyKineticPk', 'legacyBeamPk',
+    ]
+    return s
+  }
 
   it('JIATF-401 laydown (FAAD C2 with 0.5 s links)', () => {
-    const s = parseAutosave(JSON.stringify(jiatfFixture))
+    const s = phase2Scenario(jiatfFixture)
     const det = assessAllThreats(s)
     expect(pick(det)).toEqual([['ent-mtnvzhmr-25', 'engageable', 250.5, null, 537.5, 509.5, 547.5]])
     expect(det[0].effectorGates).toEqual([{ effectorId: 'ent-mtnvzhmr-24', gateS: 547.5, readyS: 556.5 }])
@@ -1866,7 +1878,7 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
   // entry carries the firm time; the FC quality gate must still return it.
   it('trial policy: the FC quality gate keeps the firm time when the firm step is a missed scan', () => {
     const gate = (fixture: unknown, runId: string) => {
-      const s = parseAutosave(JSON.stringify(fixture))
+      const s = phase2Scenario(fixture)
       return runTrial(s, createTrialManifest(s, runId, 'p2-gate')).assessments.map((a) => [
         a.uasId,
         a.stableTrackAtS,
@@ -1890,7 +1902,7 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
   })
 
   it('layered acoustic laydown (no C2 links)', () => {
-    const s = parseAutosave(JSON.stringify(layeredFixture))
+    const s = phase2Scenario(layeredFixture)
     expect(pick(assessAllThreats(s))).toEqual([
       ['ent-mt5bofdd-2q', 'engageable', 670.5, 942.5, 670.5, 783, 793],
       ['ent-mt5bofdd-2s', 'engageable', 790.5, 1062.5, 790.5, 903, 913],

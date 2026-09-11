@@ -92,6 +92,51 @@ describe('sensorEnvFactor', () => {
   })
 })
 
+describe('Phase 3 shared dispatch', () => {
+  it('routes RF ranges through the link budget and restores the placard path with rfBandGate', () => {
+    const scenario = emptyScenario()
+    const spec = scenario.library.find((model) => model.id === 'lib-rf360')!.sensor!
+    const target = scenario.library.find((model) => model.id === 'lib-mavic3')!.uas!
+    const clear = env({ apply: false })
+    const modeled = effectiveDetectRangeM(spec, clear, target)
+    const fallback = effectiveDetectRangeM(spec, clear, target, undefined, ['rfBandGate'])
+    expect(modeled).toBeGreaterThan(5000)
+    expect(fallback).toBe(spec.detectRangeM)
+  })
+
+  it('routes EO/IR detect and classify to Johnson DRI and restores the span-ratio fallback', () => {
+    const scenario = emptyScenario()
+    const spec = {
+      ...scenario.library.find((model) => model.id === 'lib-spynel')!.sensor!,
+      classifyRangeM: 2000,
+    }
+    const target = scenario.library.find((model) => model.id === 'lib-mavic3')!.uas!
+    const clear = env({ apply: false })
+    const detect = effectiveDetectRangeM(spec, clear, target)
+    const identify = effectiveClassifyRangeM(spec, clear, target)!
+    const fallbackDetect = effectiveDetectRangeM(spec, clear, target, undefined, ['eoirSpanRatio'])
+    expect(detect).toBeGreaterThan(identify)
+    expect(detect / identify).toBeCloseTo(8, 9)
+    expect(fallbackDetect).not.toBe(detect)
+  })
+
+  it('threads singlePulseRadar into the contour calibration', () => {
+    const scenario = emptyScenario()
+    const spec = scenario.library.find((model) => model.id === 'lib-giraffe1x')!.sensor!
+    const target = scenario.library.find((model) => model.id === 'lib-mohajer6')!.uas!
+    const clear = env({ apply: false })
+    const expected = rangeForPd(
+      radarCalibration(spec, true),
+      rcsM2For(target),
+      0.9,
+      1,
+      swerlingFor(target),
+    )
+    expect(effectiveDetectRangeM(spec, clear, target, 0.9, ['singlePulseRadar'])).toBe(expected)
+    expect(effectiveDetectRangeM(spec, clear, target, 0.9)).not.toBe(expected)
+  })
+})
+
 function uas(patch: Partial<UasSpec>): UasSpec {
   return {
     group: 1,

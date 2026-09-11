@@ -20,6 +20,7 @@ import type { Series } from '../../../charts/types'
 import { formatTime } from '../../../geometry/geo'
 import type { Entity } from '../../../model/types'
 import { defaultSensorRole, effectiveDoctrine, mountHeightOf } from '../../../model/types'
+import { physicsSwitches } from '../../../model/types'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { pfaText } from '../../inspector/kit'
@@ -94,7 +95,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
     )
   }
 
-  const cal = radarCalibration(spec)
+  const cal = radarCalibration(spec, physicsSwitches(scenario).includes('singlePulseRadar'))
   const scanRate = scanPeriodS(spec, false)
   // No stated period: a target with an RCS still makes the radar Pd-modeled, so
   // it scans on the role period. The panel names no threat, so it says so.

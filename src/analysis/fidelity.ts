@@ -249,8 +249,9 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     validation: 'analytic',
     note:
       'Constant-velocity Kalman filter per sensor track, measurement noise from the accuracy ' +
-      'fields; the steady-state gain is pinned to the closed form in kalman.test.ts. A sensor ' +
-      'with no accuracy fields, or the truthTracks switch, reports the truth position.',
+      'fields; the steady-state gain is pinned to the closed form in kalman.test.ts. Passive ' +
+      'RF can form a bearing estimate without a range field; other incomplete sensors, or the ' +
+      'truthTracks switch, report the truth position.',
   },
   fusion: {
     id: 'fusion',

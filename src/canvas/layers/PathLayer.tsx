@@ -4,7 +4,7 @@ import { Arrow, Circle, Group, Line, Text } from 'react-konva'
 import type { FlightPath, Vec2 } from '../../model/types'
 import type { UiState } from '../../state/store'
 import { useStore } from '../../state/store'
-import { modelFor, pathSpeed } from '../../model/scenario'
+import { modelFor, pathDurationS } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
 
@@ -118,7 +118,7 @@ export function PathLayer({ mouseWorld }: Props) {
         path={p}
         color={entityInk(entity, modelFor(scenario, entity))}
         lengthM={lengthM}
-        etaS={lengthM / pathSpeed(scenario, p)}
+        etaS={pathDurationS(scenario, p)}
         units={units}
       />
     )

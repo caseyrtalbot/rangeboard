@@ -1,0 +1,34 @@
+
+> rangeboard@0.0.0 check:bundle
+> node scripts/check-bundle.mjs
+
+{
+  "entryFile": "assets/index-D8jIDwim.js",
+  "entryBytes": 351595,
+  "initialBytes": 367081,
+  "preloadBytes": 88204,
+  "allBytes": 455285,
+  "files": [
+    {
+      "file": "assets/index-D8jIDwim.js",
+      "gzipBytes": 351595
+    },
+    {
+      "file": "assets/jsx-runtime-B-hcVAMW.js",
+      "gzipBytes": 3275
+    },
+    {
+      "file": "assets/index-DKMK0Xdi.css",
+      "gzipBytes": 12211
+    },
+    {
+      "file": "assets/Archivo-Regular-CpqDCVrH.woff2",
+      "gzipBytes": 52383
+    },
+    {
+      "file": "assets/JetBrainsMono-Regular-DhGaPbHz.woff2",
+      "gzipBytes": 35821
+    }
+  ]
+}
+Bundle budget passed: entry <= 360 kB; initial JavaScript + CSS <= 400 kB (gzip -9).

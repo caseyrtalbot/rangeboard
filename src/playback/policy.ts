@@ -6,6 +6,7 @@ import { stepIndex } from './clock'
 /** Draw kinds, one integer per engine draw point. */
 export const DRAW_KIND = {
   detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7, classify: 8, falseAlarm: 9, latency: 10,
+  fluence: 11,
 } as const
 
 /**
@@ -71,6 +72,11 @@ export interface DrawPolicy {
    * gate never read the same uniform. Deterministic: 0.5, the median.
    */
   latency(c2Id: string, uasId: string, tS: number, decision: number): number
+  /**
+   * Event-level optical fluence uniform, keyed independently from the kill
+   * outcome. Optional custom policies use the nominal calibrated fluence.
+   */
+  fluence?(effectorId: string, uasId: string, shipIdx: number, salvoIdx: number, tS: number): number
 }
 
 /**
@@ -96,6 +102,7 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
     classify: () => 0.5,
     falseAlarm: () => 0.5,
     latency: () => 0.5,
+    fluence: () => 0.5,
   }
 }
 
@@ -137,5 +144,7 @@ export function monteCarloPolicy(
     falseAlarm: (sensorId, tS, k) => u(DRAW_KIND.falseAlarm, sensorId, k, 0, stepIndex(tS)),
     latency: (c2Id, uasId, tS, decision) =>
       u(DRAW_KIND.latency, c2Id, h(uasId), decision, stepIndex(tS)),
+    fluence: (effectorId, uasId, shipIdx, salvoIdx, tS) =>
+      u(DRAW_KIND.fluence, effectorId, h(`${uasId}:${shipIdx}:${salvoIdx}`), stepIndex(tS), 0),
   }
 }

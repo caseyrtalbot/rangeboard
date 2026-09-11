@@ -134,6 +134,10 @@ function flight(entityId: string, points: Vec2[], startDelayS = 0): FlightPath {
 function legacyScenario(): Scenario {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }
+  s.physics = [
+    'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
+    'legacyKineticPk', 'legacyBeamPk',
+  ]
   return s
 }
 

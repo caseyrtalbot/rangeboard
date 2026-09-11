@@ -1,6 +1,8 @@
 import type { Entity, FlightPath, Scenario, SpecModel } from './types'
+import { physicsSwitches } from './types'
 import { pathLength } from '../geometry/geo'
 import { effectivePathDelayS } from '../playback/raid'
+import { limitedFlightDurationS } from '../playback/flight'
 
 /**
  * Id index per library array. The store never mutates a library in place, so
@@ -59,11 +61,20 @@ export function pathSpeed(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
+/** Flight time excluding the effective start delay, with Phase 3 limits when available. */
+export function pathDurationS(scenario: Scenario, path: FlightPath): number {
+  const speed = pathSpeed(scenario, path)
+  if (physicsSwitches(scenario).includes('noFlightLimits')) return pathLength(path.points) / speed
+  const entity = scenario.entities.find((e) => e.id === path.entityId)
+  const uas = entity ? modelFor(scenario, entity)?.uas : undefined
+  return uas ? limitedFlightDurationS(path.points, speed, uas) : pathLength(path.points) / speed
+}
+
 /** Scenario duration: longest path flight time plus path and wave delays, minimum 60 s. */
 export function scenarioDurationS(scenario: Scenario): number {
   let max = 60
   for (const p of scenario.paths) {
-    const t = effectivePathDelayS(scenario, p) + pathLength(p.points) / pathSpeed(scenario, p)
+    const t = effectivePathDelayS(scenario, p) + pathDurationS(scenario, p)
     if (t > max) max = t
   }
   return Math.ceil(max)

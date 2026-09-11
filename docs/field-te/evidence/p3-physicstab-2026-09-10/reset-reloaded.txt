@@ -1,0 +1,6 @@
+### Result
+{"status":"PASS","selected":0,"resetDisabled":true}
+### Ran Playwright code
+```js
+await (async (page) => { const selected = await page.getByRole('dialog').getByRole('checkbox').evaluateAll(nodes => nodes.filter(n => n.checked).length); const disabled = await page.getByRole('button', {name:'Reset physics',exact:true}).isDisabled(); if (selected !== 0 || !disabled) throw new Error('Persisted reset failed'); return {status:'PASS',selected,resetDisabled:disabled}; })(page);
+```

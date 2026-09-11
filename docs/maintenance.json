@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "dbf737259f57e38c54ad68fc6da181dab4ee98ea2c10b09e0fa1ac00f5bf36c1",
+      "sha256": "d24e3f4e5e18181744e500b4105ebdf5dfdedadd7160c663b9e6efbf3b5a5606",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 lane briefs indexed one per file"
+      "note": "Reviewed the documentation index and added the Phase 3 gate and estimate comparison records."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1559176c32c5d2ab51776666dddd222f912ecdad578f8ab4d4ed56c8248bcbbb",
+      "sha256": "04efc61a5619383fc65a3e7a1446cdf0adf5ffb910721096aba91a7008adc79e",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 stop point 2026-09-10: inputs changed by the 3.a contract, the switch addendum and the fixture pin; no text change beyond the recorded Phase 3 passages"
+      "note": "Reviewed the integrated Physics switches and default Phase 3 physical paths against current source."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c871b45e1e5f0e24f10f198049e1ce90fe5f83b16f7f0025de4f180a41f15bf5",
+      "sha256": "d473121855c69b9d5a8c81c41dc7fe6c1938500e8821cde8736b8038a5a10559",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 stop point 2026-09-10: inputs changed by the 3.a contract, the switch addendum and the fixture pin; no text change beyond the recorded Phase 3 passages"
+      "note": "Reviewed Phase 3 flight, sensor, tracker, kinetic, beam, draw-policy and fidelity integrations; updated validation anchors and known limits."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "7643ededcee40920bdd493631ce9fa49b6163d736256b7f3518d21eba7cbe26e",
+      "sha256": "23fa0af96160e07ae86347a2af4c3018ddca7d80208fd3aa24951958c24893ac",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 stop point 2026-09-10: evidence folder p3-lanes-2026-09-10 added; no verification text change"
+      "note": "Reviewed the Phase 3 validation suites, protected fixtures, draw kind and browser procedure against current tests."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "e8284a2d57f2181dfa086a553e3f5ecd3e08ac7b9b6b7bfc37f94b8958fb41fd",
+      "sha256": "8c3d283dec0ce919e449fe1f5fe713a38202bdc8d06b9b9f1eaec201d0a62e43",
       "reviewedAt": "2026-09-11",
-      "note": "Handoff prepared for the Phase 3 physics wave; owner names removed from the plan and the briefs"
+      "note": "Recorded the final gzip-9 bundle measurements after the gate build."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -107,16 +107,16 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "4a5c63820f8ef4c6acdae71fa24142da9de2922f68891e1d1ae79ddeb3defa5a",
+      "sha256": "46c998409c976d63913ba508dacfd6e9a155739aab11ad505e2846fb57e97405",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
+      "note": "Reviewed appended physics settings CSS: existing spacing, text and border tokens, field markup and square surfaces remain consistent; no design rule change."
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "4ee859d356ad7968cfacf5545e7e8f5b43bb036bf0098e21fd259d30ba970c30",
+      "sha256": "7ca7f0b3d1b58fa30fa7d8446c678118cb7e126a1a2e2a70aad8e215eb60ce61",
       "reviewedAt": "2026-09-11",
-      "note": "Handoff prepared for the Phase 3 physics wave; owner names removed from the plan and the briefs"
+      "note": "Reviewed the completed 3.1 through 3.6 lane merges, integration evidence and Phase 3 exit."
     }
   ],
   "historical": [

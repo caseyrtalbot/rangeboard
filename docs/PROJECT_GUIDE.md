@@ -74,10 +74,15 @@ the worker pool and its progress line names the stop rule and the pool size, plu
 "operator wait floored in N of M decisions" when a C2 decision draw fell below its median
 (the Outcome record prints the trial's own count). The Systems tab prints a load notice
 and a `seed v<N>` chip on each field a saved builtin adopted from the data package.
-`Scenario.physics` holds the engine simplifications a run switched on: `truthTracks`,
-`noFalseTracks`, `noOperatorQueue` and `singlePulseRadar`. No control sets them yet; a
-fixture or a script writes the field. Every run and trial manifest records the list and
-lowers its fidelity floor to `fallback` while the list is not empty.
+The **Physics** section of Settings exposes the nine declared fallback switches in
+their canonical order. A checked box records a fallback in `Scenario.physics`;
+**Reset physics** clears the list. These edits use the existing scenario action, so
+they participate in undo, result invalidation and autosave. Every run and trial manifest
+records the list and lowers its fidelity floor to `fallback` while the list is not empty.
+All nine controls are active. Clearing the six Phase 3 fallbacks selects bounded target
+flight, radar dwell integration, passive-RF link and bearing models, EO/IR DRI, physical
+kinetic effects, and optical/HPM effects. The corresponding model tags and validation
+status travel with the run record.
 Where a forecast count still prints, it reads as an expected value with two decimals
 below ten. No surface labels a forecast as a realized kill.
 

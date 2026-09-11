@@ -1,7 +1,6 @@
 import type { Scenario, SpecModel } from '../model/types'
-import { scenarioDurationS, pathSpeed } from '../model/scenario'
+import { pathDurationS, scenarioDurationS } from '../model/scenario'
 import { DT } from '../playback/clock'
-import { pathLength } from '../geometry/geo'
 import { idsOf, MAX_ARRAY_LENGTH, invalid, objectAt, reference, validateShape } from './runtimeValidation'
 
 export function validateScenarioShape(value: unknown): asserts value is Scenario {
@@ -29,7 +28,7 @@ export function validateScenarioReferences(s: Scenario): void {
     reference(p.entityId, entities, `scenario.paths[${i}].entityId`)
     if (routed.has(p.entityId)) invalid(`scenario.paths[${i}].entityId`, 'entity has more than one flight path')
     routed.add(p.entityId)
-    const duration = pathLength(p.points) / pathSpeed(s, p)
+    const duration = pathDurationS(s, p)
     if (!Number.isFinite(duration)) invalid(`scenario.paths[${i}]`, 'resolved path duration is not finite; check coordinates and speed')
   })
   const duration = scenarioDurationS(s)

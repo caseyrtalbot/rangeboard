@@ -19,7 +19,6 @@
  */
 import type { ChartMark, LadderRow, LadderSpan, Series } from '../charts/types'
 import { CHART_SLOT_TOKENS, OTHER_TOKEN } from '../charts/tokens'
-import { pathLength } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import type { Entity, Scenario, SpecModel } from '../model/types'
 import { entityActive, mountHeightOf } from '../model/types'
@@ -42,7 +41,7 @@ import {
 import { entityPosAt, threatAltitudeFt } from '../playback/tracks'
 import { buildTrackTimeline, PHASE_STYLE, trackStatesAt } from '../playback/trackState'
 import type { TrackPhase } from '../playback/trackState'
-import { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
+import { modelFor, pathDurationS, scenarioDurationS } from '../model/scenario'
 import { engagementPicture } from './impact'
 import { buildLiveTimeline, liveKpisAt } from './liveStats'
 import type { LiveKpis } from './liveStats'
@@ -381,7 +380,7 @@ function pathWindow(scenario: Scenario, uasId: string): [number, number] | null 
   const path = scenario.paths.find((p) => p.entityId === uasId)
   if (!path) return null
   const startS = effectivePathDelayS(scenario, path)
-  return [startS, startS + pathLength(path.points) / pathSpeed(scenario, path)]
+  return [startS, startS + pathDurationS(scenario, path)]
 }
 
 function trackSpan(kind: TrackLadderKind, startS: number, endS: number): LadderSpan {

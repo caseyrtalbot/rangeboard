@@ -227,8 +227,9 @@ describe('store scenario actions', () => {
     st.beginPath(uasId)
     useStore.getState().addDraftPoint({ x: 10000, y: 0 })
     useStore.getState().finishPath()
-    // 10 km at 50 m/s cruise = 200 s.
-    expect(scenarioDurationS(useStore.getState().scenario)).toBe(200)
+    // The Phase 3 point-mass model accelerates at 2 m/s2 to the 50 m/s cruise:
+    // 25 s over the first 625 m, then 187.5 s at cruise, rounded up.
+    expect(scenarioDurationS(useStore.getState().scenario)).toBe(213)
   })
 
   it('defaults connection labels from endpoint kinds', () => {

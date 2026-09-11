@@ -5,13 +5,15 @@ import { RequirementSettings } from './analysis/RequirementSettings'
 import { ThemeSettings, UnitsSettings, BasemapSettings, LayerSettings } from './ViewMenu'
 import { RunTab } from './settings/RunTab'
 import { SystemsTab } from './settings/SystemsTab'
+import { PhysicsTab } from './settings/PhysicsTab'
 
-export type SettingsSection = 'scenario' | 'run' | 'systems' | 'view'
+export type SettingsSection = 'scenario' | 'run' | 'systems' | 'physics' | 'view'
 
 const SECTIONS: { id: SettingsSection; label: string }[] = [
   { id: 'scenario', label: 'Scenario' },
   { id: 'run', label: 'Forecast and analysis' },
   { id: 'systems', label: 'Systems' },
+  { id: 'physics', label: 'Physics' },
   { id: 'view', label: 'View' },
 ]
 
@@ -95,6 +97,13 @@ export function SettingsPanel({
               <h3>Systems</h3>
               <p>Every library field the placed systems use, with its grade, layer, source and spread. An override replaces a value on this board only and records why.</p>
               <SystemsTab />
+            </section>
+          )}
+          {section === 'physics' && (
+            <section className="settings-block prepare-setting-body" aria-label="Physics">
+              <h3>Physics</h3>
+              <p>Checked switches select fallbacks and lower the next run record to fallback. Reset clears all switches.</p>
+              <PhysicsTab />
             </section>
           )}
           {section === 'view' && (

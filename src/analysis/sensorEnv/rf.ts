@@ -4,7 +4,9 @@ import { targetLinkBands } from '../ewPhysics'
 import {
   crossBearingRangeSigmaM,
   directionFindingAccuracyDeg,
+  linkMarginDb,
   linkBudgetRangeM,
+  snrRatio,
   URBAN_EXCESS_LOSS_DB,
 } from '../rfLink'
 import { envFactorImpl, sensorEnvFactor } from './common'
@@ -124,6 +126,36 @@ export function effectiveRfRangeM(
   if (urbanOverride(spec, env)) detectM = Math.min(detectM, spec.urbanRangeM!)
   const quotedRatio = spec.detectRangeM > 0 ? quotedM / spec.detectRangeM : 0
   return detectM * quotedRatio
+}
+
+/**
+ * Received power above the sensitivity reference as a linear ratio. The
+ * strongest overlapping emitted band carries the measurement; 1 is the
+ * threshold/reference value. Null means the link-budget model does not
+ * apply, so callers should keep the legacy tracker path.
+ */
+export function rfSnrOverReference(
+  spec: SensorSpec,
+  uas: UasSpec,
+  env: EnvironmentSpec,
+  rangeM: number,
+  fallback = false,
+): number | null {
+  if (!rfLinkModelApplies(spec, uas, fallback)) return null
+  let bestMarginDb = Number.NEGATIVE_INFINITY
+  for (const band of rfOverlapBands(spec, uas)) {
+    bestMarginDb = Math.max(
+      bestMarginDb,
+      linkMarginDb(
+        uas.radiatedPowerW!,
+        rangeM,
+        band,
+        spec.receiverSensitivityDbm!,
+        rfUrbanMarginDb(env),
+      ),
+    )
+  }
+  return Math.max(1, snrRatio(bestMarginDb))
 }
 
 /** Published DF seed adjusted by an SNR/reference-SNR power ratio. */

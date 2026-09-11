@@ -8,7 +8,7 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, mountHeightOf } from '../model/types'
+import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, mountHeightOf, physicsSwitches } from '../model/types'
 import { dist, pointInWedge } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { modelFor } from '../model/scenario'
@@ -256,6 +256,7 @@ export function prepareSweep(
 ): SensorSweep {
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const env = scenario.environment
+  const physics = physicsSwitches(scenario)
   const altM = altitudeFt * FT_TO_M
   const search: SensorTerms[] = []
   const cuedPass: SensorTerms[] = []
@@ -264,15 +265,15 @@ export function prepareSweep(
     const spec = modelFor(scenario, sensor)?.sensor
     if (!spec) continue
     const sensorHeightM = mountHeightOf(spec)
-    const pdAt = radarPdCurve(spec, env, uasSpec)
+    const pdAt = radarPdCurve(spec, env, uasSpec, physics.includes('singlePulseRadar'))
     const term: SensorTerms = {
       sensor,
       spec,
       gate: sensorHoldGate(spec, uasSpec),
       cueSensor: eoIrNeedsCue(spec),
       pdAt,
-      detectR: pdAt ? 0 : effectiveDetectRangeM(spec, env, uasSpec),
-      classifyR: effectiveClassifyRangeM(spec, env, uasSpec),
+      detectR: pdAt ? 0 : effectiveDetectRangeM(spec, env, uasSpec, undefined, physics),
+      classifyR: effectiveClassifyRangeM(spec, env, uasSpec, physics),
       geometryGate: sensorGeometryGateAt(spec, sensorHeightM, altM),
       sensorHeightM,
       seenMembers: null,

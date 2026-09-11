@@ -1,6 +1,6 @@
 import type { Entity, Scenario, SensorSpec } from '../model/types'
 import { entityActive, physicsSwitches, runSettings } from '../model/types'
-import { destination, dist, pathLength } from '../geometry/geo'
+import { destination, dist } from '../geometry/geo'
 import { mOfN } from '../analysis/radarPd'
 import {
   scanPeriodS,
@@ -10,6 +10,7 @@ import {
 } from '../analysis/doctrineFactors'
 import { stepCount } from './clock'
 import { effectivePathDelayS } from './raid'
+import { pathDurationS } from '../model/scenario'
 import type { DrawPolicy } from './policy'
 import type { TrackEstimate, TrackEstimateSink, TrackMeasurement } from './trackTypes'
 import {
@@ -101,10 +102,7 @@ export function scenarioHorizonS(scenario: Scenario): number {
   for (const path of scenario.paths) {
     const entity = scenario.entities.find((e) => e.id === path.entityId)
     if (!entity || entity.kind !== 'uas' || !entityActive(entity)) continue
-    const model = scenario.library.find((m) => m.id === entity.specId)
-    const speed =
-      path.speedMps && path.speedMps > 0 ? path.speedMps : model?.uas?.cruiseSpeedMps ?? 15
-    const end = effectivePathDelayS(scenario, path) + pathLength(path.points) / speed
+    const end = effectivePathDelayS(scenario, path) + pathDurationS(scenario, path)
     if (end > horizon) horizon = end
   }
   return horizon

@@ -1,0 +1,9 @@
+{
+  "base": "7c6ee2f",
+  "files": {
+    "src/index.css": "d656d270530c2f0faa9fa7e515694f2b9fc2a604f08a1e1447487451fce3ed9e",
+    "src/panels/SettingsPanel.tsx": "a5e7922a3db961e7a5fd5bd3c7651df21a7390773aa27dfded99b9abbb619e2f",
+    "src/panels/settings/PhysicsTab.tsx": "dd5fcb5f447a1c2da5cf568cbb6718b03ed739dfb8f71c48e62460e16b4a093e",
+    "src/panels/settings/PhysicsTab.test.tsx": "d09d0ece2559fafd5e9ae88e1694c6e2f961049840c89ddaa4b0bf9db4606a80"
+  }
+}

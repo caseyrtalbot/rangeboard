@@ -1,12 +1,10 @@
-import type { EffectorSpec, Entity, FlightPath, Scenario, Vec2 } from '../model/types'
+import type { EffectorSpec, Entity, Scenario, Vec2 } from '../model/types'
 import type { ThreatAssessment, ThreatClassification } from './sim'
 import type { AttritionReport, EngagementEvent } from './attritionReport'
 import { intervalIndexAt } from './intercept'
 import { SHIP_DEAD_BELOW } from './pk'
 import { DANGER_INK } from '../ui/ink'
-import { memberPositions } from './tracks'
-import { posAtTime } from '../geometry/geo'
-import { effectivePathDelayS } from './raid'
+import { memberPositions, sampleFlightPath } from './tracks'
 import { profileFor } from '../model/integration'
 import { engineKeyOf } from '../model/scenario'
 import { engagementIsKinetic, engagementReleaseS } from './engagementTiming'
@@ -380,14 +378,6 @@ function heldIn(series: IntervalSeries, tS: number): boolean {
   return false
 }
 
-/** Effective path speed: override, spec cruise, or 15 m/s (matches store.pathSpeed). */
-function speedFor(scenario: Scenario, path: FlightPath): number {
-  if (path.speedMps && path.speedMps > 0) return path.speedMps
-  const entity = scenario.entities.find((e) => e.id === path.entityId)
-  const model = entity ? scenario.library.find((m) => m.id === entity.specId) : undefined
-  return model?.uas?.cruiseSpeedMps ?? 15
-}
-
 /** Kinetic zero-flight intervals have no travel; only beams get a display hold. */
 function drawEndS(ev: EngagementEvent, releaseS: number | null): number {
   return !engagementIsKinetic(ev) && releaseS != null && ev.tEffectS === releaseS
@@ -654,12 +644,7 @@ export function buildTrackTimeline(
           if (!path || path.points.length < 2) {
             members = [uas?.pos ?? { x: 0, y: 0 }]
           } else {
-            const sample = posAtTime(
-              path.points,
-              speedFor(scenario, path),
-              effectivePathDelayS(scenario, path),
-              at,
-            )
+            const sample = sampleFlightPath(scenario, path, at)
             members = uas ? memberPositions(uas, sample.pos, sample.headingDeg) : [sample.pos]
           }
           cache.set(at, members)

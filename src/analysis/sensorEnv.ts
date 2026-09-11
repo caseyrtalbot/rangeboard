@@ -1,11 +1,12 @@
 import type { EnvironmentSpec, SensorSpec, UasSpec } from '../model/types'
+import type { PhysicsSwitch } from '../model/libraryField'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { rangeForPd } from './radarPd'
-import { envFactorImpl, probabilityOr, sensorEnvFactor } from './sensorEnv/common'
+import { probabilityOr, sensorEnvFactor } from './sensorEnv/common'
 import { capInstrumented, radarCalibration, radarPdModeled, rcsRangeFactor } from './sensorEnv/radar'
-import { capVisibility, eoIrNeedsCue, eoRangeFactor } from './sensorEnv/eoir'
+import { capVisibility, eoIrNeedsCue, eoIrRangeM, eoRangeFactor } from './sensorEnv/eoir'
 import { acousticRangeFactor } from './sensorEnv/acoustic'
-import { rfCanHear, rfDetectable, urbanOverride } from './sensorEnv/rf'
+import { effectiveRfRangeM, rfCanHear, rfDetectable } from './sensorEnv/rf'
 
 /**
  * Sensor performance under environmental covariates and target effects.
@@ -46,13 +47,39 @@ export {
 export {
   NIGHT_VISIBLE_FACTOR,
   VISIBILITY_BY_PRECIP,
+  eoBandFor,
+  eoExtinctionPerM,
+  eoIfovRadFor,
+  eoIrDriRangesM,
   eoIrNeedsCue,
+  eoIrRangeM,
+  eoPixelsOnTarget,
   eoRangeFactor,
+  eoTransmissionAt,
+  JOHNSON_CYCLES,
+  KOSCHMIEDER_CONTRAST,
   refSpanMFor,
+  THERMAL_EXTINCTION_RATIO,
   visibilityMFor,
 } from './sensorEnv/eoir'
+export type { EoirDriRanges, EoirRangeOptions, EoirTask } from './sensorEnv/eoir'
 export { ALPHA_DB_PER_KM, acousticSolveM, refAcousticDbFor } from './sensorEnv/acoustic'
-export { jammable, rfCanHear, rfDetectable, rfSensorBands } from './sensorEnv/rf'
+export {
+  effectiveRfRangeM,
+  jammable,
+  legacyRfRangeM,
+  rfCanHear,
+  rfDetectable,
+  rfDirectionFindingAccuracyDeg,
+  rfLinkBudgetModeled,
+  rfLinkModelApplies,
+  rfMeasurementAccuracy,
+  rfOverlapBands,
+  rfSensorBands,
+  rfSnrOverReference,
+  rfUrbanMarginDb,
+} from './sensorEnv/rf'
+export type { RfMeasurementAccuracy } from './sensorEnv/rf'
 
 export type SensorHoldGate = 'ok' | 'needs-cue' | 'rf-silent' | 'rf-band' | 'no-range'
 
@@ -81,6 +108,8 @@ function effectiveRangeM(
   quotedM: number,
   env: EnvironmentSpec,
   target: UasSpec | undefined,
+  physics: readonly PhysicsSwitch[],
+  eoirTask: 'detect' | 'identify',
 ): number {
   let r: number
   switch (spec.sensorType) {
@@ -88,17 +117,25 @@ function effectiveRangeM(
       r = quotedM * rcsRangeFactor(spec, target) * sensorEnvFactor('radar', env)
       break
     case 'eo-ir':
-      r = quotedM * eoRangeFactor(spec, target, env) * sensorEnvFactor('eo-ir', env)
-      break
+      r = capVisibility(
+        spec,
+        env,
+        capInstrumented(
+          spec,
+          quotedM * eoRangeFactor(spec, target, env) * sensorEnvFactor('eo-ir', env),
+        ),
+      )
+      r = eoIrRangeM(spec, target, env, {
+        task: eoirTask,
+        fallbackRangeM: r,
+        useFallback: physics.includes('eoirSpanRatio'),
+      })
+      return capInstrumented(spec, r)
     case 'acoustic':
       r = quotedM * acousticRangeFactor(spec, quotedM, target) * sensorEnvFactor('acoustic', env)
       break
     case 'rf':
-      // A vendor-published urban range outranks the generic urban multiplier;
-      // the classify figure keeps its ratio to the detect figure.
-      r = urbanOverride(spec, env)
-        ? quotedM * (spec.urbanRangeM! / spec.detectRangeM) * envFactorImpl('rf', env, false)
-        : quotedM * sensorEnvFactor('rf', env)
+      r = effectiveRfRangeM(spec, quotedM, env, target, physics.includes('rfBandGate'))
       break
   }
   return capVisibility(spec, env, capInstrumented(spec, r))
@@ -119,12 +156,13 @@ export function effectiveDetectRangeM(
   env: EnvironmentSpec,
   target?: UasSpec,
   pd?: number,
+  physics: readonly PhysicsSwitch[] = [],
 ): number {
   if (radarPdModeled(spec, target)) {
     // The placard is one point on the Pd curve; the range at `pd` follows
     // from the calibration. At the placard Pd against a placard-case target
     // this is exactly the fourth-root RCS law.
-    const cal = radarCalibration(spec)
+    const cal = radarCalibration(spec, physics.includes('singlePulseRadar'))
     const r = rangeForPd(
       cal,
       rcsM2For(target),
@@ -134,7 +172,7 @@ export function effectiveDetectRangeM(
     )
     return capInstrumented(spec, r)
   }
-  return effectiveRangeM(spec, spec.detectRangeM, env, target)
+  return effectiveRangeM(spec, spec.detectRangeM, env, target, physics, 'detect')
 }
 
 /**
@@ -147,8 +185,9 @@ export function pdContoursM(
   env: EnvironmentSpec,
   target: UasSpec | undefined,
   pds: number[],
+  physics: readonly PhysicsSwitch[] = [],
 ): number[] {
-  return pds.map((pd) => effectiveDetectRangeM(spec, env, target, pd))
+  return pds.map((pd) => effectiveDetectRangeM(spec, env, target, pd, physics))
 }
 
 /** Classify range under the same effects. Null when the sensor cannot classify. */
@@ -156,7 +195,8 @@ export function effectiveClassifyRangeM(
   spec: SensorSpec,
   env: EnvironmentSpec,
   target?: UasSpec,
+  physics: readonly PhysicsSwitch[] = [],
 ): number | null {
   if (spec.classifyRangeM == null) return null
-  return effectiveRangeM(spec, spec.classifyRangeM, env, target)
+  return effectiveRangeM(spec, spec.classifyRangeM, env, target, physics, 'identify')
 }

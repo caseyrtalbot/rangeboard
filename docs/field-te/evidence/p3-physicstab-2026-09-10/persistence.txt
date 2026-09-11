@@ -1,0 +1,6 @@
+### Result
+{"status":"PASS","selected":["Truth-position tracks (no Kalman estimate)","No false tracks"]}
+### Ran Playwright code
+```js
+await (async (page) => { const selected = await page.getByRole('dialog').getByRole('checkbox').evaluateAll(nodes => nodes.filter(n => n.checked).map(n => n.closest('label').innerText)); if (JSON.stringify(selected) !== JSON.stringify(['Truth-position tracks (no Kalman estimate)', 'No false tracks'])) throw new Error(JSON.stringify(selected)); return { status: 'PASS', selected }; })(page);
+```

@@ -14,6 +14,7 @@ import {
   effectiveDoctrine,
   entityActive,
   MOUNT_HEIGHT_M,
+  physicsSwitches,
 } from '../model/types'
 import {
   Actions,
@@ -145,7 +146,8 @@ function referenceTitle(spec: SensorSpec): string | undefined {
 function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
   // The rows show the values the engine uses. A recorded value the
   // calibration replaced (absent, or outside (0, 1)) shows as PF.
-  const cal = radarCalibration(spec)
+  const scenario = useStore((s) => s.scenario)
+  const cal = radarCalibration(spec, physicsSwitches(scenario).includes('singlePulseRadar'))
   return (
     <>
       <Row
@@ -252,6 +254,7 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
   if (models.length === 0) return null
   const planning = !targetScaled(spec)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
+  const physics = physicsSwitches(scenario)
   // Only a target-scaled radar runs the Pd model, so only it names the threshold.
   const atPd = spec.sensorType === 'radar' && !planning
   return (
@@ -265,7 +268,7 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
         const gate = sensorHoldGate(spec, m.uas)
         const label = m.threatProfile?.designator ?? m.name
         if (gate !== 'ok') return <Row key={m.id} label={label} value={GATE_WORD[gate]} muted />
-        const r = effectiveDetectRangeM(spec, scenario.environment, m.uas, thresholds.pdDetect)
+        const r = effectiveDetectRangeM(spec, scenario.environment, m.uas, thresholds.pdDetect, physics)
         return (
           <Row
             key={m.id}
@@ -874,12 +877,12 @@ function EntityInspector({ entity }: { entity: Entity }) {
               tag={<PfTag model={model} field="instrumentedRangeM" />}
             />
           )}
-          {effectiveDetectRangeM(model.sensor, scenario.environment) !==
+          {effectiveDetectRangeM(model.sensor, scenario.environment, undefined, undefined, physicsSwitches(scenario)) !==
             model.sensor.detectRangeM && (
             <Row
               label="Detection, this environment"
               value={formatDistance(
-                effectiveDetectRangeM(model.sensor, scenario.environment),
+                effectiveDetectRangeM(model.sensor, scenario.environment, undefined, undefined, physicsSwitches(scenario)),
                 units,
               )}
             />
