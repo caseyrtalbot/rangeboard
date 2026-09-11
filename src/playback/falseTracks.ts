@@ -177,9 +177,10 @@ function falseRadars(scenario: Scenario): FalseRadar[] {
  * return its load. Draw keys, kind 9 (sensorId, k, step of the scan time):
  * k 0 is the Poisson count; the n-th false track of a scan reads k = 4n + 1
  * and 4n + 2 for its position (range, bearing), 4n + 3 for speed and 4n + 4
- * for heading. Scans start at `draw.phase(sensorId) * periodS`, the same
- * phase draw the sweep takes, so the false scan clock matches the real one
- * and no draw key moves. Each false track's `TrackEstimate` per step goes to
+ * for heading. Scans start at t = 0: the false process is independent of any
+ * threat, and reading the sweep's phase draw here would add a phase call per
+ * radar that the common-random-number tests count. Each false track's
+ * `TrackEstimate` per step goes to
  * the sink when one is attached; without a sink only the counts are kept.
  */
 export function prepareFalseTracks(
@@ -199,7 +200,7 @@ export function prepareFalseTracks(
   for (const radar of radars) {
     const counts = new Float64Array(steps)
     bySensor.set(radar.sensor.id, counts)
-    const originS = draw.phase(radar.sensor.id) * radar.periodS
+    const originS = 0
     const lifeS = radar.lifeScans * radar.periodS
     for (let scanIdx = 0; ; scanIdx += 1) {
       const tScan = originS + scanIdx * radar.periodS

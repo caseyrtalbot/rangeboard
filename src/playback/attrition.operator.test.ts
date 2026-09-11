@@ -9,9 +9,9 @@ import { assessAllThreats, assessThreat } from './sim'
 /**
  * Operator queue on the doctrine fixture (attrition.doctrine.test.ts) with a
  * C2 node between the radar and the interceptor. Deterministic policy: every
- * latency uniform is 0.5, so a decision costs exactly the median, and both
- * decisions (declare, assign) together move the release-ready time by twice
- * the median. The target flies east at 40 m/s from x = -1210 through the
+ * latency uniform is 0.5, so a decision lands on its median and the queue adds
+ * nothing over the doctrine dwells; only overload adds (load / capacity - 1)
+ * medians per decision (declare, assign). The target flies east at 40 m/s from x = -1210 through the
  * 1000 m ring of an interceptor at the origin: in range from t = 5.5 to 55.
  */
 
@@ -78,17 +78,17 @@ function build(c2: C2Spec | null, doctrine: boolean): Scenario {
 const firstShot = (s: Scenario) => resolveEngagements(s).threats[0].firstShotS
 
 describe('operator queue at the gates (attrition.ts)', () => {
-  it('legacy path: two median decisions move the first shot by twice the median', () => {
+  it('legacy path: two median decisions under capacity leave the first shot where the doctrine put it', () => {
     const base = build(null, false)
     // ROE tight: the gate is hostile ID at the first sample inside the ring (t = 5.5), no link latency.
     expect(assessThreat(base, 'uas').engageGateS).toBe(5.5)
     expect(firstShot(base)).toBe(5.5)
     const withC2 = build({ decisionLatencyS: 5, decisionLatencySigmaDb: null, operatorTrackCapacity: 10 }, false)
     expect(assessAllThreats(withC2)).toEqual(assessAllThreats(base))
-    expect(firstShot(withC2)).toBeCloseTo(15.5, 9)
+    expect(firstShot(withC2)).toBe(5.5)
   })
 
-  it('doctrine path: the release-ready time carries both decisions', () => {
+  it('doctrine path: median decisions leave the release-ready time unchanged', () => {
     const base = build(null, true)
     // Gate 16 (doctrine fixture), 2 s + 3 s default hops, 8 s interceptor target dwell: ready at 29.
     const a = assessThreat(base, 'uas')
@@ -96,13 +96,13 @@ describe('operator queue at the gates (attrition.ts)', () => {
     expect(a.effectorGates?.[0].readyS).toBe(29)
     expect(firstShot(base)).toBe(29)
     const withC2 = build({ decisionLatencyS: 4, decisionLatencySigmaDb: null }, true)
-    expect(firstShot(withC2)).toBeCloseTo(37, 9)
+    expect(firstShot(withC2)).toBe(29)
   })
 
-  it('overload multiplies the decision by load / capacity', () => {
-    // One real track at the c2 with capacity 0.5: factor 2, so 5 s decisions cost 10 s each.
+  it('overload adds (load / capacity - 1) medians per decision', () => {
+    // One real track at the c2 with capacity 0.5: factor 2, so each 5 s decision adds 5 s; two decisions add 10 s.
     const withC2 = build({ decisionLatencyS: 5, decisionLatencySigmaDb: null, operatorTrackCapacity: 0.5 }, false)
-    expect(firstShot(withC2)).toBeCloseTo(25.5, 9)
+    expect(firstShot(withC2)).toBeCloseTo(15.5, 9)
   })
 
   it('the noOperatorQueue switch restores the baseline timeline', () => {

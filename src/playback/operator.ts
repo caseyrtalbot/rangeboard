@@ -24,6 +24,11 @@ import type { ThreatAssessment } from './sim'
  * as long. A queueing model would add a knee near capacity; nothing in the
  * library states one, so the planning factor stays the first-order line.
  *
+ * The doctrine dwells (`declareHostileS`, `targetS`) already charge the
+ * planning decision time, so the queue adds only the excess over the median:
+ * the tail of the draw and the overload penalty. At the median with no
+ * overload the extra is 0 and the doctrine timeline holds.
+ *
  * Inactive (zero latency, today's timeline): no C2 with a `c2` spec that
  * states a median, the `noOperatorQueue` switch, or a threat whose route has
  * no C2 node. The C2 node of a route is its first c2 entity.
@@ -62,7 +67,11 @@ export function firstC2Of(route: Pick<KillChainRoute, 'viaC2Ids'>): string | nul
 export interface OperatorQueue {
   /** True when some C2 adds latency: a c2 spec with a median and the switch off. */
   readonly active: boolean
-  /** Extra latency of one decision on `uasId` at `c2Id` taken at `tS`, seconds; 0 when inactive. */
+  /**
+   * Extra latency of one decision on `uasId` at `c2Id` taken at `tS`, seconds, over the
+   * doctrine dwell: the drawn latency times the overload factor, less the median, floored
+   * at 0. 0 when inactive.
+   */
   delayS(c2Id: string, uasId: string, tS: number): number
   /** Live tracks at the C2 at `tS`: real threats tracked plus the false tracks of its feeding radars. */
   loadAt(c2Id: string, tS: number): number
@@ -150,8 +159,14 @@ export function createOperatorQueue(
       const spec = specs.get(c2Id)
       if (!spec) return 0
       const u = draw.latency(c2Id, uasId, tS)
-      const base = decisionLatencyS(spec.decisionLatencyS!, spec.decisionLatencySigmaDb, u)
-      return base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity)
+      const medianS = spec.decisionLatencyS!
+      const base = decisionLatencyS(medianS, spec.decisionLatencySigmaDb, u)
+      // The doctrine dwell already charges the planning decision time, so the
+      // queue adds only the excess: the tail of the draw and the overload
+      // penalty. At the median with no overload the extra is 0 and today's
+      // timeline holds; a decision faster than the median never shortens a
+      // doctrine dwell.
+      return Math.max(0, base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity) - medianS)
     },
   }
 }

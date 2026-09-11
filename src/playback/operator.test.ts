@@ -111,7 +111,7 @@ describe('operator queue', () => {
     expect(policy.latencyCalls).toEqual([])
   })
 
-  it('a decision reads the kind-10 uniform keyed by (c2, uas, step) and maps it through the lognormal', () => {
+  it('a decision reads the kind-10 uniform keyed by (c2, uas, step) and adds the lognormal excess over the median', () => {
     const policy = spy(monteCarloPolicy(4821, 3, T))
     const q = createOperatorQueue(fixture(C2), [tracked('u1', 0, 100)], policy)
     expect(q.active).toBe(true)
@@ -120,25 +120,25 @@ describe('operator queue', () => {
     expect(DRAW_KIND.latency).toBe(10)
     // One real track at the c2 (load 1 <= capacity 2): no overload.
     expect(q.loadAt('c2', tS)).toBe(1)
-    expect(q.delayS('c2', 'u1', tS)).toBeCloseTo(decisionLatencyS(6, 3, u), 12)
+    expect(q.delayS('c2', 'u1', tS)).toBeCloseTo(Math.max(0, decisionLatencyS(6, 3, u) - 6), 12)
     expect(policy.latencyCalls).toEqual([['c2', 'u1', tS]])
     // A c2 that is not on the map adds zero.
     expect(q.delayS('nobody', 'u1', tS)).toBe(0)
   })
 
-  it('the deterministic policy returns the median; overload scales it by load / capacity', () => {
+  it('the deterministic policy adds nothing at the median; overload adds (load / capacity - 1) medians', () => {
     const threats = [tracked('u1', 0, 100), tracked('u2', 0, 100), tracked('u3', 50, 100), tracked('u4', 50, 100)]
     const q = createOperatorQueue(fixture(C2), threats, deterministicPolicy(T))
-    // Two tracks at t 10 (capacity 2): the median. Four at t 60: twice the median.
+    // Two tracks at t 10 (capacity 2): the median, so no extra. Four at t 60: twice the median, one median extra.
     expect(q.loadAt('c2', 10)).toBe(2)
-    expect(q.delayS('c2', 'u1', 10)).toBeCloseTo(6, 12)
+    expect(q.delayS('c2', 'u1', 10)).toBe(0)
     expect(q.loadAt('c2', 60)).toBe(4)
-    expect(q.delayS('c2', 'u1', 60)).toBeCloseTo(12, 12)
+    expect(q.delayS('c2', 'u1', 60)).toBeCloseTo(6, 12)
     // Nothing tracked after the last held sample.
     expect(q.loadAt('c2', 101)).toBe(0)
-    // The other c2 has no feeding radar: no load, but its own median still applies.
+    // The other c2 has no feeding radar: no load and no extra.
     expect(q.loadAt('other-c2', 60)).toBe(0)
-    expect(q.delayS('other-c2', 'u1', 60)).toBeCloseTo(6, 12)
+    expect(q.delayS('other-c2', 'u1', 60)).toBe(0)
   })
 
   it('a threat with no detection is not a track', () => {
