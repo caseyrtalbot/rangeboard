@@ -4,11 +4,12 @@
   "type": "eo-ir",
   "band": "dual",
   "targetClass": "any",
-  "dataPackageVersion": 2,
+  "dataPackageVersion": 3,
   "members": [
     "lib-hdcmr",
     "lib-mxgcs",
-    "lib-cm262"
+    "lib-cm262",
+    "lib-drs-s3"
   ],
   "fields": {
     "sectorDeg": {
@@ -19,6 +20,28 @@
         "lib-hdcmr",
         "lib-mxgcs",
         "lib-cm262"
+      ]
+    },
+    "detectorPixelsH": {
+      "mean": 1120,
+      "sd": 320,
+      "n": 4,
+      "members": [
+        "lib-hdcmr",
+        "lib-mxgcs",
+        "lib-cm262",
+        "lib-drs-s3"
+      ]
+    },
+    "fovDeg": {
+      "mean": 2.25,
+      "sd": 0.5972157622389639,
+      "n": 4,
+      "members": [
+        "lib-hdcmr",
+        "lib-mxgcs",
+        "lib-cm262",
+        "lib-drs-s3"
       ]
     }
   }

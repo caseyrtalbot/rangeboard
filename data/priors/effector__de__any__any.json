@@ -1,0 +1,29 @@
+{
+  "class": "effector/de/any/any",
+  "kind": "effector",
+  "type": "de",
+  "band": "any",
+  "targetClass": "any",
+  "dataPackageVersion": 3,
+  "members": [
+    "lib-phel",
+    "lib-demshorad",
+    "lib-amphel",
+    "lib-helios",
+    "lib-ironbeam"
+  ],
+  "fields": {
+    "outputPowerKw": {
+      "mean": 50,
+      "sd": 33.166247903554,
+      "n": 5,
+      "members": [
+        "lib-phel",
+        "lib-demshorad",
+        "lib-amphel",
+        "lib-helios",
+        "lib-ironbeam"
+      ]
+    }
+  }
+}

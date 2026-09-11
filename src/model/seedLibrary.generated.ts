@@ -39,6 +39,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.5,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -120,6 +122,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.8,
       elevationAccuracyDeg: 3,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -167,6 +171,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.2,
       elevationAccuracyDeg: 0.2,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -215,6 +221,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.5,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -264,6 +272,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.3,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 50,
     },
     provenance: [
       {
@@ -336,6 +346,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.3,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.011,
+      pulsesPerDwell: 56,
     },
     provenance: [
       {
@@ -386,6 +398,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.75,
       elevationAccuracyDeg: 1,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.033,
+      pulsesPerDwell: null,
     },
     provenance: [
       {
@@ -458,6 +472,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.8,
       elevationAccuracyDeg: 3,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -528,6 +544,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 5,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: 2,
     },
     provenance: [
       {
@@ -564,6 +582,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 5,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: 2,
     },
     provenance: [
       {
@@ -611,6 +631,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 10,
       elevationAccuracyDeg: 10,
+      noiseFloorDb: 21,
     },
     provenance: [
       {
@@ -659,6 +680,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: null,
       elevationAccuracyDeg: null,
+      noiseFloorDb: 23,
     },
     provenance: [
       {
@@ -697,6 +719,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: 5,
       azimuthAccuracyDeg: 0.029,
       elevationAccuracyDeg: 0.029,
+      pixelPitchUm: 12,
+      focalLengthMm: 290,
+      detectorPixelsH: 1280,
+      fovDeg: 3,
+      mrtdMk: 25,
     },
     provenance: [
       {
@@ -767,6 +794,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 0.017,
       elevationAccuracyDeg: 0.017,
+      pixelPitchUm: 10,
+      focalLengthMm: 300,
+      detectorPixelsH: 1280,
+      fovDeg: 2.7,
+      mrtdMk: 25,
     },
     provenance: [
       {
@@ -806,6 +838,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 0.1,
       elevationAccuracyDeg: 0.1,
+      pixelPitchUm: null,
+      focalLengthMm: null,
+      detectorPixelsH: null,
+      fovDeg: null,
+      mrtdMk: null,
     },
     provenance: [
       {
@@ -864,6 +901,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: 5,
       azimuthAccuracyDeg: 0.03,
       elevationAccuracyDeg: 0.03,
+      pixelPitchUm: 15,
+      focalLengthMm: 275,
+      detectorPixelsH: 640,
+      fovDeg: 2,
+      mrtdMk: 25,
     },
     provenance: [
       {
@@ -923,6 +965,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 0.02,
       elevationAccuracyDeg: 0.02,
+      pixelPitchUm: 15,
+      focalLengthMm: 100,
+      detectorPixelsH: 512,
+      fovDeg: 4.4,
+      mrtdMk: 25,
     },
     provenance: [
       {
@@ -992,6 +1039,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 15,
       elevationAccuracyDeg: null,
+      noiseFloorDb: 26,
     },
     provenance: [
       {
@@ -1039,6 +1087,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: null,
       elevationAccuracyDeg: null,
+      noiseFloorDb: 32,
     },
     provenance: [
       {
@@ -1086,6 +1135,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.2,
       elevationAccuracyDeg: 0.2,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1134,6 +1185,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.2,
       elevationAccuracyDeg: 0.2,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1182,6 +1235,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 3,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: 2,
     },
     provenance: [
       {
@@ -1220,6 +1275,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: 5,
       azimuthAccuracyDeg: 0.0046,
       elevationAccuracyDeg: 0.0046,
+      pixelPitchUm: 10,
+      focalLengthMm: 300,
+      detectorPixelsH: 1280,
+      fovDeg: 2.4,
+      mrtdMk: 25,
     },
     provenance: [
       {
@@ -1290,6 +1350,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 0.03,
       elevationAccuracyDeg: 0.03,
+      pixelPitchUm: 6,
+      focalLengthMm: 275,
+      detectorPixelsH: 1280,
+      fovDeg: 1.6,
+      mrtdMk: 30,
     },
     provenance: [
       {
@@ -1359,6 +1424,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.2,
       elevationAccuracyDeg: 0.2,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1408,6 +1475,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.5,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1468,6 +1537,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.3,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.011,
+      pulsesPerDwell: 11,
     },
     provenance: [
       {
@@ -1520,6 +1591,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.8,
       elevationAccuracyDeg: 3,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.0056,
+      pulsesPerDwell: 11,
     },
     provenance: [
       {
@@ -1603,6 +1676,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.5,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1676,6 +1751,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 1,
       elevationAccuracyDeg: 1.5,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1735,6 +1812,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.8,
       elevationAccuracyDeg: 3,
       falseAlarmRatePerScan: 0.5,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1786,6 +1865,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.8,
       elevationAccuracyDeg: 3,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.02,
+      pulsesPerDwell: 100,
     },
     provenance: [
       {
@@ -1858,6 +1939,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       azimuthAccuracyDeg: 0.3,
       elevationAccuracyDeg: 0.5,
       falseAlarmRatePerScan: 1,
+      dwellTimeS: 0.0083,
+      pulsesPerDwell: 8,
     },
     provenance: [
       {
@@ -1919,6 +2002,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 3,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: 3,
     },
     provenance: [
       {
@@ -1959,6 +2044,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 30,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: null,
     },
     provenance: [
       {
@@ -2016,6 +2103,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 30,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: null,
     },
     provenance: [
       {
@@ -2068,6 +2157,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 3,
       elevationAccuracyDeg: null,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: 2,
     },
     provenance: [
       {
@@ -2119,6 +2210,8 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeAccuracyM: null,
       azimuthAccuracyDeg: 1,
       elevationAccuracyDeg: 1,
+      receiverSensitivityDbm: -90,
+      geolocationMinNodes: null,
     },
     provenance: [
       {
@@ -2162,6 +2255,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       magazineSize: 4,
       salvoCooldownS: 30,
       flyoutSpeedMps: 154,
+      seekerAcquisitionRangeM: null,
+      lethalRadiusM: 10,
+      guidanceNoiseM: 2,
+      maxFlyoutSpeedMps: 165,
+      boostTimeS: null,
     },
     provenance: [
       {
@@ -2205,6 +2303,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       pk: 0.85,
       magazineSize: 4,
       salvoCooldownS: 30,
+      seekerAcquisitionRangeM: null,
+      lethalRadiusM: 10,
+      guidanceNoiseM: 2,
+      maxFlyoutSpeedMps: null,
+      boostTimeS: null,
     },
     provenance: [
       {
@@ -2238,6 +2341,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       pk: 0.75,
       magazineSize: 2,
       salvoCooldownS: 60,
+      seekerAcquisitionRangeM: null,
+      lethalRadiusM: 0.3,
+      guidanceNoiseM: 0.5,
+      maxFlyoutSpeedMps: null,
+      boostTimeS: null,
     },
     provenance: [
       {
@@ -2272,6 +2380,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       magazineSize: 4,
       salvoCooldownS: 60,
       flyoutSpeedMps: 78,
+      seekerAcquisitionRangeM: null,
+      lethalRadiusM: 10,
+      guidanceNoiseM: 2,
+      maxFlyoutSpeedMps: 78,
+      boostTimeS: null,
     },
     provenance: [
       {
@@ -2316,6 +2429,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       magazineSize: 30,
       salvoCooldownS: 10,
       flyoutSpeedMps: 805,
+      dispersionMils: 1,
+      fireControlErrorMils: 1,
+      burstRounds: 10,
+      rateOfFireRpm: 200,
+      muzzleVelocityMps: 805,
     },
     provenance: [
       {
@@ -2360,6 +2478,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       pk: 0.7,
       magazineSize: 20,
       salvoCooldownS: 5,
+      dispersionMils: 1,
+      fireControlErrorMils: 0.5,
+      burstRounds: 60,
+      rateOfFireRpm: 4500,
+      muzzleVelocityMps: 1113,
     },
     provenance: [
       {
@@ -2393,6 +2516,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       pk: 0.7,
       magazineSize: 24,
       salvoCooldownS: 10,
+      dispersionMils: 1,
+      fireControlErrorMils: 0.5,
+      burstRounds: 1,
+      rateOfFireRpm: 800,
+      muzzleVelocityMps: 880,
     },
     provenance: [
       {
@@ -2423,6 +2551,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       maxAltitudeFt: 8000,
       engageTimeS: 15,
       salvoCooldownS: 15,
+      outputPowerKw: 20,
+      beamQualityM2: 2,
+      jitterUrad: 10,
+      apertureM: 0.3,
+      dwellToEffectS: null,
     },
     provenance: [
       {
@@ -2454,6 +2587,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       maxAltitudeFt: 10000,
       engageTimeS: 15,
       salvoCooldownS: 10,
+      outputPowerKw: 50,
+      beamQualityM2: 2,
+      jitterUrad: 10,
+      apertureM: 0.3,
+      dwellToEffectS: null,
     },
     provenance: [
       {
@@ -2487,6 +2625,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       engageTimeS: 3,
       pk: 0.7,
       salvoCooldownS: 5,
+      fieldStrengthVm: null,
+      fieldStrengthRangeM: null,
+      beamwidthDeg: 120,
+      rechargeS: 1,
     },
     provenance: [
       {
@@ -2531,6 +2673,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       engageTimeS: 2,
       pk: 0.7,
       salvoCooldownS: 5,
+      fieldStrengthVm: null,
+      fieldStrengthRangeM: null,
+      beamwidthDeg: null,
+      rechargeS: 1,
     },
     provenance: [
       {
@@ -2684,6 +2830,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       maxRangeM: 3000,
       maxAltitudeFt: null,
       engageTimeS: 15,
+      outputPowerKw: 20,
+      beamQualityM2: 2,
+      jitterUrad: 10,
+      apertureM: 0.3,
+      dwellToEffectS: null,
     },
     provenance: [
       {
@@ -2715,6 +2866,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       maxRangeM: 3000,
       maxAltitudeFt: null,
       engageTimeS: 15,
+      outputPowerKw: 60,
+      beamQualityM2: 2,
+      jitterUrad: 10,
+      apertureM: 0.3,
+      dwellToEffectS: null,
     },
     provenance: [
       {
@@ -2746,6 +2902,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       maxRangeM: 7000,
       maxAltitudeFt: null,
       engageTimeS: 5,
+      outputPowerKw: 100,
+      beamQualityM2: 2,
+      jitterUrad: 10,
+      apertureM: 0.3,
+      dwellToEffectS: 2,
     },
     provenance: [
       {
@@ -2964,6 +3125,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       magazineSize: 4,
       salvoCooldownS: 10,
       flyoutSpeedMps: 750,
+      seekerAcquisitionRangeM: 4800,
+      lethalRadiusM: 10,
+      guidanceNoiseM: 2,
+      maxFlyoutSpeedMps: 884,
+      boostTimeS: 2,
     },
     provenance: [
       {
@@ -3033,6 +3199,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       magazineSize: 4,
       salvoCooldownS: 5,
       flyoutSpeedMps: 739,
+      seekerAcquisitionRangeM: 10000,
+      lethalRadiusM: 10,
+      guidanceNoiseM: 1,
+      maxFlyoutSpeedMps: 1000,
+      boostTimeS: 1.1,
     },
     provenance: [
       {
@@ -3091,6 +3262,11 @@ export const SEED_LIBRARY: SpecModel[] = [
       magazineSize: 252,
       salvoCooldownS: 5,
       flyoutSpeedMps: 1075,
+      dispersionMils: 1,
+      fireControlErrorMils: 1,
+      burstRounds: 20,
+      rateOfFireRpm: 1200,
+      muzzleVelocityMps: 1075,
     },
     provenance: [
       {
@@ -3157,6 +3333,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       engageTimeS: 150,
       pk: 0.85,
       salvoCooldownS: 180,
+      lethalRadiusM: 2,
     },
     provenance: [
       {
@@ -3335,6 +3512,7 @@ export const SEED_LIBRARY: SpecModel[] = [
         'ism-2400',
         'ism-5800',
       ],
+      linkProtocol: 'ocusync',
       group: 1,
       rcsM2: 0.01,
       spanM: 0.38,
@@ -3349,6 +3527,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 33,
+      climbRateMps: 8,
+      maxAccelMps2: 6.9,
+      radiatedPowerW: 0.4,
     },
     provenance: [
       {
@@ -3435,6 +3617,7 @@ export const SEED_LIBRARY: SpecModel[] = [
         'ism-2400',
         'ism-5800',
       ],
+      linkProtocol: 'ocusync',
       group: 1,
       rcsM2: 0.005,
       spanM: 0.25,
@@ -3449,6 +3632,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 39,
+      climbRateMps: 5,
+      maxAccelMps2: 6.9,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -3529,6 +3716,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       oneWay: true,
       rangeNote: 'Strikes 5-15 km; relay drones and high-gain video links push 20-30 km. Extended packs and wing kits reported.',
       weaponProfile: 'impact',
+      linkProtocol: 'elrs',
       group: 1,
       rcsM2: 0.01,
       spanM: 0.3,
@@ -3543,6 +3731,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: 4,
       effectRadiusM: 30,
       standoffRangeM: null,
+      maxTurnRateDegS: 22,
+      climbRateMps: 10,
+      maxAccelMps2: 9.8,
+      radiatedPowerW: 1.6,
     },
     provenance: [
       {
@@ -3581,6 +3773,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'Fielded fiber spools of 10, 15, and 20 km confirmed in combat; 41-50 km spools demonstrated on larger frames.',
       weaponProfile: 'impact',
       jamBehavior: 'continue',
+      linkProtocol: 'fiber',
       group: 1,
       rcsM2: 0.01,
       spanM: 0.3,
@@ -3595,6 +3788,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 37,
+      climbRateMps: 10,
+      maxAccelMps2: 9.8,
+      radiatedPowerW: 0,
     },
     provenance: [
       {
@@ -3660,6 +3857,7 @@ export const SEED_LIBRARY: SpecModel[] = [
         'ism-2400',
         'ism-5800',
       ],
+      linkProtocol: 'ocusync',
       group: 2,
       rcsM2: 0.05,
       spanM: 0.895,
@@ -3674,6 +3872,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 22,
+      climbRateMps: 6,
+      maxAccelMps2: 5.7,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -3766,6 +3968,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'Night sorties 10-20 km with ~15 kg payload; Starlink-relay control reported on some airframes.',
       weaponProfile: 'none',
       jamBehavior: 'return-home',
+      linkProtocol: 'proprietary',
       group: 2,
       rcsM2: 0.1,
       spanM: 1.5,
@@ -3780,6 +3983,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 33,
+      climbRateMps: 3,
+      maxAccelMps2: 6.9,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -3818,6 +4025,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       oneWay: false,
       rangeNote: 'Legs beyond 100 km reported for the class; combat ISR bounded by ~50 km datalink.',
       weaponProfile: 'none',
+      linkProtocol: 'proprietary',
       group: 2,
       rcsM2: 0.05,
       spanM: 3.54,
@@ -3832,6 +4040,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 33,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -3903,6 +4115,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       oneWay: true,
       rangeNote: 'Strikes documented at 40 km; Izdeliye-51 variants hit 65 km; paired relay drones push toward 100 km.',
       weaponProfile: 'impact',
+      linkProtocol: 'proprietary',
       group: 2,
       rcsM2: 0.05,
       spanM: 1.65,
@@ -3917,6 +4130,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: 5,
       effectRadiusM: 30,
       standoffRangeM: null,
+      maxTurnRateDegS: 26,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -3977,6 +4194,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'Routinely operates 110-150 km from its ground station on 14-16 hour sorties.',
       weaponProfile: 'none',
       jamBehavior: 'return-home',
+      linkProtocol: 'proprietary',
       group: 3,
       rcsM2: 0.1,
       spanM: 3.1,
@@ -3991,6 +4209,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 19,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -4087,6 +4309,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       linkBands: [
         'gnss',
       ],
+      linkProtocol: 'none',
       group: 3,
       rcsM2: 0.2,
       spanM: 2.5,
@@ -4101,6 +4324,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: 40,
       effectRadiusM: 80,
       standoffRangeM: null,
+      maxTurnRateDegS: 11,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 0,
     },
     provenance: [
       {
@@ -4171,6 +4398,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'About 300 km with a combat payload; unarmed decoy flights reported to 600 km.',
       weaponProfile: 'none',
       jamBehavior: 'continue',
+      linkProtocol: 'proprietary',
       group: 2,
       rcsM2: 0.2,
       spanM: 2.5,
@@ -4185,6 +4413,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 17,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 2,
     },
     provenance: [
       {
@@ -4244,6 +4476,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       oneWay: true,
       rangeNote: 'Early conversions flew about 500 km with 25 kg of explosives; MICH 2000 derivative extends the class.',
       weaponProfile: 'impact',
+      linkProtocol: 'none',
       group: 3,
       rcsM2: 0.2,
       spanM: 5,
@@ -4258,6 +4491,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: null,
+      maxTurnRateDegS: 19,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 0,
     },
     provenance: [
       {
@@ -4340,6 +4577,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'Bounded by line-of-sight datalink, about 200 km from the control station; up to 500 km claimed.',
       weaponProfile: 'standoff',
       jamBehavior: 'return-home',
+      linkProtocol: 'proprietary',
       group: 4,
       rcsM2: 1,
       spanM: 10,
@@ -4354,6 +4592,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: 8000,
+      maxTurnRateDegS: 8,
+      climbRateMps: 5,
+      maxAccelMps2: 2,
+      radiatedPowerW: 10,
     },
     provenance: [
       {
@@ -4425,6 +4667,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'Declared range 770 km, ceiling 4000 m (study 5.2.1 [R03]).',
       weaponProfile: 'impact',
       jamBehavior: 'continue',
+      linkProtocol: 'none',
       group: 3,
       rcsM2: 0.2,
       spanM: 3,
@@ -4439,6 +4682,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: 50,
       effectRadiusM: 80,
       standoffRangeM: null,
+      maxTurnRateDegS: 6,
+      climbRateMps: 20,
+      maxAccelMps2: 3,
+      radiatedPowerW: 0,
     },
     provenance: [
       {
@@ -4532,6 +4779,7 @@ export const SEED_LIBRARY: SpecModel[] = [
       rangeNote: 'LOS and BLOS communications per the 2026 Baykar sheet; no public radius figure used.',
       weaponProfile: 'standoff',
       jamBehavior: 'return-home',
+      linkProtocol: 'proprietary',
       group: 4,
       rcsM2: 1,
       spanM: 12,
@@ -4546,6 +4794,10 @@ export const SEED_LIBRARY: SpecModel[] = [
       warheadKg: null,
       effectRadiusM: null,
       standoffRangeM: 8000,
+      maxTurnRateDegS: 7,
+      climbRateMps: 6.1,
+      maxAccelMps2: 2,
+      radiatedPowerW: 10,
     },
     provenance: [
       {

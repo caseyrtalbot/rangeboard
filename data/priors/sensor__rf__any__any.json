@@ -4,11 +4,13 @@
   "type": "rf",
   "band": "any",
   "targetClass": "any",
-  "dataPackageVersion": 2,
+  "dataPackageVersion": 3,
   "members": [
     "lib-rf360",
     "lib-corian",
-    "lib-rfpatrol"
+    "lib-rfpatrol",
+    "lib-rfone",
+    "lib-cuaews-df"
   ],
   "fields": {
     "sectorDeg": {
@@ -19,6 +21,17 @@
         "lib-rf360",
         "lib-corian",
         "lib-rfpatrol"
+      ]
+    },
+    "geolocationMinNodes": {
+      "mean": 2.25,
+      "sd": 0.5,
+      "n": 4,
+      "members": [
+        "lib-rfone",
+        "lib-rf360",
+        "lib-cuaews-df",
+        "lib-corian"
       ]
     }
   }

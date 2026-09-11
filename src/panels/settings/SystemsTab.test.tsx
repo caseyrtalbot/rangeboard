@@ -89,10 +89,10 @@ describe('SystemsTab', () => {
     useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
     const html = render()
 
-    expect(html).toContain('Load adopted 1 seed field on 1 builtin model from data package v2')
-    expect(html).toContain('seed v2')
+    expect(html).toContain('Load adopted 1 seed field on 1 builtin model from data package v3')
+    expect(html).toContain('seed v3')
     // The chip sits beside the adopted value, not beside an untouched one.
-    expect(html).toMatch(/rangeAccuracyM<\/td><td>[^<]*<span class="chip det"[^>]*>seed v2<\/span>/)
+    expect(html).toMatch(/rangeAccuracyM<\/td><td>[^<]*<span class="chip det"[^>]*>seed v3<\/span>/)
     expect(html).not.toMatch(/detectRangeM<\/td><td>[^<]*<span class="chip det"/)
   })
 
@@ -107,14 +107,14 @@ describe('SystemsTab', () => {
     useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
     const html = render()
     expect(html).not.toContain('Load adopted')
-    expect(html).not.toContain('seed v2')
+    expect(html).not.toContain('seed v3')
   })
 
   it('shows no notice and no chip when the save already holds every seed key', () => {
     useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
     const html = render()
     expect(html).not.toContain('Load adopted')
-    expect(html).not.toContain('seed v2')
+    expect(html).not.toContain('seed v3')
   })
 
   it('marks the override beside the source value and offers its reset', () => {

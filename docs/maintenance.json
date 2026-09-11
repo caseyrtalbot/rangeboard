@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "344d84b6eaa322fefbf073b251cce417f3b3ae8dd03365b109c39d2439873360",
+      "sha256": "8dc5719c803ef1af1dce5c810eaa0f7be9f386e189d02f12af631b840f58534b",
       "reviewedAt": "2026-09-11",
-      "note": "Codex review fixes on slice 3.0: no text change; inputs SystemsTab.tsx and persist.ts changed"
+      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d58e54b6a363e4d375aabf4caceb388493eca7b830feaa745739b0cc13488a94",
+      "sha256": "7641d889bec2f4c7edc6d1bbf5e86333fb4ad6de484284522ccaa0baa9e9bd4c",
       "reviewedAt": "2026-09-11",
-      "note": "Codex review fixes on slice 3.0: decided flag on the operator delay, adoption stamp keyed by model object"
+      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "d9bc808b29a6f682dbac446b03a1895ff7874d57ae0e37d3142357036b4e6f8f",
+      "sha256": "7f5283596bb3fbebc221b404213f56faabfea0f15dc0a20885b5e7ef7028d670",
       "reviewedAt": "2026-09-11",
-      "note": "Codex review fixes on slice 3.0: the attrition operator test gains the no-median C2 case, the Systems tab test gains the New and uninstalled-parse case"
+      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "68b48d4478b530ba97b52a0bc824672a3bde1870f51a5bdc8442331f2a2d75be",
+      "sha256": "4374a41b4bbdd2375a12b42605c5cfeff05f1c4f8ead95271a28ec37e5507ea2",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
+      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
     },
     {
       "document": "docs/HANDOFF.md",

@@ -4,7 +4,7 @@
   "type": "interceptor",
   "band": "any",
   "targetClass": "any",
-  "dataPackageVersion": 2,
+  "dataPackageVersion": 3,
   "members": [
     "lib-coyote",
     "lib-merops",
@@ -15,6 +15,17 @@
     "flyoutSpeedMps": {
       "logMedian": 5.8211252616809155,
       "sigmaDb": 9.9059448831965,
+      "n": 4,
+      "members": [
+        "lib-coyote",
+        "lib-merops",
+        "lib-stinger",
+        "lib-eagls"
+      ]
+    },
+    "maxFlyoutSpeedMps": {
+      "logMedian": 5.945201268269112,
+      "sigmaDb": 10.941657740453817,
       "n": 4,
       "members": [
         "lib-coyote",

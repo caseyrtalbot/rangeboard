@@ -130,6 +130,16 @@ const FIXTURE = JSON.parse(
 const LINEAGE_KEYS = ['grade', 'layer', 'rangeType', 'condition', 'unit', 'estimator', 'comparisonSet', 'note']
 /** Sensor spec keys the Phase 2 contract added; the pre-migration fixture has none. */
 const PHASE2_SENSOR_KEYS = ['rangeAccuracyM', 'azimuthAccuracyDeg', 'elevationAccuracyDeg', 'falseAlarmRatePerScan']
+/** Spec keys the Phase 3 contract added (lanes 3.R1 and 3.R2 filled them); the fixture predates them too. */
+const PHASE3_KEYS: Record<'sensor' | 'uas' | 'effector', string[]> = {
+  sensor: ['pulsesPerDwell', 'dwellTimeS', 'pixelPitchUm', 'focalLengthMm', 'detectorPixelsH', 'fovDeg',
+    'mrtdMk', 'receiverSensitivityDbm', 'geolocationMinNodes', 'noiseFloorDb'],
+  uas: ['maxTurnRateDegS', 'climbRateMps', 'maxAccelMps2', 'radiatedPowerW', 'linkProtocol'],
+  effector: ['seekerAcquisitionRangeM', 'lethalRadiusM', 'guidanceNoiseM', 'maxFlyoutSpeedMps', 'boostTimeS',
+    'dispersionMils', 'fireControlErrorMils', 'burstRounds', 'rateOfFireRpm', 'muzzleVelocityMps',
+    'outputPowerKw', 'beamQualityM2', 'jitterUrad', 'apertureM', 'dwellToEffectS',
+    'fieldStrengthVm', 'fieldStrengthRangeM', 'beamwidthDeg', 'rechargeS'],
+}
 
 interface LibraryFileOnDisk {
   name: string
@@ -164,9 +174,15 @@ describe('generated library parity', () => {
       })
       // Phase 2 added spec keys with no pre-migration counterpart; the fixture predates them.
       const { c2: _c2, ...rest } = model
-      const sensor = rest.sensor ? { ...rest.sensor } : undefined
-      if (sensor) for (const key of PHASE2_SENSOR_KEYS) delete (sensor as Record<string, unknown>)[key]
-      const stripped = sensor ? { ...rest, sensor } : rest
+      const stripped: Record<string, unknown> = { ...rest }
+      for (const block of ['sensor', 'uas', 'effector'] as const) {
+        const spec = rest[block]
+        if (!spec) continue
+        const copy = { ...spec } as Record<string, unknown>
+        const drop = block === 'sensor' ? [...PHASE2_SENSOR_KEYS, ...PHASE3_KEYS.sensor] : PHASE3_KEYS[block]
+        for (const key of drop) delete copy[key]
+        stripped[block] = copy
+      }
       expect(rows ? { ...stripped, provenance: rows } : stripped).toEqual(FIXTURE[i])
     }
   })

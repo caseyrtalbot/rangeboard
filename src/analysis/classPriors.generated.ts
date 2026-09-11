@@ -8,13 +8,80 @@
 import type { ClassPriorTable } from './classPriors'
 
 export const CLASS_PRIORS: ClassPriorTable = {
+  'effector/de/any/any': {
+    class: 'effector/de/any/any',
+    kind: 'effector',
+    type: 'de',
+    band: 'any',
+    targetClass: 'any',
+    dataPackageVersion: 3,
+    members: [
+      'lib-phel',
+      'lib-demshorad',
+      'lib-amphel',
+      'lib-helios',
+      'lib-ironbeam',
+    ],
+    fields: {
+      outputPowerKw: {
+        mean: 50,
+        sd: 33.166247903554,
+        n: 5,
+        members: [
+          'lib-phel',
+          'lib-demshorad',
+          'lib-amphel',
+          'lib-helios',
+          'lib-ironbeam',
+        ],
+      },
+    },
+  },
+  'effector/gun/any/any': {
+    class: 'effector/gun/any/any',
+    kind: 'effector',
+    type: 'gun',
+    band: 'any',
+    targetClass: 'any',
+    dataPackageVersion: 3,
+    members: [
+      'lib-xm914',
+      'lib-lpws',
+      'lib-smash',
+      'lib-skyranger30',
+    ],
+    fields: {
+      rateOfFireRpm: {
+        mean: 1675,
+        sd: 1927.6496915501357,
+        n: 4,
+        members: [
+          'lib-xm914',
+          'lib-lpws',
+          'lib-smash',
+          'lib-skyranger30',
+        ],
+      },
+      muzzleVelocityMps: {
+        logMedian: 6.879998924017007,
+        sigmaDb: 1.3572242262636014,
+        n: 4,
+        members: [
+          'lib-xm914',
+          'lib-lpws',
+          'lib-smash',
+          'lib-skyranger30',
+        ],
+      },
+    },
+  },
   'effector/interceptor/any/any': {
     class: 'effector/interceptor/any/any',
     kind: 'effector',
     type: 'interceptor',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 2,
+    dataPackageVersion: 3,
     members: [
       'lib-coyote',
       'lib-merops',
@@ -33,6 +100,17 @@ export const CLASS_PRIORS: ClassPriorTable = {
           'lib-eagls',
         ],
       },
+      maxFlyoutSpeedMps: {
+        logMedian: 5.945201268269112,
+        sigmaDb: 10.941657740453817,
+        n: 4,
+        members: [
+          'lib-coyote',
+          'lib-merops',
+          'lib-stinger',
+          'lib-eagls',
+        ],
+      },
     },
   },
   'sensor/acoustic/any/any': {
@@ -41,7 +119,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'acoustic',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 2,
+    dataPackageVersion: 3,
     members: [
       'lib-discovair',
       'lib-zvook',
@@ -66,11 +144,12 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'eo-ir',
     band: 'dual',
     targetClass: 'any',
-    dataPackageVersion: 2,
+    dataPackageVersion: 3,
     members: [
       'lib-hdcmr',
       'lib-mxgcs',
       'lib-cm262',
+      'lib-drs-s3',
     ],
     fields: {
       sectorDeg: {
@@ -83,6 +162,28 @@ export const CLASS_PRIORS: ClassPriorTable = {
           'lib-cm262',
         ],
       },
+      detectorPixelsH: {
+        mean: 1120,
+        sd: 320,
+        n: 4,
+        members: [
+          'lib-hdcmr',
+          'lib-mxgcs',
+          'lib-cm262',
+          'lib-drs-s3',
+        ],
+      },
+      fovDeg: {
+        mean: 2.25,
+        sd: 0.5972157622389639,
+        n: 4,
+        members: [
+          'lib-hdcmr',
+          'lib-mxgcs',
+          'lib-cm262',
+          'lib-drs-s3',
+        ],
+      },
     },
   },
   'sensor/radar/any/any': {
@@ -91,7 +192,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'radar',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 2,
+    dataPackageVersion: 3,
     members: [
       'lib-rps42',
       'lib-rps62',
@@ -228,11 +329,13 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'rf',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 2,
+    dataPackageVersion: 3,
     members: [
       'lib-rf360',
       'lib-corian',
       'lib-rfpatrol',
+      'lib-rfone',
+      'lib-cuaews-df',
     ],
     fields: {
       sectorDeg: {
@@ -245,6 +348,17 @@ export const CLASS_PRIORS: ClassPriorTable = {
           'lib-rfpatrol',
         ],
       },
+      geolocationMinNodes: {
+        mean: 2.25,
+        sd: 0.5,
+        n: 4,
+        members: [
+          'lib-rfone',
+          'lib-rf360',
+          'lib-cuaews-df',
+          'lib-corian',
+        ],
+      },
     },
   },
   'uas/one-way-attack/3/any': {
@@ -253,7 +367,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'one-way-attack',
     band: '3',
     targetClass: 'any',
-    dataPackageVersion: 2,
+    dataPackageVersion: 3,
     members: [
       'lib-shahed136',
       'lib-mugin5',

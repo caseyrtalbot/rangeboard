@@ -45,6 +45,12 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   bootstrap intervals at base 1024; `mc.worker.stages.test.ts` drives the Morris and Sobol
   routes. The parity files are aleatory and do not move under LHS. A fixture that sets a
   half-width target pins `stopCap` when it reads the loop end.
+- Phase 3 contract (slice 3.a): `playback/clock.test.ts` holds the no-request sample times
+  equal to the legacy `t += DT` loop bit for bit and a fine window sampled at its step;
+  `analysis/parameterBasis.test.ts` pins `FIELDS_BY_KIND` and `hasSpec('c2')`;
+  `analysis/uncertainty.test.ts` samples a c2 median and an accuracy field at their own
+  nominals and leaves a null nominal null; `model/seedLibrary.test.ts` drops the Phase 3
+  keys before the fixture comparison, the way it drops the Phase 2 keys.
 - Phase 2 tracks and kill chain, one file per model, plus the estimate-path parity file:
   - `playback/estimate.parity.test.ts`: both golden fixtures with their physics switches
     removed, so the Kalman estimate, fusion, false tracks and the operator queue run; pins

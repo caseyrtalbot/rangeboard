@@ -366,7 +366,8 @@ src/state/     overrides.ts (useOverrides: the separate override store, activeOv
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
                trialSelectors.ts (retained run/basis selection and raw observation horizon),
                useTrialResult.ts (shared trial snapshot and series hook)
-src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), detection.ts
+src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the manifest
+               step and per-effector fine-step windows), tracks.ts (positions at t), detection.ts
                (prepareSweep: per-sensor terms resolved once per threat; sweepSensorHits,
                detectionsAt, spawn ring check), sweep.ts (the temporal sweep of one
                threat: prepareSweepRun, stepSweep, finishSweep own scan scheduling,
@@ -381,8 +382,9 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                the link latency and FC_QUALITY_MIN), classification.ts (matrixFor,
                bandFor, classifyByMatrix), falseTracks.ts (prepareFalseTracks: Poisson
                false tracks per radar scan), operator.ts (createOperatorQueue: the C2
-               decision latency and its overload factor), pk.ts (Pk model,
-               expenditure channels, missDistanceSigmaM), intercept.ts (time of flight,
+               decision latency and its overload factor), pk.ts (barrel over pk/kinetic.ts:
+               Pk model, missDistanceSigmaM, and pk/beam.ts: expenditure channels; lane
+               3.6 adds the beam physics), intercept.ts (time of flight,
                intercept, launch releases, predictedStateAt, interceptFromEstimate and
                the interceptFor selector),
                shot.ts (evaluateShot: per-ship shot eligibility shared by both
@@ -407,7 +409,9 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex), tracks.ts (positions at t), det
                state), trackEstimateView.ts (latestEstimatesAt and positionEllipse over
                a trial's track history)
 src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CLASS_PRIORS),
-               sensorEnv.ts (sensor physics), radarPd.ts (Pd closed forms), ewPhysics.ts
+               sensorEnv.ts (barrel over sensorEnv/common.ts, radar.ts, eoir.ts,
+               acoustic.ts, rf.ts: sensor physics per technology), radarPd.ts (Pd closed
+               forms), ewPhysics.ts
                (jam), doctrineFactors.ts (per-system factors), impact.ts
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), projection.ts
                (pure named quantities on the DT grid: sampleCount, hold and residual
@@ -501,7 +505,15 @@ policy?)` (`attrition.ts`) distributes fire and returns totals, events and per-e
 Each fact below has exactly one definition. Read it there; never add a second copy.
 
 - **Sample grid:** `DT` (0.5 s) and `stepIndex` in `src/playback/clock.ts`. `tickStepS` in
-  `src/charts/timeAxis.ts`. A chart's `tS` prop is quantized to DT by the caller.
+  `src/charts/timeAxis.ts`. A chart's `tS` prop is quantized to DT by the caller. The sweep
+  step is a manifest parameter since slice 3.a: `McSettings.sweepStepS` (`Scenario.sweepStepS`,
+  default `DEFAULT_SWEEP_STEP_S` = DT, filled by `runSettings`) reaches `sim.ts`, `attrition.ts`,
+  the fusion ring, the false-track scan clock and `intercept.ts` through `createSweepClock`;
+  `TrialManifest.sweepStepS` and `RunManifest.sweepStepS` record it. A lane requests a finer
+  step for one effector inside a burst or dwell window with `clock.requestFineStep`; with no
+  request `next(t)` is `t + baseS` and the 0.5 s sample times are bit-identical to the old
+  loop (`clock.test.ts`). Draw keys still use `stepIndex` (the DT grid): two fine ticks in
+  one DT step share a key until the policy learns a sub-step (open, Phase 3).
 - **Altitude and geometry:** `threatAltitudeFt(scenario, uas)` (entity value, else the
   threat profile, else the `altBandFt` midpoint) and `mountHeightOf(spec)` are the
   resolvers. Slant range, not ground range, feeds every sensor and effector range test; the
@@ -698,7 +710,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   CI. Full-run conditional time means are labeled; quantities without a replicate
   statistic retain an individual planning-envelope label.
 - **Data package** (`data/library/<kind>/<slug>.json`, one file per model, `index.json`
-  for order and version, `DATA_PACKAGE_VERSION` 2): every numeric spec field is a
+  for order and version, `DATA_PACKAGE_VERSION` 3 since the Phase 3 fields): every numeric spec field is a
   `LibraryField` with value, unit,
   grade, layer, range type, condition, source and spread; categorical spec keys are bare
   `attributes`. A file's `spec` names the block its fields compile into and now admits
@@ -756,7 +768,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   counts under a Jeffreys prior). `sampleScenario` is pure and returns a new scenario, and
   a `null` from its sampler keeps that field at its nominal; `uncertainFields` is the
   stable field order, over the library models an active entity uses, then connections,
-  then doctrine; `sampleScenario` samples the same models. `Scenario.uncertainty`
+  then doctrine; `sampleScenario` samples the same models. `FIELDS_BY_KIND` names the
+  fields per kind: sensor `detectRangeM`, `trackInitS` and the four Phase 2 accuracy
+  fields; effector `pk`, `engageTimeS`, `targetS`, `bdaS`; uas `rcsM2`; c2
+  `decisionLatencyS` (slice 3.a). A field with no resolver and a null nominal (an L3
+  accuracy field, a c2 with no median) draws nothing. `Scenario.uncertainty`
   (`UncertaintyMode`, `aleatory` or `total`, default `aleatory`) is what a replicate
   varies: under `total` the loop draws one `param` uniform per uncertain field through the
   policy and calls `sampleScenario` once per replicate before `assessAllThreats`, under
@@ -926,7 +942,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   existing board: `adoptSeedFields` gives a saved builtin only the listed keys it does
   not hold (`'*'` adopts a whole block the save lacks), so a key the save holds, null
   included, stays the user's. Phase 2 lists the four sensor accuracy fields and the whole
-  `c2` block. `reconcileLibraryReport` returns the adopted (model, block, keys) list;
+  `c2` block; Phase 3 adds its sensor, uas and effector keys (the lists in
+  `libraryLifecycle.ts`). `reconcileLibraryReport` returns the adopted (model, block, keys) list;
   `fillScenario` keeps it in a WeakMap by model object (`seedAdoptionOf`, never persisted),
   so the stamp follows the installed library and a baseline parse, a rejected import or
   New leaves no stale stamp; the Systems tab reads `loadNoticeFor(scenario.library)` and

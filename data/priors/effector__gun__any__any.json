@@ -1,0 +1,38 @@
+{
+  "class": "effector/gun/any/any",
+  "kind": "effector",
+  "type": "gun",
+  "band": "any",
+  "targetClass": "any",
+  "dataPackageVersion": 3,
+  "members": [
+    "lib-xm914",
+    "lib-lpws",
+    "lib-smash",
+    "lib-skyranger30"
+  ],
+  "fields": {
+    "rateOfFireRpm": {
+      "mean": 1675,
+      "sd": 1927.6496915501357,
+      "n": 4,
+      "members": [
+        "lib-xm914",
+        "lib-lpws",
+        "lib-smash",
+        "lib-skyranger30"
+      ]
+    },
+    "muzzleVelocityMps": {
+      "logMedian": 6.879998924017007,
+      "sigmaDb": 1.3572242262636014,
+      "n": 4,
+      "members": [
+        "lib-xm914",
+        "lib-lpws",
+        "lib-smash",
+        "lib-skyranger30"
+      ]
+    }
+  }
+}
