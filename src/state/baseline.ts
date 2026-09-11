@@ -126,5 +126,8 @@ export function validateMcSummary(value: unknown, path = 'mc'): McSummary {
     }),
     elapsedMs: finite(o.elapsedMs, `${path}.elapsedMs`),
     stopped: { rule: literal(stopped.rule, STOP_RULES, `${path}.stopped.rule`), at: finite(stopped.at, `${path}.stopped.at`) },
+    // Slice 3.0 stamps: absent on a summary written before them, so carried only when present.
+    ...(o.operatorDecisions !== undefined ? { operatorDecisions: stat(o.operatorDecisions, `${path}.operatorDecisions`) } : {}),
+    ...(o.operatorFlooredDecisions !== undefined ? { operatorFlooredDecisions: stat(o.operatorFlooredDecisions, `${path}.operatorFlooredDecisions`) } : {}),
   }
 }
