@@ -16,7 +16,7 @@ about an unfinished lane goes in Open items, not in Completed.
 | --- | --- | --- | --- |
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
 | 1 Real-mode statistics | passed | `70a7a0e` | 2026-09-10 |
-| 2 Tracks and kill chain | passed | `GATE_COMMIT` | 2026-09-10 |
+| 2 Tracks and kill chain | passed | `5373505` | 2026-09-10 |
 | 3 Sensor and effector physics | not started | | |
 | 4 Hypothesis tools | not started | | |
 
