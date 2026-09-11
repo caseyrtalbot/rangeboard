@@ -1,6 +1,11 @@
 import { expect, it } from 'vitest'
-import type { UasSpec } from '../model/types'
+import type { EffectorSpec, UasSpec } from '../model/types'
 import { kineticPk, missDistanceSigmaM } from './pk'
+import {
+  kineticEffectProbability,
+  projectileMissSigmaM,
+  rayleighProbabilityWithin,
+} from './pk/kinetic'
 
 it('kineticPk multiplies base Pk by falloff, size penalty and fpv evasion, zero past max range', () => {
   const fpv = { group: 1, airframe: 'fpv' } as UasSpec
@@ -11,9 +16,43 @@ it('kineticPk multiplies base Pk by falloff, size penalty and fpv evasion, zero 
   expect(kineticPk(0.8, 10000, undefined, 10000.5)).toBe(0)
 })
 
-it('missDistanceSigmaM is the root sum square of prediction and guidance error, null on the truth path', () => {
-  expect(missDistanceSigmaM(null, 40)).toBeNull()
+it('missDistanceSigmaM is the root sum square of prediction and guidance error', () => {
+  expect(missDistanceSigmaM(null, 40)).toBe(40)
   // sqrt(30^2 + 40^2) = 50
   expect(missDistanceSigmaM(30, 40)).toBeCloseTo(50, 12)
   expect(missDistanceSigmaM(0, 7)).toBeCloseTo(7, 12)
+})
+
+it('maps an isotropic miss through the Rayleigh CDF', () => {
+  expect(rayleighProbabilityWithin(0, 1)).toBe(0)
+  expect(rayleighProbabilityWithin(1, 0)).toBe(1)
+  expect(rayleighProbabilityWithin(10, 5)).toBeCloseTo(1 - Math.exp(-2), 12)
+})
+
+it('combines projectile angular error with track error in meters', () => {
+  // 3 km * hypot(1, 1) mrad = 4.2426 m, then RSS with 3 m track error = 5.1962 m.
+  expect(projectileMissSigmaM(3000, 1, 1, 3)).toBeCloseTo(Math.sqrt(27), 12)
+})
+
+it('uses the explicit fallback unchanged and compounds projectile intercepts by burst', () => {
+  const uas = {
+    group: 1, airframe: 'quad', spanM: 0.4,
+    cruiseSpeedMps: 15, maxSpeedMps: 20, enduranceMin: 30,
+    altBandFt: [0, 400], navMode: 'gps', emissionsNote: '',
+  } as UasSpec
+  const gun = {
+    effectorType: 'gun', minRangeM: 0, maxRangeM: 3000, engageTimeS: 0,
+    dispersionMils: 1, fireControlErrorMils: 1, burstRounds: 20,
+    rateOfFireRpm: 1200, muzzleVelocityMps: 1050,
+  } as EffectorSpec
+  const context = { basePk: 0.8, uas, slantM: 1000, predictionSigmaM: 0, fallback: false }
+  const sigma = Math.sqrt(2)
+  const perProjectile = 1 - Math.exp(-(0.2 ** 2) / (2 * sigma ** 2))
+  expect(kineticEffectProbability(gun, context)).toBeCloseTo(1 - (1 - perProjectile) ** 20, 12)
+  expect(kineticEffectProbability(gun, { ...context, fallback: true })).toBe(
+    kineticPk(context.basePk, gun.maxRangeM, uas, context.slantM),
+  )
+  expect(kineticEffectProbability({ ...gun, dispersionMils: null }, context)).toBe(
+    kineticPk(context.basePk, gun.maxRangeM, uas, context.slantM),
+  )
 })

@@ -7,6 +7,7 @@ import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelit
 const IDS: ModelId[] = [
   'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect', 'jam',
   'environment', 'horizon', 'track-init', 'doctrine', 'kinetic-pk', 'flyout',
+  'interceptor-miss', 'gun-burst',
   'draw-policy', 'parameter-spread',
   'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
 ]
@@ -197,7 +198,7 @@ describe('modelsForEntity', () => {
 
   it('gives the effector its doctrine, Pk and flyout models', () => {
     const ids = modelsForEntity(withEffector(), 'e1').map((t) => t.id)
-    expect(ids).toEqual(['doctrine', 'kinetic-pk', 'flyout'])
+    expect(ids).toEqual(['doctrine', 'kinetic-pk', 'interceptor-miss', 'flyout'])
   })
 
   it('gives a sensor the tracker and a c2 node fusion, classification and the operator', () => {
@@ -220,5 +221,30 @@ describe('modelsForEntity', () => {
     expect(modelsForEntity(s, 'a1')).toEqual([])
     expect(modelsForEntity(s, 's2')).toEqual([])
     expect(modelsForEntity(s, 'nope')).toEqual([])
+  })
+})
+
+describe('modelsUsed, Phase 3 kinetic tags', () => {
+  it('reports interceptor miss and gun burst only when their data-backed model runs', () => {
+    const interceptor = radarLaydown()
+    interceptor.entities.push(entity('e1', 'effector', 'lib-coyote'))
+    expect(modelsUsed(interceptor).map((t) => t.id)).toContain('interceptor-miss')
+    expect(modelsUsed(interceptor).map((t) => t.id)).not.toContain('gun-burst')
+
+    const gun = radarLaydown()
+    gun.entities.push(entity('e1', 'effector', 'lib-skyranger30'))
+    expect(modelsUsed(gun).map((t) => t.id)).toContain('gun-burst')
+    expect(modelsUsed(gun).map((t) => t.id)).not.toContain('interceptor-miss')
+
+    gun.physics = ['legacyKineticPk']
+    expect(modelsUsed(gun).map((t) => t.id)).not.toContain('gun-burst')
+  })
+
+  it('does not report a model whose lane sentinel is null', () => {
+    const s = radarLaydown()
+    const coyote = s.library.find((m) => m.id === 'lib-coyote')!
+    coyote.effector = { ...coyote.effector!, lethalRadiusM: null }
+    s.entities.push(entity('e1', 'effector', coyote.id))
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('interceptor-miss')
   })
 })

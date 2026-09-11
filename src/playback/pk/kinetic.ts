@@ -1,4 +1,6 @@
 import type { EffectorSpec, UasGroup, UasSpec } from '../../model/types'
+import { spanMFor } from '../../model/signatureFactors'
+import { MIL_TO_RAD, projectileCount } from '../ballistics'
 
 /**
  * Kinetic kill probability: the type-baseline tables, the distance falloff,
@@ -6,7 +8,7 @@ import type { EffectorSpec, UasGroup, UasSpec } from '../../model/types'
  * miss-distance hook. Lane 3.5 adds the interceptor speed profile, the miss
  * distance from track error plus guidance noise, Pk from the lethal radius
  * and the gun terms (dispersion, burst, rate of fire, fire control error)
- * here and in ballistics.ts; the names and values below stay as they are.
+ * here and in ballistics.ts. `kineticPk` remains the bit-identical fallback.
  */
 
 /** Type-baseline single-shot Pk for specs saved before the pk field existed. */
@@ -75,18 +77,124 @@ export function kineticPk(
 
 /**
  * Miss-distance 1 sigma, meters: the root sum square of the track prediction
- * error at the intercept time (`ShotAccepted.predictionSigmaM`) and the
- * effector's own guidance noise. Null on the truth path (no prediction
- * error), so the caller keeps the Phase 2 Pk unchanged. A pure hook for
- * Phase 3 lane 3.5, which maps the miss distance to a Pk; kineticPk does not
- * read it in this phase.
+ * error at physical release (`predictionSigmaAtS`) and the effector's own
+ * guidance noise. A truth-source track contributes zero
+ * prediction error, so its sigma is the guidance term alone.
  */
 export function missDistanceSigmaM(
   predictionSigmaM: number | null,
   guidanceNoiseM: number,
-): number | null {
-  if (predictionSigmaM == null) return null
-  return Math.hypot(predictionSigmaM, guidanceNoiseM)
+): number {
+  return Math.hypot(predictionSigmaM ?? 0, guidanceNoiseM)
+}
+
+/**
+ * Probability that an isotropic two-axis normal miss falls inside `radiusM`.
+ * Its radial miss is Rayleigh with CDF 1 - exp(-r^2 / (2 sigma^2)). A zero
+ * sigma is a point mass at zero. NIST describes the Rayleigh density and its
+ * two-normal construction (read 2026-09-10):
+ * https://www.itl.nist.gov/div898/software/dataplot/refman2/auxillar/raypdf.htm
+ */
+export function rayleighProbabilityWithin(radiusM: number, sigmaM: number): number {
+  if (!Number.isFinite(radiusM) || !(radiusM > 0)) return 0
+  if (!Number.isFinite(sigmaM) || sigmaM < 0) return 0
+  if (sigmaM === 0) return 1
+  return -Math.expm1(-(radiusM * radiusM) / (2 * sigmaM * sigmaM))
+}
+
+/** The two angular gun errors projected to range and combined with track error. */
+export function projectileMissSigmaM(
+  slantM: number,
+  dispersionMils: number,
+  fireControlErrorMils: number,
+  predictionSigmaM: number | null,
+): number {
+  const angularSigmaM = Math.max(0, slantM) * Math.hypot(
+    dispersionMils * MIL_TO_RAD,
+    fireControlErrorMils * MIL_TO_RAD,
+  )
+  return Math.hypot(angularSigmaM, predictionSigmaM ?? 0)
+}
+
+/** Inputs the shared shot caller owns at the existing commit decision point. */
+export interface KineticEffectContext {
+  /** Resolved legacy `pk` value (`EffectorState.pk`, including its type default). */
+  basePk: number
+  uas: UasSpec | undefined
+  slantM: number
+  /** Track prediction error at physical release, null for a truth-source track. */
+  predictionSigmaM: number | null
+  /** True for the scenario's `legacyKineticPk` switch. */
+  fallback: boolean
+}
+
+function validPositive(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value) && value > 0
+}
+
+function validNonNegative(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value) && value >= 0
+}
+
+/**
+ * Phase 3 probability of effect for an interceptor or projectile effector.
+ *
+ * Interceptor: Rayleigh CDF at the lethal radius, multiplied by the saved
+ * base Pk as P(effect | lethal-radius intercept) and by the FPV evasion term.
+ * The old size factor and distance falloff are omitted because lethal radius
+ * and the combined miss sigma now carry geometry and range. The evasion term
+ * remains because this miss model has no maneuver-error term of its own.
+ *
+ * Gun: each projectile uses a Rayleigh CDF at half `spanMFor(uas)`, and n
+ * independent projectiles combine as 1 - (1 - P(intercept))^n. The burst
+ * equation replaces the legacy base, size, distance and evasion factors; its
+ * fire-control error is the residual aiming term for the whole burst.
+ *
+ * The caller supplies the switch state. A switched run, an inapplicable type,
+ * or a kinetic model missing any required field returns `kineticPk` exactly.
+ */
+export function kineticEffectProbability(
+  spec: EffectorSpec,
+  context: KineticEffectContext,
+): number {
+  const legacy = kineticPk(
+    context.basePk,
+    spec.maxRangeM,
+    context.uas,
+    context.slantM,
+  )
+  if (context.fallback) return legacy
+
+  if (spec.effectorType === 'interceptor') {
+    if (!validPositive(spec.lethalRadiusM) || !validNonNegative(spec.guidanceNoiseM)) return legacy
+    const sigmaM = missDistanceSigmaM(context.predictionSigmaM, spec.guidanceNoiseM)
+    const intercept = rayleighProbabilityWithin(spec.lethalRadiusM, sigmaM)
+    const effectGivenIntercept = Math.min(1, Math.max(0, context.basePk))
+    const evasion = context.uas?.airframe === 'fpv' ? EVASION_PENALTY : 1
+    return Math.min(1, Math.max(0, intercept * effectGivenIntercept * evasion))
+  }
+
+  if (spec.effectorType === 'gun') {
+    const rounds = projectileCount(spec)
+    if (
+      !validNonNegative(spec.dispersionMils)
+      || !validNonNegative(spec.fireControlErrorMils)
+      || rounds == null
+      || !validPositive(spec.rateOfFireRpm)
+      || !validPositive(spec.muzzleVelocityMps)
+      || context.uas == null
+    ) return legacy
+    const sigmaM = projectileMissSigmaM(
+      context.slantM,
+      spec.dispersionMils,
+      spec.fireControlErrorMils,
+      context.predictionSigmaM,
+    )
+    const perProjectile = rayleighProbabilityWithin(spanMFor(context.uas) / 2, sigmaM)
+    return Math.min(1, Math.max(0, -Math.expm1(rounds * Math.log1p(-perProjectile))))
+  }
+
+  return legacy
 }
 
 /**

@@ -465,6 +465,20 @@ export function resolveEngagements(
     if (es.rounds != null) es.rounds -= 1
     es.nextReadyS = t + es.cooldownS
     // Fine-step hook (clock.ts): a burst or dwell lane requests its window here.
+    if (
+      es.spec.effectorType === 'gun'
+      && !scenario.physics?.includes('legacyKineticPk')
+      && es.spec.dispersionMils != null
+      && es.spec.burstRounds != null
+      && es.spec.rateOfFireRpm != null
+      && es.spec.burstRounds > 0
+      && es.spec.rateOfFireRpm > 0
+    ) clock.requestFineStep(
+      es.entity.id,
+      t,
+      t + (60 * Math.max(1, Math.round(es.spec.burstRounds))) / es.spec.rateOfFireRpm,
+      0.1,
+    )
   }
 
   // The fused track a shooter holds on each threat at t (sim.ts fusedTracks,

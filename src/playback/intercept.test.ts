@@ -7,9 +7,12 @@ import { positionSigmaM, PROCESS_NOISE_Q, ZERO_COVARIANCE } from './kalman'
 import {
   interceptAt,
   interceptFor,
+  interceptorDistanceM,
+  interceptorFlightTimeS,
   intervalIndexAt,
   launchPolicyReleases,
   predictedStateAt,
+  predictionSigmaAtS,
 } from './intercept'
 
 const INTERCEPTOR = {
@@ -155,5 +158,98 @@ describe('intercept kinematics', () => {
     expect(intervalIndexAt(windows, 10 + 1e-10)).toBe(0)
     expect(intervalIndexAt(windows, 15)).toBe(-1)
     expect(intervalIndexAt(windows, 25)).toBe(1)
+  })
+})
+
+describe('Phase 3 kinetic flight', () => {
+  const PROFILED = {
+    ...INTERCEPTOR,
+    flyoutSpeedMps: 50,
+    maxFlyoutSpeedMps: 100,
+    boostTimeS: 2,
+    lethalRadiusM: 10,
+    guidanceNoiseM: 1,
+    seekerAcquisitionRangeM: 100,
+  } as EffectorSpec
+
+  it('accelerates linearly to peak speed, then cruises at flyoutSpeedMps', () => {
+    // a = 100 / 2 = 50 m/s2: distance at burnout is 0.5 * 50 * 2^2 = 100 m.
+    // Another 100 m at the 50 m/s cruise takes 2 s, total 4 s.
+    expect(interceptorDistanceM(PROFILED, 1)).toBeCloseTo(25, 12)
+    expect(interceptorDistanceM(PROFILED, 2)).toBeCloseTo(100, 12)
+    expect(interceptorDistanceM(PROFILED, 4)).toBeCloseTo(200, 12)
+    expect(interceptorFlightTimeS(PROFILED, 200)).toBeCloseTo(4, 12)
+  })
+
+  it('uses the profile on truth and estimate paths only when the caller enables it', () => {
+    const { ts, es } = states(PROFILED)
+    const point = () => [{ x: 200, y: 0 }]
+    // Assignment 0 + engage 5 + profiled flight 4 = effect 9.
+    const truth = interceptAt(ts, es, 0, 0, point, Infinity, 0.5, { fallback: false })
+    expect(truth.tEffectS).toBeCloseTo(9, 12)
+    const tracked = interceptFor(
+      ts,
+      es,
+      0,
+      0,
+      point,
+      Infinity,
+      estimate({ x: 200, y: 0, vx: 0, vy: 0, tS: 0 }),
+      0.5,
+      { fallback: false },
+    )
+    expect(tracked.tEffectS).toBeCloseTo(9, 12)
+    expect(tracked.interceptSource).toBe('estimate')
+
+    // Explicit fallback preserves the old 0.7 * 50 m/s constant-speed path.
+    const fallback = interceptAt(ts, es, 0, 0, point, Infinity, 0.5, { fallback: true })
+    expect(fallback.tEffectS).toBeCloseTo(5 + 200 / 35, 12)
+  })
+
+  it('exposes the track prediction sigma at physical release for kinetic P(effect)', () => {
+    const e = estimate(
+      { x: 0, y: 0, vx: 0, vy: 0, tS: 0 },
+      diagCov(100, 0),
+    )
+    // CWNA position variance after 3 s: 100 + q * dt^3 / 3, q = 1.
+    expect(predictionSigmaAtS(e, 3)).toBeCloseTo(Math.sqrt(109), 12)
+    expect(predictionSigmaAtS({ ...e, source: 'truth' }, 3)).toBeNull()
+  })
+
+  it('uses flyoutSpeedMps directly when either profile field is null', () => {
+    const spec = { ...PROFILED, boostTimeS: null } as EffectorSpec
+    expect(interceptorFlightTimeS(spec, 200)).toBeCloseTo(4, 12)
+  })
+
+  it('rejects a capped flight when terminal seeker acquisition falls after its end', () => {
+    const spec = {
+      ...PROFILED,
+      flyoutSpeedMps: 100,
+      maxFlyoutSpeedMps: null,
+      boostTimeS: null,
+    } as EffectorSpec
+    const { ts, es } = states(spec)
+    const ic = interceptAt(ts, es, 0, 0, () => [{ x: 700, y: 0 }], 10, 2, {
+      fallback: false,
+    })
+    // Release 5, cap 10: 500 m flown. One-step reach tolerance admits the
+    // 700 m intercept, but acquisition needs 600 m, so the terminal gate rejects it.
+    expect(ic.capped).toBe(true)
+    expect(ic.infeasible).toBe(true)
+  })
+
+  it('places one gun event at the effect of the last projectile', () => {
+    const gun = {
+      effectorType: 'gun', minRangeM: 0, maxRangeM: 3000, engageTimeS: 5,
+      flyoutSpeedMps: 1000, muzzleVelocityMps: 1000,
+      dispersionMils: 1, fireControlErrorMils: 1,
+      burstRounds: 20, rateOfFireRpm: 1200,
+    } as EffectorSpec
+    const { ts, es } = states(gun)
+    // Release 5 + burst 1 + drag-free 1000 m / 1000 m/s = effect 7.
+    const ic = interceptAt(ts, es, 0, 0, () => [{ x: 1000, y: 0 }], Infinity, 0.5, {
+      fallback: false,
+    })
+    expect(ic.tEffectS).toBeCloseTo(7, 12)
   })
 })
