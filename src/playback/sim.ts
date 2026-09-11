@@ -1,5 +1,5 @@
 import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf, physicsSwitches } from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf, physicsSwitches, runSettings } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
@@ -18,7 +18,7 @@ import {
 } from '../analysis/sensorEnv'
 import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
 import { CONFIRMED_DECLARE_FACTOR, targetSFor } from '../analysis/doctrineFactors'
-import { DT } from './clock'
+import { createSweepClock } from './clock'
 import { memberPositions, threatAltitudeFt } from './tracks'
 import type { SensorObservationSink } from './detection'
 import type { FusedTrack, TrackEstimate, TrackEstimateSink } from './trackTypes'
@@ -255,12 +255,17 @@ export function assessThreat(
 
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const delayS = effectivePathDelayS(scenario, path)
+  // The sweep clock: the manifest step from the path start (clock.ts). No
+  // fine step is requested here; the sweep samples at the base step.
+  const clock = createSweepClock(runSettings(scenario).sweepStepS, delayS)
+  const stepS = clock.baseS
   // Fusion (fusion.ts) reads the tracker's estimates through the sink and
   // fuses them at the C2 nodes the sensors link to, after link latency.
   const activeSensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const fusion = createFusionStage(
     c2LinksFor(scenario, new Set(activeSensors.map((e) => e.id))),
     physicsSwitches(scenario).includes('truthTracks'),
+    stepS,
   )
   const fusionSink: TrackEstimateSink = trackSink
     ? (estimate) => {
@@ -322,7 +327,7 @@ export function assessThreat(
   let connectedCache: Set<string> | null = null
   let connectedCacheSize = -1
 
-  for (let t = delayS; t <= duration; t += DT) {
+  for (let t = delayS; t <= duration; t = clock.next(t)) {
     const sample = posAtTime(path.points, speed, delayS, t)
     const pos = sample.pos
     const members = memberPositions(uas, pos, sample.headingDeg)
@@ -350,7 +355,7 @@ export function assessThreat(
           decl = { declaredHostile: decision.declaredHostile, declareAtS: t + decision.timeToDeclareS }
           declarations.set(sensor.id, decl)
         }
-        if (decl.declaredHostile && t + DT / 2 >= decl.declareAtS) fcClassified = true
+        if (decl.declaredHostile && t + stepS / 2 >= decl.declareAtS) fcClassified = true
       }
     }
 
@@ -417,7 +422,7 @@ export function assessThreat(
         intervals = []
         effectorInRange.set(eff.id, intervals)
       }
-      extendIntervals(intervals, t)
+      extendIntervals(intervals, t, stepS)
     }
 
     if (sample.done) break
@@ -450,7 +455,7 @@ export function assessThreat(
     // Continuity is judged out to closest approach: a fly-by still has a horizon.
     const horizonS = base.cpaS ?? trackSamples[trackSamples.length - 1]?.tS ?? base.firstDetectS
     const samples = trackSamples.filter(
-      (sample) => sample.tS >= base.firstDetectS! - DT / 2 && sample.tS <= horizonS + DT / 2,
+      (sample) => sample.tS >= base.firstDetectS! - stepS / 2 && sample.tS <= horizonS + stepS / 2,
     )
     let heldSamples = 0
     let gapSamples = 0
@@ -470,7 +475,7 @@ export function assessThreat(
       heldSamples,
       totalSamples: samples.length,
       continuity: samples.length > 0 ? heldSamples / samples.length : 0,
-      longestGapS: longestGapSamples * DT,
+      longestGapS: longestGapSamples * stepS,
       lastTrackS,
     }
   }
@@ -486,7 +491,7 @@ export function assessThreat(
     if (obs.sensorType !== 'radar' && obs.sensorType !== 'eo-ir') continue
     const firmAt = obs.trackInitAtS
     if (firmAt == null) continue
-    const qualityAtS = fcQualityAtS(fusedTracks, firmAt)
+    const qualityAtS = fcQualityAtS(fusedTracks, firmAt, stepS)
     if (qualityAtS == null) continue
     const stableAt = Math.max(firmAt, qualityAtS)
     firmBySensor.set(obs.sensorId, stableAt)
@@ -628,10 +633,10 @@ export function assessThreat(
  * steps the tracker on that step, so no fused entry carries the firm time
  * and the next entry stands in for it.
  */
-function fcQualityAtS(fusedTracks: readonly FusedTrack[], fromS: number): number | null {
+function fcQualityAtS(fusedTracks: readonly FusedTrack[], fromS: number, stepS: number): number | null {
   let first = true
   for (const f of fusedTracks) {
-    if (f.fusedAtS < fromS - DT / 2) continue
+    if (f.fusedAtS < fromS - stepS / 2) continue
     if (f.quality >= FC_QUALITY_MIN) return first ? fromS : f.fusedAtS
     first = false
   }

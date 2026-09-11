@@ -177,8 +177,9 @@ export interface SelectedIntercept extends InterceptResult {
  * `capS` is the end of the in-range interval containing tS: a flight past it is
  * held at the cap and reported `capped`; a release already past the cap is not.
  * `infeasible` is true when the slant exceeds the reach v * (tEffectS - release)
- * by more than v * DT (only at a cap or with no meeting); the caller declines
- * the shot. Never true without a flyout.
+ * by more than v * stepS, one sweep step (the manifest step, default DT; only
+ * at a cap or with no meeting); the caller declines the shot. Never true
+ * without a flyout.
  */
 export function interceptAt(
   ts: ThreatState,
@@ -187,6 +188,7 @@ export function interceptAt(
   memberIdx: number,
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
   capS = Number.POSITIVE_INFINITY,
+  stepS = DT,
 ): InterceptResult {
   const dAltM = ts.altM - es.mountM
   const sampleAt = (tEffectS: number) => {
@@ -212,7 +214,7 @@ export function interceptAt(
   const capped = releaseS <= capS && releaseS + tofS > capS
   const tEffectS = capped ? capS : releaseS + tofS
   const at = sampleAt(tEffectS)
-  const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * DT
+  const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * stepS
   return { ...at, tEffectS, capped, infeasible }
 }
 
@@ -253,6 +255,7 @@ export function interceptFromEstimate(
   releaseS: number,
   dAltM: number,
   capS = Number.POSITIVE_INFINITY,
+  stepS = DT,
 ): EstimateIntercept {
   const v = flyoutMps
   const sampleAt = (tEffectS: number) => {
@@ -278,7 +281,7 @@ export function interceptFromEstimate(
   const capped = releaseS <= capS && releaseS + tofS > capS
   const tEffectS = capped ? capS : releaseS + tofS
   const at = sampleAt(tEffectS)
-  const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * DT
+  const infeasible = v > 0 && at.slantM > v * (tEffectS - releaseS) + v * stepS
   return { ...at, tEffectS, capped, infeasible }
 }
 
@@ -298,10 +301,11 @@ export function interceptFor(
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
   capS = Number.POSITIVE_INFINITY,
   estimate: TrackEstimate | null = null,
+  stepS = DT,
 ): SelectedIntercept {
   if (estimate == null || estimate.source === 'truth') {
     return {
-      ...interceptAt(ts, es, tS, memberIdx, membersAt, capS),
+      ...interceptAt(ts, es, tS, memberIdx, membersAt, capS, stepS),
       predictionSigmaM: null,
       interceptSource: 'truth',
     }
@@ -313,6 +317,7 @@ export function interceptFor(
     tS + es.engageTimeS,
     ts.altM - es.mountM,
     capS,
+    stepS,
   )
   return { ...ic, interceptSource: 'estimate' }
 }

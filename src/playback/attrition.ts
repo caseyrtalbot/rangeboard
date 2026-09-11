@@ -5,11 +5,12 @@ import {
   effectiveDoctrine,
   entityActive,
   mountHeightOf,
+  runSettings,
 } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats } from './sim'
-import { DT } from './clock'
+import { createSweepClock } from './clock'
 import { threatAltitudeFt } from './tracks'
 import { killChainRoutes } from './killChain'
 import {
@@ -181,7 +182,9 @@ function operatorDelayS(
 
 /**
  * Resolve every engagement window into expected kills, leakers and magazine
- * use. Sweeps at DT; each ready effector fires one salvo per salvoCooldownS
+ * use. Sweeps at the manifest step (clock.ts SweepClock; a lane may request a
+ * per-effector fine step on `clock` inside a burst or dwell window); each
+ * ready effector fires one salvo per salvoCooldownS
  * at the eligible ship with the highest effective survival (see the header),
  * or holds fire with no magazine spend and no cooldown. Effects still pending
  * when the sweep ends are flushed in tEffect order. `falseLoad` is the
@@ -201,6 +204,11 @@ export function resolveEngagements(
   const assessments = (precomputed ?? assessAllThreats(scenario, draw)).filter(
     (a) => a.status !== 'no-path',
   )
+  // The engagement clock: the manifest step from t = 0. Lanes 3.5 and 3.6
+  // call `clock.requestFineStep(effectorId, fromS, toS, stepS)` at the salvo
+  // commit (commitSalvo) for a gun burst or a directed-energy dwell; outside
+  // a requested window the tick stays at the base step.
+  const clock = createSweepClock(runSettings(scenario).sweepStepS, 0)
   const doctrine = effectiveDoctrine(scenario)
   // Operator queue: inactive (no draw, zero delay) with no c2 spec that
   // states a median or with the noOperatorQueue switch, so today's timings hold.
@@ -288,7 +296,7 @@ export function resolveEngagements(
       spec,
       mountM: mountHeightOf(spec),
       pk: spec.pk ?? DEFAULT_PK[spec.effectorType],
-      cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], DT),
+      cooldownS: Math.max(spec.salvoCooldownS ?? DEFAULT_SALVO_COOLDOWN_S[spec.effectorType], clock.baseS),
       engageTimeS: spec.engageTimeS ?? 0,
       rounds: spec.magazineSize ?? null,
       // Route latency is charged per threat from its gate, so the battery starts ready.
@@ -456,6 +464,7 @@ export function resolveEngagements(
 
     if (es.rounds != null) es.rounds -= 1
     es.nextReadyS = t + es.cooldownS
+    // Fine-step hook (clock.ts): a burst or dwell lane requests its window here.
   }
 
   // The fused track a shooter holds on each threat at t (sim.ts fusedTracks,
@@ -473,14 +482,14 @@ export function resolveEngagements(
     fusedCursor.set(ts.a.uasId, i)
     if (i < 0) return null
     const latest = tracks[i]
-    return t - latest.state.tS <= DT + EPS ? latest : null
+    return t - latest.state.tS <= clock.baseS + EPS ? latest : null
   }
   const shotContextFor = (base: ShotContext, ts: ThreatState, t: number): ShotContext => {
     const estimate = fusedEstimateAt(ts, t)
     return estimate ? { ...base, estimate } : base
   }
 
-  for (let t = 0; t <= tEnd + EPS; t += DT) {
+  for (let t = 0; t <= tEnd + EPS; t = clock.next(t)) {
     applyDueEffects(t)
     tickGeom = new Map()
     const volleyShot: ShotContext = { t, effectContainment: 'any', membersAt }

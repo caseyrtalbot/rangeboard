@@ -23,6 +23,8 @@ export interface TrialManifest {
   readonly drawPolicyVersion: string
   readonly engineRevision: string
   readonly buildRevision: string | null
+  /** Sweep step the trial sampled at, seconds (`McSettings.sweepStepS`, default DT). */
+  readonly sweepStepS: number
   /** Library package the run drew its values from. */
   readonly dataPackageVersion: number
   /** Field overrides in force, so the record says which values were not the library's. */
@@ -45,15 +47,17 @@ export function createTrialManifest(
   if (!runId || !basisSignature) throw new Error('Trial requires a run id and configuration basis')
   // A physics switch runs a model on its fallback, so the floor drops with it.
   const switches = extras.physicsSwitches ?? physicsSwitches(scenario)
+  const settings = runSettings(scenario)
   return Object.freeze({
     runId,
     basisSignature,
-    seed: runSettings(scenario).seed,
+    seed: settings.seed,
     replicateIndex: idHash(runId),
     basis: 'nominal-aleatory',
     drawPolicyVersion: TRIAL_DRAW_POLICY_VERSION,
     engineRevision: TRIAL_ENGINE_REVISION,
     buildRevision: TRIAL_BUILD_REVISION,
+    sweepStepS: settings.sweepStepS,
     dataPackageVersion: extras.dataPackageVersion ?? DATA_PACKAGE_VERSION,
     overrides: extras.overrides ?? [],
     physicsSwitches: switches,

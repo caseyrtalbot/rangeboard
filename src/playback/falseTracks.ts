@@ -1,5 +1,5 @@
 import type { Entity, Scenario, SensorSpec } from '../model/types'
-import { entityActive, physicsSwitches } from '../model/types'
+import { entityActive, physicsSwitches, runSettings } from '../model/types'
 import { destination, dist, pathLength } from '../geometry/geo'
 import { mOfN } from '../analysis/radarPd'
 import {
@@ -8,7 +8,7 @@ import {
   trackInitMFor,
   trackInitNFor,
 } from '../analysis/doctrineFactors'
-import { DT, stepIndex } from './clock'
+import { stepCount } from './clock'
 import { effectivePathDelayS } from './raid'
 import type { DrawPolicy } from './policy'
 import type { TrackEstimate, TrackEstimateSink, TrackMeasurement } from './trackTypes'
@@ -143,7 +143,7 @@ interface FalseRadar {
 }
 
 /** Active radars with a positive false-alarm rate, with their per-scan false-track rate. */
-function falseRadars(scenario: Scenario): FalseRadar[] {
+function falseRadars(scenario: Scenario, stepS: number): FalseRadar[] {
   const out: FalseRadar[] = []
   for (const sensor of scenario.entities) {
     if (sensor.kind !== 'sensor' || !entityActive(sensor)) continue
@@ -153,8 +153,8 @@ function falseRadars(scenario: Scenario): FalseRadar[] {
     if (lambda == null || !Number.isFinite(lambda) || lambda <= 0) continue
     // A false alarm is a receiver event with no target, so the scan clock is
     // the radar's own: updateRateS, else the role's SCAN_S. A period below
-    // DT counts one scan per step, as the sweep does.
-    const periodS = Math.max(scanPeriodS(spec, true) ?? DT, DT)
+    // the step counts one scan per step, as the sweep does.
+    const periodS = Math.max(scanPeriodS(spec, true) ?? stepS, stepS)
     const m = trackInitMFor(spec)
     const n = trackInitNFor(spec)
     const ratePerScan = falseTrackRatePerScan(lambda, m, n)
@@ -190,9 +190,11 @@ export function prepareFalseTracks(
   sink?: TrackEstimateSink,
 ): FalseTrackLoad {
   if (physicsSwitches(scenario).includes('noFalseTracks')) return EMPTY_LOAD
-  const radars = falseRadars(scenario)
+  // The manifest step (clock.ts): the false process samples on the sweep grid.
+  const stepS = runSettings(scenario).sweepStepS
+  const radars = falseRadars(scenario, stepS)
   if (radars.length === 0 || !(horizonS >= 0)) return EMPTY_LOAD
-  const steps = stepIndex(horizonS) + 1
+  const steps = stepCount(horizonS, stepS) + 1
   const total = new Float64Array(steps)
   const bySensor = new Map<string, Float64Array>()
   let created = 0
@@ -209,22 +211,22 @@ export function prepareFalseTracks(
       if (count === 0) continue
       created += count
       // Live over steps with tScan <= t < tScan + lifeS.
-      const first = Math.max(0, Math.ceil(tScan / DT - 1e-9))
-      const last = Math.min(steps - 1, Math.ceil((tScan + lifeS) / DT - 1e-9) - 1)
+      const first = Math.max(0, Math.ceil(tScan / stepS - 1e-9))
+      const last = Math.min(steps - 1, Math.ceil((tScan + lifeS) / stepS - 1e-9) - 1)
       for (let i = first; i <= last; i += 1) {
         counts[i] += count
         total[i] += count
       }
       if (!sink) continue
       for (let n = 0; n < count; n += 1) {
-        emitFalseTrack(radar, draw, tScan, scanIdx, n, first, last, sink)
+        emitFalseTrack(radar, draw, tScan, scanIdx, n, first, last, stepS, sink)
       }
     }
   }
 
   const at = (arr: Float64Array | undefined, tS: number): number => {
     if (!arr) return 0
-    const i = stepIndex(tS)
+    const i = stepCount(tS, stepS)
     return i >= 0 && i < arr.length ? arr[i] : 0
   }
   return {
@@ -245,6 +247,7 @@ function emitFalseTrack(
   n: number,
   firstStep: number,
   lastStep: number,
+  stepS: number,
   sink: TrackEstimateSink,
 ): void {
   const id = radar.sensor.id
@@ -279,7 +282,7 @@ function emitFalseTrack(
   }
   const trackId = `${id}:false:${scanIdx}:${n}`
   for (let i = firstStep; i <= lastStep; i += 1) {
-    const t = i * DT
+    const t = i * stepS
     const dt = t - state.tS
     if (dt > 0) {
       const pred = predict(state, cov, dt, PROCESS_NOISE_Q)

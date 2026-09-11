@@ -6,6 +6,7 @@
 
 import type { IntegrationConfidence, LinkMedium } from './integration'
 import type { FieldEstimator, LibraryGrade, LibraryLayer, PhysicsSwitch, RangeType } from './libraryField'
+import { DT } from '../playback/clock'
 
 export interface Vec2 {
   x: number
@@ -92,6 +93,26 @@ export interface SensorSpec {
    * count. Null or absent means unknown: no false track enters the tracker.
    */
   falseAlarmRatePerScan?: number | null
+  /** Radar only: pulses integrated per dwell, a count. Null or absent means unknown (single pulse). */
+  pulsesPerDwell?: number | null
+  /** Radar only: dwell time on target per scan, seconds. Null or absent means unknown. */
+  dwellTimeS?: number | null
+  /** EO/IR only: detector pixel pitch, micrometres, for the band of record. Null or absent means unknown. */
+  pixelPitchUm?: number | null
+  /** EO/IR only: focal length at the narrow zoom stop, millimetres. Null or absent means unknown. */
+  focalLengthMm?: number | null
+  /** EO/IR only: horizontal detector pixel count. Null or absent means unknown. */
+  detectorPixelsH?: number | null
+  /** EO/IR only: horizontal field of view at the narrow zoom stop, degrees. Null or absent means unknown. */
+  fovDeg?: number | null
+  /** EO/IR thermal only: minimum resolvable temperature difference, millikelvin. Null or absent means unknown. */
+  mrtdMk?: number | null
+  /** RF only: receiver sensitivity at the quoted band, dBm. Null or absent means unknown. */
+  receiverSensitivityDbm?: number | null
+  /** RF only: nodes needed to geolocate (2 AOA cross, 3 TDOA), a count. Null means bearing only. */
+  geolocationMinNodes?: number | null
+  /** Acoustic only: array detection threshold, dB re 20 uPa. Null or absent means unknown. */
+  noiseFloorDb?: number | null
   /**
    * EO/IR only: the target characteristic dimension, meters, at which
    * detectRangeM is quoted. Absent means SPAN_PLANNING_M[1] (Group 1) in
@@ -218,6 +239,19 @@ export type JamBehavior = 'drift' | 'return-home' | 'continue'
  */
 export type JamBand = 'gnss' | 'uhf-433' | 'ism-915' | 'ism-2400' | 'ism-5800'
 
+/** Control or video link protocol of a threat (library attribute `linkProtocol`). */
+export type LinkProtocol =
+  | 'wifi'
+  | 'ocusync'
+  | 'lightbridge'
+  | 'elrs'
+  | 'crossfire'
+  | 'analog-fpv'
+  | 'cellular'
+  | 'proprietary'
+  | 'fiber'
+  | 'none'
+
 export const JAM_BANDS: JamBand[] = ['gnss', 'uhf-433', 'ism-915', 'ism-2400', 'ism-5800']
 
 export const JAM_BAND_LABEL: Record<JamBand, string> = {
@@ -287,6 +321,16 @@ export interface UasSpec {
    * (frequency hopping, directional link antennas). Absent means 0.
    */
   jamResistDb?: number
+  /** Maximum sustained turn rate, degrees per second. Null or absent means unknown (no turn limit). */
+  maxTurnRateDegS?: number | null
+  /** Maximum climb rate, m/s. Null or absent means unknown (no climb limit). */
+  climbRateMps?: number | null
+  /** Maximum longitudinal acceleration, m/s2. Null or absent means unknown (no acceleration limit). */
+  maxAccelMps2?: number | null
+  /** Control or video link radiated power (EIRP), watts. Null or absent means unknown. */
+  radiatedPowerW?: number | null
+  /** Control or video link protocol. Absent means unknown. */
+  linkProtocol?: LinkProtocol
   /**
    * Warhead mass, kg, from the threat study (docs/threat). Null when the study
    * gives no public figure. Never invented to fill the blank.
@@ -383,6 +427,44 @@ export interface EffectorSpec {
    * Absent: no flyout term.
    */
   flyoutSpeedMps?: number | null
+  /** Interceptor only: seeker acquisition range, meters. Null or absent means unknown. */
+  seekerAcquisitionRangeM?: number | null
+  /** Interceptor or net: lethal or capture radius, meters. Null or absent means unknown. */
+  lethalRadiusM?: number | null
+  /** Interceptor only: terminal guidance noise, 1 sigma miss contribution, meters. Null or absent means unknown. */
+  guidanceNoiseM?: number | null
+  /** Interceptor only: peak speed of the flyout profile, m/s (flyoutSpeedMps stays the average). Null or absent means unknown. */
+  maxFlyoutSpeedMps?: number | null
+  /** Interceptor only: time to reach peak speed, seconds. Null or absent means unknown. */
+  boostTimeS?: number | null
+  /** Gun only: round dispersion, 1 sigma, milliradians. Null or absent means unknown. */
+  dispersionMils?: number | null
+  /** Gun only: fire control aim error, 1 sigma, milliradians. Null or absent means unknown. */
+  fireControlErrorMils?: number | null
+  /** Gun only: rounds per burst, a count. Null or absent means unknown. */
+  burstRounds?: number | null
+  /** Gun only: cyclic rate of fire, rounds per minute. Null or absent means unknown. */
+  rateOfFireRpm?: number | null
+  /** Gun only: muzzle velocity, m/s. Null or absent means unknown. */
+  muzzleVelocityMps?: number | null
+  /** DE only: optical output power, kilowatts. Null or absent means unknown. */
+  outputPowerKw?: number | null
+  /** DE only: beam quality M squared, a ratio. Null or absent means unknown. */
+  beamQualityM2?: number | null
+  /** DE only: pointing jitter, 1 sigma, microradians. Null or absent means unknown. */
+  jitterUrad?: number | null
+  /** DE only: output aperture diameter, meters. Null or absent means unknown. */
+  apertureM?: number | null
+  /** DE only: dwell to effect on a Group 1 quadcopter at the quoted range, seconds. Null or absent means unknown. */
+  dwellToEffectS?: number | null
+  /** HPM only: field strength at fieldStrengthRangeM, volts per meter. Null or absent means unknown. */
+  fieldStrengthVm?: number | null
+  /** HPM only: the range fieldStrengthVm is quoted at, meters. Null or absent means unknown. */
+  fieldStrengthRangeM?: number | null
+  /** HPM only: half-power beamwidth, degrees. Null or absent means unknown. */
+  beamwidthDeg?: number | null
+  /** HPM only: recharge time between shots, seconds. Null or absent means unknown. */
+  rechargeS?: number | null
 }
 
 /**
@@ -1012,6 +1094,13 @@ export const DEFAULT_SEED = 4821
 export const DEFAULT_REPLICATES = 100
 
 /**
+ * Sweep step of a fresh scenario, seconds: the engine DT (playback/clock.ts).
+ * The manifest parameter the sweep, the fusion ring and the false-track scan
+ * clock read; a per-effector fine step is requested on the SweepClock, not here.
+ */
+export const DEFAULT_SWEEP_STEP_S = DT
+
+/**
  * How the parameter draws of a replicate run are laid out across replicates:
  * one Latin hypercube stratum per replicate index (`lhs`), or an independent
  * uniform draw per replicate (`independent`).
@@ -1071,6 +1160,8 @@ export interface Scenario {
    * is under this. Null or absent: run every replicate.
    */
   targetHalfWidth?: number | null
+  /** Sweep step, seconds. Absent or invalid on old saves = DEFAULT_SWEEP_STEP_S (the engine DT). */
+  sweepStepS?: number
   /** Replicate uncertainty mode. Absent on old saves = aleatory. */
   uncertainty?: UncertaintyMode
   /** Parameter sampling layout. Absent on old saves = DEFAULT_SAMPLING. */
@@ -1132,6 +1223,8 @@ export interface McSettings {
   seed: number
   replicates: number
   targetHalfWidth: number | null
+  /** Sweep step, seconds; the manifest parameter every sweep reads (default DT). */
+  sweepStepS: number
   uncertainty: UncertaintyMode
   sampling: SamplingMode
   sensitivityDepth: SensitivityDepth
@@ -1150,6 +1243,7 @@ function positiveInt(v: number | undefined, fallback: number): number {
 export function runSettings(s: Scenario): McSettings {
   const seed = s.seed
   const half = s.targetHalfWidth
+  const step = s.sweepStepS
   const conf = s.confidence
   // Floor and cap fall back together when the pair is inverted, so floor <= cap always holds.
   let stopFloor = positiveInt(s.stopFloor, DEFAULT_STOP_FLOOR)
@@ -1163,6 +1257,7 @@ export function runSettings(s: Scenario): McSettings {
     seed: Number.isInteger(seed) ? (seed as number) : DEFAULT_SEED,
     replicates: positiveInt(s.replicates, DEFAULT_REPLICATES),
     targetHalfWidth: typeof half === 'number' && Number.isFinite(half) && half > 0 ? half : null,
+    sweepStepS: typeof step === 'number' && Number.isFinite(step) && step > 0 ? step : DEFAULT_SWEEP_STEP_S,
     uncertainty: s.uncertainty === 'total' ? 'total' : 'aleatory',
     sampling: s.sampling === 'independent' ? 'independent' : DEFAULT_SAMPLING,
     sensitivityDepth: s.sensitivityDepth === 'quick' ? 'quick' : DEFAULT_SENSITIVITY_DEPTH,
