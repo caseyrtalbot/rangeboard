@@ -2,7 +2,7 @@
   "id": "lib-gerbera",
   "kind": "uas",
   "type": "one-way-attack",
-  "version": 1,
+  "version": 2,
   "name": "Red air: Gerbera decoy / light OWA (G2)",
   "description": "Cheap foam decoy flown inside Shahed streams to saturate defenses. Same corridors and altitudes as the OWA it mimics.",
   "color": "#c2705f",
@@ -125,6 +125,54 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 17,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: coordinated-turn rate g tan(bank) / V. The 45° roll limit is the ArduPlane default (ROLL_LIMIT_DEG 45; PX4 FW_R_LIM 50°), the autopilot class these small fixed-wing UAS fly with. At the record's cruise speed 33 m/s: 17°/s. No turn rate, bank limit or g limit is published for this airframe."
+    },
+    "climbRateMps": {
+      "value": 5,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Gerbera source publishes no climb rate. The ArduPlane TECS_CLMB_MAX default and the PX4 FW_T_CLMB_MAX default are both 5.0 m/s for a small fixed-wing UAS."
+    },
+    "maxAccelMps2": {
+      "value": 2,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Gerbera source publishes no acceleration. About 18 kg on a DLE60-class 7 hp engine (Jerusalem Post; Wikipedia). A propeller airframe with thrust-to-weight near 0.3 and cruise drag near 0.1 of weight accelerates at about 0.2 g = 2 m/s² in level flight."
+    },
+    "radiatedPowerW": {
+      "value": 2,
+      "unit": "W",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: No Gerbera source publishes no link power. Gerbera carries a Xingkai XK-F358 mesh modem and, on some airframes, 3G/LTE modems (CSIS; Wikipedia). The only OEM-published link power in this threat set is Mugin's SprintLink family (2 W, 5 W, 10 W at 1.4 GHz for 30 to 150 km); the 2 W entry-level class is used for a small-UAS command and video link."
     }
   },
   "attributes": {
@@ -134,7 +182,8 @@
     "oneWay": true,
     "rangeNote": "About 300 km with a combat payload; unarmed decoy flights reported to 600 km.",
     "weaponProfile": "none",
-    "jamBehavior": "continue"
+    "jamBehavior": "continue",
+    "linkProtocol": "proprietary"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -147,5 +196,17 @@
     "altitudeFt": 4000,
     "speedMps": 33,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "proprietary",
+      "source": "Wikipedia, Gerbera (drone): XK-F358 mesh modem relays operator signals; CSIS, Shahed/Geran: mesh radio XK-F358 and ZTE 3G/LTE modems",
+      "url": "https://www.csis.org/analysis/shahed-geran-how-russia-continues-reinvent-one-way-attack-drone",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "CORROBORATED",
+      "layer": "L1",
+      "note": "Mesh radio relay; cellular modems on some airframes."
+    }
   }
 }

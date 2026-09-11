@@ -2,7 +2,7 @@
   "id": "lib-hdcmr",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "Ranger HDC MR EO/IR (FLIR)",
   "description": "Mid-range pan-tilt thermal and color imager for visual identification of radar-cued tracks. 360 deg slewable.",
   "color": "#a49bc4",
@@ -118,6 +118,68 @@
         "kind": "lognormal",
         "sigmaDb": 2
       }
+    },
+    "pixelPitchUm": {
+      "value": 12,
+      "unit": "um",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the HDC MR sheet gives a 1280 x 720 InSb array and no pitch. Teledyne FLIR's HD InSb cores of that generation (Neutrino SX12, 1280 x 1024) are 12 µm; recorded as 12 µm."
+    },
+    "focalLengthMm": {
+      "value": 290,
+      "unit": "mm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: FLIR publishes only '>12x optical zoom' for the thermal channel. From the HDC 350 narrow field 3.0° and an assumed 12 µm × 1280 px = 15.4 mm array width: 15.4 / (2 tan 1.5°) = 293 mm, recorded as 290 mm. The HDC 550 lens option (1.9° narrow) would give about 460 mm."
+    },
+    "detectorPixelsH": {
+      "value": 1280,
+      "unit": "count",
+      "condition": "cooled InSb 1280 x 720, 3 to 5 µm",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet 21-0714 (mirror at atline.pl; defense.flir.com returned 403)",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-10"
+    },
+    "fovDeg": {
+      "value": 3,
+      "unit": "deg",
+      "condition": "HDC 350 cooled lens option, narrow field 3.0° x 1.7° ±7%; the HDC 550 option gives 1.9° x 1.08°",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet 21-0714 (mirror at atline.pl; defense.flir.com returned 403)",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "mrtdMk": {
+      "value": 25,
+      "unit": "mK",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: FLIR publishes no MRTD or NETD for the HDC MR. Cooled HD MWIR cores publish NETD of 20 mK (Lynred Daphnis-HD MW), <25 mK (Teledyne FLIR Neutrino SX12) and <30 mK (DRS HexaBlu 1280-MW); the 25 mK median is used as the low-spatial-frequency MRTD."
     }
   },
   "attributes": {

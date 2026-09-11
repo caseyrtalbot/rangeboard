@@ -2,7 +2,7 @@
   "id": "lib-cuaews-df",
   "kind": "sensor",
   "type": "rf",
-  "version": 2,
+  "version": 3,
   "name": "CUAEWS DF passive RF sensor (SRC)",
   "description": "Passive find-and-fix half of the LIDS EW element. Searches the RF environment for signals of interest, direction-finds lines of bearing to both the UAS and its operator, and classifies each contact SUSPECT, NEUTRAL/UNKNOWN or FRIEND before the jammer half fires. No detection range is published: the ring is REPRESENTATIVE. The brochure's 8 km is the EW EFFECTS range and belongs to lib-cuaews.",
   "color": "#c7a86f",
@@ -92,6 +92,29 @@
       "grade": "UNKNOWN",
       "layer": "L3",
       "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
+    },
+    "receiverSensitivityDbm": {
+      "value": -90,
+      "unit": "dBm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor, 2.4 GHz band, channel-integrated: kTB for a 10 MHz OcuSync-class channel (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS application note) gives -92 dBm, recorded as -90 dBm. The SRC Whisper Hunter direction-finder sheet gives 395 to 6000 MHz and four coherent channels but no sensitivity. No passive RF sensor in the library publishes one."
+    },
+    "geolocationMinNodes": {
+      "value": 2,
+      "unit": "count",
+      "condition": "four-element array, four coherent receive channels, maximum-likelihood direction finding that 'provides lines of bearing'; two sites is the cross-bearing minimum",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "SRC Whisper Hunter direction finder product sheet (PDF)",
+      "url": "https://www.srcinc.com/pdf/electronic-warfare-whisper-hunter-direction-finder.pdf",
+      "date": "2026-09-10"
     }
   },
   "attributes": {

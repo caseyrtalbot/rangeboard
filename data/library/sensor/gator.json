@@ -2,7 +2,7 @@
   "id": "lib-gator",
   "kind": "sensor",
   "type": "radar",
-  "version": 2,
+  "version": 3,
   "name": "AN/TPS-80 G/ATOR multi-mission radar",
   "description": "S-band GaN AESA expeditionary multi-mission radar, 360 deg. USMC air surveillance and air defense (Block 1) plus counterfire (Block 2); the sensor for MRIC. No public small-UAS range; ring is a role planning factor.",
   "color": "#5f87a2",
@@ -107,6 +107,30 @@
         "sigmaDb": 4
       },
       "note": "Planning factor: PLACARD_PFA 1e-6 (src/model/types.ts) times about 1e6 range-azimuth-Doppler cells per scan of a 360° surveillance volume gives about one false alarm per scan over the whole coverage; this 360° radar is recorded at 1. No vendor publishes a false-alarm rate."
+    },
+    "dwellTimeS": {
+      "value": 0.011,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: beam time on target = azimuth beamwidth / scan rate (Skolnik; Wikipedia 'Dwell time (radar)'). Trade press (topwar) gives 30 rpm (180°/s); Northrop publishes no rotation rate. No beamwidth is published; a 2° S-band beam (about 4 m aperture) is assumed. 2° / 180°/s = 11.1 ms. Northrop Grumman publishes no dwell."
+    },
+    "pulsesPerDwell": {
+      "value": 11,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: dwell 11.1 ms × PRF. A 1 kHz PRF is assumed, the unambiguous-range limit for a 150 km air-surveillance volume. Northrop Grumman publishes no PRF or pulse count."
     }
   },
   "attributes": {

@@ -2,7 +2,7 @@
   "id": "lib-mini4",
   "kind": "uas",
   "type": "quad",
-  "version": 1,
+  "version": 2,
   "name": "Red air: DJI Mini class (G1 sub-250 g)",
   "description": "Sub-250 g quad for short-range recce. Low and slow, 30-300 ft AGL, frequent hovers; hard radar target.",
   "color": "#cc9083",
@@ -130,6 +130,60 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 39,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the flight-path turn rate a multirotor can hold at its cruise speed is g tan(tilt) / V. DJI publishes a 35° max pitch angle for the Mini 4 Pro. At the record's cruise speed 10 m/s: 6.9 / 10 rad/s = 39°/s. The body yaw-rate cap (DJI publishes 100 to 300°/s; PX4 MC_YAWRATE_MAX 200°/s) is not a path turn limit and is not used."
+    },
+    "climbRateMps": {
+      "value": 5,
+      "unit": "mps",
+      "condition": "5 m/s max ascent speed in S and N mode (3 m/s in C mode)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Mini 4 Pro specs page",
+      "url": "https://www.dji.com/mini-4-pro/specs",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "maxAccelMps2": {
+      "value": 6.9,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a multirotor's horizontal acceleration is g tan(tilt). DJI publishes a 35° max pitch angle on the Mini 4 Pro specs page. 9.81 × tan 35° = 6.9 m/s²."
+    },
+    "radiatedPowerW": {
+      "value": 2,
+      "unit": "W",
+      "condition": "<33 dBm EIRP (FCC) at 2.4 GHz and at 5.8 GHz; <20 dBm CE/SRRC/MIC at 2.4 GHz, <30 dBm SRRC and <14 dBm CE at 5.8 GHz, <23 dBm CE at 5.1 GHz",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "DJI Mini 4 Pro specs page, O4 transmitter power",
+      "url": "https://www.dji.com/mini-4-pro/specs",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {
@@ -144,7 +198,8 @@
       "gnss",
       "ism-2400",
       "ism-5800"
-    ]
+    ],
+    "linkProtocol": "ocusync"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -159,6 +214,15 @@
       "source": "DJI Mini 4 Pro specs page",
       "url": "https://www.dji.com/mini-4-pro/specs",
       "date": "2026-09-04",
+      "basis": "datasheet",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1"
+    },
+    "linkProtocol": {
+      "value": "ocusync",
+      "source": "DJI Mini 4 Pro specs page, video transmission system O4",
+      "url": "https://www.dji.com/mini-4-pro/specs",
+      "date": "2026-09-10",
       "basis": "datasheet",
       "grade": "MANUFACTURER_CLAIM",
       "layer": "L1"

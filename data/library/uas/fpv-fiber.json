@@ -2,7 +2,7 @@
   "id": "lib-fpv-fiber",
   "kind": "uas",
   "type": "fpv",
-  "version": 1,
+  "version": 2,
   "name": "Red air: fiber-optic FPV (G1, jam-immune)",
   "description": "FPV quad steered over a fiber-optic spool. No RF emissions; immune to jamming. Slower due to spool drag.",
   "color": "#c87b6d",
@@ -127,6 +127,53 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "maxTurnRateDegS": {
+      "value": 37,
+      "unit": "deg/s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the flight-path turn rate a multirotor can hold at its cruise speed is g tan(tilt) / V. No tilt cap is published; the PX4 MPC_TILTMAX_AIR default of 45° is used, and the reel mass holds the cruise speed down. At the record's cruise speed 15 m/s: 9.8 / 15 rad/s = 37°/s. The body yaw-rate cap (DJI publishes 100 to 300°/s; PX4 MC_YAWRATE_MAX 200°/s) is not a path turn limit and is not used."
+    },
+    "climbRateMps": {
+      "value": 10,
+      "unit": "mps",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no vendor publishes a climb rate for a fibre-optic FPV (Skywalker gives a 190 km/h top speed and a 3 kg payload with the 10 km reel). A 10-inch build with the reel keeps thrust-to-weight near 2; 10 m/s is taken as the sustained climb."
+    },
+    "maxAccelMps2": {
+      "value": 9.8,
+      "unit": "mps2",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a multirotor's horizontal acceleration is g tan(tilt). No tilt cap is published; the PX4 MPC_TILTMAX_AIR default of 45° is used. 9.81 × tan 45° = 9.8 m/s²."
+    },
+    "radiatedPowerW": {
+      "value": 0,
+      "unit": "W",
+      "condition": "no RF link: control and video run over the fibre-optic tether (Skywalker Technology fibre FPV)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Militarnyi, Chinese drone maker introduces UAV controlled by fiber optics",
+      "url": "https://militarnyi.com/en/news/chinese-drone-maker-introduces-uav-controlled-by-fiber-optics/",
+      "date": "2026-09-10"
     }
   },
   "attributes": {
@@ -136,7 +183,8 @@
     "oneWay": true,
     "rangeNote": "Fielded fiber spools of 10, 15, and 20 km confirmed in combat; 41-50 km spools demonstrated on larger frames.",
     "weaponProfile": "impact",
-    "jamBehavior": "continue"
+    "jamBehavior": "continue",
+    "linkProtocol": "fiber"
   },
   "provenanceOrder": [
     "rcsM2",
@@ -149,5 +197,16 @@
     "altitudeFt": 60,
     "speedMps": 15,
     "count": 1
+  },
+  "attributeProvenance": {
+    "linkProtocol": {
+      "value": "fiber",
+      "source": "Militarnyi (Skywalker fibre-optic FPV) and Wikipedia, Fiber optic drone",
+      "url": "https://militarnyi.com/en/news/chinese-drone-maker-introduces-uav-controlled-by-fiber-optics/",
+      "date": "2026-09-10",
+      "basis": "reference",
+      "grade": "CORROBORATED",
+      "layer": "L1"
+    }
   }
 }

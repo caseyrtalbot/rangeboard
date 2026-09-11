@@ -2,7 +2,7 @@
   "id": "lib-rfone",
   "kind": "sensor",
   "type": "rf",
-  "version": 2,
+  "version": 3,
   "name": "RfOne Mk2 RF sensor (DroneShield)",
   "description": "Passive, non-emitting RF direction finder for UAS control and video links. Four units give 360 deg; multiple sites triangulate a position. DroneShield publishes no detection range, so the 5 km ring is a planning figure.",
   "color": "#cdb079",
@@ -90,6 +90,29 @@
       "grade": "UNKNOWN",
       "layer": "L3",
       "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
+    },
+    "receiverSensitivityDbm": {
+      "value": -90,
+      "unit": "dBm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor, 2.4 GHz band, channel-integrated: kTB for a 10 MHz OcuSync-class channel (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS application note) gives -92 dBm, recorded as -90 dBm. DroneShield publishes no sensitivity; the RfOne product URL redirects to a portfolio page today."
+    },
+    "geolocationMinNodes": {
+      "value": 2,
+      "unit": "count",
+      "condition": "four 90° sector antennas give a sector bearing; 'deploying multiple RfOne MKII sensors ... enables triangulation'; two sites is the cross-bearing minimum",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "basis": "reference",
+      "source": "Army Technology, DroneShield RfOne MkII long-range sensors for Australia",
+      "url": "https://www.army-technology.com/news/droneshield-rfone-mkii-long-range-sensors-australia/",
+      "date": "2026-09-10"
     }
   },
   "attributes": {

@@ -2,7 +2,7 @@
   "id": "lib-wingman",
   "kind": "sensor",
   "type": "rf",
-  "version": 2,
+  "version": 3,
   "name": "Wingman 103 wearable RF detector (MyDefence)",
   "description": "Body-worn passive RF detector for dismounted troops. Up to 6 km on the drone or controller link, direction finding to within 30 deg, alert in under 10 s. 90 deg face as issued; omnidirectional with the wideband antenna. ATAK compatible.",
   "color": "#dcc79c",
@@ -95,6 +95,25 @@
       "grade": "UNKNOWN",
       "layer": "L3",
       "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
+    },
+    "receiverSensitivityDbm": {
+      "value": -90,
+      "unit": "dBm",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor, 2.4 GHz band, channel-integrated: kTB for a 10 MHz OcuSync-class channel (-104 dBm) plus a 12 dB receiver noise figure (Narda SignalShark C-UAS application note) gives -92 dBm, recorded as -90 dBm. The MyDefence Wingman 103/105 sheet gives bands (2.4, 5.2, 5.8 GHz internal; 350 to 1300 MHz and 5 to 6 GHz with the wideband antenna) and 'up to 6 km' but no sensitivity."
+    },
+    "geolocationMinNodes": {
+      "value": null,
+      "unit": "count",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Signal-strength direction finding to ±30° by sweeping the 90° internal antenna (MyDefence Wingman 103/105 sheet); bearing only, no multi-node geolocation documented, so no node count applies."
     }
   },
   "attributes": {

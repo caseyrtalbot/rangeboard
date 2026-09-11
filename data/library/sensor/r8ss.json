@@ -2,7 +2,7 @@
   "id": "lib-r8ss",
   "kind": "sensor",
   "type": "radar",
-  "version": 2,
+  "version": 3,
   "name": "Ranger R8SS-3D panel radar (FLIR)",
   "description": "Compact perimeter panel radar; tracks up to 500 targets and cues EO/IR. Micro-UAS to 2-3 km per 120 deg face.",
   "color": "#809fb5",
@@ -141,6 +141,30 @@
         "sigmaDb": 4
       },
       "note": "Planning factor: PLACARD_PFA 1e-6 (src/model/types.ts) times about 1e6 range-azimuth-Doppler cells per scan of a 360° surveillance volume gives about one false alarm per scan over the whole coverage; this 90° sector panel searches about half the cells and is recorded at 0.5. No vendor publishes a false-alarm rate."
+    },
+    "dwellTimeS": {
+      "value": 0.02,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Teledyne FLIR publishes no dwell or CPI. An electronically scanned radar sets its dwell in the beam schedule rather than by beamwidth over scan rate; the literature CPI of 20 ms for X/Ku-band drone-detection AESAs is used. Open literature on X/Ku-band drone-detection AESAs gives a CPI of about 20 ms at 5 kHz PRF (about 100 pulses; arXiv 2307.10326) and about 30 ms at 6 kHz (about 180 pulses; MDPI Drones 7(5):316), and notes that a 2.7 ms dwell barely resolves micro-Doppler. The R8SS-3D sheet gives a 2 or 4 Hz electronic scan rate over a 90° sector and no dwell. The sheet states X-band, where this record says Ku; see the changelog open item."
+    },
+    "pulsesPerDwell": {
+      "value": 100,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Teledyne FLIR publishes no PRF or pulse count. 20 ms dwell at the literature 5 kHz PRF gives 100 pulses coherently integrated. Open literature on X/Ku-band drone-detection AESAs gives a CPI of about 20 ms at 5 kHz PRF (about 100 pulses; arXiv 2307.10326) and about 30 ms at 6 kHz (about 180 pulses; MDPI Drones 7(5):316), and notes that a 2.7 ms dwell barely resolves micro-Doppler. The R8SS-3D sheet gives a 2 or 4 Hz electronic scan rate over a 90° sector and no dwell. The sheet states X-band, where this record says Ku; see the changelog open item."
     }
   },
   "attributes": {

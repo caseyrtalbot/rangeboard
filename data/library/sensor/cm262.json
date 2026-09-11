@@ -2,7 +2,7 @@
   "id": "lib-cm262",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 2,
+  "version": 3,
   "name": "CM262 EO/IR/SWIR gimbal (CACI)",
   "description": "Four-sensor 16 kg gimbal on the L-MADIS sensor vehicle: HD EO, HD MWIR, SWIR and a laser rangefinder, 360 deg continuous in azimuth and +90 to -16 deg in elevation, with on-board C-UAS tracking. CACI publishes no detection or identification range against any target, so the ring is REPRESENTATIVE. The datasheet's 16 km is the laser rangefinder's ranging range, not a detection range.",
   "color": "#a99fc6",
@@ -110,6 +110,71 @@
         "kind": "lognormal",
         "sigmaDb": 2
       }
+    },
+    "pixelPitchUm": {
+      "value": 10,
+      "unit": "um",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the FS576a sheet names no detector. Its own MWIR figures (300 mm tele, 2.4° HFOV, 1280 px) imply 300 × tan(2.4°) / 1280 = 9.8 µm, and HD 1280-class MWIR cores are made at 10 µm (Lynred Daphnis-HD MW, 10 µm); recorded as 10 µm."
+    },
+    "focalLengthMm": {
+      "value": 300,
+      "unit": "mm",
+      "condition": "MWIR channel, tele end of the 15 to 300 mm focal length range",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "detectorPixelsH": {
+      "value": 1280,
+      "unit": "count",
+      "condition": "MWIR 1280 x 1024",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-09-10"
+    },
+    "fovDeg": {
+      "value": 2.4,
+      "unit": "deg",
+      "condition": "MWIR HFOV 46.2° to 2.4°, narrow end",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "CACI CM262 ground system datasheet (FS576a, 2026), Widen DAM PDF",
+      "url": "https://caci-dam.widen.net/s/6nkd7zqbrc/gimbal_cm262",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "mrtdMk": {
+      "value": 25,
+      "unit": "mK",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: CACI publishes no MRTD or NETD. Cooled HD MWIR cores publish NETD of 20 mK (Lynred Daphnis-HD MW), <25 mK (Teledyne FLIR Neutrino SX12) and <30 mK (DRS HexaBlu 1280-MW); the 25 mK median is used as the low-spatial-frequency MRTD."
     }
   },
   "attributes": {
