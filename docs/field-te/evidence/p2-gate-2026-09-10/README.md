@@ -15,6 +15,7 @@ the tree at the gate commit on `main`, not the current tree.
 | [`capture-timeline.mjs`](capture-timeline.mjs) | The capture script: it reads the CLI run record in a directory, runs one trial per fixture through `dist-engine/engine.js`, and writes `timeline.json` |
 | [`compare-timelines.mjs`](compare-timelines.mjs) | Renders `comparison.md` from the three `timeline.json` files |
 | [`check.txt`](check.txt) | `npm run check` output at the gate: 168 test files, 1955 tests, engine CLI test 2 of 2, library 90 models and 790 fields, build entry 1,196.69 kB (353.20 kB gzip) |
+| [`tip-timing.md`](tip-timing.md) | Post-gate evidence for Casey's two open verdicts on `7c65ca1`: Run and Monte Carlo wall time with the switches pinned against the estimate path, and a legacy board that adopts seed keys against a current-seed board |
 | [`browser/`](browser) | Nine screenshots from the gate browser check on port 5385: the ellipses at 1.5 s and 200 s, solid at 497 s and dashed at 500 s, horizon censoring, the finished run and the outcome tiles |
 
 Monte Carlo rows are 200 replicates at seed 4821, aleatory, on 4 workers. Trial rows are

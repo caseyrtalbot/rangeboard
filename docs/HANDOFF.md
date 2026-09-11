@@ -95,30 +95,46 @@ Phase 2, all on `main`, nothing pushed. Base `2a6f87f`.
   missed scan no longer moves one step; a truth member yields to an estimate member when
   the switch is off; unlinked sensors fuse at `NO_C2`; duplicate links count once). The
   remaining findings are in Open items.
+- Post-gate (Casey's change verdict): `src/playback/estimate.parity.test.ts` pins the
+  default estimate path on both golden fixtures (four tests, about 25 s); the plan's parity
+  rule and `VERIFICATION.md` name it.
 - 2.d Docs `ec7d1fb`: `ENGINEERING_REFERENCE.md`, `PROJECT_GUIDE.md`, `VERIFICATION.md`,
   `WORKFLOW.md`, `DESIGN_SYSTEM.md` and the docs index updated and reviewed; evidence in
   [p2-gate-2026-09-10](field-te/evidence/p2-gate-2026-09-10/README.md).
 
-## Decisions taken without a poll
+## Decisions, polled 2026-09-10
 
-Casey was not in the loop during this phase. Each item below is one commit to revert or
-amend; put them to Casey before Phase 3 starts.
+Casey answered the six decisions the phase took without a poll. Each verdict below names
+the commit it covers and the condition it carries.
 
-- C2 decision fields live on a `C2Spec` block in the library, not on `FireDoctrine`
-  (`6e33ef2`); decision latency is a lognormal median in seconds plus a sigma in dB, two
-  numeric library fields.
-- The operator queue adds only the excess over its median, floored at 0 (`26d5c40`). The
-  reviewer notes the floor biases the Monte Carlo mean: at median 10 s and 3 dB an
-  engagement adds about 8.8 s on average while the deterministic run adds 0.
-- Physics switches live on `Scenario.physics`; a switch sets `fidelityFloor: 'fallback'`
-  on the manifest (`4359d28`). No Physics tab yet (Phase 3 lane 3.7).
-- `ADOPTED_SEED_KEYS`: a saved builtin adopts the Phase 2 seed keys it lacks on load, so
-  existing boards receive the tracker (`4359d28`). A blanket adoption of every absent seed
-  key was tried and rejected because it moved older physics (`updateRateS`-class keys).
-- The golden fixtures pin the three switches, so the parity tests keep guarding the truth
-  path exactly; the estimate path is documented in `comparison.md` instead of pinned.
-- `SensorSpec.classification` carries the confusion matrix (`259fa86`); no library sensor
-  states one, so the rule ladder classifies everywhere.
+| Decision | Verdict | Condition |
+| --- | --- | --- |
+| C2 fields on a `C2Spec` library block (`6e33ef2`) | Keep | The block alone does not touch the hot path; a later library-scan cost is a separate measured question. |
+| Operator queue adds only the excess over its median, floored at 0 (`26d5c40`) | Keep, more evidence | Re-measure Run and Monte Carlo wall time on the Phase 2 tip before Phase 3 (recorded below). The Board must say when the wait was floored, so Play and Run never differ in speed for an unexplained reason: slice 3.0 in the plan. |
+| Physics switches on `Scenario.physics` with the `fallback` floor (`4359d28`) | Keep | A switch that turns on heavier physics later is measured alone; where the flag lives is settled. |
+| `ADOPTED_SEED_KEYS` fills the Phase 2 seed keys on load (`4359d28`) | Keep, more evidence | Keep the fill only with a visible stamp (slice 3.0). Re-check load and playback on a legacy board that adopts against one that already has the keys (recorded below). |
+| Estimate path documented in `comparison.md`, not pinned | Change | Done: `src/playback/estimate.parity.test.ts` pins the seed-4821 trial per threat, the event count, the kill mass, the track count and the 200 replicate means on both fixtures with the switches removed; the parity rule in the plan names it, and a gate fails when it moves without a hand-derived replacement. |
+| `SensorSpec.classification` carries the matrix (`259fa86`) | Keep | No library sensor states one; when the first ships, measure classify cost against the rule ladder before calling it free. |
+
+## Evidence for the two open verdicts
+
+Measured on the Phase 2 tip `7c65ca1`, browser on port 5386, 8 pool workers, in
+[tip-timing.md](field-te/evidence/p2-gate-2026-09-10/tip-timing.md).
+
+- Run and Monte Carlo wall time, pool clock (`elapsedMs`), switches pinned against the
+  estimate path: JIATF-401 default 30 replicates 0.17 s against 0.18 s; 1000 replicates
+  total 0.85 s against 1.28 s (1.5x); half-width rule at 0.5 stops at 60 replicates in
+  0.21 s against 0.23 s. Layered acoustic default 100 replicates 1.23 s against 1.46 s;
+  1000 replicates total 9.2 s against 12.1 s (1.3x); half-width rule stops at 33 in
+  0.67 s against 0.76 s. Every number is inside the section J reference values (10 s
+  default, 20 s for 1000 replicates). Watch trials hold 84 to 85 fps at 30x on both.
+- Legacy board against a current-seed board (the onboarding firing scenario, 46 of 90
+  models adopt keys: 19 radars four fields, 19 other sensors three, 8 C2 the whole block):
+  load medians 6.3 ms adopting, 4.9 ms adopting with the switches, 7.8 ms with the current
+  seed and nothing to adopt; `loadScenario` itself 0.0 to 0.5 ms, the rest is JSON.parse.
+  Watch first frame 2.8 to 3.4 ms, 85 fps, identical frame counts on all three; trial
+  worker 66 to 86 ms. Adoption has no measurable cost; the estimate path costs 1.1x to
+  1.5x on the ensemble and nothing visible in playback.
 
 ## Open items
 
@@ -162,12 +178,18 @@ amend; put them to Casey before Phase 3 starts.
 
 ## Continuation boundary
 
-Put the decisions above to Casey first. The next task is the Phase 3 contract and split
-slice in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics):
-a `fable-medium` worker on `src/model/types.ts`, `src/playback/clock.ts`,
+The next task is slice 3.0 (stamps) in
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics),
+an `opus-high` worker: the operator floor count on the report, the summary and the Board,
+and the seed-adoption notice and chip. It is the condition Casey set on two verdicts, so
+it merges before any Phase 3 lane. The Phase 3 contract and split slice 3.a follows: a
+`fable-medium` worker on `src/model/types.ts`, `src/playback/clock.ts`,
 `src/playback/attrition.ts`, `src/playback/sweep.ts`, `src/analysis/sensorEnv.ts` and its
-split, `src/playback/pk.ts` and its split. Research lanes 3.R1 and 3.R2 may start with it.
-No poll is open beyond the decisions listed.
+split, `src/playback/pk.ts` and its split, the barrel and `parameterBasis.ts`; its row in
+the plan now names the Phase 2 surface it must keep (`missDistanceSigmaM`, `interceptFor`,
+the tracker and fusion reading the step through `clock.ts`, `FIELDS_BY_KIND` learning `c2`
+and the accuracy fields). Research lanes 3.R1 and 3.R2 may start with 3.a. No poll is
+open.
 
 ## Verification at the last gate
 

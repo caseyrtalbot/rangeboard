@@ -21,9 +21,12 @@ remain cancelled.
 - Every lane runs `npm run typecheck` and `npx vitest run <its test files>` before it
   reports. A lane with UI runs a real browser check and records what it saw. The
   orchestrator runs `npm run check` at each gate.
-- Parity: `sensitivity.parity.test.ts`, `accuracy.verify.test.ts` and
-  `convergence.verify.test.ts` must pass unchanged unless the slice's brief names the pinned
-  number and gives the hand-derived replacement.
+- Parity: `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`,
+  `convergence.verify.test.ts` (the truth path; the golden fixtures pin the physics
+  switches) and `estimate.parity.test.ts` (the default estimate path: Kalman, fusion,
+  false tracks, operator queue) must pass unchanged unless the slice's brief names the
+  pinned number and gives the hand-derived replacement. A gate fails when any of them
+  moves without one (Casey, 2026-09-10).
 - Type changes require `npm run schema:generate`. Library changes require the data health
   check once it exists.
 - A worker reports: files changed, tests run with output, browser check if any, open items,
@@ -169,11 +172,17 @@ against advertised data. Three to four weeks. Phases 2 and 3 may overlap once 2.
 because the file sets are disjoint except `pk.ts` and `intercept.ts`; lane 3.6 starts after
 2.6 merges.
 
-### 3.a Contract and split (sequential)
+### 3.0 Stamps (sequential, before any Phase 3 lane; Casey's conditions of 2026-09-10)
 
 | Owner | Files | Deliverable |
 | --- | --- | --- |
-| `fable-medium` | `src/model/types.ts`, `src/playback/clock.ts`, `src/playback/attrition.ts`, `src/playback/sweep.ts`, `src/analysis/sensorEnv.ts`, `src/analysis/sensorEnv/*.ts` (new), `src/playback/pk.ts`, `src/playback/pk/*.ts` (new) | Sweep step as a manifest parameter, 0.5 s default, with a per-effector fine-step request honoured only during a burst or dwell. `sensorEnv.ts` split into `radar.ts`, `eoir.ts`, `acoustic.ts`, `rf.ts` with `sensorEnv.ts` as the barrel. `pk.ts` split into `kinetic.ts` and `beam.ts`. New threat fields (turn rate, climb rate, acceleration, radiated power, protocol, acoustic level) and effector fields from blueprint section D. Pure moves; every test unchanged. |
+| `opus-high` | `src/playback/operator.ts`, `src/playback/attrition.ts`, `src/playback/attritionReport.ts`, `src/playback/mcRun.ts` (summary fields only), `src/playback/mergeSummaries.ts`, `src/panels/analysis/RunControl.tsx`, `src/panels/analysis/screens/OutcomeScreen.tsx`, `src/model/libraryLifecycle.ts`, `src/io/persist.ts`, `src/panels/settings/SystemsTab.tsx`, their tests | Two visible stamps. (1) Operator floor: `OperatorQueue.delayS` reports whether the floor at 0 applied; `AttritionTotals` gains `operatorDecisions` and `operatorFlooredDecisions`; the Monte Carlo summary carries their means and the merge keeps them; the Run progress line and the Outcome record read "operator wait floored in N of M decisions" whenever N is not 0, so Play and Run never differ in speed for an unexplained reason. (2) Seed adoption: `reconcileLibrary` returns which builtin models adopted `ADOPTED_SEED_KEYS` and which keys; `fillScenario` surfaces it as a load notice (not persisted) and the Systems tab marks each adopted field with a chip naming the data package version. Stop: `attrition.operator.test.ts` counts floored decisions in a fixture that floors; `libraryLifecycle.test.ts` reports the adopted models; browser check shows both stamps; parity files unchanged (the counts are additions). |
+
+### 3.a Contract and split (sequential, after 3.0)
+
+| Owner | Files | Deliverable |
+| --- | --- | --- |
+| `fable-medium` | `src/model/types.ts`, `src/playback/clock.ts`, `src/playback/attrition.ts`, `src/playback/sweep.ts`, `src/analysis/sensorEnv.ts`, `src/analysis/sensorEnv/*.ts` (new), `src/playback/pk.ts`, `src/playback/pk/*.ts` (new), `src/engine/index.ts` (barrel), `src/analysis/parameterBasis.ts` | Sweep step as a manifest parameter, 0.5 s default, with a per-effector fine-step request honoured only during a burst or dwell; the tracker, fusion ring, false-track scan clock and operator decision keys read the step through `clock.ts`, never a literal 0.5. `sensorEnv.ts` split into `radar.ts`, `eoir.ts`, `acoustic.ts`, `rf.ts` with `sensorEnv.ts` as the barrel. `pk.ts` split into `kinetic.ts` and `beam.ts`, keeping `missDistanceSigmaM`, `kineticPk`, `expenditureChannel` and their pins. New threat fields (turn rate, climb rate, acceleration, radiated power, protocol, acoustic level) and effector fields from blueprint section D as `LibraryField` numeric keys with `UNIT_BY_FIELD` rows. `FIELDS_BY_KIND` learns `c2` (`decisionLatencyS`) and the Phase 2 sensor accuracy fields so their spreads draw in total mode and Morris screens them; the parity files are aleatory and do not move. Pure moves otherwise; every test unchanged, `estimate.parity.test.ts` included. |
 
 ### 3.b Research wave (parallel, two agents, with web search)
 

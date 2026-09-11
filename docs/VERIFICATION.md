@@ -45,7 +45,13 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   bootstrap intervals at base 1024; `mc.worker.stages.test.ts` drives the Morris and Sobol
   routes. The parity files are aleatory and do not move under LHS. A fixture that sets a
   half-width target pins `stopCap` when it reads the loop end.
-- Phase 2 tracks and kill chain, one file per model:
+- Phase 2 tracks and kill chain, one file per model, plus the estimate-path parity file:
+  - `playback/estimate.parity.test.ts`: both golden fixtures with their physics switches
+    removed, so the Kalman estimate, fusion, false tracks and the operator queue run; pins
+    the seed-4821 trial per threat (status, first detect, confirm, stable track,
+    declaration, gate), the event count, the kill mass, the track count, and the 200
+    replicate aleatory end-of-run means (leakers, kills, firm track) from the Phase 2 gate
+    capture. Moves only with a hand-derived replacement, like the truth-path parity files.
   - `playback/kalman.test.ts`: the steady-state gain against the closed form of the CWNA
     tracking index, symmetry after 1000 predict and update steps, the coast growing and
     an update lowering the position sigma, and the quality map at 0 and at the scale.

@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "35e4f1afe61c93be17dbf010ded1ac03f44f5acfaa442d9cd31c8c96ab64e05f",
+      "sha256": "59132a63f9b6aa126924110262a7ecb7cda1bcb727041d88f1f4388e27dc3d55",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
+      "note": "Post-gate 2026-09-10: Casey's six verdicts, estimate.parity.test.ts in the parity rule, slice 3.0 stamps, 3.a row names the Phase 2 surface, tip timing and legacy-board evidence"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "75097ca6029cd98aea6948246493e57214c3eff592e4586fdf53049df8cb81fd",
+      "sha256": "f20a76dd3a473e69fd29bd89a42b4dc0debf6b33d5fc648d321f6eb5152cb963",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate handoff: completion, decisions to poll, open items, continuation boundary"
+      "note": "Post-gate 2026-09-10: Casey's six verdicts, estimate.parity.test.ts in the parity rule, slice 3.0 stamps, 3.a row names the Phase 2 surface, tip timing and legacy-board evidence"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "a149d35d8300590e08d1fc26b9a626766f5fff678dfaccdb8554a350a3651081",
+      "sha256": "5cae54fac184d9b1509ddbb0ac88b9b91c3831fcc7b4ebd1996ab11393dbabcb",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 marked complete with its merge commits and deviations"
+      "note": "Post-gate 2026-09-10: Casey's six verdicts, estimate.parity.test.ts in the parity rule, slice 3.0 stamps, 3.a row names the Phase 2 surface, tip timing and legacy-board evidence"
     }
   ],
   "historical": [
