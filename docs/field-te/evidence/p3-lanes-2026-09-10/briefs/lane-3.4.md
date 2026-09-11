@@ -1,0 +1,9 @@
+# Lane 3.4 Radar (fable-medium), branch `calib/p3-radar`, model tag id `radar-dwell`
+
+Files owned: `src/analysis/radarPd.ts`, `src/analysis/sensorEnv/radar.ts`, `src/playback/radarDwell.ts` (new), their tests, `radarDwell.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`.
+
+Deliverable (plan row 3.4): pulse integration per dwell. From `pulsesPerDwell` (or `dwellTimeS` times a PRF you derive and document when only the dwell time is stated) compute the integrated single-scan Pd: non-coherent integration of N pulses at the placard-calibrated single-pulse SNR using Shnidman's approximation for the Swerling case the calibration carries (`radarCalibration`), keeping the placard calibration so the placard point still holds (recalibrate the single-pulse SNR so the integrated Pd equals the placard Pd at the placard range). Elevation coverage limits are already a geometry gate (`sensorGeometryGate` on `elevationDeg`); confirm they apply on the Pd path and add nothing new unless a gap exists (report it). The false alarm rate per scan already feeds `falseTracks.ts`; do not change it. Expose the integrated Pd through `radarPdAt` and `radarPdCurve` so `sweep.ts` and the Pd contours read it without a signature change; the sweep and the ring drawing are outside your set.
+
+Fallback: the `singlePulseRadar` switch, or a radar with null `pulsesPerDwell` and null `dwellTimeS`, keeps today's single-pulse Pd bit for bit.
+
+Stop condition: `radarPd.test.ts` Marcum-Q pins unchanged; the integrated Pd matches Shnidman's approximation within its stated tolerance at three (N, SNR, Swerling) points hand-derived in the test comment; the placard point is reproduced with integration on. Validation tier: `analytic` for the integration, and keep the existing `radar-pd` datasheet checks in `validation.verify.test.ts` passing unchanged.

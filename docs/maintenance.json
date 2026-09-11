@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "a60cba0e32365e2532a3783a2e1f839253d36f45670acfc7f7549f71d98e37c2",
+      "sha256": "dbf737259f57e38c54ad68fc6da181dab4ee98ea2c10b09e0fa1ac00f5bf36c1",
       "reviewedAt": "2026-09-11",
-      "note": "Slice 3.0 stamps: operator floor counts on the report, summary, Run line and Outcome record; seed adoption notice and chip on the Systems tab; evidence folder indexed"
+      "note": "Phase 3 lane briefs indexed one per file"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "8dc5719c803ef1af1dce5c810eaa0f7be9f386e189d02f12af631b840f58534b",
+      "sha256": "1559176c32c5d2ab51776666dddd222f912ecdad578f8ab4d4ed56c8248bcbbb",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
+      "note": "Phase 3 stop point 2026-09-10: inputs changed by the 3.a contract, the switch addendum and the fixture pin; no text change beyond the recorded Phase 3 passages"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "7641d889bec2f4c7edc6d1bbf5e86333fb4ad6de484284522ccaa0baa9e9bd4c",
+      "sha256": "c871b45e1e5f0e24f10f198049e1ce90fe5f83b16f7f0025de4f180a41f15bf5",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
+      "note": "Phase 3 stop point 2026-09-10: inputs changed by the 3.a contract, the switch addendum and the fixture pin; no text change beyond the recorded Phase 3 passages"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "7f5283596bb3fbebc221b404213f56faabfea0f15dc0a20885b5e7ef7028d670",
+      "sha256": "7643ededcee40920bdd493631ce9fa49b6163d736256b7f3518d21eba7cbe26e",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
+      "note": "Phase 3 stop point 2026-09-10: evidence folder p3-lanes-2026-09-10 added; no verification text change"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "f20a76dd3a473e69fd29bd89a42b4dc0debf6b33d5fc648d321f6eb5152cb963",
+      "sha256": "3611a06def4b0777007470f7d528b1be656bfe7d3b107396427ffe13512b69b6",
       "reviewedAt": "2026-09-11",
-      "note": "Post-gate 2026-09-10: Casey's six verdicts, estimate.parity.test.ts in the parity rule, slice 3.0 stamps, 3.a row names the Phase 2 surface, tip timing and legacy-board evidence"
+      "note": "Phase 3 stop point 2026-09-10: 3.0, 3.a, 3.R1, 3.R2 merged; physics lanes stopped and rolled back; continuation boundary rewritten"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

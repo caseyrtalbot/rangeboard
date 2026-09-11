@@ -17,19 +17,53 @@ about an unfinished lane goes in Open items, not in Completed.
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
 | 1 Real-mode statistics | passed | `70a7a0e` | 2026-09-10 |
 | 2 Tracks and kill chain | passed | `5373505` | 2026-09-10 |
-| 3 Sensor and effector physics | not started | | |
+| 3 Sensor and effector physics | in progress: 3.0, 3.a, 3.R1, 3.R2 merged; physics lanes not started | | |
 | 4 Hypothesis tools | not started | | |
 
 ## Completed
 
-Phase 1, gate `70a7a0e` on `main`. Contract `64c9f83` and `c4473e7`; range primitive
-`ec80ac0`; lane merges `570ada4` (1.5 Sobol chart), `abf332f` (1.4 Run tab), `ac8343d`
-(1.2 pool), `3891fcb` (1.3 sampling and sensitivity), `4f0730f` (1.1 headless runner);
-integration `0f5231a`. `McSettings` with the real-mode defaults, the worker pool, the Node
-runner, LHS, Morris and Sobol, the Run tab and one Run button. Evidence in
-[p1-gate-2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md).
+Phase 3, in progress on `main`, nothing pushed (origin/main is `7c65ca1`). Base `dc8f69f`.
 
-Phase 2, all on `main`, nothing pushed. Base `2a6f87f`.
+- 3.0 Stamps, `calib/p3-stamps` `a8c1b7a` (opus-high), integration `3bf29a9`, docs
+  `327c849`. Casey asked for a Codex high review of the Opus work; it found three defects
+  and no blocker, fixed in `b45d7f2`: `OperatorQueue.delayS` returns `{ extraS, floored,
+  decided }` and only a C2 that drew counts as a decision; the seed-adoption stamp lives
+  in a WeakMap by model object (`seedAdoptionOf`, `loadNoticeFor` in `persist.ts`), so a
+  baseline parse, a rejected import or New leaves no stale stamp. Stop condition met:
+  `attrition.operator.test.ts`, `libraryLifecycle.test.ts`, `SystemsTab.test.tsx`,
+  browser check in [p3-stamps-2026-09-10](field-te/evidence/p3-stamps-2026-09-10/README.md).
+- 3.a Contract and split, `calib/p3-contract` `1ecd403` (fable-medium), merge `9cecbd2`,
+  integration `23c197c`. `clock.ts` gains `stepCount` and `createSweepClock` (manifest
+  step `McSettings.sweepStepS`, default DT, `requestFineStep` per effector window; no
+  request reproduces the old sample times bit for bit, `clock.test.ts`);
+  `TrialManifest.sweepStepS`; `sensorEnv.ts` is a barrel over `sensorEnv/{common, radar,
+  eoir, acoustic, rf}.ts`; `pk.ts` a barrel over `pk/{kinetic, beam}.ts`; the Phase 3
+  spec keys in `types.ts` and `UNIT_BY_FIELD` (the table is
+  [p3-fields.md](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-fields.md));
+  `FIELDS_BY_KIND` learns c2 and the accuracy fields, `uncertainty.ts` samples them at
+  their own nominals and skips a null nominal (`uncertainty.test.ts`); `shot.ts` passes
+  the base step to `interceptFor`. Parity unchanged.
+- 3.R1 Sensor and threat data, `calib/p3-sensordata` `bc6464d` (fable-medium): 168
+  fields (42 L1, 117 L2, 9 L3) over 38 sensor and 15 uas files, changelog section
+  "Phase 3 sensor and threat fields". 3.R2 Effector data, `calib/p3-effectordata`
+  `3eb0a92` (opus-high after Fable's safeguard flagged the brief): 84 fields (23 L1, 42
+  L2, 19 L3) over 18 effector files, changelog section "Phase 3 effector fields".
+- Integration `64572fb`: data package v3, the Phase 3 keys in `ADOPTED_SEED_KEYS`,
+  library and priors rebuilt (90 models, 1027 fields), `seedLibrary.test.ts` drops the
+  Phase 3 keys, docs reviewed; `npm run check` exit 0 (170 files, 1978 tests, entry
+  356.23 kB gzip of 360 kB), output in
+  [check-64572fb.txt](field-te/evidence/p3-lanes-2026-09-10/check-64572fb.txt).
+- Contract addendum `051adde`: switches `noFlightLimits`, `rfBandGate`, `eoirSpanRatio`,
+  `legacyKineticPk`, `legacyBeamPk`. Fixture pin `d81ebdb`: both golden fixtures carry
+  all eight switches, so the truth-path parity files hold through the physics lanes.
+- Physics lanes 3.1 to 3.5 and UI lane 3.7 were launched from `d81ebdb` and stopped by
+  Casey on 2026-09-10 (credit limit); their worktrees and branches were removed with
+  nothing merged. Lane 3.7 had one unverified commit, discarded. The issued briefs are
+  kept as evidence in
+  [p3-lanes-2026-09-10/briefs](field-te/evidence/p3-lanes-2026-09-10/briefs/), not as
+  tasking.
+
+Phase 2, all on `main`, pushed at `7c65ca1`. Base `2a6f87f`.
 
 - 2.a Contract, `calib/p2-contract`, `6e33ef2`, plus the orchestrator's amendment
   `259fa86`. `SensorSpec` gains `rangeAccuracyM`, `azimuthAccuracyDeg`,
@@ -178,18 +212,26 @@ Measured on the Phase 2 tip `7c65ca1`, browser on port 5386, 8 pool workers, in
 
 ## Continuation boundary
 
-The next task is slice 3.0 (stamps) in
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics),
-an `opus-high` worker: the operator floor count on the report, the summary and the Board,
-and the seed-adoption notice and chip. It is the condition Casey set on two verdicts, so
-it merges before any Phase 3 lane. The Phase 3 contract and split slice 3.a follows: a
-`fable-medium` worker on `src/model/types.ts`, `src/playback/clock.ts`,
-`src/playback/attrition.ts`, `src/playback/sweep.ts`, `src/analysis/sensorEnv.ts` and its
-split, `src/playback/pk.ts` and its split, the barrel and `parameterBasis.ts`; its row in
-the plan now names the Phase 2 surface it must keep (`missDistanceSigmaM`, `interceptFor`,
-the tracker and fusion reading the step through `clock.ts`, `FIELDS_BY_KIND` learning `c2`
-and the accuracy fields). Research lanes 3.R1 and 3.R2 may start with 3.a. No poll is
-open.
+Main is `d81ebdb`, not pushed. The next task is the Phase 3 physics wave from
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics)
+section 3.c and 3.d: lanes 3.1 to 3.5 and 3.7 in parallel from `d81ebdb`, then 3.6 after
+3.2 merges (it reads `rfLink.ts`). The issued briefs in
+[p3-lanes-2026-09-10/briefs](field-te/evidence/p3-lanes-2026-09-10/briefs/) carry the
+common rules (owned files, switches, fidelity rows, parity rule) and one section per
+lane; reissue them as they are or amended. Fable 5.1's safeguard flagged the 3.R2, 3.5
+and 3.1 briefs (`[general_harms]`); run those lanes on `opus-high`.
+
+Decisions the orchestrator took without a poll, for Casey before the wave restarts:
+one draw per burst or dwell keyed at its commit step (no `policy.ts` change); Phase 3
+physics on by default with the truth-path fixtures pinned by switches and
+`estimate.parity.test.ts` to be re-pinned at the gate with a before-and-after comparison
+(it will move as each lane lands); the field key and unit table; Phase 3 keys adopted
+into saved boards; data package bumped to 3. Research-lane modelling choices to confirm:
+acoustic `noiseFloorDb` back-solved from each record's quoted range; radar dwell from a
+literature CPI (20 ms, 100 pulses) on e-scan panels; RF `receiverSensitivityDbm` -90 dBm
+flat; gun dispersion 1.0 mil and fire control 0.5 to 1.0 mil flat planning factors;
+laser M squared 2.0, jitter 10 urad, aperture 0.30 m flat. The entry bundle is 3.8 kB
+under its budget before any physics lane lands. No poll is open.
 
 ## Verification at the last gate
 
