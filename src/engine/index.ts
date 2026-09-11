@@ -192,6 +192,17 @@ export {
 } from '../playback/fusion'
 export type { ClassificationDecision, ClassificationKeys } from '../playback/classification'
 export { bandFor, classifyByMatrix, matrixFor } from '../playback/classification'
+// Lane 2.6: the intercept solved from an estimate, and the miss-distance hook for Phase 3.
+export type {
+  EstimateIntercept,
+  InterceptResult,
+  InterceptSource,
+  SelectedIntercept,
+} from '../playback/intercept'
+export { interceptAt, interceptFor, interceptFromEstimate, predictedStateAt } from '../playback/intercept'
+export type { ShotAccepted, ShotContext, ShotRejected, ShotRejection } from '../playback/shot'
+export { evaluateShot } from '../playback/shot'
+export { kineticPk, missDistanceSigmaM } from '../playback/pk'
 
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'

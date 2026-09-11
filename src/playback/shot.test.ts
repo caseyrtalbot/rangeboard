@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { EffectorSpec, UasSpec } from '../model/types'
 import type { EffectorState, ThreatState } from './sweepState'
+import type { TrackEstimate } from './trackTypes'
+import { ZERO_COVARIANCE } from './kalman'
 import { kineticPk } from './pk'
 import type { ShotContext } from './shot'
 import { evaluateShot } from './shot'
@@ -46,6 +48,36 @@ describe('evaluateShot', () => {
     expect(shot.intercept.capped).toBe(false)
     expect(shot.interval).toEqual([0, 200])
     expect(shot.pk).toBeCloseTo(kineticPk(0.8, 10000, undefined, 7000), 12)
+    // Today's path solves the intercept from truth: no prediction error.
+    expect(shot.predictionSigmaM).toBeNull()
+    expect(shot.interceptSource).toBe('truth')
+  })
+
+  it('solves the intercept from a track estimate when the context carries one', () => {
+    const { ts, es } = states(INTERCEPTOR, [[0, 200]])
+    // Closing at 30 m/s from 7000 m at t = 10: release position 6850, tau =
+    // 6850 / 100 = 68.5 s, point 4795 m at 83.5 s (see intercept.test.ts).
+    const estimate: TrackEstimate = {
+      id: 'trk', uasId: 'u1', sensorIds: ['s1'], covariance: ZERO_COVARIANCE,
+      state: { x: 7000, y: 0, vx: -30, vy: 0, tS: 10 },
+      quality: 1, hits: 1, misses: 0, coasting: false, source: 'estimate',
+    }
+    const shot = evaluateShot({ ...ctx(), estimate }, es, ts, 0)
+    expect(shot.rejected).toBeUndefined()
+    if (shot.rejected) return
+    expect(shot.interceptSource).toBe('estimate')
+    expect(shot.intercept.tEffectS).toBeCloseTo(83.5, 9)
+    expect(shot.intercept.pos.x).toBeCloseTo(4795, 9)
+    expect(shot.pk).toBeCloseTo(kineticPk(0.8, 10000, undefined, 4795), 12)
+    // Zero covariance at t = 10 grows by the process noise alone over the
+    // 73.5 s lead: sqrt(q * 73.5^3 / 3) with q = 1.
+    expect(shot.predictionSigmaM).toBeCloseTo(Math.sqrt(73.5 ** 3 / 3), 6)
+    // A truth-source estimate keeps the truth path.
+    const truth = evaluateShot({ ...ctx(), estimate: { ...estimate, source: 'truth' } }, es, ts, 0)
+    if (truth.rejected) throw new Error(truth.rejected)
+    expect(truth.interceptSource).toBe('truth')
+    expect(truth.predictionSigmaM).toBeNull()
+    expect(truth.intercept.tEffectS).toBeCloseTo(115, 9)
   })
 
   it('rejects a threat with no window for this effector', () => {

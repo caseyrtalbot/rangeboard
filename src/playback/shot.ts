@@ -5,7 +5,9 @@ import { assessJam, effectiveJamRangeM } from '../analysis/ewPhysics'
 import { effectorGeometryGate } from '../analysis/sensorEnv'
 import { kineticPk } from './pk'
 import type { EffectorState, ThreatState } from './sweepState'
-import { EPS, interceptAt, membersAtTime } from './intercept'
+import type { InterceptSource } from './intercept'
+import { EPS, interceptAt, interceptFor, membersAtTime } from './intercept'
+import type { TrackEstimate } from './trackTypes'
 
 /**
  * Shot eligibility for one (effector, threat, ship) at one assignment time.
@@ -43,6 +45,14 @@ export interface ShotAccepted {
    * base Pk times the jam factor (clamped to [0, 1]) for a jammer.
    */
   pk: number
+  /**
+   * Predicted position 1 sigma at the intercept time, meters, when the
+   * intercept was solved from a track estimate; null on the truth path.
+   * Phase 3 turns it into a miss distance (pk.missDistanceSigmaM).
+   */
+  predictionSigmaM: number | null
+  /** Which path solved the intercept point (interceptFor). */
+  interceptSource: InterceptSource
 }
 
 export interface ShotRejected {
@@ -61,6 +71,12 @@ export interface ShotContext {
   effectContainment: 'any' | 'same'
   /** Per-tick geometry cache; defaults to a fresh sample. */
   membersAt?: (ts: ThreatState, tS: number) => Vec2[]
+  /**
+   * The track estimate the shooter holds on this ship at t. Absent, null or
+   * a truth-source estimate keeps the truth-path intercept (interceptAt); a
+   * Kalman estimate solves the intercept against its predicted path.
+   */
+  estimate?: TrackEstimate | null
 }
 
 /**
@@ -92,7 +108,15 @@ export function evaluateShot(
   const interval = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
   if (!interval) return { rejected: 'outside-interval' }
 
-  const intercept = interceptAt(ts, es, t, shipIdx, ctx.membersAt ?? membersAtTime, interval[1])
+  const { predictionSigmaM, interceptSource, ...intercept } = interceptFor(
+    ts,
+    es,
+    t,
+    shipIdx,
+    ctx.membersAt ?? membersAtTime,
+    interval[1],
+    ctx.estimate ?? null,
+  )
   if (intercept.infeasible) return { rejected: 'unreachable' }
 
   const tEffect = intercept.tEffectS
@@ -115,11 +139,19 @@ export function evaluateShot(
       ts.altM - es.mountM,
     ).factor
     if (factor <= 0) return { rejected: 'no-jam-link' }
-    return { intercept, interval, pk: Math.min(1, Math.max(0, es.pk * factor)) }
+    return {
+      intercept,
+      interval,
+      pk: Math.min(1, Math.max(0, es.pk * factor)),
+      predictionSigmaM,
+      interceptSource,
+    }
   }
   return {
     intercept,
     interval,
     pk: kineticPk(es.pk, es.spec.maxRangeM, ts.uasSpec, intercept.slantM),
+    predictionSigmaM,
+    interceptSource,
   }
 }
