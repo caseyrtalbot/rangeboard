@@ -1702,6 +1702,8 @@ describe('one draw per scan', () => {
       jam: (x) => x,
       phase: () => 0,
       param: () => 0.5,
+      falseAlarm: () => 0.5,
+      latency: () => 0.5,
     }
     return p
   }
