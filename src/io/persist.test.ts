@@ -392,6 +392,7 @@ describe('run settings load fill', () => {
       targetHalfWidth: null,
       uncertainty: 'aleatory',
       sampling: 'lhs',
+      sweepStepS: 0.5,
       sensitivityDepth: 'full',
       sobolBase: 256,
       stopFloor: 30,

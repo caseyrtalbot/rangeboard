@@ -6,6 +6,7 @@ import { effectorGeometryGate } from '../analysis/sensorEnv'
 import { kineticPk } from './pk'
 import type { EffectorState, ThreatState } from './sweepState'
 import type { InterceptSource } from './intercept'
+import { DT } from './clock'
 import { EPS, interceptAt, interceptFor, membersAtTime } from './intercept'
 import type { TrackEstimate } from './trackTypes'
 
@@ -69,6 +70,8 @@ export interface ShotContext {
    * interval's end).
    */
   effectContainment: 'any' | 'same'
+  /** The sweep's base step, seconds (clock.ts); the intercept slack is one step. Defaults to DT. */
+  stepS?: number
   /** Per-tick geometry cache; defaults to a fresh sample. */
   membersAt?: (ts: ThreatState, tS: number) => Vec2[]
   /**
@@ -116,6 +119,7 @@ export function evaluateShot(
     ctx.membersAt ?? membersAtTime,
     interval[1],
     ctx.estimate ?? null,
+    ctx.stepS ?? DT,
   )
   if (intercept.infeasible) return { rejected: 'unreachable' }
 

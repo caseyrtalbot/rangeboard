@@ -178,9 +178,13 @@ function sampleModel(model: SpecModel, doctrine: FireDoctrine, u: ParamSampler):
     if (!spread) continue
     const uv = u(model.id, field)
     if (uv == null) continue
-    const v = sampleSpread(nominalOf(model, field, doctrine), spread, uv)
+    // A null nominal (an L3 accuracy field, a c2 with no median) draws nothing: the
+    // engine's fallback path is not a value to spread.
+    const nominal = nominalOf(model, field, doctrine)
+    if (!Number.isFinite(nominal)) continue
+    const v = sampleSpread(nominal, spread, uv)
     next = next ?? cloneSpec(model)
-    const spec = (next.sensor ?? next.effector ?? next.uas) as unknown as Record<string, unknown>
+    const spec = (next.sensor ?? next.effector ?? next.uas ?? next.c2) as unknown as Record<string, unknown>
     spec[field] = v
   }
   return next ?? model
@@ -190,6 +194,7 @@ function cloneSpec(model: SpecModel): SpecModel {
   if (model.sensor) return { ...model, sensor: { ...model.sensor } }
   if (model.effector) return { ...model, effector: { ...model.effector } }
   if (model.uas) return { ...model, uas: { ...model.uas } }
+  if (model.c2) return { ...model, c2: { ...model.c2 } }
   return { ...model }
 }
 
@@ -197,8 +202,12 @@ function cloneSpec(model: SpecModel): SpecModel {
 function nominalOf(model: SpecModel, field: string, doctrine: FireDoctrine): number {
   if (model.sensor) {
     if (field === 'detectRangeM') return model.sensor.detectRangeM
-    return trackInitSFor(model.sensor, doctrine)
+    if (field === 'trackInitS') return trackInitSFor(model.sensor, doctrine)
+    // The Phase 2 accuracy fields have no resolver: a null stays null.
+    const v = (model.sensor as unknown as Record<string, unknown>)[field]
+    return typeof v === 'number' ? v : NaN
   }
+  if (model.c2) return model.c2.decisionLatencyS ?? NaN
   if (model.effector) {
     const fx = model.effector
     if (field === 'pk') return fx.pk ?? DEFAULT_PK[fx.effectorType]

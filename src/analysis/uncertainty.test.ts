@@ -238,6 +238,32 @@ describe('sampleScenario', () => {
     expect(out.doctrine).toEqual(s.doctrine)
   })
 
+  it('samples a c2 decision median and a sensor accuracy field at their own nominals; a null nominal draws nothing', () => {
+    const spread = { kind: 'lognormal' as const, sigmaDb: 3 }
+    const c2: SpecModel = {
+      id: 'tst-c2', name: 'test c2', kind: 'c2', description: '', color: '#fff', builtin: false,
+      c2: { decisionLatencyS: 10, decisionLatencySigmaDb: 3, operatorTrackCapacity: 6 },
+      provenance: [{ field: 'decisionLatencyS', value: '10 s', basis: 'pf', source: 'test', date: '2026-09-10', spread }],
+    }
+    const radar: SpecModel = {
+      ...RADAR,
+      sensor: { ...RADAR.sensor!, rangeAccuracyM: 20, azimuthAccuracyDeg: null },
+      provenance: [
+        { field: 'rangeAccuracyM', value: '20 m', basis: 'pf', source: 'test', date: '2026-09-10', spread },
+        { field: 'azimuthAccuracyDeg', value: 'null', basis: 'pf', source: 'test', date: '2026-09-10', spread },
+      ],
+    }
+    const s = scenario([radar, INTERCEPTOR, UAS, c2])
+    s.entities = s.entities.map((e) => (e.id === 'c1' ? { ...e, specId: c2.id } : e))
+    const out = sampleScenario(s, () => 0.9)
+    expect(out.library[3].c2?.decisionLatencyS).toBeCloseTo(sampleSpread(10, spread, 0.9), 9)
+    expect(out.library[3].c2?.operatorTrackCapacity).toBe(6)
+    expect(out.library[0].sensor?.rangeAccuracyM).toBeCloseTo(sampleSpread(20, spread, 0.9), 9)
+    // A null accuracy field stays null: the truth path is not a value to spread.
+    expect(out.library[0].sensor?.azimuthAccuracyDeg).toBeNull()
+    expect(s.library[3].c2?.decisionLatencyS).toBe(10)
+  })
+
   it('samples one field and keeps the rest nominal', () => {
     const s = scenario([RADAR, INTERCEPTOR, UAS])
     const out = sampleScenario(s, (m, f) => (m === UAS.id && f === 'rcsM2' ? 0.9 : null))

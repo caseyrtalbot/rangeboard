@@ -492,8 +492,8 @@ export function resolveEngagements(
   for (let t = 0; t <= tEnd + EPS; t = clock.next(t)) {
     applyDueEffects(t)
     tickGeom = new Map()
-    const volleyShot: ShotContext = { t, effectContainment: 'any', membersAt }
-    const doctrineShot: ShotContext = { t, effectContainment: 'same', membersAt }
+    const volleyShot: ShotContext = { t, effectContainment: 'any', membersAt, stepS: clock.baseS }
+    const doctrineShot: ShotContext = { t, effectContainment: 'same', membersAt, stepS: clock.baseS }
 
     for (const es of effectors.values()) {
       // Under doctrine only jammers fire here: shoot-look-shoot does not apply to a dwell.
