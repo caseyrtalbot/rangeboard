@@ -151,6 +151,19 @@ export type {
   TrackSource,
   TrackState,
 } from '../playback/trackTypes'
+export {
+  INIT_SPEED_SIGMA_MPS,
+  initFromMeasurement,
+  positionSigmaM,
+  predict,
+  PROCESS_NOISE_Q,
+  quality,
+  QUALITY_SCALE_M,
+  update,
+  ZERO_COVARIANCE,
+} from '../playback/kalman'
+export type { TrackHold, TrackManager } from '../playback/tracker'
+export { createTrackManager, polarMeasurement, trackId, truthPathFor } from '../playback/tracker'
 
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'

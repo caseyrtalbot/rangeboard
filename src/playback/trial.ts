@@ -5,6 +5,7 @@ import { resolveEngagements } from './attrition'
 import { resolvedThresholds } from './detection'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
+import type { TrackEstimate } from './trackTypes'
 import type { TrialManifest, TrialResult } from './trialTypes'
 import { TRIAL_DRAW_POLICY_VERSION, TRIAL_ENGINE_REVISION } from './trialTypes'
 
@@ -26,6 +27,7 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
 
   const observations: TrialResult['observations'] = []
   const jamDecisions: TrialResult['jamDecisions'] = []
+  const tracks: TrackEstimate[] = []
   const policy = monteCarloPolicy(manifest.seed, manifest.replicateIndex, resolvedThresholds(scenario))
   const draw = {
     ...policy,
@@ -35,7 +37,9 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
       return outcome
     },
   }
-  const assessments = assessAllThreats(scenario, draw, (observation) => observations.push(observation))
+  const assessments = assessAllThreats(
+    scenario, draw, (observation) => observations.push(observation), (estimate) => tracks.push(estimate),
+  )
   const report = resolveEngagements(scenario, assessments, draw)
-  return { manifest: Object.freeze({ ...manifest }), assessments, report, observations, jamDecisions }
+  return { manifest: Object.freeze({ ...manifest }), assessments, report, observations, jamDecisions, tracks }
 }
