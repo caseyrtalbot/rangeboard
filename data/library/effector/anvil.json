@@ -2,7 +2,7 @@
   "id": "lib-anvil",
   "kind": "effector",
   "type": "interceptor",
-  "version": 1,
+  "version": 2,
   "name": "Anvil interceptor (Anduril)",
   "description": "Rotary-wing collision interceptor for Group 1-2 with low collateral effects. ~4 km planning value.",
   "color": "#cd9674",
@@ -71,6 +71,51 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "seekerAcquisitionRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anduril publishes no seeker and no acquisition figure for Anvil; the interceptor is cued through Lattice and closes autonomously. Not established by the public record."
+    },
+    "lethalRadiusM": {
+      "value": 0.3,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Anvil defeats the target by collision with no blast-fragmentation effect, so the lethal radius is the contact envelope of an 11.6 lb multirotor, taken as 0.3 m. Anduril publishes no dimension and no miss distance."
+    },
+    "guidanceNoiseM": {
+      "value": 0.5,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a collision kill needs a miss distance inside the airframe contact envelope, so 0.5 m at 1 sigma is the planning value. Anduril publishes no terminal accuracy."
+    },
+    "maxFlyoutSpeedMps": {
+      "value": null,
+      "unit": "mps",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anduril publishes no speed for Anvil; the engagement ring in this file is itself a planning value. Not established by the public record."
+    },
+    "boostTimeS": {
+      "value": null,
+      "unit": "s",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Anvil is a multirotor interceptor with no boost motor, and no acceleration profile is published."
     }
   },
   "attributes": {

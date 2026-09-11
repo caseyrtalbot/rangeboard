@@ -2,7 +2,7 @@
   "id": "lib-coyote",
   "kind": "effector",
   "type": "interceptor",
-  "version": 1,
+  "version": 2,
   "name": "Coyote Block 2 interceptor",
   "description": "Rocket-boosted turbojet kinetic interceptor with a tungsten fragmentation warhead, fired from a 4-pack palletized launcher. The RF seeker belongs to Block 1B, not Block 2. Reach is reported at about 15 km.",
   "color": "#c47f5c",
@@ -81,6 +81,61 @@
       "source": "Army Recognition",
       "url": "https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars",
       "date": "2026-09-04"
+    },
+    "seekerAcquisitionRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "The Block 2 seeker type and its acquisition range are not published; the RF seeker described in open sources belongs to Block 1B. Not established by the public record."
+    },
+    "lethalRadiusM": {
+      "value": 10,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-eagls"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the one sourced interceptor warhead radius: the APKWS M151 burst radius of 10 m (lib-eagls). The Coyote tungsten fragmentation warhead is reported at about 1.8 kg against the 3.95 kg M151, so 10 m sits at the generous end for this round. Raytheon publishes no lethal radius. A one-member median is thin; it is recorded as such so a later source replaces it cleanly."
+    },
+    "guidanceNoiseM": {
+      "value": 2,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: 2 m 1 sigma terminal guidance noise for a proximity-fuzed interceptor. The one sourced member of the class, the semi-active laser APKWS at better than 1 m CEP, sits at the accurate end; this seeker's accuracy is not published."
+    },
+    "maxFlyoutSpeedMps": {
+      "value": 165,
+      "unit": "mps",
+      "condition": "upper bound of the reported 555 to 595 km/h band (595 km/h = 165 m/s); flyoutSpeedMps keeps the 555 km/h lower bound as the average",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Army Recognition",
+      "url": "https://www.armyrecognition.com/news/army-news/2025/pentagon-awards-raytheon-5-04b-army-contract-for-coyote-counter-uas-and-kurfs-radars",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "boostTimeS": {
+      "value": null,
+      "unit": "s",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Coyote launches on a rocket booster and then cruises on a turbojet, but no booster burn time and no acceleration profile are published."
     }
   },
   "attributes": {

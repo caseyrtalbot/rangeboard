@@ -2,7 +2,7 @@
   "id": "lib-helios",
   "kind": "effector",
   "type": "de",
-  "version": 1,
+  "version": 2,
   "name": "HELIOS 60 kW shipboard laser",
   "description": "US Navy Mk 5 Mod 0 HELIOS: 60 kW-class laser plus optical dazzler, hosted by the Aegis Combat System, installed on USS Preble since 2022 and the only such installation. Engaged four UAS in one at-sea counter-UAS demonstration. Single target per engagement. Magazine is bounded by ship power and cooling, not by rounds. Engagement range and the deckhouse-restricted firing arcs are NOT published.",
   "color": "#ac6e80",
@@ -46,6 +46,63 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "outputPowerKw": {
+      "value": 60,
+      "unit": "kW",
+      "condition": "60 kW-class laser, Mk 5 Mod 0 HELIOS installed on USS Preble",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Navy Times, 4 February 2025, quoted from the search index",
+      "url": "https://www.navytimes.com/news/your-navy/2025/02/04/us-navy-hits-drone-with-helios-laser-in-successful-test/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "beamQualityM2": {
+      "value": 2.0,
+      "unit": "ratio",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no high-energy laser programme publishes a beam quality. Open optics references put high-power multimode and combined-fibre beams at M squared of about 1.5 to 3; 2.0 is the planning value for every laser in the library."
+    },
+    "jitterUrad": {
+      "value": 10,
+      "unit": "urad",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no high-energy laser programme publishes a pointing jitter. The Airborne Laser Laboratory of the 1980s held about 25 urad and modern beam control is better, so 10 urad at 1 sigma is the planning value for every laser in the library."
+    },
+    "apertureM": {
+      "value": 0.3,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no high-energy laser programme publishes a beam director aperture. Open beam-director literature describes 30 to 50 cm apertures for weapon-class systems; 0.30 m is the planning value for every laser in the library."
+    },
+    "dwellToEffectS": {
+      "value": null,
+      "unit": "s",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "No dwell time to defeat a drone is published for this system. The programme has released engagement results but no engagement timeline; not established by the public record. The Navy has released the result of the USS Preble engagements but neither the target profiles nor the engagement timeline."
     }
   },
   "attributes": {

@@ -2,7 +2,7 @@
   "id": "lib-ironbeam",
   "kind": "effector",
   "type": "de",
-  "version": 1,
+  "version": 2,
   "name": "Iron Beam 100 kW laser (Rafael)",
   "description": "Rafael Iron Beam ('Or Eitan'), 100 kW-class laser handed to the Israeli Air Force 28 Dec 2025: the first high-energy laser air-defence system declared operationally mature. Reported to burn rockets, mortars and UAS at about 10 km in clear air; interception takes seconds. Fires from a static emplacement and degrades badly in cloud, fog and low visibility, which is why Iron Dome remains the all-weather layer.",
   "color": "#9e6274",
@@ -48,6 +48,71 @@
       "url": "https://breakingdefense.com/2025/09/lasers-iron-beam-iron-dome-israel-pew-pew/",
       "date": "2025-09-17",
       "estimator": "planning-factor"
+    },
+    "outputPowerKw": {
+      "value": 100,
+      "unit": "kW",
+      "condition": "100 kW-class laser with a 10 km engagement envelope",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Army Recognition, AUSA 2025 Iron Beam report",
+      "url": "https://www.armyrecognition.com/news/aerospace-news/2025/ausa-2025-israeli-rafael-debuts-its-iron-beam-laser-to-defeat-drones-and-rockets-up-to-10-km",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "beamQualityM2": {
+      "value": 2.0,
+      "unit": "ratio",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no high-energy laser programme publishes a beam quality. Open optics references put high-power multimode and combined-fibre beams at M squared of about 1.5 to 3; 2.0 is the planning value for every laser in the library. Rafael says the beam director uses coherent beam combination and adaptive optics and publishes no beam quality."
+    },
+    "jitterUrad": {
+      "value": 10,
+      "unit": "urad",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no high-energy laser programme publishes a pointing jitter. The Airborne Laser Laboratory of the 1980s held about 25 urad and modern beam control is better, so 10 urad at 1 sigma is the planning value for every laser in the library."
+    },
+    "apertureM": {
+      "value": 0.3,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no high-energy laser programme publishes a beam director aperture. Open beam-director literature describes 30 to 50 cm apertures for weapon-class systems; 0.30 m is the planning value for every laser in the library. The Rafael claim of a coin-sized spot at 10 km would imply an aperture nearer 1 m if taken literally, so 0.30 m is the conservative end for this system."
+    },
+    "dwellToEffectS": {
+      "value": 2,
+      "unit": "s",
+      "condition": "reported burn-through in 2 to 5 s at up to 10 km; the lower bound is taken",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Defense Update, Iron Beam 450 report, 17 September 2025, quoted from the search index; the page returned HTTP 403 on read",
+      "url": "https://defense-update.com/20250917_iron-beam-450.html",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      },
+      "note": "The 2 to 5 s figure is quoted for the Iron Beam 450 beam director against rockets, mortars and UAS, not specifically against a Group 1 quadcopter, and Rafael's own material says only that the system dwells for seconds. Treat it as the order of magnitude, not a measured dwell."
     }
   },
   "attributes": {

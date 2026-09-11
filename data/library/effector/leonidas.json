@@ -2,7 +2,7 @@
   "id": "lib-leonidas",
   "kind": "effector",
   "type": "hpm",
-  "version": 1,
+  "version": 2,
   "name": "Leonidas HPM (Epirus)",
   "description": "Software-defined high-power microwave array; defeats swarms in a sector. ~1 km planning value, 120 deg beam.",
   "color": "#a48ac4",
@@ -75,6 +75,44 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "fieldStrengthVm": {
+      "value": null,
+      "unit": "V/m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Epirus publishes no field strength, no radiated power and no range for Leonidas; the product page carries qualitative claims only. Not established by the public record."
+    },
+    "fieldStrengthRangeM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "The reference range for a field strength that is not published. Not established by the public record."
+    },
+    "beamwidthDeg": {
+      "value": 120,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Epirus publishes no antenna pattern. The 120 deg sector placard in this file is taken as the half-power beamwidth, which is the widest reading and matches the counter-swarm use of a wide illuminated volume."
+    },
+    "rechargeS": {
+      "value": 1,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a solid-state GaN array has no capacitor charging cycle, and Epirus advertises repeated fire with no reload, so the gap between shots is a duty-cycle limit rather than a recharge. 1 s is the planning value; no figure is published."
     }
   },
   "attributes": {

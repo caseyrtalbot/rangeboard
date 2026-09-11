@@ -2,7 +2,7 @@
   "id": "lib-lpws",
   "kind": "effector",
   "type": "gun",
-  "version": 1,
+  "version": 2,
   "name": "LPWS 20mm (land Phalanx)",
   "description": "Land-based Phalanx 20mm gun with radar-directed burst fire, cued by KuRFS. Point defense to ~1.5 km.",
   "color": "#cfa96a",
@@ -71,6 +71,73 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "dispersionMils": {
+      "value": 1.0,
+      "unit": "mil",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: no vendor and no open source publishes a round-to-round dispersion for this gun. 1.0 mil at 1 sigma is the planning value for a stabilised automatic cannon, and it is a factor, not a measurement. NavWeaps records that a muzzle restraint was added to decrease dispersion but gives no figure."
+    },
+    "fireControlErrorMils": {
+      "value": 0.5,
+      "unit": "mil",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: Phalanx closed-loop spotting tracks the outgoing burst and corrects the aim during the engagement, so the residual aim error is smaller than the ballistic dispersion; 0.5 mil at 1 sigma is the planning value. No fire control error is published."
+    },
+    "burstRounds": {
+      "value": 60,
+      "unit": "count",
+      "condition": "bursts of 60 or 100 rounds; the shorter burst is taken",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "NavWeaps 20 mm Phalanx CIWS page",
+      "url": "https://www.navweaps.com/Weapons/WNUS_Phalanx.php",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      },
+      "note": "The burst lengths are documented for Block 0. Block 1 matches burst length to the target type and publishes no figure, so this is the shortest documented burst of the family."
+    },
+    "rateOfFireRpm": {
+      "value": 4500,
+      "unit": "rpm",
+      "condition": "Block 1 and Block 1B, selectable 3,000 or 4,500 rounds per minute cyclic; the high rate is taken",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "NavWeaps 20 mm Phalanx CIWS page",
+      "url": "https://www.navweaps.com/Weapons/WNUS_Phalanx.php",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "muzzleVelocityMps": {
+      "value": 1113,
+      "unit": "mps",
+      "condition": "Mark 149 round, 3,650 fps (1,113 m/s)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "NavWeaps 20 mm Phalanx CIWS page",
+      "url": "https://www.navweaps.com/Weapons/WNUS_Phalanx.php",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {
