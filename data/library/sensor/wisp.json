@@ -2,7 +2,7 @@
   "id": "lib-wisp",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 1,
+  "version": 2,
   "name": "Wisp wide-area IR sensor (Anduril)",
   "description": "Passive 360 deg wide-area infrared sensor with on-edge AI. Searches for low, slow, small UAS without a radar cue and feeds Lattice. Detection band 3-10 miles; 4.8 km is the low end.",
   "color": "#9b92ba",
@@ -89,6 +89,37 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Passive imager with no rangefinder documented: bearing only; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.1,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a wide-area staring LWIR panorama (360° x 125°) with no published pixel count; a few pixels of such a panorama is about 2 mrad, so 0.1°. Anduril publishes no angular accuracy."
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.1,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a wide-area staring LWIR panorama (360° x 125°) with no published pixel count; a few pixels of such a panorama is about 2 mrad, so 0.1°. Anduril publishes no angular accuracy."
     }
   },
   "attributes": {

@@ -2,7 +2,7 @@
   "id": "lib-discovair",
   "kind": "sensor",
   "type": "acoustic",
-  "version": 1,
+  "version": 2,
   "name": "Discovair G2 acoustic array (Squarehead)",
   "description": "Passive 128-microphone array with ML classification. Tracks Group 1-2 UAS by sound, including RF-silent drones.",
   "color": "#7fae94",
@@ -70,6 +70,41 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single acoustic node measures bearing at best, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 10,
+      "unit": "deg",
+      "condition": "direction accuracy <10° azimuth (vendor bound taken as 1 sigma)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Squarehead Discovair G2 product sheet v1.3 (cuashub mirror): direction accuracy '<10°' azimuth/elevation, quoted from the search index; the PDF was blocked on read",
+      "url": "https://cuashub.com/wp-content/uploads/2022/12/Discovair-G2-Product-Sheet_v1.3.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": 10,
+      "unit": "deg",
+      "condition": "direction accuracy <10° elevation (vendor bound taken as 1 sigma)",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Squarehead Discovair G2 product sheet v1.3 (cuashub mirror): direction accuracy '<10°' azimuth/elevation, quoted from the search index; the PDF was blocked on read",
+      "url": "https://cuashub.com/wp-content/uploads/2022/12/Discovair-G2-Product-Sheet_v1.3.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {

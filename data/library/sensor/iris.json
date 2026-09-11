@@ -2,7 +2,7 @@
   "id": "lib-iris",
   "kind": "sensor",
   "type": "radar",
-  "version": 1,
+  "version": 2,
   "name": "IRIS counter-drone radar (Robin)",
   "description": "X-band FMCW 3D radar with micro-Doppler drone/bird classification. 5 km is the instrumented range, not a detection range against a stated target; a 12 km long-range mode is offered.",
   "color": "#7395ad",
@@ -89,6 +89,60 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": 0.6,
+      "unit": "m",
+      "condition": "range accuracy 0.6 m",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Robin Radar IRIS datasheet as quoted by xsonomy.com and radartutorial.eu (the robinradar.com product page shows no accuracy line)",
+      "url": "https://xsonomy.com/sensors/iris-elvira/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.75,
+      "unit": "deg",
+      "condition": "azimuth accuracy 0.6-0.75°; upper end recorded",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Robin Radar IRIS datasheet as quoted by xsonomy.com and radartutorial.eu (the robinradar.com product page shows no accuracy line)",
+      "url": "https://xsonomy.com/sensors/iris-elvira/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": 1,
+      "unit": "deg",
+      "condition": "3D elevation accuracy 1°",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "Robin Radar IRIS datasheet as quoted by xsonomy.com and radartutorial.eu (the robinradar.com product page shows no accuracy line)",
+      "url": "https://xsonomy.com/sensors/iris-elvira/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "falseAlarmRatePerScan": {
+      "value": 1,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: PLACARD_PFA 1e-6 (src/model/types.ts) times about 1e6 range-azimuth-Doppler cells per scan of a 360° surveillance volume gives about one false alarm per scan over the whole coverage; this 360° radar is recorded at 1. No vendor publishes a false-alarm rate."
     }
   },
   "attributes": {

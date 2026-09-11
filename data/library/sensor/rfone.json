@@ -2,7 +2,7 @@
   "id": "lib-rfone",
   "kind": "sensor",
   "type": "rf",
-  "version": 1,
+  "version": 2,
   "name": "RfOne Mk2 RF sensor (DroneShield)",
   "description": "Passive, non-emitting RF direction finder for UAS control and video links. Four units give 360 deg; multiple sites triangulate a position. DroneShield publishes no detection range, so the 5 km ring is a planning figure.",
   "color": "#cdb079",
@@ -59,6 +59,37 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single-site RF direction finder measures bearing, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 5,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-titan",
+        "lib-rf360",
+        "lib-wingman"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of every sourced RF sensor regardless of role: lib-titan 1, lib-rf360 5, lib-wingman 30; median 5 deg. The role-restricted set (early-warning) holds only the body-worn Wingman, whose ±30° is a signal-strength sector indication and not comparable with a mast-mounted multi-element direction finder."
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
     }
   },
   "attributes": {

@@ -2,7 +2,7 @@
   "id": "lib-titan",
   "kind": "sensor",
   "type": "rf",
-  "version": 1,
+  "version": 2,
   "name": "Titan C-UAS RF sensor (BlueHalo / AeroVironment)",
   "description": "Self-contained RF detection and direction-finding unit, up to 3 km horizontal across five bands from 433 MHz to 5.8 GHz. NOT receive-only: the same 20 lb unit jams to 1.5 km, which belongs in a separate effector record. US Army fielded.",
   "color": "#bfa877",
@@ -61,6 +61,41 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single-site RF direction finder measures bearing, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 1,
+      "unit": "deg",
+      "condition": "1° azimuth tracking of non-precision sUAS platforms",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "BlueHalo C-UAS RF product page (Titan SV LOB): '1° Azimuth and Elevation tracking of non-precision sUAS platforms', quoted from the search index; the page now redirects to avinc.com",
+      "url": "https://bluehalo.com/c-uas-autonomous-systems/c-uas-rf/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": 1,
+      "unit": "deg",
+      "condition": "1° elevation tracking of non-precision sUAS platforms",
+      "grade": "REPORTED",
+      "layer": "L1",
+      "source": "BlueHalo C-UAS RF product page (Titan SV LOB): '1° Azimuth and Elevation tracking of non-precision sUAS platforms', quoted from the search index; the page now redirects to avinc.com",
+      "url": "https://bluehalo.com/c-uas-autonomous-systems/c-uas-rf/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {

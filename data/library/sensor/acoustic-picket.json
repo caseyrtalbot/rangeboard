@@ -2,7 +2,7 @@
   "id": "lib-acoustic-picket",
   "kind": "sensor",
   "type": "acoustic",
-  "version": 1,
+  "version": 2,
   "name": "Acoustic picket node (representative)",
   "description": "REPRESENTATIVE acoustic picket node, not a named product. Cheap omnidirectional microphone node for a forward picket line. Ranges are planning figures for an engine-noise target; small electric quadcopters are detected at far shorter ranges.",
   "color": "#6fa287",
@@ -69,6 +69,27 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single acoustic node measures bearing at best, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Representative omnidirectional microphone node: presence-and-alarm only, no bearing; localisation comes from crossing nodes."
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "No elevation measurement is published for this acoustic node; not established by the public record."
     }
   },
   "attributes": {

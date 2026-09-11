@@ -2,7 +2,7 @@
   "id": "lib-cm262",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 1,
+  "version": 2,
   "name": "CM262 EO/IR/SWIR gimbal (CACI)",
   "description": "Four-sensor 16 kg gimbal on the L-MADIS sensor vehicle: HD EO, HD MWIR, SWIR and a laser rangefinder, 360 deg continuous in azimuth and +90 to -16 deg in elevation, with on-board C-UAS tracking. CACI publishes no detection or identification range against any target, so the ring is REPRESENTATIVE. The datasheet's 16 km is the laser rangefinder's ranging range, not a detection range.",
   "color": "#a99fc6",
@@ -70,6 +70,46 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": 5,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: a laser rangefinder is fitted; eyesafe 1.54 µm rangefinders in this class are specified at ±2 to ±5 m and no figure is published for this unit, so 5 m is recorded."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.0046,
+      "unit": "deg",
+      "condition": "gimbal position accuracy 0.0046° (80 µrad)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "CACI CM262 datasheet 3-2-0, gimbal position accuracy 0.0046° (80 µrad), quoted from the search index; the PDF was blocked on read",
+      "url": "https://www.caci.com/sites/default/files/2020-10/cm262_cm262_datasheet_3-2-0_1.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.0046,
+      "unit": "deg",
+      "condition": "gimbal position accuracy 0.0046° (80 µrad)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "CACI CM262 datasheet 3-2-0, gimbal position accuracy 0.0046° (80 µrad), quoted from the search index; the PDF was blocked on read",
+      "url": "https://www.caci.com/sites/default/files/2020-10/cm262_cm262_datasheet_3-2-0_1.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {

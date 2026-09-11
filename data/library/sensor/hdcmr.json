@@ -2,7 +2,7 @@
   "id": "lib-hdcmr",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 1,
+  "version": 2,
   "name": "Ranger HDC MR EO/IR (FLIR)",
   "description": "Mid-range pan-tilt thermal and color imager for visual identification of radar-cued tracks. 360 deg slewable.",
   "color": "#a49bc4",
@@ -78,6 +78,46 @@
       "layer": "L2",
       "estimator": "planning-factor",
       "note": "No provenance row; planning factor"
+    },
+    "rangeAccuracyM": {
+      "value": 5,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: the mid-range (10 km) laser rangefinder is optional; eyesafe 1.54 µm rangefinders in this class are specified at ±2 to ±5 m, so 5 m is recorded for a unit fitted with it."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.029,
+      "unit": "deg",
+      "condition": "pan and tilt unit accuracy ±0.5 mrad (0.029°); the imager centroid adds nothing at this scale",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet (mirror at atline.pl), pan and tilt unit accuracy ±0.5 mrad",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.029,
+      "unit": "deg",
+      "condition": "pan and tilt unit accuracy ±0.5 mrad (0.029°)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "Teledyne FLIR Ranger HDC MR datasheet (mirror at atline.pl), pan and tilt unit accuracy ±0.5 mrad",
+      "url": "https://www.atline.pl/images/design/pdf/FLIR-Ranger-HDC-MR.pdf",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      }
     }
   },
   "attributes": {

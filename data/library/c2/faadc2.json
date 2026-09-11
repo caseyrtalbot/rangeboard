@@ -2,12 +2,46 @@
   "id": "lib-faadc2",
   "kind": "c2",
   "type": null,
-  "version": 1,
+  "version": 2,
   "name": "FAAD C2 (Northrop Grumman)",
   "description": "DoD-designated C2 for C-sUAS. Fuses sensor tracks, correlates the air picture, and manages engagements.",
   "color": "#d6d9d2",
   "builtin": true,
-  "spec": null,
-  "fields": {},
+  "spec": "c2",
+  "fields": {
+    "decisionLatencyS": {
+      "value": 10,
+      "unit": "s",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: DEFAULT_FIRE_DOCTRINE.declareHostileS is 10 s (src/model/types.ts), the operator dwell after identification before release. Trade reporting brackets it: 2 to 5 s from operator acceptance to release under pre-authorised ROE, 10 to 30 s more where a commander releases (Corvus Intelligence, 'Counter-UAS C2 software', read 2026-09-10). No vendor publishes a decision latency."
+    },
+    "decisionLatencySigmaDb": {
+      "value": 3,
+      "unit": "dB",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": null,
+      "note": "Planning factor: 3 dB is a factor of 2 at 1 sigma on the 10 log10 convention, which spans the 5 to 20 s band the reporting gives around a 10 s median."
+    },
+    "operatorTrackCapacity": {
+      "value": 6,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: 'the human operator can only update a maximum of six tracks about once per two seconds and that only for a short time' (Fundamentals of Naval Weapons Systems, ch. 6 Track-While-Scan Concepts, FAS mirror). Automation raises the number a console can display, not the number one operator decides on; no vendor publishes an operator capacity."
+    }
+  },
   "attributes": {}
 }

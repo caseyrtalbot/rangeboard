@@ -2,7 +2,7 @@
   "id": "lib-spynel",
   "kind": "sensor",
   "type": "eo-ir",
-  "version": 1,
+  "version": 2,
   "name": "Spynel-S 6000 panoramic IR (HGH)",
   "description": "Passive rotating MWIR sensor that rebuilds a 360 deg thermal panorama every 2 s and cues itself. Wide-area search, no radar needed. UAS ranges are planning figures: HGH publishes DRI for people and vehicles only.",
   "color": "#c3bada",
@@ -70,6 +70,37 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Passive imager with no rangefinder documented: bearing only; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.02,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: about two IFOV of the Spynel-S 6000 (0.15 x 0.15 mrad per the HGH Spynel-S leaflet), 0.3 mrad or 0.017°, rounded to 0.02°; HGH publishes no angular accuracy."
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.02,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: about two IFOV of the Spynel-S 6000 (0.15 x 0.15 mrad per the HGH Spynel-S leaflet), 0.3 mrad or 0.017°, rounded to 0.02°; HGH publishes no angular accuracy."
     }
   },
   "attributes": {

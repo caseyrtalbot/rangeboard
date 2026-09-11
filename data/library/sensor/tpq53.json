@@ -2,7 +2,7 @@
   "id": "lib-tpq53",
   "kind": "sensor",
   "type": "radar",
-  "version": 1,
+  "version": 2,
   "name": "AN/TPQ-53 multi-mission radar",
   "description": "S-band counterfire radar with a simultaneous air-surveillance and C-UAS mode, running a 90 deg sector at longer range or 360 deg rotating. Lockheed publishes no range against a UAS class; the ring is a planning figure. Cues LIDS effectors.",
   "color": "#86aac2",
@@ -58,6 +58,54 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": 30,
+      "unit": "m",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: 30 m for a pulse-compressed medium-range surveillance waveform; no early-warning radar in the library publishes a figure and the nearest sourced value is the RPS-42 brochure 50 m."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 0.3,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: about a tenth of a 2 to 3° S- or L-band beam (beam splitting or monopulse at 10 dB SNR, Skolnik), so 0.3°; no early-warning radar in the library publishes a figure."
+    },
+    "elevationAccuracyDeg": {
+      "value": 0.5,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: 0.5° for a stacked-beam or e-scan elevation estimate on a 2 to 3° beam; no early-warning radar in the library publishes a figure."
+    },
+    "falseAlarmRatePerScan": {
+      "value": 1,
+      "unit": "count",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "planning-factor",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Planning factor: PLACARD_PFA 1e-6 (src/model/types.ts) times about 1e6 range-azimuth-Doppler cells per scan of a 360° surveillance volume gives about one false alarm per scan over the whole coverage; this 360° radar is recorded at 1. No vendor publishes a false-alarm rate."
     }
   },
   "attributes": {

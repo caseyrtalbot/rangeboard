@@ -2,7 +2,7 @@
   "id": "lib-wingman",
   "kind": "sensor",
   "type": "rf",
-  "version": 1,
+  "version": 2,
   "name": "Wingman 103 wearable RF detector (MyDefence)",
   "description": "Body-worn passive RF detector for dismounted troops. Up to 6 km on the drone or controller link, direction finding to within 30 deg, alert in under 10 s. 90 deg face as issued; omnidirectional with the wideband antenna. ATAK compatible.",
   "color": "#dcc79c",
@@ -66,6 +66,35 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single-site RF direction finder measures bearing, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 30,
+      "unit": "deg",
+      "condition": "signal-strength direction-finding mode, ±30° (vendor bound taken as 1 sigma)",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "source": "MyDefence Wingman product page and Wingman 103/105 datasheet: 'direction finding with ±30° accuracy'",
+      "url": "https://mydefence.com/products/wingman-drone-detector/",
+      "date": "2026-09-10",
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 2
+      },
+      "note": "A body-worn signal-strength bearing, not an interferometric DF; the figure is a sector indication and sits far above the RF class."
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
     }
   },
   "attributes": {

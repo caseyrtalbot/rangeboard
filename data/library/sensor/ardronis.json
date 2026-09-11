@@ -2,7 +2,7 @@
   "id": "lib-ardronis",
   "kind": "sensor",
   "type": "rf",
-  "version": 1,
+  "version": 2,
   "name": "ARDRONIS Locate RF DF system (Rohde & Schwarz)",
   "description": "Receive-only RF monitoring and direction finding on the control uplink, telemetry and video downlink. Locate Compact states more than 5 km. Warns while the drone is still on the ground. STANAG aligned and SAPIENT compliant.",
   "color": "#e0cfab",
@@ -60,6 +60,36 @@
       "unit": "m",
       "grade": "UNKNOWN",
       "layer": "L3"
+    },
+    "rangeAccuracyM": {
+      "value": null,
+      "unit": "m",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "A single-site RF direction finder measures bearing, not range; not established by the public record."
+    },
+    "azimuthAccuracyDeg": {
+      "value": 3,
+      "unit": "deg",
+      "grade": "INFERRED",
+      "layer": "L2",
+      "estimator": "class-median",
+      "comparisonSet": [
+        "lib-titan",
+        "lib-rf360"
+      ],
+      "spread": {
+        "kind": "lognormal",
+        "sigmaDb": 4
+      },
+      "note": "Class median of the sourced classification RF sensors: lib-titan 1, lib-rf360 5; median 3 deg. The R&S DDF550 direction finder ARDRONIS builds on is specified at 1° RMS (1.3 to 6 GHz, brochure v13), but the ARDRONIS-configured accuracy is not published."
+    },
+    "elevationAccuracyDeg": {
+      "value": null,
+      "unit": "deg",
+      "grade": "UNKNOWN",
+      "layer": "L3",
+      "note": "Two-dimensional RF direction finding gives no elevation; not established by the public record."
     }
   },
   "attributes": {
