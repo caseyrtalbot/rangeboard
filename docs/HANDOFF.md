@@ -16,120 +16,180 @@ about an unfinished lane goes in Open items, not in Completed.
 | --- | --- | --- | --- |
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
 | 1 Real-mode statistics | passed | `70a7a0e` | 2026-09-10 |
-| 2 Tracks and kill chain | not started | | |
+| 2 Tracks and kill chain | passed | `GATE_COMMIT` | 2026-09-10 |
 | 3 Sensor and effector physics | not started | | |
 | 4 Hypothesis tools | not started | | |
 
 ## Completed
 
-Phase 0, gate `f024709` on `main`, nothing pushed. Contract `8e9a0bc`, lanes merged at
-`ff24472`, `b1493ec`, `e48b3ab`, `a56291c`, integration `248f4ca`. Data package under
-`data/library` with schema, build and health check; class priors; overrides store and the
-Systems tab; IndexedDB run store with history. Evidence in
-[p0-gate-2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md).
+Phase 1, gate `70a7a0e` on `main`. Contract `64c9f83` and `c4473e7`; range primitive
+`ec80ac0`; lane merges `570ada4` (1.5 Sobol chart), `abf332f` (1.4 Run tab), `ac8343d`
+(1.2 pool), `3891fcb` (1.3 sampling and sensitivity), `4f0730f` (1.1 headless runner);
+integration `0f5231a`. `McSettings` with the real-mode defaults, the worker pool, the Node
+runner, LHS, Morris and Sobol, the Run tab and one Run button. Evidence in
+[p1-gate-2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md).
 
-Phase 1, all on `main`, nothing pushed. Base `7f2997d`.
+Phase 2, all on `main`, nothing pushed. Base `2a6f87f`.
 
-- 1.a Contract, `calib/p1-contract`, `64c9f83` plus the orchestrator's `c4473e7`.
-  `McSettings` is the return type of `runSettings` and gains `sampling`,
-  `sensitivityDepth`, `sobolBase`, `stopFloor`, `stopCap`, `confidence` with `DEFAULT_*`
-  constants; a fresh scenario is Monte Carlo, total, LHS, half-width 0.5 with floor 30 and
-  cap 2000; a save without the run fields stays deterministic and aleatory through
-  `runSettings` and `fillScenario`. `PoolProgress`, `MorrisResult`, `SobolResult` in
-  `src/playback/mcTypes.ts`; `McState` gains `pool`, `morris`, `sobol`; `src/engine/index.ts`
-  barrel; `.oxlintrc.json` forbids react, konva, `window`, `document` under `src/playback`,
-  `src/analysis`, `src/geometry`, `src/engine`. Stop condition: `runSettings.test.ts`,
-  the lint proof in the report, full suite 149 files and 1763 tests.
-- 1.3 part A, `calib/p1-range`, `ec80ac0`, fast-forwarded. `McPartial`,
-  `replicateRangeLoop`, `halfWidthReached` (floor from the settings), `finishSummary`,
-  `mergePartials` (`mergeSummaries.ts`). Stop condition: `mergeSummaries.test.ts` (two
-  ranges in either order equal `runReplicates`, aleatory and total); parity files unchanged.
-- 1.5 Sobol chart, `calib/p1-sobolchart` (`652a028`), merged `570ada4`. `SobolChart.tsx`
-  (two bars per row with bootstrap whiskers, 0 to 1 scale, hidden ranking text),
-  `SensitivityWidget.tsx`, `charts/__fixtures__/sobolFixture.ts`. Stop condition: 71 tests
-  under `src/charts` and the widget.
-- 1.4 Run tab, `calib/p1-runtab` (`3e38201`), merged `abf332f`. `settings/RunTab.tsx` with
-  every field, its default and a reset; `RunControl.tsx` (Deterministic switch, Run or Stop,
-  progress line with the stop rule and the pool size) on Prepare and Analyze; the popover
-  is gone. Stop condition: browser check on port 5383, 0 page errors.
-- 1.2 Browser pool, `calib/p1-pool` (`201d7c3`), merged `ac8343d`. `workerPool.ts`:
-  `min(hardwareConcurrency - 1, 8)` workers, chunks by index, half-width rule on the
-  contiguous prefix from the floor, cap, slot cancel semantics; `run-range` in
-  `mc.worker.ts`; `startPooledRun` in `mcClient.ts`. Stop condition: `workerPool.test.ts`
-  (pooled equals `runReplicates` at 1, 3 and 7 workers, aleatory and total);
-  `workerGraph.test.ts` and `workerSlot.test.ts` unchanged.
-- 1.3 part B, `calib/p1-sampling` (`8fff845`), merged `3891fcb`. `sampling.ts` (LHS stratum
-  per replicate index from a keyed permutation over the loop end), `morris.ts`,
-  `sobol.ts`, Morris and Sobol requests and messages, loop end `stopCap` under a target.
-  Stop condition: Ishigami inside every bootstrap interval at base 1024; a range slice
-  equals the full loop's slice under LHS; parity files unchanged.
-- 1.1 Headless runner, `calib/p1-runner` (`9fc436e`), merged `4f0730f`.
-  `vite.engine.config.ts` builds `dist-engine/engine.js`; `scripts/run-engine.mjs` with
-  `scripts/engine-worker.mjs` over `worker_threads`; `src/engine/loadScenario.ts`;
-  `npm run engine`, `engine:build`, `test:engine` (now inside `check`). Stop condition:
-  `scripts/test-engine-cli.mjs` (the record equals `runReplicates` at one seed, 3 workers
-  and 1 worker); timing in
-  [p1-runner-2026-09-10](field-te/evidence/p1-runner-2026-09-10/timing.txt).
-- 1.c Integration, `0f5231a`, and the gate commit `70a7a0e`. The Run button runs on the pool
-  (`mcLaunch` through `startPooledRun`, the pool sink writes `mc.pool` while running);
-  `sensitivityDepth: 'full'` runs Morris then Sobol on the sensitivity slot with the kept
-  fields; Fragility mounts `SensitivityWidget`; `RunControl` and the chip read the loop end
-  after a half-width stop; docs updated and reviewed.
+- 2.a Contract, `calib/p2-contract`, `6e33ef2`, plus the orchestrator's amendment
+  `259fa86`. `SensorSpec` gains `rangeAccuracyM`, `azimuthAccuracyDeg`,
+  `elevationAccuracyDeg`, `falseAlarmRatePerScan` and `classification`; `C2Spec`
+  (`decisionLatencyS`, `decisionLatencySigmaDb`, `operatorTrackCapacity`) on
+  `SpecModel.c2` and `LibraryFile.spec: 'c2'`; `Scenario.physics` with
+  `physicsSwitches()`; `src/playback/trackTypes.ts` (`TrackState`, `Covariance4`,
+  `TrackEstimate`, `FusedTrack`, `TrackMeasurement`, `TrackEstimateSink`);
+  `ClassificationMatrix` and `ClassificationBand` in `types.ts`; `TrialResult.tracks`;
+  fidelity tags `tracker`, `fusion`, `classification`, `operator`, `false-tracks`. Stop
+  condition: `fidelity.test.ts`, schema regenerated, full suite.
+- 2.3 Track layer, `calib/p2-tracklayer`, `67bce5c`, fast-forwarded. `TrackLayer.tsx`
+  (1 sigma covariance ellipse and a screen cross per track, dash on coast, muted ink on a
+  false track, censored at the horizon), `trackEstimateView.ts` (`latestEstimatesAt`,
+  `positionEllipse`), style constants in `footprintStyle.ts`, mounted in `LiveScene.tsx`.
+  Stop condition: `TrackLayer.test.tsx` and `trackEstimateView.test.ts` on a fixture that
+  shrinks then grows; browser check on port 5384 with injected tracks, 0 page errors.
+- 2.2 Kalman tracker, `calib/p2-tracker` (`3b8ab4e`), merged `10c6675`. `kalman.ts`
+  (CWNA predict, Joseph update, `PROCESS_NOISE_Q` 1 m^2/s^3, `QUALITY_SCALE_M` 50 m,
+  `INIT_SPEED_SIGMA_MPS` 20 m/s), `tracker.ts` (one track per sensor and threat, polar
+  noise from the accuracy fields, truth path with no draw on a null field or under
+  `truthTracks`), `DrawPolicy.noise` kind 7, the sink threaded through `sim.ts` and
+  `trial.ts`. Stop condition: the steady-state gain equals the closed form of the CWNA
+  tracking index to 1e-6 (`kalman.test.ts`); `tracker.test.ts`; parity unchanged.
+- 2.1 Accuracy data, `calib/p2-accuracy` (`d70a113`), merged `68cde42`. 38 sensor files
+  gain 133 accuracy fields (L1 25, L2 80, L3 28); 8 C2 files gain `spec: 'c2'` with one
+  planning factor each (median 10 s, 3 dB, 6 tracks); every radar carries a
+  `falseAlarmRatePerScan` planning factor; changelog section; priors rebuilt. Stop
+  condition: `npm run check:library`; parity unchanged. The orchestrator's `aac28db`
+  taught `seedLibrary.test.ts`, `fidelity.test.ts` and `tracker.test.ts` the new keys.
+- 2.5 False tracks and operator, `calib/p2-operator` (`a46c4b0`), merged `f69d049`.
+  `falseTracks.ts` (Poisson false tracks per scan through the M-of-N rule,
+  `FALSE_TRACK_CELLS` 1e4, kind 9), `operator.ts` (decision latency lognormal from the C2
+  median and sigma, linear overload above capacity, kind 10), wired at the declare and
+  assign gates in `attrition.ts`; false tracks reach `TrialResult.tracks`. Stop condition:
+  `falseTracks.test.ts` convergence within 4 sd of the closed form, `operator.test.ts`,
+  `attrition.operator.test.ts`; parity unchanged. Orchestrator `26d5c40`: the queue adds
+  only the excess over its median (a median decision under capacity leaves the doctrine
+  timeline where it was) and the false scan clock starts at zero.
+- 2.4 Fusion and classification, `calib/p2-fusion` (`41218ff`), merged `9c937e8`.
+  `fusion.ts` (information-form `fuseTracks`, `createFusionStage` with a per-sensor ring
+  and predict over the link latency, `FC_QUALITY_MIN` 0.5), `classification.ts`
+  (`matrixFor`, `bandFor`, `classifyByMatrix`, kind 8), `ThreatAssessment.fusedTracks`,
+  the stable track gated on fused quality. Stop condition: two equal tracks halve the
+  covariance (`fusion.test.ts`); the no-matrix laydowns keep their declaration times
+  (`sim.test.ts`).
+- 2.6 Intercept from estimate, `calib/p2-intercept` (`17e79d3`), merged `8f02175`.
+  `interceptFor`, `interceptFromEstimate`, `predictedStateAt`; `ShotContext.estimate`,
+  `ShotAccepted.predictionSigmaM` and `interceptSource`; `missDistanceSigmaM` in `pk.ts`.
+  Stop condition: a truth-source estimate returns the `interceptAt` result exactly; a
+  velocity delta moves the point by delta times the time of flight; the 1 sigma at a 10 s
+  lead matches the hand-derived value (`intercept.test.ts`).
+- 2.d Integration `4359d28`: the latest fused track at the tick enters the shot context;
+  `createRunManifest` and `createTrialManifest` read `physicsSwitches(scenario)` and drop
+  `fidelityFloor` to `fallback` when a switch is on; `DATA_PACKAGE_VERSION` 2; the five
+  fidelity tags state the current engine; `ADOPTED_SEED_KEYS` in `libraryLifecycle.ts`
+  gives a saved builtin the Phase 2 seed keys it lacks on load; the two golden fixtures pin
+  `physics: ['truthTracks', 'noFalseTracks', 'noOperatorQueue']`.
+- 2.d Review (`fable-high`, read-only on `8f02175` and `4359d28`): two blockers, four
+  defects, three nits. Fixed in `25bd78f` (a decision index in the kind-10 key; a fused
+  entry older than one step falls back to the truth intercept) and `feab222` merged
+  `467ceda` (the fire-control gate is a quality condition, so a firm time decided on a
+  missed scan no longer moves one step; a truth member yields to an estimate member when
+  the switch is off; unlinked sensors fuse at `NO_C2`; duplicate links count once). The
+  remaining findings are in Open items.
+- 2.d Docs `ec7d1fb`: `ENGINEERING_REFERENCE.md`, `PROJECT_GUIDE.md`, `VERIFICATION.md`,
+  `WORKFLOW.md`, `DESIGN_SYSTEM.md` and the docs index updated and reviewed; evidence in
+  [p2-gate-2026-09-10](field-te/evidence/p2-gate-2026-09-10/README.md).
+
+## Decisions taken without a poll
+
+Casey was not in the loop during this phase. Each item below is one commit to revert or
+amend; put them to Casey before Phase 3 starts.
+
+- C2 decision fields live on a `C2Spec` block in the library, not on `FireDoctrine`
+  (`6e33ef2`); decision latency is a lognormal median in seconds plus a sigma in dB, two
+  numeric library fields.
+- The operator queue adds only the excess over its median, floored at 0 (`26d5c40`). The
+  reviewer notes the floor biases the Monte Carlo mean: at median 10 s and 3 dB an
+  engagement adds about 8.8 s on average while the deterministic run adds 0.
+- Physics switches live on `Scenario.physics`; a switch sets `fidelityFloor: 'fallback'`
+  on the manifest (`4359d28`). No Physics tab yet (Phase 3 lane 3.7).
+- `ADOPTED_SEED_KEYS`: a saved builtin adopts the Phase 2 seed keys it lacks on load, so
+  existing boards receive the tracker (`4359d28`). A blanket adoption of every absent seed
+  key was tried and rejected because it moved older physics (`updateRateS`-class keys).
+- The golden fixtures pin the three switches, so the parity tests keep guarding the truth
+  path exactly; the estimate path is documented in `comparison.md` instead of pinned.
+- `SensorSpec.classification` carries the confusion matrix (`259fa86`); no library sensor
+  states one, so the rule ladder classifies everywhere.
 
 ## Open items
 
-- The blueprint exit item on 10 000 command-line replicates was dropped on 2026-09-10
-  (Casey): the retained-numbers budget (96 million, a browser-worker guard in
-  `DEFAULT_BUDGET`) refuses that count on `layered-acoustic-merops.json`; 2594 replicates
-  fit and ran in 21.6 s on 14 threads. Section J targets are reference values; a
-  performance problem is noted when it appears.
-- The Morris `'leakers'` response on the JIATF-401 laydown is 0 in every row at ten
-  trajectories, so every mu star is 0 there; `'firstDetectS'` screens well. The Fragility
-  response selector picks the response; no default change made.
-- A Sobol response with zero variance over the base rows gives NaN indices, which JSON
-  writes as null.
-- Wilson intervals keep z 1.96 and the rule of three keeps 3 / n; the t interval follows
-  `confidence`. `DEFAULT_CONFIDENCE` and `STAT_CONF` are equal and not linked.
-- `RunManifest` and `McSummary` do not record the sampling mode; `RunRecord` does not
-  carry `morris` or `sobol`.
-- `src/state/analysisBasis.ts` excludes the five old raw run keys from the signature but
-  not the six new ones (the resolved settings already carry them, so the keys appear twice).
-- `src/engine/loadScenario.ts` repeats `fillScenario` from its pieces because `persist.ts`
-  imports the store; no drift test yet.
-- The worker applies `DEFAULT_BUDGET` per range chunk; a chunk stopped on budget would
-  leave a hole and the pool would finish on a shorter prefix. Not reachable at today's chunk
-  sizes.
-- `PoolProgress.perWorkerDone` includes in-flight range progress, so its sum can exceed
-  `done` between merges.
-- Bundle: entry 344.62 kB gzip against the 360 kB budget after the pool joined the entry
-  chunk; the engine additions do not load lazily yet.
-- The CLI sets `runMode: 'monte-carlo'` on the loaded scenario so the manifest matches its
-  summary; the fill default for a file without run fields is deterministic.
-- The Run tab names the fresh-scenario mode and uncertainty as defaults with local
-  constants; `types.ts` has no `DEFAULT_RUN_MODE` or `DEFAULT_UNCERTAINTY`.
-- No pinned parity number moved in Phase 1. `convergence.verify.test.ts` and
-  `mcRun.test.ts` fixtures pin aleatory, a null target or `stopCap` where they read the
-  loop end.
-- The seven `calib/p1-*` lane branches remain; every commit is merged and the worktrees
-  are removed.
+- Review finding 4: a confusion matrix on one sensor silences the classified flag of every
+  other fire-control sensor (`sim.ts`, `matrixSensors.length > 0`); needs a per-sensor
+  classified flag on `SweepStepResult`. Unreachable with library data today.
+- Review nit 8: link latency is quantized to the DT grid in the fusion ring (a 0.3 s link
+  carries back one step and predicts 0.5 s). Nit 9: the cross-range sigma uses slant range
+  over ground range (0.2 percent at 1000 ft and 5 km); `elevationAccuracyDeg` is in the
+  library and not modeled.
+- With the seed planning factors the false-track process and the operator overload are
+  inert: 0.5 to 1 false alarms per scan give 1e-8 to 1e-7 false tracks per scan under
+  M 3 of N 5 and 1e4 cells; every seed radar meets the 50 m quality gate at track
+  initiation except the Sentinel A4 at 10 km.
+- Every RF and acoustic sensor and four EO/IR sensors have `rangeAccuracyM: null`, so they
+  take the truth path and yield to an estimate member at fusion. A bearing-only sensor
+  should become a measurement with range sigma equal to its detect range (Phase 3).
+- `uncertainty.ts` and `parameterBasis.ts` know no `c2` and no accuracy field: the spreads
+  lane 2.1 wrote on the new fields do not draw in total mode, and Morris does not screen
+  them. `FIELDS_BY_KIND` is the place; the Phase 3 contract should decide.
+- The new library fields have no `provenanceOrder` entry, so no provenance row appears at
+  runtime for them; the Systems tab shows their values without grade or source until the
+  build emits rows for them (a `seedLibrary.test.ts` fixture question).
+- `LibraryEditor.tsx` reads `sensor ?? uas ?? effector` and cannot edit a c2 spec.
+- `fusedTracks` rides on every assessment, the memoized deterministic one included (about
+  one entry per held step per threat); strip it after use if store or message size grows.
+- `TrialResult.tracks` holds false tracks with `source: 'false'` and `uasId: null`;
+  `trackEstimateView` and the layer handle them, no panel lists them.
+- `TRIAL_ENGINE_REVISION` was not bumped: no existing draw key moved and the pinned
+  fixtures are bit-identical to the contract commit.
+- Performance: 200 replicates on the largest fixture on 4 workers took 3.6 s at the
+  contract commit, 4.6 s pinned and 5.4 s on the estimate path at the gate. The trial
+  path went from 72 to 102 ms per trial with every model on. Section J values are
+  reference values.
+- The track layer has no entry in `selectEffectiveLayers`, so it cannot be toggled off;
+  its inks are fixed values with weaker contrast on the paper theme.
+- Lane 2.3 saw the first load of the 176 KB firing scenario freeze the renderer for over
+  30 s; later loads were responsive. Not traced.
+- The eight `calib/p2-*` lane branches and `calib/p2-review-fusion` remain; every commit
+  is merged and the worktrees are removed.
 
 ## Continuation boundary
 
-The next task is the Phase 2 contract slice in
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#4-phase-2-tracks-and-kill-chain): a
-`fable-medium` worker on `src/model/types.ts`, `src/playback/trackTypes.ts` and
-`src/analysis/fidelity.ts`. Wave one (2.1 to 2.3) starts only after it merges. No poll is open.
+Put the decisions above to Casey first. The next task is the Phase 3 contract and split
+slice in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics):
+a `fable-medium` worker on `src/model/types.ts`, `src/playback/clock.ts`,
+`src/playback/attrition.ts`, `src/playback/sweep.ts`, `src/analysis/sensorEnv.ts` and its
+split, `src/playback/pk.ts` and its split. Research lanes 3.R1 and 3.R2 may start with it.
+No poll is open beyond the decisions listed.
 
 ## Verification at the last gate
 
-- `npm run check` at the gate: exit 0; 159 test files, 1853 tests; engine CLI test 2 of 2;
-  library check 90 models and 633 fields; build entry 1,170.44 kB (344.62 kB gzip).
-  Output in [check.txt](field-te/evidence/p1-gate-2026-09-10/check.txt).
+- `npm run check` at the gate: exit 0; 168 test files, 1955 tests; engine CLI test 2 of 2;
+  library check 90 models and 790 fields; build entry 1,196.69 kB (353.20 kB gzip against
+  the 360 kB budget). Output in
+  [check.txt](field-te/evidence/p2-gate-2026-09-10/check.txt).
 - Parity: `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`,
-  `convergence.verify.test.ts` unchanged and passing inside that run.
-- Browser checks recorded in
-  [the gate evidence](field-te/evidence/p1-gate-2026-09-10/README.md): Run tab defaults,
-  default run on the pool, 1000 replicates, Morris then Sobol to the chart, 0 page errors.
-- Timing against blueprint section J: default run 0.13 s, 1000 replicates 2.2 s,
-  sensitivity 5.9 s, all inside the reference values; 2594 command-line replicates in
-  21.6 s on the largest fixture (the 10 000 item is dropped).
+  `convergence.verify.test.ts` unchanged and passing inside that run; the golden fixtures
+  pin the three physics switches. [comparison.md](field-te/evidence/p2-gate-2026-09-10/comparison.md):
+  the pinned path is identical to the contract commit on every assessment field, every
+  engagement event and every Monte Carlo summary; the estimate path moves the
+  layered-acoustic-merops leaker mean from 1.990 to 2.120 (intervals overlap), one threat
+  firms 2 s later, and the trial ledger goes from 22 to 25 events.
+- Browser check on port 5385 at `ec7d1fb` (screenshots in
+  [browser/](field-te/evidence/p2-gate-2026-09-10/browser)): the firing scenario loaded
+  through `parseAutosave` adopted the seed accuracy fields and the FAAD C2 spec; two sage
+  ellipses with cross markers drew on the tracked Mavic; the Giraffe ellipse semi-major
+  fell from 83.5 m at 1.5 s to 2.8 m at 490 s, then grew from 2.8 m to 7.6 m over 2.5 s of
+  coast with the dash; a playhead at 400 s with the horizon at 151.5 s drew nothing past
+  the horizon; the default Run finished 30 replicates on 8 workers in about 0.17 s; 0 page
+  errors. Outcome tiles need a completed trial, not the ensemble (existing design).
+- Timing: 200 replicates on the largest fixture on 4 workers, 4.6 s pinned and 5.4 s on
+  the estimate path (3.6 s at the contract commit); one trial 102 ms with every model on
+  (72 ms with the switches).

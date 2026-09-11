@@ -14,7 +14,8 @@ the tree at the gate commit on `main`, not the current tree.
 | [`comparison.md`](comparison.md) | The three captures side by side: end-of-run means, the per-threat trial timeline and the engagement ledger |
 | [`capture-timeline.mjs`](capture-timeline.mjs) | The capture script: it reads the CLI run record in a directory, runs one trial per fixture through `dist-engine/engine.js`, and writes `timeline.json` |
 | [`compare-timelines.mjs`](compare-timelines.mjs) | Renders `comparison.md` from the three `timeline.json` files |
-| `check.txt` | `npm run check` output at the gate, added by the orchestrator |
+| [`check.txt`](check.txt) | `npm run check` output at the gate: 168 test files, 1955 tests, engine CLI test 2 of 2, library 90 models and 790 fields, build entry 1,196.69 kB (353.20 kB gzip) |
+| [`browser/`](browser) | Nine screenshots from the gate browser check on port 5385: the ellipses at 1.5 s and 200 s, solid at 497 s and dashed at 500 s, horizon censoring, the finished run and the outcome tiles |
 
 Monte Carlo rows are 200 replicates at seed 4821, aleatory, on 4 workers. Trial rows are
 seed 4821, replicate 0.
@@ -52,3 +53,14 @@ goes from 0.065 to 0.060, inside the interval.
 
 Track estimates emitted in the trial are the same on both after paths: 3173 on
 detection-outside-rings and 25157 on layered-acoustic-merops.
+
+## Browser check
+
+Port 5385 at `ec7d1fb`, the onboarding firing scenario loaded through `parseAutosave`. The
+saved Giraffe 1X and KuRFS adopted their seed accuracy fields and FAAD C2 its spec, so the
+Kalman path ran. Two sage ellipses with cross markers drew on the tracked Mavic. The
+Giraffe track's 1 sigma semi-major axis fell from 83.5 m at 1.5 s to 2.8 m at 490 s, then
+grew from 2.8 m to 7.6 m over 2.5 s of coast with the dash. With the horizon at 151.5 s
+and the playhead dragged to 400 s the ellipses stayed at 151.5 s. The default Run
+finished 30 replicates on 8 workers in about 0.17 s. 0 page errors over the session.
+Outcome tiles render only after a completed trial, which is the existing design.

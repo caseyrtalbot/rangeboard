@@ -149,6 +149,19 @@ keying (does a new draw point disturb another model's draws?). Orchestrator: `np
 check`; timeline parity captured before and after under `docs/field-te/evidence/`;
 Physics switches wired in the manifest. Exit: blueprint Phase 2 exit.
 
+**Phase 2 complete, 2026-09-10.** Contract `6e33ef2` and the amendment `259fa86`
+(`SensorSpec.classification`); lane merges `67bce5c` (2.3), `10c6675` (2.2), `68cde42`
+(2.1), `f69d049` (2.5), `9c937e8` (2.4), `8f02175` (2.6); integration `26d5c40`, `aac28db`,
+`4359d28`; review fixes `25bd78f` and `467ceda`; docs `ec7d1fb`; gate commit in
+[HANDOFF.md](HANDOFF.md). Deviations: the C2 fields live on a `C2Spec` library block;
+the track layer mounts in `LiveScene.tsx`, not `CanvasStage.tsx`; lane 2.2 threaded a
+sink through `sim.ts` and `trial.ts` and added `DrawPolicy.noise`; lanes 2.4 and 2.5
+added draw kinds 8 to 10 to `policy.ts`; lane 2.5 also owned `tracker.ts` and `trial.ts`;
+the operator queue adds only the excess over its median; `ADOPTED_SEED_KEYS` carries the
+new fields into saved boards; the golden fixtures pin `truthTracks`, `noFalseTracks` and
+`noOperatorQueue`, and the estimate path is documented rather than pinned. Evidence,
+open items and the decisions to put to Casey are in [HANDOFF.md](HANDOFF.md).
+
 ## 5. Phase 3: sensor and effector physics
 
 Goal: one physics per sensor type and per effector type, each with a validation test
