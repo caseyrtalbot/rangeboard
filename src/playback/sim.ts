@@ -1,5 +1,5 @@
 import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge, posAtTime } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
@@ -21,8 +21,10 @@ import { CONFIRMED_DECLARE_FACTOR, targetSFor } from '../analysis/doctrineFactor
 import { DT } from './clock'
 import { memberPositions, threatAltitudeFt } from './tracks'
 import type { SensorObservationSink } from './detection'
-import type { TrackEstimateSink } from './trackTypes'
+import type { FusedTrack, TrackEstimate, TrackEstimateSink } from './trackTypes'
 import { resolvedThresholds } from './detection'
+import { c2LinksFor, createFusionStage, FC_QUALITY_MIN } from './fusion'
+import { classifyByMatrix, matrixFor } from './classification'
 import type { SensorObservation } from './sweep'
 import { extendIntervals, finishSweep, prepareSweepRun, stepSweep } from './sweep'
 import { connectedEffectorIds, killChainConnected, killChainRoutes } from './killChain'
@@ -161,6 +163,13 @@ export interface ThreatAssessment {
   detectingSensorIds: string[]
   /** Per-sensor detection/classification intervals retained for operator telemetry. */
   sensorObservations?: SensorObservation[]
+  /**
+   * The fused track at each sweep step where one exists (fusion.ts): the
+   * C2 picture after link latency, or the sensor-level fusion with no C2
+   * node. Per replicate, discarded with the assessment; no summary retains
+   * it. Lane 2.6 and the intercept read the entry at a launch time.
+   */
+  fusedTracks?: FusedTrack[]
   /** Union-of-sensors hold quality from first detection to the decision horizon. */
   trackQuality?: TrackQualitySummary | null
   /**
@@ -246,8 +255,33 @@ export function assessThreat(
 
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const delayS = effectivePathDelayS(scenario, path)
+  // Fusion (fusion.ts) reads the tracker's estimates through the sink and
+  // fuses them at the C2 nodes the sensors link to, after link latency.
+  const activeSensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
+  const fusion = createFusionStage(c2LinksFor(scenario, new Set(activeSensors.map((e) => e.id))))
+  const fusionSink: TrackEstimateSink = trackSink
+    ? (estimate) => {
+        fusion.observe(estimate)
+        trackSink(estimate)
+      }
+    : (estimate) => fusion.observe(estimate)
+  const fusedTracks: FusedTrack[] = []
+  // Fire-control or classification sensors with a confusion matrix: the
+  // matrix decides the hostile rung's classified input in place of the
+  // sweep's classified flag (classification.ts). One declaration attempt per
+  // sensor, at the first step it holds the track (not coasting) inside a band.
+  const matrixSensors: Array<{ sensor: Entity; matrix: NonNullable<SensorSpec['classification']>; dAltM: number }> = []
+  for (const sensor of activeSensors) {
+    const spec = modelFor(scenario, sensor)?.sensor
+    if (!spec) continue
+    const role = defaultSensorRole(spec)
+    if (role !== 'fire-control' && role !== 'classification') continue
+    const matrix = matrixFor(spec)
+    if (matrix) matrixSensors.push({ sensor, matrix, dAltM: altM - mountHeightOf(spec) })
+  }
+  const declarations = new Map<string, { declaredHostile: boolean; declareAtS: number }>()
   // The temporal rules (scan schedule, holds, cue order, coast, M-of-N) live in sweep.ts.
-  const run = prepareSweepRun(scenario, uas, delayS, draw, capture, trackSink)
+  const run = prepareSweepRun(scenario, uas, delayS, draw, capture, fusionSink)
   const detectingSensors = run.detectingSensorIds
   // In range when any formation member is inside the envelope on slant
   // range, under the effector ceiling. A jammer's reach is its effective
@@ -290,9 +324,32 @@ export function assessThreat(
     const pos = sample.pos
     const members = memberPositions(uas, pos, sample.headingDeg)
 
+    fusion.begin()
     const step = stepSweep(run, members, t)
+    const fused = fusion.fuse(t)
+    if (fused) fusedTracks.push(fused)
     trackSamples.push({ tS: t, held: step.held })
     if (base.firstConfirmS == null && step.measuredTechs >= 2) base.firstConfirmS = t
+
+    // Matrix classification: attempt once per sensor at the first non-coasting
+    // hold inside a band; the declaration lands timeToDeclareS later.
+    let fcClassified = step.fcClassified
+    if (matrixSensors.length > 0) {
+      fcClassified = false
+      for (const { sensor, matrix, dAltM } of matrixSensors) {
+        let decl = declarations.get(sensor.id)
+        if (!decl) {
+          const estimate: TrackEstimate | undefined = fusion.current.get(sensor.id)
+          if (!estimate || estimate.coasting) continue
+          const rangeM = slantRangeM(dist(sensor.pos, pos), dAltM)
+          const decision = classifyByMatrix(matrix, rangeM, draw, { sensorId: sensor.id, uasId, tS: t })
+          if (!decision) continue
+          decl = { declaredHostile: decision.declaredHostile, declareAtS: t + decision.timeToDeclareS }
+          declarations.set(sensor.id, decl)
+        }
+        if (decl.declaredHostile && t + DT / 2 >= decl.declareAtS) fcClassified = true
+      }
+    }
 
     // A track can climb several rungs in one step.
     if (step.measuredTechs > 0 && classification !== 'hostile') {
@@ -322,7 +379,7 @@ export function assessThreat(
         classification = 'suspected'
         clsAt.suspectedAtS = t
       }
-      if (classification === 'suspected' && (nearestRatio <= 1 || step.fcClassified)) {
+      if (classification === 'suspected' && (nearestRatio <= 1 || fcClassified)) {
         classification = 'hostile'
         clsAt.hostileAtS = t
       }
@@ -369,6 +426,7 @@ export function assessThreat(
   base.techs = sweep.techs
   base.detectingSensorIds = sweep.detectingSensorIds
   base.sensorObservations = sweep.sensorObservations
+  base.fusedTracks = fusedTracks
   base.effectorWindows = [...effectorInRange.entries()].map(([effectorId, intervals]) => ({
     effectorId,
     intervals,
@@ -415,15 +473,21 @@ export function assessThreat(
   }
 
   // Stable track file per fire-control-quality sensor: the sweep wrote
-  // trackInitAtS (finishSweep); the earliest one is the stable track time.
+  // trackInitAtS (finishSweep), and the fused track must reach
+  // FC_QUALITY_MIN at or after it (fusion.ts); the earliest one is the
+  // stable track time. On the truth path the fused quality is 1 at every
+  // held step, so the firm time stands.
   const doctrine = effectiveDoctrine(scenario)
   const firmBySensor = new Map<string, number>()
   for (const obs of sweep.sensorObservations) {
     if (obs.sensorType !== 'radar' && obs.sensorType !== 'eo-ir') continue
     const firmAt = obs.trackInitAtS
     if (firmAt == null) continue
-    firmBySensor.set(obs.sensorId, firmAt)
-    if (base.stableTrackAtS == null || firmAt < base.stableTrackAtS) base.stableTrackAtS = firmAt
+    const qualityAtS = fcQualityAtS(fusedTracks, firmAt)
+    if (qualityAtS == null) continue
+    const stableAt = Math.max(firmAt, qualityAtS)
+    firmBySensor.set(obs.sensorId, stableAt)
+    if (base.stableTrackAtS == null || stableAt < base.stableTrackAtS) base.stableTrackAtS = stableAt
   }
 
   const routes = killChainRoutes(scenario, detectingSensors)
@@ -550,6 +614,18 @@ export function assessThreat(
     base.status = anyUsable ? 'engageable' : fcBlockedUsable ? 'no-fc-uplink' : 'window-too-short'
   }
   return base
+}
+
+/**
+ * First fused-track time at or after `fromS` (within half a step) whose
+ * quality reaches FC_QUALITY_MIN; null when the fused track never does.
+ */
+function fcQualityAtS(fusedTracks: readonly FusedTrack[], fromS: number): number | null {
+  for (const f of fusedTracks) {
+    if (f.fusedAtS < fromS - DT / 2) continue
+    if (f.quality >= FC_QUALITY_MIN) return f.fusedAtS
+  }
+  return null
 }
 
 /**

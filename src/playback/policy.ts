@@ -5,7 +5,7 @@ import { stepIndex } from './clock'
 
 /** Draw kinds, one integer per engine draw point. */
 export const DRAW_KIND = {
-  detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7, falseAlarm: 9, latency: 10,
+  detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7, classify: 8, falseAlarm: 9, latency: 10,
 } as const
 
 /**
@@ -49,6 +49,14 @@ export interface DrawPolicy {
    */
   noise?(sensorId: string, uasId: string, tS: number, axis: number): number
   /**
+   * Classification outcome uniform for one declaration attempt, in [0, 1):
+   * classification.ts compares it with the band's pCorrect (a hostile
+   * track) or pFalseHostile (a non-hostile one). Keyed by (sensorId, uasId,
+   * tS) under kind 8, a namespace of its own, so no existing draw key
+   * moves. Deterministic: 0.5, so a band declares when pCorrect > 0.5.
+   */
+  classify(sensorId: string, uasId: string, tS: number): number
+  /**
    * False-alarm uniform for one radar scan, in [0, 1): k 0 is the Poisson
    * count inversion, k >= 1 the state uniforms of each false track
    * (falseTracks.ts). Keyed by (sensorId, k, step), kind 9 (kind 8 is the
@@ -83,6 +91,7 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
     phase: () => 0,
     param: () => 0.5,
     noise: () => 0.5,
+    classify: () => 0.5,
     falseAlarm: () => 0.5,
     latency: () => 0.5,
   }
@@ -121,6 +130,8 @@ export function monteCarloPolicy(
     param: (modelId, field) => u(DRAW_KIND.param, modelId, h(field), 0, 0),
     noise: (sensorId, uasId, tS, axis) =>
       u(DRAW_KIND.noise, sensorId, h(uasId), axis, stepIndex(tS)),
+    classify: (sensorId, uasId, tS) =>
+      u(DRAW_KIND.classify, sensorId, h(uasId), 0, stepIndex(tS)),
     falseAlarm: (sensorId, tS, k) => u(DRAW_KIND.falseAlarm, sensorId, k, 0, stepIndex(tS)),
     latency: (c2Id, uasId, tS) => u(DRAW_KIND.latency, c2Id, h(uasId), 0, stepIndex(tS)),
   }

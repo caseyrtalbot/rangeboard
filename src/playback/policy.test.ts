@@ -250,12 +250,14 @@ describe('draw policy engine regression', () => {
     coyote.effector = { ...coyote.effector!, pk: 1 }
     const giraffe = s.library.find((m) => m.id === 'lib-giraffe1x')!
     giraffe.sensor = { ...giraffe.sensor!, rangeBasis: 'planning' }
-    // Giraffe states updateRateS 1, so its one remaining draw is the scan
-    // phase; pin it to 0 (the deterministic origin) so the comparison isolates
-    // the Pd draw.
+    // Giraffe states updateRateS 1, so its remaining draws are the scan phase
+    // and, since the seed radar carries accuracy fields, the tracker's
+    // measurement noise; pin both to their deterministic values (origin 0,
+    // noise-free 0.5) so the comparison isolates the Pd draw.
     const mc: DrawPolicy = {
       ...monteCarloPolicy(4821, 0, thresholdsOf(s)),
       phase: () => 0,
+      noise: () => 0.5,
     }
     const assessments = assessAllThreats(s, mc)
     expect(JSON.stringify(assessments)).toBe(JSON.stringify(assessAllThreats(s)))
@@ -288,6 +290,21 @@ describe('noise draw', () => {
     expect(p.noise!('s', 'u', 2.5, 0)).not.toBe(p.noise!('s', 'u', 2.5, 1))
     expect(p.noise!('s', 'u', 2.5, 0)).not.toBe(p.noise!('s', 'u', 3, 0))
     const u = p.noise!('s', 'u', 2.5, 0)
+    expect(u).toBeGreaterThanOrEqual(0)
+    expect(u).toBeLessThan(1)
+  })
+})
+
+describe('classify draw', () => {
+  it('the deterministic policy returns 0.5; the Monte Carlo policy keys kind 8 by sensor, threat and step', () => {
+    expect(deterministicPolicy(T).classify('s', 'u', 3)).toBe(0.5)
+    expect(DRAW_KIND.classify).toBe(8)
+    const p = monteCarloPolicy(7, 3, T)
+    const key = (tS: number) => hashU01(7, 3, DRAW_KIND.classify, idHash('s'), idHash('u'), 0, stepIndex(tS))
+    expect(p.classify('s', 'u', 2.5)).toBe(key(2.5))
+    expect(p.classify('s', 'u', 2.5)).not.toBe(p.classify('s', 'u', 3))
+    expect(p.classify('s', 'u', 2.5)).not.toBe(p.noise!('s', 'u', 2.5, 0))
+    const u = p.classify('s', 'u', 2.5)
     expect(u).toBeGreaterThanOrEqual(0)
     expect(u).toBeLessThan(1)
   })

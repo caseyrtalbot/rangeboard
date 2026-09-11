@@ -176,6 +176,22 @@ export {
 export type { OperatorQueue } from '../playback/operator'
 export { createOperatorQueue, decisionLatencyS, firstC2Of, overloadFactor } from '../playback/operator'
 export type { KillChainRoute } from '../playback/killChain'
+export type { C2Link, FusionStage } from '../playback/fusion'
+export {
+  c2LinksFor,
+  COVARIANCE_FLOOR,
+  createFusionStage,
+  delayedMember,
+  FC_QUALITY_MIN,
+  fusedQuality,
+  fusedTrackId,
+  fuseTracks,
+  invert4,
+  isZeroCovariance,
+  NO_C2,
+} from '../playback/fusion'
+export type { ClassificationDecision, ClassificationKeys } from '../playback/classification'
+export { bandFor, classifyByMatrix, matrixFor } from '../playback/classification'
 
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'
