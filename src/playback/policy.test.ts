@@ -292,3 +292,18 @@ describe('noise draw', () => {
     expect(u).toBeLessThan(1)
   })
 })
+
+describe('classify draw', () => {
+  it('the deterministic policy returns 0.5; the Monte Carlo policy keys kind 8 by sensor, threat and step', () => {
+    expect(deterministicPolicy(T).classify('s', 'u', 3)).toBe(0.5)
+    expect(DRAW_KIND.classify).toBe(8)
+    const p = monteCarloPolicy(7, 3, T)
+    const key = (tS: number) => hashU01(7, 3, DRAW_KIND.classify, idHash('s'), idHash('u'), 0, stepIndex(tS))
+    expect(p.classify('s', 'u', 2.5)).toBe(key(2.5))
+    expect(p.classify('s', 'u', 2.5)).not.toBe(p.classify('s', 'u', 3))
+    expect(p.classify('s', 'u', 2.5)).not.toBe(p.noise!('s', 'u', 2.5, 0))
+    const u = p.classify('s', 'u', 2.5)
+    expect(u).toBeGreaterThanOrEqual(0)
+    expect(u).toBeLessThan(1)
+  })
+})

@@ -164,6 +164,22 @@ export {
 } from '../playback/kalman'
 export type { TrackHold, TrackManager } from '../playback/tracker'
 export { createTrackManager, polarMeasurement, trackId, truthPathFor } from '../playback/tracker'
+export type { C2Link, FusionStage } from '../playback/fusion'
+export {
+  c2LinksFor,
+  COVARIANCE_FLOOR,
+  createFusionStage,
+  delayedMember,
+  FC_QUALITY_MIN,
+  fusedQuality,
+  fusedTrackId,
+  fuseTracks,
+  invert4,
+  isZeroCovariance,
+  NO_C2,
+} from '../playback/fusion'
+export type { ClassificationDecision, ClassificationKeys } from '../playback/classification'
+export { bandFor, classifyByMatrix, matrixFor } from '../playback/classification'
 
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'

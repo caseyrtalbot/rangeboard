@@ -11,7 +11,7 @@ import type {
   SpecModel,
   Vec2,
 } from '../model/types'
-import { MOUNT_HEIGHT_M, newId } from '../model/types'
+import { MOUNT_HEIGHT_M, mountHeightOf, newId } from '../model/types'
 import { TRACK_INIT_S } from '../analysis/doctrineFactors'
 import type { LinkMedium } from '../model/integration'
 import { MEDIUM_LATENCY_S } from '../model/integration'
@@ -20,7 +20,11 @@ import { rangeForPd } from '../analysis/radarPd'
 import { posAtTime } from '../geometry/geo'
 import { groundRangeM } from '../geometry/slant'
 import type { DrawPolicy } from './policy'
-import { assessThreat, DEFAULT_DEFENDED_RADIUS_M } from './sim'
+import { deterministicPolicy, monteCarloPolicy } from './policy'
+import { parseAutosave } from '../io/persist'
+import jiatfFixture from './__fixtures__/detection-outside-rings.json'
+import layeredFixture from './__fixtures__/layered-acoustic-merops.json'
+import { assessAllThreats, assessThreat, DEFAULT_DEFENDED_RADIUS_M } from './sim'
 import { memberPositions, threatAltitudeFt } from './tracks'
 import { detectionsAt } from './detection'
 
@@ -672,6 +676,46 @@ describe('classification ladder promotions', () => {
     // the crossing at 100 s (slant still above 2000 m on that step) is first
     // seen at the 102 s scan.
     expect(a.classificationAtS.hostileAtS).toBe(102)
+  })
+
+  it('a classification sensor with a confusion matrix declares after the band dwell in place of the classified flag', () => {
+    // Same laydown as above; the attempt is the first 0.5 s hold with the
+    // slant range inside the 3000 m band, and the 10 s dwell lands the
+    // declaration then, not at the 102 s classify-range scan.
+    const build = (pCorrect: number) => {
+      const built = ladderScenario({
+        speedMps: 20,
+        sensor: { x: 0, detectRangeM: 4000, classifyRangeM: 2000, role: 'classification' },
+        pathFromX: -4000,
+        pathToX: 0,
+      })
+      const model = built.scenario.library.find((m) => m.kind === 'sensor' && !m.builtin)!
+      model.sensor = {
+        ...model.sensor!,
+        classification: {
+          sensorType: 'radar',
+          bands: [{ maxRangeM: 3000, pCorrect, pFalseHostile: 0.05, timeToDeclareS: 10 }],
+        },
+      }
+      return built
+    }
+    const sure = build(0.9)
+    const uas = sure.scenario.entities.find((e) => e.id === sure.uasId)!
+    const spec = sure.scenario.library.find((m) => m.kind === 'sensor' && !m.builtin)!.sensor!
+    const dAltM = threatAltitudeFt(sure.scenario, uas) * FT_TO_M - mountHeightOf(spec)
+    const tCross = (4000 - groundRangeM(3000, dAltM)) / 20
+    const attemptS = (Math.floor(tCross / 0.5) + 1) * 0.5
+    const a = assessThreat(sure.scenario, sure.uasId)
+    expect(a.classificationAtS.hostileAtS).toBe(attemptS + 10)
+    expect(a.classificationAtS.hostileAtS!).toBeLessThan(102)
+    // Deterministic 0.5 against pCorrect 0.4: the matrix never declares, the flag is not read.
+    const unsure = build(0.4)
+    const b = assessThreat(unsure.scenario, unsure.uasId)
+    expect(b.classificationAtS.suspectedAtS).not.toBeNull()
+    expect(b.classificationAtS.hostileAtS).toBeNull()
+    // A classify draw below 0.4 declares at the same time (the other draws stay deterministic).
+    const lucky: DrawPolicy = { ...deterministicPolicy(unsure.scenario.requirements), classify: () => 0.1 }
+    expect(assessThreat(unsure.scenario, unsure.uasId, lucky).classificationAtS.hostileAtS).toBe(attemptS + 10)
   })
 
   it('the same classified hit from an early-warning sensor does not go hostile', () => {
@@ -1702,6 +1746,7 @@ describe('one draw per scan', () => {
       jam: (x) => x,
       phase: () => 0,
       param: () => 0.5,
+      classify: () => 0.5,
     }
     return p
   }
@@ -1777,5 +1822,65 @@ describe('one draw per scan', () => {
     expect(obs.pdSeriesStartS).toBe(0)
     expect(obs.pdSeries![0]).toBe(0)
     expect(obs.pdSeries![Math.round(44 / 0.5)]).toBeGreaterThan(0.9)
+  })
+})
+
+describe('fusion and matrix wiring keep the declaration times of the no-matrix laydowns', () => {
+  // Values captured on main 259fa86 before lane 2.4, deterministic and
+  // seed 4821 replicate 0. Neither fixture library carries accuracy fields
+  // or a matrix: the truth path fuses at the C2 (JIATF-401) or at the
+  // sensors (layered) and nothing moves.
+  const pick = (a: ReturnType<typeof assessAllThreats>) =>
+    a.map((t) => [
+      t.uasId,
+      t.status,
+      t.firstDetectS,
+      t.firstConfirmS,
+      t.classificationAtS.hostileAtS,
+      t.stableTrackAtS,
+      t.declaredHostileAtS,
+    ])
+
+  it('JIATF-401 laydown (FAAD C2 with 0.5 s links)', () => {
+    const s = parseAutosave(JSON.stringify(jiatfFixture))
+    const det = assessAllThreats(s)
+    expect(pick(det)).toEqual([['ent-mtnvzhmr-25', 'engageable', 250.5, null, 537.5, 509.5, 547.5]])
+    expect(det[0].effectorGates).toEqual([{ effectorId: 'ent-mtnvzhmr-24', gateS: 547.5, readyS: 556.5 }])
+    const mc = assessAllThreats(s, monteCarloPolicy(4821, 0, s.requirements))
+    expect(pick(mc)).toEqual([['ent-mtnvzhmr-25', 'engageable', 3, null, 537.5, 509.5, 547.5]])
+    // The fused history is the truth at the C2 node, one entry per held step.
+    const c2 = s.entities.find((e) => e.kind === 'c2')!
+    const fused = det[0].fusedTracks!
+    expect(fused.length).toBeGreaterThan(0)
+    expect(fused.every((f) => f.source === 'truth' && f.quality === 1 && f.c2Id === c2.id)).toBe(true)
+    expect(fused[0].fusedAtS).toBe(250.5)
+  })
+
+  it('layered acoustic laydown (no C2 links)', () => {
+    const s = parseAutosave(JSON.stringify(layeredFixture))
+    expect(pick(assessAllThreats(s))).toEqual([
+      ['ent-mt5bofdd-2q', 'engageable', 670.5, 942.5, 670.5, 783, 793],
+      ['ent-mt5bofdd-2s', 'engageable', 790.5, 1062.5, 790.5, 903, 913],
+      ['ent-mt5bq0rc-2u', 'no-path', null, null, null, null, null],
+      ['ent-mt5bqja3-2v', 'engageable', 239, 699, 239, 352, 362],
+      ['ent-mt5bqnfg-2x', 'engageable', 0, 72, 0, 1, 11],
+      ['ent-mt5bqnfg-2z', 'engageable', 0, 74, 0, 1, 11],
+      ['ent-mt5bqnfg-31', 'engageable', 0, 73, 0, 1, 11],
+      ['ent-mt5bqnfg-33', 'engageable', 0, 78.5, 0, 1, 11],
+      ['ent-mt5bqnfg-35', 'engageable', 0, 76, 0, 1, 11],
+      ['ent-mt5bqnfg-37', 'engageable', 0, 85.5, 0, 1, 11],
+    ])
+    expect(pick(assessAllThreats(s, monteCarloPolicy(4821, 0, s.requirements)))).toEqual([
+      ['ent-mt5bofdd-2q', 'engageable', 285.5, 942.5, 402.5, 783, 793],
+      ['ent-mt5bofdd-2s', 'engageable', 365, 1062.5, 540.5, 903, 913],
+      ['ent-mt5bq0rc-2u', 'no-path', null, null, null, null, null],
+      ['ent-mt5bqja3-2v', 'engageable', 3, 699, 3, 352, 362],
+      ['ent-mt5bqnfg-2x', 'engageable', 0.5, 72, 0.5, 1.5, 11.5],
+      ['ent-mt5bqnfg-2z', 'engageable', 0.5, 74, 0.5, 1.5, 11.5],
+      ['ent-mt5bqnfg-31', 'engageable', 0.5, 73, 0.5, 1.5, 11.5],
+      ['ent-mt5bqnfg-33', 'engageable', 0.5, 78.5, 0.5, 1.5, 11.5],
+      ['ent-mt5bqnfg-35', 'engageable', 0.5, 76, 0.5, 1.5, 11.5],
+      ['ent-mt5bqnfg-37', 'engageable', 0.5, 85.5, 0.5, 1.5, 11.5],
+    ])
   })
 })
