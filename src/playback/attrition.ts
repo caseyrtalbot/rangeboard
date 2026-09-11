@@ -135,9 +135,25 @@ function retirePending(set: Set<PendingEffect>, discount: number, fx: PendingEff
 }
 
 /**
+ * What the operator queue charged one (threat, effector) pair: the seconds, the
+ * decisions taken and how many of them the floor at 0 caught. A pair the queue
+ * never decided for charges nothing and counts nothing.
+ */
+interface OperatorCharge {
+  /** Extra seconds on this pair's release-ready time. */
+  extraS: number
+  /** Decisions taken: 2 (declare, assign) when the queue decided, else 0. */
+  decisions: number
+  /** Of those decisions, the ones whose raw wait fell below 0 (operator.ts). */
+  floored: number
+}
+
+const NO_CHARGE: OperatorCharge = { extraS: 0, decisions: 0, floored: 0 }
+
+/**
  * Operator delay on one (threat, effector) pair, seconds (operator.ts): the
  * declare-hostile decision taken at the gate, then the weapon-assignment
- * decision taken once the cue has crossed the route latency. Zero with no
+ * decision taken once the cue has crossed the route latency. Nothing with no
  * C2 node on the route or no gate for the pair. Under doctrine the gate is
  * the effector's own (effectorGates), else the threat's engageGateS.
  */
@@ -147,16 +163,20 @@ function operatorDelayS(
   a: ThreatAssessment,
   effectorId: string,
   doctrineOn: boolean,
-): number {
+): OperatorCharge {
   const c2Id = firstC2Of(route)
-  if (!c2Id) return 0
+  if (!c2Id) return NO_CHARGE
   const gateS = doctrineOn
     ? a.effectorGates?.find((g) => g.effectorId === effectorId)?.gateS ?? null
     : a.engageGateS
-  if (gateS == null) return 0
-  const declareS = queue.delayS(c2Id, a.uasId, gateS, 0)
-  const assignS = queue.delayS(c2Id, a.uasId, gateS + declareS + route.latencyS, 1)
-  return declareS + assignS
+  if (gateS == null) return NO_CHARGE
+  const declare = queue.delayS(c2Id, a.uasId, gateS, 0)
+  const assign = queue.delayS(c2Id, a.uasId, gateS + declare.extraS + route.latencyS, 1)
+  return {
+    extraS: declare.extraS + assign.extraS,
+    decisions: 2,
+    floored: (declare.floored ? 1 : 0) + (assign.floored ? 1 : 0),
+  }
 }
 
 /**
@@ -185,6 +205,11 @@ export function resolveEngagements(
   // Operator queue: inactive (no draw, zero delay) with no c2 spec that
   // states a median or with the noOperatorQueue switch, so today's timings hold.
   const operator = createOperatorQueue(scenario, assessments, draw, falseLoad)
+  // The floor stamp: decisions the queue took, and the ones whose raw wait the
+  // floor at 0 discarded. Both stay 0 while the queue is inactive, so the
+  // Board never shows a stamp on a run the queue did not touch.
+  let operatorDecisions = 0
+  let operatorFlooredDecisions = 0
 
   const threats: ThreatState[] = assessments.map((a) => {
     const entity = scenario.entities.find((e) => e.id === a.uasId)!
@@ -209,11 +234,13 @@ export function resolveEngagements(
         if (!operator.active) continue
         // Both operator decisions delay this pair's release-ready time: the
         // legacy path reads gateS + routeLatencyS, doctrine reads effectorReadyS.
-        const extraS = operatorDelayS(operator, route, a, w.effectorId, doctrine.enabled)
-        if (extraS <= 0) continue
-        routeLatencyS.set(w.effectorId, route.latencyS + extraS)
+        const charge = operatorDelayS(operator, route, a, w.effectorId, doctrine.enabled)
+        operatorDecisions += charge.decisions
+        operatorFlooredDecisions += charge.floored
+        if (charge.extraS <= 0) continue
+        routeLatencyS.set(w.effectorId, route.latencyS + charge.extraS)
         const readyS = effectorReadyS.get(w.effectorId)
-        if (readyS != null) effectorReadyS.set(w.effectorId, readyS + extraS)
+        if (readyS != null) effectorReadyS.set(w.effectorId, readyS + charge.extraS)
       }
     }
     return {
@@ -692,6 +719,8 @@ export function resolveEngagements(
       shotsFired: threatRows.reduce((s, t) => s + t.shotsFired, 0),
       deSalvos: threatRows.reduce((s, t) => s + t.deSalvos, 0),
       jamSalvos: threatRows.reduce((s, t) => s + t.jamSalvos, 0),
+      operatorDecisions,
+      operatorFlooredDecisions,
     },
     events,
   }

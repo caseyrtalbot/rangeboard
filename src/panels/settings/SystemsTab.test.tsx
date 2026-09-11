@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { fillScenario } from '../../io/persist'
 import { emptyScenario } from '../../model/seed'
 import { useOverrides } from '../../state/overrides'
 import { useStore } from '../../state/store'
@@ -7,6 +8,20 @@ import { SystemsTab } from './SystemsTab'
 
 const SENSOR = 'lib-giraffe1x'
 const EFFECTOR = 'lib-coyote'
+
+/**
+ * Load a save through `fillScenario`, which sets the load notice the tab reads.
+ * `strip` removes a sensor key from the saved Giraffe, so the reconcile adopts
+ * it back from the seed: a board written before that field existed.
+ */
+function load(strip?: string): void {
+  const save = JSON.parse(JSON.stringify(emptyScenario()))
+  if (strip) {
+    const model = save.library.find((m: { id: string }) => m.id === SENSOR)
+    delete model.sensor[strip]
+  }
+  useStore.getState().replaceScenario(fillScenario(save))
+}
 
 // Zustand 5 gives react-dom/server the initial state, so keep both stores the
 // panel reads aligned with their live state before each static render.
@@ -18,7 +33,8 @@ function render(): string {
 
 describe('SystemsTab', () => {
   beforeEach(() => {
-    useStore.getState().replaceScenario(emptyScenario())
+    // A load that adopts nothing clears the notice the previous test set.
+    load()
     useOverrides.getState().resetAll()
   })
 
@@ -66,6 +82,25 @@ describe('SystemsTab', () => {
     expect(html).toContain('elevationDeg')
     expect(html).toContain('0, 70')
     expect(html).toContain(`aria-label="Edit elevationDeg on Giraffe 1X 3D radar (Saab)"`)
+  })
+
+  it('stamps the load notice and a chip on each field the load adopted', () => {
+    load('rangeAccuracyM')
+    useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
+    const html = render()
+
+    expect(html).toContain('Load adopted 1 seed field on 1 builtin model from data package v2')
+    expect(html).toContain('seed v2')
+    // The chip sits beside the adopted value, not beside an untouched one.
+    expect(html).toMatch(/rangeAccuracyM<\/td><td>[^<]*<span class="chip det"[^>]*>seed v2<\/span>/)
+    expect(html).not.toMatch(/detectRangeM<\/td><td>[^<]*<span class="chip det"/)
+  })
+
+  it('shows no notice and no chip when the save already holds every seed key', () => {
+    useStore.getState().addEntityFromModel(SENSOR, { x: 0, y: 0 })
+    const html = render()
+    expect(html).not.toContain('Load adopted')
+    expect(html).not.toContain('seed v2')
   })
 
   it('marks the override beside the source value and offers its reset', () => {

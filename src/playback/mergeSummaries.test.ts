@@ -68,6 +68,20 @@ describe('mergePartials', () => {
     expect(mergePartials([part, range(scenario, 8, 8)])).toEqual(part)
   })
 
+  it('carries the operator decision counts one row per replicate, in index order', () => {
+    const scenario = base('aleatory')
+    const whole = range(scenario, 0, 20)
+    const merged = mergePartials([range(scenario, 12, 20), range(scenario, 0, 12)])
+    expect(merged.operatorDecisions).toEqual(whole.operatorDecisions)
+    expect(merged.operatorFlooredDecisions).toEqual(whole.operatorFlooredDecisions)
+    expect(merged.operatorDecisions).toHaveLength(20)
+    expect(merged.operatorFlooredDecisions).toHaveLength(20)
+    // The summary reads the merged rows: the means are the per-replicate means.
+    const summary = finishSummary(scenario, merged, { rule: 'replicates', at: 20 }, 0)
+    expect(summary.operatorDecisions?.n).toBe(20)
+    expect(summary.operatorFlooredDecisions?.n).toBe(20)
+  })
+
   it('a duplicate index throws, as does an empty list', () => {
     const scenario = base('aleatory')
     expect(() => mergePartials([range(scenario, 0, 5), range(scenario, 4, 8)]))
@@ -100,6 +114,8 @@ describe('contiguousPrefix', () => {
     const late = contiguousPrefix(range(scenario, 3, 8))
     expect(late.indices).toEqual([])
     expect(late.leakers).toEqual([])
+    expect(late.operatorDecisions).toEqual([])
+    expect(late.operatorFlooredDecisions).toEqual([])
     expect(late.threatKilled.every((row) => row.length === 0)).toBe(true)
     // The track and effector lists survive: they are geometry, not replicate rows.
     expect(late.threatIds).toEqual(range(scenario, 3, 8).threatIds)

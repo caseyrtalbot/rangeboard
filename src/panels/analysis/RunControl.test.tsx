@@ -53,6 +53,11 @@ function summary(replicates: number, rule: McSummary['stopped']['rule']): McSumm
   return { replicates, stopped: { rule, at: replicates } } as McSummary
 }
 
+/** A Stat carrying only what the floor stamp reads: the mean over n samples. */
+function stat(mean: number, n: number): McSummary['operatorDecisions'] {
+  return { mean, n } as NonNullable<McSummary['operatorDecisions']>
+}
+
 describe('RunControl', () => {
   beforeEach(() => {
     useStore.getState().replaceScenario(emptyScenario())
@@ -124,6 +129,28 @@ describe('RunControl', () => {
     useStore.getState().patchScenario({ targetHalfWidth: null })
     setMc({ status: 'done', summary: summary(100, 'replicates') })
     expect(render()).toContain('100 of 100 replicates · stop on the replicate count')
+  })
+
+  it('stamps the operator floor on a finished run, and only when the floor caught a decision', () => {
+    // 0.7 floored of 2 decisions a replicate over 20 replicates: 14 of 40.
+    setMc({ status: 'done', summary: {
+      ...summary(20, 'replicates'),
+      operatorDecisions: stat(2, 20),
+      operatorFlooredDecisions: stat(0.7, 20),
+    } })
+    expect(render()).toContain('operator wait floored in 14 of 40 decisions')
+
+    // Nothing floored: the line stays as it was.
+    setMc({ status: 'done', summary: {
+      ...summary(20, 'replicates'),
+      operatorDecisions: stat(2, 20),
+      operatorFlooredDecisions: stat(0, 20),
+    } })
+    expect(render()).not.toContain('operator wait floored')
+
+    // A summary written before the stamp existed carries no counts at all.
+    setMc({ status: 'done', summary: summary(20, 'replicates') })
+    expect(render()).not.toContain('operator wait floored')
   })
 
   it('shows no progress line before the first run', () => {

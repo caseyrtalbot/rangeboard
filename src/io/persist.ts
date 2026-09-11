@@ -18,7 +18,9 @@ import type { UncertainField } from '../analysis/uncertainty'
 import { uncertainFields } from '../analysis/uncertainty'
 import { runSettings } from '../model/types'
 import { emptyScenario } from '../model/seed'
-import { reconcileLibrary, reconcileSeeded } from '../model/libraryLifecycle'
+import type { SeedAdoption } from '../model/libraryLifecycle'
+import { reconcileLibraryReport, reconcileSeeded } from '../model/libraryLifecycle'
+import { DATA_PACKAGE_VERSION } from '../model/libraryField'
 import { useStore } from '../state/store'
 import { analysisBasisSignature } from '../state/analysisBasis'
 import { runResultGroups } from './runResultGroups'
@@ -48,6 +50,33 @@ import { validateMcSummary } from '../state/baseline'
  * (`src/model/libraryLifecycle.ts` owns that policy). The legacy engageOn policy
  * migrates to an ROE posture ('detected' -> 'free', 'confirmed' -> 'tight').
  */
+/**
+ * What the last load adopted from the seed library: the stamp the Systems tab
+ * prints. Never persisted and never part of the Scenario: a save records the
+ * filled library, not the fact that a fill happened.
+ */
+export interface LoadNotice {
+  /** Builtin models that took at least one seed key. */
+  models: number
+  /** Seed fields taken over those models. */
+  fields: number
+  /** The data package the keys came from (`DATA_PACKAGE_VERSION`). */
+  dataPackageVersion: number
+  /** Per (model, block), the keys taken. */
+  adopted: SeedAdoption[]
+}
+
+let loadNotice: LoadNotice | null = null
+
+/**
+ * The notice of the last `fillScenario` call, or null when that load adopted
+ * nothing. Every load sets it, so a board that adopts nothing clears the stamp
+ * the previous load left.
+ */
+export function lastLoadNotice(): LoadNotice | null {
+  return loadNotice
+}
+
 export function fillScenario(parsed: unknown): Scenario {
   validateScenarioShape(parsed)
   const empty = emptyScenario()
@@ -55,11 +84,18 @@ export function fillScenario(parsed: unknown): Scenario {
     parsed.roe ??
     (parsed.engageOn === 'detected' ? 'free' : parsed.engageOn === 'confirmed' ? 'tight' : empty.roe)
   const deletedSeedIds = Array.isArray(parsed.deletedSeedIds) ? parsed.deletedSeedIds : []
+  const reconciled = reconcileLibraryReport(parsed.library, empty.library, deletedSeedIds)
+  loadNotice = reconciled.adopted.length === 0 ? null : {
+    models: new Set(reconciled.adopted.map((a) => a.modelId)).size,
+    fields: reconciled.adopted.reduce((sum, a) => sum + a.keys.length, 0),
+    dataPackageVersion: DATA_PACKAGE_VERSION,
+    adopted: reconciled.adopted,
+  }
   const filled: Scenario = {
     ...empty,
     ...parsed,
     ...fillContainers(parsed, empty, SCENARIO_LEGACY_FIELDS),
-    library: reconcileLibrary(parsed.library, empty.library, deletedSeedIds),
+    library: reconciled.library,
     systemPresets: reconcileSeeded(parsed.systemPresets, empty.systemPresets, deletedSeedIds),
     deletedSeedIds,
     // emptyScenario() always sets doctrine; the Scenario type keeps it optional for old saves.

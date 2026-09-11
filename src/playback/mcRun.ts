@@ -178,6 +178,18 @@ export interface McSummary {
   firmTrackS: Stat
   /** Shortest warning (arrival minus first detection) over the tracks, per replicate. */
   minWarningS: Stat
+  /**
+   * Operator decisions the C2 queue took, per replicate
+   * (`AttritionTotals.operatorDecisions`). Absent on a summary written before
+   * the stamp existed.
+   */
+  operatorDecisions?: Stat
+  /**
+   * Of those, the decisions the floor at 0 caught, per replicate: the stamp
+   * the Run progress line reads. Absent on a summary written before the stamp
+   * existed.
+   */
+  operatorFlooredDecisions?: Stat
   perThreat: Record<string, McThreatSummary>
   perEffector: Record<string, McEffectorSummary>
   /** Wall time in the worker, ms; 0 when run outside the worker. */
@@ -530,6 +542,9 @@ export interface McPartial {
   raidFirstDetect: number[]
   raidFirmTrack: number[]
   raidMinWarning: number[]
+  /** Operator decisions taken per replicate, and the ones the floor caught. */
+  operatorDecisions: number[]
+  operatorFlooredDecisions: number[]
   /** Tracks (threats with a path), in track order. */
   threatIds: string[]
   /** Per track, one sample per replicate. */
@@ -564,6 +579,8 @@ export function emptyPartial(): McPartial {
     raidFirstDetect: [],
     raidFirmTrack: [],
     raidMinWarning: [],
+    operatorDecisions: [],
+    operatorFlooredDecisions: [],
     threatIds: [],
     threatKilled: [],
     threatLeaked: [],
@@ -733,6 +750,8 @@ function* rangeLoopInto(
     partial.raidFirstDetect.push(firstDetect)
     partial.raidFirmTrack.push(firmTrack)
     partial.raidMinWarning.push(minWarning)
+    partial.operatorDecisions.push(report.totals.operatorDecisions ?? 0)
+    partial.operatorFlooredDecisions.push(report.totals.operatorFlooredDecisions ?? 0)
 
     report.effectors.forEach((ef, e) => {
       if (i === start) {
@@ -828,6 +847,10 @@ export function finishSummary(
     firstDetectS: statOf(partial.raidFirstDetect, TIME, conf),
     firmTrackS: statOf(partial.raidFirmTrack, TIME, conf),
     minWarningS: statOf(partial.raidMinWarning, TIME, conf),
+    // Unbounded counts, like the per-effector salvos: a pair can decide twice
+    // and the pair count is a property of the laydown, not of the raid's ships.
+    operatorDecisions: statOf(partial.operatorDecisions, count(Infinity), conf),
+    operatorFlooredDecisions: statOf(partial.operatorFlooredDecisions, count(Infinity), conf),
     perThreat,
     perEffector,
     elapsedMs,

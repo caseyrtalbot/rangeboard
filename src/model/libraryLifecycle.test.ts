@@ -6,6 +6,7 @@ import {
   importModels,
   initialLibrary,
   reconcileLibrary,
+  reconcileLibraryReport,
   reconcileSeeded,
   resetBuiltin,
 } from './libraryLifecycle'
@@ -123,6 +124,37 @@ describe('adoptSeedFields', () => {
     seed.sensor = { ...seed.sensor!, falseAlarmRatePerScan: 1 }
     const out = reconcileLibrary([seedModel()], [seed])
     expect(out[0].sensor?.falseAlarmRatePerScan).toBe(1)
+  })
+})
+
+describe('reconcileLibraryReport', () => {
+  it('names the models and the keys a save that predates the Phase 2 fields adopted', () => {
+    const seed = seedModel()
+    seed.sensor = { ...seed.sensor!, rangeAccuracyM: 25, falseAlarmRatePerScan: 1 }
+    seed.c2 = { decisionLatencyS: 10, decisionLatencySigmaDb: 3, operatorTrackCapacity: 6 }
+    const other = { ...otherSeed(), sensor: { ...otherSeed().sensor!, rangeAccuracyM: 40 } }
+    const report = reconcileLibraryReport([seedModel(), otherSeed()], [seed, other])
+
+    expect(report.library.map((m) => m.id)).toEqual(['lib-x', 'lib-y'])
+    expect(report.library[0].sensor?.rangeAccuracyM).toBe(25)
+    expect(report.adopted).toEqual([
+      { modelId: 'lib-x', block: 'sensor', keys: ['rangeAccuracyM', 'falseAlarmRatePerScan'] },
+      // A block the save has none of reports every key of the seed block.
+      { modelId: 'lib-x', block: 'c2', keys: ['decisionLatencyS', 'decisionLatencySigmaDb', 'operatorTrackCapacity'] },
+      { modelId: 'lib-y', block: 'sensor', keys: ['rangeAccuracyM'] },
+    ])
+    // The library is the one reconcileLibrary gives for the same arguments.
+    expect(report.library).toEqual(reconcileLibrary([seedModel(), otherSeed()], [seed, other]))
+  })
+
+  it('reports nothing for a save that already holds the keys, and for a custom model', () => {
+    const seed = seedModel()
+    seed.sensor = { ...seed.sensor!, rangeAccuracyM: 25 }
+    const held: SpecModel = { ...seed, sensor: { ...seed.sensor, rangeAccuracyM: null } }
+    expect(reconcileLibraryReport([held], [seed]).adopted).toEqual([])
+
+    const custom: SpecModel = { ...seedModel(), id: 'lib-custom-1', builtin: false }
+    expect(reconcileLibraryReport([custom], [seed], ['lib-x']).adopted).toEqual([])
   })
 })
 

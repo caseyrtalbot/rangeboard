@@ -111,6 +111,20 @@ export interface AttritionTotals {
   deSalvos: number
   /** Jammer salvos of every behavior. */
   jamSalvos: number
+  /**
+   * Operator decisions the C2 queue took over the run: two per (threat,
+   * effector) pair it decided for, the declare gate and the weapon assignment
+   * (operator.ts). 0 with an inactive queue. Absent in a legacy ledger.
+   */
+  operatorDecisions?: number
+  /**
+   * Of those decisions, the ones whose raw wait fell below 0 and the floor
+   * discarded: the draw came back faster than its median and the queue charged
+   * nothing rather than shortening a doctrine dwell. This is the stamp the
+   * Board prints, so Play and Run never differ in timing for an unexplained
+   * reason. 0 with an inactive queue. Absent in a legacy ledger.
+   */
+  operatorFlooredDecisions?: number
 }
 
 /**

@@ -44,6 +44,19 @@ const machineStyle: CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 
 const columnWidth: Record<SortColumn, string> = { track: '23%', detect: '10%', identify: '10%', engage: '10%', effect: '10%', salvos: '8%', result: '29%' }
 const timeText = (value: number | null) => value == null ? '—' : formatTime(value)
 
+/**
+ * The operator floor stamp of one trial: decisions whose raw operator wait fell
+ * below 0 and the floor discarded, against the decisions the C2 queue took
+ * (`AttritionTotals`). Null when nothing floored and on a legacy ledger that
+ * carries no counts, so the record gains no line. The trial and the ensemble
+ * read the same counts, so Play and Run never differ in timing without saying so.
+ */
+function flooredText(totals: TrialResultView['attrition']['totals']): string | null {
+  const floored = totals.operatorFlooredDecisions
+  if (!floored || floored <= 0) return null
+  return `operator wait floored in ${floored} of ${totals.operatorDecisions ?? floored} decisions`
+}
+
 function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS: number }) {
   const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({ column: 'track', descending: false })
   const sorted = [...rows].sort((a, b) => {
@@ -111,6 +124,7 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
     </small></>],
   ]
   const validityText = VALIDITY_TEXT[validity.validity]
+  const floored = flooredText(view.attrition.totals)
   return (
     <>
       <div className="tiles c3" aria-label="Completed trial outcomes">
@@ -122,6 +136,7 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
         ))}
       </div>
       {!view.hasActiveAsset && <p className="muted small">No defended asset · arrival and leakage unavailable.</p>}
+      {floored && <p className="muted small">{floored}</p>}
       <OutcomeTable rows={rows} durationS={view.durationS} />
       <section aria-label="Records">
         <details className="analysis-disclosure">

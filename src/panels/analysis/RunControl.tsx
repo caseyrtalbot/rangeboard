@@ -7,7 +7,7 @@
 
 import { runSettings } from '../../model/types'
 import type { McSettings } from '../../model/types'
-import type { StopRule } from '../../playback/mcRun'
+import type { McSummary, StopRule } from '../../playback/mcRun'
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 
@@ -30,6 +30,24 @@ function loopEndOf(run: McSettings): number {
 }
 
 /**
+ * The operator floor stamp of a finished run: the decisions whose raw wait the
+ * floor at 0 discarded, against the decisions the C2 queue took
+ * (`AttritionTotals.operatorFlooredDecisions`). Counted over the whole run,
+ * not per replicate: each Stat mean times its sample count is the sum over the
+ * replicates, so both figures stay whole and a single floored decision in a
+ * long run never rounds away. Null when nothing floored, and on a summary
+ * written before the stamp existed, so the line stays as it was.
+ */
+function flooredText(summary: McSummary): string | null {
+  const floored = summary.operatorFlooredDecisions
+  const decisions = summary.operatorDecisions
+  if (!floored || !decisions) return null
+  const n = Math.round(floored.mean * floored.n)
+  if (!(n > 0)) return null
+  return `operator wait floored in ${n} of ${Math.round(decisions.mean * decisions.n)} decisions`
+}
+
+/**
  * The progress line: replicates done, the stop rule and the pool size. A
  * pooled run reports its own rule and worker count through `mc.pool`; the
  * single-worker path that runs today reports neither, so the count comes from
@@ -49,7 +67,9 @@ function progressText(run: McSettings, mc: McState): string | null {
   // A finished run keeps the line, so the rule that ended it stays readable.
   const summary = mc.status === 'done' ? mc.summary : null
   if (!summary) return null
-  return `${summary.replicates} of ${loopEndOf(run)} replicates · ${stopRuleText(summary.stopped.rule, run)}`
+  const floored = flooredText(summary)
+  const line = `${summary.replicates} of ${loopEndOf(run)} replicates · ${stopRuleText(summary.stopped.rule, run)}`
+  return floored ? `${line} · ${floored}` : line
 }
 
 /** Deterministic mode runs no replicates, so the button says why it is closed. */

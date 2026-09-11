@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { C2Spec, Entity, Scenario, SpecModel, Vec2 } from '../model/types'
-import { MOUNT_HEIGHT_M } from '../model/types'
+import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { resolveEngagements } from './attrition'
+import { monteCarloPolicy } from './policy'
 import { assessAllThreats, assessThreat } from './sim'
 
 /**
@@ -112,6 +113,51 @@ describe('operator queue at the gates (attrition.ts)', () => {
       withC2.physics = ['noOperatorQueue']
       expect(resolveEngagements(withC2)).toEqual(resolveEngagements(base))
     }
+  })
+
+  it('counts the decisions and the ones the floor at 0 caught', () => {
+    // Sigma 3 dB with capacity 10 (no overload): a latency uniform under 0.5
+    // draws below the median, so the raw excess is negative and the floor
+    // catches that decision. Seed 4821: replicate 2 floors both decisions and
+    // the shot stays at the unfloored gate, replicate 1 floors one of two, and
+    // replicate 0 floors neither, so both waits are charged.
+    const s = build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false)
+    const run = (i: number) =>
+      resolveEngagements(s, undefined, monteCarloPolicy(4821, i, DEFAULT_REQUIREMENT_THRESHOLDS))
+
+    const both = run(2)
+    expect(both.totals.operatorDecisions).toBe(2)
+    expect(both.totals.operatorFlooredDecisions).toBe(2)
+    expect(both.threats[0].firstShotS).toBe(5.5)
+
+    const one = run(1)
+    expect(one.totals.operatorDecisions).toBe(2)
+    expect(one.totals.operatorFlooredDecisions).toBe(1)
+    expect(one.threats[0].firstShotS).toBeGreaterThan(5.5)
+
+    const neither = run(0)
+    expect(neither.totals.operatorDecisions).toBe(2)
+    expect(neither.totals.operatorFlooredDecisions).toBe(0)
+  })
+
+  it('the deterministic median draw and an inactive queue count nothing floored', () => {
+    // The deterministic policy draws the median: the raw excess is exactly 0,
+    // which is not a floor, so the stamp stays silent on the Play timeline.
+    const median = resolveEngagements(build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false))
+    expect(median.totals.operatorDecisions).toBe(2)
+    expect(median.totals.operatorFlooredDecisions).toBe(0)
+
+    // No c2 spec: the queue is inactive and takes no decision at all.
+    const inactive = resolveEngagements(build(null, false))
+    expect(inactive.totals.operatorDecisions).toBe(0)
+    expect(inactive.totals.operatorFlooredDecisions).toBe(0)
+
+    // The switch is the same inactive queue on a laydown that states a median.
+    const off = build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false)
+    off.physics = ['noOperatorQueue']
+    const switched = resolveEngagements(off, undefined, monteCarloPolicy(4821, 2, DEFAULT_REQUIREMENT_THRESHOLDS))
+    expect(switched.totals.operatorDecisions).toBe(0)
+    expect(switched.totals.operatorFlooredDecisions).toBe(0)
   })
 
   it('a route with no C2 node adds nothing', () => {

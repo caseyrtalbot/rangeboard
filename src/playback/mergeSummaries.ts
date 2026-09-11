@@ -39,6 +39,8 @@ export function contiguousPrefix(partial: McPartial): McPartial {
     raidFirstDetect: partial.raidFirstDetect.slice(0, m),
     raidFirmTrack: partial.raidFirmTrack.slice(0, m),
     raidMinWarning: partial.raidMinWarning.slice(0, m),
+    operatorDecisions: partial.operatorDecisions.slice(0, m),
+    operatorFlooredDecisions: partial.operatorFlooredDecisions.slice(0, m),
     threatKilled: rows(partial.threatKilled),
     threatLeaked: rows(partial.threatLeaked),
     threatFirstDetect: rows(partial.threatFirstDetect),
@@ -101,6 +103,8 @@ export function mergePartials(parts: McPartial[]): McPartial {
     out.raidFirstDetect.push(part.raidFirstDetect[k])
     out.raidFirmTrack.push(part.raidFirmTrack[k])
     out.raidMinWarning.push(part.raidMinWarning[k])
+    out.operatorDecisions.push(part.operatorDecisions[k])
+    out.operatorFlooredDecisions.push(part.operatorFlooredDecisions[k])
     for (const t of first.threatIds.keys()) {
       out.threatKilled[t].push(part.threatKilled[t][k])
       out.threatLeaked[t].push(part.threatLeaked[t][k])

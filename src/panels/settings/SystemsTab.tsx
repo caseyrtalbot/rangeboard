@@ -3,6 +3,8 @@ import type { LibraryGrade, LibraryLayer, Override } from '../../model/libraryFi
 import type { Provenance, SpecModel, Spread } from '../../model/types'
 import { basisFor, specFields } from '../../model/types'
 import { modelsInUse, spreadFor } from '../../analysis/parameterBasis'
+import type { LoadNotice } from '../../io/persist'
+import { lastLoadNotice } from '../../io/persist'
 import { useOverrides } from '../../state/overrides'
 import { useStore } from '../../state/store'
 import { Field } from '../../ui/kit'
@@ -61,6 +63,19 @@ function valueText(value: unknown, unit?: string): string {
   if (value === null || value === undefined) return '—'
   const text = Array.isArray(value) ? value.join(', ') : String(value)
   return unit ? `${text} ${unit}` : text
+}
+
+/**
+ * The fields the last load filled from the seed library, as `modelId/field`
+ * keys (`lastLoadNotice`). Each one gets a chip naming the data package the
+ * value came from, so an adopted value is never read as the user's own.
+ */
+function adoptedFields(notice: LoadNotice | null): Set<string> {
+  const out = new Set<string>()
+  for (const entry of notice?.adopted ?? []) {
+    for (const key of entry.keys) out.add(`${entry.modelId}/${key}`)
+  }
+  return out
 }
 
 /** Draft parts of a field: one number for a scalar, one per element for a tuple. */
@@ -136,6 +151,7 @@ function FieldRow({
   override,
   editing,
   onEdit,
+  seedVersion,
 }: {
   model: SpecModel
   field: string
@@ -143,6 +159,8 @@ function FieldRow({
   override: Override | undefined
   editing: boolean
   onEdit: (field: string | null) => void
+  /** Data package version when this load adopted the value, else null. */
+  seedVersion: number | null
 }) {
   const resetField = useOverrides((s) => s.resetField)
   const row = rowFor(model, field)
@@ -151,7 +169,14 @@ function FieldRow({
     <>
       <tr>
         <td className="prose">{field}</td>
-        <td>{valueText(value, row?.unit)}</td>
+        <td>
+          {valueText(value, row?.unit)}
+          {seedVersion != null && (
+            <> <span className="chip det" title="This load filled the field from the seed library">
+              seed v{seedVersion}
+            </span></>
+          )}
+        </td>
         <td>{override ? `override ${valueText(override.value, row?.unit)}` : '—'}</td>
         <td className="prose">{grade}</td>
         <td>{layer}</td>
@@ -176,11 +201,16 @@ function FieldRow({
 }
 
 /** One library model in use, with every field the contract calls a field. */
-function ModelGroup({ model, overrides }: { model: SpecModel; overrides: Override[] }) {
+function ModelGroup({ model, overrides, notice }: {
+  model: SpecModel
+  overrides: Override[]
+  notice: LoadNotice | null
+}) {
   const [editing, setEditing] = useState<string | null>(null)
   const resetModel = useOverrides((s) => s.resetModel)
   const fields = fieldsOf(model)
   const mine = overrides.filter((o) => o.modelId === model.id)
+  const adopted = adoptedFields(notice)
   return (
     <section className="systems-group" aria-label={model.name}>
       <div className="systems-head">
@@ -208,7 +238,8 @@ function ModelGroup({ model, overrides }: { model: SpecModel; overrides: Overrid
           <tbody>
             {fields.map(([field, value]) => (
               <FieldRow key={field} model={model} field={field} value={value} editing={editing === field}
-                override={mine.find((o) => o.field === field)} onEdit={setEditing} />
+                override={mine.find((o) => o.field === field)} onEdit={setEditing}
+                seedVersion={adopted.has(`${model.id}/${field}`) ? notice!.dataPackageVersion : null} />
             ))}
           </tbody>
         </table>
@@ -228,9 +259,19 @@ export function SystemsTab() {
   const resetAll = useOverrides((s) => s.resetAll)
   const inUse = modelsInUse(scenario)
   const models = scenario.library.filter((m) => inUse.has(m.id))
+  // The load notice is not scenario state: the load that filled the library
+  // recorded it in persist.ts, and it is read here rather than stored.
+  const notice = lastLoadNotice()
 
   return (
     <>
+      {notice && (
+        <p className="systems-count">
+          Load adopted {notice.fields} seed {notice.fields === 1 ? 'field' : 'fields'} on{' '}
+          {notice.models} builtin {notice.models === 1 ? 'model' : 'models'} from data package v
+          {notice.dataPackageVersion}
+        </p>
+      )}
       <div className="systems-head">
         <span className="systems-count">
           {models.length} {models.length === 1 ? 'system' : 'systems'} in use, {overrides.length}{' '}
@@ -244,7 +285,9 @@ export function SystemsTab() {
       {models.length === 0 ? (
         <p className="systems-empty">No system is in use. Place a sensor, effector or threat on the board.</p>
       ) : (
-        models.map((model) => <ModelGroup key={model.id} model={model} overrides={overrides} />)
+        models.map((model) => (
+          <ModelGroup key={model.id} model={model} overrides={overrides} notice={notice} />
+        ))
       )}
     </>
   )

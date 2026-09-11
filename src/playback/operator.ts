@@ -63,6 +63,24 @@ export function firstC2Of(route: Pick<KillChainRoute, 'viaC2Ids'>): string | nul
   return route.viaC2Ids.length > 0 ? route.viaC2Ids[0] : null
 }
 
+/**
+ * What one operator decision charged, and whether the floor at 0 applied.
+ * `floored` is the stamp the Board reads: the raw excess
+ * `base * overload - medianS` was strictly below 0, so the decision drew
+ * faster than its median and the queue charged nothing rather than shortening
+ * a doctrine dwell. A raw excess of exactly 0 (the deterministic median draw)
+ * is NOT floored: nothing was discarded.
+ */
+export interface OperatorDelay {
+  /** Extra seconds over the doctrine dwell; never negative. */
+  readonly extraS: number
+  /** True when the raw excess was below 0 and the floor discarded it. */
+  readonly floored: boolean
+}
+
+/** No charge and no floor: an inactive queue, or a C2 the queue does not know. */
+const NO_DELAY: OperatorDelay = Object.freeze({ extraS: 0, floored: false })
+
 /** The operator queue of one replicate. */
 export interface OperatorQueue {
   /** True when some C2 adds latency: a c2 spec with a median and the switch off. */
@@ -70,16 +88,16 @@ export interface OperatorQueue {
   /**
    * Extra latency of one decision (0 declare, 1 assign) on `uasId` at `c2Id` taken at
    * `tS`, seconds, over the doctrine dwell: the drawn latency times the overload factor, less the median, floored
-   * at 0. 0 when inactive.
+   * at 0, with the floor reported. extraS 0 and floored false when inactive.
    */
-  delayS(c2Id: string, uasId: string, tS: number, decision: number): number
+  delayS(c2Id: string, uasId: string, tS: number, decision: number): OperatorDelay
   /** Live tracks at the C2 at `tS`: real threats tracked plus the false tracks of its feeding radars. */
   loadAt(c2Id: string, tS: number): number
 }
 
 const INACTIVE_QUEUE: OperatorQueue = Object.freeze({
   active: false,
-  delayS: () => 0,
+  delayS: () => NO_DELAY,
   loadAt: () => 0,
 })
 
@@ -157,7 +175,7 @@ export function createOperatorQueue(
     loadAt,
     delayS(c2Id, uasId, tS, decision) {
       const spec = specs.get(c2Id)
-      if (!spec) return 0
+      if (!spec) return NO_DELAY
       const u = draw.latency(c2Id, uasId, tS, decision)
       const medianS = spec.decisionLatencyS!
       const base = decisionLatencyS(medianS, spec.decisionLatencySigmaDb, u)
@@ -165,8 +183,9 @@ export function createOperatorQueue(
       // queue adds only the excess: the tail of the draw and the overload
       // penalty. At the median with no overload the extra is 0 and today's
       // timeline holds; a decision faster than the median never shortens a
-      // doctrine dwell.
-      return Math.max(0, base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity) - medianS)
+      // doctrine dwell, and the floor that drops it is reported.
+      const raw = base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity) - medianS
+      return raw < 0 ? { extraS: 0, floored: true } : { extraS: raw, floored: false }
     },
   }
 }
