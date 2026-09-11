@@ -6,7 +6,7 @@ import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelit
 
 const IDS: ModelId[] = [
   'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect', 'jam',
-  'environment', 'horizon', 'track-init', 'doctrine', 'kinetic-pk', 'flyout',
+  'environment', 'threat-flight', 'horizon', 'track-init', 'doctrine', 'kinetic-pk', 'flyout',
   'draw-policy', 'parameter-spread',
   'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
 ]
@@ -120,6 +120,19 @@ describe('modelsUsed', () => {
     s.runMode = 'deterministic'
     s.uncertainty = 'total'
     expect(modelsUsed(s).map((t) => t.id)).not.toContain('parameter-spread')
+  })
+
+  it('reads threat flight only for a limited target with the model switch on', () => {
+    const s = radarLaydown()
+    expect(modelsUsed(s).map((t) => t.id)).toContain('threat-flight')
+    s.physics = ['noFlightLimits']
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('threat-flight')
+    delete s.physics
+    const target = s.library.find((m) => m.id === 'lib-mavic3')!.uas!
+    target.maxTurnRateDegS = null
+    target.climbRateMps = null
+    target.maxAccelMps2 = null
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('threat-flight')
   })
 })
 

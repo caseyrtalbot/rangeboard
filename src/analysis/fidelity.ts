@@ -18,7 +18,7 @@ import { radarPdModeled } from './sensorEnv'
 /** Every model the engine runs. */
 export type ModelId =
   | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'jam'
-  | 'environment' | 'horizon' | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
+  | 'environment' | 'threat-flight' | 'horizon' | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
   | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
 
@@ -99,6 +99,16 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     tier: 'planning',
     validation: 'none',
     note: 'One multiplier per condition. No weather or terrain data.',
+  },
+  'threat-flight': {
+    id: 'threat-flight',
+    label: 'Threat flight',
+    tier: 'physics',
+    validation: 'analytic',
+    standard: 'VV&A documentation',
+    note:
+      'Point-mass acceleration, bounded-rate waypoint fillets and wind drift. The turn arc ' +
+      'is hand-derived and the DJI Mavic 3 tilt figure is checked in flight.verify.test.ts.',
   },
   horizon: {
     id: 'horizon',
@@ -207,7 +217,7 @@ const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
   effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
-  uas: ['radar-pd', 'environment', 'kinetic-pk'],
+  uas: ['radar-pd', 'environment', 'threat-flight', 'kinetic-pk'],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
 
@@ -277,6 +287,12 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('rf-detect', sensors.some((s) => s.sensorType === 'rf'))
   add('jam', effectors.some((e) => e.effectorType === 'jammer'))
   add('environment', scenario.environment.apply)
+  add(
+    'threat-flight',
+    !physicsSwitches(scenario).includes('noFlightLimits')
+      && targets.some((t) => [t.maxTurnRateDegS, t.climbRateMps, t.maxAccelMps2]
+        .some((value) => value != null)),
+  )
   // sensorGeometryGate answers before the horizon test for an acoustic sensor.
   add('horizon', sensors.some((s) => s.sensorType !== 'acoustic'))
   add('track-init', sensors.some((s) => scanPeriods(s, targets).every((p) => p == null)))
