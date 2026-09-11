@@ -14,10 +14,11 @@ import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '.
 import { expenditureChannel } from '../playback/pk'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
+import { rfLinkModelApplies } from './sensorEnv/rf'
 
 /** Every model the engine runs. */
 export type ModelId =
-  | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'jam'
+  | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'rf-link' | 'jam'
   | 'environment' | 'horizon' | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
   | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
@@ -85,6 +86,18 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     tier: 'planning',
     validation: 'none',
     note: 'Band match and a placard range. The link budget is not modeled.',
+  },
+  'rf-link': {
+    id: 'rf-link',
+    label: 'RF link',
+    tier: 'physics',
+    validation: 'datasheet',
+    standard:
+      'RF propagation: ITU-R P.2001 wide-range terrestrial model; ITU-R P.526 diffraction; ' +
+      'ITU-R P.528 aeronautical paths; NTIA ITM (Longley-Rice) as the cross-check model',
+    note:
+      'ITU-R free-space loss with a fixed urban margin, target EIRP and receiver sensitivity; ' +
+      'RF-360 and ARDRONIS published ranges are checked in rfLink.verify.test.ts.',
   },
   jam: {
     id: 'jam',
@@ -203,11 +216,11 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
 /** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
 const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
   sensor: [
-    'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect',
+    'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect', 'rf-link',
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
   effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
-  uas: ['radar-pd', 'environment', 'kinetic-pk'],
+  uas: ['radar-pd', 'rf-link', 'environment', 'kinetic-pk'],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
 
@@ -275,6 +288,11 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
   add('acoustic-range', sensors.some((s) => s.sensorType === 'acoustic'))
   add('rf-detect', sensors.some((s) => s.sensorType === 'rf'))
+  add(
+    'rf-link',
+    !physicsSwitches(scenario).includes('rfBandGate')
+      && sensors.some((s) => targets.some((t) => rfLinkModelApplies(s, t))),
+  )
   add('jam', effectors.some((e) => e.effectorType === 'jammer'))
   add('environment', scenario.environment.apply)
   // sensorGeometryGate answers before the horizon test for an acoustic sensor.
