@@ -128,6 +128,8 @@ const FIXTURE = JSON.parse(
 
 /** The keys the data package adds to a provenance row; everything else is pre-migration. */
 const LINEAGE_KEYS = ['grade', 'layer', 'rangeType', 'condition', 'unit', 'estimator', 'comparisonSet', 'note']
+/** Sensor spec keys the Phase 2 contract added; the pre-migration fixture has none. */
+const PHASE2_SENSOR_KEYS = ['rangeAccuracyM', 'azimuthAccuracyDeg', 'elevationAccuracyDeg', 'falseAlarmRatePerScan']
 
 interface LibraryFileOnDisk {
   name: string
@@ -160,7 +162,12 @@ describe('generated library parity', () => {
         for (const key of LINEAGE_KEYS) delete copy[key]
         return copy
       })
-      expect(rows ? { ...model, provenance: rows } : model).toEqual(FIXTURE[i])
+      // Phase 2 added spec keys with no pre-migration counterpart; the fixture predates them.
+      const { c2: _c2, ...rest } = model
+      const sensor = rest.sensor ? { ...rest.sensor } : undefined
+      if (sensor) for (const key of PHASE2_SENSOR_KEYS) delete (sensor as Record<string, unknown>)[key]
+      const stripped = sensor ? { ...rest, sensor } : rest
+      expect(rows ? { ...stripped, provenance: rows } : stripped).toEqual(FIXTURE[i])
     }
   })
 })

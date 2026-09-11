@@ -160,9 +160,11 @@ describe('modelsUsed, Phase 2 tags', () => {
 
   it('reads false tracks from a radar false-alarm rate unless noFalseTracks is on', () => {
     const s = radarLaydown()
-    expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')
     const radar = s.library.find((m) => m.id === 'lib-echoguard')!
-    radar.sensor = { ...radar.sensor!, falseAlarmRatePerScan: 0.5 }
+    // Every seed radar carries a rate since lane 2.1; a null rate is no source.
+    radar.sensor = { ...radar.sensor!, falseAlarmRatePerScan: null }
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')
+    radar.sensor = { ...radar.sensor, falseAlarmRatePerScan: 0.5 }
     expect(modelsUsed(s).map((t) => t.id)).toContain('false-tracks')
     s.physics = ['noFalseTracks']
     expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')

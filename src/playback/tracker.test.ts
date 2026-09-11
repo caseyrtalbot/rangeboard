@@ -269,7 +269,8 @@ describe('runTrial tracks', () => {
   }
 
   it('returns truth tracks with one entry per track per step when the radar has no accuracy', () => {
-    const scenario = laydown({})
+    // The seed Giraffe 1X carries accuracy fields since lane 2.1; null them for the truth path.
+    const scenario = laydown({ rangeAccuracyM: null, azimuthAccuracyDeg: null })
     const result = runTrial(scenario, createTrialManifest(scenario, 'trial-tracks', 'basis'))
     expectOnePerStep(result.tracks!)
     for (const e of result.tracks!) {
