@@ -4,7 +4,7 @@
   "type": "acoustic",
   "band": "any",
   "targetClass": "any",
-  "dataPackageVersion": 1,
+  "dataPackageVersion": 2,
   "members": [
     "lib-discovair",
     "lib-zvook",

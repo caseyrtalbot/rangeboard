@@ -4,7 +4,7 @@
   "type": "eo-ir",
   "band": "dual",
   "targetClass": "any",
-  "dataPackageVersion": 1,
+  "dataPackageVersion": 2,
   "members": [
     "lib-hdcmr",
     "lib-mxgcs",

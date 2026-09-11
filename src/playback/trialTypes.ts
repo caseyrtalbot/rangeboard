@@ -1,5 +1,5 @@
 import type { Scenario } from '../model/types'
-import { runSettings } from '../model/types'
+import { physicsSwitches, runSettings } from '../model/types'
 import type { FidelityTier, Override, PhysicsSwitch } from '../model/libraryField'
 import { DATA_PACKAGE_VERSION } from '../model/libraryField'
 import { idHash } from '../geometry/prng'
@@ -43,6 +43,8 @@ export function createTrialManifest(
   extras: TrialManifestExtras = {},
 ): TrialManifest {
   if (!runId || !basisSignature) throw new Error('Trial requires a run id and configuration basis')
+  // A physics switch runs a model on its fallback, so the floor drops with it.
+  const switches = extras.physicsSwitches ?? physicsSwitches(scenario)
   return Object.freeze({
     runId,
     basisSignature,
@@ -54,8 +56,8 @@ export function createTrialManifest(
     buildRevision: TRIAL_BUILD_REVISION,
     dataPackageVersion: extras.dataPackageVersion ?? DATA_PACKAGE_VERSION,
     overrides: extras.overrides ?? [],
-    physicsSwitches: extras.physicsSwitches ?? [],
-    fidelityFloor: extras.fidelityFloor ?? 'datasheet',
+    physicsSwitches: switches,
+    fidelityFloor: extras.fidelityFloor ?? (switches.length > 0 ? 'fallback' : 'datasheet'),
     producer: extras.producer ?? 'browser',
   })
 }

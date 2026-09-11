@@ -5,7 +5,7 @@
  */
 
 import type { RunMode, Scenario, UncertaintyMode } from './types'
-import { runSettings } from './types'
+import { physicsSwitches, runSettings } from './types'
 import type { FidelityTier, Override, PhysicsSwitch } from './libraryField'
 import { DATA_PACKAGE_VERSION } from './libraryField'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
@@ -58,6 +58,8 @@ export function createRunManifest(
   opts: RunManifestOptions = {},
 ): RunManifest {
   const settings = runSettings(scenario)
+  // A physics switch runs a model on its fallback, so the floor drops with it.
+  const switches = opts.physicsSwitches ?? physicsSwitches(scenario)
   return {
     runId,
     basisSignature,
@@ -71,8 +73,8 @@ export function createRunManifest(
     sweepStepS: opts.sweepStepS ?? 0.5,
     dataPackageVersion: opts.dataPackageVersion ?? DATA_PACKAGE_VERSION,
     overrides: opts.overrides ?? [],
-    physicsSwitches: opts.physicsSwitches ?? [],
-    fidelityFloor: opts.fidelityFloor ?? 'datasheet',
+    physicsSwitches: switches,
+    fidelityFloor: opts.fidelityFloor ?? (switches.length > 0 ? 'fallback' : 'datasheet'),
     producer: opts.producer ?? 'browser',
   }
 }

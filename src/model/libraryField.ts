@@ -132,4 +132,4 @@ export type PhysicsSwitch = 'truthTracks' | 'noFalseTracks' | 'noOperatorQueue' 
 export type FidelityTier = 'analytic' | 'datasheet' | 'calibrated' | 'fallback'
 
 /** Current data package version. Every library change bumps it. */
-export const DATA_PACKAGE_VERSION = 1
+export const DATA_PACKAGE_VERSION = 2

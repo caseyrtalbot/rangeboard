@@ -14,7 +14,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'interceptor',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 1,
+    dataPackageVersion: 2,
     members: [
       'lib-coyote',
       'lib-merops',
@@ -41,7 +41,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'acoustic',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 1,
+    dataPackageVersion: 2,
     members: [
       'lib-discovair',
       'lib-zvook',
@@ -66,7 +66,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'eo-ir',
     band: 'dual',
     targetClass: 'any',
-    dataPackageVersion: 1,
+    dataPackageVersion: 2,
     members: [
       'lib-hdcmr',
       'lib-mxgcs',
@@ -91,7 +91,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'radar',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 1,
+    dataPackageVersion: 2,
     members: [
       'lib-rps42',
       'lib-rps62',
@@ -228,7 +228,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'rf',
     band: 'any',
     targetClass: 'any',
-    dataPackageVersion: 1,
+    dataPackageVersion: 2,
     members: [
       'lib-rf360',
       'lib-corian',
@@ -253,7 +253,7 @@ export const CLASS_PRIORS: ClassPriorTable = {
     type: 'one-way-attack',
     band: '3',
     targetClass: 'any',
-    dataPackageVersion: 1,
+    dataPackageVersion: 2,
     members: [
       'lib-shahed136',
       'lib-mugin5',

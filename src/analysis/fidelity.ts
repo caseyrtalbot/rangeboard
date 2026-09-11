@@ -153,37 +153,50 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
   tracker: {
     id: 'tracker',
     label: 'Tracker',
-    tier: 'planning',
-    validation: 'none',
-    note: 'Track position is truth; a Kalman estimate arrives in Phase 2.',
+    tier: 'physics',
+    validation: 'analytic',
+    note:
+      'Constant-velocity Kalman filter per sensor track, measurement noise from the accuracy ' +
+      'fields; the steady-state gain is pinned to the closed form in kalman.test.ts. A sensor ' +
+      'with no accuracy fields, or the truthTracks switch, reports the truth position.',
   },
   fusion: {
     id: 'fusion',
     label: 'Fusion',
-    tier: 'planning',
-    validation: 'none',
-    note: 'Two technologies held at once halve the declaration dwell.',
+    tier: 'physics',
+    validation: 'analytic',
+    note:
+      'Covariance-weighted track-to-track fusion at the C2 node after link latency; two equal ' +
+      'tracks halve the covariance in fusion.test.ts. A truth member makes the fused track truth. ' +
+      'Two technologies held at once still halve the declaration dwell.',
   },
   classification: {
     id: 'classification',
     label: 'Classification',
     tier: 'planning',
     validation: 'none',
-    note: 'Rule ladder: speed, intent keyword, range factor.',
+    note:
+      'Rule ladder: speed, intent keyword, range factor. A confusion matrix by range band ' +
+      'applies when a sensor states one; no library sensor does yet.',
   },
   operator: {
     id: 'operator',
     label: 'Operator',
     tier: 'planning',
     validation: 'none',
-    note: 'No operator queue; doctrine dwells only.',
+    note:
+      'Decision latency over the doctrine dwell: the lognormal excess over the C2 median times ' +
+      'a linear overload factor. Median, sigma and capacity are planning factors on every C2.',
   },
   'false-tracks': {
     id: 'false-tracks',
     label: 'False tracks',
-    tier: 'planning',
-    validation: 'none',
-    note: 'None.',
+    tier: 'physics',
+    validation: 'analytic',
+    note:
+      'Poisson false tracks per scan from the radar false-alarm rate through the M-of-N rule; ' +
+      'the mean matches the closed form in falseTracks.test.ts. The rate is a planning factor ' +
+      'on every radar.',
   },
 }
 

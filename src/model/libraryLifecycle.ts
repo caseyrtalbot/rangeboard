@@ -55,8 +55,51 @@ export function reconcileLibrary(
   const seedById = new Map(seeds.map((m) => [m.id, m]))
   return reconcileSeeded(saved, seeds, deleted).map((m) => {
     const seed = m.builtin ? seedById.get(m.id) : undefined
-    return seed ? adoptSeedProvenance(m, seed) : m
+    return seed ? adoptSeedProvenance(adoptSeedFields(m, seed), seed) : m
   })
+}
+
+/**
+ * Seed spec keys a saved builtin adopts when it does not hold them: the fields
+ * the data package gained after saves were written. `'*'` adopts the whole
+ * block when the save has none. Every other key follows saved-id precedence,
+ * so an old save keeps its physics; this list is the one migration path a new
+ * field takes into an existing board.
+ */
+export const ADOPTED_SEED_KEYS: Partial<Record<'sensor' | 'uas' | 'effector' | 'c2', readonly string[] | '*'>> = {
+  // Phase 2 (2026-09-10): tracker accuracy and the radar false-alarm rate.
+  sensor: ['rangeAccuracyM', 'azimuthAccuracyDeg', 'elevationAccuracyDeg', 'falseAlarmRatePerScan'],
+  // Phase 2: the C2 decision fields; c2 models had no spec block before.
+  c2: '*',
+}
+
+/**
+ * Give a saved builtin model the `ADOPTED_SEED_KEYS` it does not hold. A key
+ * the save holds, with any value including null, is the user's and stays. A
+ * custom model is returned unchanged; so is a model with nothing to adopt.
+ */
+export function adoptSeedFields(saved: SpecModel, seed: SpecModel): SpecModel {
+  if (!saved.builtin) return saved
+  let out: SpecModel | null = null
+  for (const block of Object.keys(ADOPTED_SEED_KEYS) as Array<keyof typeof ADOPTED_SEED_KEYS>) {
+    const keys = ADOPTED_SEED_KEYS[block]
+    const seedSpec = seed[block] as Record<string, unknown> | undefined
+    if (!keys || !seedSpec) continue
+    const savedSpec = saved[block] as Record<string, unknown> | undefined
+    if (!savedSpec) {
+      if (keys !== '*') continue
+      out = { ...(out ?? saved), [block]: { ...seedSpec } }
+      continue
+    }
+    let next: Record<string, unknown> | null = null
+    for (const key of keys === '*' ? Object.keys(seedSpec) : keys) {
+      if (key in savedSpec || !(key in seedSpec)) continue
+      next = next ?? { ...savedSpec }
+      next[key] = seedSpec[key]
+    }
+    if (next) out = { ...(out ?? saved), [block]: next }
+  }
+  return out ?? saved
 }
 
 /**

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Provenance, SpecModel } from './types'
 import {
+  adoptSeedFields,
   adoptSeedProvenance,
   importModels,
   initialLibrary,
@@ -78,6 +79,50 @@ describe('reconcile', () => {
     const saved: SpecModel = { ...seedModel(), provenance: undefined }
     const out = reconcileLibrary([saved], [seedModel()])
     expect(out[0].provenance?.map((r) => r.field)).toEqual(['updateRateS', 'detectRangeM'])
+  })
+})
+
+describe('adoptSeedFields', () => {
+  it('gives a saved builtin a seed spec key it does not hold and keeps every key it holds', () => {
+    const seed = seedModel()
+    seed.sensor = { ...seed.sensor!, rangeAccuracyM: 25, azimuthAccuracyDeg: 1 }
+    const saved: SpecModel = { ...seedModel() }
+    saved.sensor = { ...saved.sensor!, detectRangeM: 1234, azimuthAccuracyDeg: null }
+    const out = adoptSeedFields(saved, seed)
+    expect(out.sensor?.rangeAccuracyM).toBe(25)
+    expect(out.sensor?.azimuthAccuracyDeg).toBeNull()
+    expect(out.sensor?.detectRangeM).toBe(1234)
+    expect(out).not.toBe(saved)
+    expect(saved.sensor?.rangeAccuracyM).toBeUndefined()
+  })
+
+  it('adopts only the listed keys: an older seed key the save lacks stays absent', () => {
+    const seed = seedModel()
+    seed.sensor = { ...seed.sensor!, urbanRangeM: 900, rangeAccuracyM: 25 }
+    const saved = seedModel()
+    delete (saved.sensor as unknown as Record<string, unknown>).urbanRangeM
+    const out = adoptSeedFields(saved, seed)
+    expect(out.sensor?.rangeAccuracyM).toBe(25)
+    expect('urbanRangeM' in out.sensor!).toBe(false)
+  })
+
+  it('adopts a spec block the save lacks, returns the same object with nothing to adopt, and skips a custom model', () => {
+    const seed: SpecModel = { ...seedModel(), c2: { decisionLatencyS: 10, decisionLatencySigmaDb: 3, operatorTrackCapacity: 6 } }
+    const saved = seedModel()
+    const out = adoptSeedFields(saved, seed)
+    expect(out.c2).toEqual(seed.c2)
+    expect(out.c2).not.toBe(seed.c2)
+    const same = seedModel()
+    expect(adoptSeedFields(same, seedModel())).toBe(same)
+    const custom: SpecModel = { ...seedModel(), builtin: false }
+    expect(adoptSeedFields(custom, seed)).toBe(custom)
+  })
+
+  it('reaches the save through reconcileLibrary', () => {
+    const seed = seedModel()
+    seed.sensor = { ...seed.sensor!, falseAlarmRatePerScan: 1 }
+    const out = reconcileLibrary([seedModel()], [seed])
+    expect(out[0].sensor?.falseAlarmRatePerScan).toBe(1)
   })
 })
 

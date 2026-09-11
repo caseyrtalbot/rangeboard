@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "order": [
     "lib-rps42",
     "lib-rps62",

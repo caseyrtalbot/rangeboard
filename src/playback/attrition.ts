@@ -29,6 +29,7 @@ import type {
 import type { EffectorState, JamHold, PendingEffect, ShipState, ThreatState } from './sweepState'
 import { EPS, intervalIndexAt, launchPolicyReleases, membersAtTime } from './intercept'
 import type { ShotAccepted, ShotContext } from './shot'
+import type { FusedTrack } from './trackTypes'
 import { evaluateShot } from './shot'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
@@ -430,6 +431,24 @@ export function resolveEngagements(
     es.nextReadyS = t + es.cooldownS
   }
 
+  // The fused track a shooter holds on each threat at t (sim.ts fusedTracks,
+  // time-ordered): a cursor per threat advances with the tick, so the lookup
+  // is amortized O(1). A truth-source or absent estimate keeps the truth-path
+  // intercept inside evaluateShot.
+  const fusedCursor = new Map<string, number>()
+  const fusedEstimateAt = (ts: ThreatState, t: number): FusedTrack | null => {
+    const tracks = ts.a.fusedTracks
+    if (!tracks || tracks.length === 0) return null
+    let i = fusedCursor.get(ts.a.uasId) ?? -1
+    while (i + 1 < tracks.length && tracks[i + 1].state.tS <= t + EPS) i += 1
+    fusedCursor.set(ts.a.uasId, i)
+    return i >= 0 ? tracks[i] : null
+  }
+  const shotContextFor = (base: ShotContext, ts: ThreatState, t: number): ShotContext => {
+    const estimate = fusedEstimateAt(ts, t)
+    return estimate ? { ...base, estimate } : base
+  }
+
   for (let t = 0; t <= tEnd + EPS; t += DT) {
     applyDueEffects(t)
     tickGeom = new Map()
@@ -463,8 +482,9 @@ export function resolveEngagements(
         // Closing soonest: arrival, else closest approach for a fly-by.
         const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
 
+        const volleyCtx = shotContextFor(volleyShot, ts, t)
         for (let i = 0; i < ts.ships.length; i++) {
-          const shot = evaluateShot(volleyShot, es, ts, i)
+          const shot = evaluateShot(volleyCtx, es, ts, i)
           if (shot.rejected) continue
           const s = ts.ships[i]
           const alive = effectiveAlive(s)
@@ -530,12 +550,13 @@ export function resolveEngagements(
           if (t + EPS < readyS) continue
           const refS = ts.a.arrivalS ?? ts.a.cpaS
           const arrivalS = ts.a.arrivalS ?? ts.a.cpaS ?? Number.POSITIVE_INFINITY
+          const doctrineCtx = shotContextFor(doctrineShot, ts, t)
           for (let i = 0; i < ts.ships.length; i++) {
             const ship = ts.ships[i]
             if (t + EPS < ship.holdUntilS) continue
             if (effectiveAlive(ship) < SHIP_DEAD_BELOW) continue
             // The effect must land in the interval containing t: its end is the deadline.
-            const shot = evaluateShot(doctrineShot, es, ts, i)
+            const shot = evaluateShot(doctrineCtx, es, ts, i)
             if (shot.rejected) continue
             const { intercept: ic, interval: within, pk } = shot
             const tEffect = ic.tEffectS

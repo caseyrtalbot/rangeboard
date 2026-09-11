@@ -4,7 +4,7 @@
   "type": "radar",
   "band": "any",
   "targetClass": "any",
-  "dataPackageVersion": 1,
+  "dataPackageVersion": 2,
   "members": [
     "lib-rps42",
     "lib-rps62",

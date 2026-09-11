@@ -4,7 +4,7 @@
   "type": "one-way-attack",
   "band": "3",
   "targetClass": "any",
-  "dataPackageVersion": 1,
+  "dataPackageVersion": 2,
   "members": [
     "lib-shahed136",
     "lib-mugin5",
