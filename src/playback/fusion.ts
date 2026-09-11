@@ -1,7 +1,7 @@
 import type { Scenario } from '../model/types'
 import { effectiveDoctrine, entityActive } from '../model/types'
 import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
-import { stepIndex } from './clock'
+import { DT, stepCount } from './clock'
 import { predict, PROCESS_NOISE_Q, quality, ZERO_COVARIANCE } from './kalman'
 import type { Covariance4, FusedTrack, TrackEstimate, TrackState } from './trackTypes'
 
@@ -268,11 +268,11 @@ export function c2LinksFor(scenario: Scenario, sensorIds: ReadonlySet<string>): 
  * bypasses the latency and the current entry is returned. Null when the
  * track is younger than the latency: no report has reached the node yet.
  */
-export function delayedMember(ring: readonly TrackEstimate[], latencyS: number, tS: number): TrackEstimate | null {
+export function delayedMember(ring: readonly TrackEstimate[], latencyS: number, tS: number, stepS = DT): TrackEstimate | null {
   const last = ring[ring.length - 1]
   if (!last) return null
   if (last.source === 'truth') return last
-  const back = stepIndex(latencyS)
+  const back = stepCount(latencyS, stepS)
   const entry = ring[ring.length - 1 - back]
   if (!entry) return null
   if (back === 0) return entry
@@ -317,7 +317,7 @@ export function admitMembers(members: readonly TrackEstimate[], truthTracks: boo
  * link's latency. Without links every current estimate fuses at the
  * sensors. `truthTracks` is the physics switch; see the module comment.
  */
-export function createFusionStage(links: readonly C2Link[], truthTracks = false): FusionStage {
+export function createFusionStage(links: readonly C2Link[], truthTracks = false, stepS = DT): FusionStage {
   const current = new Map<string, TrackEstimate>()
   const rings = new Map<string, TrackEstimate[]>()
   const ringDepth = new Map<string, number>()
@@ -328,7 +328,7 @@ export function createFusionStage(links: readonly C2Link[], truthTracks = false)
       if (list.some((l) => l.sensorId === link.sensorId)) continue
       list.push(link)
     } else byC2.set(link.c2Id, [link])
-    const depth = stepIndex(link.latencyS) + 1
+    const depth = stepCount(link.latencyS, stepS) + 1
     ringDepth.set(link.sensorId, Math.max(ringDepth.get(link.sensorId) ?? 1, depth))
   }
   const viaC2 = byC2.size > 0
@@ -366,7 +366,7 @@ export function createFusionStage(links: readonly C2Link[], truthTracks = false)
         for (const link of c2Links) {
           const ring = rings.get(link.sensorId)
           if (!ring) continue
-          const member = delayedMember(ring, link.latencyS, tS)
+          const member = delayedMember(ring, link.latencyS, tS, stepS)
           if (member) members.push(member)
         }
         const fused = fuseAdmitted(members, c2Id, tS)

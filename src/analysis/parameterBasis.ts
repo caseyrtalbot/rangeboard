@@ -69,11 +69,25 @@ export interface UncertainField {
   spread: Spread
 }
 
-/** Library field order per kind; the sensor, effector and uas lists are the contract order. */
+/**
+ * Library field order per kind; the contract order the sampler and Morris
+ * walk. Phase 3 (slice 3.a) added the sensor accuracy fields of Phase 2 and
+ * the c2 decision latency, so their provenance spreads draw in total mode and
+ * Morris screens them. They have no PF_SPREAD row: a model without a spread
+ * on the row keeps the field fixed.
+ */
 export const FIELDS_BY_KIND: Partial<Record<Entity['kind'], string[]>> = {
-  sensor: ['detectRangeM', 'trackInitS'],
+  sensor: [
+    'detectRangeM',
+    'trackInitS',
+    'rangeAccuracyM',
+    'azimuthAccuracyDeg',
+    'elevationAccuracyDeg',
+    'falseAlarmRatePerScan',
+  ],
   effector: ['pk', 'engageTimeS', 'targetS', 'bdaS'],
   uas: ['rcsM2'],
+  c2: ['decisionLatencyS'],
 }
 
 /** Whether this model has the spec required by its sampled kind. */
@@ -81,6 +95,7 @@ export function hasSpec(model: SpecModel): boolean {
   if (model.kind === 'sensor') return model.sensor != null
   if (model.kind === 'effector') return model.effector != null
   if (model.kind === 'uas') return model.uas != null
+  if (model.kind === 'c2') return model.c2 != null
   return false
 }
 
@@ -93,8 +108,7 @@ export function modelsInUse(scenario: Scenario): Set<string> {
 
 /**
  * Every (modelId, field) pair with a spread in this scenario, in a stable order: library
- * models in use, in library order (sensor detectRangeM, trackInitS; effector pk,
- * engageTimeS, targetS, bdaS; uas rcsM2), then connections as `{ modelId: connection.id,
+ * models in use, in library order (FIELDS_BY_KIND per kind), then connections as `{ modelId: connection.id,
  * field: 'latencyS' }`, then `{ modelId: 'doctrine', field: 'declareHostileS' }` when
  * doctrine is enabled. A field with no spread is skipped, and so is a model no active
  * entity uses.

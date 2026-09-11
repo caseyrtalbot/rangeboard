@@ -70,7 +70,7 @@ export function createRunManifest(
     drawPolicyVersion: TRIAL_DRAW_POLICY_VERSION,
     engineRevision: TRIAL_ENGINE_REVISION,
     buildRevision: TRIAL_BUILD_REVISION,
-    sweepStepS: opts.sweepStepS ?? 0.5,
+    sweepStepS: opts.sweepStepS ?? settings.sweepStepS,
     dataPackageVersion: opts.dataPackageVersion ?? DATA_PACKAGE_VERSION,
     overrides: opts.overrides ?? [],
     physicsSwitches: switches,

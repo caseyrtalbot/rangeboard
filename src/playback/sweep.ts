@@ -1,5 +1,5 @@
 import type { Entity, Scenario, SensorSpec, SensorType, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive } from '../model/types'
+import { defaultSensorRole, effectiveDoctrine, entityActive, runSettings } from '../model/types'
 import { modelFor } from '../model/scenario'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
@@ -24,8 +24,10 @@ import { createTrackManager } from './tracker'
  * The temporal sensor sweep against one threat: scan scheduling, holds
  * between scans, the cue order, coasting and the M-of-N initiation rule.
  * `prepareSweepRun` resolves the per-sensor terms once, `stepSweep` runs one
- * DT step at a position set, `finishSweep` closes the hold files. The
- * assessment (sim.ts) consumes step results and owns no temporal rule.
+ * step at a position set, `finishSweep` closes the hold files. The step is
+ * the manifest step (`McSettings.sweepStepS`, default DT; the assessment's
+ * SweepClock advances t). The assessment (sim.ts) consumes step results and
+ * owns no temporal rule.
  */
 
 /** One sensor's complete hold history against one threat. */
@@ -69,10 +71,10 @@ export interface SensorObservation {
 /** Tolerance for a nominal scan time landing on the DT grid, seconds. */
 const SCAN_EPS = 1e-6
 
-/** Extend the trailing inclusive DT interval to t, or open a new one after a break. */
-export function extendIntervals(intervals: Array<[number, number]>, t: number): void {
+/** Extend the trailing inclusive interval (one `stepS` per sample) to t, or open a new one after a break. */
+export function extendIntervals(intervals: Array<[number, number]>, t: number, stepS = DT): void {
   const last = intervals[intervals.length - 1]
-  if (last && Math.abs(last[1] - (t - DT)) < DT / 2) last[1] = t
+  if (last && Math.abs(last[1] - (t - stepS)) < stepS / 2) last[1] = t
   else intervals.push([t, t])
 }
 
@@ -221,6 +223,8 @@ export interface SweepRun {
 
 interface SweepRunState extends SweepRun {
   scenario: Scenario
+  /** The manifest step, seconds: the spacing of consecutive samples in a hold interval. */
+  stepS: number
   uasId: string
   sweep: SensorSweep
   pdTrack: number
@@ -298,6 +302,7 @@ export function prepareSweepRun(
   const idleScans = new Set<string>()
   const run: SweepRunState = {
     scenario,
+    stepS: runSettings(scenario).sweepStepS,
     uasId: uas.id,
     sweep,
     pdTrack: pdTrackCumulativeOf(scenario),
@@ -361,7 +366,7 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
     }
     recordDetection(observation, hit, t)
     observation.heldSamples += 1
-    extendIntervals(observation.intervals, t)
+    extendIntervals(observation.intervals, t, run.stepS)
     tracks.step(hit.sensorId, t, 'measure', hit, 0)
     const role = defaultSensorRole(spec)
     if (hit.classified && (role === 'fire-control' || role === 'classification')) {
@@ -429,14 +434,14 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
       stepTechs.add(observation.sensorType)
       if (scan.classifiedCarry && scan.fcRole) fcClassifiedNow = true
       observation.heldSamples += 1
-      extendIntervals(observation.intervals, t)
+      extendIntervals(observation.intervals, t, run.stepS)
       // A scan step with a hit measures; the steps between scans carry the estimate.
       tracks.step(sensorId, t, hit ? 'measure' : 'carry', hit, 0)
     } else if (scan.hold === 'coast') {
       coastHeld = true
       observation.heldSamples += 1
-      extendIntervals(observation.intervals, t)
-      extendIntervals(observation.coastIntervals, t)
+      extendIntervals(observation.intervals, t, run.stepS)
+      extendIntervals(observation.coastIntervals, t, run.stepS)
       tracks.step(sensorId, t, 'coast', undefined, scan.consecutiveMisses)
     }
   }
@@ -471,7 +476,7 @@ export function finishSweep(handle: SweepRun): SweepOutcome {
     const spec = sensorEnt ? modelFor(run.scenario, sensorEnt)?.sensor : undefined
     const initS = spec ? trackInitSFor(spec, doctrine) : doctrine.trackFirmS
     for (const [s0, s1] of obs.intervals) {
-      if (s1 - s0 + DT / 2 < initS) continue
+      if (s1 - s0 + run.stepS / 2 < initS) continue
       obs.trackInitAtS = s0 + initS
       break
     }

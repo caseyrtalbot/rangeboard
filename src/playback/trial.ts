@@ -19,9 +19,11 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
     manifest.drawPolicyVersion !== TRIAL_DRAW_POLICY_VERSION ||
     manifest.engineRevision !== TRIAL_ENGINE_REVISION
   ) throw new Error('Incompatible trial engine or draw-policy revision')
+  const settings = runSettings(scenario)
   if (
     !manifest.runId || !manifest.basisSignature ||
-    manifest.seed !== runSettings(scenario).seed ||
+    manifest.seed !== settings.seed ||
+    manifest.sweepStepS !== settings.sweepStepS ||
     manifest.replicateIndex !== idHash(manifest.runId) ||
     !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')
   ) throw new Error('Invalid trial manifest identity or seed')
