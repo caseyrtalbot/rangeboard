@@ -15,6 +15,7 @@ import type { LabelPlacement } from './labelLayout'
 import { ThreatWezLayer } from './layers/ThreatWezLayer'
 import { PathLayer } from './layers/PathLayer'
 import { EngagementLayer } from './layers/EngagementLayer'
+import { TrackLayer } from './layers/TrackLayer'
 import { EntityLayer } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
@@ -197,6 +198,7 @@ export function LiveScene(props: Props) {
     <>
       <ThreatWezLayer tracks={tracks} trial={trial} horizonS={outcomeTimeS} displayTimeS={displayTimeS} />
       <StaticPathLayer mouseWorld={mouseWorld} />
+      <TrackLayer tracks={trial?.result.tracks} horizonS={outcomeTimeS} />
       <EngagementLayer shots={shots} displayTimeS={outcomeTimeS ?? 0} />
       <EntityLayer tracks={tracks} members={geometry.members} states={states} sweep={sweep} spokeIds={spokeIds} blink={blink} />
       <StaticSystemHandleLayer />

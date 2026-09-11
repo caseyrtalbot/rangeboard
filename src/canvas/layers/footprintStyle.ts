@@ -2,7 +2,7 @@ import type { SensorHoldGate } from '../../analysis/sensorEnv'
 import type { FireDoctrine, UasSpec } from '../../model/types'
 import type { RingKey } from '../../state/rings'
 import { falloffRangeM, kineticPk } from '../../playback/pk'
-import { DANGER_INK } from '../../ui/ink'
+import { DANGER_INK, KIND_INK } from '../../ui/ink'
 
 /**
  * One style source for every ring the board draws. Each ring is either a
@@ -68,6 +68,19 @@ export const EFFECTOR_MIN_DASH = [2, 5]
 export const RELEASE_DASH = [7, 4]
 /** Commit-Pk range ring: dash-dot. */
 export const COMMIT_DASH = [6, 3, 1, 3]
+/**
+ * Track covariance ellipse on a coasting track: even dash, distinct from
+ * every ring dash above.
+ */
+export const TRACK_ELLIPSE_DASH = [4, 4]
+/** Ink for an estimated or truth track. Sage reads on the board and names no
+ *  ring channel: the danger red and the EW cyan are taken. */
+export const TRACK_ESTIMATE_INK = KIND_INK.asset
+/** Ink for a false track: the same muted grey the inert rings take. */
+export const TRACK_FALSE_INK = DISABLED_RING_COLOR
+/** Track position marker arm, screen px, held constant under the camera. */
+export const TRACK_MARKER_PX = 3
+
 /** Two rings closer than this draw as one ring. */
 const PLACARD_TOLERANCE_M = 1
 /** Pd of the upper contour (PF, a display constant). Not a requirement
