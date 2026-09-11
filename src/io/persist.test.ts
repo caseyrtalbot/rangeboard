@@ -204,8 +204,8 @@ describe('AAR export payload', () => {
     expect(out.requirements.overall).toBe('not-evaluated')
     expect(out.requirements.gates).toHaveLength(6)
     expect(out.validity.validity).toBe('pending')
-    // The empty-laydown models: environment on and fire doctrine on.
-    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine'])
+    // The empty-laydown models: environment on and fire doctrine on (doctrine brings classification).
+    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine', 'classification'])
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 })
@@ -271,8 +271,8 @@ describe('run export Monte Carlo basis', () => {
     expect(out.dataBasis.replicates).toBe(5)
     expect(out.dataBasis.stopped).toEqual({ rule: 'replicates', at: 5 })
     expect(out.mcSummary).toBe(summary)
-    // The empty laydown under Monte Carlo: environment, fire doctrine, draw policy.
-    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine', 'draw-policy'])
+    // The empty laydown under Monte Carlo: environment, fire doctrine, draw policy, classification.
+    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine', 'draw-policy', 'classification'])
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 

@@ -8,6 +8,7 @@ const IDS: ModelId[] = [
   'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect', 'jam',
   'environment', 'horizon', 'track-init', 'doctrine', 'kinetic-pk', 'flyout',
   'draw-policy', 'parameter-spread',
+  'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
 ]
 
 describe('MODEL_TAGS', () => {
@@ -90,11 +91,11 @@ describe('modelsUsed', () => {
     expect(modelsUsed(radarLaydown()).map((t) => t.id)).toContain('doctrine')
   })
 
-  it('reads an empty laydown as environment and doctrine, and nothing with both off', () => {
+  it('reads an empty laydown as environment, doctrine and classification, and nothing with all off', () => {
     const s = emptyScenario()
     // The fresh scenario runs Monte Carlo; the envelope reading is explicit here.
     s.runMode = 'deterministic'
-    expect(modelsUsed(s).map((t) => t.id)).toEqual(['environment', 'doctrine'])
+    expect(modelsUsed(s).map((t) => t.id)).toEqual(['environment', 'doctrine', 'classification'])
     s.environment.apply = false
     s.doctrine = { ...DEFAULT_FIRE_DOCTRINE, enabled: false }
     expect(modelsUsed(s)).toEqual([])
@@ -122,6 +123,59 @@ describe('modelsUsed', () => {
   })
 })
 
+describe('modelsUsed, Phase 2 tags', () => {
+  it('reads the tracker from one active sensor and fusion from two', () => {
+    const s = radarLaydown()
+    let ids = modelsUsed(s).map((t) => t.id)
+    expect(ids).toContain('tracker')
+    expect(ids).not.toContain('fusion')
+    s.entities.push(entity('s2', 'sensor', 'lib-discovair'))
+    ids = modelsUsed(s).map((t) => t.id)
+    expect(ids).toContain('fusion')
+    s.entities[s.entities.length - 1].enabled = false
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('fusion')
+  })
+
+  it('reads no tracker from a laydown with no sensor', () => {
+    const s = emptyScenario()
+    s.entities.push(entity('u1', 'uas', 'lib-mavic3'))
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('tracker')
+  })
+
+  it('follows the doctrine switch for classification', () => {
+    const s = radarLaydown()
+    expect(modelsUsed(s).map((t) => t.id)).toContain('classification')
+    s.doctrine = { ...DEFAULT_FIRE_DOCTRINE, enabled: false }
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('classification')
+  })
+
+  it('reads the operator from an active c2 entity only', () => {
+    const s = radarLaydown()
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('operator')
+    s.entities.push(entity('c1', 'c2', 'lib-faadc2'))
+    expect(modelsUsed(s).map((t) => t.id)).toContain('operator')
+    s.entities[s.entities.length - 1].enabled = false
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('operator')
+  })
+
+  it('reads false tracks from a radar false-alarm rate unless noFalseTracks is on', () => {
+    const s = radarLaydown()
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')
+    const radar = s.library.find((m) => m.id === 'lib-echoguard')!
+    radar.sensor = { ...radar.sensor!, falseAlarmRatePerScan: 0.5 }
+    expect(modelsUsed(s).map((t) => t.id)).toContain('false-tracks')
+    s.physics = ['noFalseTracks']
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')
+    // The rate on a non-radar sensor is not a false-track source.
+    s.physics = []
+    radar.sensor = { ...radar.sensor, falseAlarmRatePerScan: null }
+    const acoustic = s.library.find((m) => m.id === 'lib-discovair')!
+    acoustic.sensor = { ...acoustic.sensor!, falseAlarmRatePerScan: 0.5 }
+    s.entities.push(entity('s2', 'sensor', 'lib-discovair'))
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')
+  })
+})
+
 describe('modelsForEntity', () => {
   /** The radar laydown plus one kinetic interceptor with a stated flyout speed. */
   function withEffector(): Scenario {
@@ -142,6 +196,19 @@ describe('modelsForEntity', () => {
   it('gives the effector its doctrine, Pk and flyout models', () => {
     const ids = modelsForEntity(withEffector(), 'e1').map((t) => t.id)
     expect(ids).toEqual(['doctrine', 'kinetic-pk', 'flyout'])
+  })
+
+  it('gives a sensor the tracker and a c2 node fusion, classification and the operator', () => {
+    const s = withEffector()
+    s.entities.push(entity('s2', 'sensor', 'lib-discovair'))
+    s.entities.push(entity('c1', 'c2', 'lib-faadc2'))
+    const sensorIds = modelsForEntity(s, 's1').map((t) => t.id)
+    expect(sensorIds).toContain('tracker')
+    expect(sensorIds).not.toContain('fusion')
+    expect(sensorIds).not.toContain('operator')
+    expect(modelsForEntity(s, 'c1').map((t) => t.id)).toEqual([
+      'doctrine', 'fusion', 'classification', 'operator',
+    ])
   })
 
   it('returns nothing for an asset, a disabled entity and an unknown id', () => {

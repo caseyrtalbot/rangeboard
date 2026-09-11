@@ -8,6 +8,7 @@
 
 // Run settings: the contract every runner reads, with the fresh-scenario defaults.
 export type {
+  C2Spec,
   McSettings,
   RunMode,
   SamplingMode,
@@ -27,6 +28,7 @@ export {
   DEFAULT_STOP_CAP,
   DEFAULT_STOP_FLOOR,
   DEFAULT_TARGET_HALF_WIDTH,
+  physicsSwitches,
   runSettings,
 } from '../model/types'
 
@@ -136,6 +138,19 @@ export {
 } from '../playback/trialTypes'
 export type { TrialRequest, TrialRequestIdentity, TrialWorkerMessage } from '../playback/trialMessages'
 export { runTrial } from '../playback/trial'
+
+// Phase 2 track contract: estimates, fused tracks, the classification matrix and the measurement.
+export type {
+  ClassificationBand,
+  ClassificationMatrix,
+  Covariance4,
+  FusedTrack,
+  TrackEstimate,
+  TrackEstimateSink,
+  TrackMeasurement,
+  TrackSource,
+  TrackState,
+} from '../playback/trackTypes'
 
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'

@@ -10,7 +10,7 @@
 import type {
   Entity, EntityKind, Scenario, SensorSpec, SpecModel, UasSpec,
 } from '../model/types'
-import { effectiveDoctrine, entityActive, runSettings } from '../model/types'
+import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
 import { expenditureChannel } from '../playback/pk'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
@@ -20,6 +20,7 @@ export type ModelId =
   | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'jam'
   | 'environment' | 'horizon' | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
+  | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
 
 /** How a model is built: a planning factor table, or a physical law. */
 type FidelityTier = 'planning' | 'physics'
@@ -149,17 +150,52 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     validation: 'none',
     note: 'Spread shapes and widths are planning factors until a trial count replaces them.',
   },
+  tracker: {
+    id: 'tracker',
+    label: 'Tracker',
+    tier: 'planning',
+    validation: 'none',
+    note: 'Track position is truth; a Kalman estimate arrives in Phase 2.',
+  },
+  fusion: {
+    id: 'fusion',
+    label: 'Fusion',
+    tier: 'planning',
+    validation: 'none',
+    note: 'Two technologies held at once halve the declaration dwell.',
+  },
+  classification: {
+    id: 'classification',
+    label: 'Classification',
+    tier: 'planning',
+    validation: 'none',
+    note: 'Rule ladder: speed, intent keyword, range factor.',
+  },
+  operator: {
+    id: 'operator',
+    label: 'Operator',
+    tier: 'planning',
+    validation: 'none',
+    note: 'No operator queue; doctrine dwells only.',
+  },
+  'false-tracks': {
+    id: 'false-tracks',
+    label: 'False tracks',
+    tier: 'planning',
+    validation: 'none',
+    note: 'None.',
+  },
 }
 
 /** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
 const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
   sensor: [
     'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect',
-    'environment', 'horizon', 'track-init',
+    'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
   effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
   uas: ['radar-pd', 'environment', 'kinetic-pk'],
-  c2: ['doctrine'],
+  c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
 
 /** Tag order every reader gets: the order MODEL_TAGS declares. */
@@ -207,6 +243,12 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   const targets = activeSpecs(
     scenario, 'uas', (m) => m.uas, entity?.kind === 'uas' ? entity.id : undefined,
   )
+  // A c2 model may carry no spec; the entity counts through its kind alone.
+  const c2Count = scenario.entities.filter(
+    (e) => e.kind === 'c2' && entityActive(e) && (entity?.kind !== 'c2' || e.id === entity.id),
+  ).length
+  // The sensor count for fusion is the laydown's, so one sensor entity still reports fusion.
+  const allSensors = entity?.kind === 'sensor' ? activeSpecs(scenario, 'sensor', (m) => m.sensor) : sensors
   const kinetic = effectors.filter((e) => expenditureChannel(e.effectorType) === 'kinetic')
   // The engine reads kineticPk for every non-jammer effector (DE and HPM
   // included); only the flyout term is confined to the kinetic channel.
@@ -231,6 +273,15 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   const run = runSettings(scenario)
   add('draw-policy', run.runMode === 'monte-carlo')
   add('parameter-spread', run.runMode === 'monte-carlo' && run.uncertainty === 'total')
+  add('tracker', sensors.length > 0)
+  add('fusion', allSensors.length >= 2)
+  add('classification', effectiveDoctrine(scenario).enabled)
+  add('operator', c2Count > 0)
+  add(
+    'false-tracks',
+    !physicsSwitches(scenario).includes('noFalseTracks')
+      && sensors.some((s) => s.sensorType === 'radar' && s.falseAlarmRatePerScan != null),
+  )
   return out
 }
 

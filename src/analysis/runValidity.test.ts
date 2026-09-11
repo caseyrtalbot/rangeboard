@@ -254,7 +254,7 @@ describe('run basis findings', () => {
     expect(finding.severity).toBe('limiting')
     expect(finding.gates).toHaveLength(6)
     expect(finding.message).toBe(
-      'These models are not validated: Environment, Doctrine, Kinetic Pk. ' +
+      'These models are not validated: Environment, Doctrine, Kinetic Pk, Classification. ' +
         'Their outputs are planning factors.',
     )
   })

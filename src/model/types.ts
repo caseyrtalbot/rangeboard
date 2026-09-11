@@ -5,7 +5,7 @@
  */
 
 import type { IntegrationConfidence, LinkMedium } from './integration'
-import type { FieldEstimator, LibraryGrade, LibraryLayer, RangeType } from './libraryField'
+import type { FieldEstimator, LibraryGrade, LibraryLayer, PhysicsSwitch, RangeType } from './libraryField'
 
 export interface Vec2 {
   x: number
@@ -78,6 +78,20 @@ export interface SensorSpec {
   trackInitN?: number
   /** Consecutive missed scans before a coasting track drops. Absent: TRACK_DROP_MISSES (PF). */
   trackDropMisses?: number
+  /**
+   * Range measurement accuracy, 1 sigma, meters. Null or absent means unknown:
+   * the tracker takes the truth path and reports the true position.
+   */
+  rangeAccuracyM?: number | null
+  /** Azimuth measurement accuracy, 1 sigma, degrees. Null or absent means unknown (truth path). */
+  azimuthAccuracyDeg?: number | null
+  /** Elevation measurement accuracy, 1 sigma, degrees. Null or absent means unknown (truth path). */
+  elevationAccuracyDeg?: number | null
+  /**
+   * Radar only: expected false alarms per scan over the whole coverage, a
+   * count. Null or absent means unknown: no false track enters the tracker.
+   */
+  falseAlarmRatePerScan?: number | null
   /**
    * EO/IR only: the target characteristic dimension, meters, at which
    * detectRangeM is quoted. Absent means SPAN_PLANNING_M[1] (Group 1) in
@@ -405,7 +419,27 @@ export interface Provenance {
   note?: string
 }
 
-/** A library model. Exactly one of sensor/uas/effector is set (c2/asset/marker have none). */
+/**
+ * Command-and-control model spec. Every field is optional and null or absent
+ * means unknown: the engine then runs no operator queue for the node.
+ */
+export interface C2Spec {
+  /**
+   * Median per-decision latency, seconds. Each decision draws from a
+   * lognormal with this median and `decisionLatencySigmaDb`, the same
+   * convention as the lognormal `Spread`.
+   */
+  decisionLatencyS?: number | null
+  /**
+   * Sigma of the decision latency lognormal, in dB (10 log10 of the ratio
+   * to the median). Null or absent with a median present means a fixed latency.
+   */
+  decisionLatencySigmaDb?: number | null
+  /** Simultaneous tracks one operator handles before the decision queue overloads, a count. */
+  operatorTrackCapacity?: number | null
+}
+
+/** A library model. At most one of sensor/uas/effector/c2 is set (asset/marker have none). */
 export interface SpecModel {
   id: string
   name: string
@@ -416,6 +450,7 @@ export interface SpecModel {
   sensor?: SensorSpec
   uas?: UasSpec
   effector?: EffectorSpec
+  c2?: C2Spec
   threatProfile?: ThreatProfile
   /** Where each placard value comes from. A field with no row is a planning factor. */
   provenance?: Provenance[]
@@ -426,9 +461,9 @@ export function basisFor(model: SpecModel, field: string): Provenance['basis'] {
   return model.provenance?.find((row) => row.field === field)?.basis ?? 'pf'
 }
 
-/** The spec fields a provenance row can name: the sensor, uas or effector spec. */
+/** The spec fields a provenance row can name: the sensor, uas, effector or c2 spec. */
 export function specFields(model: SpecModel): Record<string, unknown> {
-  const spec = model.sensor ?? model.uas ?? model.effector
+  const spec = model.sensor ?? model.uas ?? model.effector ?? model.c2
   return (spec ?? {}) as unknown as Record<string, unknown>
 }
 
@@ -1022,6 +1057,8 @@ export interface Scenario {
   stopCap?: number
   /** Confidence level of reported intervals, in (0, 1). Absent on old saves = DEFAULT_CONFIDENCE. */
   confidence?: number
+  /** Engine simplifications switched on for the run. Absent on old saves = none. */
+  physics?: PhysicsSwitch[]
   environment: EnvironmentSpec
   /** Legacy field; persist migration maps it to `roe`. Never written. */
 
@@ -1047,6 +1084,18 @@ export interface Scenario {
   underlay: Underlay
   /** Lat/lon of world (0,0) for satellite tiles. Null until the user sets one. */
   geoRef: GeoRef | null
+}
+
+/** Every physics switch, in the declaration order of the union type; the manifest order. */
+const PHYSICS_SWITCH_ORDER: readonly PhysicsSwitch[] = [
+  'truthTracks', 'noFalseTracks', 'noOperatorQueue', 'singlePulseRadar',
+]
+
+/** The scenario's physics switches, deduplicated, in PHYSICS_SWITCH_ORDER; empty on old saves. */
+export function physicsSwitches(s: Scenario): PhysicsSwitch[] {
+  const on = s.physics
+  if (!on || on.length === 0) return []
+  return PHYSICS_SWITCH_ORDER.filter((id) => on.includes(id))
 }
 
 /** The run fields of a scenario with their defaults applied; the contract every runner reads. */

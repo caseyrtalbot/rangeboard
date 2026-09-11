@@ -19,8 +19,8 @@
     "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
     "builtin": { "type": "boolean" },
     "spec": {
-      "description": "Which spec block the fields and attributes compile into; null for c2, asset and marker.",
-      "enum": ["sensor", "uas", "effector", null]
+      "description": "Which spec block the fields and attributes compile into; null for asset and marker, and for a c2 file with no spec yet.",
+      "enum": ["sensor", "uas", "effector", "c2", null]
     },
     "fields": {
       "description": "Every spec key whose value is a number, a tuple of numbers, or null.",

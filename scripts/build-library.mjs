@@ -48,6 +48,10 @@ export const UNIT_BY_FIELD = {
   trackInitM: 'count',
   trackInitN: 'count',
   trackDropMisses: 'count',
+  rangeAccuracyM: 'm',
+  azimuthAccuracyDeg: 'deg',
+  elevationAccuracyDeg: 'deg',
+  falseAlarmRatePerScan: 'count',
   // uas
   group: 'uas-group',
   rcsM2: 'm2',
@@ -78,6 +82,10 @@ export const UNIT_BY_FIELD = {
   bdaS: 's',
   commitPk: 'fraction',
   targetS: 's',
+  // c2
+  decisionLatencyS: 's',
+  decisionLatencySigmaDb: 'dB',
+  operatorTrackCapacity: 'count',
 }
 
 /**
@@ -98,6 +106,7 @@ export const RANGE_TYPE_BY_FIELD = {
     minRangeM: 'effective-engagement',
   },
   uas: {},
+  c2: {},
 }
 
 export const GRADES = ['VERIFIED', 'CORROBORATED', 'REPORTED', 'MANUFACTURER_CLAIM', 'INFERRED', 'UNKNOWN']

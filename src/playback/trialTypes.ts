@@ -6,6 +6,7 @@ import { idHash } from '../geometry/prng'
 import type { AttritionReport } from './attritionReport'
 import type { SensorScanObservation } from './detection'
 import type { ThreatAssessment } from './sim'
+import type { TrackEstimate } from './trackTypes'
 
 /** Compatibility tags, bumped when engine semantics or existing draw keys change. */
 export const TRIAL_ENGINE_REVISION = 'rangeboard-trial-r4-v1'
@@ -98,4 +99,11 @@ export interface TrialResult {
    */
   observations: SensorScanObservation[]
   jamDecisions: TrialJamDecision[]
+  /**
+   * Sensor-level track estimates sampled in time order, one entry per track
+   * per sweep step it existed. Absent when the trial ran before Phase 2 or
+   * the sink was not attached. Watch reads the latest entry per track id at
+   * or before its horizon.
+   */
+  tracks?: readonly TrackEstimate[]
 }

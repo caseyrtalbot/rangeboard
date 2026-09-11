@@ -85,8 +85,8 @@ export interface LibraryFile {
   description: string
   color: string
   builtin: boolean
-  /** Which spec block the fields and attributes compile into; null for c2/asset/marker. */
-  spec: 'sensor' | 'uas' | 'effector' | null
+  /** Which spec block the fields and attributes compile into; null for asset/marker and for a c2 file with no spec yet. */
+  spec: 'sensor' | 'uas' | 'effector' | 'c2' | null
   fields: Record<string, LibraryField<unknown>>
   attributes: Record<string, unknown>
   threatProfile?: ThreatProfile
