@@ -4,7 +4,7 @@ import { hashU01, idHash } from '../geometry/prng'
 import { stepIndex } from './clock'
 
 /** Draw kinds, one integer per engine draw point. */
-export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5 } as const
+export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7 } as const
 
 /**
  * The engine's five probabilistic outcomes, resolved by one policy per run.
@@ -38,6 +38,14 @@ export interface DrawPolicy {
   phase(sensorId: string): number
   /** Parameter sample for one uncertain field, a uniform in [0, 1). Deterministic: 0.5. */
   param(modelId: string, field: string): number
+  /**
+   * Measurement-noise uniform for one track update, in [0, 1): the tracker
+   * maps it through the normal quantile. Keyed by (sensorId, uasId, tS,
+   * axis), a namespace of its own (kind 7; kind 6 is the LHS stratum
+   * shuffle in sampling.ts), so no existing draw key moves. Deterministic:
+   * 0.5, the noise-free value. Optional: a policy without it is noise-free.
+   */
+  noise?(sensorId: string, uasId: string, tS: number, axis: number): number
 }
 
 /**
@@ -59,6 +67,7 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
     jam: (p) => p,
     phase: () => 0,
     param: () => 0.5,
+    noise: () => 0.5,
   }
 }
 
@@ -93,5 +102,7 @@ export function monteCarloPolicy(
       u(DRAW_KIND.jam, effectorId, h(uasId), 0, stepIndex(tS)) < p ? 1 : 0,
     phase: (sensorId) => u(DRAW_KIND.phase, sensorId, 0, 0, 0),
     param: (modelId, field) => u(DRAW_KIND.param, modelId, h(field), 0, 0),
+    noise: (sensorId, uasId, tS, axis) =>
+      u(DRAW_KIND.noise, sensorId, h(uasId), axis, stepIndex(tS)),
   }
 }

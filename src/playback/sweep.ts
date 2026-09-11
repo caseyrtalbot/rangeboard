@@ -3,7 +3,7 @@ import { defaultSensorRole, effectiveDoctrine, entityActive } from '../model/typ
 import { modelFor } from '../model/scenario'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
-import { radarPdModeled } from '../analysis/sensorEnv'
+import { FT_TO_M, radarPdModeled } from '../analysis/sensorEnv'
 import { mOfN } from '../analysis/radarPd'
 import {
   scanPeriodS,
@@ -16,6 +16,9 @@ import { DT } from './clock'
 import { threatAltitudeFt } from './tracks'
 import type { DetectionHit, ScanSteering, SensorObservationSink, SensorSweep } from './detection'
 import { pdTrackCumulativeOf, prepareSweep, resolvedThresholds } from './detection'
+import type { TrackEstimateSink } from './trackTypes'
+import type { TrackManager } from './tracker'
+import { createTrackManager } from './tracker'
 
 /**
  * The temporal sensor sweep against one threat: scan scheduling, holds
@@ -233,6 +236,8 @@ interface SweepRunState extends SweepRun {
   firstDetectS: number | null
   firstDetectSensorId: string | null
   result: SweepStepResult
+  /** The per-sensor track estimates (tracker.ts), stepped after the hold decisions. */
+  tracks: TrackManager
 }
 
 /**
@@ -242,7 +247,8 @@ interface SweepRunState extends SweepRun {
  * run's one draw per (radar, threat), taken before any scan. A missing
  * policy is the deterministic run. Reads the active sensors, the library,
  * the environment, the requirements and the doctrine: every one already in
- * the assessment's input list.
+ * the assessment's input list. `trackSink` receives one track estimate per
+ * sensor track per step; absent, no estimate history is allocated.
  */
 export function prepareSweepRun(
   scenario: Scenario,
@@ -250,6 +256,7 @@ export function prepareSweepRun(
   delayS: number,
   policy?: DrawPolicy,
   capture?: SensorObservationSink,
+  trackSink?: TrackEstimateSink,
 ): SweepRun {
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const uasSpec = modelFor(scenario, uas)?.uas
@@ -257,9 +264,11 @@ export function prepareSweepRun(
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const sweep = prepareSweep(scenario, sensors, uas.formation, uasSpec, altitudeFt, draw, capture)
   const scanStates = new Map<string, ScanState>()
+  const trackSensors: Array<{ sensor: Entity; spec: SensorSpec }> = []
   for (const sensor of sensors) {
     const spec = modelFor(scenario, sensor)?.sensor
     if (!spec) continue
+    trackSensors.push({ sensor, spec })
     const pdModeled = radarPdModeled(spec, uasSpec)
     const periodS = scanPeriodS(spec, pdModeled)
     if (periodS == null) continue
@@ -306,6 +315,7 @@ export function prepareSweepRun(
     firstDetectS: null,
     firstDetectSensorId: null,
     result: { firstHitSensorId: null, measuredTechs: 0, fcClassified: false, coastHeld: false, held: false },
+    tracks: createTrackManager(scenario, uas.id, trackSensors, altitudeFt * FT_TO_M, draw, trackSink),
   }
   return run
 }
@@ -318,8 +328,9 @@ export function prepareSweepRun(
  */
 export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepStepResult {
   const run = handle as SweepRunState
-  const { scanStates, idleScans, stepTechs, sensorObservations, detectingSensorIds } = run
+  const { scanStates, idleScans, stepTechs, sensorObservations, detectingSensorIds, tracks } = run
   stepTechs.clear()
+  tracks.beginStep(members, t)
   let fcClassifiedNow = false
   // A coast is held for continuity only: invisible to stepTechs and the ladder.
   let coastHeld = false
@@ -351,6 +362,7 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
     recordDetection(observation, hit, t)
     observation.heldSamples += 1
     extendIntervals(observation.intervals, t)
+    tracks.step(hit.sensorId, t, 'measure', hit, 0)
     const role = defaultSensorRole(spec)
     if (hit.classified && (role === 'fire-control' || role === 'classification')) {
       fcClassifiedNow = true
@@ -418,13 +430,18 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
       if (scan.classifiedCarry && scan.fcRole) fcClassifiedNow = true
       observation.heldSamples += 1
       extendIntervals(observation.intervals, t)
+      // A scan step with a hit measures; the steps between scans carry the estimate.
+      tracks.step(sensorId, t, hit ? 'measure' : 'carry', hit, 0)
     } else if (scan.hold === 'coast') {
       coastHeld = true
       observation.heldSamples += 1
       extendIntervals(observation.intervals, t)
       extendIntervals(observation.coastIntervals, t)
+      tracks.step(sensorId, t, 'coast', undefined, scan.consecutiveMisses)
     }
   }
+  // Tracks the sweep did not hold this step drop; the rest emit to the sink.
+  tracks.endStep(t)
   if (run.firstDetectS == null && stepFirstId != null) {
     run.firstDetectS = t
     run.firstDetectSensorId = stepFirstId

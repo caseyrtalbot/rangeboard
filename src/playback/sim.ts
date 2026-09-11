@@ -21,6 +21,7 @@ import { CONFIRMED_DECLARE_FACTOR, targetSFor } from '../analysis/doctrineFactor
 import { DT } from './clock'
 import { memberPositions, threatAltitudeFt } from './tracks'
 import type { SensorObservationSink } from './detection'
+import type { TrackEstimateSink } from './trackTypes'
 import { resolvedThresholds } from './detection'
 import type { SensorObservation } from './sweep'
 import { extendIntervals, finishSweep, prepareSweepRun, stepSweep } from './sweep'
@@ -194,6 +195,7 @@ export function assessThreat(
   uasId: string,
   policy?: DrawPolicy,
   capture?: SensorObservationSink,
+  trackSink?: TrackEstimateSink,
 ): ThreatAssessment {
   const base: ThreatAssessment = {
     uasId,
@@ -245,7 +247,7 @@ export function assessThreat(
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   const delayS = effectivePathDelayS(scenario, path)
   // The temporal rules (scan schedule, holds, cue order, coast, M-of-N) live in sweep.ts.
-  const run = prepareSweepRun(scenario, uas, delayS, draw, capture)
+  const run = prepareSweepRun(scenario, uas, delayS, draw, capture, trackSink)
   const detectingSensors = run.detectingSensorIds
   // In range when any formation member is inside the envelope on slant
   // range, under the effector ceiling. A jammer's reach is its effective
@@ -677,9 +679,10 @@ export function assessAllThreats(
   scenario: Scenario,
   policy?: DrawPolicy,
   capture?: SensorObservationSink,
+  trackSink?: TrackEstimateSink,
 ): ThreatAssessment[] {
   const draw = policy ?? deterministicPolicy(resolvedThresholds(scenario))
   return scenario.entities
     .filter((e) => e.kind === 'uas' && entityActive(e))
-    .map((e) => assessThreat(scenario, e.id, draw, capture))
+    .map((e) => assessThreat(scenario, e.id, draw, capture, trackSink))
 }

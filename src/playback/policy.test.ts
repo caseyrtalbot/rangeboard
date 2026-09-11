@@ -271,3 +271,24 @@ describe('draw policy engine regression', () => {
     expect(rep.totals.reportedLeakers).toBe(det.totals.reportedLeakers)
   })
 })
+
+describe('noise draw', () => {
+  it('the deterministic policy returns the noise-free 0.5', () => {
+    expect(deterministicPolicy(T).noise!('s', 'u', 3, 0)).toBe(0.5)
+    expect(deterministicPolicy(T).noise!('s', 'u', 3, 1)).toBe(0.5)
+  })
+
+  it('the Monte Carlo policy keys kind 7 by sensor, threat, axis and step, apart from every other kind', () => {
+    const p = monteCarloPolicy(7, 3, T)
+    const key = (axis: number, tS: number) =>
+      hashU01(7, 3, DRAW_KIND.noise, idHash('s'), idHash('u'), axis, stepIndex(tS))
+    expect(DRAW_KIND.noise).toBe(7)
+    expect(p.noise!('s', 'u', 2.5, 0)).toBe(key(0, 2.5))
+    expect(p.noise!('s', 'u', 2.5, 1)).toBe(key(1, 2.5))
+    expect(p.noise!('s', 'u', 2.5, 0)).not.toBe(p.noise!('s', 'u', 2.5, 1))
+    expect(p.noise!('s', 'u', 2.5, 0)).not.toBe(p.noise!('s', 'u', 3, 0))
+    const u = p.noise!('s', 'u', 2.5, 0)
+    expect(u).toBeGreaterThanOrEqual(0)
+    expect(u).toBeLessThan(1)
+  })
+})
