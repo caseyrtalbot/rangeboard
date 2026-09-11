@@ -1,4 +1,4 @@
-# Lane 3.2 Passive RF (fable-medium), branch `calib/p3-rf`, model tag id `rf-link`
+# Lane 3.2 Passive RF, branch `calib/p3-rf`, model tag id `rf-link`
 
 Files owned: `src/analysis/sensorEnv/rf.ts`, `src/analysis/rfLink.ts` (new), their tests, `rfLink.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`.
 

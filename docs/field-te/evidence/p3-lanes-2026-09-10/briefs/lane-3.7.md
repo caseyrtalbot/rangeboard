@@ -1,4 +1,4 @@
-# Lane 3.7 Physics tab (opus-high), branch `calib/p3-physicstab`
+# Lane 3.7 Physics tab, branch `calib/p3-physicstab`
 
 Files owned: `src/panels/settings/PhysicsTab.tsx` (new), `PhysicsTab.test.tsx` (new), `src/panels/SettingsPanel.tsx`, and CSS only in the stylesheet the settings tabs already use if a class is missing.
 

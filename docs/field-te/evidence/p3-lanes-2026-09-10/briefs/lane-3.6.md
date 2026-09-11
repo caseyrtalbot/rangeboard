@@ -1,4 +1,4 @@
-# Lane 3.6 Beam effectors (fable-medium), branch `calib/p3-beam`, model tag ids `de-dwell`, `hpm-field`, and the existing `jam` row's note
+# Lane 3.6 Beam effectors, branch `calib/p3-beam`, model tag ids `de-dwell`, `hpm-field`, and the existing `jam` row's note
 
 Files owned: `src/playback/pk/beam.ts`, `src/playback/directedEnergy.ts` (new), `src/playback/hpm.ts` (new), `src/analysis/ewPhysics.ts`, their tests, `beam.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`, and the fine-step hook line in `src/playback/attrition.ts` (`commitSalvo`, marked with a hook comment: the one call `clock.requestFineStep(...)` for a directed-energy dwell; nothing else in that file). Lane 3.5 adds the gun-burst call on the same hook line; write yours as a separate statement so the merge is additive.
 

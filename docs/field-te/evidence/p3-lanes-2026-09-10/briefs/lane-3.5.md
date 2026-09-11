@@ -1,4 +1,4 @@
-# Lane 3.5 Kinetic effectors (fable-medium), branch `calib/p3-kinetic`, model tag ids `interceptor-miss` and `gun-burst`
+# Lane 3.5 Kinetic effectors, branch `calib/p3-kinetic`, model tag ids `interceptor-miss` and `gun-burst`
 
 Files owned: `src/playback/pk/kinetic.ts`, `src/playback/ballistics.ts` (new), `src/playback/intercept.ts`, their tests, `kinetic.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`, and the fine-step hook line in `src/playback/attrition.ts` (`commitSalvo`, marked with a hook comment: the one call `clock.requestFineStep(...)` for a gun burst; nothing else in that file).
 

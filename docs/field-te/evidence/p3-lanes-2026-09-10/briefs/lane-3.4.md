@@ -1,4 +1,4 @@
-# Lane 3.4 Radar (fable-medium), branch `calib/p3-radar`, model tag id `radar-dwell`
+# Lane 3.4 Radar, branch `calib/p3-radar`, model tag id `radar-dwell`
 
 Files owned: `src/analysis/radarPd.ts`, `src/analysis/sensorEnv/radar.ts`, `src/playback/radarDwell.ts` (new), their tests, `radarDwell.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`.
 

@@ -24,15 +24,15 @@ about an unfinished lane goes in Open items, not in Completed.
 
 Phase 3, in progress on `main`, nothing pushed (origin/main is `7c65ca1`). Base `dc8f69f`.
 
-- 3.0 Stamps, `calib/p3-stamps` `a8c1b7a` (opus-high), integration `3bf29a9`, docs
-  `327c849`. Casey asked for a Codex high review of the Opus work; it found three defects
+- 3.0 Stamps, `calib/p3-stamps` `a8c1b7a`, integration `3bf29a9`, docs
+  `327c849`. An independent review found three defects
   and no blocker, fixed in `b45d7f2`: `OperatorQueue.delayS` returns `{ extraS, floored,
   decided }` and only a C2 that drew counts as a decision; the seed-adoption stamp lives
   in a WeakMap by model object (`seedAdoptionOf`, `loadNoticeFor` in `persist.ts`), so a
   baseline parse, a rejected import or New leaves no stale stamp. Stop condition met:
   `attrition.operator.test.ts`, `libraryLifecycle.test.ts`, `SystemsTab.test.tsx`,
   browser check in [p3-stamps-2026-09-10](field-te/evidence/p3-stamps-2026-09-10/README.md).
-- 3.a Contract and split, `calib/p3-contract` `1ecd403` (fable-medium), merge `9cecbd2`,
+- 3.a Contract and split, `calib/p3-contract` `1ecd403`, merge `9cecbd2`,
   integration `23c197c`. `clock.ts` gains `stepCount` and `createSweepClock` (manifest
   step `McSettings.sweepStepS`, default DT, `requestFineStep` per effector window; no
   request reproduces the old sample times bit for bit, `clock.test.ts`);
@@ -43,10 +43,10 @@ Phase 3, in progress on `main`, nothing pushed (origin/main is `7c65ca1`). Base 
   `FIELDS_BY_KIND` learns c2 and the accuracy fields, `uncertainty.ts` samples them at
   their own nominals and skips a null nominal (`uncertainty.test.ts`); `shot.ts` passes
   the base step to `interceptFor`. Parity unchanged.
-- 3.R1 Sensor and threat data, `calib/p3-sensordata` `bc6464d` (fable-medium): 168
+- 3.R1 Sensor and threat data, `calib/p3-sensordata` `bc6464d`: 168
   fields (42 L1, 117 L2, 9 L3) over 38 sensor and 15 uas files, changelog section
   "Phase 3 sensor and threat fields". 3.R2 Effector data, `calib/p3-effectordata`
-  `3eb0a92` (opus-high after Fable's safeguard flagged the brief): 84 fields (23 L1, 42
+  `3eb0a92`: 84 fields (23 L1, 42
   L2, 19 L3) over 18 effector files, changelog section "Phase 3 effector fields".
 - Integration `64572fb`: data package v3, the Phase 3 keys in `ADOPTED_SEED_KEYS`,
   library and priors rebuilt (90 models, 1027 fields), `seedLibrary.test.ts` drops the
@@ -122,7 +122,7 @@ Phase 2, all on `main`, pushed at `7c65ca1`. Base `2a6f87f`.
   fidelity tags state the current engine; `ADOPTED_SEED_KEYS` in `libraryLifecycle.ts`
   gives a saved builtin the Phase 2 seed keys it lacks on load; the two golden fixtures pin
   `physics: ['truthTracks', 'noFalseTracks', 'noOperatorQueue']`.
-- 2.d Review (`fable-high`, read-only on `8f02175` and `4359d28`): two blockers, four
+- 2.d Review (independent, read-only on `8f02175` and `4359d28`): two blockers, four
   defects, three nits. Fixed in `25bd78f` (a decision index in the kind-10 key; a fused
   entry older than one step falls back to the truth intercept) and `feab222` merged
   `467ceda` (the fire-control gate is a quality condition, so a firm time decided on a
@@ -212,26 +212,62 @@ Measured on the Phase 2 tip `7c65ca1`, browser on port 5386, 8 pool workers, in
 
 ## Continuation boundary
 
-Main is `d81ebdb`, not pushed. The next task is the Phase 3 physics wave from
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics)
-section 3.c and 3.d: lanes 3.1 to 3.5 and 3.7 in parallel from `d81ebdb`, then 3.6 after
-3.2 merges (it reads `rfLink.ts`). The issued briefs in
-[p3-lanes-2026-09-10/briefs](field-te/evidence/p3-lanes-2026-09-10/briefs/) carry the
-common rules (owned files, switches, fidelity rows, parity rule) and one section per
-lane; reissue them as they are or amended. Fable 5.1's safeguard flagged the 3.R2, 3.5
-and 3.1 briefs (`[general_harms]`); run those lanes on `opus-high`.
+Main is `be9d54a`, not pushed (origin/main is `7c65ca1`). The next task is the Phase 3
+physics wave, plan sections 3.c, 3.d and 3.e in
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md#5-phase-3-sensor-and-effector-physics).
+The contract, the data and the switches it needs are on main. One orchestrator runs it.
 
-Decisions the orchestrator took without a poll, for Casey before the wave restarts:
-one draw per burst or dwell keyed at its commit step (no `policy.ts` change); Phase 3
-physics on by default with the truth-path fixtures pinned by switches and
-`estimate.parity.test.ts` to be re-pinned at the gate with a before-and-after comparison
-(it will move as each lane lands); the field key and unit table; Phase 3 keys adopted
-into saved boards; data package bumped to 3. Research-lane modelling choices to confirm:
-acoustic `noiseFloorDb` back-solved from each record's quoted range; radar dwell from a
-literature CPI (20 ms, 100 pulses) on e-scan panels; RF `receiverSensitivityDbm` -90 dBm
-flat; gun dispersion 1.0 mil and fire control 0.5 to 1.0 mil flat planning factors;
-laser M squared 2.0, jitter 10 urad, aperture 0.30 m flat. The entry bundle is 3.8 kB
-under its budget before any physics lane lands. No poll is open.
+Lane briefs, complete and ready to issue, one file per lane plus the common rules:
+[p3-lane-common.md](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-lane-common.md),
+[lane-3.1](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.1.md) threat flight,
+[lane-3.2](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.2.md) passive RF,
+[lane-3.3](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.3.md) EO/IR,
+[lane-3.4](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.4.md) radar dwell,
+[lane-3.5](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.5.md) kinetic effectors,
+[lane-3.6](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.6.md) beam effectors,
+[lane-3.7](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.7.md) Physics tab. A brief
+is the common rules followed by the lane section; the base commit in the common rules is
+`d81ebdb` and must be replaced by the main tip at launch.
+
+Sequence:
+
+1. Launch 3.1, 3.2, 3.3, 3.4, 3.5 and 3.7 in parallel from the main tip, each in its own
+   worktree on its `calib/p3-<lane>` branch. Their file sets are disjoint except
+   `src/analysis/fidelity.ts` (one additive row and branch per lane) and the fine-step
+   hook line in `src/playback/attrition.ts` (3.5 and 3.6, separate statements).
+2. Merge each lane as it reports: `--ff-only` when linear, `--no-ff` otherwise; resolve
+   `fidelity.ts` conflicts by keeping every lane's rows. After each merge run
+   `npm run typecheck` and the four parity files.
+3. Launch 3.6 after 3.2 merges; it reads `src/analysis/rfLink.ts` for jam-to-signal.
+4. Before the gate, decide the open items below, then re-pin
+   `src/playback/estimate.parity.test.ts` from a fresh capture with a before-and-after
+   comparison document under `docs/field-te/evidence/p3-gate-<date>/` (the Phase 2
+   comparison.md is the pattern). The three truth-path parity files must not move.
+5. Gate (plan 3.e): `npm run check` exit 0; each lane's validation test named in
+   docs/ENGINEERING_REFERENCE.md section 8; every model tag `datasheet` or `analytic`;
+   a browser check of the Physics tab and one run record with a switch on. Update
+   docs/PROJECT_GUIDE.md, docs/ENGINEERING_REFERENCE.md and docs/VERIFICATION.md, record
+   the reviews with `npm run docs:review`, rewrite this handoff, mark Phase 3 in the plan.
+
+Open decisions for Casey, taken provisionally and recorded in the briefs and on main:
+
+- One draw per burst or dwell, keyed at its commit step; `policy.ts` unchanged. A fine
+  tick advances geometry and the timeline only.
+- Phase 3 physics on by default. The golden fixtures pin all eight switches, so the
+  truth-path parity files hold; `estimate.parity` moves with each lane and is re-pinned
+  at the gate.
+- The Phase 3 field key and unit table (p3-fields.md); the Phase 3 keys in
+  `ADOPTED_SEED_KEYS`; data package version 3.
+- Research-lane modelling choices: acoustic `noiseFloorDb` back-solved from each record's
+  quoted range; radar dwell from a literature CPI (20 ms, 100 pulses) on e-scan panels;
+  RF `receiverSensitivityDbm` -90 dBm flat; gun dispersion 1.0 mil and fire control 0.5 to
+  1.0 mil flat; laser M squared 2.0, jitter 10 urad, aperture 0.30 m flat.
+
+Known constraints: the entry bundle is 356.23 kB gzip of a 360 kB budget before any
+physics lane lands (`scripts/check-bundle.mjs`); a lane that pushes it over reports it
+and the gate decides between a budget change and lazy loading. Draw keys inside a fine
+window share the DT step key (`policy.ts`); left as is under the one-draw rule. No poll
+is open.
 
 ## Verification at the last gate
 

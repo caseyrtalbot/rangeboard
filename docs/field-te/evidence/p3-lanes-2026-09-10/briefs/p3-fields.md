@@ -1,7 +1,7 @@
 # Phase 3 new library fields (orchestrator contract, 2026-09-10)
 
-Fixed by the orchestrator so the 3.a contract, lane 3.R1 and lane 3.R2 agree on names and
-units before 3.a merges. Every key below is a numeric `LibraryField` unless marked
+Fixed before the 3.a contract so the contract and the data lanes agreed on names and
+units; every key is now in `src/model/types.ts` and `UNIT_BY_FIELD`. Every key below is a numeric `LibraryField` unless marked
 attribute. Units not yet in `UNIT_BY_FIELD` (scripts/build-library.mjs) are new and 3.a
 adds them; `ALLOWED_UNITS` derives from the table. New units: `deg/s`, `mps2`, `um`, `mm`,
 `mK`, `dBm`, `mil`, `rpm`, `kW`, `ratio`, `urad`, `V/m`.

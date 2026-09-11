@@ -1,4 +1,4 @@
-# Lane 3.3 EO/IR (fable-medium), branch `calib/p3-eoir`, model tag id `eoir-dri`
+# Lane 3.3 EO/IR, branch `calib/p3-eoir`, model tag id `eoir-dri`
 
 Files owned: `src/analysis/sensorEnv/eoir.ts`, its tests, `eoir.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`.
 

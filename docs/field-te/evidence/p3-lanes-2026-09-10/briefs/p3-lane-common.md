@@ -10,8 +10,8 @@ lane brief; the plan row is the deliverable and stop condition.
   from it (named in your brief). Commit there; several commits are fine. End each commit
   message with the line:
   `Claude-Session: https://claude.ai/code/session_01HCcoVPrGbCoUDrViZTuF1q`
-- Run vitest as `npx vitest run --dir src <paths>`; other lane worktrees exist under
-  .claude/worktrees and an unscoped run picks up their files.
+- Run vitest as `npx vitest run --dir src <paths>` so a run never picks up another
+  lane's worktree.
 - Contract files you must not edit: `src/model/types.ts`, `src/model/libraryField.ts`,
   `src/io/storageKeys.ts`, `src/state/store.ts`, `src/playback/clock.ts`,
   `src/playback/policy.ts`, the parity tests (`sensitivity.parity`, `accuracy.verify`,

@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "3611a06def4b0777007470f7d528b1be656bfe7d3b107396427ffe13512b69b6",
+      "sha256": "e8284a2d57f2181dfa086a553e3f5ecd3e08ac7b9b6b7bfc37f94b8958fb41fd",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 3 stop point 2026-09-10: 3.0, 3.a, 3.R1, 3.R2 merged; physics lanes stopped and rolled back; continuation boundary rewritten"
+      "note": "Handoff prepared for the Phase 3 physics wave; owner names removed from the plan and the briefs"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "5cae54fac184d9b1509ddbb0ac88b9b91c3831fcc7b4ebd1996ab11393dbabcb",
+      "sha256": "4ee859d356ad7968cfacf5545e7e8f5b43bb036bf0098e21fd259d30ba970c30",
       "reviewedAt": "2026-09-11",
-      "note": "Post-gate 2026-09-10: Casey's six verdicts, estimate.parity.test.ts in the parity rule, slice 3.0 stamps, 3.a row names the Phase 2 surface, tip timing and legacy-board evidence"
+      "note": "Handoff prepared for the Phase 3 physics wave; owner names removed from the plan and the briefs"
     }
   ],
   "historical": [

@@ -1,4 +1,4 @@
-# Lane 3.1 Threat flight (fable-medium), branch `calib/p3-flight`, model tag id `threat-flight`
+# Lane 3.1 Threat flight, branch `calib/p3-flight`, model tag id `threat-flight`
 
 Files owned: `src/playback/flight.ts` (new), `src/geometry/geo.ts`, `src/playback/tracks.ts`, their tests, `flight.verify.test.ts`, your rows in `src/analysis/fidelity.ts` and `fidelity.test.ts`.
 
