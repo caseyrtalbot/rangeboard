@@ -126,7 +126,13 @@ export interface OverrideSet {
 }
 
 /** Engine simplifications a run may switch on; each is recorded in the manifest. */
-export type PhysicsSwitch = 'truthTracks' | 'noFalseTracks' | 'noOperatorQueue' | 'singlePulseRadar'
+export type PhysicsSwitch =
+  | 'truthTracks' | 'noFalseTracks' | 'noOperatorQueue' | 'singlePulseRadar'
+  // Phase 3 fallbacks, one per physics lane: constant-speed waypoints with no wind
+  // (3.1), the RF band gate with no link budget (3.2), the EO/IR span ratio with the
+  // Koschmieder cap (3.3), the shared kinetic Pk formula for interceptors and guns
+  // (3.5) and for directed energy and HPM (3.6).
+  | 'noFlightLimits' | 'rfBandGate' | 'eoirSpanRatio' | 'legacyKineticPk' | 'legacyBeamPk'
 
 /** Lowest model fidelity a run accepted, best to worst. */
 export type FidelityTier = 'analytic' | 'datasheet' | 'calibrated' | 'fallback'

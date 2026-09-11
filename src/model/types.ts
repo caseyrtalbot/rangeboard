@@ -1208,6 +1208,7 @@ export interface Scenario {
 /** Every physics switch, in the declaration order of the union type; the manifest order. */
 const PHYSICS_SWITCH_ORDER: readonly PhysicsSwitch[] = [
   'truthTracks', 'noFalseTracks', 'noOperatorQueue', 'singlePulseRadar',
+  'noFlightLimits', 'rfBandGate', 'eoirSpanRatio', 'legacyKineticPk', 'legacyBeamPk',
 ]
 
 /** The scenario's physics switches, deduplicated, in PHYSICS_SWITCH_ORDER; empty on old saves. */
