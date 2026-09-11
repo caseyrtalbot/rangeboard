@@ -76,13 +76,13 @@ describe('operator queue', () => {
     } as unknown as ThreatAssessment
   }
 
-  function spy(base: DrawPolicy): DrawPolicy & { latencyCalls: Array<[string, string, number]> } {
+  function spy(base: DrawPolicy): DrawPolicy & { latencyCalls: Array<[string, string, number, number]> } {
     const p = {
       ...base,
-      latencyCalls: [] as Array<[string, string, number]>,
-      latency(c2Id: string, uasId: string, tS: number) {
-        p.latencyCalls.push([c2Id, uasId, tS])
-        return base.latency(c2Id, uasId, tS)
+      latencyCalls: [] as Array<[string, string, number, number]>,
+      latency(c2Id: string, uasId: string, tS: number, decision: number) {
+        p.latencyCalls.push([c2Id, uasId, tS, decision])
+        return base.latency(c2Id, uasId, tS, decision)
       },
     }
     return p
@@ -92,13 +92,13 @@ describe('operator queue', () => {
     const policy = spy(monteCarloPolicy(1, 0, T))
     const q = createOperatorQueue(fixture(null), [tracked('u1', 0, 100)], policy)
     expect(q.active).toBe(false)
-    expect(q.delayS('c2', 'u1', 10)).toBe(0)
+    expect(q.delayS('c2', 'u1', 10, 0)).toBe(0)
     expect(q.loadAt('c2', 10)).toBe(0)
     expect(policy.latencyCalls).toEqual([])
     // A spec with no median is the same as no spec.
     const capacityOnly = createOperatorQueue(fixture({ operatorTrackCapacity: 4 }), [tracked('u1', 0, 100)], policy)
     expect(capacityOnly.active).toBe(false)
-    expect(capacityOnly.delayS('c2', 'u1', 10)).toBe(0)
+    expect(capacityOnly.delayS('c2', 'u1', 10, 0)).toBe(0)
   })
 
   it('the noOperatorQueue switch adds zero and consumes no draw', () => {
@@ -107,7 +107,7 @@ describe('operator queue', () => {
     const policy = spy(monteCarloPolicy(1, 0, T))
     const q = createOperatorQueue(scenario, [tracked('u1', 0, 100)], policy)
     expect(q.active).toBe(false)
-    expect(q.delayS('c2', 'u1', 10)).toBe(0)
+    expect(q.delayS('c2', 'u1', 10, 0)).toBe(0)
     expect(policy.latencyCalls).toEqual([])
   })
 
@@ -117,13 +117,16 @@ describe('operator queue', () => {
     expect(q.active).toBe(true)
     const tS = 12.5
     const u = hashU01(4821, 3, DRAW_KIND.latency, idHash('c2'), idHash('u1'), 0, stepIndex(tS))
+    const u1 = hashU01(4821, 3, DRAW_KIND.latency, idHash('c2'), idHash('u1'), 1, stepIndex(tS))
+    expect(u1).not.toBe(u)
     expect(DRAW_KIND.latency).toBe(10)
     // One real track at the c2 (load 1 <= capacity 2): no overload.
     expect(q.loadAt('c2', tS)).toBe(1)
-    expect(q.delayS('c2', 'u1', tS)).toBeCloseTo(Math.max(0, decisionLatencyS(6, 3, u) - 6), 12)
-    expect(policy.latencyCalls).toEqual([['c2', 'u1', tS]])
+    expect(q.delayS('c2', 'u1', tS, 0)).toBeCloseTo(Math.max(0, decisionLatencyS(6, 3, u) - 6), 12)
+    expect(q.delayS('c2', 'u1', tS, 1)).toBeCloseTo(Math.max(0, decisionLatencyS(6, 3, u1) - 6), 12)
+    expect(policy.latencyCalls).toEqual([['c2', 'u1', tS, 0], ['c2', 'u1', tS, 1]])
     // A c2 that is not on the map adds zero.
-    expect(q.delayS('nobody', 'u1', tS)).toBe(0)
+    expect(q.delayS('nobody', 'u1', tS, 0)).toBe(0)
   })
 
   it('the deterministic policy adds nothing at the median; overload adds (load / capacity - 1) medians', () => {
@@ -131,14 +134,14 @@ describe('operator queue', () => {
     const q = createOperatorQueue(fixture(C2), threats, deterministicPolicy(T))
     // Two tracks at t 10 (capacity 2): the median, so no extra. Four at t 60: twice the median, one median extra.
     expect(q.loadAt('c2', 10)).toBe(2)
-    expect(q.delayS('c2', 'u1', 10)).toBe(0)
+    expect(q.delayS('c2', 'u1', 10, 0)).toBe(0)
     expect(q.loadAt('c2', 60)).toBe(4)
-    expect(q.delayS('c2', 'u1', 60)).toBeCloseTo(6, 12)
+    expect(q.delayS('c2', 'u1', 60, 0)).toBeCloseTo(6, 12)
     // Nothing tracked after the last held sample.
     expect(q.loadAt('c2', 101)).toBe(0)
     // The other c2 has no feeding radar: no load and no extra.
     expect(q.loadAt('other-c2', 60)).toBe(0)
-    expect(q.delayS('other-c2', 'u1', 60)).toBe(0)
+    expect(q.delayS('other-c2', 'u1', 60, 0)).toBe(0)
   })
 
   it('a threat with no detection is not a track', () => {

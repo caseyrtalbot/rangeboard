@@ -154,8 +154,8 @@ function operatorDelayS(
     ? a.effectorGates?.find((g) => g.effectorId === effectorId)?.gateS ?? null
     : a.engageGateS
   if (gateS == null) return 0
-  const declareS = queue.delayS(c2Id, a.uasId, gateS)
-  const assignS = queue.delayS(c2Id, a.uasId, gateS + declareS + route.latencyS)
+  const declareS = queue.delayS(c2Id, a.uasId, gateS, 0)
+  const assignS = queue.delayS(c2Id, a.uasId, gateS + declareS + route.latencyS, 1)
   return declareS + assignS
 }
 
@@ -433,8 +433,10 @@ export function resolveEngagements(
 
   // The fused track a shooter holds on each threat at t (sim.ts fusedTracks,
   // time-ordered): a cursor per threat advances with the tick, so the lookup
-  // is amortized O(1). A truth-source or absent estimate keeps the truth-path
-  // intercept inside evaluateShot.
+  // is amortized O(1). The picture must be current: an entry older than one
+  // step is a dropped track, and the shot falls back to the truth-path
+  // intercept as it does with no estimate at all. A truth-source estimate
+  // keeps that path too, inside evaluateShot.
   const fusedCursor = new Map<string, number>()
   const fusedEstimateAt = (ts: ThreatState, t: number): FusedTrack | null => {
     const tracks = ts.a.fusedTracks
@@ -442,7 +444,9 @@ export function resolveEngagements(
     let i = fusedCursor.get(ts.a.uasId) ?? -1
     while (i + 1 < tracks.length && tracks[i + 1].state.tS <= t + EPS) i += 1
     fusedCursor.set(ts.a.uasId, i)
-    return i >= 0 ? tracks[i] : null
+    if (i < 0) return null
+    const latest = tracks[i]
+    return t - latest.state.tS <= DT + EPS ? latest : null
   }
   const shotContextFor = (base: ShotContext, ts: ThreatState, t: number): ShotContext => {
     const estimate = fusedEstimateAt(ts, t)

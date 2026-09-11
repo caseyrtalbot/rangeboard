@@ -66,9 +66,11 @@ export interface DrawPolicy {
   /**
    * Operator decision-latency uniform at one C2 node for one threat, in
    * [0, 1): operator.ts maps it through the lognormal quantile. Keyed by
-   * (c2Id, uasId, step), kind 10. Deterministic: 0.5, the median.
+   * (c2Id, uasId, decision, step), kind 10, where `decision` is 0 for the
+   * declare gate and 1 for the weapon assignment, so the two decisions of one
+   * gate never read the same uniform. Deterministic: 0.5, the median.
    */
-  latency(c2Id: string, uasId: string, tS: number): number
+  latency(c2Id: string, uasId: string, tS: number, decision: number): number
 }
 
 /**
@@ -133,6 +135,7 @@ export function monteCarloPolicy(
     classify: (sensorId, uasId, tS) =>
       u(DRAW_KIND.classify, sensorId, h(uasId), 0, stepIndex(tS)),
     falseAlarm: (sensorId, tS, k) => u(DRAW_KIND.falseAlarm, sensorId, k, 0, stepIndex(tS)),
-    latency: (c2Id, uasId, tS) => u(DRAW_KIND.latency, c2Id, h(uasId), 0, stepIndex(tS)),
+    latency: (c2Id, uasId, tS, decision) =>
+      u(DRAW_KIND.latency, c2Id, h(uasId), decision, stepIndex(tS)),
   }
 }

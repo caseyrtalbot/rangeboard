@@ -68,11 +68,11 @@ export interface OperatorQueue {
   /** True when some C2 adds latency: a c2 spec with a median and the switch off. */
   readonly active: boolean
   /**
-   * Extra latency of one decision on `uasId` at `c2Id` taken at `tS`, seconds, over the
-   * doctrine dwell: the drawn latency times the overload factor, less the median, floored
+   * Extra latency of one decision (0 declare, 1 assign) on `uasId` at `c2Id` taken at
+   * `tS`, seconds, over the doctrine dwell: the drawn latency times the overload factor, less the median, floored
    * at 0. 0 when inactive.
    */
-  delayS(c2Id: string, uasId: string, tS: number): number
+  delayS(c2Id: string, uasId: string, tS: number, decision: number): number
   /** Live tracks at the C2 at `tS`: real threats tracked plus the false tracks of its feeding radars. */
   loadAt(c2Id: string, tS: number): number
 }
@@ -155,10 +155,10 @@ export function createOperatorQueue(
   return {
     active: true,
     loadAt,
-    delayS(c2Id, uasId, tS) {
+    delayS(c2Id, uasId, tS, decision) {
       const spec = specs.get(c2Id)
       if (!spec) return 0
-      const u = draw.latency(c2Id, uasId, tS)
+      const u = draw.latency(c2Id, uasId, tS, decision)
       const medianS = spec.decisionLatencyS!
       const base = decisionLatencyS(medianS, spec.decisionLatencySigmaDb, u)
       // The doctrine dwell already charges the planning decision time, so the
