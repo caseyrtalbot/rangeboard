@@ -1,5 +1,7 @@
 # RangeBoard continuation status
 
+RangeBoard is a modeling and simulation tool for test and evaluation planning. It estimates detection, track and outcome probabilities for a counter-UAS system under test from published datasheet values and open literature. The estimates size a test plan: how many trials, which conditions, and where to place sensors on a range. Every model is an empirical statistical model used as a surrogate for the system under test. The software controls no hardware, connects to no system and produces no targeting data. All inputs are open-source vendor specifications.
+
 One handoff for the calibration plan. It is rewritten in place at each phase gate of
 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), from the Phase 0 gate through the Phase 4
 gate. It records verified completion and the next boundary. It does not authorize a
@@ -16,7 +18,7 @@ about an unfinished lane goes in Open items, not in Completed.
 | --- | --- | --- | --- |
 | 0 Data foundation | passed | `f024709` | 2026-09-10 |
 | 1 Real-mode statistics | passed | `70a7a0e` | 2026-09-10 |
-| 2 Tracks and kill chain | passed | `5373505` | 2026-09-10 |
+| 2 Tracks and detect to engage (DTE) sequence | passed | `5373505` | 2026-09-10 |
 | 3 Sensor and effector physics | in progress: 3.0, 3.a, 3.R1, 3.R2 merged; physics lanes not started | | |
 | 4 Hypothesis tools | not started | | |
 
@@ -43,9 +45,9 @@ Phase 3, in progress on `main`, nothing pushed (origin/main is `7c65ca1`). Base 
   `FIELDS_BY_KIND` learns c2 and the accuracy fields, `uncertainty.ts` samples them at
   their own nominals and skips a null nominal (`uncertainty.test.ts`); `shot.ts` passes
   the base step to `interceptFor`. Parity unchanged.
-- 3.R1 Sensor and threat data, `calib/p3-sensordata` `bc6464d`: 168
+- 3.R1 Sensor and target UAS data, `calib/p3-sensordata` `bc6464d`: 168
   fields (42 L1, 117 L2, 9 L3) over 38 sensor and 15 uas files, changelog section
-  "Phase 3 sensor and threat fields". 3.R2 Effector data, `calib/p3-effectordata`
+  "Phase 3 sensor and target UAS fields". 3.R2 Effector data, `calib/p3-effectordata`
   `3eb0a92`: 84 fields (23 L1, 42
   L2, 19 L3) over 18 effector files, changelog section "Phase 3 effector fields".
 - Integration `64572fb`: data package v3, the Phase 3 keys in `ADOPTED_SEED_KEYS`,
@@ -83,7 +85,7 @@ Phase 2, all on `main`, pushed at `7c65ca1`. Base `2a6f87f`.
   shrinks then grows; browser check on port 5384 with injected tracks, 0 page errors.
 - 2.2 Kalman tracker, `calib/p2-tracker` (`3b8ab4e`), merged `10c6675`. `kalman.ts`
   (CWNA predict, Joseph update, `PROCESS_NOISE_Q` 1 m^2/s^3, `QUALITY_SCALE_M` 50 m,
-  `INIT_SPEED_SIGMA_MPS` 20 m/s), `tracker.ts` (one track per sensor and threat, polar
+  `INIT_SPEED_SIGMA_MPS` 20 m/s), `tracker.ts` (one track per sensor and target UAS, polar
   noise from the accuracy fields, truth path with no draw on a null field or under
   `truthTracks`), `DrawPolicy.noise` kind 7, the sink threaded through `sim.ts` and
   `trial.ts`. Stop condition: the steady-state gain equals the closed form of the CWNA
@@ -116,7 +118,7 @@ Phase 2, all on `main`, pushed at `7c65ca1`. Base `2a6f87f`.
   Stop condition: a truth-source estimate returns the `interceptAt` result exactly; a
   velocity delta moves the point by delta times the time of flight; the 1 sigma at a 10 s
   lead matches the hand-derived value (`intercept.test.ts`).
-- 2.d Integration `4359d28`: the latest fused track at the tick enters the shot context;
+- 2.d Integration `4359d28`: the latest fused track at the tick enters the engagement context;
   `createRunManifest` and `createTrialManifest` read `physicsSwitches(scenario)` and drop
   `fidelityFloor` to `fallback` when a switch is on; `DATA_PACKAGE_VERSION` 2; the five
   fidelity tags state the current engine; `ADOPTED_SEED_KEYS` in `libraryLifecycle.ts`
@@ -125,7 +127,7 @@ Phase 2, all on `main`, pushed at `7c65ca1`. Base `2a6f87f`.
 - 2.d Review (independent, read-only on `8f02175` and `4359d28`): two blockers, four
   defects, three nits. Fixed in `25bd78f` (a decision index in the kind-10 key; a fused
   entry older than one step falls back to the truth intercept) and `feab222` merged
-  `467ceda` (the fire-control gate is a quality condition, so a firm time decided on a
+  `467ceda` (the commit decision point is a quality condition, so a firm time decided on a
   missed scan no longer moves one step; a truth member yields to an estimate member when
   the switch is off; unlinked sensors fuse at `NO_C2`; duplicate links count once). The
   remaining findings are in Open items.
@@ -147,7 +149,7 @@ the commit it covers and the condition it carries.
 | Operator queue adds only the excess over its median, floored at 0 (`26d5c40`) | Keep, more evidence | Re-measure Run and Monte Carlo wall time on the Phase 2 tip before Phase 3 (recorded below). The Board must say when the wait was floored, so Play and Run never differ in speed for an unexplained reason: slice 3.0 in the plan. |
 | Physics switches on `Scenario.physics` with the `fallback` floor (`4359d28`) | Keep | A switch that turns on heavier physics later is measured alone; where the flag lives is settled. |
 | `ADOPTED_SEED_KEYS` fills the Phase 2 seed keys on load (`4359d28`) | Keep, more evidence | Keep the fill only with a visible stamp (slice 3.0). Re-check load and playback on a legacy board that adopts against one that already has the keys (recorded below). |
-| Estimate path documented in `comparison.md`, not pinned | Change | Done: `src/playback/estimate.parity.test.ts` pins the seed-4821 trial per threat, the event count, the kill mass, the track count and the 200 replicate means on both fixtures with the switches removed; the parity rule in the plan names it, and a gate fails when it moves without a hand-derived replacement. |
+| Estimate path documented in `comparison.md`, not pinned | Change | Done: `src/playback/estimate.parity.test.ts` pins the seed-4821 trial per target UAS, the event count, the total successful intercepts, the track count and the 200 replicate means on both fixtures with the switches removed; the parity rule in the plan names it, and a gate fails when it moves without a hand-derived replacement. |
 | `SensorSpec.classification` carries the matrix (`259fa86`) | Keep | No library sensor states one; when the first ships, measure classify cost against the rule ladder before calling it free. |
 
 ## Evidence for the two open verdicts
@@ -173,7 +175,7 @@ Measured on the Phase 2 tip `7c65ca1`, browser on port 5386, 8 pool workers, in
 ## Open items
 
 - Review finding 4: a confusion matrix on one sensor silences the classified flag of every
-  other fire-control sensor (`sim.ts`, `matrixSensors.length > 0`); needs a per-sensor
+  other cueing sensor (`sim.ts`, `matrixSensors.length > 0`); needs a per-sensor
   classified flag on `SweepStepResult`. Unreachable with library data today.
 - Review nit 8: link latency is quantized to the DT grid in the fusion ring (a 0.3 s link
   carries back one step and predicts 0.5 s). Nit 9: the cross-range sigma uses slant range
@@ -194,7 +196,7 @@ Measured on the Phase 2 tip `7c65ca1`, browser on port 5386, 8 pool workers, in
   build emits rows for them (a `seedLibrary.test.ts` fixture question).
 - `LibraryEditor.tsx` reads `sensor ?? uas ?? effector` and cannot edit a c2 spec.
 - `fusedTracks` rides on every assessment, the memoized deterministic one included (about
-  one entry per held step per threat); strip it after use if store or message size grows.
+  one entry per held step per target UAS); strip it after use if store or message size grows.
 - `TrialResult.tracks` holds false tracks with `source: 'false'` and `uasId: null`;
   `trackEstimateView` and the layer handle them, no panel lists them.
 - `TRIAL_ENGINE_REVISION` was not bumped: no existing draw key moved and the pinned
@@ -219,7 +221,7 @@ The contract, the data and the switches it needs are on main. One orchestrator r
 
 Lane briefs, complete and ready to issue, one file per lane plus the common rules:
 [p3-lane-common.md](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-lane-common.md),
-[lane-3.1](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.1.md) threat flight,
+[lane-3.1](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.1.md) target UAS flight,
 [lane-3.2](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.2.md) passive RF,
 [lane-3.3](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.3.md) EO/IR,
 [lane-3.4](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.4.md) radar dwell,
@@ -260,8 +262,8 @@ Open decisions for Casey, taken provisionally and recorded in the briefs and on 
   `ADOPTED_SEED_KEYS`; data package version 3.
 - Research-lane modelling choices: acoustic `noiseFloorDb` back-solved from each record's
   quoted range; radar dwell from a literature CPI (20 ms, 100 pulses) on e-scan panels;
-  RF `receiverSensitivityDbm` -90 dBm flat; gun dispersion 1.0 mil and fire control 0.5 to
-  1.0 mil flat; laser M squared 2.0, jitter 10 urad, aperture 0.30 m flat.
+  RF `receiverSensitivityDbm` -90 dBm flat; projectile effector dispersion 1.0 mil and pointing error 0.5 to
+  1.0 mil flat; optical source M squared 2.0, jitter 10 urad, aperture 0.30 m flat.
 
 Known constraints: the entry bundle is 356.23 kB gzip of a 360 kB budget before any
 physics lane lands (`scripts/check-bundle.mjs`); a lane that pushes it over reports it
@@ -280,7 +282,7 @@ is open.
   pin the three physics switches. [comparison.md](field-te/evidence/p2-gate-2026-09-10/comparison.md):
   the pinned path is identical to the contract commit on every assessment field, every
   engagement event and every Monte Carlo summary; the estimate path moves the
-  layered-acoustic-merops leaker mean from 1.990 to 2.120 (intervals overlap), one threat
+  layered-acoustic-merops leaker mean from 1.990 to 2.120 (intervals overlap), one target UAS
   firms 2 s later, and the trial ledger goes from 22 to 25 events.
 - Browser check on port 5385 at `ec7d1fb` (screenshots in
   [browser/](field-te/evidence/p2-gate-2026-09-10/browser)): the firing scenario loaded

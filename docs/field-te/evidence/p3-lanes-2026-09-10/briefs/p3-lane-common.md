@@ -1,5 +1,7 @@
 # Common rules for every Phase 3 lane (orchestrator, 2026-09-10)
 
+RangeBoard is a modeling and simulation tool for test and evaluation planning. It estimates detection, track and outcome probabilities for a counter-UAS system under test from published datasheet values and open literature. The estimates size a test plan: how many trials, which conditions, and where to place sensors on a range. Every model is an empirical statistical model used as a surrogate for the system under test. The software controls no hardware, connects to no system and produces no targeting data. All inputs are open-source vendor specifications.
+
 Read AGENTS.md, then your lane's row in docs/IMPLEMENTATION_PLAN.md section 5, then
 docs/HANDOFF.md ("Open items") before you edit. The blueprint context you need is in your
 lane brief; the plan row is the deliverable and stop condition.
@@ -18,14 +20,14 @@ lane brief; the plan row is the deliverable and stop condition.
   `convergence.verify`, `estimate.parity`) and their fixtures. Every Phase 3 spec key you
   need already exists in `types.ts` (slice 3.a) and every seed file carries a value or a
   null for it (lanes 3.R1 and 3.R2; `docs/inventory/changelog.md` sections "Phase 3
-  sensor and threat fields" and "Phase 3 effector fields" list them). If a key or a switch
+  sensor and target UAS fields" and "Phase 3 effector fields" list them). If a key or a switch
   you need is missing, stop and report it.
 
 ## What the contract gives you
 
 - The sweep step: `src/playback/clock.ts` exports `DT`, `stepIndex`, `stepCount` and
   `createSweepClock`. `attrition.ts` holds one `clock` per run; a burst or dwell lane
-  calls `clock.requestFineStep(effectorId, fromS, toS, stepS)` at the salvo commit (the
+  calls `clock.requestFineStep(effectorId, fromS, toS, stepS)` at the multi-effect commit (the
   hook comment in `attrition.ts`). Inside the window the sweep samples at the fine step;
   outside it, at the base step; with no request the sample times are today's.
 - Draw keys: `policy.ts` keys every draw by `stepIndex(tS)`, the DT grid. Inside a fine

@@ -30,7 +30,7 @@ effector `flyoutSpeedMps`, `eirpW`, `sectorDeg`; c2 `decisionLatencyS`,
 
 A key that does not apply to a sensor type is omitted from that file (not written as null).
 
-## Threat (UasSpec, spec 'uas')
+## Target UAS (UasSpec, spec 'uas')
 
 | Key | Unit | Meaning |
 | --- | --- | --- |
@@ -45,27 +45,27 @@ A key that does not apply to a sensor type is omitted from that file (not writte
 | Key | Unit | Applies to | Meaning |
 | --- | --- | --- | --- |
 | `seekerAcquisitionRangeM` | `m` | interceptor | seeker acquisition range |
-| `lethalRadiusM` | `m` | interceptor, net | lethal or capture radius |
+| `lethalRadiusM` | `m` | interceptor, net | effective or capture radius |
 | `guidanceNoiseM` | `m` | interceptor | terminal guidance noise, 1 sigma miss contribution |
 | `maxFlyoutSpeedMps` | `mps` | interceptor | peak speed of the flyout profile (`flyoutSpeedMps` stays the average) |
 | `boostTimeS` | `s` | interceptor | time to reach peak speed |
-| `dispersionMils` | `mil` | gun | round dispersion, 1 sigma, milliradians |
-| `fireControlErrorMils` | `mil` | gun | fire control aim error, 1 sigma, milliradians |
-| `burstRounds` | `count` | gun | rounds per burst |
-| `rateOfFireRpm` | `rpm` | gun | cyclic rate of fire |
-| `muzzleVelocityMps` | `mps` | gun | muzzle velocity |
+| `dispersionMils` | `mil` | gun | projectile dispersion, 1 sigma, milliradians |
+| `fireControlErrorMils` | `mil` | gun | pointing aim error, 1 sigma, milliradians |
+| `burstRounds` | `count` | gun | projectiles per burst |
+| `rateOfFireRpm` | `rpm` | gun | cyclic projectile rate |
+| `muzzleVelocityMps` | `mps` | gun | launch velocity |
 | `outputPowerKw` | `kW` | de | optical output power |
 | `beamQualityM2` | `ratio` | de | beam quality M squared |
 | `jitterUrad` | `urad` | de | pointing jitter, 1 sigma, microradians |
 | `apertureM` | `m` | de | output aperture diameter |
-| `dwellToEffectS` | `s` | de | dwell to effect on a Group 1 quadcopter at the quoted range (condition names the range) |
-| `fieldStrengthVm` | `V/m` | hpm | field strength at `fieldStrengthRangeM` |
-| `fieldStrengthRangeM` | `m` | hpm | range the field strength is quoted at |
+| `dwellToEffectS` | `s` | de | dwell to threshold on a Group 1 quadcopter at the quoted range (condition names the range) |
+| `fieldStrengthVm` | `V/m` | hpm | field level at `fieldStrengthRangeM` |
+| `fieldStrengthRangeM` | `m` | hpm | range the field level is quoted at |
 | `beamwidthDeg` | `deg` | hpm | half-power beamwidth |
-| `rechargeS` | `s` | hpm | recharge time between shots |
+| `rechargeS` | `s` | hpm | recharge time between engagements |
 
-Susceptibility thresholds per airframe class (HPM) and dwell scaling per airframe class
-(DE) are constants in the physics lane, not library fields.
+Effect thresholds per airframe class (RF field effector) and dwell scaling per airframe class
+(optical effector) are constants in the physics lane, not library fields.
 
 Range-type rule: `seekerAcquisitionRangeM`, `lethalRadiusM` and `fieldStrengthRangeM` are
 not entries in `RANGE_TYPE_BY_FIELD`; they need no `rangeType`.
