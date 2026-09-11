@@ -1,12 +1,14 @@
-import type { EffectorSpec } from '../../model/types'
+import type { EffectorSpec, EnvironmentSpec, Spread, UasSpec } from '../../model/types'
+import { opticalDwellAt, opticalDwellModelApplies } from '../directedEnergy'
+import { assessHpmField, hpmFieldModelApplies, hpmRechargeS } from '../hpm'
+import { kineticPk } from './kinetic'
 
 /**
- * Beam effectors: what a directed-energy or HPM salvo spends. Today no
- * separate DE or HPM kill model exists; both share the kinetic Pk in
- * kinetic.ts with their type-baseline tables. Lane 3.6 adds here, with
- * directedEnergy.ts and hpm.ts: DE irradiance from `outputPowerKw`,
+ * Beam effectors: what a directed-energy or HPM salvo spends and which
+ * physical closure answers its effect. directedEnergy.ts and hpm.ts model
+ * DE irradiance from `outputPowerKw`,
  * `beamQualityM2`, `jitterUrad` and `apertureM`; dwell to effect per airframe
- * class scaled from `dwellToEffectS`; slew and settle; HPM field strength
+ * class calibrated from the sourced Iron Beam `dwellToEffectS`; settle; HPM field strength
  * from `fieldStrengthVm` at `fieldStrengthRangeM` against a susceptibility
  * threshold per airframe class, `beamwidthDeg` and `rechargeS`. A dwell
  * requests its fine sweep step on the engagement clock (clock.ts
@@ -35,3 +37,87 @@ export function expenditureChannel(
 ): ExpenditureChannel {
   return EXPENDITURE_CHANNEL[effectorType]
 }
+
+/** Which kill law answered a beam shot. */
+export type BeamEffectMode = 'legacy' | 'de-dwell' | 'hpm-field'
+
+/** Beam result consumed by the engagement adapter. */
+export interface BeamEffect {
+  mode: BeamEffectMode
+  pk: number
+  /** Assignment-to-effect delay. The legacy path keeps spec.engageTimeS. */
+  effectDelayS: number
+  /** Optical dwell only, excluding settle. */
+  dwellS: number
+  /** Seconds before the effector may commit again. */
+  cooldownS: number
+}
+
+export interface BeamEffectOptions {
+  /** `legacyBeamPk` switch. */
+  fallback?: boolean
+  /** HPM target angle from boresight. */
+  offBoresightDeg?: number
+  /** Resolved dwell-field spread and its one commit-step uniform. */
+  fluenceSpread?: Spread | null
+  fluenceDraw?: number | null
+  /** Already-resolved salvo cooldown, used by the legacy path. */
+  legacyCooldownS: number
+}
+
+/**
+ * DE/HPM adapter with an exact kinetic fallback. A modeled DE removes the
+ * kinetic distance/size/evasion penalties: it holds the beam until the
+ * sampled fluence threshold. A modeled HPM shot has the base Pk only when
+ * its inverse-distance field clears the airframe threshold inside the
+ * half-power beamwidth. The caller still owns the one outcome draw.
+ */
+export function beamEffect(
+  basePk: number,
+  spec: EffectorSpec,
+  uas: UasSpec | undefined,
+  slantM: number,
+  env: EnvironmentSpec,
+  options: BeamEffectOptions,
+): BeamEffect {
+  const legacy = (): BeamEffect => ({
+    mode: 'legacy',
+    pk: kineticPk(basePk, spec.maxRangeM, uas, slantM),
+    effectDelayS: spec.engageTimeS,
+    dwellS: 0,
+    cooldownS: options.legacyCooldownS,
+  })
+  if (options.fallback) return legacy()
+  if (spec.effectorType === 'de') {
+    const dwell = opticalDwellAt(
+      spec,
+      uas,
+      slantM,
+      env,
+      options.fluenceSpread,
+      options.fluenceDraw,
+    )
+    if (!dwell) return legacy()
+    return {
+      mode: 'de-dwell',
+      pk: Math.min(1, Math.max(0, basePk)),
+      effectDelayS: dwell.effectDelayS,
+      dwellS: dwell.dwellS,
+      cooldownS: options.legacyCooldownS,
+    }
+  }
+  if (spec.effectorType === 'hpm') {
+    const field = assessHpmField(spec, uas, slantM, options.offBoresightDeg)
+    if (!field) return legacy()
+    return {
+      mode: 'hpm-field',
+      pk: field.effective ? Math.min(1, Math.max(0, basePk)) : 0,
+      effectDelayS: spec.engageTimeS,
+      dwellS: 0,
+      cooldownS: hpmRechargeS(spec, options.legacyCooldownS),
+    }
+  }
+  return legacy()
+}
+
+export { opticalDwellModelApplies, hpmFieldModelApplies }

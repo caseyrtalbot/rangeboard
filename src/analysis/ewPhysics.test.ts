@@ -6,6 +6,7 @@ import {
   JAM_PARTIAL_BAND_FACTOR,
   assessJam,
   effectiveJamRangeM,
+  jamToSignalRangeM,
   jamBandsOverlap,
   jammerBands,
   targetLinkBands,
@@ -79,6 +80,35 @@ describe('effectiveJamRangeM', () => {
     // +6 dB of resistance is a 3.98x power cost: range shrinks by ~2x.
     const r = effectiveJamRangeM(jammer(), uas({ jamResistDb: 6 }))
     expect(r).toBeCloseTo(2000 / Math.sqrt(Math.pow(10, 0.6)), 6)
+  })
+
+  it('closes J/S from the target signal and jammer received power', () => {
+    const radioTarget = uas({
+      navMode: 'rf-manual',
+      linkBands: ['ism-2400'],
+      radiatedPowerW: 1,
+      controlLinkRangeM: 1000,
+    })
+    const radioJammer = jammer({ maxRangeM: 5000, eirpW: 4, jamBands: ['ism-2400'] })
+    // The same free-space path on both sides gives
+    // R_jam = R_link * sqrt(P_jam / P_signal) = 1000 * sqrt(4) = 2000 m.
+    expect(jamToSignalRangeM(radioJammer, radioTarget)).toBeCloseTo(2000, 9)
+    expect(effectiveJamRangeM(radioJammer, radioTarget)).toBeCloseTo(2000, 9)
+    expect(jamToSignalRangeM({ ...radioJammer, eirpW: undefined, ratedEirpW: 4 }, radioTarget))
+      .toBeCloseTo(2000, 9)
+    expect(effectiveJamRangeM(radioJammer, { ...radioTarget, jamResistDb: 6 }))
+      .toBeCloseTo(2000 / Math.sqrt(10 ** 0.6), 9)
+  })
+
+  it('keeps the legacy power and resistance result exactly with null target power', () => {
+    const spec = jammer({ eirpW: 25, ratedEirpW: 100 })
+    const target = uas({ radiatedPowerW: null, controlLinkRangeM: 1000, jamResistDb: 6 })
+    const legacy = spec.maxRangeM * Math.sqrt((25 / 100) / Math.pow(10, 6 / 10))
+    expect(jamToSignalRangeM(spec, target)).toBeNull()
+    expect(effectiveJamRangeM(spec, target)).toBe(legacy)
+    const actual = assessJam(spec, ORIGIN, 0, target, { x: 0, y: -legacy / 2 })
+    expect(actual.effectiveRangeM).toBe(legacy)
+    expect(actual.powerFactor).toBe(0.85)
   })
 })
 

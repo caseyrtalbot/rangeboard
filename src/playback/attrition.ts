@@ -5,13 +5,14 @@ import {
   effectiveDoctrine,
   entityActive,
   mountHeightOf,
+  physicsSwitches,
   runSettings,
 } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import type { ThreatAssessment } from './sim'
 import { assessAllThreats } from './sim'
 import { createSweepClock } from './clock'
-import { threatAltitudeFt } from './tracks'
+import { sampleFlightPath, threatAltitudeFt } from './tracks'
 import { killChainRoutes } from './killChain'
 import {
   CONTINUE_TRACK_DEGRADE,
@@ -41,6 +42,8 @@ import type { FalseTrackLoad } from './falseTracks'
 import type { OperatorQueue } from './operator'
 import { createOperatorQueue, firstC2Of } from './operator'
 import type { KillChainRoute } from './killChain'
+import { opticalDwellModelApplies } from './directedEnergy'
+import { projectileCount } from './ballistics'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls in
@@ -210,6 +213,8 @@ export function resolveEngagements(
   // a requested window the tick stays at the base step.
   const clock = createSweepClock(runSettings(scenario).sweepStepS, 0)
   const doctrine = effectiveDoctrine(scenario)
+  const physics = physicsSwitches(scenario)
+  const legacyKineticPk = physics.includes('legacyKineticPk')
   // Operator queue: inactive (no draw, zero delay) with no c2 spec that
   // states a median or with the noOperatorQueue switch, so today's timings hold.
   const operator = createOperatorQueue(scenario, assessments, draw, falseLoad)
@@ -257,6 +262,7 @@ export function resolveEngagements(
       uasSpec,
       altM: threatAltitudeFt(scenario, entity) * FT_TO_M,
       path,
+      sampleFlightAt: path ? (tS) => sampleFlightPath(scenario, path, tS) : undefined,
       speedMps: path ? speedFor(scenario, path) : 15,
       delayS: path ? effectivePathDelayS(scenario, path) : 0,
       ships: Array.from({ length: count }, () => ({
@@ -462,12 +468,26 @@ export function resolveEngagements(
     }
     if (target.firstShotS == null) target.firstShotS = t
 
-    if (es.rounds != null) es.rounds -= 1
+    if (es.rounds != null) {
+      const burstRounds =
+        es.spec.effectorType === 'gun'
+        && !legacyKineticPk
+        && es.spec.dispersionMils != null
+        && es.spec.fireControlErrorMils != null
+        && es.spec.rateOfFireRpm != null
+        && es.spec.muzzleVelocityMps != null
+          ? projectileCount(es.spec) ?? 1
+          : 1
+      es.rounds -= burstRounds
+    }
     es.nextReadyS = t + es.cooldownS
     // Fine-step hook (clock.ts): a burst or dwell lane requests its window here.
+    if (opticalDwellModelApplies(es.spec, scenario.physics?.includes('legacyBeamPk'))) {
+      clock.requestFineStep(es.entity.id, t, tEffect, 0.1)
+    }
     if (
       es.spec.effectorType === 'gun'
-      && !scenario.physics?.includes('legacyKineticPk')
+      && !legacyKineticPk
       && es.spec.dispersionMils != null
       && es.spec.burstRounds != null
       && es.spec.rateOfFireRpm != null
@@ -506,8 +526,20 @@ export function resolveEngagements(
   for (let t = 0; t <= tEnd + EPS; t = clock.next(t)) {
     applyDueEffects(t)
     tickGeom = new Map()
-    const volleyShot: ShotContext = { t, effectContainment: 'any', membersAt, stepS: clock.baseS }
-    const doctrineShot: ShotContext = { t, effectContainment: 'same', membersAt, stepS: clock.baseS }
+    const volleyShot: ShotContext = {
+      t,
+      effectContainment: 'any',
+      membersAt,
+      stepS: clock.baseS,
+      legacyKineticPk,
+    }
+    const doctrineShot: ShotContext = {
+      t,
+      effectContainment: 'same',
+      membersAt,
+      stepS: clock.baseS,
+      legacyKineticPk,
+    }
 
     for (const es of effectors.values()) {
       // Under doctrine only jammers fire here: shoot-look-shoot does not apply to a dwell.

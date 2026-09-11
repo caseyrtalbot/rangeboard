@@ -13,6 +13,8 @@ import type {
 import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
 import { expenditureChannel } from '../playback/pk'
 import { radarDwellPulses } from '../playback/radarDwell'
+import { opticalDwellModelApplies } from '../playback/directedEnergy'
+import { hpmFieldModelApplies } from '../playback/hpm'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
 import { eoIfovRadFor } from './sensorEnv/eoir'
@@ -22,7 +24,8 @@ import { rfLinkModelApplies } from './sensorEnv/rf'
 export type ModelId =
   | 'radar-pd' | 'radar-dwell' | 'radar-scan' | 'eoir-range' | 'eoir-dri' | 'acoustic-range'
   | 'rf-detect' | 'rf-link' | 'jam' | 'environment' | 'threat-flight' | 'horizon'
-  | 'track-init' | 'doctrine' | 'kinetic-pk' | 'interceptor-miss' | 'gun-burst' | 'flyout'
+  | 'track-init' | 'doctrine' | 'kinetic-pk' | 'interceptor-miss' | 'gun-burst'
+  | 'de-dwell' | 'hpm-field' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
   | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
 
@@ -130,7 +133,9 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     label: 'Jam',
     tier: 'planning',
     validation: 'none',
-    note: 'Band, boresight and power-range gates. The jam-to-signal ratio is a planning factor.',
+    note:
+      'Band and boresight gates with ITU-R P.525 received-power J/S when both radios state ' +
+      'power; incomplete radios keep the placard power-range planning factor.',
   },
   environment: {
     id: 'environment',
@@ -194,6 +199,26 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     note:
       'Independent Rayleigh projectile intercepts compounded over one burst; the Rheinmetall ' +
       '1,200 rounds/min timeline is pinned in kinetic.verify.test.ts.',
+  },
+  'de-dwell': {
+    id: 'de-dwell',
+    label: 'Optical dwell',
+    tier: 'physics',
+    validation: 'datasheet',
+    standard: 'VV&A documentation',
+    note:
+      'Diffraction, pointing jitter and visibility set irradiance; fluence sets dwell. ' +
+      'beam.verify.test.ts reproduces the published Iron Beam power, range and dwell anchor.',
+  },
+  'hpm-field': {
+    id: 'hpm-field',
+    label: 'HPM field',
+    tier: 'physics',
+    validation: 'analytic',
+    standard: 'VV&A documentation',
+    note:
+      'Inverse-distance electric field inside beamwidth against an airframe threshold. ' +
+      'beam.verify.test.ts pins the hand-derived threshold range.',
   },
   flyout: {
     id: 'flyout',
@@ -274,10 +299,13 @@ const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
     'acoustic-range', 'rf-detect', 'rf-link',
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
-  effector: ['jam', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst', 'flyout'],
+  effector: [
+    'jam', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst',
+    'de-dwell', 'hpm-field', 'flyout',
+  ],
   uas: [
     'radar-pd', 'radar-dwell', 'rf-link', 'environment', 'threat-flight', 'kinetic-pk',
-    'interceptor-miss', 'gun-burst',
+    'interceptor-miss', 'gun-burst', 'de-dwell', 'hpm-field',
   ],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
@@ -334,9 +362,14 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   // The sensor count for fusion is the laydown's, so one sensor entity still reports fusion.
   const allSensors = entity?.kind === 'sensor' ? activeSpecs(scenario, 'sensor', (m) => m.sensor) : sensors
   const kinetic = effectors.filter((e) => expenditureChannel(e.effectorType) === 'kinetic')
-  // The engine reads kineticPk for every non-jammer effector (DE and HPM
-  // included); only the flyout term is confined to the kinetic channel.
-  const aimed = effectors.filter((e) => e.effectorType !== 'jammer')
+  const switches = physicsSwitches(scenario)
+  const beamFallback = switches.includes('legacyBeamPk')
+  const deModeled = effectors.filter((e) => opticalDwellModelApplies(e, beamFallback))
+  const hpmModeled = effectors.filter((e) => hpmFieldModelApplies(e, beamFallback))
+  const legacyBeam = effectors.filter(
+    (e) => (e.effectorType === 'de' && !deModeled.includes(e))
+      || (e.effectorType === 'hpm' && !hpmModeled.includes(e)),
+  )
   const out = new Set<ModelId>()
   const add = (id: ModelId, when: boolean): void => {
     if (when) out.add(id)
@@ -351,7 +384,7 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
   add(
     'eoir-dri',
-    !physicsSwitches(scenario).includes('eoirSpanRatio')
+    !switches.includes('eoirSpanRatio')
       && targets.length > 0
       && sensors.some((s) => s.sensorType === 'eo-ir' && eoIfovRadFor(s) != null),
   )
@@ -359,14 +392,14 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('rf-detect', sensors.some((s) => s.sensorType === 'rf'))
   add(
     'rf-link',
-    !physicsSwitches(scenario).includes('rfBandGate')
+    !switches.includes('rfBandGate')
       && sensors.some((s) => targets.some((t) => rfLinkModelApplies(s, t))),
   )
   add('jam', effectors.some((e) => e.effectorType === 'jammer'))
   add('environment', scenario.environment.apply)
   add(
     'threat-flight',
-    !physicsSwitches(scenario).includes('noFlightLimits')
+    !switches.includes('noFlightLimits')
       && targets.some((t) => [t.maxTurnRateDegS, t.climbRateMps, t.maxAccelMps2]
         .some((value) => value != null)),
   )
@@ -374,8 +407,8 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('horizon', sensors.some((s) => s.sensorType !== 'acoustic'))
   add('track-init', sensors.some((s) => scanPeriods(s, targets).every((p) => p == null)))
   add('doctrine', effectiveDoctrine(scenario).enabled)
-  add('kinetic-pk', aimed.length > 0)
-  const legacyKinetic = physicsSwitches(scenario).includes('legacyKineticPk')
+  add('kinetic-pk', kinetic.length > 0 || legacyBeam.length > 0)
+  const legacyKinetic = switches.includes('legacyKineticPk')
   add(
     'interceptor-miss',
     !legacyKinetic && effectors.some(
@@ -386,6 +419,8 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
     'gun-burst',
     !legacyKinetic && effectors.some((e) => e.effectorType === 'gun' && e.dispersionMils != null),
   )
+  add('de-dwell', deModeled.length > 0)
+  add('hpm-field', hpmModeled.length > 0)
   add('flyout', kinetic.some((e) => (e.flyoutSpeedMps ?? 0) > 0))
   const run = runSettings(scenario)
   add('draw-policy', run.runMode === 'monte-carlo')
@@ -396,7 +431,7 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('operator', c2Count > 0)
   add(
     'false-tracks',
-    !physicsSwitches(scenario).includes('noFalseTracks')
+    !switches.includes('noFalseTracks')
       && sensors.some((s) => s.sensorType === 'radar' && s.falseAlarmRatePerScan != null),
   )
   return out
