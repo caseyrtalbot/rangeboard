@@ -5,8 +5,9 @@ import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelity'
 
 const IDS: ModelId[] = [
-  'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range', 'rf-detect', 'jam',
-  'environment', 'threat-flight', 'horizon', 'track-init', 'doctrine', 'kinetic-pk', 'flyout',
+  'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range',
+  'rf-detect', 'rf-link', 'jam', 'environment', 'threat-flight', 'horizon',
+  'track-init', 'doctrine', 'kinetic-pk', 'flyout',
   'draw-policy', 'parameter-spread',
   'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
 ]
@@ -53,6 +54,13 @@ function entity(id: string, kind: Entity['kind'], specId: string): Entity {
 function radarLaydown(): Scenario {
   const s = emptyScenario()
   s.entities.push(entity('s1', 'sensor', 'lib-echoguard'))
+  s.entities.push(entity('u1', 'uas', 'lib-mavic3'))
+  return s
+}
+
+function rfLaydown(): Scenario {
+  const s = emptyScenario()
+  s.entities.push(entity('s1', 'sensor', 'lib-rf360'))
   s.entities.push(entity('u1', 'uas', 'lib-mavic3'))
   return s
 }
@@ -200,6 +208,25 @@ describe('modelsUsed, Phase 2 tags', () => {
     acoustic.sensor = { ...acoustic.sensor!, falseAlarmRatePerScan: 0.5 }
     s.entities.push(entity('s2', 'sensor', 'lib-discovair'))
     expect(modelsUsed(s).map((t) => t.id)).not.toContain('false-tracks')
+  })
+})
+
+describe('modelsUsed, RF link tag', () => {
+  it('adds the link budget for an RF sensor and emitting target with both fields', () => {
+    const s = rfLaydown()
+    expect(modelsUsed(s).map((tag) => tag.id)).toContain('rf-link')
+    expect(modelsForEntity(s, 's1').map((tag) => tag.id)).toContain('rf-link')
+    expect(modelsForEntity(s, 'u1').map((tag) => tag.id)).toContain('rf-link')
+  })
+
+  it('omits the link budget under its fallback switch or a null required field', () => {
+    const s = rfLaydown()
+    s.physics = ['rfBandGate']
+    expect(modelsUsed(s).map((tag) => tag.id)).not.toContain('rf-link')
+    s.physics = []
+    const target = s.library.find((model) => model.id === 'lib-mavic3')!
+    target.uas = { ...target.uas!, radiatedPowerW: null }
+    expect(modelsUsed(s).map((tag) => tag.id)).not.toContain('rf-link')
   })
 })
 
