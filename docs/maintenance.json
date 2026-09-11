@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "e2f0f44a298061abf596b5a8ae4f1373448786c56be036531b8d8f038999db95",
+      "sha256": "d7313d831b7bddbafdd3ddf9c60038bcc73ac68c857a33d1ab7dbc9d6cee2c56",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
+      "note": "Post-gate 2026-09-10: estimate.parity.test.ts added under src/playback (a test file, no engine change); tip-timing evidence indexed"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "6a7d06b452df07bce724449cd7b1a0ae8a8ba90cf8623b446ce37e27f6af76a2",
+      "sha256": "62be713990eb33b804217f1faf3154157e86746acc3a3427284699745b3be734",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
+      "note": "Post-gate 2026-09-10: estimate.parity.test.ts added under src/playback (a test file, no engine change); tip-timing evidence indexed"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "15e4c44231a2134d3dc562a1f88baac15bc9aa62b59446198217bd731b636153",
+      "sha256": "07e4c3478fad8465d187d3c02c382b4a2d89418c593d6508a97a7569df0cf5dc",
       "reviewedAt": "2026-09-11",
-      "note": "Phase 2 gate 2026-09-10: tracks and kill chain (Kalman tracker, fusion, classification matrix, false tracks, operator queue, intercept from estimate, track layer, accuracy and C2 library fields, physics switches, fixture pins); content updated where the inputs changed"
+      "note": "Post-gate 2026-09-10: estimate.parity.test.ts added under src/playback (a test file, no engine change); tip-timing evidence indexed"
     },
     {
       "document": "docs/VERIFICATION.md",

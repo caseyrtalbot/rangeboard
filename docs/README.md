@@ -46,6 +46,7 @@ Proposals preserve design decisions for review; implementation requires separate
 - [Calibration Phase 1 gate evidence, 2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md)
 - [Calibration Phase 2 gate evidence, 2026-09-10](field-te/evidence/p2-gate-2026-09-10/README.md)
 - [Calibration Phase 2 timeline comparison, before and after](field-te/evidence/p2-gate-2026-09-10/comparison.md)
+- [Calibration Phase 2 tip timing and legacy-board evidence](field-te/evidence/p2-gate-2026-09-10/tip-timing.md)
 - [Performance refactor handoff, September 7, 2026 snapshot](field-te/performance-refactor-handoff-2026-09-07.md)
 - [Agent workspace preparation, 2026-09-06](field-te/WORKSPACE_PREPARATION_2026-09-06.md)
 - [C1: analysis identity and result invalidation](field-te/C1_COMPLETION.md)
