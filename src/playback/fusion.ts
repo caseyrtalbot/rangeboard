@@ -29,7 +29,20 @@ import type { Covariance4, FusedTrack, TrackEstimate, TrackState } from './track
  * unchanged by fusion.
  *
  * No C2 node: every live sensor track fuses at the sensors with no latency,
- * so today's behaviour holds.
+ * so today's behaviour holds. A sensor with no C2 link on a board that has
+ * links fuses at the sensors too (NO_C2) and competes with the nodes on
+ * quality, so a radar wired straight to an effector still reaches the
+ * picture.
+ *
+ * Truth members off the `truthTracks` switch. The tracker sends a sensor
+ * with no range or azimuth accuracy down the truth path (tracker.ts
+ * `truthPathFor`), and every RF and acoustic sensor in the library has no
+ * range accuracy. When the switch is off, such a member would otherwise
+ * make every mixed fusion exact, so the stage drops truth members from a
+ * fusion that has at least one estimate member; a fusion whose members are
+ * all truth (a laydown with no accuracy data) stands as before. With the
+ * switch on nothing changes. Phase 3: a bearing-only sensor should become a
+ * measurement with range sigma equal to its detect range instead.
  */
 
 /**
@@ -284,25 +297,43 @@ export interface FusionStage {
 }
 
 /**
- * Build the fusion stage of one threat over `links` (c2LinksFor). With
- * links, each C2 fuses the delayed reports of its linked sensors and the
- * fused track of the node with the highest quality is the step's picture
- * (ties: scenario entity order of the nodes, which is the link order).
- * Without links every current estimate fuses at the sensors (NO_C2).
+ * Members admitted to one fusion under the truth rule of the module comment:
+ * with `truthTracks` off, truth members are dropped when an estimate member
+ * is present. Returns the input when nothing is dropped.
  */
-export function createFusionStage(links: readonly C2Link[]): FusionStage {
+export function admitMembers(members: readonly TrackEstimate[], truthTracks: boolean): readonly TrackEstimate[] {
+  if (truthTracks) return members
+  if (!members.some((m) => m.source === 'estimate')) return members
+  return members.filter((m) => m.source !== 'truth')
+}
+
+/**
+ * Build the fusion stage of one threat over `links` (c2LinksFor). With
+ * links, each C2 fuses the delayed reports of its linked sensors, the
+ * sensors with no link fuse at the sensors (NO_C2), and the fused track
+ * with the highest quality is the step's picture (ties: scenario entity
+ * order of the nodes, which is the link order, then the unlinked set).
+ * Duplicate links from one sensor to one node count once, with the first
+ * link's latency. Without links every current estimate fuses at the
+ * sensors. `truthTracks` is the physics switch; see the module comment.
+ */
+export function createFusionStage(links: readonly C2Link[], truthTracks = false): FusionStage {
   const current = new Map<string, TrackEstimate>()
   const rings = new Map<string, TrackEstimate[]>()
   const ringDepth = new Map<string, number>()
   const byC2 = new Map<string, C2Link[]>()
   for (const link of links) {
     const list = byC2.get(link.c2Id)
-    if (list) list.push(link)
-    else byC2.set(link.c2Id, [link])
+    if (list) {
+      if (list.some((l) => l.sensorId === link.sensorId)) continue
+      list.push(link)
+    } else byC2.set(link.c2Id, [link])
     const depth = stepIndex(link.latencyS) + 1
     ringDepth.set(link.sensorId, Math.max(ringDepth.get(link.sensorId) ?? 1, depth))
   }
   const viaC2 = byC2.size > 0
+  const fuseAdmitted = (members: readonly TrackEstimate[], c2Id: string, tS: number) =>
+    fuseTracks(admitMembers(members, truthTracks), c2Id, tS)
   return {
     current,
     viaC2,
@@ -325,7 +356,7 @@ export function createFusionStage(links: readonly C2Link[]): FusionStage {
       if (ring.length > depth) ring.shift()
     },
     fuse(tS) {
-      if (!viaC2) return fuseTracks([...current.values()], NO_C2, tS)
+      if (!viaC2) return fuseAdmitted([...current.values()], NO_C2, tS)
       // A sensor that emitted nothing this step dropped its track: its ring restarts.
       for (const [sensorId, ring] of rings) if (!current.has(sensorId)) ring.length = 0
       let best: FusedTrack | null = null
@@ -338,7 +369,14 @@ export function createFusionStage(links: readonly C2Link[]): FusionStage {
           const member = delayedMember(ring, link.latencyS, tS)
           if (member) members.push(member)
         }
-        const fused = fuseTracks(members, c2Id, tS)
+        const fused = fuseAdmitted(members, c2Id, tS)
+        if (fused && (!best || fused.quality > best.quality)) best = fused
+      }
+      // Sensors with no C2 link fuse at the sensors and compete on quality.
+      members.length = 0
+      for (const [sensorId, estimate] of current) if (!ringDepth.has(sensorId)) members.push(estimate)
+      if (members.length > 0) {
+        const fused = fuseAdmitted(members, NO_C2, tS)
         if (fused && (!best || fused.quality > best.quality)) best = fused
       }
       return best
