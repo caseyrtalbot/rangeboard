@@ -21,7 +21,7 @@ import { rfLinkModelApplies } from './sensorEnv/rf'
 export type ModelId =
   | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'eoir-dri' | 'acoustic-range'
   | 'rf-detect' | 'rf-link' | 'jam' | 'environment' | 'threat-flight' | 'horizon'
-  | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
+  | 'track-init' | 'doctrine' | 'kinetic-pk' | 'interceptor-miss' | 'gun-burst' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
   | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
 
@@ -166,6 +166,24 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     validation: 'none',
     note: 'A base Pk with a distance falloff and size and evasion penalties.',
   },
+  'interceptor-miss': {
+    id: 'interceptor-miss',
+    label: 'Interceptor miss',
+    tier: 'physics',
+    validation: 'datasheet',
+    note:
+      'Rayleigh miss probability from track prediction and guidance error at the published ' +
+      'effective radius; the APKWS 10 m radius table is pinned in kinetic.verify.test.ts.',
+  },
+  'gun-burst': {
+    id: 'gun-burst',
+    label: 'Gun burst',
+    tier: 'physics',
+    validation: 'datasheet',
+    note:
+      'Independent Rayleigh projectile intercepts compounded over one burst; the Rheinmetall ' +
+      '1,200 rounds/min timeline is pinned in kinetic.verify.test.ts.',
+  },
   flyout: {
     id: 'flyout',
     label: 'Flyout',
@@ -244,8 +262,11 @@ const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
     'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range', 'rf-detect', 'rf-link',
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
-  effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
-  uas: ['radar-pd', 'rf-link', 'environment', 'threat-flight', 'kinetic-pk'],
+  effector: ['jam', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst', 'flyout'],
+  uas: [
+    'radar-pd', 'rf-link', 'environment', 'threat-flight', 'kinetic-pk',
+    'interceptor-miss', 'gun-burst',
+  ],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
 
@@ -337,6 +358,17 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('track-init', sensors.some((s) => scanPeriods(s, targets).every((p) => p == null)))
   add('doctrine', effectiveDoctrine(scenario).enabled)
   add('kinetic-pk', aimed.length > 0)
+  const legacyKinetic = physicsSwitches(scenario).includes('legacyKineticPk')
+  add(
+    'interceptor-miss',
+    !legacyKinetic && effectors.some(
+      (e) => e.effectorType === 'interceptor' && e.lethalRadiusM != null,
+    ),
+  )
+  add(
+    'gun-burst',
+    !legacyKinetic && effectors.some((e) => e.effectorType === 'gun' && e.dispersionMils != null),
+  )
   add('flyout', kinetic.some((e) => (e.flyoutSpeedMps ?? 0) > 0))
   const run = runSettings(scenario)
   add('draw-policy', run.runMode === 'monte-carlo')

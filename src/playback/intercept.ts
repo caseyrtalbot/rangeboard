@@ -7,6 +7,7 @@ import type { EffectorState, ThreatState } from './sweepState'
 import { DT } from './clock'
 import type { Covariance4, TrackEstimate } from './trackTypes'
 import { positionSigmaM, predict, PROCESS_NOISE_Q } from './kalman'
+import { projectileBurstDurationS } from './ballistics'
 
 /** Time tolerance for interval and release comparisons, seconds. */
 export const EPS = 1e-9
@@ -40,6 +41,143 @@ function averageFlyoutMps(spec: EffectorSpec): number {
   const v = spec.flyoutSpeedMps
   if (v == null || !(v > 0) || expenditureChannel(spec.effectorType) !== 'kinetic') return 0
   return v * FLYOUT_SPEED_FACTOR
+}
+
+/** Caller-owned switch state for the Phase 3 kinetic flight model. */
+export interface KineticInterceptOptions {
+  /** True for the scenario's `legacyKineticPk` switch. */
+  fallback: boolean
+}
+
+interface FlyoutProfile {
+  /** Delay after physical release before the modeled projectile begins its flight. */
+  launchDelayS: number
+  /** Distance available after `flightS`, measured from projectile launch. */
+  distanceAt(flightS: number): number
+  /** Interceptor terminal seeker range; absent for a gun. */
+  seekerAcquisitionRangeM: number | null
+}
+
+function positive(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value) && value > 0
+}
+
+function nonNegative(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value) && value >= 0
+}
+
+/**
+ * Phase 3 kinetic flight profile, or null for the bit-identical legacy path.
+ * A null lethal radius / dispersion is the lane's library-data fallback in
+ * addition to the caller-supplied physics switch.
+ */
+function phase3FlyoutProfile(
+  spec: EffectorSpec,
+  options: KineticInterceptOptions | undefined,
+): FlyoutProfile | null {
+  if (options == null || options.fallback) return null
+
+  if (spec.effectorType === 'interceptor') {
+    if (!positive(spec.lethalRadiusM) || !nonNegative(spec.guidanceNoiseM)) return null
+    const cruiseMps = spec.flyoutSpeedMps
+    if (!positive(cruiseMps)) return null
+    const boostS = spec.boostTimeS
+    const peakMps = spec.maxFlyoutSpeedMps
+    if (!positive(boostS) || !positive(peakMps)) {
+      return {
+        launchDelayS: 0,
+        distanceAt: (flightS) => cruiseMps * Math.max(0, flightS),
+        seekerAcquisitionRangeM: positive(spec.seekerAcquisitionRangeM)
+          ? spec.seekerAcquisitionRangeM
+          : null,
+      }
+    }
+    const boostDistanceM = 0.5 * peakMps * boostS
+    return {
+      launchDelayS: 0,
+      distanceAt: (flightS) => {
+        const t = Math.max(0, flightS)
+        if (t <= boostS) return 0.5 * (peakMps / boostS) * t * t
+        return boostDistanceM + cruiseMps * (t - boostS)
+      },
+      seekerAcquisitionRangeM: positive(spec.seekerAcquisitionRangeM)
+        ? spec.seekerAcquisitionRangeM
+        : null,
+    }
+  }
+
+  if (spec.effectorType === 'gun') {
+    if (
+      !nonNegative(spec.dispersionMils)
+      || !nonNegative(spec.fireControlErrorMils)
+      || !positive(spec.muzzleVelocityMps)
+    ) return null
+    const burstS = projectileBurstDurationS(spec)
+    if (burstS == null) return null
+    return {
+      launchDelayS: burstS,
+      distanceAt: (flightS) => spec.muzzleVelocityMps! * Math.max(0, flightS),
+      seekerAcquisitionRangeM: null,
+    }
+  }
+
+  return null
+}
+
+/** Distance flown by an interceptor under the Phase 3 boost/cruise profile. */
+export function interceptorDistanceM(spec: EffectorSpec, flightS: number): number | null {
+  const profile = phase3FlyoutProfile(spec, { fallback: false })
+  return spec.effectorType === 'interceptor' && profile != null
+    ? profile.distanceAt(flightS)
+    : null
+}
+
+/**
+ * Earliest time a monotone flyout profile reaches a moving point. The
+ * bracket doubles until closure, then bisection resolves the first crossing.
+ * Target paths end at a held point, so any positive cruise eventually closes.
+ */
+function profileMeetTau(
+  profile: FlyoutProfile,
+  slantAt: (flightS: number) => number,
+): number | null {
+  const closure = (flightS: number) => profile.distanceAt(flightS) - slantAt(flightS)
+  if (closure(0) >= -EPS) return 0
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 64 && closure(hi) < 0; i += 1) {
+    lo = hi
+    hi *= 2
+  }
+  if (closure(hi) < 0) return null
+  for (let i = 0; i < 48; i += 1) {
+    const mid = (lo + hi) / 2
+    if (closure(mid) >= 0) hi = mid
+    else lo = mid
+  }
+  return hi
+}
+
+/** Flight time to a stationary point under the Phase 3 interceptor profile. */
+export function interceptorFlightTimeS(spec: EffectorSpec, slantM: number): number | null {
+  if (!Number.isFinite(slantM) || slantM < 0 || spec.effectorType !== 'interceptor') return null
+  const profile = phase3FlyoutProfile(spec, { fallback: false })
+  return profile == null ? null : profileMeetTau(profile, () => slantM)
+}
+
+/**
+ * A terminal seeker must come within its acquisition range before the
+ * credited flyout ends. This only adds a rejection at a capped intercept;
+ * an uncapped intercept necessarily traverses the acquisition point first.
+ */
+function seekerAcquisitionAfterEnd(
+  profile: FlyoutProfile,
+  slantM: number,
+  flownS: number,
+): boolean {
+  const seekerM = profile.seekerAcquisitionRangeM
+  if (seekerM == null) return false
+  return profile.distanceAt(flownS) + EPS < Math.max(0, slantM - seekerM)
 }
 
 /** Formation member positions of a threat at one sim time. */
@@ -172,14 +310,15 @@ export interface SelectedIntercept extends InterceptResult {
 
 /**
  * Predicted intercept for one ship: position and slant sampled at the returned
- * tEffectS = tS + engageTimeS + flight time (analyticTofS; 0 with no stated
- * speed). `membersAt` lets the sweep supply its per-tick geometry cache.
+ * tEffectS. With no kinetic options this keeps the legacy constant-speed path
+ * bit for bit. `{ fallback: false }` selects the Phase 3 interceptor profile
+ * or drag-free last-projectile gun timing when its sentinel fields exist.
+ * `membersAt` lets the sweep supply its per-tick geometry cache.
  * `capS` is the end of the in-range interval containing tS: a flight past it is
  * held at the cap and reported `capped`; a release already past the cap is not.
- * `infeasible` is true when the slant exceeds the reach v * (tEffectS - release)
- * by more than v * stepS, one sweep step (the manifest step, default DT; only
- * at a cap or with no meeting); the caller declines the shot. Never true
- * without a flyout.
+ * `infeasible` is true when the slant exceeds the flight profile's reach by
+ * more than one sweep step, or terminal seeker acquisition occurs after a
+ * capped flyout; the caller declines the shot. Never true without a flyout.
  */
 export function interceptAt(
   ts: ThreatState,
@@ -189,6 +328,7 @@ export function interceptAt(
   membersAt: (ts: ThreatState, tS: number) => Vec2[] = membersAtTime,
   capS = Number.POSITIVE_INFINITY,
   stepS = DT,
+  kineticOptions?: KineticInterceptOptions,
 ): InterceptResult {
   const dAltM = ts.altM - es.mountM
   const sampleAt = (tEffectS: number) => {
@@ -197,6 +337,26 @@ export function interceptAt(
     return { pos, slantM: slantRangeM(dist(es.entity.pos, pos), dAltM) }
   }
   const releaseS = tS + es.engageTimeS
+  const profile = phase3FlyoutProfile(es.spec, kineticOptions)
+  if (profile != null) {
+    const flightReleaseS = releaseS + profile.launchDelayS
+    const flightS = profileMeetTau(
+      profile,
+      (tauS) => sampleAt(flightReleaseS + tauS).slantM,
+    )
+    if (flightS == null) {
+      const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
+      return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
+    }
+    const uncappedEffectS = flightReleaseS + flightS
+    const capped = releaseS <= capS && uncappedEffectS > capS
+    const tEffectS = capped ? capS : uncappedEffectS
+    const at = sampleAt(tEffectS)
+    const flownS = Math.max(0, tEffectS - flightReleaseS)
+    const unreachable = at.slantM > profile.distanceAt(flownS + stepS) + EPS
+    const seekerLate = seekerAcquisitionAfterEnd(profile, at.slantM, flownS)
+    return { ...at, tEffectS, capped, infeasible: unreachable || seekerLate }
+  }
   const v = averageFlyoutMps(es.spec)
   // A ship with no path (or no speed) is stationary where the sampler puts it.
   const moving = ts.path != null && ts.path.points.length >= 2 && ts.speedMps > 0
@@ -235,6 +395,12 @@ export function predictedStateAt(
     PROCESS_NOISE_Q,
   )
   return { x: state.x, y: state.y, vx: state.vx, vy: state.vy, cov }
+}
+
+/** Position 1 sigma of an estimate propagated to physical release; null for truth. */
+export function predictionSigmaAtS(estimate: TrackEstimate | null, tS: number): number | null {
+  if (estimate == null || estimate.source === 'truth') return null
+  return positionSigmaM(predictedStateAt(estimate, tS).cov)
 }
 
 /**
@@ -285,13 +451,50 @@ export function interceptFromEstimate(
   return { ...at, tEffectS, capped, infeasible }
 }
 
+/** Estimate-path counterpart of the Phase 3 truth-path profile in interceptAt. */
+function interceptFromEstimateProfile(
+  estimate: TrackEstimate,
+  launcherPos: Vec2,
+  releaseS: number,
+  dAltM: number,
+  capS: number,
+  stepS: number,
+  profile: FlyoutProfile,
+): EstimateIntercept {
+  const sampleAt = (tEffectS: number) => {
+    const p = predictedStateAt(estimate, tEffectS)
+    const pos = { x: p.x, y: p.y }
+    return {
+      pos,
+      slantM: slantRangeM(dist(launcherPos, pos), dAltM),
+      predictionSigmaM: positionSigmaM(p.cov),
+    }
+  }
+  const flightReleaseS = releaseS + profile.launchDelayS
+  const flightS = profileMeetTau(
+    profile,
+    (tauS) => sampleAt(flightReleaseS + tauS).slantM,
+  )
+  if (flightS == null) {
+    const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
+    return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
+  }
+  const uncappedEffectS = flightReleaseS + flightS
+  const capped = releaseS <= capS && uncappedEffectS > capS
+  const tEffectS = capped ? capS : uncappedEffectS
+  const at = sampleAt(tEffectS)
+  const flownS = Math.max(0, tEffectS - flightReleaseS)
+  const unreachable = at.slantM > profile.distanceAt(flownS + stepS) + EPS
+  const seekerLate = seekerAcquisitionAfterEnd(profile, at.slantM, flownS)
+  return { ...at, tEffectS, capped, infeasible: unreachable || seekerLate }
+}
+
 /**
  * Intercept selector. With no estimate, or a truth-source estimate
  * (`source: 'truth'`, zero covariance), this is interceptAt with the same
  * arguments and the same result, plus `predictionSigmaM: null` and
- * `interceptSource: 'truth'`. With a Kalman estimate it is
- * interceptFromEstimate at the release time tS + engageTimeS, against the
- * launcher of `es` and the altitude difference of `ts`.
+ * `interceptSource: 'truth'`. With a Kalman estimate it propagates that state
+ * against the same legacy or caller-selected Phase 3 flight profile.
  */
 export function interceptFor(
   ts: ThreatState,
@@ -302,23 +505,36 @@ export function interceptFor(
   capS = Number.POSITIVE_INFINITY,
   estimate: TrackEstimate | null = null,
   stepS = DT,
+  kineticOptions?: KineticInterceptOptions,
 ): SelectedIntercept {
   if (estimate == null || estimate.source === 'truth') {
     return {
-      ...interceptAt(ts, es, tS, memberIdx, membersAt, capS, stepS),
+      ...interceptAt(ts, es, tS, memberIdx, membersAt, capS, stepS, kineticOptions),
       predictionSigmaM: null,
       interceptSource: 'truth',
     }
   }
-  const ic = interceptFromEstimate(
-    estimate,
-    es.entity.pos,
-    averageFlyoutMps(es.spec),
-    tS + es.engageTimeS,
-    ts.altM - es.mountM,
-    capS,
-    stepS,
-  )
+  const releaseS = tS + es.engageTimeS
+  const profile = phase3FlyoutProfile(es.spec, kineticOptions)
+  const ic = profile == null
+    ? interceptFromEstimate(
+      estimate,
+      es.entity.pos,
+      averageFlyoutMps(es.spec),
+      releaseS,
+      ts.altM - es.mountM,
+      capS,
+      stepS,
+    )
+    : interceptFromEstimateProfile(
+      estimate,
+      es.entity.pos,
+      releaseS,
+      ts.altM - es.mountM,
+      capS,
+      stepS,
+      profile,
+    )
   return { ...ic, interceptSource: 'estimate' }
 }
 
