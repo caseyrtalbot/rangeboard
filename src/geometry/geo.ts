@@ -133,7 +133,7 @@ export function pathLength(points: Vec2[]): number {
   return total
 }
 
-interface PathSample {
+export interface PathSample {
   pos: Vec2
   headingDeg: number
   /** Distance traveled along the path, meters. */

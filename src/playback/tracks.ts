@@ -1,7 +1,9 @@
-import type { Entity, Scenario, SpecModel, Vec2 } from '../model/types'
-import { formationOffsets, posAtTime } from '../geometry/geo'
+import type { Entity, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
+import { physicsSwitches } from '../model/types'
+import { formationOffsets, posAtTime, type PathSample } from '../geometry/geo'
 import { modelFor, pathSpeed } from '../model/scenario'
 import { effectivePathDelayS } from './raid'
+import { limitedPosAtTime } from './flight'
 
 /** Positions of every ship in the entity's formation (just the lead when none). */
 export function memberPositions(entity: Entity, pos: Vec2, headingDeg: number): Vec2[] {
@@ -22,13 +24,25 @@ export interface LiveTrack {
   done: boolean
 }
 
+/** The one scenario-aware sampler for a target UAS path. */
+export function sampleFlightPath(scenario: Scenario, path: FlightPath, tS: number): PathSample {
+  const speed = pathSpeed(scenario, path)
+  const delayS = effectivePathDelayS(scenario, path)
+  if (physicsSwitches(scenario).includes('noFlightLimits')) {
+    return posAtTime(path.points, speed, delayS, tS)
+  }
+  const entity = scenario.entities.find((e) => e.id === path.entityId)
+  const uas = entity ? modelFor(scenario, entity)?.uas : undefined
+  if (!uas) return posAtTime(path.points, speed, delayS, tS)
+  return limitedPosAtTime(path.points, speed, delayS, tS, uas, scenario.environment)
+}
+
 /** Positions of all path-flying UAS at sim time t. Entities without paths stay put. */
 export function liveTracks(scenario: Scenario, tS: number): Map<string, LiveTrack> {
   const out = new Map<string, LiveTrack>()
   for (const path of scenario.paths) {
-    const speed = pathSpeed(scenario, path)
     const delayS = effectivePathDelayS(scenario, path)
-    const s = posAtTime(path.points, speed, delayS, tS)
+    const s = sampleFlightPath(scenario, path, tS)
     out.set(path.entityId, {
       entityId: path.entityId,
       pos: s.pos,
