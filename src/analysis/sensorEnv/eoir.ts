@@ -1,7 +1,7 @@
 import type { EnvironmentSpec, Precipitation, SensorRole, SensorSpec, UasSpec } from '../../model/types'
 import { defaultSensorRole } from '../../model/types'
 import { EO_REF_SPAN_M, IR_SIGNATURE_FACTOR, irSignatureFor, spanMFor } from '../../model/signatureFactors'
-import { targetScaled } from './common'
+import { sensorEnvFactor, targetScaled } from './common'
 
 /**
  * EO/IR target law, night and visibility rules, and the cue rule. The spec
@@ -27,6 +27,50 @@ export const VISIBILITY_BY_PRECIP: Record<Precipitation, number> = {
   fog: 600,
 }
 
+/** The three observer tasks in the Johnson DRI model. */
+export type EoirTask = 'detect' | 'recognize' | 'identify'
+
+/**
+ * Johnson line-pair thresholds at 50 percent task probability. The lane
+ * contract uses the conservative industry values 1, 4 and 8 cycles across
+ * the target critical dimension; one cycle occupies two detector pixels.
+ */
+export const JOHNSON_CYCLES: Readonly<Record<EoirTask, number>> = {
+  detect: 1,
+  recognize: 4,
+  identify: 8,
+}
+
+/** Koschmieder's original contrast threshold: visibility is 2 percent transmission. */
+export const KOSCHMIEDER_CONTRAST = 0.02
+
+/**
+ * MWIR extinction relative to visible extinction. ITU-R P.1814-0 equations
+ * (4)-(5), evaluated at 4 um versus 550 nm and the model's 0.6 km fog
+ * visibility, give q = 0.585 * 0.6^(1/3) and a ratio 0.3757. One rounded
+ * constant keeps the band rule explicit instead of implying a spectral
+ * weather model the inputs do not support.
+ */
+export const THERMAL_EXTINCTION_RATIO = 0.38
+
+/** A modeled DRI triple, meters. */
+export interface EoirDriRanges {
+  detectM: number
+  recognizeM: number
+  identifyM: number
+}
+
+/**
+ * Adapter options for the shared sensor-range dispatch. `fallbackRangeM` is
+ * the already-computed legacy result; returning it unchanged is the exact
+ * fallback contract for the switch and incomplete optics.
+ */
+export interface EoirRangeOptions {
+  task: EoirTask
+  fallbackRangeM: number
+  useFallback?: boolean
+}
+
 /** The span, m, at which an EO/IR detect range is quoted: spec value, else the Group 1 planning factor. */
 export function refSpanMFor(spec: SensorSpec): number {
   const r = spec.refSpanM
@@ -41,11 +85,149 @@ function eoThermalCarries(spec: SensorSpec, env: EnvironmentSpec): boolean {
   return env.apply && (env.light ?? 'day') === 'night'
 }
 
+/**
+ * Instantaneous angular field per detector pixel, radians. Pitch/focal
+ * length is authoritative when complete; horizontal field/pixel count is
+ * the fallback optics pair. Null means the sensor has no usable optics.
+ */
+export function eoIfovRadFor(spec: SensorSpec): number | null {
+  const pitchUm = spec.pixelPitchUm
+  const focalMm = spec.focalLengthMm
+  if (
+    pitchUm != null && Number.isFinite(pitchUm) && pitchUm > 0 &&
+    focalMm != null && Number.isFinite(focalMm) && focalMm > 0
+  ) {
+    return (pitchUm / focalMm) * 1e-3
+  }
+  const fovDeg = spec.fovDeg
+  const pixels = spec.detectorPixelsH
+  if (
+    fovDeg != null && Number.isFinite(fovDeg) && fovDeg > 0 &&
+    pixels != null && Number.isFinite(pixels) && pixels > 0
+  ) {
+    return (fovDeg * Math.PI / 180) / pixels
+  }
+  return null
+}
+
 /** Meteorological visibility in use, meters: the environment value, else the precipitation default. */
 export function visibilityMFor(env: EnvironmentSpec): number {
   const v = env.visibilityM
   if (v != null && Number.isFinite(v) && v > 0) return v
   return VISIBILITY_BY_PRECIP[env.precipitation ?? 'clear']
+}
+
+/** Active imaging band: a dual sensor uses visible by day and thermal at night. */
+export function eoBandFor(spec: SensorSpec, env: EnvironmentSpec): 'visible' | 'thermal' {
+  const band = spec.eoBand ?? 'dual'
+  if (band !== 'dual') return band
+  return env.apply && (env.light ?? 'day') === 'night' ? 'thermal' : 'visible'
+}
+
+/**
+ * Atmospheric extinction, inverse meters. Koschmieder gives
+ * sigma = -ln(0.02) / visibility. Thermal uses the ITU-derived smaller
+ * constant ratio; an environment that is not applied has no extinction.
+ */
+export function eoExtinctionPerM(spec: SensorSpec, env: EnvironmentSpec): number {
+  if (!env.apply) return 0
+  const visible = -Math.log(KOSCHMIEDER_CONTRAST) / visibilityMFor(env)
+  return visible * (eoBandFor(spec, env) === 'thermal' ? THERMAL_EXTINCTION_RATIO : 1)
+}
+
+/** Beer-Lambert one-way contrast transmission exp(-sigma * range). */
+export function eoTransmissionAt(
+  spec: SensorSpec,
+  env: EnvironmentSpec,
+  rangeM: number,
+): number {
+  return Math.exp(-eoExtinctionPerM(spec, env) * Math.max(0, rangeM))
+}
+
+/** Detector pixels across a target's critical span at one slant range. */
+export function eoPixelsOnTarget(spanM: number, rangeM: number, ifovRad: number): number {
+  if (!(spanM > 0) || !(rangeM > 0) || !(ifovRad > 0)) return 0
+  return spanM / (rangeM * ifovRad)
+}
+
+/**
+ * Solve R * exp(sigma R) = clearRange without adding a Lambert-W
+ * dependency. The left side is monotone and the attenuated answer lies in
+ * [0, clearRange]; 64 bisections resolve well below floating-point input
+ * precision for the ranges represented by the library.
+ */
+function attenuatedRangeM(clearRangeM: number, extinctionPerM: number): number {
+  if (!(extinctionPerM > 0)) return clearRangeM
+  let lo = 0
+  let hi = clearRangeM
+  for (let i = 0; i < 64; i += 1) {
+    const mid = (lo + hi) / 2
+    const logRatio = Math.log(mid / clearRangeM) + extinctionPerM * mid
+    if (logRatio > 0) hi = mid
+    else lo = mid
+  }
+  return (lo + hi) / 2
+}
+
+/**
+ * Optics-based DRI ranges for one target. At range R the available line
+ * pairs are
+ *
+ *   span * bandFactor * environmentFactor * exp(-sigma R)
+ *   ------------------------------------------------------
+ *                    2 R IFOV
+ *
+ * and the task range is where that value meets JOHNSON_CYCLES[task].
+ * Null means this is not an EO/IR case with a target and a complete optics
+ * pair, so the caller must use its legacy result. A planning-basis placard
+ * may still use this path because the modeled range comes from the optics,
+ * not by scaling that placard.
+ */
+export function eoIrDriRangesM(
+  spec: SensorSpec,
+  target: UasSpec | undefined,
+  env: EnvironmentSpec,
+): EoirDriRanges | null {
+  if (spec.sensorType !== 'eo-ir' || !target) return null
+  const ifovRad = eoIfovRadFor(spec)
+  if (ifovRad == null) return null
+
+  let bandFactor = 1
+  if (eoBandFor(spec, env) === 'thermal') {
+    bandFactor *= IR_SIGNATURE_FACTOR[irSignatureFor(target)]
+  } else if (env.apply && (env.light ?? 'day') === 'night') {
+    bandFactor *= NIGHT_VISIBLE_FACTOR
+  }
+  const numeratorM = spanMFor(target) * bandFactor * sensorEnvFactor('eo-ir', env)
+  const extinctionPerM = eoExtinctionPerM(spec, env)
+  const rangeFor = (task: EoirTask): number => attenuatedRangeM(
+    numeratorM / (2 * JOHNSON_CYCLES[task] * ifovRad),
+    extinctionPerM,
+  )
+  return {
+    detectM: rangeFor('detect'),
+    recognizeM: rangeFor('recognize'),
+    identifyM: rangeFor('identify'),
+  }
+}
+
+/**
+ * One DRI task range for sensorEnv.ts. The switch, incomplete optics,
+ * missing target return the supplied legacy value bit for bit; modeled
+ * cases ignore that value.
+ */
+export function eoIrRangeM(
+  spec: SensorSpec,
+  target: UasSpec | undefined,
+  env: EnvironmentSpec,
+  options: EoirRangeOptions,
+): number {
+  if (options.useFallback) return options.fallbackRangeM
+  const dri = eoIrDriRangesM(spec, target, env)
+  if (dri == null) return options.fallbackRangeM
+  if (options.task === 'detect') return dri.detectM
+  if (options.task === 'recognize') return dri.recognizeM
+  return dri.identifyM
 }
 
 /**

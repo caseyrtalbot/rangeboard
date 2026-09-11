@@ -5,7 +5,7 @@ import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelity'
 
 const IDS: ModelId[] = [
-  'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect', 'jam',
+  'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range', 'rf-detect', 'jam',
   'environment', 'threat-flight', 'horizon', 'track-init', 'doctrine', 'kinetic-pk', 'flyout',
   'draw-policy', 'parameter-spread',
   'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
@@ -82,6 +82,18 @@ describe('modelsUsed', () => {
     const ids = modelsUsed(s).map((t) => t.id)
     expect(ids).toContain('acoustic-range')
     expect(ids).not.toContain('horizon')
+  })
+
+  it('reads optics-based EO/IR DRI unless its fallback switch is on', () => {
+    const s = emptyScenario()
+    s.entities.push(entity('s1', 'sensor', 'lib-spynel'))
+    s.entities.push(entity('u1', 'uas', 'lib-mavic3'))
+    expect(modelsUsed(s).map((t) => t.id)).toContain('eoir-dri')
+    expect(modelsForEntity(s, 's1').map((t) => t.id)).toContain('eoir-dri')
+
+    s.physics = ['eoirSpanRatio']
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('eoir-dri')
+    expect(modelsForEntity(s, 's1').map((t) => t.id)).not.toContain('eoir-dri')
   })
 
   it('drops doctrine when the scenario turns fire doctrine off', () => {

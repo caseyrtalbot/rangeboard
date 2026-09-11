@@ -14,10 +14,11 @@ import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '.
 import { expenditureChannel } from '../playback/pk'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
+import { eoIfovRadFor } from './sensorEnv/eoir'
 
 /** Every model the engine runs. */
 export type ModelId =
-  | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'acoustic-range' | 'rf-detect' | 'jam'
+  | 'radar-pd' | 'radar-scan' | 'eoir-range' | 'eoir-dri' | 'acoustic-range' | 'rf-detect' | 'jam'
   | 'environment' | 'threat-flight' | 'horizon' | 'track-init' | 'doctrine' | 'kinetic-pk' | 'flyout'
   | 'draw-policy' | 'parameter-spread'
   | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
@@ -70,6 +71,19 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     validation: 'none',
     standard: 'EO/IR: Johnson criteria retained as a legacy cross-check',
     note: 'Johnson criteria scale a placard range by target span. No sensor model behind it.',
+  },
+  'eoir-dri': {
+    id: 'eoir-dri',
+    label: 'EO/IR DRI',
+    tier: 'physics',
+    validation: 'datasheet',
+    standard:
+      'EO/IR: NVESD NV-IPM methodology and the Targeting Task Performance metric; ' +
+      'Johnson criteria retained as a legacy cross-check',
+    note:
+      'Johnson 1/4/8-cycle DRI from detector optics with Beer-Lambert extinction. ' +
+      'eoir.verify.test.ts reproduces the Spynel-S 6000 detect point and pins the ' +
+      'vendor D/R ratio mismatch; its identification range is analytic because the sheet omits it.',
   },
   'acoustic-range': {
     id: 'acoustic-range',
@@ -213,7 +227,7 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
 /** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
 const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
   sensor: [
-    'radar-pd', 'radar-scan', 'eoir-range', 'acoustic-range', 'rf-detect',
+    'radar-pd', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range', 'rf-detect',
     'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
   ],
   effector: ['jam', 'doctrine', 'kinetic-pk', 'flyout'],
@@ -283,6 +297,12 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('radar-pd', sensors.some((s) => targets.some((t) => radarPdModeled(s, t))))
   add('radar-scan', sensors.some((s) => scanPeriods(s, targets).some((p) => p != null)))
   add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
+  add(
+    'eoir-dri',
+    !physicsSwitches(scenario).includes('eoirSpanRatio')
+      && targets.length > 0
+      && sensors.some((s) => s.sensorType === 'eo-ir' && eoIfovRadFor(s) != null),
+  )
   add('acoustic-range', sensors.some((s) => s.sensorType === 'acoustic'))
   add('rf-detect', sensors.some((s) => s.sensorType === 'rf'))
   add('jam', effectors.some((e) => e.effectorType === 'jammer'))
