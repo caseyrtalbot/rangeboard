@@ -35,6 +35,10 @@ import { deterministicPolicy } from './policy'
 import { effectivePathDelayS } from './raid'
 import { profileFor } from '../model/integration'
 import { bdaSFor, commitPkFor } from '../analysis/doctrineFactors'
+import type { FalseTrackLoad } from './falseTracks'
+import type { OperatorQueue } from './operator'
+import { createOperatorQueue, firstC2Of } from './operator'
+import type { KillChainRoute } from './killChain'
 
 /**
  * Deterministic expected-value attrition over the raid. No random rolls in
@@ -130,16 +134,44 @@ function retirePending(set: Set<PendingEffect>, discount: number, fx: PendingEff
 }
 
 /**
+ * Operator delay on one (threat, effector) pair, seconds (operator.ts): the
+ * declare-hostile decision taken at the gate, then the weapon-assignment
+ * decision taken once the cue has crossed the route latency. Zero with no
+ * C2 node on the route or no gate for the pair. Under doctrine the gate is
+ * the effector's own (effectorGates), else the threat's engageGateS.
+ */
+function operatorDelayS(
+  queue: OperatorQueue,
+  route: KillChainRoute,
+  a: ThreatAssessment,
+  effectorId: string,
+  doctrineOn: boolean,
+): number {
+  const c2Id = firstC2Of(route)
+  if (!c2Id) return 0
+  const gateS = doctrineOn
+    ? a.effectorGates?.find((g) => g.effectorId === effectorId)?.gateS ?? null
+    : a.engageGateS
+  if (gateS == null) return 0
+  const declareS = queue.delayS(c2Id, a.uasId, gateS)
+  const assignS = queue.delayS(c2Id, a.uasId, gateS + declareS + route.latencyS)
+  return declareS + assignS
+}
+
+/**
  * Resolve every engagement window into expected kills, leakers and magazine
  * use. Sweeps at DT; each ready effector fires one salvo per salvoCooldownS
  * at the eligible ship with the highest effective survival (see the header),
  * or holds fire with no magazine spend and no cooldown. Effects still pending
- * when the sweep ends are flushed in tEffect order.
+ * when the sweep ends are flushed in tEffect order. `falseLoad` is the
+ * replicate's false-track load when the caller already ran that process
+ * (the trial, with its sink); the operator queue builds its own otherwise.
  */
 export function resolveEngagements(
   scenario: Scenario,
   precomputed?: ThreatAssessment[],
   policy?: DrawPolicy,
+  falseLoad?: FalseTrackLoad,
 ): AttritionReport {
   // A missing policy is the deterministic expected-value run.
   const draw =
@@ -149,6 +181,9 @@ export function resolveEngagements(
     (a) => a.status !== 'no-path',
   )
   const doctrine = effectiveDoctrine(scenario)
+  // Operator queue: inactive (no draw, zero delay) with no c2 spec that
+  // states a median or with the noOperatorQueue switch, so today's timings hold.
+  const operator = createOperatorQueue(scenario, assessments, draw, falseLoad)
 
   const threats: ThreatState[] = assessments.map((a) => {
     const entity = scenario.entities.find((e) => e.id === a.uasId)!
@@ -157,6 +192,7 @@ export function resolveEngagements(
     const count = entity.formation && entity.formation.count > 1 ? entity.formation.count : 1
     const windows = new Map<string, Array<[number, number]>>()
     const routeLatencyS = new Map<string, number>()
+    const effectorReadyS = new Map((a.effectorGates ?? []).map((g) => [g.effectorId, g.readyS]))
     if (a.status === 'engageable') {
       const routes = killChainRoutes(scenario, new Set(a.detectingSensorIds))
       for (const w of a.effectorWindows) {
@@ -169,6 +205,14 @@ export function resolveEngagements(
         }
         windows.set(w.effectorId, w.intervals)
         routeLatencyS.set(w.effectorId, route.latencyS)
+        if (!operator.active) continue
+        // Both operator decisions delay this pair's release-ready time: the
+        // legacy path reads gateS + routeLatencyS, doctrine reads effectorReadyS.
+        const extraS = operatorDelayS(operator, route, a, w.effectorId, doctrine.enabled)
+        if (extraS <= 0) continue
+        routeLatencyS.set(w.effectorId, route.latencyS + extraS)
+        const readyS = effectorReadyS.get(w.effectorId)
+        if (readyS != null) effectorReadyS.set(w.effectorId, readyS + extraS)
       }
     }
     return {
@@ -196,7 +240,7 @@ export function resolveEngagements(
       windows,
       routeLatencyS,
       gateS: a.engageGateS,
-      effectorReadyS: new Map((a.effectorGates ?? []).map((g) => [g.effectorId, g.readyS])),
+      effectorReadyS,
       shotsFired: 0,
       deSalvos: 0,
       jamSalvos: 0,

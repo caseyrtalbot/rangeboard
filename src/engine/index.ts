@@ -164,6 +164,18 @@ export {
 } from '../playback/kalman'
 export type { TrackHold, TrackManager } from '../playback/tracker'
 export { createTrackManager, polarMeasurement, trackId, truthPathFor } from '../playback/tracker'
+export type { FalseTrackLoad } from '../playback/falseTracks'
+export {
+  FALSE_TRACK_CELLS,
+  FALSE_TRACK_SPEED_MPS,
+  falseTrackRatePerScan,
+  poissonInverse,
+  prepareFalseTracks,
+  scenarioHorizonS,
+} from '../playback/falseTracks'
+export type { OperatorQueue } from '../playback/operator'
+export { createOperatorQueue, decisionLatencyS, firstC2Of, overloadFactor } from '../playback/operator'
+export type { KillChainRoute } from '../playback/killChain'
 
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'

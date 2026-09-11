@@ -4,7 +4,9 @@ import { hashU01, idHash } from '../geometry/prng'
 import { stepIndex } from './clock'
 
 /** Draw kinds, one integer per engine draw point. */
-export const DRAW_KIND = { detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7 } as const
+export const DRAW_KIND = {
+  detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7, falseAlarm: 9, latency: 10,
+} as const
 
 /**
  * The engine's five probabilistic outcomes, resolved by one policy per run.
@@ -46,6 +48,19 @@ export interface DrawPolicy {
    * 0.5, the noise-free value. Optional: a policy without it is noise-free.
    */
   noise?(sensorId: string, uasId: string, tS: number, axis: number): number
+  /**
+   * False-alarm uniform for one radar scan, in [0, 1): k 0 is the Poisson
+   * count inversion, k >= 1 the state uniforms of each false track
+   * (falseTracks.ts). Keyed by (sensorId, k, step), kind 9 (kind 8 is the
+   * classification draw). Deterministic: 0.5.
+   */
+  falseAlarm(sensorId: string, tS: number, k: number): number
+  /**
+   * Operator decision-latency uniform at one C2 node for one threat, in
+   * [0, 1): operator.ts maps it through the lognormal quantile. Keyed by
+   * (c2Id, uasId, step), kind 10. Deterministic: 0.5, the median.
+   */
+  latency(c2Id: string, uasId: string, tS: number): number
 }
 
 /**
@@ -68,6 +83,8 @@ export function deterministicPolicy(thresholds: RequirementThresholds): DrawPoli
     phase: () => 0,
     param: () => 0.5,
     noise: () => 0.5,
+    falseAlarm: () => 0.5,
+    latency: () => 0.5,
   }
 }
 
@@ -104,5 +121,7 @@ export function monteCarloPolicy(
     param: (modelId, field) => u(DRAW_KIND.param, modelId, h(field), 0, 0),
     noise: (sensorId, uasId, tS, axis) =>
       u(DRAW_KIND.noise, sensorId, h(uasId), axis, stepIndex(tS)),
+    falseAlarm: (sensorId, tS, k) => u(DRAW_KIND.falseAlarm, sensorId, k, 0, stepIndex(tS)),
+    latency: (c2Id, uasId, tS) => u(DRAW_KIND.latency, c2Id, h(uasId), 0, stepIndex(tS)),
   }
 }

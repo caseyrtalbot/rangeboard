@@ -3,6 +3,7 @@ import { runSettings } from '../model/types'
 import { idHash } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
 import { resolvedThresholds } from './detection'
+import { prepareFalseTracks, scenarioHorizonS } from './falseTracks'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
 import type { TrackEstimate } from './trackTypes'
@@ -40,6 +41,11 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
   const assessments = assessAllThreats(
     scenario, draw, (observation) => observations.push(observation), (estimate) => tracks.push(estimate),
   )
-  const report = resolveEngagements(scenario, assessments, draw)
+  // False tracks (kind-9 draws only) join the trial's track history; the
+  // operator queue in resolveEngagements reads the same load.
+  const falseLoad = prepareFalseTracks(
+    scenario, draw, scenarioHorizonS(scenario), (estimate) => tracks.push(estimate),
+  )
+  const report = resolveEngagements(scenario, assessments, draw, falseLoad)
   return { manifest: Object.freeze({ ...manifest }), assessments, report, observations, jamDecisions, tracks }
 }
