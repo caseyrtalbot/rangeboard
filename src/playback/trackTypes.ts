@@ -6,7 +6,6 @@
  * fill them. Board meters throughout: +x east, +y south, m/s for velocity.
  */
 
-import type { SensorType } from '../model/types'
 
 /** Estimated kinematic state in board meters and m/s, stamped with the update time. */
 export interface TrackState {
@@ -61,27 +60,7 @@ export interface FusedTrack extends TrackEstimate {
   fusedAtS: number
 }
 
-/** Classification performance of one sensor type inside one range band. */
-export interface ClassificationBand {
-  /** Upper edge of the band, meters. */
-  maxRangeM: number
-  /** Probability the declared class is correct. */
-  pCorrect: number
-  /** Probability a non-hostile track is declared hostile. */
-  pFalseHostile: number
-  /** Dwell before the declaration, seconds. */
-  timeToDeclareS: number
-}
-
-/**
- * Confusion matrix by range band for one sensor type. `bands` is sorted by
- * `maxRangeM` ascending; the first band whose `maxRangeM` exceeds the range
- * applies. A range beyond the last band has no classification.
- */
-export interface ClassificationMatrix {
-  sensorType: SensorType
-  bands: ClassificationBand[]
-}
+export type { ClassificationBand, ClassificationMatrix } from '../model/types'
 
 /**
  * One Cartesian measurement with its 2x2 noise, in board meters. The tracker

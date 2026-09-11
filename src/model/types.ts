@@ -121,6 +121,34 @@ export interface SensorSpec {
    * stated target, so no physics runs on it and target scaling returns 1.
    */
   rangeBasis?: RangeBasis
+  /**
+   * Classification confusion matrix by range band for this sensor. Absent or
+   * null: the rule ladder classifies (today's path). Fills through the library
+   * as an attribute in a later data lane.
+   */
+  classification?: ClassificationMatrix | null
+}
+
+/** Classification performance of one sensor type inside one range band. */
+export interface ClassificationBand {
+  /** Upper edge of the band, meters. */
+  maxRangeM: number
+  /** Probability the declared class is correct. */
+  pCorrect: number
+  /** Probability a non-hostile track is declared hostile. */
+  pFalseHostile: number
+  /** Dwell before the declaration, seconds. */
+  timeToDeclareS: number
+}
+
+/**
+ * Confusion matrix by range band for one sensor type. `bands` is sorted by
+ * `maxRangeM` ascending; the first band whose `maxRangeM` exceeds the range
+ * applies. A range beyond the last band has no classification.
+ */
+export interface ClassificationMatrix {
+  sensorType: SensorType
+  bands: ClassificationBand[]
 }
 
 /** EO/IR imaging band. */
