@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "c1e38da79c52b11bae3fa2ec635cb98c12542d1ebed0f993c9b7fd0e2570fabb",
-      "reviewedAt": "2026-09-11",
-      "note": "Indexed the dated Phase 3 integration code review."
+      "sha256": "0c9266e46ceaf6d2f07dd34ee79941349370c3ef1d09df489506da21ec48a13e",
+      "reviewedAt": "2026-09-14",
+      "note": "Removed index rows for deleted superseded evidence and journals (design steps, R0 to R3, F1, analysis rebuild, workspace preparation, performance handoff)"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4374a41b4bbdd2375a12b42605c5cfeff05f1c4f8ead95271a28ec37e5507ea2",
-      "reviewedAt": "2026-09-11",
-      "note": "Phase 3 slice 3.a and data lanes: sweep step contract, sensorEnv and pk splits, Phase 3 fields at data package v3, FIELDS_BY_KIND c2 and accuracy"
+      "sha256": "ca432322790518326c2733a6e64589ca43f3acb5d0c187f6bc9878cf60e38cab",
+      "reviewedAt": "2026-09-14",
+      "note": "Handoff defined as position, tasking and landmines with fixed sections; completed work lives in plan, evidence and commits"
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "986321c69abd286a5afd979310847bf75c6b3325a60acce7ee5e8749a5054469",
-      "reviewedAt": "2026-09-11",
-      "note": "Recorded four open review findings and distinguished the historical gate publication status from the committed integration."
+      "sha256": "1b2afe6e726ecdf3cd6d6b41006a2690a468513f56f6d5b5f81fe1f703ea86d7",
+      "reviewedAt": "2026-09-14",
+      "note": "Rewritten to the fixed shape: position, tasking ahead, landmines, evidence; no completed-work journal"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "7ca7f0b3d1b58fa30fa7d8446c678118cb7e126a1a2e2a70aad8e215eb60ce61",
-      "reviewedAt": "2026-09-11",
-      "note": "Reviewed the completed 3.1 through 3.6 lane merges, integration evidence and Phase 3 exit."
+      "sha256": "1c6afa74605cead08f226ebe44e88f070e23a6432a7e4fc85d06be7277f5426a",
+      "reviewedAt": "2026-09-14",
+      "note": "Handoff rule in section 8 matches the fixed shape; Phase 3 review recorded in section 7"
     }
   ],
   "historical": [

@@ -17,7 +17,7 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [VERIFICATION.md](VERIFICATION.md) | Commands, tests, parity and browser procedures |
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
-| [HANDOFF.md](HANDOFF.md) | Completed work, continuation references and unstarted-stage boundaries |
+| [HANDOFF.md](HANDOFF.md) | Position, tasking ahead and landmines; rewritten in place, never a journal |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Calibration blueprint implementation: phases, lanes, owners, file sets and stop conditions |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
@@ -35,14 +35,11 @@ the original bytes from the capture commit when checking an old manifest.
 
 Proposals preserve design decisions for review; implementation requires separate approval.
 
-- [Board workspace design plan and interactive prototype, 2026-09-06](field-te/evidence/board-workspace-design-2026-09-06/board-workspace-prototype.html)
 - [Playback realism implementation proposal, 2026-09-07](field-te/evidence/playback-realism-plan-2026-09-07.md)
-- [Analysis rebuild implementation plan, 2026-09-08, approved](field-te/evidence/analysis-rebuild-plan-2026-09-08.md)
 
 ### Completion and integration records
 
 - [Phase 3 integration code review, 2026-09-11](CodeReview.md)
-- [Analysis rebuild completion evidence, 2026-09-08](field-te/evidence/analysis-rebuild-2026-09-08/README.md)
 - [Calibration Phase 0 gate evidence, 2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md)
 - [Calibration Phase 1 gate evidence, 2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md)
 - [Calibration Phase 2 gate evidence, 2026-09-10](field-te/evidence/p2-gate-2026-09-10/README.md)
@@ -61,8 +58,6 @@ Proposals preserve design decisions for review; implementation requires separate
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.5 kinetic effectors](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.5.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.6 beam effectors](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.6.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.7 Physics tab](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.7.md)
-- [Performance refactor handoff, September 7, 2026 snapshot](field-te/performance-refactor-handoff-2026-09-07.md)
-- [Agent workspace preparation, 2026-09-06](field-te/WORKSPACE_PREPARATION_2026-09-06.md)
 - [C1: analysis identity and result invalidation](field-te/C1_COMPLETION.md)
 - [C4: authoritative T&E record transitions](field-te/C4_COMPLETION.md)
 - [C2/C3/E1 wave completion](field-te/WAVE_C2_C3_E1_COMPLETION.md)
@@ -97,13 +92,6 @@ Proposals preserve design decisions for review; implementation requires separate
 - [Track, C2 and doctrine slice: before-and-after capture, 2026-09-05](field-te/evidence/track-c2-slice-2026-09-05/diff.md)
 - [Native import browser check](field-te/evidence/wave-c2-c3-e1-2026-09-05/native-import-recipe.md)
 - [Performance baseline at 955ad6b, 2026-09-06](field-te/evidence/perf-2026-09-06/README.md)
-- [R0 playback realism baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/README.md)
-- [R0 numerical baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/numerical-baseline.md)
-- [R0 consumer matrix, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/consumer-matrix.md)
-- [R0 browser and performance baseline, 2026-09-07](field-te/evidence/r0-playback-realism-2026-09-07/browser-perf-baseline.md)
-- [R1 honest readouts and setup, 2026-09-07](field-te/evidence/r1-honest-readouts-2026-09-07/README.md)
-- [R2 execution scope and layers, 2026-09-07](field-te/evidence/r2-execution-scope-2026-09-07/README.md)
-- [R3 physical launch timing, 2026-09-07](field-te/evidence/r3-physical-launch-2026-09-07/README.md)
 - [R4 trial engine and lifecycle, 2026-09-07](field-te/evidence/r4-trial-lifecycle-2026-09-07/README.md)
 - [R5 sampled experience evidence, 2026-09-08](field-te/evidence/r5-sampled-experience-2026-09-08/README.md)
 

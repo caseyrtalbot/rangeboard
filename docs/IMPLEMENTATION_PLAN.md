@@ -263,7 +263,7 @@ this, Where it fails, Where to put it, Save, Compare, Export. Exit: blueprint Ph
 | 0 | 1 | 4 | none | 0.2 waits for 0.1's format |
 | 1 | 1 | 5 | none | 1.3 owns `mcRun.ts` |
 | 2 | 1 | wave one 3, wave two 3 | 1 | highest risk |
-| 3 | 1 | 2 research, 6 physics, 1 UI | none | may overlap Phase 2 after 2.a |
+| 3 | 1 | 2 research, 6 physics, 1 UI | 1 after the gate | may overlap Phase 2 after 2.a; review findings in [CodeReview.md](CodeReview.md) |
 | 4 | 1 | 4, then 1 | none | |
 
 Peak concurrency is nine agents in Phase 3. Every lane has a named owner, a file set and a
@@ -277,5 +277,5 @@ Each phase gate updates `docs/PROJECT_GUIDE.md`, `docs/ENGINEERING_REFERENCE.md`
 `npm run docs:review`. This plan is a current reference; when a phase completes, mark it
 here with the merge commit and move on. Dated evidence goes under `docs/field-te/evidence/`.
 [HANDOFF.md](HANDOFF.md) is the one session-state document. The orchestrator rewrites it in
-place at every phase gate, from the Phase 0 gate through the Phase 4 gate, and keeps only
-the current phase and the one before it.
+place at every gate. It holds the position, the tasking ahead and the landmines; completed
+phases are marked here, not there.

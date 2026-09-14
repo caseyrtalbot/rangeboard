@@ -47,7 +47,7 @@ the same change; do not retain competing active descriptions or mark an active g
 | Current references | Root `README.md`, this workflow, project/engineering/verification guides, `docs/README.md`, and the design system. Each is registered in [maintenance.json](maintenance.json). |
 | Historical evidence | `docs/field-te/`, including dated captures and model dossiers. Dates, measurements and limitations describe the capture, not the current tree. Preserve evidence paths used by tests and scripts. |
 | Source material | `docs/te-compilation/`, `docs/inventory/`, `docs/threat/`, and `docs/te-plan.md`. Preserve unique source content and distinguish original intent from implemented behavior. |
-| Session state | A task message selects work. The central [handoff](HANDOFF.md) records verified completion and continuation boundaries; update it after the selected change passes its gate. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
+| Session state | A task message selects work. The central [handoff](HANDOFF.md) holds the position, the tasking ahead and the landmines; rewrite it in place after the selected change passes its gate. Completed work is recorded in the plan, the evidence index and commits, never in the handoff. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
 
 Every Markdown file must have a direct link in [the index](README.md), except the index
 itself. Add a current reference only when no existing document owns the subject; register
@@ -81,10 +81,11 @@ pretend an old capture is current. Use Git history to retrieve its original byte
 
 ## Handoffs and orchestration
 
-A task handoff carries exactly one session task. The central `docs/HANDOFF.md` records
-completion and continuation boundaries; archived wave plans cannot select a new task.
-Update it after the selected change passes verification. Point to current source and docs
-instead of copying them. For a selected implementation task, include:
+A task handoff carries exactly one session task. The central `docs/HANDOFF.md` has fixed
+sections: Position, Tasking, Landmines and Evidence. It lists tasks in order, never
+completed work; archived wave plans cannot select a new task. Rewrite it after the
+selected change passes verification. Point to current source and docs instead of copying
+them. For each task in the Tasking section, include:
 
 - Repository, branch/base commit and dirty paths relevant to the next task.
 - Requested outcome, owned files and explicit exclusions.
