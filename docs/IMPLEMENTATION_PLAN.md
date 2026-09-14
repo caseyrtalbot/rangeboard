@@ -224,6 +224,8 @@ truth-path parity suites remain unchanged. The estimate-path fixture was deliber
 recaptured after all six models were integrated; the before/after numbers and their
 interpretation are in
 [the Phase 3 gate record](field-te/evidence/p3-gate-2026-09-10/README.md).
+The four findings of the [integration review](CodeReview.md) were closed on 2026-09-14
+with regression tests; see [the review-fix record](field-te/evidence/cr-fixes-2026-09-14/README.md).
 
 ## 6. Phase 4: hypothesis tools
 

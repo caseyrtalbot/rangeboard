@@ -488,10 +488,15 @@ export function resolveEngagements(
           : 1
       es.rounds -= burstRounds
     }
-    es.nextReadyS = t + cooldownS
-    // Fine-step hook (clock.ts): a burst or dwell lane requests its window here.
+    // Cooldown is the spacing between assignments (one salvo per
+    // salvoCooldownS, counted from t). A modeled optical dwell also holds
+    // the beam director on this target until the effect lands, so the
+    // effector is reserved through whichever ends later.
+    es.nextReadyS = dwellS > 0 ? Math.max(t + cooldownS, tEffect) : t + cooldownS
+    // Fine-step hook (clock.ts): a burst or dwell lane requests its window
+    // here. The dwell window is the credited illumination, release to effect.
     if (dwellS > 0) {
-      clock.requestFineStep(es.entity.id, t, t + dwellS, 0.1)
+      clock.requestFineStep(es.entity.id, t + releaseDelayS, tEffect, 0.1)
     }
     if (
       es.spec.effectorType === 'gun'

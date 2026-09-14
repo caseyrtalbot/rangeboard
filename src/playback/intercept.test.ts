@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { EffectorSpec } from '../model/types'
+import type { EffectorSpec, Entity, FlightPath } from '../model/types'
 import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import type { EffectorState, ThreatState } from './sweepState'
 import type { Covariance4, TrackEstimate, TrackSource } from './trackTypes'
@@ -65,6 +65,41 @@ describe('intercept kinematics', () => {
     // A jammer effect arrives with the beam: no flyout.
     const jam = states({ ...INTERCEPTOR, effectorType: 'jammer' })
     expect(interceptAt(jam.ts, jam.es, 10, 0, stationary).tEffectS).toBe(15)
+  })
+
+  it('interceptAt solves the fallback flyout against the sampled limited flight', () => {
+    // CR-04: the target starts 1000 m east and flies to the launcher at a
+    // requested 20 m/s with 1 m/s2 of acceleration, so it has covered
+    // 0.5 t^2 m at t (it is still accelerating at the meeting). The flyout
+    // charges 0.7 * 100 = 70 m/s from the origin with no engagement delay.
+    // Constant-speed timing solves 70 t = 1000 - 20 t, t = 11.111 s, and then
+    // samples the target 938.272 m out: past the flyout, so the old code
+    // declined the shot. The accelerated meeting is 0.5 t^2 + 70 t = 1000,
+    // t = 13.066 s at 914.637 m, which the flyout reaches.
+    const points = [{ x: 1000, y: 0 }, { x: 0, y: 0 }]
+    const flownM = (tS: number) => {
+      const t = Math.max(0, tS)
+      // Requested speed 20 m/s at 1 m/s2: 20 s of acceleration, then cruise.
+      const d = t <= 20 ? 0.5 * t * t : 200 + 20 * (t - 20)
+      return Math.min(1000, d)
+    }
+    const ts = {
+      entity: {} as Entity,
+      altM: 4,
+      path: { points } as FlightPath,
+      sampleFlightAt: (tS: number) => ({ pos: { x: 1000 - flownM(tS), y: 0 }, headingDeg: 270 }),
+      speedMps: 20,
+      delayS: 0,
+    } as ThreatState
+    const es = {
+      entity: { pos: { x: 0, y: 0 } }, spec: INTERCEPTOR, mountM: 4, engageTimeS: 0,
+    } as EffectorState
+    const ic = interceptAt(ts, es, 0, 0)
+    expect(ic.tEffectS).toBeCloseTo(13.066238629, 6)
+    expect(ic.slantM).toBeCloseTo(914.636704, 6)
+    expect(ic.pos.x).toBeCloseTo(914.636704, 6)
+    expect(ic.capped).toBe(false)
+    expect(ic.infeasible).toBe(false)
   })
 
   it('interceptFor with no estimate or a truth-source estimate is interceptAt exactly', () => {

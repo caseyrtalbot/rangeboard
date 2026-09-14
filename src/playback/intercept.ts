@@ -158,6 +158,40 @@ function profileMeetTau(
   return hi
 }
 
+/**
+ * Largest slant miss that still counts as a constant-speed meeting, as a
+ * fraction of the distance flown (floored at one meter). It sits above float
+ * noise and meetTau's root clamping at an interval end, and far below any
+ * real gap between the sampled trajectory and the constant-speed one.
+ */
+const CONSTANT_SPEED_MISS = 1e-6
+
+/** Constant-speed flyout as a profile, so the sampled solve reuses profileMeetTau. */
+function constantSpeedProfile(v: number): FlyoutProfile {
+  return {
+    launchDelayS: 0,
+    distanceAt: (flightS) => v * Math.max(0, flightS),
+    seekerAcquisitionRangeM: null,
+  }
+}
+
+/**
+ * True when a constant-speed flyout of `v` really reaches the SAMPLED target
+ * after `tofS`, so the closed-form time and the sampled trajectory describe
+ * the same motion. False under flight limits, where the sampler accelerates,
+ * rounds its corners or drifts downwind away from the closed-form point.
+ */
+function closesOnSample(
+  sampleAt: (tEffectS: number) => { slantM: number },
+  releaseS: number,
+  tofS: number,
+  v: number,
+): boolean {
+  const flownM = v * tofS
+  const missM = Math.abs(sampleAt(releaseS + tofS).slantM - flownM)
+  return missM <= CONSTANT_SPEED_MISS * Math.max(1, flownM)
+}
+
 /** Flight time to a stationary point under the Phase 3 interceptor profile. */
 export function interceptorFlightTimeS(spec: EffectorSpec, slantM: number): number | null {
   if (!Number.isFinite(slantM) || slantM < 0 || spec.effectorType !== 'interceptor') return null
@@ -361,12 +395,23 @@ export function interceptAt(
   const v = averageFlyoutMps(es.spec)
   // A ship with no path (or no speed) is stationary where the sampler puts it.
   const moving = ts.path != null && ts.path.points.length >= 2 && ts.speedMps > 0
-  const tofS =
+  let tofS =
     v <= 0
       ? 0
       : moving
         ? analyticTofS(ts, es, releaseS, memberIdx, dAltM)
         : sampleAt(releaseS).slantM / v
+  // The closed-form time above assumes constant-speed waypoint motion, but the
+  // position and feasibility below read the sampled flight. Keep the closed
+  // form only when the flyout really closes on the sampled target; otherwise
+  // solve the flyout against that same sampled trajectory, so timing, position
+  // and feasibility all describe one trajectory.
+  if (v > 0 && tofS != null && !closesOnSample(sampleAt, releaseS, tofS, v)) {
+    tofS = profileMeetTau(
+      constantSpeedProfile(v),
+      (tauS) => sampleAt(releaseS + tauS).slantM,
+    )
+  }
   if (tofS == null) {
     // No meeting on a path that never ends: credit nothing, decline.
     const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS

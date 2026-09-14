@@ -1233,3 +1233,72 @@ describe('physical release metadata and playback', () => {
     expect(trackStatesAt(tl, ev.tEffectS).get(uas.id)!.expectedKills).toBe(report.threats[0].expectedKills)
   })
 })
+
+/*
+ * CR-02: a modeled optical dwell holds the effector until its effect time.
+ * Cooldown alone released it, so one laser illuminated two targets at once.
+ */
+describe('optical dwell reservation', () => {
+  /** Group 1 quadcopter: the Iron Beam calibration airframe. */
+  const QUAD: SpecModel = {
+    ...TARGET,
+    id: 'tst-quad',
+    name: 'test quad',
+    uas: { ...TARGET.uas!, group: 1, airframe: 'quad', cruiseSpeedMps: 1, maxSpeedMps: 2 },
+  }
+  const OPTICAL: SpecModel = {
+    id: 'tst-optical',
+    name: 'test optical',
+    kind: 'effector',
+    description: '',
+    color: '#fff',
+    builtin: false,
+    effector: {
+      effectorType: 'de',
+      minRangeM: 0,
+      maxRangeM: 12000,
+      engageTimeS: 5,
+      pk: 0.8,
+      salvoCooldownS: 15,
+      outputPowerKw: 100,
+      beamQualityM2: 2,
+      apertureM: 0.3,
+      jitterUrad: 10,
+    },
+  }
+
+  it('does not illuminate a second target while the first dwell is still in progress', () => {
+    // Two quadcopters 10 km east crawling at 1 m/s under 8 km visibility:
+    // each dwell runs about 39 s against a 15 s cooldown. The second
+    // assignment waits for the first effect, so the credited illumination
+    // intervals [release, effect] never overlap.
+    const scenario = legacyScenario()
+    scenario.roe = 'free'
+    scenario.physics = ['truthTracks', 'noFalseTracks', 'noOperatorQueue']
+    scenario.environment = { ...scenario.environment, visibilityM: 8000, windSpeedMps: 0 }
+    scenario.library = [...scenario.library, SENSOR, QUAD, OPTICAL]
+    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
+    const laser = ent('effector', OPTICAL.id, { x: 0, y: 0 })
+    const a = ent('uas', QUAD.id, { x: 10000, y: 0 })
+    const b = ent('uas', QUAD.id, { x: 10000, y: 100 })
+    scenario.entities = [sensor, laser, a, b]
+    scenario.connections = [link(sensor.id, laser.id)]
+    scenario.paths = [
+      flight(a.id, [{ x: 10000, y: 0 }, { x: 10100, y: 0 }], 1),
+      flight(b.id, [{ x: 10000, y: 100 }, { x: 10100, y: 100 }], 1),
+    ]
+    const report = resolveEngagements(scenario, assessAllThreats(scenario))
+    const events = report.events.filter((e) => e.effectorId === laser.id)
+    expect(events.length).toBeGreaterThanOrEqual(2)
+    expect(events[0].tS).toBeCloseTo(0, 9)
+    expect(events[0].tReleaseS).toBeCloseTo(1, 9)
+    expect(events[0].tEffectS - events[0].tReleaseS!).toBeGreaterThan(15)
+    expect(events[1].uasId).not.toBe(events[0].uasId)
+    for (let i = 1; i < events.length; i += 1) {
+      expect(events[i].tReleaseS!).toBeGreaterThanOrEqual(events[i - 1].tEffectS - 1e-9)
+    }
+    // The fine-step window ends at the effect, so the next assignment lands
+    // on that sample, not on the next base-grid tick after it.
+    expect(events[1].tS).toBeCloseTo(events[0].tEffectS, 9)
+  })
+})

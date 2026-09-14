@@ -5,12 +5,19 @@ import type { EffectorState, ThreatState } from './sweepState'
 import type { TrackEstimate } from './trackTypes'
 import { ZERO_COVARIANCE } from './kalman'
 import { kineticPk } from './pk'
+import { beamEffect } from './pk/beam'
 import type { ShotContext } from './shot'
 import { evaluateShot } from './shot'
 
 const INTERCEPTOR = {
   effectorType: 'interceptor', minRangeM: 0, maxRangeM: 10000, engageTimeS: 5, flyoutSpeedMps: 100,
 } as EffectorSpec
+/** The Iron Beam calibration optics (directedEnergy.ts) with a 12 km envelope. */
+const OPTICAL = {
+  effectorType: 'de', minRangeM: 0, maxRangeM: 12000, engageTimeS: 5, sectorDeg: 360,
+  outputPowerKw: 100, beamQualityM2: 2, apertureM: 0.3, jitterUrad: 10,
+} as EffectorSpec
+const QUAD = { navMode: 'gps', group: 1, airframe: 'quad' } as UasSpec
 
 /**
  * Launcher at the origin heading north, one stationary ship 7 km east at
@@ -145,12 +152,7 @@ describe('evaluateShot', () => {
   })
 
   it('uses the optical dwell as effect timing and preserves the independent fluence draw', () => {
-    const de = {
-      effectorType: 'de', minRangeM: 0, maxRangeM: 12000, engageTimeS: 5, sectorDeg: 360,
-      outputPowerKw: 100, beamQualityM2: 2, apertureM: 0.3, jitterUrad: 10,
-    } as EffectorSpec
-    const quad = { navMode: 'gps', group: 1, airframe: 'quad' } as UasSpec
-    const { ts, es } = states(de, [[0, 30]], quad)
+    const { ts, es } = states(OPTICAL, [[0, 30]], QUAD)
     const draws: Array<[string, string, number, number]> = []
     const shot = evaluateShot({
       ...ctx(),
@@ -170,6 +172,61 @@ describe('evaluateShot', () => {
     expect(shot.releaseDelayS).toBeCloseTo(1, 9)
     expect(shot.intercept.tEffectS).toBeCloseTo(13, 9)
     expect(shot.pk).toBe(0.8)
+  })
+
+  /**
+   * CR-01: a target closing at 50 m/s from 10 km, held at 100 m. The dwell
+   * falls with range faster than the effect delay grows, so the plain fixed
+   * point oscillates between a near-instant effect at 100 m and a 10 km
+   * dwell of minutes. The accepted answer must satisfy the model's own
+   * equation: the dwell at the credited range is the credited dwell.
+   */
+  const approach = (_ts: ThreatState, tS: number) => [{ x: Math.max(100, 10000 - 50 * tS), y: 0 }]
+  const opticalCtx = (visibilityM: number): ShotContext => ({
+    t: 0,
+    effectContainment: 'any',
+    membersAt: approach,
+    legacyBeamPk: false,
+    environment: { ...defaultEnvironment(), apply: true, visibilityM },
+  })
+  /** The dwell the beam model itself gives at the credited range. */
+  const dwellAtRange = (ctx: ShotContext, es: EffectorState, slantM: number) =>
+    beamEffect(es.pk, es.spec, QUAD, slantM, ctx.environment!, {
+      fallback: false, legacyCooldownS: es.cooldownS,
+    }).dwellS
+
+  it('solves the optical dwell of an approaching target to a self-consistent effect point', () => {
+    const { ts, es } = states(OPTICAL, [[0, 200]], QUAD)
+    const ctx5km = opticalCtx(5000)
+    const shot = evaluateShot(ctx5km, es, ts, 0)
+    if (shot.rejected) throw new Error(shot.rejected)
+    const d = shot.intercept.tEffectS
+    // Delay, dwell and position agree with one another and with the beam
+    // model at the credited range, to 1e-4 s.
+    expect(shot.intercept.pos.x).toBeCloseTo(10000 - 50 * d, 6)
+    expect(Math.abs(shot.releaseDelayS + shot.dwellS - d)).toBeLessThan(1e-4)
+    expect(Math.abs(dwellAtRange(ctx5km, es, shot.intercept.slantM) - shot.dwellS)).toBeLessThan(1e-4)
+    // Tens of seconds of dwell at 7.4 km, never the 100 m near-instant effect.
+    expect(shot.dwellS).toBeGreaterThan(40)
+    expect(shot.dwellS).toBeLessThan(60)
+    expect(shot.pk).toBe(0.8)
+  })
+
+  it('solves a low-visibility dwell inside the window and declines one that ends outside it', () => {
+    // 1 km visibility: the beam only bites inside about 2.4 km, so the
+    // effect lands near 153 s. The 100 s window cannot contain it.
+    const { ts, es } = states(OPTICAL, [[0, 200]], QUAD)
+    const ctx1km = opticalCtx(1000)
+    const shot = evaluateShot(ctx1km, es, ts, 0)
+    if (shot.rejected) throw new Error(shot.rejected)
+    const d = shot.intercept.tEffectS
+    expect(d).toBeGreaterThan(150)
+    expect(d).toBeLessThan(160)
+    expect(shot.intercept.pos.x).toBeCloseTo(10000 - 50 * d, 6)
+    expect(Math.abs(shot.releaseDelayS + shot.dwellS - d)).toBeLessThan(1e-4)
+    expect(Math.abs(dwellAtRange(ctx1km, es, shot.intercept.slantM) - shot.dwellS)).toBeLessThan(1e-4)
+    const short = states(OPTICAL, [[0, 100]], QUAD)
+    expect(evaluateShot(ctx1km, short.es, short.ts, 0)).toEqual({ rejected: 'no-dwell-solution' })
   })
 
   it('uses HPM field and recharge at the final target angle', () => {

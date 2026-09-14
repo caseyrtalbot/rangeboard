@@ -492,7 +492,9 @@ reads is the same object and a fresh memo otherwise. The assessment module owns 
 dependency set (`threatAssessmentInputs`, beside `assessThreat`: the scenario fields the
 sweep reads, the run duration, the threat, every asset, effector and C2 node, and every
 sensor whose technology gate admits the target and whose reach touches the flight path plus
-the formation spread); `impact.ts` only keeps the memos from one run to the next. A new
+the formation spread and the flight model's deviation, `flightDeviationM`: one turn radius
+plus wind drift over the path duration, zero under `noFlightLimits` or an unlimited spec);
+`impact.ts` only keeps the memos from one run to the next. A new
 scenario read inside `assessThreat`, or inside the sweep run it steps (`sweep.ts`), joins
 `threatAssessmentInputs` in `sim.ts` in the same change. `resolveEngagements` runs fresh
 every time. Engine entry
@@ -637,7 +639,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   intercept: the exact constant-speed meeting time along the path (`analyticTofS`:
   the target holds the first point before its delay and the last point after the path ends,
   and on each straight segment the formation member moves at constant velocity, so the
-  meeting time is the smallest root of a quadratic per phase in time order), and it caps the
+  meeting time is the smallest root of a quadratic per phase in time order). The closed form
+  is kept only when a constant-speed flyout closes on the sampled limited-flight target at
+  that time (`closesOnSample`); otherwise the flyout is solved against the sampled trajectory
+  (`profileMeetTau`), so timing, position and feasibility read one trajectory. It caps the
   flight at the end of the envelope interval that holds the release: a flight past that end
   lands at the end and the event carries `flightCapped`. It also reports `infeasible`:
   the slant to the credited point exceeds the reach `v * (tEffectS - release)` by
@@ -659,7 +664,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   size. `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
   `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,
   jitter, atmospheric transmission and a sampled fluence threshold; their effect time includes
-  settle and dwell. HPM compares inverse-distance field strength with an airframe threshold
+  settle and dwell. `solveBeamTiming` (`shot.ts`) iterates the effect delay to a fixed point,
+  brackets and bisects the residual when the iterates oscillate, and declines the shot
+  (`no-dwell-solution`) when no converged effect time lies inside the window. A modeled
+  dwell reserves the effector until its effect time when that is later than the cooldown,
+  and its fine-step window runs from release to effect. HPM compares inverse-distance field strength with an airframe threshold
   inside beamwidth and uses the stated recharge. `legacyBeamPk` restores the prior curve.
   `SIZE_PENALTY` and `EVASION_PENALTY` (`pk.ts`) stay PF. Per-system factors and spec
   overrides live in `src/analysis/doctrineFactors.ts`. Doctrine off is the legacy

@@ -9,6 +9,7 @@ import type {
   SensorRole,
   SensorSpec,
   SpecModel,
+  UasSpec,
   Vec2,
 } from '../model/types'
 import { MOUNT_HEIGHT_M, mountHeightOf, newId } from '../model/types'
@@ -24,7 +25,7 @@ import { deterministicPolicy, monteCarloPolicy } from './policy'
 import { parseAutosave } from '../io/persist'
 import jiatfFixture from './__fixtures__/detection-outside-rings.json'
 import layeredFixture from './__fixtures__/layered-acoustic-merops.json'
-import { assessAllThreats, assessThreat, DEFAULT_DEFENDED_RADIUS_M } from './sim'
+import { assessAllThreats, assessThreat, assessThreatReusing, DEFAULT_DEFENDED_RADIUS_M } from './sim'
 import { runTrial } from './trial'
 import { createTrialManifest } from './trialTypes'
 import { memberPositions, threatAltitudeFt } from './tracks'
@@ -1927,5 +1928,79 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
       ['ent-mt5bqnfg-35', 'engageable', 0.5, 76, 0.5, 1.5, 11.5],
       ['ent-mt5bqnfg-37', 'engageable', 0.5, 85.5, 0.5, 1.5, 11.5],
     ])
+  })
+})
+
+describe('assessment reuse under bounded, wind-drifted flight (CR-03)', () => {
+  beforeEach(() => useStore.getState().replaceScenario(emptyScenario()))
+
+  /** Custom sensor model placed at `pos`; returns the entity id. */
+  function placeSensorAt(pos: Vec2, patch: Partial<NonNullable<SpecModel['sensor']>>): string {
+    const modelId = useStore.getState().addModel('sensor')
+    useStore.getState().updateModel(modelId, {
+      sensor: { sensorType: 'acoustic', role: 'surveillance', classifyRangeM: null, sectorDeg: 360, detectRangeM: 100, ...patch },
+    })
+    useStore.getState().addEntityFromModel(modelId, pos)
+    return useStore.getState().scenario.entities.at(-1)!.id
+  }
+
+  /** Custom 10 m/s threat at altitude 0 flying `points`; returns the entity id. */
+  function placeLimitedThreat(points: Vec2[], patch: Partial<UasSpec>): string {
+    const st = useStore.getState()
+    const modelId = st.addModel('uas')
+    const uas = useStore.getState().scenario.library.find((m) => m.id === modelId)!.uas!
+    useStore.getState().updateModel(modelId, { uas: { ...uas, cruiseSpeedMps: 10, ...patch } })
+    useStore.getState().addEntityFromModel(modelId, points[0])
+    const uasId = useStore.getState().scenario.entities.at(-1)!.id
+    useStore.getState().updateEntity(uasId, { altitudeFt: 0 })
+    useStore.getState().beginPath(uasId)
+    for (const p of points.slice(1)) useStore.getState().addDraftPoint(p)
+    useStore.getState().finishPath()
+    return uasId
+  }
+
+  /** The store scenario with flight limits on (the seed's switch set leaves them off). */
+  function limited(): Scenario {
+    const s = useStore.getState().scenario
+    return { ...s, physics: (s.physics ?? []).filter((p) => p !== 'noFlightLimits') }
+  }
+
+  /** The scenario with the sensor entity replaced by a copy at `pos`. */
+  function movedSensor(s: Scenario, sensorId: string, pos: Vec2): Scenario {
+    return { ...s, entities: s.entities.map((e) => (e.id === sensorId ? { ...e, pos } : e)) }
+  }
+
+  it('moving a sensor that only the wind-drifted track reaches invalidates the memo', () => {
+    const uasId = placeLimitedThreat([{ x: 0, y: 0 }, { x: 0, y: -1000 }], { maxAccelMps2: 10 })
+    useStore.getState().updateEnvironment({ windSpeedMps: 10, windFromDeg: 270, apply: true })
+    const sensorId = placeSensorAt({ x: 500, y: -495 }, { detectRangeM: 100 })
+    const s = limited()
+    // The waypoint segment is 500 m away, but the eastward drift carries the
+    // target inside the ring at 45.5 s.
+    const memo = assessThreatReusing(s, uasId, undefined)
+    expect(memo.assessment.firstDetectS).toBe(45.5)
+    const next = movedSensor(s, sensorId, { x: 1000, y: -495 })
+    const reused = assessThreatReusing(next, uasId, memo)
+    expect(reused).not.toBe(memo)
+    expect(JSON.stringify(reused.assessment)).toBe(JSON.stringify(assessThreat(next, uasId)))
+    expect(reused.assessment.firstDetectS).toBeNull()
+  })
+
+  it('moving a sensor that only the bounded turn reaches invalidates the memo', () => {
+    // 10 m/s at 0.1 rad/s: a 100 m fillet whose midpoint sits 29.3 m inside the corner.
+    const uasId = placeLimitedThreat(
+      [{ x: 0, y: 0 }, { x: 0, y: -1000 }, { x: 1000, y: -1000 }],
+      { maxTurnRateDegS: 0.1 / (Math.PI / 180) },
+    )
+    const sensorId = placeSensorAt({ x: 40, y: -960 }, { detectRangeM: 20 })
+    const s = limited()
+    // 40 m from both waypoint segments, 15 m from the arc midpoint.
+    const memo = assessThreatReusing(s, uasId, undefined)
+    expect(memo.assessment.firstDetectS).not.toBeNull()
+    const next = movedSensor(s, sensorId, { x: 40, y: -600 })
+    const reused = assessThreatReusing(next, uasId, memo)
+    expect(reused).not.toBe(memo)
+    expect(JSON.stringify(reused.assessment)).toBe(JSON.stringify(assessThreat(next, uasId)))
+    expect(reused.assessment.firstDetectS).toBeNull()
   })
 })

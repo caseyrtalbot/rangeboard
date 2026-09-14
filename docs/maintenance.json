@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "0c9266e46ceaf6d2f07dd34ee79941349370c3ef1d09df489506da21ec48a13e",
+      "sha256": "4a1552d229f049cfbf644e42da85c9f1f6c20a383402d40a302c170a55b07093",
       "reviewedAt": "2026-09-14",
-      "note": "Removed index rows for deleted superseded evidence and journals (design steps, R0 to R3, F1, analysis rebuild, workspace preparation, performance handoff)"
+      "note": "Task 1 review fixes CR-01 to CR-04 closed 2026-09-14; evidence record indexed"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "04efc61a5619383fc65a3e7a1446cdf0adf5ffb910721096aba91a7008adc79e",
-      "reviewedAt": "2026-09-11",
-      "note": "Reviewed the integrated Physics switches and default Phase 3 physical paths against current source."
+      "sha256": "414094eea123d8d79a1f7939463b96b0720415d4f5fb244d0dbe63178532691a",
+      "reviewedAt": "2026-09-14",
+      "note": "Task 1 review fixes CR-01 to CR-04 in src/playback; no feature or entry-point change"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d473121855c69b9d5a8c81c41dc7fe6c1938500e8821cde8736b8038a5a10559",
-      "reviewedAt": "2026-09-11",
-      "note": "Reviewed Phase 3 flight, sensor, tracker, kinetic, beam, draw-policy and fidelity integrations; updated validation anchors and known limits."
+      "sha256": "9899b4f0f07cad94d260ea4e124b5956d43654c9e718dcb82692a5c5dd137ffe",
+      "reviewedAt": "2026-09-14",
+      "note": "Task 1 review fixes: memo dependency set adds flightDeviationM; interceptAt keeps the closed form only when it closes on the sampled flight; solveBeamTiming and optical dwell reservation"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1b2afe6e726ecdf3cd6d6b41006a2690a468513f56f6d5b5f81fe1f703ea86d7",
+      "sha256": "fb9b6e0c2836ebfd92e04d5baf396e8c9133b2aaab5c4b14380179a403f12852",
       "reviewedAt": "2026-09-14",
-      "note": "Rewritten to the fixed shape: position, tasking ahead, landmines, evidence; no completed-work journal"
+      "note": "Task 1 review fixes CR-01 to CR-04 closed 2026-09-14; evidence record indexed"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "1c6afa74605cead08f226ebe44e88f070e23a6432a7e4fc85d06be7277f5426a",
+      "sha256": "4edabd39d84f6060494d5eed41c8439e55b063fba142dbbd90b5a5231157ad82",
       "reviewedAt": "2026-09-14",
-      "note": "Handoff rule in section 8 matches the fixed shape; Phase 3 review recorded in section 7"
+      "note": "Task 1 review fixes CR-01 to CR-04 closed 2026-09-14; evidence record indexed"
     }
   ],
   "historical": [

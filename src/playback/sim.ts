@@ -1,9 +1,9 @@
-import type { EffectorSpec, Entity, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
+import type { EffectorSpec, Entity, FlightPath, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
 import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf, physicsSwitches, runSettings } from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
-import { modelFor, pathSpeed, scenarioDurationS } from '../model/scenario'
+import { modelFor, pathDurationS, pathSpeed, scenarioDurationS } from '../model/scenario'
 import { effectivePathDelayS } from './raid'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
@@ -20,6 +20,7 @@ import { effectiveJamRangeM, jamBandsOverlap } from '../analysis/ewPhysics'
 import { CONFIRMED_DECLARE_FACTOR, targetSFor } from '../analysis/doctrineFactors'
 import { createSweepClock } from './clock'
 import { memberPositions, sampleFlightPath, threatAltitudeFt } from './tracks'
+import { hasFlightLimits, turnRadiusM } from './flight'
 import type { SensorObservationSink } from './detection'
 import type { FusedTrack, TrackEstimate, TrackEstimateSink } from './trackTypes'
 import { resolvedThresholds } from './detection'
@@ -676,14 +677,32 @@ function sensorReachM(spec: SensorSpec, scenario: Scenario, uasSpec: UasSpec | u
 }
 
 /**
+ * How far, meters, the flown track can leave the waypoint segments under
+ * the flight model `sampleFlightPath` applies (flight.ts): a turn fillet
+ * stays within one turn radius of its corner, and wind drifts the ground
+ * track by at most wind speed times the flight time. Zero when the legacy
+ * switch or an unlimited spec keeps the track on the segments.
+ */
+function flightDeviationM(scenario: Scenario, path: FlightPath, uasSpec: UasSpec | undefined): number {
+  if (!uasSpec || !hasFlightLimits(uasSpec) || physicsSwitches(scenario).includes('noFlightLimits')) return 0
+  const speed = pathSpeed(scenario, path)
+  const turnM = uasSpec.maxTurnRateDegS != null && uasSpec.maxTurnRateDegS > 0
+    ? turnRadiusM(speed, uasSpec.maxTurnRateDegS)
+    : 0
+  const env = scenario.environment
+  const windM = env.apply && env.windSpeedMps > 0 ? env.windSpeedMps * pathDurationS(scenario, path) : 0
+  return turnM + windM
+}
+
+/**
  * The entity objects one threat's assessment reads, in scenario order: the
  * threat itself, every asset, effector and C2 node, and every sensor that
  * can hit it. A sensor whose technology gate refuses the target, or whose
  * reach ends short of every point of the flight path with the formation's
- * spread added, never hits, so it never cues, never routes and writes no
- * observation, wherever it stands or points. Other threats reach the
- * assessment only through the run duration, which the shared inputs carry
- * as a number. Markers are never read.
+ * spread and the flight model's deviation added, never hits, so it never
+ * cues, never routes and writes no observation, wherever it stands or
+ * points. Other threats reach the assessment only through the run duration,
+ * which the shared inputs carry as a number. Markers are never read.
  */
 function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
   const path = scenario.paths.find((p) => p.entityId === uas.id)
@@ -692,9 +711,9 @@ function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
   const uasSpec = modelFor(scenario, uas)?.uas
   const f = uas.formation
   const spreadM =
-    f && f.count > 1
+    (f && f.count > 1
       ? Math.max(...formationOffsets(f.shape, f.count, f.spacingM, 0).map((o) => Math.hypot(o.x, o.y)))
-      : 0
+      : 0) + flightDeviationM(scenario, path, uasSpec)
   const out: Entity[] = [uas]
   for (const e of scenario.entities) {
     if (e === uas || e.kind === 'uas' || e.kind === 'marker') continue

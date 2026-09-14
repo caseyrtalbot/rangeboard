@@ -34,6 +34,8 @@ export type ShotRejection =
   | 'outside-envelope'
   /** Jam physics reach a factor of 0 at the effect point. */
   | 'no-jam-link'
+  /** The optical dwell solve found no converged effect time inside the window (see `solveBeamTiming`). */
+  | 'no-dwell-solution'
 
 export type ShotIntercept = ReturnType<typeof interceptAt>
 
@@ -113,6 +115,128 @@ function inEnvelope(es: EffectorState, ts: ThreatState, p: Vec2): boolean {
   )
 }
 
+/** Convergence tolerance of the optical dwell solve on the effect delay, seconds. */
+const DWELL_TOL_S = 1e-6
+/** Fixed-point iterations tried before the bracketing solve. */
+const DWELL_FIXED_POINT_STEPS = 12
+/** Coarse cells scanned for a sign change of the delay residual over the window. */
+const DWELL_SCAN_CELLS = 32
+/** Bisection steps on a bracketed residual (well past 1e-9 s over any window). */
+const DWELL_BISECTIONS = 64
+
+const NO_ENVIRONMENT: EnvironmentSpec = {
+  apply: false,
+  light: 'day',
+  precipitation: 'clear',
+  windSpeedMps: 0,
+  windFromDeg: 0,
+  temperatureC: 15,
+  fieldElevationFt: 0,
+  visibilityM: null,
+  emBackground: 'rural',
+}
+
+/** One beam evaluation and the intercept at the delay it asks for. */
+interface BeamTiming {
+  beam: BeamEffect
+  selected: ReturnType<typeof interceptFor>
+}
+
+/**
+ * Beam effect timing. The dwell depends on slant range while the target
+ * moves, so the effect delay d must satisfy d = f(d), where f samples the
+ * target at t + d and returns the beam model's own delay there. The fixed
+ * point d <- f(d) converges when f contracts (a stationary or slow target,
+ * or the constant-delay legacy and HPM laws); its stop test |f(d) - d| <
+ * DWELL_TOL_S is the residual at d. A closing target under poor visibility
+ * makes |f'| > 1 and the iterates oscillate, so the fallback brackets the
+ * residual d - f(d) on [0, window end - t] and bisects. Null when no
+ * bracket exists or the candidate fails the residual check: the shot
+ * has no physical effect time inside the window and is declined. The one
+ * commit-keyed fluence draw is reused throughout.
+ */
+function solveBeamTiming(
+  ctx: ShotContext,
+  es: EffectorState,
+  ts: ThreatState,
+  shipIdx: number,
+  intervals: Array<[number, number]>,
+  interval: [number, number],
+  first: ReturnType<typeof interceptFor>,
+): BeamTiming | null {
+  const { t } = ctx
+  const fluenceDraw = ctx.beamFluenceDraw?.(es.entity.id, ts.a.uasId, shipIdx, t)
+  const environment = ctx.environment ?? NO_ENVIRONMENT
+  const atDelay = (delayS: number) => interceptFor(
+    ts,
+    { ...es, engageTimeS: delayS },
+    t,
+    shipIdx,
+    ctx.membersAt ?? membersAtTime,
+    interval[1],
+    ctx.estimate ?? null,
+    ctx.stepS ?? DT,
+    { fallback: true },
+  )
+  const beamAt = (at: ReturnType<typeof interceptFor>): BeamEffect => {
+    const offBoresightDeg = Math.abs(angleDiffDeg(
+      es.entity.headingDeg,
+      bearingDeg(es.entity.pos, at.pos),
+    ))
+    return beamEffect(es.pk, es.spec, ts.uasSpec, at.slantM, environment, {
+      fallback: ctx.legacyBeamPk ?? true,
+      offBoresightDeg,
+      fluenceDraw,
+      legacyCooldownS: es.cooldownS,
+    })
+  }
+  // The beam at one intercept, then the intercept at that beam's delay.
+  const step = (at: ReturnType<typeof interceptFor>): BeamTiming => {
+    const beam = beamAt(at)
+    return { beam, selected: atDelay(beam.effectDelayS) }
+  }
+
+  let at = first
+  for (let i = 0; i < DWELL_FIXED_POINT_STEPS; i += 1) {
+    const next = step(at)
+    if (Math.abs(next.selected.tEffectS - at.tEffectS) < DWELL_TOL_S) return next
+    at = next.selected
+  }
+
+  // Bracketing fallback. The residual is negative at d = 0 (the delay is at
+  // least the settle); the first cell where it turns non-negative holds the
+  // earliest root, the effect time the accumulating fluence reaches first.
+  const endS = ctx.effectContainment === 'same'
+    ? interval[1]
+    : intervals.reduce((acc, [, s1]) => Math.max(acc, s1), interval[1])
+  const spanS = endS - t
+  if (!(spanS > 0) || !Number.isFinite(spanS)) return null
+  const residual = (delayS: number) => delayS - beamAt(atDelay(delayS)).effectDelayS
+  let lo = 0
+  let hi = Number.NaN
+  if (residual(lo) >= 0) return null
+  for (let k = 1; k <= DWELL_SCAN_CELLS; k += 1) {
+    const d = (spanS * k) / DWELL_SCAN_CELLS
+    if (residual(d) >= 0) {
+      hi = d
+      break
+    }
+    lo = d
+  }
+  if (!Number.isFinite(hi)) return null
+  for (let i = 0; i < DWELL_BISECTIONS && hi - lo > 1e-9; i += 1) {
+    const mid = 0.5 * (lo + hi)
+    if (residual(mid) >= 0) hi = mid
+    else lo = mid
+  }
+  const candidate = step(atDelay(hi))
+  // The residual check: the beam's own delay at the candidate range must
+  // reproduce the candidate delay. Reject otherwise; never credit an
+  // unconverged point.
+  if (Math.abs(candidate.beam.effectDelayS - hi) >= DWELL_TOL_S) return null
+  return candidate
+}
+
 /** Evaluate one candidate shot; see the module header. */
 export function evaluateShot(
   ctx: ShotContext,
@@ -126,7 +250,7 @@ export function evaluateShot(
   const interval = intervals.find(([s0, s1]) => t >= s0 - EPS && t <= s1 + EPS)
   if (!interval) return { rejected: 'outside-interval' }
 
-  let selected = interceptFor(
+  const selected = interceptFor(
     ts,
     es,
     t,
@@ -142,46 +266,10 @@ export function evaluateShot(
 
   let beam: BeamEffect | null = null
   if (es.spec.effectorType === 'de' || es.spec.effectorType === 'hpm') {
-    const fluenceDraw = ctx.beamFluenceDraw?.(es.entity.id, ts.a.uasId, shipIdx, t)
-    // Dwell depends on slant range while the target continues to move. Iterate
-    // the effect delay and target position to their fixed point, reusing the
-    // one commit-keyed fluence draw throughout.
-    for (let i = 0; i < 12; i += 1) {
-      const offBoresightDeg = Math.abs(angleDiffDeg(
-        es.entity.headingDeg,
-        bearingDeg(es.entity.pos, intercept.pos),
-      ))
-      beam = beamEffect(es.pk, es.spec, ts.uasSpec, intercept.slantM, ctx.environment ?? {
-        apply: false,
-        light: 'day',
-        precipitation: 'clear',
-        windSpeedMps: 0,
-        windFromDeg: 0,
-        temperatureC: 15,
-        fieldElevationFt: 0,
-        visibilityM: null,
-        emBackground: 'rural',
-      }, {
-        fallback: ctx.legacyBeamPk ?? true,
-        offBoresightDeg,
-        fluenceDraw,
-        legacyCooldownS: es.cooldownS,
-      })
-      selected = interceptFor(
-        ts,
-        { ...es, engageTimeS: beam.effectDelayS },
-        t,
-        shipIdx,
-        ctx.membersAt ?? membersAtTime,
-        interval[1],
-        ctx.estimate ?? null,
-        ctx.stepS ?? DT,
-        { fallback: true },
-      )
-      const previousEffectS = intercept.tEffectS
-      ;({ predictionSigmaM, interceptSource, ...intercept } = selected)
-      if (Math.abs(intercept.tEffectS - previousEffectS) < 1e-6) break
-    }
+    const solved = solveBeamTiming(ctx, es, ts, shipIdx, intervals, interval, selected)
+    if (solved == null) return { rejected: 'no-dwell-solution' }
+    beam = solved.beam
+    ;({ predictionSigmaM, interceptSource, ...intercept } = solved.selected)
     if (intercept.infeasible) return { rejected: 'unreachable' }
   }
 
