@@ -239,10 +239,13 @@ export function PlacementScreen() {
         </tr></thead>
         <tbody>
           {rows.map((row, i) => <tr key={i} data-placement-row={row.rank ?? 'start'}>
-            <td>{row.rank != null ? `Candidate ${row.rank}` : 'Start'}
+            <td title={row.start ? 'The starting laydown: the movable entities where they stand now' : undefined}>
+              {row.rank != null ? `Candidate ${row.rank}` : 'Start'}
               {row.start && <> <State tone="inactive" hollow>start</State></>}</td>
-            {result.movableIds.map(id => <td key={id} className="mono">{positionText(row.positions[id])}</td>)}
-            <td>{statText(row.objective)}</td>
+            {/* A dense cell clips in the right panel, so every cell carries its full text as a title. */}
+            {result.movableIds.map(id => <td key={id} className="mono"
+              title={`${nameOf(id)} · ${positionText(row.positions[id])} m`}>{positionText(row.positions[id])}</td>)}
+            <td title={statText(row.objective)}>{statText(row.objective)}</td>
             <td>{row.rank != null && <button type="button"
               onClick={() => replaceScenario(withPlacement(scenario, row.positions, row.rank!))}>
               {`Apply placement ${row.rank}`}</button>}</td>
