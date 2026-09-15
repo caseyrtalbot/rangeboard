@@ -27,7 +27,7 @@ function valueGraph(entry: string): Map<string, string> {
   return modules
 }
 
-it.each(['mc.worker.ts', 'trial.worker.ts'])('keeps %s independent of stores, React, panels and browser persistence', (entry) => {
+it.each(['mc.worker.ts', 'trial.worker.ts', 'optimize.worker.ts'])('keeps %s independent of stores, React, panels and browser persistence', (entry) => {
   const modules = valueGraph(`src/playback/${entry}`)
   expect(modules.size).toBeGreaterThan(1)
   for (const [file, source] of modules) {
