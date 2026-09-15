@@ -74,7 +74,7 @@ export const BAND80_MIN_N = 10
 export const BAND95_MIN_N = 40
 
 /** What a Stat measures: a count with its support maximum, or a time. */
-type StatKind = { kind: 'time' } | { kind: 'count'; max: number }
+export type StatKind = { kind: 'time' } | { kind: 'count'; max: number }
 const TIME: StatKind = { kind: 'time' }
 const count = (max: number): StatKind => ({ kind: 'count', max })
 
@@ -405,7 +405,7 @@ function intervalOf(
  * finite filter. `conf` drives the t-interval and is reported as `conf`; the
  * Wilson and rule-of-three paths keep their 0.95 forms (z 1.96, 3 / n).
  */
-function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Stat {
+export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Stat {
   const total = samples.length
   const sorted = samples.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
   const n = sorted.length

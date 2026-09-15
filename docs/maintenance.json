@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "84666c377b67298a478d40e9a52f29247cfee0bc67160975698a9f64aee0c861",
+      "sha256": "00613c12df7cbcded61ad7a49d17d44323bb9321c6a0467aadcd57dd99a04831",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4.a contract: optimize and calibration types only, no behavior or entry-point change"
+      "note": "Phase 4 contract: statOf and StatKind exported from mcRun for the optimize lane; no guide text change"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d2b6e226a242b9c7ade80961c49c1a02b96877eb08e7c4b68137febad408c52f",
+      "sha256": "3744ced8f0c905544300cf553921c9ff34d2a6e743fde9da10b1be649b6e1dad",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4.a contract: OptimizeRequest/Result in src/playback/optimizeTypes.ts and CalibrationRecord in types.ts; no invariant change"
+      "note": "Phase 4 contract: statOf and StatKind exported from mcRun for the optimize lane; no guide text change"
     },
     {
       "document": "docs/VERIFICATION.md",
