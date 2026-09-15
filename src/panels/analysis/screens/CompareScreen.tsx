@@ -1,15 +1,21 @@
-import { useMemo } from 'react'
-import type { CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { engagementPicture } from '../../../analysis/impact'
 import { trialKpisAt } from '../../../analysis/liveStats'
 import { assessRunValidity } from '../../../analysis/runValidity'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { trialSeriesOf } from '../../../analysis/trialSeries'
 import { BandChart } from '../../../charts/BandChart'
+import { exportChartPng } from '../../../charts/exportPng'
+import { readTokens } from '../../../charts/tokens'
 import { formatTime } from '../../../geometry/geo'
 import { entityActive, runSettings } from '../../../model/types'
+import type { RunRecord } from '../../../model/runRecord'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DT } from '../../../playback/clock'
+import type { RunSummary } from '../../../io/runStore'
+import { getRun, listRuns } from '../../../io/runStore'
+import { safeName } from '../../../io/persist'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
 import type { PinnedBaseline } from '../../../state/baseline'
 import { defaultBaselineLabel } from '../../../state/baseline'
@@ -19,6 +25,7 @@ import { selectTrialHorizon } from '../../../state/trialSelectors'
 import { State } from '../../../ui/kit'
 import { trialStateText, trialViewOf, useTrialResult } from '../controls'
 import { currentSummary, formatCount, statMean, timeStatSub } from '../mc'
+import { RecordExports } from '../RunHistory'
 import { SEVERITY_PILL } from '../runValidityText'
 
 type DeltaRow = { label: string; trial: number | null; mean: number | null; lo: number | null; hi: number | null; unit: string; note?: string }
@@ -27,6 +34,7 @@ const ROW_KEYS: MeanKey[] = ['kills', 'leakers', 'firstDetect', 'minWarning', 's
 // Interval ends and units must remain readable at the panel's minimum width.
 const cellStyle: CSSProperties = { whiteSpace: 'normal', overflowWrap: 'anywhere', overflow: 'visible' }
 const finite = (value: number | null | undefined) => value != null && Number.isFinite(value) ? value : null
+const loadError = (error: unknown) => error instanceof Error ? error.message : 'Run history is unavailable.'
 const minimum = (values: Array<number | null>) => {
   const defined = values.filter((value): value is number => finite(value) != null)
   return defined.length ? Math.min(...defined) : null
@@ -49,6 +57,28 @@ function ensembleMeans(mc: McSummary, hasAsset: boolean) {
 }
 
 const signed = (value: number) => `${value > 0 ? '+' : ''}${formatCount(value)}`
+
+/**
+ * A chart and its PNG button. The chart paints from CSS custom properties, so
+ * the export takes the panel surface as the ground the SVG does not carry.
+ */
+function ChartExport({ name, children }: { name: string; children: ReactNode }) {
+  const frame = useRef<HTMLDivElement>(null)
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <>
+      <div ref={frame}>{children}</div>
+      <div className="insp-row" aria-label="Export the chart">
+        <span className="muted small">Chart</span>
+        <button className="mini" type="button" onClick={() => {
+          exportChartPng(frame.current, `${name}.png`, { background: readTokens().surface })
+            .then(() => setError(null), (reason: unknown) => setError(reason instanceof Error ? reason.message : 'Could not export the chart.'))
+        }}>Export PNG</button>
+      </div>
+      {error && <State tone="critical" role="status">{error}</State>}
+    </>
+  )
+}
 
 function CompletedCompare({ view, mc, baseline }: { view: TrialResultView; mc: McSummary; baseline: PinnedBaseline | null }) {
   const data = useMemo(() => {
@@ -95,7 +125,9 @@ function CompletedCompare({ view, mc, baseline }: { view: TrialResultView; mc: M
   return (
     <>
       <p className="muted small">Simulated trial · one draw · seed {view.manifest.seed} · through T+{formatTime(view.durationS)}. Kills exclude late effects. Bands are intervals on ensemble means, not replicate ranges; count bounds may use Wilson or rule of three.</p>
-      <BandChart ensemble={mc.kills} trial={data.trial} baseline={base?.series} durationS={mc.durationS} population={data.population} replicates={mc.replicates} />
+      <ChartExport name={`${safeName(view.scenario.name)}.compare`}>
+        <BandChart ensemble={mc.kills} trial={data.trial} baseline={base?.series} durationS={mc.durationS} population={data.population} replicates={mc.replicates} />
+      </ChartExport>
       <table className="tb tb-dense" aria-label={`Trial against ensemble through T+${formatTime(view.durationS)}`}>
         <thead><tr>
           {headers.map((label, i) => (
@@ -163,6 +195,176 @@ function BaselineRow({ mc, current }: { mc: McSummary | null; current: boolean }
   )
 }
 
+type RunRow = { label: string; mean: number | null; lo: number | null; hi: number | null; unit: string; note?: string }
+
+/**
+ * The five compared quantities of one saved ensemble, read from that record's
+ * own summary. Same gates as the trial comparison above: a count band needs two
+ * replicates, a conditional time mean needs 30 defined samples at 95 %, and an
+ * aggregate salvo interval exists only with a single effector.
+ */
+function savedRunRows(mc: McSummary, hasAsset: boolean): { population: number; rows: RunRow[] } {
+  const { population, i, salvos, salvoMean } = ensembleMeans(mc, hasAsset)
+  const countRow = (label: string, band: BandSeries, available = true): RunRow => ({
+    label, mean: available && mc.replicates > 0 ? finite(band.mean[i]) : null,
+    lo: available && mc.replicates >= 2 ? finite(band.lo[i]) : null,
+    hi: available && mc.replicates >= 2 ? finite(band.hi[i]) : null,
+    unit: `/${population} members`,
+    note: available ? undefined : 'No defended asset; unavailable.',
+  })
+  const timeRow = (label: string, stat: Stat, quantity: 'detected' | 'warning', available = true): RunRow => ({
+    label, mean: available ? statMean(stat) : null,
+    lo: available && stat.n >= 30 && stat.conf === 0.95 ? finite(stat.lo) : null,
+    hi: available && stat.n >= 30 && stat.conf === 0.95 ? finite(stat.hi) : null,
+    unit: label === 'First detect' ? 's from T0' : 's',
+    note: available ? timeStatSub(stat, quantity) : 'No defended asset; unavailable.',
+  })
+  const salvoBand = salvos.length === 1 && salvos[0].n >= 2 && salvos[0].conf === 0.95 ? salvos[0] : null
+  return { population, rows: [
+    countRow('Kills', mc.kills),
+    countRow('Leakers', mc.leakers, hasAsset),
+    timeRow('First detect', mc.firstDetectS, 'detected'),
+    timeRow('Min warning', mc.minWarningS, 'warning', hasAsset),
+    { label: 'Salvos', mean: salvoMean, lo: finite(salvoBand?.lo), hi: finite(salvoBand?.hi), unit: 'salvos',
+      note: salvoBand ? 'One effector; its salvo interval is the aggregate interval.' : 'Aggregate interval unavailable; per-effector intervals cannot be added.' },
+  ] }
+}
+
+const hasAssetIn = (record: RunRecord) =>
+  record.scenario.entities.some(entity => entity.kind === 'asset' && entityActive(entity))
+
+// The replicate count is the summary's own, never the manifest setting: the
+// loop may have stopped early, and the numbers carry the basis they were run on.
+const runScope = (record: RunRecord, population: number) =>
+  `${record.mc.replicates} replicates · ${record.manifest.uncertainty === 'total' ? 'Total uncertainty' : 'Aleatory uncertainty'} · seed ${record.mc.seed} · full run T+${formatTime(record.mc.durationS)} · ${population} members`
+
+// Four columns at the panel's minimum width: each side's interval sits under
+// its mean rather than in a column of its own, so no unit breaks mid-word.
+const compareWidths = ['22%', '28%', '28%', '22%']
+
+export interface SavedRunCompareViewProps {
+  runs: RunSummary[]
+  a: RunRecord | null
+  b: RunRecord | null
+  error: string | null
+  onPick: (side: 'a' | 'b', id: string) => void
+}
+
+/**
+ * Two saved runs side by side. Each side keeps its own replicate basis,
+ * horizon and population, so only the means are differenced; a count delta is
+ * in members, because two records may raid different populations.
+ */
+export function SavedRunCompareView({ runs, a, b, error, onPick }: SavedRunCompareViewProps) {
+  const left = a ? savedRunRows(a.mc, hasAssetIn(a)) : null
+  const right = b ? savedRunRows(b.mc, hasAssetIn(b)) : null
+  const picker = (side: 'a' | 'b', record: RunRecord | null) => (
+    <div className="insp-row">
+      <span>Run {side.toUpperCase()}</span>
+      <select value={record?.id ?? ''} aria-label={`Run ${side.toUpperCase()}`}
+        onChange={event => onPick(side, event.target.value)}>
+        <option value="">choose a saved run…</option>
+        {runs.map(run => <option key={run.id} value={run.id}>{run.label}</option>)}
+      </select>
+    </div>
+  )
+  const value = (number: number | null, unit: string) => number == null ? '—' : `${formatCount(number)} ${unit}`
+  const band = (row: RunRow) => row.lo == null || row.hi == null
+    ? 'Unavailable' : `${formatCount(row.lo)} to ${formatCount(row.hi)} ${row.unit}`
+  return (
+    <section aria-label="Compare saved runs">
+      <h4>Compare saved runs</h4>
+      {error && <p className="muted small">{error}</p>}
+      {!error && runs.length < 2 && <p className="muted small">{runs.length} saved {runs.length === 1 ? 'run' : 'runs'}. Save two runs on Outcome to compare them here.</p>}
+      {runs.length >= 2 && <>
+        {picker('a', a)}
+        {picker('b', b)}
+        {a && b && left && right && <>
+          <p className="analysis-scope">A · {a.label} · {runScope(a, left.population)}</p>
+          <p className="analysis-scope">B · {b.label} · {runScope(b, right.population)}</p>
+          <p className="muted small">Each cell holds the ensemble mean and, under it, the 95 % interval on that mean. A count is members of that record's own raid.</p>
+          <table className="tb tb-dense" aria-label="Saved run A against saved run B">
+            <thead><tr>
+              {['Quantity', 'A', 'B', 'A − B'].map((label, index) => (
+                <th key={label} scope="col" style={{ ...cellStyle, width: compareWidths[index] }}>{label}</th>
+              ))}
+            </tr></thead>
+            <tbody>{ROW_KEYS.map((key, r) => {
+              const rowA = left.rows[r]
+              const rowB = right.rows[r]
+              const delta = rowA.mean != null && rowB.mean != null ? rowA.mean - rowB.mean : null
+              const side = (row: RunRow) => (
+                <td style={cellStyle}>
+                  {value(row.mean, row.unit)}
+                  <small style={{ display: 'block' }}>{band(row)}</small>
+                </td>
+              )
+              return <tr key={key}>
+                <th scope="row" style={{ ...cellStyle, width: compareWidths[0] }}>{rowA.label}</th>
+                {side(rowA)}
+                {side(rowB)}
+                <td style={cellStyle}>{delta == null ? '—' : `${signed(delta)} ${r < 2 ? 'members' : rowA.unit}`}</td>
+              </tr>
+            })}</tbody>
+          </table>
+          <details className="analysis-disclosure">
+            <summary>Interval and definedness details</summary>
+            {left.rows.map((row, r) => <p className="muted small" key={row.label}>
+              {row.label} · A: {row.note ?? 'Interval on the ensemble mean.'} · B: {right.rows[r].note ?? 'Interval on the ensemble mean.'}
+            </p>)}
+            {left.population !== right.population && <p className="muted small">Populations differ, {left.population} against {right.population} members; count deltas are in members.</p>}
+            {a.id === b.id && <p className="muted small">Both sides are the same record; every delta is zero.</p>}
+            <p className="muted small">Bands are intervals on each record's own ensemble mean. Deltas are A minus B; no interval is claimed on a difference of two independent runs.</p>
+          </details>
+          <RecordExports record={a} title="Export A" />
+          <RecordExports record={b} title="Export B" />
+        </>}
+        {(!a || !b) && <p className="muted small">Choose two saved runs to see the delta table.</p>}
+      </>}
+    </section>
+  )
+}
+
+/** The container: the run list, the two opened records, and nothing until the first read settles. */
+export function SavedRunCompare() {
+  const [load, setLoad] = useState<{ status: 'loading' | 'ready' | 'error'; runs: RunSummary[]; error: string | null }>(
+    { status: 'loading', runs: [], error: null })
+  const [sides, setSides] = useState<{ a: RunRecord | null; b: RunRecord | null }>({ a: null, b: null })
+
+  useEffect(() => {
+    let live = true
+    // The two newest records open by default, the pair a reader most often wants.
+    const open = (side: 'a' | 'b', id: string | undefined) => {
+      if (!id) return
+      getRun(id).then(
+        record => { if (live && record) setSides(current => ({ ...current, [side]: record })) },
+        (error: unknown) => { if (live) setLoad(state => ({ ...state, status: 'error', error: loadError(error) })) },
+      )
+    }
+    listRuns().then(
+      runs => {
+        if (!live) return
+        setLoad({ status: 'ready', runs, error: null })
+        open('a', runs[0]?.id)
+        open('b', runs[1]?.id)
+      },
+      (error: unknown) => { if (live) setLoad({ status: 'error', runs: [], error: loadError(error) }) },
+    )
+    return () => { live = false }
+  }, [])
+
+  if (load.status === 'loading') return null
+  return <SavedRunCompareView
+    runs={load.runs} a={sides.a} b={sides.b} error={load.error}
+    onPick={(side, id) => {
+      if (!id) { setSides(current => ({ ...current, [side]: null })); return }
+      getRun(id).then(
+        record => { if (record) setSides(current => ({ ...current, [side]: record })) },
+        (error: unknown) => setLoad(state => ({ ...state, status: 'error', error: loadError(error) })),
+      )
+    }} />
+}
+
 export function CompareScreen() {
   const trial = useTrialResult()
   const { selection, snapshot } = trial
@@ -176,11 +378,13 @@ export function CompareScreen() {
   const mc = currentSummary(mcState, runId)
   // Stale marking already covers an edit; the check also guards a summary restored without a signature.
   const current = useMemo(() => mc != null && (mcState.basisSignature == null || mcState.basisSignature === analysisBasisSignature(scenario)), [mc, mcState.basisSignature, scenario])
+  // Saved-run comparison needs no trial and no current ensemble, so it stays
+  // below both placeholders, as the run history does on Outcome.
   if (selection.status === 'idle' || selection.status === 'cancelled' || (selection.status === 'ready' && !snapshot)) {
-    return <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
+    return <><p className="muted small">No trial yet. Press Play in Execute to run one.</p><SavedRunCompare /></>
   }
-  if (!mc) return <div role="region" aria-label="Compare" className="muted small">Monte Carlo · {mcState.status === 'running' ? 'Running ensemble.' : mcState.status === 'error' ? mcState.error : 'No current ensemble result.'}{' '}
-    <button className="mini" type="button" disabled={mcState.status === 'running'} onClick={runMonteCarlo}>Run Monte Carlo</button></div>
+  if (!mc) return <><div role="region" aria-label="Compare" className="muted small">Monte Carlo · {mcState.status === 'running' ? 'Running ensemble.' : mcState.status === 'error' ? mcState.error : 'No current ensemble result.'}{' '}
+    <button className="mini" type="button" disabled={mcState.status === 'running'} onClick={runMonteCarlo}>Run Monte Carlo</button></div><SavedRunCompare /></>
   const view = trialViewOf(trial)
   return (
     <section className="analysis-primary" aria-label="Compare">
@@ -190,6 +394,7 @@ export function CompareScreen() {
         ? <CompletedCompare view={view} mc={mc} baseline={baseline} />
         : <p className="muted small">{!view ? trialStateText(selection) : mc.durationS !== view.durationS ? 'Ensemble and trial horizons differ. Run Monte Carlo again for this trial.' : 'Trial in progress. Complete playback in Execute to compare.'}</p>}
       <BaselineRow mc={mc} current={current} />
+      <SavedRunCompare />
     </section>
   )
 }
