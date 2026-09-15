@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "887f648cdd52091dfdf15ddad5c3457ea9c12ba942086cbdf89cf5082ccf6cc2",
+      "sha256": "fb1fc72332e5bdf90c83b3d56666e4f4996e59a7fbeefed12cda51a2d04b3457",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 complete; gate numbers from the clean-worktree run at 62cfeb8; tasking is gate follow-ups; shell-rework dirty paths named"
+      "note": "Phase 4 pushed to origin/main 2026-09-15; tasking is gate follow-ups; shell-rework dirty paths named"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

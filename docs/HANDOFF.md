@@ -12,8 +12,8 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, branch `main`, base commit `cf4992d` plus this
-  handoff commit. `origin/main` is at `63486ca`; nothing from Phase 4 is pushed.
+- Repository `~/Projects/rangeboard`, branch `main`, base commit `bb07e81` plus this
+  handoff commit, pushed to `origin/main` on 2026-09-15.
 - Dirty paths not owned by Phase 4: `src/App.tsx`, `src/index.css`, `src/io/storageKeys.ts`,
   `src/panels/Toolbar.tsx`, `src/panels/Toolbar.test.tsx` and
   `scripts/e2e/board-shell.e2e.mjs` carry the uncommitted shell-rework slice (right
