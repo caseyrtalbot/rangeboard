@@ -3,11 +3,13 @@ import type { LibraryGrade, LibraryLayer, Override } from '../../model/libraryFi
 import type { Provenance, SpecModel, Spread } from '../../model/types'
 import { basisFor, specFields } from '../../model/types'
 import { modelsInUse, spreadFor } from '../../analysis/parameterBasis'
+import { familyFor } from '../../analysis/calibrate'
 import type { LoadNotice } from '../../io/persist'
 import { loadNoticeFor } from '../../io/persist'
 import { useOverrides } from '../../state/overrides'
 import { useStore } from '../../state/store'
 import { Field } from '../../ui/kit'
+import { CalibrateDialog } from './CalibrateDialog'
 
 /** Columns of the field table; the edit form spans them. */
 const COLUMNS = 8
@@ -151,6 +153,8 @@ function FieldRow({
   override,
   editing,
   onEdit,
+  calibrating,
+  onCalibrate,
   seedVersion,
 }: {
   model: SpecModel
@@ -159,12 +163,16 @@ function FieldRow({
   override: Override | undefined
   editing: boolean
   onEdit: (field: string | null) => void
+  calibrating: boolean
+  onCalibrate: (field: string | null) => void
   /** Data package version when this load adopted the value, else null. */
   seedVersion: number | null
 }) {
   const resetField = useOverrides((s) => s.resetField)
   const row = rowFor(model, field)
   const { grade, layer } = lineage(model, field, value, row)
+  // Only a scalar proportion or time calibrates from counts (Phase 4.2).
+  const family = typeof value === 'number' ? familyFor(model, field) : null
   return (
     <>
       <tr>
@@ -187,6 +195,12 @@ function FieldRow({
             onClick={() => onEdit(editing ? null : field)}>
             Edit
           </button>
+          {family && (
+            <button type="button" className="mini" aria-label={`Calibrate ${field} on ${model.name}`}
+              onClick={() => onCalibrate(calibrating ? null : field)}>
+              Calibrate
+            </button>
+          )}
           {override && (
             <button type="button" className="mini" aria-label={`Reset ${field} on ${model.name}`}
               onClick={() => resetField(model.id, field)}>
@@ -196,6 +210,14 @@ function FieldRow({
         </td>
       </tr>
       {editing && <EditRow model={model} field={field} value={value} onDone={() => onEdit(null)} />}
+      {calibrating && family && typeof value === 'number' && (
+        <tr>
+          <td colSpan={COLUMNS}>
+            <CalibrateDialog model={model} field={field} family={family} value={value}
+              unit={row?.unit ?? (family === 'proportion' ? 'fraction' : 's')} onClose={() => onCalibrate(null)} />
+          </td>
+        </tr>
+      )}
     </>
   )
 }
@@ -207,6 +229,7 @@ function ModelGroup({ model, overrides, notice }: {
   notice: LoadNotice | null
 }) {
   const [editing, setEditing] = useState<string | null>(null)
+  const [calibrating, setCalibrating] = useState<string | null>(null)
   const resetModel = useOverrides((s) => s.resetModel)
   const fields = fieldsOf(model)
   const mine = overrides.filter((o) => o.modelId === model.id)
@@ -239,6 +262,7 @@ function ModelGroup({ model, overrides, notice }: {
             {fields.map(([field, value]) => (
               <FieldRow key={field} model={model} field={field} value={value} editing={editing === field}
                 override={mine.find((o) => o.field === field)} onEdit={setEditing}
+                calibrating={calibrating === field} onCalibrate={setCalibrating}
                 seedVersion={adopted.has(`${model.id}/${field}`) ? notice!.dataPackageVersion : null} />
             ))}
           </tbody>
