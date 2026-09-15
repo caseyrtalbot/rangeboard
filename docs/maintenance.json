@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "a08680bbc84f6570de8cf3b26178d890799ddfd2478cc1a2873571b92617b9e7",
+      "sha256": "887f648cdd52091dfdf15ddad5c3457ea9c12ba942086cbdf89cf5082ccf6cc2",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 complete at cf4992d; tasking is gate follow-ups (apply overrides, zero-kill kinetic finding, entry lazy split, smaller items); shell-rework dirty paths named; lane branches deleted"
+      "note": "Phase 4 complete; gate numbers from the clean-worktree run at 62cfeb8; tasking is gate follow-ups; shell-rework dirty paths named"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

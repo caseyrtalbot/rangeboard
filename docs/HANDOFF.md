@@ -24,10 +24,10 @@ this file and the docs index. This file does not authorize a commit, push or mer
   deleted.
 - Plan: Phases 0 to 4 complete, each marked in the plan with its merge commits. Phase 4
   is the last phase in the plan; there is no Phase 5 tasking.
-- Gate on the committed tree at `891c4f0`: `npm run check` passed (198 test files, 2,159
-  tests, then the two record fixes added 2 tests), `npm run check:bundle` passed with the
-  entry at 360,308 bytes gzip against the budget raised to 364,000 in `4f50104`, and the
-  whole-loop browser check is recorded in
+- Gate on the committed tree at `62cfeb8`, run in a clean worktree: `npm run check`
+  passed (198 test files, 2,160 tests) and `npm run check:bundle` passed with the entry at
+  360,322 bytes gzip and the initial set at 375,970 against the entry budget raised to
+  364,000 in `4f50104`. The whole-loop browser check is recorded in
   [the Phase 4 gate record](field-te/evidence/p4-gate-2026-09-15/README.md).
 - Open defects found at the gate and not fixed: an accepted override is recorded in both
   manifests but no engine path reads it, so a calibration changes no run result; on the
