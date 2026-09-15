@@ -1277,3 +1277,85 @@ export function newId(prefix: string): string {
   counter += 1
   return `${prefix}-${Date.now().toString(36)}-${counter.toString(36)}`
 }
+
+/**
+ * Calibration from typed counts (Phase 4.2). A record names one library
+ * field by the same `(modelId, field)` pair `Override` and
+ * `useOverrides.setOverride` take, holds the prior the user started from,
+ * the observation typed in, and the posterior the accept step writes as an
+ * override. Plain data: the record lives beside the override set, never in
+ * a `Scenario` or `SpecModel`.
+ */
+
+/** Beta(a, b) on a proportion. The Jeffreys prior is a = b = 0.5. */
+export interface BetaParams {
+  a: number
+  b: number
+}
+
+/** Jeffreys prior on a proportion, the default a calibration starts from. */
+export const JEFFREYS_PRIOR: BetaParams = { a: 0.5, b: 0.5 }
+
+/**
+ * Normal-gamma(mu, kappa, alpha, beta) on the mean and precision of a time:
+ * mean ~ Normal(mu, 1 / (kappa tau)), precision tau ~ Gamma(alpha, beta).
+ */
+export interface NormalGammaParams {
+  mu: number
+  kappa: number
+  alpha: number
+  beta: number
+}
+
+/** A proportion observed as successes over trials, the typed count. */
+export interface ProportionObservation {
+  successes: number
+  trials: number
+}
+
+/**
+ * A time observed either as the sample itself or as its count, mean and
+ * (unbiased) variance; the summary form carries what a report states.
+ */
+export type TimeObservation =
+  | { form: 'sample'; timesS: number[] }
+  | { form: 'summary'; n: number; meanS: number; varianceS2: number }
+
+/**
+ * Whether the posterior was accepted. On accept, `at` is the ISO time and
+ * `reason` the text written into the override (`Override.reason`), so the
+ * manifest shows why the sourced value was replaced.
+ */
+export type CalibrationAcceptance =
+  | { accepted: false }
+  | { accepted: true; at: string; reason: string }
+
+/** The library field a calibration updates, as `Override` names it. */
+export interface CalibrationField {
+  modelId: string
+  /** The spec key, as in `LibraryFile.fields`. */
+  field: string
+}
+
+/** One calibration of a proportion field: beta prior to beta posterior. */
+export interface ProportionCalibrationRecord {
+  kind: 'proportion'
+  field: CalibrationField
+  prior: BetaParams
+  observed: ProportionObservation
+  posterior: BetaParams
+  accepted: CalibrationAcceptance
+}
+
+/** One calibration of a time field: normal-gamma prior to normal-gamma posterior. */
+export interface TimeCalibrationRecord {
+  kind: 'time'
+  field: CalibrationField
+  prior: NormalGammaParams
+  observed: TimeObservation
+  posterior: NormalGammaParams
+  accepted: CalibrationAcceptance
+}
+
+/** One calibration, discriminated on `kind` by the family of the field. */
+export type CalibrationRecord = ProportionCalibrationRecord | TimeCalibrationRecord

@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "414094eea123d8d79a1f7939463b96b0720415d4f5fb244d0dbe63178532691a",
-      "reviewedAt": "2026-09-14",
-      "note": "Task 1 review fixes CR-01 to CR-04 in src/playback; no feature or entry-point change"
+      "sha256": "84666c377b67298a478d40e9a52f29247cfee0bc67160975698a9f64aee0c861",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4.a contract: optimize and calibration types only, no behavior or entry-point change"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9899b4f0f07cad94d260ea4e124b5956d43654c9e718dcb82692a5c5dd137ffe",
-      "reviewedAt": "2026-09-14",
-      "note": "Task 1 review fixes: memo dependency set adds flightDeviationM; interceptAt keeps the closed form only when it closes on the sampled flight; solveBeamTiming and optical dwell reservation"
+      "sha256": "d2b6e226a242b9c7ade80961c49c1a02b96877eb08e7c4b68137febad408c52f",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4.a contract: OptimizeRequest/Result in src/playback/optimizeTypes.ts and CalibrationRecord in types.ts; no invariant change"
     },
     {
       "document": "docs/VERIFICATION.md",
