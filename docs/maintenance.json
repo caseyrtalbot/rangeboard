@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "c2d2293dcf34b1717f431689fd8d2d05c18ee5bd59f4b9767334c38ae16fba19",
+      "sha256": "c1839becaf7ae1b14aee600efeded1db4e27b1e717389e2fd92a3b925e893aa8",
       "reviewedAt": "2026-09-15",
-      "note": "Rebase of Task 1 onto e35c0f1. Drawer session note stands: reviewed the right drawer change in src/App.tsx; the README names no panel behavior or shortcut, so no text changes."
+      "note": "Slice 2 merged after Task 1: re-read src changes (playback bar toggle, App-held strip flag); no text change needed."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "aca2a970d5e47bc757b75bba7754bbcc390f2b6883ac6448283384b373660281",
+      "sha256": "6d20a2fb78397447c14911c0a768748cbfde2e1842383447b1f6fb300108caac",
       "reviewedAt": "2026-09-15",
-      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
+      "note": "Slice 2 merged after Task 1; the right panel section names the Engagement toggle, the 36 px bar and the saved open state."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "05a4198cbaa2d1a3121b2addaccff70ac28a02efcb0182ac4dbd539001bdd0c1",
+      "sha256": "2cf434d86ec8562164b414693f2c23728ac65289436208e76e2a9a20bc9664b5",
       "reviewedAt": "2026-09-15",
-      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
+      "note": "Slice 2 merged after Task 1; the TimelineBar map entry names the Engagement toggle and the App-held open flag; ENGSTRIP_OPEN_KEY unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b57b0a7e2f71970b9def89adadb7eac6ddd0ab9c55ab7846ad6f11f4e26524a2",
+      "sha256": "3fa17b5a8da09be287cb36997d85825f7ceb6c478c9afa07256022b2a7dfd66a",
       "reviewedAt": "2026-09-15",
-      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
+      "note": "Slice 2 merged after Task 1; the e2e paragraph names the two playback-bar tests."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "dd74cbd1e9db6ffb6f1c5263d4561b23925443426516c4ec06644f390b679284",
+      "sha256": "9524c87e366a11704a83cfee2d4ca2e875384e9105961131b1bb0b4971e8e1bd",
       "reviewedAt": "2026-09-15",
-      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
+      "note": "Slice 2 merged after Task 1: re-read src changes (playback bar toggle, App-held strip flag); no text change needed."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "386f254f7420a3ef3f4f4f4a9ea07fa756d496c8f9f051fd2b58255626948837",
+      "sha256": "4bf615c9238008b6efb5ab3dbb7da6b60787f21208913abec7ba913af56cfa75",
       "reviewedAt": "2026-09-15",
-      "note": "Rebase of Task 1 onto e35c0f1. Drawer session note stands: reviewed the drawer toggle and closed-drawer rules and the Declutter row alignment in index.css; the right panel paragraph describes the drawer."
+      "note": "Slice 2 merged after Task 1: re-read src changes (playback bar toggle, App-held strip flag); no text change needed."
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
