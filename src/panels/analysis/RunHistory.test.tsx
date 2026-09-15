@@ -27,7 +27,7 @@ const basis = `Monte Carlo estimate · ${summary.replicates} replicates`
 function view(props: Partial<Parameters<typeof RunHistoryView>[0]> = {}) {
   return renderToStaticMarkup(<RunHistoryView
     runs={[listed]} opened={null} notice={null} error={null} save={save}
-    onOpen={() => {}} onDelete={() => {}} onSave={() => {}} onImport={() => {}} {...props} />)
+    onOpen={() => {}} onDelete={() => {}} onSave={() => {}} onImport={() => {}} onExportSqlite={() => {}} {...props} />)
 }
 
 describe('RunHistoryView', () => {
@@ -48,7 +48,9 @@ describe('RunHistoryView', () => {
     const html = view({ runs: [], save: { ...save, enabled: false, reason: 'No finished ensemble to save' } })
     expect(html).toContain('title="Read a saved-run JSON file into this history"')
     expect(html.indexOf('>Import run</button>')).toBeLessThan(html.indexOf('>Save to history</button>'))
-    expect(html.match(/disabled=""/g)).toHaveLength(1)
+    // Save is disabled by its reason and the SQLite export by the empty list; import never is.
+    expect(html.match(/disabled=""/g)).toHaveLength(2)
+    expect(html).not.toMatch(/disabled=""[^>]*>Import run</)
   })
 
   it('reports the empty list, the eviction notice and the load error', () => {

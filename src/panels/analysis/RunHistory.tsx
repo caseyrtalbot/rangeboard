@@ -13,6 +13,7 @@ import type { BandSeries, McSummary, Stat } from '../../playback/mcRun'
 import type { RunSummary } from '../../io/runStore'
 import { deleteRun, getRun, listRuns } from '../../io/runStore'
 import { exportRunCsv } from '../../io/exportCsv'
+import { downloadRunsSqlite } from '../../io/exportSqlite'
 import { exportRunRecordPackage, importRunRecordFile } from '../../io/persist'
 import { formatCount, statMean } from './mc'
 
@@ -236,10 +237,12 @@ export interface RunHistoryViewProps {
   onDelete: (id: string) => void
   onSave: () => void
   onImport: () => void
+  /** Export every saved run as one SQLite file. */
+  onExportSqlite: () => void
 }
 
 /** The list, its per-row actions and the opened record. Pure: every state arrives as a prop. */
-export function RunHistoryView({ runs, opened, notice, error, save, onOpen, onDelete, onSave, onImport }: RunHistoryViewProps) {
+export function RunHistoryView({ runs, opened, notice, error, save, onOpen, onDelete, onSave, onImport, onExportSqlite }: RunHistoryViewProps) {
   return (
     <section aria-label="Run history">
       <h4>Run history</h4>
@@ -248,6 +251,8 @@ export function RunHistoryView({ runs, opened, notice, error, save, onOpen, onDe
         <span style={{ display: 'flex', gap: 'var(--space-2)' }}>
           <button className="mini" type="button" style={actionWord}
             title="Read a saved-run JSON file into this history" onClick={onImport}>Import run</button>
+          <button className="mini" type="button" style={actionWord} disabled={runs.length === 0}
+            title="Export every saved run as one SQLite file" onClick={onExportSqlite}>Export SQLite</button>
           <button className="mini" type="button" style={actionWord}
             disabled={!save.enabled} title={save.reason} onClick={onSave}>Save to history</button>
         </span>
@@ -331,6 +336,10 @@ export function RunHistory({ save }: { save: RunHistorySave }) {
         setNotice(`Imported ${record.label}.${evicted.length ? ` ${evicted.length} oldest ${evicted.length === 1 ? 'record' : 'records'} evicted to stay under the size cap.` : ''}`)
         setReload(n => n + 1)
       })}
+      onExportSqlite={() => {
+        Promise.all(load.runs.map(run => getRun(run.id))).then(records =>
+          downloadRunsSqlite(records.filter(record => record !== null), load.runs[0]?.scenarioName ?? 'scenario'), fail)
+      }}
     />
   )
 }
