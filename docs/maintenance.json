@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "ef2b0e2c29a792990602c1b0e3f4019f27286e0634614d7d233f2b196857c91f",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: package.json gains engine:build, engine and test:engine; check runs test:engine; no guidance change"
+      "sha256": "91c2a3a90f47c8c2e5f5e316c0bc6c7f58620186ef57b54e6faad7fa2588d504",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 gate: package.json and lock gain the pinned sql.js 1.14.2 dependency; no guidance change needed after reading the diff."
     },
     {
       "document": "CLAUDE.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "302200361bbecd8403f09cedd14f440b7686e25a53f80ce32c7fde26f904ca26",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 1 gate: package.json gains engine:build, engine and test:engine; check runs test:engine; no guidance change"
+      "sha256": "c2d2293dcf34b1717f431689fd8d2d05c18ee5bd59f4b9767334c38ae16fba19",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "4a1552d229f049cfbf644e42da85c9f1f6c20a383402d40a302c170a55b07093",
-      "reviewedAt": "2026-09-14",
-      "note": "Task 1 review fixes CR-01 to CR-04 closed 2026-09-14; evidence record indexed"
+      "sha256": "0817950d4ade53dde0221487a11dbfd18593de3e2e477f5b0a583c1591b6012a",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 gate record indexed beside the Phase 3 gate lines."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "00613c12df7cbcded61ad7a49d17d44323bb9321c6a0467aadcd57dd99a04831",
+      "sha256": "c606f5b442df380fb691a282a3aedf7e9eaebf8f3864c64715f92effcfb4364d",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 contract: statOf and StatKind exported from mcRun for the optimize lane; no guide text change"
+      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "3744ced8f0c905544300cf553921c9ff34d2a6e743fde9da10b1be649b6e1dad",
+      "sha256": "e0d4ad276a2384233e11c90b1cce2d1830f390f4e1bb275aa86f2753281bb250",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 contract: statOf and StatKind exported from mcRun for the optimize lane; no guide text change"
+      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "23fa0af96160e07ae86347a2af4c3018ddca7d80208fd3aa24951958c24893ac",
-      "reviewedAt": "2026-09-11",
-      "note": "Reviewed the Phase 3 validation suites, protected fixtures, draw kind and browser procedure against current tests."
+      "sha256": "e05eb10a05ab384c61c9cc7ecf3421877fc4eb6c74b40294d1c965ed1d91f91c",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "ca432322790518326c2733a6e64589ca43f3acb5d0c187f6bc9878cf60e38cab",
-      "reviewedAt": "2026-09-14",
-      "note": "Handoff defined as position, tasking and landmines with fixed sections; completed work lives in plan, evidence and commits"
+      "sha256": "689f2e54d356c9f693cb9d2019d849b9cb57a4dff586ba0d6734ed94586b48cb",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
     },
     {
       "document": "docs/HANDOFF.md",
@@ -107,16 +107,16 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "46c998409c976d63913ba508dacfd6e9a155739aab11ad505e2846fb57e97405",
-      "reviewedAt": "2026-09-11",
-      "note": "Reviewed appended physics settings CSS: existing spacing, text and border tokens, field markup and square surfaces remain consistent; no design rule change."
+      "sha256": "2e289608391e89d481ade50d700e3debeb6040e31f52ce2811dfb6c169eba634",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
       "inputs": [],
-      "sha256": "4edabd39d84f6060494d5eed41c8439e55b063fba142dbbd90b5a5231157ad82",
-      "reviewedAt": "2026-09-14",
-      "note": "Task 1 review fixes CR-01 to CR-04 closed 2026-09-14; evidence record indexed"
+      "sha256": "5b5f467b9dda606c29cb8d63d405ff496f54d5cd590815383f751919015b2845",
+      "reviewedAt": "2026-09-15",
+      "note": "Phase 4 complete paragraph appended after the 4.d Gate section, naming the lane merges and the gate record."
     }
   ],
   "historical": [

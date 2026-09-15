@@ -258,6 +258,16 @@ three weeks.
 Orchestrator: `npm run check`; browser check of the whole loop: build, Run, What drives
 this, Where it fails, Where to put it, Save, Compare, Export. Exit: blueprint Phase 4 exit.
 
+**Phase 4 complete, 2026-09-15.** The contract `86c65e8` (with `statOf` and `StatKind`
+exported in `6defdf4`), then lanes 4.2 calibrate `72ea030`, 4.1 optimizer `44575d0`,
+4.4 sqlite `eddbb59`, 4.3 compare `95418bc` and 4.5 placement `d8fb1c2`, with the
+SQLite history button `c59fb90` and the install cancel `f855d6b`: a placement optimizer
+on its own worker slot behind the Where to put it screen, calibration of a library field
+from typed counts into an override, a saved-run comparison with lineage, JSON package,
+CSV and PNG export, and one SQLite file of the run history. No parity fixture moved; the
+lane table, the known limits and the browser check are in
+[the Phase 4 gate record](field-te/evidence/p4-gate-2026-09-15/README.md).
+
 ## 7. Agent count and effort by phase
 
 | Phase | Contract | Parallel lanes | Review | Notes |

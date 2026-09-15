@@ -86,9 +86,14 @@ status travel with the run record.
 Where a forecast count still prints, it reads as an expected value with two decimals
 below ten. No surface labels a forecast as a realized kill.
 
+The right panel is a drawer. The drawer button at the right end of the top bar, or `]`,
+closes and opens it, and the open state is saved. Objects, Details in Analysis and a
+Prepare link reopen it; a selection does not.
+
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
-Now. Analyze offers Outcome and Compare. The selected screen of Prepare and of Analyze is
+Now. Analyze offers Outcome and Compare. Prepare also offers Where to put it after Inputs.
+The selected screen of Prepare and of Analyze is
 session state in [App.tsx](../src/App.tsx), never saved; a Prepare link from a results
 screen selects Inputs.
 
@@ -96,9 +101,10 @@ screen selects Inputs.
 | --- | --- | --- | --- |
 | [Fragility](../src/panels/analysis/screens/FragilityScreen.tsx) | Prepare | Monte Carlo ensemble and sensitivity | Kills, Leakers and Min warning tiles with the band inside; a factor [sweep map](../src/charts/SweepMap.tsx) over one or two scenario factors; ranked sensitivity bars for a selected response; validity findings; Run Monte Carlo, Run sweep, Run sensitivity and Pin as baseline |
 | Inputs | Prepare | Scenario | The existing [BoardPreparation](../src/panels/BoardPreparation.tsx) content |
+| [Where to put it](../src/panels/analysis/screens/PlacementScreen.tsx) | Prepare | Optimize run over the current scenario | Objective, movable systems and budget; progress with the best evaluation so far; up to five candidate laydowns with intervals; Apply installs one as a new scenario named with the suffix `(placement N)` |
 | [Now](../src/panels/analysis/screens/NowScreen.tsx) | Execute | Sampled trial at the cursor | Run line, kill-chain table, one inventory bar per effector, sensor rows, New run and Forecast and analysis |
 | [Outcome](../src/panels/analysis/screens/OutcomeScreen.tsx) | Analyze | Completed trial | Six count tiles with their denominator, a sortable per-threat table, and Event ledger, Manifest and Validity rows that open the existing records in place, with export |
-| [Compare](../src/panels/analysis/screens/CompareScreen.tsx) | Analyze | Ensemble with the trial marked, plus a pinned baseline | [Band chart](../src/charts/BandChart.tsx), delta table with an inside/outside flag, findings that name a cause, and a Baseline row with Pin and Clear |
+| [Compare](../src/panels/analysis/screens/CompareScreen.tsx) | Analyze | Ensemble with the trial marked, plus a pinned baseline; any two saved runs | [Band chart](../src/charts/BandChart.tsx), delta table with an inside/outside flag, findings that name a cause, a Baseline row with Pin and Clear, PNG export of the chart, and a saved-run comparison of two history records (means differenced, no interval on the difference) |
 
 Before the first Play, Now, Outcome and Compare each show one line: `No trial yet. Press
 Play in Execute to run one.` Trial outcomes are bounded by the lesser of the cursor and
@@ -114,6 +120,19 @@ sensitivity run replace each other. A pinned baseline keeps the current laydown 
 finished ensemble under its own storage key; Compare draws its mean dashed and adds
 Baseline and Current minus Baseline columns. The baseline never enters the scenario, the
 undo history or a worker request.
+
+Where to put it runs a placement optimizer on its own worker slot: a Gaussian process
+with expected improvement over the movable positions inside the range polygon, each
+evaluation a replicate run under common random numbers at one seed (defaults 60
+evaluations of 40 replicates). Apply copies the scenario through the existing replace
+action, so the candidate is a new scenario and the optimize result is cleared with the
+other analyses on install. Calibrate, a button per field on the Systems tab, opens a
+dialog that turns typed counts or times into a posterior (beta with the Jeffreys prior
+for a proportion, normal-gamma for a time); Accept writes an ordinary override whose
+reason records the prior, the observation and the posterior. The run history exports
+every saved run as one SQLite file, one record as a JSON package that Import run reads
+back, and per-threat, per-effector and sensitivity CSV tables; each tile opens its
+lineage on demand.
 
 Completed-run Evidence products in Outcome retain export, final-frame capture, reset and
 full-run records without repeating the outcome tiles. Completed-run JSON adds a
@@ -131,15 +150,18 @@ screen changes preserve the result basis.
 | Represent an architecture | Sensor/C2/effector links, integration profiles, suggested pairings, typed routes and fire-control eligibility | [integration](../src/model/integration.ts), [killChain](../src/playback/killChain.ts) |
 | Represent a threat | Paths, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON; the Systems tab lists every field of every system in use with grade, layer, source and spread, and an edit there is an override with a reason, reset per field, per system or all | [LibraryEditor](../src/panels/LibraryEditor.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx), [overrides](../src/state/overrides.ts), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |
+| Calibrate from counts | Calibrate per field on the Systems tab: a beta posterior with the Jeffreys prior for a proportion, a normal-gamma posterior for a time; Accept writes an override with the prior, observation and posterior in its reason | [calibrate](../src/analysis/calibrate.ts), [CalibrateDialog](../src/panels/settings/CalibrateDialog.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx) |
 | Trace a value | The library is a JSON data package, one file per model, with grade, layer, range type, condition, source and spread on every numeric field; every sensor carries range, azimuth and elevation accuracy and a radar false-alarm rate, every C2 model carries decision latency, its sigma and an operator track capacity; class priors are derived from the sourced entries | [data package](../data/library/), [libraryField](../src/model/libraryField.ts), [classPriors](../src/analysis/classPriors.ts) |
 | Follow a track | Per-sensor Kalman track estimates with covariance ellipses on the board, track-to-track fusion at the C2 after link latency, confusion-matrix classification where a sensor states one, false tracks from the radar false-alarm rate and an operator decision queue at the C2 | [kalman](../src/playback/kalman.ts), [tracker](../src/playback/tracker.ts), [fusion](../src/playback/fusion.ts), [classification](../src/playback/classification.ts), [falseTracks](../src/playback/falseTracks.ts), [operator](../src/playback/operator.ts), [TrackLayer](../src/canvas/layers/TrackLayer.tsx) |
 | Play a scenario | Sampled trial preparation, retained Replay, New run, speed, cursor and observation-bounded track/engagement display | [TimelineBar](../src/panels/TimelineBar.tsx), [trialSelectors](../src/state/trialSelectors.ts), [useTrialResult](../src/state/useTrialResult.ts), [trialTrackState](../src/playback/trialTrackState.ts), [trialSweepAt](../src/playback/trialSweepAt.ts), [frameClock](../src/canvas/frameClock.ts) |
 | Watch a trial | Now screen: run line, kill chain at the cursor, effector inventory bars and sensor rows | [NowScreen](../src/panels/analysis/screens/NowScreen.tsx), [trialSweepAt](../src/playback/trialSweepAt.ts), [systemTelemetry](../src/analysis/systemTelemetry.ts) |
 | Read a completed trial | Outcome screen: count tiles, per-threat table, event ledger, manifest, validity and export | [OutcomeScreen](../src/panels/analysis/screens/OutcomeScreen.tsx), [trialResult](../src/analysis/trialResult.ts), [DebriefRecord](../src/panels/analysis/DebriefRecord.tsx) |
-| Compare against expectation | Compare screen: ensemble band with the trial marked, delta table, disagreement finding and a pinned baseline | [CompareScreen](../src/panels/analysis/screens/CompareScreen.tsx), [BandChart](../src/charts/BandChart.tsx), [runValidity](../src/analysis/runValidity.ts), [baseline](../src/state/baseline.ts) |
+| Compare against expectation | Compare screen: ensemble band with the trial marked, delta table, disagreement finding, a pinned baseline, chart PNG export and a comparison of any two saved runs | [CompareScreen](../src/panels/analysis/screens/CompareScreen.tsx), [BandChart](../src/charts/BandChart.tsx), [runValidity](../src/analysis/runValidity.ts), [baseline](../src/state/baseline.ts), [exportPng](../src/charts/exportPng.ts) |
+| Find where to put it | Where to put it screen: objective, movable systems and budget; a GP with expected improvement over the range polygon, common random numbers, candidates with intervals; Apply installs one as a new scenario | [PlacementScreen](../src/panels/analysis/screens/PlacementScreen.tsx), [optimize loop](../src/playback/optimize/loop.ts), [gp](../src/playback/optimize/gp.ts), [polygon](../src/playback/optimize/polygon.ts), [optimize client](../src/playback/optimize/client.ts), [optimizeTypes](../src/playback/optimizeTypes.ts) |
 | Find where a laydown fails | Fragility screen: Monte Carlo tiles, factor sweep map, Morris screening then Sobol first-order and total indices with bootstrap intervals under the full sensitivity depth (one-at-a-time under quick) and validity; run settings on the Run tab | [FragilityScreen](../src/panels/analysis/screens/FragilityScreen.tsx), [SweepMap](../src/charts/SweepMap.tsx), [SobolChart](../src/charts/SobolChart.tsx), [morris](../src/playback/morris.ts), [sobol](../src/playback/sobol.ts), [mcRun](../src/playback/mcRun.ts), [RunTab](../src/panels/settings/RunTab.tsx) |
 | Run outside the browser | `npm run engine -- scenario.json --replicates N --seed S --out run.json` builds the headless engine bundle and spreads a fixed replicate count over worker threads; the run record equals the browser summary at one seed | [run-engine](../scripts/run-engine.mjs), [engine barrel](../src/engine/index.ts), [workerPool](../src/playback/workerPool.ts) |
-| Retain work | Autosave, scenario/library/run JSON, saved Board frames and run logs; Save to history keeps a finished ensemble in IndexedDB with its manifest, and the history list opens any record in place | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [runStore](../src/io/runStore.ts), [RunHistory](../src/panels/analysis/RunHistory.tsx) |
+| Retain work | Autosave, scenario/library/run JSON, saved Board frames and run logs; Save to history keeps a finished ensemble in IndexedDB with its manifest, and the history list opens any record in place with its lineage | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [runStore](../src/io/runStore.ts), [RunHistory](../src/panels/analysis/RunHistory.tsx) |
+| Export a record | One saved run as a JSON package (`rangeboardRunRecord: 1`) that Import run reads back; per-threat, per-effector and sensitivity CSV with units in the headers; every saved run as one SQLite file with runs, per_target, per_effector, sensitivity and sobol tables | [runRecordPackage](../src/io/runRecordPackage.ts), [exportCsv](../src/io/exportCsv.ts), [exportSqlite](../src/io/exportSqlite.ts), [RunHistory](../src/panels/analysis/RunHistory.tsx) |
 
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
 never advances observation or stamps a run start or analysis basis.
@@ -166,7 +188,9 @@ when a view fails; it carries the scenario and the pinned baseline as two lanes.
 3. Monte Carlo and sensitivity use separate worker slots; a factor sweep runs on the
    sensitivity slot, so it and a sensitivity run replace each other. Sampled Play
    preparation has a third slot and retains one nominal/aleatory ledger, sampled
-   observations and frozen manifest. Results require the current slot, request, run and
+   observations and frozen manifest. The placement optimizer has a fourth slot
+   ([optimize client](../src/playback/optimize/client.ts)); its result is view state that
+   a scenario install cancels and clears. Results require the current slot, request, run and
    analysis basis. Trial selectors and adapters supply the canvas, telemetry, charts and
    completed-run export from that retained result. Play waits for trial readiness,
    independently of MC and sensitivity. No trial is autosaved or archived in application

@@ -100,6 +100,7 @@ Breaking one of these breaks the app.
   instead. The live keys are `SCENARIO_KEY` (`rangeboard.scenario.v1`), `BOARD_BASELINE`
   (`rangeboard.baseline.v1`), `LAYERS_KEY`,
   `RINGS_KEY`, `UNITS_KEY`, `VIEW_KEY`, `RUNSEQ_KEY`, `RIGHT_PANEL_WIDTH_KEY`,
+  `RIGHT_PANEL_OPEN_KEY`,
   `PALETTE_WIDTH_KEY`, `PALETTE_COLLAPSED_KEY`, `ENGSTRIP_OPEN_KEY` and the retired
   `ANALYSIS_KEY` (`rangeboard.analysis.v1`), which earlier builds wrote for the removed
   lens layout and nothing reads now, and `OVERRIDES_KEY` (`rangeboard.overrides.v1`), an
@@ -154,19 +155,28 @@ Breaking one of these breaks the app.
   it. `cancel` posts the protocol's stop request and terminates a worker silent for
   `CANCEL_GRACE_MS`. `mcClient.ts` (a worker pool for replicates, `workerPool.ts`, and one slot for
   sensitivity shared with the sweep, Morris and Sobol) and
-  `trialClient.ts` (one slot) are protocol adapters over it: they own the worker URL,
+  `trialClient.ts` (one slot) and `optimize/client.ts` (one slot for the placement
+  optimizer, `startOptimize` and `cancelOptimize`) are protocol adapters over it: they own the worker URL,
   the request envelope, decoding, identity checks (run id; for a trial also request token,
   basis and manifest) and their cancellation semantics (graceful with grace period for MC,
   immediate terminate for a trial). Above them, `src/state/analysisRequests.ts` owns what
-  a request is for the four kinds `mc`, `sensitivity`, `sweep` and `trial`: `requestAnalysis` builds
+  a request is for the five kinds `mc`, `sensitivity`, `sweep`, `trial` and `optimize`
+  (`AnalysisKind`): `requestAnalysis` builds
   the identity (run id, analysis basis, trial token and manifest), publishes the pending
   slice state first and starts the worker second, so a synchronous startup error or a
   missing `Worker` lands as a terminal error on that state; `acceptMcMessage`,
-  `acceptSensitivityMessage`, `acceptSweepMessage` and `acceptTrialMessage` accept a message only while the
+  `acceptSensitivityMessage`, `acceptSweepMessage`, `acceptTrialMessage` and `acceptOptimizeMessage` accept a message only while the
   request is live, for the current playback id and analysis basis (and for a trial the
   token and manifest). Terminal states accept nothing. Store actions `runMonteCarlo`,
   `runSensitivity`, `runSweep` and `prepareTrial` request an analysis; the store's `mcMessage`,
   `sensitivityMessage`, `sweepMessage` and `trialMessage` sinks reduce through the accept functions.
+  The optimize kind carries an `OptimizeSpec` (objective, movable ids, bounds, budget)
+  that no other request has, so it has its own entry `requestOptimize` (`RequestKind`
+  excludes it from `requestAnalysis`); the store's `runOptimize`, `optimizeMessage`,
+  `cancelOptimize` and `clearOptimize` are its launch, sink, cancel and clear. Its
+  result lives in `McState.optimize` (`AnalysisRunState<OptimizeResult>`) with the best
+  evaluation so far in `optimizeBest`; `installScenario` cancels a live optimize run and
+  marks the result stale, like the other analyses.
   A sweep launch replaces a pending sensitivity run and a sensitivity launch replaces a
   pending sweep, because they share one slot; `runSweep` takes a `SweepSpec` (factors,
   `replicatesPerCell` and `responses`, defaults in `SWEEP_DEFAULTS`) and is refused
@@ -297,6 +307,21 @@ Breaking one of these breaks the app.
   instrumented T&E claim. Missing build provenance reads **Build revision unavailable**.
   `persist.ts` checks run identity and completion; `runResultGroups.ts` revalidates the
   captured basis and result. Existing forecast/MC groups retain their own semantics.
+- **Placement optimizer** (`src/playback/optimize/loop.ts`, `gp.ts`, `polygon.ts`,
+  `optimize.worker.ts`; contract in `optimizeTypes.ts`): `runOptimize` drives
+  `optimizeLoop`, a Gaussian process with expected improvement over the movable
+  positions inside the range polygon. `SEED_EVALUATIONS` (8) Latin hypercube laydowns seed
+  the GP, each later evaluation picks the best of a `CANDIDATE_CLOUD` (512) of polygon
+  samples by expected improvement, and the GP length scale is `LENGTH_SCALE_FRACTION`
+  (0.25) of the polygon extent. Every evaluation is one replicate run
+  (`evaluateLaydown` over `placeLaydown`) under common random numbers at the request's
+  one seed, read through `endOfRunResponses` and `statOf` (`mcRun.ts`) with the
+  response's `StatKind`. `rankCandidates` returns at most `CANDIDATE_CAP` (5) candidates,
+  best first by the objective direction, each with the response `Stat` and its interval.
+  Defaults are `DEFAULT_OPTIMIZE_EVALUATIONS` (60) and `DEFAULT_OPTIMIZE_REPLICATES`
+  (40). The worker is in the isolation set of `workerGraph.test.ts`. The optimizer adds
+  a path and changes no engine number: the replicate loop, `statOf` and every parity
+  fixture are unchanged.
 - **Worker budget and cancel:** `replicateLoop` and `sensitivityLoop` (`mcRun.ts`)
   are generators that yield a `Checkpoint` after every replicate; `runReplicates` and
   `runSensitivity` drive them synchronously and unchanged. The worker drives them
@@ -357,10 +382,12 @@ src/state/     overrides.ts (useOverrides: the separate override store, activeOv
                play, pause, scrub, frame, publish, newRun and their transitions),
                baseline.ts (PinnedBaseline, buildBaseline, validateMcSummary),
                layers.ts (LayerVisibility, presets, ringVisible), runState.ts (playback and
-               MC/sensitivity/sweep/trial state shapes), scenarioInstall.ts (installScenario: the per-operation
+               MC/sensitivity/sweep/trial/optimize state shapes), scenarioInstall.ts (installScenario: the per-operation
                edit/undo/redo/replace response of history, selection, ring overrides,
-               playback, mc and trial), analysisRequests.ts (requestAnalysis and the accept
-               reducers for the mc, sensitivity, sweep and trial requests), analysisBasis.ts
+               playback, mc, trial and optimize), analysisRequests.ts (requestAnalysis and the accept
+               reducers for the mc, sensitivity, sweep and trial requests, plus
+               requestOptimize and acceptOptimizeMessage for the optimize kind and its
+               OptimizeSpec), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
                (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
@@ -403,7 +430,14 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the
                replicate index), sampling.ts (LHS strata), morris.ts, sobol.ts,
                trial.ts (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
-               (the trial protocol adapter), controlledWorker.ts (the shared Worker test
+               (the trial protocol adapter), optimizeTypes.ts (OptimizeRequest,
+               OptimizeResult, OptimizeWorkerMessage, the evaluation and replicate
+               defaults), optimize/ (loop.ts: optimizeLoop, runOptimize, evaluateLaydown,
+               rankCandidates and the constants; gp.ts: the Gaussian process and expected
+               improvement; polygon.ts: point-in-polygon and sampling inside the range;
+               client.ts: the optimize slot adapter startOptimize and cancelOptimize),
+               optimize.worker.ts (the optimize protocol worker),
+               controlledWorker.ts (the shared Worker test
                double), trialTrackState.ts (retained member
                outcomes and geometry), trialSweepAt.ts (retained scan/hold and effector
                state), trackEstimateView.ts (latestEstimatesAt and positionEllipse over
@@ -421,7 +455,9 @@ src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CL
                (sampling), parameterBasis.ts (pure spread resolution and enumeration),
                fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
                threatAggregation.ts, range.ts, trialResult.ts (validated trial view and
-               integer counts), trialSeries.ts (observation-bounded trial chart adapters)
+               integer counts), trialSeries.ts (observation-bounded trial chart adapters),
+               calibrate.ts (familyFor, the beta and normal-gamma posteriors,
+               overrideReason and acceptCalibration over CalibrationRecord)
 src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that the
                Board panels render; reads index.css classes only, no store.
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
@@ -435,7 +471,9 @@ src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.
                box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
                render), BandChart (the recharts ensemble band with the trial and a dashed
                baseline), SweepMap (the CSS-grid factor sweep map), Ladder and Tornado
-               (plain SVG). Props only; never reads the store.
+               (plain SVG). Props only; never reads the store. exportPng.ts (svgMarkup,
+               svgToPng, chartPng, exportChartPng: a recharts SVG to PNG with computed
+               paint baked in)
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Layers),
                interactionRouter.ts (store-free intent routing: Escape order, click
                precedence, drop, placement), StaticScene.tsx (boundaries, footprints, range rings and
@@ -449,8 +487,10 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                style source)
 src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
-               LibraryEditor, AnalysisPanel (+ analysis/screens/ for the
-               Fragility, Now, Outcome and Compare screens and their phase map,
+               LibraryEditor, settings/ (RunTab, SystemsTab, PhysicsTab and
+               CalibrateDialog), AnalysisPanel (+ analysis/screens/ for the
+               Fragility, Inputs, Where to put it (PlacementScreen), Now, Outcome and
+               Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
                TimelineBar (owns the rAF loop; publishes the clock only), CommandPalette,
@@ -461,7 +501,14 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                an AutosaveAdapter supplies key, parser, record selection, adoption and
                save status), persist.ts (scenarioAutosaveAdapter and the Board autosave
                entry points, fillScenario, JSON and library
-               import/export, runExportObject), compat.ts (the Board schema-1
+               import/export, runExportObject, downloadJson and pickJsonFile),
+               runRecordPackage.ts (the saved-run package: runRecordExportObject,
+               exportRunRecordPackage, parseRunRecordPackage, importRunRecordFile; a
+               separate module so runStore and the parser stay out of the entry chunk),
+               exportCsv.ts (per-threat, per-effector and
+               sensitivity CSV, RFC 4180, units in headers), exportSqlite.ts
+               (exportRunsSqlite and downloadRunsSqlite over a dynamically imported
+               sql.js), compat.ts (the Board schema-1
                legacy-omission declaration the validator and fillScenario both read),
                runResultGroups.ts (per-group basis/units
                and separately typed TrialResultGroup),
@@ -475,7 +522,7 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
 src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
                the autosave subscription, then does the same for the overrides,
                exposes window.__store in dev
-src/App.tsx    right panel tabs, keyboard map, resizer; lazy boundaries for
+src/App.tsx    right panel tabs and drawer, keyboard map, resizer; lazy boundaries for
                AnalysisPanel and CommandPalette
 ```
 
@@ -895,7 +942,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   pixel size.
 - **Analysis screens** (`src/panels/AnalysisPanel.tsx`, `src/panels/analysis/screens/`):
   `PHASE_SCREENS` (`screens/navigation.ts`) is the one phase-to-screen map: Prepare
-  `fragility` and `inputs`, Execute `now`, Analyze `outcome` and `compare`. `AnalysisPanel`
+  `fragility`, `inputs` and `placement` (Where to put it), Execute `now`, Analyze
+  `outcome` and `compare`. `AnalysisPanel`
   takes the phase and the screen, falls back to the phase's first screen, and renders
   `BoardPreparation` for `inputs`. `AnalysisNavigation` is one `Seg` of the phase's
   screens, kept outside the content scroller. Each screen has one owner component and one
@@ -903,7 +951,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
   trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon;
   Outcome the completed `TrialResultView` through `trialResultOf`; Compare the completed
-  trial against the current `McSummary` and the pinned baseline. The deterministic
+  trial against the current `McSummary` and the pinned baseline, plus any two saved
+  history records side by side (`SavedRunCompareView`: means differenced, no interval on
+  a difference of independent runs); Where to put it the `McState.optimize` result and
+  `optimizeBest`, and its Apply installs a copy through `replaceScenario` with the name
+  suffix `(placement N)`. The deterministic
   forecast appears on no screen; Outcome and Compare call `engagementPicture` only for
   requirement validity and the `forecast-trial-disagreement` finding. Before the first
   Play, Now, Outcome and Compare each render one placeholder line.
@@ -981,6 +1033,37 @@ Each fact below has exactly one definition. Read it there; never add a second co
   so the stamp follows the installed library and a baseline parse, a rejected import or
   New leaves no stale stamp; the Systems tab reads `loadNoticeFor(scenario.library)` and
   prints a `seed v<N>` chip, N the data package version, on each adopted field (slice 3.0).
+- **Calibration posterior** (`src/analysis/calibrate.ts`, `CalibrationRecord` in
+  `src/model/types.ts`): `familyFor` picks the family from the provenance unit
+  (`fraction` is a proportion, `s` is a time) else from the spec key. A proportion takes
+  a beta posterior with the Jeffreys prior (`proportionPosterior`, `betaInterval`); a
+  time takes a normal-gamma posterior (`timePosterior`, `meanCredibleInterval`) whose
+  default prior (`defaultTimePrior`) is mu0 the current value, kappa0 = 1, alpha0 = 1 and
+  beta0 from the field's spread variance (`spreadVariance`), falling back to
+  `WEAK_TIME_CV` (0.5). `overrideReason` is the one text of the prior, observation and
+  posterior; `CalibrateDialog` Accept writes it through `useOverrides.setOverride`. The
+  record is stored nowhere else: the override is the durable product.
+- **Placement optimizer:** `src/playback/optimize/loop.ts` owns the loop, the seeding,
+  the expected-improvement proposal and the candidate ranking; `gp.ts` the process and
+  `polygon.ts` the range containment and sampling. `optimizeTypes.ts` is the one
+  contract (`OptimizeRequest`, `OptimizeResult`, the defaults); `optimize/client.ts` is
+  the one slot adapter and `state/analysisRequests.ts` (`requestOptimize`,
+  `acceptOptimizeMessage`) the one launch/accept pair. Nothing else builds a laydown
+  evaluation or reads the optimize worker.
+- **SQLite schema** (`src/io/exportSqlite.ts`): the five tables `runs`, `per_target`,
+  `per_effector`, `sensitivity` and `sobol` are declared once there and written by
+  `exportRunsSqlite`; `downloadRunsSqlite` wraps it for the history button. `sobol` is
+  empty by construction because no `RunRecord` field carries Sobol indices. `sql.js`
+  1.14.2 is pinned and loaded only by dynamic import with its wasm URL, so it stays out of
+  the entry chunk.
+- **Run-record package** (`src/io/runRecordPackage.ts`): `runRecordExportObject` is the one
+  envelope, `{ rangeboardRunRecord: 1, record }`; `exportRunRecordPackage` downloads it
+  and `parseRunRecordPackage` reads it back, refusing a debrief export
+  (`rangeboardRun: 1`) by name because it carries no run manifest. `importRunRecordFile`
+  saves the parsed record to the run history. The module uses `downloadJson` and
+  `pickJsonFile` from `persist.ts` and is imported lazily, so the parser and `runStore`
+  stay out of the entry chunk. CSV tables (`exportCsv.ts`: `perThreatCsv`,
+  `perEffectorCsv`, `sensitivityCsv`, RFC 4180, units in headers) are one-way exports.
 - **Other:** kill chain = `Connection` list, sensor to C2 to effector or direct. Threat
   tactics live in `src/playback/tactics.ts`; the raid builder commits entities, paths and
   waves in one `mutate`. Threat WEZ geometry is `src/analysis/impact.ts`; `effectRadiusM`
@@ -1155,7 +1238,9 @@ Design system (`src/index.css`):
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to
-  select), Enter (finish boundary or path), Space (play/pause). Shortcuts are suppressed
+  select), Enter (finish boundary or path), Space (play/pause), `]` (open or close the
+  right drawer; the layout effect shifts the camera by half the canvas width change so
+  the board center holds). Shortcuts are suppressed
   while typing in inputs. Escape order: the command palette,
   then an open dialog (Location, Calibrate), then a toolbar dropdown or the Layout
   surface, then an armed placement or the open drawer, then the canvas draft and the

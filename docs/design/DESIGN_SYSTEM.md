@@ -87,7 +87,10 @@ tabular-nums` is set on `:root`.
 The floor is 11 px. No `font-size` rule in the sheet is below it. Only dense machine rows
 reach it: the detail and register tables, the event ledger, the phase chips, the timeline
 axis and rows, and the KPI sub-line. The Board right panel defaults to 408 px (280 px minimum, 560 px maximum, capped at
-44 percent of the viewport); an existing saved width is preserved. Its lifecycle and
+44 percent of the viewport); an existing saved width is preserved. The right panel is a
+drawer: the drawer button at the right end of the top bar, or `]`, closes and opens it,
+and a resize drag 60 px past the minimum also closes it. A closed drawer gives its width to
+the canvas and holds the board center. A selection does not reopen it. Its lifecycle and
 analysis navigation sit outside the scroll body. Labels wrap and no panel text may be inaccessible.
 
 ## 4. Components

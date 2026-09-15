@@ -31,7 +31,12 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
 | `npm run check` | Complete documentation, type, library, schema, engine, test, lint and build gate |
 
-Run the complete gate for source changes and after integrating lanes. Documentation-only
+Run the complete gate for source changes and after integrating lanes. `npm run check`
+does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
+`npm run check:bundle` after `npm run build` for any change that touches the entry chunk.
+The budget (`scripts/check-bundle.mjs`) is 364,000 bytes gzip for the entry and 400,000
+for initial JavaScript plus CSS; the Phase 4 gate measured 360,308 and 375,965, so the
+entry headroom is under 4 kB. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`. Update a
 source-review fingerprint only after reading the affected document and changed inputs,
 following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
@@ -45,6 +50,36 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   bootstrap intervals at base 1024; `mc.worker.stages.test.ts` drives the Morris and Sobol
   routes. The parity files are aleatory and do not move under LHS. A fixture that sets a
   half-width target pins `stopCap` when it reads the loop end.
+- Phase 4 hypothesis tools, one focused command per lane
+  (`npx vitest run --dir src <files>`):
+  - Contract: `playback/optimizeTypes.test.ts` (the request, result and message shapes
+    and the 60 x 40 defaults).
+  - Calibrate: `analysis/calibrate.test.ts` (a hand-computed beta posterior under the
+    Jeffreys prior, the normal-gamma time posterior, the family from the provenance unit,
+    the override reason) and `panels/settings/CalibrateDialog.test.tsx` (Accept writes
+    `useOverrides.setOverride`, Accept disabled while a count is incomplete or
+    inconsistent).
+  - Optimizer: `playback/optimize/loop.test.ts`, `gp.test.ts`, `polygon.test.ts`,
+    `client.test.ts` and `playback/optimize.worker.test.ts` (the real worker completes
+    and cancels); `playback/workerGraph.test.ts` keeps `optimize.worker.ts` independent
+    of stores, React, panels and browser persistence. The optimizer changes no parity
+    fixture; `sensitivity.parity.test.ts`, `estimate.parity.test.ts` and the two verify
+    suites stay at their anchors.
+  - SQLite: `io/exportSqlite.test.ts` (the file opens in the `sqlite3` CLI with every
+    table keyed on `run_id`, a join returns per-target rows for two runs, `sobol` is
+    empty, a quantile with too few replicates is NULL).
+  - Compare and record: `panels/analysis/screens/CompareScreen.test.tsx` (the saved-run
+    comparison), `panels/analysis/RunHistory.test.tsx` (lineage disclosure, the export
+    buttons), `io/exportCsv.test.ts` (RFC 4180 quoting, units in headers),
+    `io/runExport.test.ts` (the `rangeboardRunRecord: 1` package in
+    `io/runRecordPackage.ts` round-trips and a
+    debrief export is refused), `charts/exportPng.test.ts` (the PNG pipeline under
+    injected canvas and image doubles; `svgMarkup` over a live SVG is covered only by
+    the browser check).
+  - Placement screen and wiring: `panels/analysis/screens/PlacementScreen.test.tsx`,
+    `panels/AnalysisPanel.test.tsx`, `state/store.analysis.test.ts` (`runOptimize`,
+    `optimizeMessage`, `cancelOptimize`, `clearOptimize`) and
+    `state/scenarioInstall.test.ts` (an install cancels and stales the optimize run).
 - Phase 3 contract (slice 3.a): `playback/clock.test.ts` holds the no-request sample times
   equal to the legacy `t += DT` loop bit for bit and a fine window sampled at its step;
   `analysis/parameterBasis.test.ts` pins `FIELDS_BY_KIND` and `hasSpec('c2')`;
@@ -210,6 +245,10 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   | Settings Physics | `panels/settings/PhysicsTab.test.tsx` | Toggle two fallbacks, reload and check persistence; inspect the completed trial's Manifest for the switch list and fallback floor; Reset physics clears the list; all six Phase 3 controls describe the active physical model selected when cleared |
   | Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `charts/BandChart.test.tsx`, `analysis/runValidity.test.ts` | A completed run with an ensemble; the band chart, delta table and disagreement finding render |
   | Baseline | `state/baseline.test.ts`, the persistence tests above | Pin, reload, compare against the dashed baseline, clear; the Storage section lists `rangeboard.baseline.v1` |
+  | Where to put it | `panels/analysis/screens/PlacementScreen.test.tsx`, `playback/optimize.worker.test.ts` | Pick an objective and one movable system, run with a small budget; the progress line advances and the best-so-far updates; up to five candidates list with intervals; Apply installs a scenario named `(placement N)` and the board shows the moved system; an edit after Apply clears the result |
+  | Save and Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `panels/analysis/RunHistory.test.tsx` | Save two runs to history; on Compare pick both as saved runs, the delta table differences the means with no interval on the difference; each history tile opens its Lineage in place |
+  | Export | `io/runExport.test.ts`, `io/exportCsv.test.ts`, `io/exportSqlite.test.ts`, `charts/exportPng.test.ts` | From a history tile download JSON, the three CSV tables and the chart PNG (the PNG opens with the computed paint); Import run reads the JSON back and lists it; Export SQLite downloads one file that opens in the `sqlite3` CLI and a join across two runs returns rows |
+  | Calibrate | `panels/settings/CalibrateDialog.test.tsx`, `analysis/calibrate.test.ts` | On the Systems tab press Calibrate on a proportion field and on a time field; type counts, the posterior and its interval show before Accept; Accept writes an override whose reason names the prior, observation and posterior, and the override survives a reload |
 
   `panels/AnalysisPanel.test.tsx` and `panels/analysis/AnalysisNavigation.test.tsx` cover
   the phase-to-screen map and the screen control.
