@@ -23,7 +23,7 @@ describe('Board toolbar grouping', () => {
   })
 
   it('keeps Board identity, scenario, file trigger and status in the top bar', () => {
-    const html = render(<Toolbar />)
+    const html = render(<Toolbar drawerOpen onToggleDrawer={() => {}} />)
 
     expect(html).toContain('Rangeboard')
     expect(html).toContain('aria-label="Scenario name"')
@@ -31,6 +31,7 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('aria-label="Status"')
     expect(html).toContain('title="Settings (all scenario, run and view settings)"')
     expect(html).toContain('title="ROE · click to change"')
+    expect(html).toContain('aria-controls="board-workspace-panel" aria-expanded="true" aria-label="Workspace drawer"')
     expect(html).not.toContain('aria-label="Board tools"')
     expect(html).not.toContain('aria-label="Theme"')
   })

@@ -19,6 +19,8 @@ export const VIEW_KEY = 'rangeboard.view.v1'
 export const RUNSEQ_KEY = 'rangeboard.runseq.v1'
 /** Right panel width, px. */
 export const RIGHT_PANEL_WIDTH_KEY = 'rangeboard.rightpanel.width'
+/** Right panel open flag, '1' or '0'. A missing flag reads as open. */
+export const RIGHT_PANEL_OPEN_KEY = 'rangeboard.rightpanel.open'
 /** Palette width, px. */
 export const PALETTE_WIDTH_KEY = 'rangeboard.palette.width'
 /** Palette collapsed groups, JSON record. */

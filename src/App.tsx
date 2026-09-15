@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from './state/store'
 import type { BoardPhase } from './state/runState'
 import { selectBoardPhase } from './state/selectors'
@@ -21,7 +21,7 @@ import { formatRunLabel } from './state/labels'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
 import { toggleAnalysisRun } from './playback/runSession'
-import { RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
+import { RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
@@ -45,6 +45,13 @@ const RIGHT_MAX_W = 560
 function savedRightWidth(): number {
   const n = Number(readSetting(RIGHT_PANEL_WIDTH_KEY))
   return n >= RIGHT_MIN_W && n <= RIGHT_MAX_W ? n : 408
+}
+
+/** A resize drag this far past the minimum width closes the drawer. */
+const RIGHT_CLOSE_DRAG = 60
+
+function savedRightOpen(): boolean {
+  return readSetting(RIGHT_PANEL_OPEN_KEY) !== '0'
 }
 
 const PHASES: { id: BoardPhase; label: string }[] = [
@@ -420,12 +427,39 @@ export default function App() {
   const setEntitySection = (section: EntityWorkspaceSection) => setEntityView({ key: selectionKey, section })
   const activeTab = rightTab
 
+  // The right drawer. A selection switches its tab but never reopens it.
+  const [rightOpen, setRightOpenState] = useState(savedRightOpen)
+  // setRightOpen is the one writer, so the ref and the state stay in step.
+  const rightOpenNow = useRef(rightOpen)
+  // Canvas width before a drawer change, so the layout effect below holds the board center.
+  const centerFrom = useRef<number | null>(null)
+
+  const setRightOpen = useCallback((open: boolean) => {
+    if (open === rightOpenNow.current) return
+    if (!open && document.activeElement?.closest('.right-panel')) document.getElementById('drawer-toggle')?.focus()
+    centerFrom.current = document.querySelector('.canvas-host')?.clientWidth ?? null
+    rightOpenNow.current = open
+    setRightOpenState(open)
+    writeSetting(RIGHT_PANEL_OPEN_KEY, open ? '1' : '0')
+  }, [])
+  const toggleRight = useCallback(() => setRightOpen(!rightOpenNow.current), [setRightOpen])
+
+  useLayoutEffect(() => {
+    const from = centerFrom.current
+    centerFrom.current = null
+    const to = document.querySelector('.canvas-host')?.clientWidth
+    if (from == null || to == null || to === from) return
+    const { camera, setCamera } = useStore.getState()
+    setCamera({ ...camera, x: camera.x + (to - from) / 2 })
+  }, [rightOpen])
+
   const openTelemetry = useCallback(() => {
     // Read the selection at call time so the canvas keeps one stable handler.
     setEntityView({ key: selectSelectionKey(useStore.getState()), section: 'telemetry' })
     setRightTab('inspect')
+    setRightOpen(true)
     requestAnimationFrame(() => document.getElementById('entity-section-telemetry')?.focus())
-  }, [setRightTab])
+  }, [setRightTab, setRightOpen])
 
   const closeLibrary = useCallback(() => {
     setLibraryOpen(false)
@@ -537,8 +571,9 @@ export default function App() {
   const openObjects = useCallback(() => {
     openPhase('prepare')
     setPrepareScreen('inputs')
+    setRightOpen(true)
     requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView())
-  }, [openPhase])
+  }, [openPhase, setRightOpen])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
   const navigateAnalysis = useCallback((screen: AnalysisScreen) => {
     if (screen === 'fragility' || screen === 'inputs' || screen === 'placement') setPrepareScreen(screen)
@@ -555,6 +590,7 @@ export default function App() {
     setPlacement(null)
     setLibraryOpen(false)
     setRightTab('analysis')
+    setRightOpen(true)
     requestAnimationFrame(() => {
       const target = document.getElementById(`prepare-${section}`)
       if (!target) return
@@ -563,7 +599,7 @@ export default function App() {
       focusTarget.focus()
       target.scrollIntoView({ block: 'start' })
     })
-  }, [setBoardPhase, setRightTab])
+  }, [setBoardPhase, setRightTab, setRightOpen])
 
   const [rightW, setRightW] = useState(savedRightWidth)
 
@@ -595,7 +631,13 @@ export default function App() {
     e.preventDefault()
     const from = { x: e.clientX, w: rightW }
     function onMove(ev: MouseEvent) {
-      setRightWidth(from.w - (ev.clientX - from.x))
+      const next = from.w - (ev.clientX - from.x)
+      if (next < RIGHT_MIN_W - RIGHT_CLOSE_DRAG) {
+        onUp()
+        setRightOpen(false)
+        return
+      }
+      setRightWidth(next)
     }
     function onUp() {
       window.removeEventListener('mousemove', onMove)
@@ -638,6 +680,11 @@ export default function App() {
         })
         return
       }
+      if (!mod && e.key === ']') {
+        e.preventDefault()
+        toggleRight()
+        return
+      }
       if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         if (e.shiftKey) st.redo()
@@ -663,11 +710,11 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [dispatchEscape])
+  }, [dispatchEscape, toggleRight])
 
   const board = (
     <div className="app board-app" data-board-phase={boardPhase}>
-      <Toolbar />
+      <Toolbar drawerOpen={rightOpen} onToggleDrawer={toggleRight} />
       <LifecycleNav boardPhase={boardPhase} runSeq={runSeq} runPhase={runPhase} onOpenPhase={openPhase} />
       <div className="main" id="board-workspace" role="tabpanel" aria-labelledby={`board-phase-${boardPhase}`}>
 
@@ -698,7 +745,8 @@ export default function App() {
           <EngagementStrip />
           <TimelineBar />
         </div>
-        <aside className="right-panel" style={{ width: rightW }} aria-label="Board workspace panel">
+        <aside id="board-workspace-panel" className="right-panel" style={{ width: rightW }} hidden={!rightOpen}
+          aria-label="Board workspace panel">
           <div className="board-panel-heading">
             <h2>{boardPhase === 'prepare' ? 'Prepare scenario' : boardPhase === 'execute' ? 'Run monitor' : 'Analyze run'}</h2>
           </div>

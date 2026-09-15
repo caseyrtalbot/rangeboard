@@ -204,7 +204,10 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
  * The top bar. Memoized with no props, so an `App` render never reaches it; it
  * subscribes to the scenario fields it shows, never to the whole scenario.
  */
-export const Toolbar = memo(function Toolbar() {
+export const Toolbar = memo(function Toolbar({ drawerOpen, onToggleDrawer }: {
+  drawerOpen: boolean
+  onToggleDrawer: () => void
+}) {
   const scenarioName = useStore((s) => s.scenario.name)
   const environment = useStore((s) => s.scenario.environment)
   const spawnWarning = useStore(useShallow(selectSpawnWarning))
@@ -260,6 +263,16 @@ export const Toolbar = memo(function Toolbar() {
           )
         )}
       </div>
+
+      {/* The one drawer control. The filled column marks the drawer as open. */}
+      <button id="drawer-toggle" type="button" className="tb-menu tb-drawer-toggle"
+        aria-controls="board-workspace-panel" aria-expanded={drawerOpen} aria-label="Workspace drawer"
+        title={`${drawerOpen ? 'Close' : 'Open'} drawer (])`} onClick={onToggleDrawer}>
+        <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="13" height="11" fill="none" stroke="currentColor" />
+          <rect x="8.5" y="0.5" width="5" height="11" fill={drawerOpen ? 'currentColor' : 'none'} stroke="currentColor" />
+        </svg>
+      </button>
     </header>
   )
 })

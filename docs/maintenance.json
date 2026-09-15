@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "46248f8bcc1a8b97c6848602309edeca232719067d62365c6743c6545f02e24b",
+      "sha256": "c2d2293dcf34b1717f431689fd8d2d05c18ee5bd59f4b9767334c38ae16fba19",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: fingerprints recorded against the committed tree at 00d2300; no text change"
+      "note": "Reviewed the right drawer change in src/App.tsx; the README names no panel behavior or shortcut, so no text changes."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "f67afc3606d4e705df1479050629fc89ab8883fab38609186719796c0a0a3854",
+      "sha256": "deb8fe72c873c0369caf0f1afbb2d80c8ed07912c0267d48352627d163fefeb4",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: fingerprints recorded against the committed tree at 00d2300; no text change"
+      "note": "Reviewed the right drawer slice (App.tsx, Toolbar.tsx, storageKeys.ts, index.css, Toolbar test); the right panel section describes the drawer button, ], the saved open state and which actions reopen it."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c53a76b98988c3dd7d4c14ce3dd6ccf7385311c3cc52d2cc4a007fcf45d7c98d",
+      "sha256": "45487b9162d738e0720a81fe13a25538c14dec62dedc0131fadc02cc282ec1c0",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: fingerprints recorded against the committed tree at 00d2300; no text change"
+      "note": "Reviewed the right drawer slice; the storage key list names RIGHT_PANEL_OPEN_KEY, the App.tsx map names the drawer, and the keyboard map names ] and the camera center shift."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "47811402bfe1eac2bdc14b3ef1fe80283c6958689fa6f087375c247eadf7bdcd",
+      "sha256": "411df39763f7c8983744ffb193dae20dd9f87feabad43165d88f3a6cd52d2a8c",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: fingerprints recorded against the committed tree at 00d2300; no text change"
+      "note": "Reviewed RIGHT_PANEL_OPEN_KEY and the two drawer tests in board-shell.e2e.mjs; updated the shell spec description."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "053c6bad181266c4c07355ec4b9f2a33bd6f4ef19143a33dcdee33bd6e84b520",
+      "sha256": "689f2e54d356c9f693cb9d2019d849b9cb57a4dff586ba0d6734ed94586b48cb",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: fingerprints recorded against the committed tree at 00d2300; no text change"
+      "note": "Reviewed the two drawer tests added to board-shell.e2e.mjs; the gate still runs npm run test:e2e unchanged, so no text changes."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "2e289608391e89d481ade50d700e3debeb6040e31f52ce2811dfb6c169eba634",
+      "sha256": "386f254f7420a3ef3f4f4f4a9ea07fa756d496c8f9f051fd2b58255626948837",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: saved-run manifest records active overrides and lineage shows the hash digest (891c4f0); index.css reviewed at its committed state"
+      "note": "Reviewed the drawer toggle and closed-drawer rules and the Declutter row alignment in index.css; the right panel paragraph describes the drawer."
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",

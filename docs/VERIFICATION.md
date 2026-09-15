@@ -255,9 +255,12 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
   in the page, then checks phase switching, selection routing, placement, the Escape chain
-  and the debrief record against store state. Its last test checks that the analysis
+  and the debrief record against store state. One test checks that the analysis
   screen control follows the phase (Outcome and Compare in Analyze, Now in Execute) and
-  that no lens bar renders. The debrief check calls
+  that no lens bar renders. Two drawer tests close and reopen the right panel with the
+  top-bar button and `]`, check that the camera holds the board center, that a selection
+  keeps a closed drawer closed, and that a resize drag past the minimum closes it. The
+  debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.
   CI runs it separately after `npm run check` and `npm run check:bundle`, installing Chromium
