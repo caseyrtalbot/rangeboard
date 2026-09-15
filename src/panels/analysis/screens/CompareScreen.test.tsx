@@ -244,19 +244,18 @@ describe('SavedRunCompareView', () => {
   it('differences the five quantities, each side with its own interval', () => {
     const html = savedView()
     expect(html).toContain('aria-label="Saved run A against saved run B"')
+    expect(html).toContain('Each cell holds the ensemble mean and, under it, the 95 % interval on that mean.')
     // Kills 2.5 of 9 against 1.5 of 6: the means differ by 1 member.
-    expect(row(html, 'Kills')).toContain('>2.5 /9 members</td><td')
-    expect(row(html, 'Kills')).toContain('>2 to 3 /9 members</td>')
-    expect(row(html, 'Kills')).toContain('>1.5 /6 members</td>')
-    expect(row(html, 'Kills')).toContain('>1 to 2 /6 members</td>')
+    expect(row(html, 'Kills')).toContain('>2.5 /9 members<small style="display:block">2 to 3 /9 members</small>')
+    expect(row(html, 'Kills')).toContain('>1.5 /6 members<small style="display:block">1 to 2 /6 members</small>')
     expect(row(html, 'Kills')).toContain('>+1 members</td>')
     // Leakers 2 against 3, first detect 2 s against 3 s, min warning 4 s against 5 s.
     expect(row(html, 'Leakers')).toContain('>-1 members</td>')
-    expect(row(html, 'First detect')).toContain('>1 to 3 s from T0</td>')
+    expect(row(html, 'First detect')).toContain('>1 to 3 s from T0</small>')
     expect(row(html, 'First detect')).toContain('>-1 s from T0</td>')
     expect(row(html, 'Min warning')).toContain('>-1 s</td>')
     // One effector each, so the aggregate salvo interval is that effector's: 4 against 6.
-    expect(row(html, 'Salvos')).toContain('>3 to 5 salvos</td>')
+    expect(row(html, 'Salvos')).toContain('>3 to 5 salvos</small>')
     expect(row(html, 'Salvos')).toContain('>-2 salvos</td>')
   })
 

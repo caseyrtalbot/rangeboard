@@ -238,7 +238,9 @@ const hasAssetIn = (record: RunRecord) =>
 const runScope = (record: RunRecord, population: number) =>
   `${record.mc.replicates} replicates · ${record.manifest.uncertainty === 'total' ? 'Total uncertainty' : 'Aleatory uncertainty'} · seed ${record.mc.seed} · full run T+${formatTime(record.mc.durationS)} · ${population} members`
 
-const compareWidths = ['16%', '13%', '21%', '13%', '21%', '16%']
+// Four columns at the panel's minimum width: each side's interval sits under
+// its mean rather than in a column of its own, so no unit breaks mid-word.
+const compareWidths = ['22%', '28%', '28%', '22%']
 
 export interface SavedRunCompareViewProps {
   runs: RunSummary[]
@@ -280,9 +282,10 @@ export function SavedRunCompareView({ runs, a, b, error, onPick }: SavedRunCompa
         {a && b && left && right && <>
           <p className="analysis-scope">A · {a.label} · {runScope(a, left.population)}</p>
           <p className="analysis-scope">B · {b.label} · {runScope(b, right.population)}</p>
+          <p className="muted small">Each cell holds the ensemble mean and, under it, the 95 % interval on that mean. A count is members of that record's own raid.</p>
           <table className="tb tb-dense" aria-label="Saved run A against saved run B">
             <thead><tr>
-              {['Quantity', 'A', 'A 95 % band', 'B', 'B 95 % band', 'A − B'].map((label, index) => (
+              {['Quantity', 'A', 'B', 'A − B'].map((label, index) => (
                 <th key={label} scope="col" style={{ ...cellStyle, width: compareWidths[index] }}>{label}</th>
               ))}
             </tr></thead>
@@ -290,12 +293,16 @@ export function SavedRunCompareView({ runs, a, b, error, onPick }: SavedRunCompa
               const rowA = left.rows[r]
               const rowB = right.rows[r]
               const delta = rowA.mean != null && rowB.mean != null ? rowA.mean - rowB.mean : null
+              const side = (row: RunRow) => (
+                <td style={cellStyle}>
+                  {value(row.mean, row.unit)}
+                  <small style={{ display: 'block' }}>{band(row)}</small>
+                </td>
+              )
               return <tr key={key}>
                 <th scope="row" style={{ ...cellStyle, width: compareWidths[0] }}>{rowA.label}</th>
-                <td style={cellStyle}>{value(rowA.mean, rowA.unit)}</td>
-                <td style={cellStyle}>{band(rowA)}</td>
-                <td style={cellStyle}>{value(rowB.mean, rowB.unit)}</td>
-                <td style={cellStyle}>{band(rowB)}</td>
+                {side(rowA)}
+                {side(rowB)}
                 <td style={cellStyle}>{delta == null ? '—' : `${signed(delta)} ${r < 2 ? 'members' : rowA.unit}`}</td>
               </tr>
             })}</tbody>

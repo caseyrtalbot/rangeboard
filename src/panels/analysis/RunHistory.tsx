@@ -139,7 +139,7 @@ function TileLineage({ record, label }: { record: RunRecord; label: string }) {
 export function RecordExports({ record, title = 'Export' }: { record: RunRecord; title?: string }) {
   return (
     <div className="insp-row" aria-label={`${title} this run`}>
-      <span className="muted small">{title}</span>
+      <span className="muted small" style={actionWord}>{title}</span>
       <span style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         <button className="mini" type="button" style={actionWord}
           onClick={() => exportRunRecordPackage(record)}>JSON</button>
