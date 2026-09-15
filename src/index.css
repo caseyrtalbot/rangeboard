@@ -2330,10 +2330,14 @@ select.nu-unit {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  height: 36px;
+  padding: 0 10px;
+  box-sizing: border-box;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .timeline .play {
@@ -2361,7 +2365,8 @@ select.nu-unit {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .frame-chip {
@@ -2381,6 +2386,30 @@ select.nu-unit {
 
 .frame-name {
   width: 110px;
+}
+
+.engagement-toggle {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.engagement-toggle .caret {
+  display: inline-block;
+  transition: transform 140ms linear;
+}
+
+.engagement-toggle[aria-expanded='true'] .caret {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .engagement-toggle .caret {
+    transition: none;
+  }
 }
 
 /* ---------- Dialog ---------- */
@@ -2895,26 +2924,12 @@ input[type='number'] {
   user-select: none;
 }
 
-.engstrip-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
-.engstrip-title {
-  color: var(--text-dim);
-  font-size: var(--type-title-size);
-  font-weight: var(--type-title-weight);
-  white-space: nowrap;
-}
-
 .engstrip-legend {
-  margin-left: auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  padding: 3px 10px 2px;
   cursor: default;
 }
 

@@ -90,6 +90,10 @@ The right panel is a drawer. The drawer button at the right end of the top bar, 
 closes and opens it, and the open state is saved. Objects, Details in Analysis and a
 Prepare link reopen it; a selection does not.
 
+The engagement timeline opens from the Engagement button at the right end of the playback
+bar. The bar is 36 px high. The strip sits above the bar and pushes the canvas up, and its
+open state is saved.
+
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
 Now. Analyze offers Outcome and Compare. Prepare also offers Where to put it after Inputs.

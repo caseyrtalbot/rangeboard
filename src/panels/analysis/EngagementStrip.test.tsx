@@ -47,6 +47,10 @@ describe('censorLane', () => {
   })
 })
 
+const STATE_TEXT = {
+  preparing: 'Preparing trial', error: 'Trial preparation failed', cancelled: 'Trial cancelled',
+}
+
 describe('EngagementStrip execution scope', () => {
   beforeEach(() => {
     installTrial(3)
@@ -56,7 +60,8 @@ describe('EngagementStrip execution scope', () => {
   it('renders an empty strip with trial state text before Play', () => {
     unstartTrial()
     const html = render()
-    expect(html).toContain('Simulated trial · ready')
+    expect(html).not.toContain('Simulated trial')
+    expect(html).toContain('No trial yet. Press Play to start one.')
     expect(html).not.toContain('engstrip-name-text')
     expect(html).toContain('aria-label="No outcomes observed yet"')
     expect(html).not.toContain('shape-rendering=')
@@ -87,11 +92,11 @@ describe('EngagementStrip execution scope', () => {
     expect(render()).not.toContain('<path')
   })
 
-  it.each(['preparing', 'error'] as const)('renders no forecast lanes when %s', status => {
+  it.each(['preparing', 'error', 'cancelled'] as const)('renders no forecast lanes when %s', status => {
     const trial = useStore.getState().trial
     useStore.setState({ trial: { ...trial, status, error: status === 'error' ? 'Trial preparation failed' : null } })
     const html = render()
-    expect(html).toContain(status === 'preparing' ? 'Preparing trial' : 'Trial preparation failed')
+    expect(html).toContain(STATE_TEXT[status])
     expect(html).not.toContain('engstrip-name-text')
     expect(html).not.toContain('shape-rendering=')
   })

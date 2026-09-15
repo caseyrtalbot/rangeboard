@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../state/store'
+import type { Store } from '../state/store'
 import { defaultFrameName, formatRunLabel } from '../state/labels'
 import {
   selectDurationS,
@@ -15,6 +16,12 @@ import { nextPublishedTimeS } from '../canvas/frameClock'
 
 const SPEEDS = [1, 2, 5, 10, 30]
 
+/** Threats the engagement strip lists: `uas` entities that have a flight path. */
+function selectThreatCount(s: Store): number {
+  const { entities, paths } = s.scenario
+  return entities.filter((e) => e.kind === 'uas' && paths.some((p) => p.entityId === e.id)).length
+}
+
 /**
  * Bottom transport: play/pause, scrub, speed, and the frames strip. It owns
  * the playback loop: one requestAnimationFrame loop that publishes
@@ -23,9 +30,17 @@ const SPEEDS = [1, 2, 5, 10, 30]
  * playback speed, so the clock does not drift. The loop only publishes; the
  * store's playback commands own observation and completion. The canvas
  * interpolates between publications with its own frame clock (`useFrameClock`).
- * Memoized with no props: it re-renders on its own selectors only.
+ * It also holds the Engagement toggle; the strip's open flag lives in `App`, so
+ * the two stable props leave the memo intact and the bar re-renders on its own
+ * selectors only.
  */
-export const TimelineBar = memo(function TimelineBar() {
+export const TimelineBar = memo(function TimelineBar({
+  engagementOpen,
+  onToggleEngagement,
+}: {
+  engagementOpen: boolean
+  onToggleEngagement: () => void
+}) {
   const { playing, speedMult, runSeq } = useStore(useShallow(selectPlaybackFlags))
   const phase = useStore((s) => s.playback.phase)
   const trialStatus = useStore((s) => s.trial.status)
@@ -36,6 +51,7 @@ export const TimelineBar = memo(function TimelineBar() {
   const waves = useStore(selectWaves)
   const scenarioName = useStore((s) => s.scenario.name)
   const basemap = useStore((s) => s.ui.basemap)
+  const threatCount = useStore(selectThreatCount)
   const {
     scrubTo,
     setSpeedMult,
@@ -182,6 +198,18 @@ export const TimelineBar = memo(function TimelineBar() {
           + Frame
         </button>
       </div>
+
+      <button
+        type="button"
+        id="engagement-toggle"
+        className="engagement-toggle"
+        aria-expanded={engagementOpen}
+        aria-controls="engagement-strip"
+        title="Engagement timeline"
+        onClick={onToggleEngagement}
+      >
+        <span className="caret">▴</span> Engagement {threatCount}
+      </button>
     </div>
   )
 })

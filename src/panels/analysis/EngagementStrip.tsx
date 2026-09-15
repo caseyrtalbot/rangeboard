@@ -7,14 +7,11 @@ import { reached } from '../../analysis/horizon'
 import type { ImpactSeverity } from '../../model/types'
 import { SEVERITY_RANK, severityFor } from '../../analysis/impact'
 import { formatTime } from '../../geometry/geo'
-import { ENGSTRIP_OPEN_KEY } from '../../io/storageKeys'
-import { readSetting, writeSetting } from '../../io/viewState'
 import { tickStepS } from '../../charts/timeAxis'
 import type { TrialResultView } from '../../analysis/trialResult'
-import { useTrialResult, trialViewOf, trialStateText } from './controls'
+import type { TrialSelection } from '../../state/trialSelectors'
+import { useTrialResult, trialViewOf } from './controls'
 import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
-
-const OPEN_KEY = ENGSTRIP_OPEN_KEY
 
 const GUTTER_W = 150
 const LANE_H = 16
@@ -260,10 +257,18 @@ const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS
   )
 })
 
+/** Text for a trial that produced no outcomes, one line per state that is not ready. */
+function stripStateText(selection: TrialSelection): string {
+  if (selection.status === 'preparing') return 'Preparing trial'
+  if (selection.status === 'error') return selection.message
+  if (selection.status === 'cancelled') return 'Trial cancelled'
+  return 'No trial yet. Press Play to start one.'
+}
+
 /**
  * Engagement timeline lane strip: detection, classification, window, shot, arrival per threat.
- * Under the board it owns a collapse header and persists its open flag. `embedded` (inside a
- * widget frame, which has its own header) renders it open with no header and no storage.
+ * Under the board it is mounted only while open: the playback bar holds the toggle and `App`
+ * holds the open flag. `embedded` (inside a widget frame) only drops the shared element id.
  * Memoized: `App` re-renders on every selection change and the strip reads none of it.
  */
 export const EngagementStrip = memo(function EngagementStrip({ embedded = false }: { embedded?: boolean } = {}) {
@@ -272,10 +277,6 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
   const view = trialViewOf(trial)
   const horizon = useMemo<ExecutionHorizon>(() => ({ scoped: true, horizonS: view ? trial.horizon : -1 }), [view, trial.horizon])
   const clipId = useId()
-  const [openFlag, setOpen] = useState(
-    () => !embedded && readSetting(OPEN_KEY) === '1',
-  )
-  const open = embedded || openFlag
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [hover, setHover] = useState<{ i: number; tipLeft: number; tipTop: number } | null>(null)
   const [w, setW] = useState(0)
@@ -301,7 +302,7 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
     ro.observe(el)
     setW(el.clientWidth)
     return () => ro.disconnect()
-  }, [open, view])
+  }, [view])
 
   const x = useMemo(() => {
     return (t: number) => Math.round((Math.min(durationS, Math.max(0, t)) / durationS) * w)
@@ -335,12 +336,6 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
     return out
   }, [durationS, w, x])
 
-  function toggleOpen() {
-    const next = !open
-    writeSetting(OPEN_KEY, next ? '1' : '0')
-    setOpen(next)
-  }
-
   function timeFromEvent(e: React.PointerEvent<HTMLDivElement>): number {
     const rect = e.currentTarget.getBoundingClientRect()
     const t = ((e.clientX - rect.left) / rect.width) * durationS
@@ -370,42 +365,35 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
   return (
     <div
       className="engstrip"
+      id={embedded ? undefined : 'engagement-strip'}
       ref={stripRef}
       role={horizon.scoped ? 'group' : undefined}
       aria-label={horizon.scoped
         ? horizon.horizonS < 0 ? 'No outcomes observed yet' : `Outcomes through T+${formatTime(horizon.horizonS)}`
         : undefined}
     >
-      {!embedded && (
-      <div className="engstrip-head" onClick={toggleOpen}>
-        <span className={`chevron${open ? ' open' : ''}`}>▸</span>
-        <span className="engstrip-title">
-          Engagement timeline · {lanes.length} threat{lanes.length === 1 ? '' : 's'}
-        </span>
-        {open && (
-          <div className="engstrip-legend" onClick={(e) => e.stopPropagation()}>
-            <span>
-              <i className="sw ramp" />
-              classify
-            </span>
-            <span>
-              <i className="sw win" />
-              window
-            </span>
-            <span>
-              <i className="sw shot" />
-              shot
-            </span>
-            <span>
-              <i className="sw arr" />
-              arrival
-            </span>
-          </div>
-        )}
-      </div>
+      {view && (
+        <div className="engstrip-legend">
+          <span>
+            <i className="sw ramp" />
+            classify
+          </span>
+          <span>
+            <i className="sw win" />
+            window
+          </span>
+          <span>
+            <i className="sw shot" />
+            shot
+          </span>
+          <span>
+            <i className="sw arr" />
+            arrival
+          </span>
+        </div>
       )}
-      {!view && <p className="muted small" role="status">{trialStateText(trial.selection)}</p>}
-      {open && view && (
+      {!view && <p className="muted small" role="status">{stripStateText(trial.selection)}</p>}
+      {view && (
         <div className="engstrip-scroll">
           <div className="engstrip-axis">
             <div className="engstrip-axis-gutter" style={{ width: GUTTER_W }} />
@@ -474,7 +462,7 @@ export const EngagementStrip = memo(function EngagementStrip({ embedded = false 
           </div>
         </div>
       )}
-      {open && tip != null && hover != null && (
+      {tip != null && hover != null && (
         <div className="engstrip-tip" style={{ left: hover.tipLeft, top: hover.tipTop }}>
           <span className="name">{tip.label}</span> {tipText(tip, horizon.scoped)}
         </div>

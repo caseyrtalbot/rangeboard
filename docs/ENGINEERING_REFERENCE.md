@@ -504,7 +504,8 @@ src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over s
                Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
-               TimelineBar (owns the rAF loop; publishes the clock only), CommandPalette,
+               TimelineBar (owns the rAF loop; publishes the clock only; holds the
+               Engagement toggle whose open flag lives in App state), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
                restore, observe, flush and stop, and owns the read, the recovery, the

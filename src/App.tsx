@@ -21,7 +21,7 @@ import { formatRunLabel } from './state/labels'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
 import { toggleAnalysisRun } from './playback/runSession'
-import { RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
+import { ENGSTRIP_OPEN_KEY, RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
@@ -444,6 +444,18 @@ export default function App() {
   }, [])
   const toggleRight = useCallback(() => setRightOpen(!rightOpenNow.current), [setRightOpen])
 
+  // The engagement strip open flag. It stays here, not in the store: only this
+  // column reads it, and the strip is mounted only while it is open. The ref
+  // keeps one stable toggle, so the memoized playback bar holds its memo.
+  const [engagementOpen, setEngagementOpen] = useState(() => readSetting(ENGSTRIP_OPEN_KEY) === '1')
+  const engagementOpenNow = useRef(engagementOpen)
+  const toggleEngagement = useCallback(() => {
+    const next = !engagementOpenNow.current
+    engagementOpenNow.current = next
+    writeSetting(ENGSTRIP_OPEN_KEY, next ? '1' : '0')
+    setEngagementOpen(next)
+  }, [])
+
   useLayoutEffect(() => {
     const from = centerFrom.current
     centerFrom.current = null
@@ -742,8 +754,8 @@ export default function App() {
             <button onClick={() => { const st = useStore.getState(); st.cancelDraft(); st.setTool('select') }}>Cancel</button>
           </div>}
           <CanvasStage onOpenDetail={openTelemetry} onPlace={placement ? placeAt : undefined} />
-          <EngagementStrip />
-          <TimelineBar />
+          {engagementOpen && <EngagementStrip />}
+          <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />
         </div>
         <aside id="board-workspace-panel" className="right-panel" style={{ width: rightW }} hidden={!rightOpen}
           aria-label="Board workspace panel">

@@ -259,7 +259,10 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   screen control follows the phase (Outcome and Compare in Analyze, Now in Execute) and
   that no lens bar renders. Two drawer tests close and reopen the right panel with the
   top-bar button and `]`, check that the camera holds the board center, that a selection
-  keeps a closed drawer closed, and that a resize drag past the minimum closes it. The
+  keeps a closed drawer closed, and that a resize drag past the minimum closes it. Two
+  playback-bar tests open and close the engagement strip from the Engagement toggle, check
+  the 36 px bar height, the strip position above the bar, the canvas height change and the
+  saved open state, and check that the saved state restores on reload. The
   debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.
