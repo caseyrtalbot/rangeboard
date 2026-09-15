@@ -12,14 +12,14 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, branch `p4f/apply-overrides`, checked out from
-  `main` at `5b1eb27` (the Phase 4 handoff commit). The branch carries Task 1
-  uncommitted: nothing on it is committed, pushed or merged.
-- `main` and `origin/main` moved to `e35c0f1` (the shell-rework right drawer, merged
-  and pushed by a separate session on 2026-09-15). That commit touches `src/App.tsx`,
-  `src/index.css`, `src/io/storageKeys.ts`, the Toolbar files and
-  `scripts/e2e/board-shell.e2e.mjs`; Task 1 touches none of them, so a rebase onto
-  `main` is clean. Rebase before the commit.
+- Repository `~/Projects/rangeboard`, branch `p4f/apply-overrides` at `663f695` plus this
+  handoff commit, rebased onto `main` at `e35c0f1` (the shell-rework right drawer) and
+  pushed to `origin/p4f/apply-overrides` on 2026-09-15. Not merged into `main`.
+- A separate shell session works in the worktree `~/Projects/rangeboard-shell` on
+  branch `shell/slice-2-playback-bar` (base `e35c0f1`); it owns `src/App.tsx`,
+  `src/index.css`, the Toolbar files and `scripts/e2e/board-shell.e2e.mjs`. The docs
+  registry `docs/maintenance.json` is shared; a rebase across that lane conflicts there
+  and is resolved by re-recording each review with `docs:review` on the combined tree.
 - No lane worktrees or lane branches exist; the five `p4/*` branches were merged and
   deleted.
 - Plan: Phases 0 to 4 complete, each marked in the plan with its merge commits. Phase 4
@@ -33,10 +33,10 @@ this file and the docs index. This file does not authorize a commit, push or mer
   list it applied (`AnalysisRunState.overrides`) and goes stale when an override edit
   changes the values in force; Save to history and `pinBaseline` write that list; the
   Outcome and Compare forecasts run `trialForecast` on the applied scenario.
-- Gate on the working tree, 2026-09-15: `npm run check` passed (202 test files, 2,173
-  tests; main had 198 and 2,160), `npm run test:engine` 3 pass, and `npm run
-  check:bundle` passed with the entry at 360,844 bytes gzip against the 364,000 budget
-  (main 360,322). The Phase 4
+- Gate on the rebased tree at `663f695`, 2026-09-15: `npm run check` passed (202 test
+  files, 2,173 tests; `5b1eb27` had 198 and 2,160), `npm run test:engine` 3 pass, and
+  `npm run check:bundle` passed with the entry at 361,302 bytes gzip against the
+  364,000 budget (2.7 kB of headroom). The Phase 4
   gate on the committed tree is recorded in
   [the Phase 4 gate record](field-te/evidence/p4-gate-2026-09-15/README.md).
 - Open defect found at the Phase 4 gate and not fixed: on the firing-scenario laydown the

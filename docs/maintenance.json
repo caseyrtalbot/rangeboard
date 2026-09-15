@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "075309cfeb681115a62ef27d07ba39727e7e7e03d5f19053910df5861fba53ed",
+      "sha256": "5378926ebce0e0768bc98c0df520c053aa1d255009d8a9d5535c0277abfa54d4",
       "reviewedAt": "2026-09-15",
-      "note": "Position: main moved to e35c0f1 by the shell session; Task 1 gate numbers recorded"
+      "note": "Task 1 committed as 663f695 on p4f/apply-overrides, rebased onto e35c0f1, pushed; gate numbers from the rebased tree; shell lane worktree noted"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
