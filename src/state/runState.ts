@@ -2,6 +2,7 @@ import type { Scenario } from '../model/types'
 import { newId } from '../model/types'
 import type { McSummary, SensitivitySummary, SweepSummary } from '../playback/mcRun'
 import type { MorrisResult, PoolProgress, SobolResult } from '../playback/mcTypes'
+import type { OptimizeEvaluation, OptimizeResult } from '../playback/optimizeTypes'
 import type { TrialManifest, TrialResult } from '../playback/trialTypes'
 
 /** Board navigation only, independent of the playback lifecycle. */
@@ -93,6 +94,12 @@ export type SweepState = AnalysisRunState<SweepSummary>
 /** The sweep slice before any run. */
 export const IDLE_SWEEP: SweepState = { ...IDLE_SENSITIVITY, summary: null }
 
+/** The placement optimization behind the Where to put it screen; `progress` and `total` count evaluations. */
+export type OptimizeState = AnalysisRunState<OptimizeResult>
+
+/** The optimize slice before any run. */
+export const IDLE_OPTIMIZE: OptimizeState = { ...IDLE_SENSITIVITY, summary: null }
+
 /** The Monte Carlo slice: replicate run, its sensitivity companion and the factor sweep. */
 export interface McState extends AnalysisRunState<McSummary> {
   /** The sensitivity run, on its own worker and its own lifecycle. */
@@ -105,6 +112,14 @@ export interface McState extends AnalysisRunState<McSummary> {
   morris: MorrisResult | null
   /** Sobol indices over the fields Morris kept; null until it runs. */
   sobol: SobolResult | null
+  /** The placement optimization, on its own worker and its own lifecycle. */
+  optimize: OptimizeState
+  /**
+   * The best evaluation the running optimization has reported, beside its run
+   * as Morris and Sobol sit beside the sensitivity run: `optimize-progress`
+   * carries it and the finished `OptimizeResult` does not repeat it.
+   */
+  optimizeBest: OptimizeEvaluation | null
 }
 
 /** The Monte Carlo slice before any run: no summary, no signature, no error. */
@@ -121,6 +136,8 @@ export const IDLE_MC: McState = {
   pool: null,
   morris: null,
   sobol: null,
+  optimize: IDLE_OPTIMIZE,
+  optimizeBest: null,
 }
 
 /** A clean run: new identity, clock at zero, nothing observed. */

@@ -541,7 +541,7 @@ export default function App() {
   }, [openPhase])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
   const navigateAnalysis = useCallback((screen: AnalysisScreen) => {
-    if (screen === 'fragility' || screen === 'inputs') setPrepareScreen(screen)
+    if (screen === 'fragility' || screen === 'inputs' || screen === 'placement') setPrepareScreen(screen)
     if (screen === 'outcome' || screen === 'compare') setAnalyzeScreen(screen)
     setRightTab('analysis')
   }, [setRightTab])

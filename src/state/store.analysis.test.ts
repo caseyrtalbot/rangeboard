@@ -2,7 +2,8 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PfTag } from '../panels/inspector/kit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Scenario, SpecModel } from '../model/types'
+import type { Boundary, Scenario, SpecModel } from '../model/types'
+import { runSettings } from '../model/types'
 import { PF_SPREAD } from '../analysis/parameterBasis'
 import { defendedRadiusOf } from '../playback/sim'
 import { threatAltitudeFt } from '../playback/tracks'
@@ -11,7 +12,8 @@ import { emptyScenario } from '../model/seed'
 import { useStore } from './store'
 import { analysisBasisSignature } from './analysisBasis'
 import { currentSensitivity, currentSummary } from '../panels/analysis/mc'
-import type { McWorkerMessage } from '../playback/mcRun'
+import type { McWorkerMessage, Stat } from '../playback/mcRun'
+import type { OptimizeEvaluation, OptimizeResult } from '../playback/optimizeTypes'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
 import type { PoolProgress } from '../playback/mcTypes'
 import { startPooledRun } from '../playback/mcClient'
@@ -518,5 +520,120 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
   it('the quick depth still starts the one-at-a-time run', () => {
     useStore.getState().runSensitivity()
     expect(ControlledWorker.latest().request).toMatchObject({ type: 'sensitivity' })
+  })
+})
+
+/**
+ * The placement optimization: its own slot, its own lifecycle. The fixture
+ * carries no boundary, so these tests add the range polygon the bounds
+ * default reads. Every number below is hand-built test data, never engine
+ * output; the assertions are on the store's bookkeeping of it.
+ */
+describe('the placement optimization', () => {
+  const EFFECTOR = 'ent-mtnvzhmr-24'
+  const RANGE: Boundary = {
+    id: 'bnd-range', name: 'Range', type: 'range', closed: true, altBandFt: null,
+    points: [{ x: -2000, y: -2000 }, { x: 2000, y: -2000 }, { x: 2000, y: 2000 }, { x: -2000, y: 2000 }],
+  }
+  const ranged = (): Scenario => ({ ...scenario(), boundaries: [RANGE] })
+  const spec = {
+    objective: { response: 'leakers', direction: 'minimize' } as const,
+    movableIds: [EFFECTOR], evaluations: 6, replicates: 10,
+  }
+  const stat = (mean: number): Stat => ({ mean, sd: 1, se: 0.2, lo: mean - 0.4, hi: mean + 0.4,
+    conf: 0.95, interval: 't', p10: mean, p90: mean, p025: mean, p975: mean, n: 10, total: 10,
+    defined: { p: 1, lo: 0.9, hi: 1 } })
+  const evaluation = (index: number, mean: number, incumbent: boolean): OptimizeEvaluation =>
+    ({ index, positions: { [EFFECTOR]: { x: 100 * index, y: -100 * index } }, objective: stat(mean), incumbent })
+  /** A cut run: four evaluations of the six the budget asked for. */
+  function cutResult(): OptimizeResult {
+    const trace = [evaluation(0, 2.5, true), evaluation(1, 3.1, false), evaluation(2, 1.4, true), evaluation(3, 1.9, false)]
+    return {
+      method: 'gp-ei', objective: spec.objective, movableIds: [EFFECTOR],
+      budget: { evaluations: 6, replicates: 10, seed: runSettings(ranged()).seed },
+      candidates: [trace[2], trace[3], trace[0]].map((e) => ({ positions: e.positions, objective: e.objective, evaluationIndex: e.index })),
+      trace, replicatesRun: 40, elapsedMs: 1234,
+    }
+  }
+
+  beforeEach(() => {
+    ControlledWorker.install()
+    useStore.getState().replaceScenario(ranged())
+  })
+  afterEach(() => {
+    useStore.getState().replaceScenario(emptyScenario())
+    vi.unstubAllGlobals()
+  })
+
+  it('publishes the pending run and sends the scenario, bounds and budget to its own worker', () => {
+    useStore.getState().runOptimize(spec)
+    const { mc, playback, scenario: current } = useStore.getState()
+    expect(mc.optimize).toMatchObject({ status: 'running', runId: playback.runId, progress: 0, total: 6,
+      summary: null, error: null, basisSignature: analysisBasisSignature(current) })
+    expect(mc.optimizeBest).toBeNull()
+    expect(ControlledWorker.latest().request).toMatchObject({
+      type: 'optimize', runId: playback.runId, movableIds: [EFFECTOR],
+      objective: { response: 'leakers', direction: 'minimize' },
+      // The bounds default to the scenario's first range boundary; the seed to its run seed.
+      bounds: { boundaryId: RANGE.id, points: RANGE.points },
+      budget: { evaluations: 6, replicates: 10, seed: runSettings(current).seed },
+    })
+  })
+
+  it('keeps the incumbent on progress and records a cut run on done', () => {
+    useStore.getState().runOptimize(spec)
+    const work = ControlledWorker.latest()
+    const runId = useStore.getState().playback.runId
+    const best = evaluation(2, 1.4, true)
+    work.send({ type: 'optimize-progress', runId, done: 3, total: 6, best })
+    expect(useStore.getState().mc.optimize).toMatchObject({ progress: 3, total: 6, status: 'running' })
+    expect(useStore.getState().mc.optimizeBest).toEqual(best)
+    // A message from another run belongs to no live request here.
+    work.send({ type: 'optimize-progress', runId: 'other', done: 5, total: 6, best: null })
+    expect(useStore.getState().mc.optimize.progress).toBe(3)
+    const result = cutResult()
+    work.send({ type: 'optimize-done', runId, result })
+    // Four trace entries of the six the budget asked for: the run reads as cut.
+    expect(useStore.getState().mc.optimize).toMatchObject({ status: 'done', progress: 4, total: 6, error: null })
+    expect(useStore.getState().mc.optimize.summary).toBe(result)
+    expect(work.terminated).toBe(true)
+    // Clearing drops the result and the incumbent.
+    useStore.getState().clearOptimize()
+    expect(useStore.getState().mc.optimize).toMatchObject({ status: 'idle', summary: null, runId: null })
+    expect(useStore.getState().mc.optimizeBest).toBeNull()
+  })
+
+  it('reports an unavailable Worker as an error on the pending run', () => {
+    vi.stubGlobal('Worker', undefined)
+    useStore.getState().runOptimize(spec)
+    const { mc, playback } = useStore.getState()
+    expect(mc.optimize).toMatchObject({ status: 'error', error: 'Web Worker unavailable',
+      runId: playback.runId, total: 6 })
+  })
+
+  it('requests nothing under deterministic mode, with no movable entity or with no range boundary', () => {
+    useStore.getState().runOptimize({ ...spec, movableIds: [] })
+    expect(ControlledWorker.instances).toHaveLength(0)
+    useStore.getState().replaceScenario(scenario())
+    useStore.getState().runOptimize(spec)
+    expect(ControlledWorker.instances).toHaveLength(0)
+    useStore.getState().replaceScenario({ ...ranged(), runMode: 'deterministic' })
+    useStore.getState().runOptimize(spec)
+    expect(ControlledWorker.instances).toHaveLength(0)
+    expect(useStore.getState().mc.optimize.status).toBe('idle')
+  })
+
+  it('asks a running optimization to stop and keeps a replicate run on its own slot', () => {
+    useStore.getState().runOptimize(spec)
+    const work = ControlledWorker.latest()
+    const runId = useStore.getState().playback.runId
+    useStore.getState().runMonteCarlo()
+    expect(ControlledWorker.latest()).not.toBe(work)
+    expect(useStore.getState().mc.optimize.status).toBe('running')
+    useStore.getState().cancelOptimize()
+    expect(work.postMessage).toHaveBeenCalledTimes(2)
+    expect(work.postMessage.mock.calls[1][0]).toEqual({ type: 'cancel', runId })
+    // The graceful stop keeps the run live until the worker answers.
+    expect(useStore.getState().mc.optimize.status).toBe('running')
   })
 })

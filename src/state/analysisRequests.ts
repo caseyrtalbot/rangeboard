@@ -12,6 +12,15 @@ import type {
   SensitivityResponse,
 } from '../playback/mcRun'
 import type { MorrisResult, PoolProgress } from '../playback/mcTypes'
+import type {
+  OptimizeBounds,
+  OptimizeBudget,
+  OptimizeObjective,
+  OptimizeRequest,
+  OptimizeWorkerMessage,
+} from '../playback/optimizeTypes'
+import { DEFAULT_OPTIMIZE_EVALUATIONS, DEFAULT_OPTIMIZE_REPLICATES } from '../playback/optimizeTypes'
+import { cancelOptimize, startOptimize } from '../playback/optimize/client'
 import {
   cancelPooledRun,
   cancelSensitivity,
@@ -37,7 +46,7 @@ import { analysisBasisSignature } from './analysisBasis'
 import { selectTrialSelection } from './trialSelectors'
 
 /**
- * The four worker-backed analyses the store can request. This module owns
+ * The five worker-backed analyses the store can request. This module owns
  * what a request is: its identity (run id, analysis basis, and for a trial the
  * request token and manifest), the startup order (pending state is published
  * before the worker starts, so a synchronous startup error lands as a terminal
@@ -45,7 +54,15 @@ import { selectTrialSelection } from './trialSelectors'
  * request ends early. Callers request, accept and cancel through this module;
  * the envelope, the slot and the adapters are decided here and below.
  */
-export type AnalysisKind = 'mc' | 'sensitivity' | 'sweep' | 'trial'
+export type AnalysisKind = 'mc' | 'sensitivity' | 'sweep' | 'trial' | 'optimize'
+
+/**
+ * The kinds `requestAnalysis` launches. A placement run cannot be requested
+ * without its spec, so it has its own entry point (`requestOptimize`), as the
+ * Sobol stage has `requestSobol`; every kind still cancels through
+ * `cancelAnalysis` and `requestCancel`.
+ */
+export type RequestKind = Exclude<AnalysisKind, 'optimize'>
 
 /** What a sweep request needs beyond the current scenario and run; the defaults fill the rest. */
 export interface SweepSpec {
@@ -58,6 +75,35 @@ export interface SweepSpec {
 export const SWEEP_DEFAULTS: Required<Omit<SweepSpec, 'factors'>> = {
   replicatesPerCell: 40,
   responses: ['leakers'],
+}
+
+/**
+ * What a placement run needs beyond the current scenario and run. `bounds`
+ * defaults to the scenario's first range boundary, the budget to the contract
+ * constants, and the seed to the scenario's run seed, so every evaluation of
+ * one request shares the draw keys the replicate run would use.
+ */
+export interface OptimizeSpec {
+  objective: OptimizeObjective
+  /** Entity ids the optimizer may move; every other entity stays put. */
+  movableIds: string[]
+  bounds?: OptimizeBounds
+  evaluations?: number
+  replicates?: number
+  seed?: number
+}
+
+/** The request defaults of the contract: 60 evaluations of 40 replicates. */
+export const OPTIMIZE_DEFAULTS = {
+  evaluations: DEFAULT_OPTIMIZE_EVALUATIONS,
+  replicates: DEFAULT_OPTIMIZE_REPLICATES,
+} as const
+
+/** The scenario's first range boundary as optimize bounds; null when it has none. */
+export function rangeBounds(scenario: Scenario): OptimizeBounds | null {
+  const range = scenario.boundaries.find((b) => b.type === 'range')
+  if (!range) return null
+  return { boundaryId: range.id, points: range.points.map((p) => ({ x: p.x, y: p.y })) }
 }
 
 /** The slices a request reads and writes. */
@@ -81,6 +127,7 @@ export interface AnalysisSinks {
   sensitivity: (m: SensitivityMessage) => void
   sweep: (m: McSweepMessage) => void
   trial: (m: TrialWorkerMessage) => void
+  optimize: (m: OptimizeWorkerMessage) => void
 }
 
 /** What one request publishes before its worker starts, and how it starts. */
@@ -104,7 +151,7 @@ const UNAVAILABLE = 'Web Worker unavailable'
  * (leakers by default), and the Sobol stage follows through `requestSobol`.
  */
 export function requestAnalysis(
-  kind: AnalysisKind,
+  kind: RequestKind,
   st: AnalysisSlices,
   publish: (patch: AnalysisPatch) => void,
   sinks: AnalysisSinks,
@@ -139,17 +186,24 @@ export function cancelAnalysis(kind: AnalysisKind): void {
       return cancelSweep()
     case 'trial':
       return cancelTrial()
+    case 'optimize':
+      cancelOptimize()
+      return
   }
 }
 
 /**
- * Ask a running replicate, sensitivity or sweep run to stop at its next
- * checkpoint, so its `done` message still carries the work already finished.
- * A worker silent past the grace period is terminated. A trial has no
- * graceful stop; cancel it through `cancelAnalysis`.
+ * Ask a running replicate, sensitivity, sweep or placement run to stop at its
+ * next checkpoint, so its `done` message still carries the work already
+ * finished. A worker silent past the grace period is terminated. A trial has
+ * no graceful stop; cancel it through `cancelAnalysis`.
  */
-export function requestCancel(kind: 'mc' | 'sensitivity' | 'sweep', runId: string): boolean {
+export function requestCancel(
+  kind: 'mc' | 'sensitivity' | 'sweep' | 'optimize',
+  runId: string,
+): boolean {
   if (kind === 'mc') return requestPooledCancel(runId)
+  if (kind === 'optimize') return cancelOptimize(runId)
   return kind === 'sweep' ? requestSweepCancel(runId) : requestSensitivityCancel(runId)
 }
 
@@ -179,9 +233,12 @@ function mcLaunch(
       pool: null,
       morris: st.mc.morris,
       sobol: st.mc.sobol,
-      // The sensitivity run and the sweep have their own worker and lifecycle.
+      // The sensitivity run, the sweep and the placement run have their own
+      // worker and lifecycle, so a replicate run leaves all three alone.
       sensitivity: st.mc.sensitivity,
       sweep: st.mc.sweep,
+      optimize: st.mc.optimize,
+      optimizeBest: st.mc.optimizeBest,
     } },
     start: (deliver) => startPooledRun(st.scenario, runId, deliver, onPool),
     unavailable: { type: 'error', runId, message: UNAVAILABLE },
@@ -243,6 +300,51 @@ export function requestSobol(
     start: (deliver) => startSobol(request, deliver),
     unavailable: { type: 'sobol-error', runId, message: UNAVAILABLE },
   }, publish, sinks.sensitivity)
+}
+
+/**
+ * Request one placement optimization for the current scenario and run. It has
+ * its own worker slot, so it replaces only an optimization already there.
+ * Nothing is requested under deterministic mode, with no movable entity, or
+ * with no bounds polygon (the scenario has no range boundary and the spec
+ * names none).
+ */
+export function requestOptimize(
+  st: AnalysisSlices,
+  publish: (patch: AnalysisPatch) => void,
+  sinks: AnalysisSinks,
+  spec: OptimizeSpec,
+): void {
+  launch(optimizeLaunch(st, spec), publish, sinks.optimize)
+}
+
+function optimizeLaunch(st: AnalysisSlices, spec: OptimizeSpec): Launch<OptimizeWorkerMessage> | null {
+  const settings = runSettings(st.scenario)
+  if (settings.runMode === 'deterministic') return null
+  const bounds = spec.bounds ?? rangeBounds(st.scenario)
+  if (bounds == null || spec.movableIds.length === 0) return null
+  const runId = st.playback.runId
+  const budget: OptimizeBudget = {
+    evaluations: spec.evaluations ?? OPTIMIZE_DEFAULTS.evaluations,
+    replicates: spec.replicates ?? OPTIMIZE_DEFAULTS.replicates,
+    // Common random numbers: every evaluation of one request runs at this seed.
+    seed: spec.seed ?? settings.seed,
+  }
+  const request: OptimizeRequest = {
+    type: 'optimize',
+    runId,
+    scenario: st.scenario,
+    objective: spec.objective,
+    movableIds: spec.movableIds,
+    bounds,
+    budget,
+  }
+  return {
+    // A new run starts with no incumbent; the first progress message brings one.
+    pending: { mc: { ...st.mc, optimize: pendingRun(st, budget.evaluations), optimizeBest: null } },
+    start: (deliver) => startOptimize(request, deliver),
+    unavailable: { type: 'optimize-error', runId, message: UNAVAILABLE },
+  }
 }
 
 /** The state of the run the shared slot drops: a running one goes idle, a finished one stays. */
@@ -413,6 +515,36 @@ export function acceptSweepMessage(st: AnalysisSlices, m: McSweepMessage): Analy
   const { sweep } = st.mc
   const next = acceptRun(st, sweep, m, (summary) => summary.cells.length)
   return next == null ? null : { mc: { ...st.mc, sweep: { ...sweep, ...next } } }
+}
+
+/**
+ * Accept a placement message; null when it belongs to no live request. The
+ * progress count is the evaluations completed and `best` is the incumbent so
+ * far. `optimize-done` keeps the requested budget as the total and the trace
+ * length as the progress, so a cut run (cancelled or stopped early) still
+ * reads as fewer evaluations than it asked for.
+ */
+export function acceptOptimizeMessage(
+  st: AnalysisSlices,
+  m: OptimizeWorkerMessage,
+): AnalysisPatch | null {
+  const run = st.mc.optimize
+  if (!owns(st, { live: run.status === 'running', ...run }, m)) return null
+  switch (m.type) {
+    case 'optimize-progress':
+      return { mc: { ...st.mc, optimize: { ...run, progress: m.done, total: m.total }, optimizeBest: m.best } }
+    case 'optimize-done':
+      return { mc: { ...st.mc, optimize: {
+        ...run,
+        status: 'done',
+        summary: m.result,
+        progress: m.result.trace.length,
+        total: m.result.budget.evaluations,
+        error: null,
+      } } }
+    case 'optimize-error':
+      return { mc: { ...st.mc, optimize: { ...run, status: 'error', error: m.message } } }
+  }
 }
 
 type RunMessage<S> =
