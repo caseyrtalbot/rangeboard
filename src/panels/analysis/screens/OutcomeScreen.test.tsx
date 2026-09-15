@@ -1,8 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { formatTime } from '../../../geometry/geo'
+import type { McSummary } from '../../../playback/mcRun'
 import { createTrialManifest } from '../../../playback/trialTypes'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
+import { useOverrides } from '../../../state/overrides'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
 import { installTrial, observeTrial, unstartTrial } from '../trialTestState'
@@ -11,6 +13,14 @@ import { OutcomeScreen } from './OutcomeScreen'
 const interaction = vi.hoisted(() => ({
   sort: { column: 'track', descending: false },
   buttons: new Map<string, () => void>(),
+  save: null as null | { enabled: boolean; run: () => Promise<{ evicted: string[] }> },
+  saved: [] as unknown[],
+}))
+vi.mock('../../../io/runStore', () => ({
+  saveRun: (record: unknown) => { interaction.saved.push(record); return Promise.resolve({ evicted: [] }) },
+  listRuns: () => Promise.resolve([]),
+  getRun: () => Promise.resolve(null),
+  deleteRun: () => Promise.resolve(),
 }))
 // Exercise header handlers and their next render in the repository's server-render harness.
 vi.mock('react', async importOriginal => {
@@ -29,6 +39,7 @@ vi.mock('react/jsx-dev-runtime', async importOriginal => {
     if (type === 'button' && typeof button.children === 'string' && button.onClick) {
       interaction.buttons.set(button.children, button.onClick)
     }
+    if (typeof type === 'function' && type.name === 'RunHistory') interaction.save = (props as { save: typeof interaction.save }).save
     return actual.jsxDEV(type, props, ...rest)
   }
   return { ...actual, jsxDEV }
@@ -169,5 +180,24 @@ describe('OutcomeScreen', () => {
     expect(tile(html, 'First detect')).toContain('>—<small')
     expect(tile(html, 'First effect')).toContain('>—<small')
     expect(html).toContain('No defended asset · arrival and leakage unavailable')
+  })
+})
+
+describe('Save to history', () => {
+  it('records the overrides in force at the save in the manifest', async () => {
+    complete()
+    const scenario = useStore.getState().scenario
+    const model = scenario.library[0]
+    useOverrides.getState().resetAll()
+    useOverrides.getState().setOverride(model.id, 'pk', 0.8333, 'Calibrated from counts')
+    const signature = analysisBasisSignature(scenario)
+    useStore.setState({ mc: { ...useStore.getState().mc, status: 'done', runId: 'run-1', basisSignature: signature, summary: {} as McSummary } })
+    interaction.saved.length = 0
+    render()
+    expect(interaction.save?.enabled).toBe(true)
+    await interaction.save!.run()
+    const record = interaction.saved[0] as { manifest: { overrides: Array<{ modelId: string; field: string; value: unknown }> } }
+    expect(record.manifest.overrides).toEqual([expect.objectContaining({ modelId: model.id, field: 'pk', value: 0.8333 })])
+    useOverrides.getState().resetAll()
   })
 })

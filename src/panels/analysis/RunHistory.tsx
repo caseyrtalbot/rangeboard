@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { formatTime } from '../../geometry/geo'
+import { idHash } from '../../geometry/prng'
 import type { RunRecord } from '../../model/runRecord'
 import type { BandSeries, McSummary, Stat } from '../../playback/mcRun'
 import type { RunSummary } from '../../io/runStore'
@@ -119,7 +120,8 @@ function lineageRows(record: RunRecord): Array<[string, ReactNode]> {
     ['Physics switches', manifestValue(m.physicsSwitches)],
     ['Fidelity floor', m.fidelityFloor],
     ['Producer', m.producer],
-    ['Scenario hash', record.scenarioHash],
+    // The stored value is the full analysis basis signature; the row shows its FNV-1a digest.
+    ['Scenario hash', idHash(record.scenarioHash).toString(16).padStart(8, '0')],
   ]
 }
 

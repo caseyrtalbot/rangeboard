@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import { idHash } from '../../geometry/prng'
 import { describe, expect, it } from 'vitest'
 import type { Scenario } from '../../model/types'
 import { createRunManifest } from '../../model/runRecord'
@@ -120,7 +121,8 @@ describe('RunRecordView', () => {
       'Draw policy', 'Data package', 'Overrides', 'Physics switches', 'Fidelity floor', 'Producer']) {
       expect(html).toContain(`<dt>${field}</dt>`)
     }
-    expect(html).toContain('<dt>Scenario hash</dt><dd>basis</dd>')
+    // FNV-1a 32-bit of 'basis', as idHash computes it; the raw signature never prints.
+    expect(html).toContain(`<dt>Scenario hash</dt><dd>${idHash('basis').toString(16).padStart(8, '0')}</dd>`)
     expect(html).toContain(`<dt>Seed</dt><dd>${record.manifest.seed}</dd>`)
     expect(html).toContain('<dt>Overrides</dt><dd>none</dd>')
   })

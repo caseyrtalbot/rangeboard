@@ -14,6 +14,7 @@ import type { RunRecord } from '../../../model/runRecord'
 import { newId } from '../../../model/types'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
 import { defaultBaselineLabel } from '../../../state/baseline'
+import { activeOverrides, useOverrides } from '../../../state/overrides'
 import { useStore } from '../../../state/store'
 import { selectRunComplete } from '../../../state/selectors'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
@@ -188,7 +189,10 @@ function useRunHistorySave(): RunHistorySave {
         id: newId('run'),
         savedAt,
         label: defaultBaselineLabel(scenario.name, savedAt),
-        manifest: createRunManifest(scenario, mc.runId ?? playbackRunId, signature),
+        // The record names the overrides in force at the save, as the trial manifest does at launch.
+        manifest: createRunManifest(scenario, mc.runId ?? playbackRunId, signature, {
+          overrides: activeOverrides(useOverrides.getState().overrides, scenario),
+        }),
         scenario,
         scenarioHash: signature,
         mc: summary,
