@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
-import { parseAutosave, parseRunRecordPackage, runExportObject, runRecordExportObject } from './persist'
+import { parseAutosave, runExportObject } from './persist'
+import { parseRunRecordPackage, runRecordExportObject } from './runRecordPackage'
 import type { RunRecord } from '../model/runRecord'
 import { createRunManifest } from '../model/runRecord'
 import { engagementPicture } from '../analysis/impact'

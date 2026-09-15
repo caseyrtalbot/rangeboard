@@ -14,7 +14,7 @@ import type { RunSummary } from '../../io/runStore'
 import { deleteRun, getRun, listRuns } from '../../io/runStore'
 import { exportRunCsv } from '../../io/exportCsv'
 import { downloadRunsSqlite } from '../../io/exportSqlite'
-import { exportRunRecordPackage, importRunRecordFile } from '../../io/persist'
+import { exportRunRecordPackage, importRunRecordFile } from '../../io/runRecordPackage'
 import { formatCount, statMean } from './mc'
 
 /** What Outcome supplies: whether this Board state may be saved, and the save itself. */
