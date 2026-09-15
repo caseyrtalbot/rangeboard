@@ -12,9 +12,9 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, branch `p4f/apply-overrides` at `663f695` plus this
-  handoff commit, rebased onto `main` at `e35c0f1` (the shell-rework right drawer) and
-  pushed to `origin/p4f/apply-overrides` on 2026-09-15. Not merged into `main`.
+- Repository `~/Projects/rangeboard`, branch `main` at `42aa39f` plus this handoff
+  commit, pushed to `origin/main` on 2026-09-15. Task 1 (`663f695`) was fast-forwarded
+  into `main` from `p4f/apply-overrides`; that branch is deleted locally and on origin.
 - A separate shell session works in the worktree `~/Projects/rangeboard-shell` on
   branch `shell/slice-2-playback-bar` (base `e35c0f1`); it owns `src/App.tsx`,
   `src/index.css`, the Toolbar files and `scripts/e2e/board-shell.e2e.mjs`. The docs

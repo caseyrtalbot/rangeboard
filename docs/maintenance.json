@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "5378926ebce0e0768bc98c0df520c053aa1d255009d8a9d5535c0277abfa54d4",
+      "sha256": "1c403d22ecae1d83f4456b2c0223e7a2de813fa244358c48d3d80b7283e30562",
       "reviewedAt": "2026-09-15",
-      "note": "Task 1 committed as 663f695 on p4f/apply-overrides, rebased onto e35c0f1, pushed; gate numbers from the rebased tree; shell lane worktree noted"
+      "note": "Task 1 merged fast-forward into main and pushed; branch deleted"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
