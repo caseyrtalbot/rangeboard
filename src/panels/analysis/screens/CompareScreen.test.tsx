@@ -2,10 +2,15 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DT } from '../../../playback/clock'
+import { emptyScenario } from '../../../model/seed'
+import type { Entity, Scenario } from '../../../model/types'
+import { createRunManifest } from '../../../model/runRecord'
+import type { RunRecord } from '../../../model/runRecord'
+import type { RunSummary } from '../../../io/runStore'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
 import { installTrial, unstartTrial } from '../trialTestState'
-import { CompareScreen } from './CompareScreen'
+import { CompareScreen, SavedRunCompareView } from './CompareScreen'
 
 const interaction = vi.hoisted(() => ({ buttons: new Map<string, () => void>() }))
 vi.mock('react/jsx-dev-runtime', async importOriginal => {
@@ -169,5 +174,115 @@ describe('CompareScreen', () => {
     for (const finding of findings) expect(finding.slice(0, finding.indexOf('</section>')).match(/<button/g)).toHaveLength(1)
     interaction.buttons.get('Review tracks in Prepare')!()
     expect(useStore.getState().ui.boardPhase).toBe('prepare')
+  })
+
+  it('offers a PNG export beside the compare chart', () => {
+    const html = render()
+    expect(html).toContain('aria-label="Export the chart"')
+    expect(html).toContain('>Export PNG</button>')
+  })
+})
+
+function entity(id: string, name: string, kind: Entity['kind']): Entity {
+  return { id, name, kind, specId: null, pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' }
+}
+const savedScenario: Scenario = {
+  ...emptyScenario(), name: 'Camp Able',
+  entities: [entity('asset-1', 'HQ', 'asset'), entity('uas-1', 'Raid A', 'uas'), entity('gun-1', 'Gun 1', 'effector')],
+}
+
+/** One saved record with hand-chosen ensemble means; `ships` sets the count denominator. */
+function saved(id: string, ships: number, mc: Partial<McSummary>): RunRecord {
+  return {
+    id, savedAt: '2026-09-15T12:00:00.000Z', label: `Camp Able · ${id}`,
+    manifest: createRunManifest(savedScenario, `sim-${id}`, `basis-${id}`),
+    scenario: savedScenario, scenarioHash: `basis-${id}`, sensitivity: null,
+    mc: {
+      seed: 7, replicates: 40, durationS: 60, kills: band(0, 0, 0), leakers: band(0, 0, 0),
+      detected: band(0, 0, 0), tracked: band(0, 0, 0), engaged: band(0, 0, 0),
+      firstDetectS: stat(0, 0, 0), firmTrackS: stat(0, 0, 0), minWarningS: stat(0, 0, 0),
+      perThreat: { 'uas-1': { shipCount: ships, killed: stat(1, 0, 2), leaked: stat(1, 0, 2),
+        firstDetectS: stat(2, 1, 3), arrivalS: null, residual: band(1, 0, 2) } },
+      perEffector: { 'gun-1': { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) } },
+      elapsedMs: 1, stopped: { rule: 'replicates', at: 40 }, ...mc,
+    },
+  }
+}
+const runA = saved('run-a', 9, { kills: band(2.5, 2, 3), leakers: band(2, 1, 2.5),
+  firstDetectS: stat(2, 1, 3), minWarningS: stat(4, 2, 6), perEffector: { 'gun-1': { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) } } })
+const runB = saved('run-b', 6, { kills: band(1.5, 1, 2), leakers: band(3, 2, 4),
+  firstDetectS: stat(3, 2, 4), minWarningS: stat(5, 3, 7), perEffector: { 'gun-1': { salvos: stat(6, 5, 7), kills: stat(3, 2, 4) } } })
+const listed = (record: RunRecord): RunSummary => ({ id: record.id, label: record.label, savedAt: record.savedAt,
+  seed: record.mc.seed, replicates: record.mc.replicates, scenarioName: record.scenario.name, bytes: 1024 })
+
+function savedView(props: Partial<SavedRunCompareViewProps> = {}) {
+  return renderToStaticMarkup(<SavedRunCompareView
+    runs={[listed(runA), listed(runB)]} a={runA} b={runB} error={null} onPick={() => {}} {...props} />)
+}
+type SavedRunCompareViewProps = Parameters<typeof SavedRunCompareView>[0]
+
+describe('SavedRunCompareView', () => {
+  it('asks for two saved runs before it compares any', () => {
+    expect(savedView({ runs: [], a: null, b: null })).toContain('0 saved runs. Save two runs on Outcome')
+    expect(savedView({ runs: [listed(runA)], a: runA, b: null })).toContain('1 saved run. Save two runs on Outcome')
+    expect(savedView({ runs: [listed(runA)], a: runA, b: null })).not.toContain('<table')
+    expect(savedView({ b: null })).toContain('Choose two saved runs to see the delta table.')
+    expect(savedView({ error: 'Run history is unavailable: this browser provides no IndexedDB.' }))
+      .toContain('this browser provides no IndexedDB')
+  })
+
+  it('lists every saved run in both pickers with the chosen one selected', () => {
+    const html = savedView()
+    expect(html.match(/<select/g)).toHaveLength(2)
+    expect(html.match(/<option value="run-a">/g)).toHaveLength(1)
+    expect(html).toContain('aria-label="Run A"')
+    expect(html).toContain('aria-label="Run B"')
+    expect(html).toContain('<option value="run-a" selected="">')
+    expect(html).toContain('<option value="run-b" selected="">')
+  })
+
+  it('differences the five quantities, each side with its own interval', () => {
+    const html = savedView()
+    expect(html).toContain('aria-label="Saved run A against saved run B"')
+    // Kills 2.5 of 9 against 1.5 of 6: the means differ by 1 member.
+    expect(row(html, 'Kills')).toContain('>2.5 /9 members</td><td')
+    expect(row(html, 'Kills')).toContain('>2 to 3 /9 members</td>')
+    expect(row(html, 'Kills')).toContain('>1.5 /6 members</td>')
+    expect(row(html, 'Kills')).toContain('>1 to 2 /6 members</td>')
+    expect(row(html, 'Kills')).toContain('>+1 members</td>')
+    // Leakers 2 against 3, first detect 2 s against 3 s, min warning 4 s against 5 s.
+    expect(row(html, 'Leakers')).toContain('>-1 members</td>')
+    expect(row(html, 'First detect')).toContain('>1 to 3 s from T0</td>')
+    expect(row(html, 'First detect')).toContain('>-1 s from T0</td>')
+    expect(row(html, 'Min warning')).toContain('>-1 s</td>')
+    // One effector each, so the aggregate salvo interval is that effector's: 4 against 6.
+    expect(row(html, 'Salvos')).toContain('>3 to 5 salvos</td>')
+    expect(row(html, 'Salvos')).toContain('>-2 salvos</td>')
+  })
+
+  it('states each record basis, the differing populations and the delta rule', () => {
+    const html = savedView()
+    expect(html).toContain('A · Camp Able · run-a · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 9 members')
+    expect(html).toContain('B · Camp Able · run-b · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 6 members')
+    expect(html).toContain('Populations differ, 9 against 6 members; count deltas are in members.')
+    expect(html).toContain('no interval is claimed on a difference of two independent runs')
+    expect(savedView({ b: runA })).toContain('Both sides are the same record; every delta is zero.')
+  })
+
+  it('leaves leakage and warning unavailable on a record with no defended asset', () => {
+    const noAsset = { ...runB, scenario: { ...savedScenario, entities: savedScenario.entities.filter(e => e.kind !== 'asset') } }
+    const html = savedView({ b: noAsset })
+    expect(row(html, 'Leakers')).toContain('Unavailable')
+    expect(row(html, 'Leakers')).toContain('>—</td>')
+    expect(row(html, 'Min warning')).toContain('>—</td>')
+    expect(html).toContain('No defended asset; unavailable.')
+  })
+
+  it('offers each record its own export buttons', () => {
+    const html = savedView()
+    expect(html).toContain('aria-label="Export A this run"')
+    expect(html).toContain('aria-label="Export B this run"')
+    expect(html.match(/>Threat CSV<\/button>/g)).toHaveLength(2)
+    expect(html.match(/>JSON<\/button>/g)).toHaveLength(2)
   })
 })

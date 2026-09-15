@@ -12,6 +12,8 @@ import type { RunRecord } from '../../model/runRecord'
 import type { BandSeries, McSummary, Stat } from '../../playback/mcRun'
 import type { RunSummary } from '../../io/runStore'
 import { deleteRun, getRun, listRuns } from '../../io/runStore'
+import { exportRunCsv } from '../../io/exportCsv'
+import { exportRunRecordPackage, importRunRecordFile } from '../../io/persist'
 import { formatCount, statMean } from './mc'
 
 /** What Outcome supplies: whether this Board state may be saved, and the save itself. */
@@ -59,11 +61,11 @@ function ManifestRecord({ record }: { record: RunRecord }) {
 }
 
 /** A count tile: the end-of-run mean with the interval on that mean at the same step. */
-function countTile(label: string, band: BandSeries, mc: McSummary): [string, ReactNode] {
+function countTile(band: BandSeries, mc: McSummary): ReactNode {
   const i = band.mean.length - 1
   const mean = mc.replicates > 0 && Number.isFinite(band.mean[i]) ? band.mean[i] : null
   const bounded = mean != null && Number.isFinite(band.lo[i]) && Number.isFinite(band.hi[i])
-  return [label, (
+  return (
     <>
       {mean == null ? '—' : formatCount(mean)}
       <small style={{ display: 'block' }}>
@@ -71,13 +73,13 @@ function countTile(label: string, band: BandSeries, mc: McSummary): [string, Rea
       </small>
       <small style={{ display: 'block' }}>{basisOf(mc)}</small>
     </>
-  )]
+  )
 }
 
 /** A time tile: the conditional mean, its interval method and the defined fraction. */
-function timeTile(label: string, stat: Stat, mc: McSummary): [string, ReactNode] {
+function timeTile(stat: Stat, mc: McSummary): ReactNode {
   const mean = statMean(stat)
-  return [label, (
+  return (
     <>
       {mean == null ? '—' : formatTime(mean)}
       <small style={{ display: 'block' }}>
@@ -85,7 +87,7 @@ function timeTile(label: string, stat: Stat, mc: McSummary): [string, ReactNode]
       </small>
       <small style={{ display: 'block' }}>{basisOf(mc)}</small>
     </>
-  )]
+  )
 }
 
 const cell = { whiteSpace: 'normal', overflowWrap: 'anywhere' } as const
@@ -96,6 +98,63 @@ const actionWord = { whiteSpace: 'nowrap' } as const
 const meanText = (stat: Stat) => statMean(stat) == null ? '—' : formatCount(stat.mean)
 const timeText = (stat: Stat) => statMean(stat) == null ? '—' : formatTime(stat.mean)
 
+/**
+ * What fixed a tile's number: the manifest entries that decided the draws and
+ * the models, and the scenario hash the run was made on. Every tile of one
+ * record shares the same lineage, because one run produced all of them.
+ * Collapsed by default: a tile shows the estimate, not its provenance.
+ */
+function lineageRows(record: RunRecord): Array<[string, ReactNode]> {
+  const m = record.manifest
+  return [
+    ['Seed', m.seed],
+    ['Replicates', m.replicates],
+    ['Uncertainty', m.uncertainty],
+    ['Run mode', m.runMode],
+    ['Engine revision', m.engineRevision],
+    ['Draw policy', m.drawPolicyVersion],
+    ['Data package', m.dataPackageVersion],
+    ['Overrides', manifestValue(m.overrides)],
+    ['Physics switches', manifestValue(m.physicsSwitches)],
+    ['Fidelity floor', m.fidelityFloor],
+    ['Producer', m.producer],
+    ['Scenario hash', record.scenarioHash],
+  ]
+}
+
+function TileLineage({ record, label }: { record: RunRecord; label: string }) {
+  return (
+    <details className="analysis-disclosure">
+      <summary aria-label={`${label} lineage`}>Lineage</summary>
+      <dl style={{ overflowWrap: 'anywhere' }}>
+        {lineageRows(record).map(([name, value]) => (
+          <div key={name}><dt>{name}</dt><dd>{value}</dd></div>
+        ))}
+      </dl>
+    </details>
+  )
+}
+
+/** JSON keeps the whole record; each CSV is one table. A missing table cannot be exported. */
+export function RecordExports({ record, title = 'Export' }: { record: RunRecord; title?: string }) {
+  return (
+    <div className="insp-row" aria-label={`${title} this run`}>
+      <span className="muted small">{title}</span>
+      <span style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <button className="mini" type="button" style={actionWord}
+          onClick={() => exportRunRecordPackage(record)}>JSON</button>
+        <button className="mini" type="button" style={actionWord}
+          onClick={() => exportRunCsv(record, 'per-threat')}>Threat CSV</button>
+        <button className="mini" type="button" style={actionWord}
+          onClick={() => exportRunCsv(record, 'per-effector')}>Effector CSV</button>
+        <button className="mini" type="button" style={actionWord} disabled={!record.sensitivity}
+          title={record.sensitivity ? 'Export the sensitivity rows' : 'This run carries no sensitivity result'}
+          onClick={() => exportRunCsv(record, 'sensitivity')}>Sensitivity CSV</button>
+      </span>
+    </div>
+  )
+}
+
 /** One saved record: its manifest, its end-of-run tiles and its two per-entity tables. */
 export function RunRecordView({ record }: { record: RunRecord }) {
   const mc = record.mc
@@ -103,21 +162,23 @@ export function RunRecordView({ record }: { record: RunRecord }) {
   const name = (id: string) => record.scenario.entities.find(entity => entity.id === id)?.name ?? id
   const threats = Object.entries(mc.perThreat)
   const effectors = Object.entries(mc.perEffector)
-  const tiles = [
-    countTile('Kills', mc.kills, mc),
-    countTile('Leakers', mc.leakers, mc),
-    timeTile('First detect', mc.firstDetectS, mc),
-    timeTile('Min warning', mc.minWarningS, mc),
+  const tiles: Array<[string, ReactNode]> = [
+    ['Kills', countTile(mc.kills, mc)],
+    ['Leakers', countTile(mc.leakers, mc)],
+    ['First detect', timeTile(mc.firstDetectS, mc)],
+    ['Min warning', timeTile(mc.minWarningS, mc)],
   ]
   return (
     <section className="analysis-primary" aria-label={`Saved run ${record.label}`}>
       <h5>{record.label}</h5>
       <p className="analysis-scope">{basis} · seed {mc.seed} · full run T+{formatTime(mc.durationS)} · saved {savedTime(record.savedAt)}</p>
+      <RecordExports record={record} />
       <div className="tiles c2" aria-label="Saved run outcomes">
         {tiles.map(([label, value]) => (
           <div className="tile" key={label}>
             <span className="tl">{label}</span>
             <div className="tv" style={cell}>{value}</div>
+            <TileLineage record={record} label={label} />
           </div>
         ))}
       </div>
@@ -174,16 +235,22 @@ export interface RunHistoryViewProps {
   onOpen: (id: string) => void
   onDelete: (id: string) => void
   onSave: () => void
+  onImport: () => void
 }
 
 /** The list, its per-row actions and the opened record. Pure: every state arrives as a prop. */
-export function RunHistoryView({ runs, opened, notice, error, save, onOpen, onDelete, onSave }: RunHistoryViewProps) {
+export function RunHistoryView({ runs, opened, notice, error, save, onOpen, onDelete, onSave, onImport }: RunHistoryViewProps) {
   return (
     <section aria-label="Run history">
       <h4>Run history</h4>
       <div className="insp-row">
         <span className="muted small">{runs.length} saved {runs.length === 1 ? 'run' : 'runs'}</span>
-        <button className="mini" type="button" disabled={!save.enabled} title={save.reason} onClick={onSave}>Save to history</button>
+        <span style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <button className="mini" type="button" style={actionWord}
+            title="Read a saved-run JSON file into this history" onClick={onImport}>Import run</button>
+          <button className="mini" type="button" style={actionWord}
+            disabled={!save.enabled} title={save.reason} onClick={onSave}>Save to history</button>
+        </span>
       </div>
       {notice && <p className="muted small" role="status">{notice}</p>}
       {error && <p className="muted small">{error}</p>}
@@ -259,6 +326,11 @@ export function RunHistory({ save }: { save: RunHistorySave }) {
           setReload(n => n + 1)
         }, error => { setNotice(null); fail(error) })
       }}
+      // The picker reports a bad file itself; a good one is written and the list reloads.
+      onImport={() => importRunRecordFile((record, evicted) => {
+        setNotice(`Imported ${record.label}.${evicted.length ? ` ${evicted.length} oldest ${evicted.length === 1 ? 'record' : 'records'} evicted to stay under the size cap.` : ''}`)
+        setReload(n => n + 1)
+      })}
     />
   )
 }

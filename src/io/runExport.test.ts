@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
-import { parseAutosave, runExportObject } from './persist'
+import { parseAutosave, parseRunRecordPackage, runExportObject, runRecordExportObject } from './persist'
+import type { RunRecord } from '../model/runRecord'
+import { createRunManifest } from '../model/runRecord'
 import { engagementPicture } from '../analysis/impact'
 import { buildAarSummary } from '../analysis/aar'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
@@ -148,5 +150,49 @@ describe('run export physical launch timing', () => {
     expect(JSON.parse(JSON.stringify(known)).attrition.events).toEqual(legacy.events)
     expect(JSON.parse(JSON.stringify(unknown)).attrition.events).toEqual(legacy.events)
     expect(legacy.events.every(event => !('tReleaseS' in event))).toBe(true)
+  })
+})
+
+describe('saved run record round trip', () => {
+  function record(): RunRecord {
+    const f = fixture()
+    const hash = analysisBasisSignature(f.scenario)
+    return {
+      id: 'run-round-trip', savedAt: '2026-09-15T12:00:00.000Z', label: 'Camp Able · saved',
+      manifest: createRunManifest(f.scenario, f.run.id, hash),
+      scenario: f.scenario, scenarioHash: hash, mc: f.mc, sensitivity: runSensitivity(f.scenario),
+    }
+  }
+
+  it('returns an equal record through the export builder and the import parser', () => {
+    const saved = record()
+    expect(saved.sensitivity!.rows.length).toBeGreaterThan(0)
+    // The file is what a download writes: JSON, so every NaN statistic is null on the way out.
+    const file = JSON.parse(JSON.stringify(runRecordExportObject(saved)))
+    expect(file.rangeboardRunRecord).toBe(1)
+    expect(parseRunRecordPackage(file)).toEqual(saved)
+    // A bare record, the shape a hand-written or store-dumped file carries, reads the same.
+    expect(parseRunRecordPackage(JSON.parse(JSON.stringify(saved)))).toEqual(saved)
+  })
+
+  it('refuses a debrief export, which carries no run manifest', () => {
+    const f = fixture()
+    const debrief = JSON.parse(JSON.stringify(runExportObject(f.scenario, f.run, f.assessments, f.report, f.summary, f.mc)))
+    expect(() => parseRunRecordPackage(debrief)).toThrow(/no run manifest/)
+  })
+
+  it('names the field a malformed record fails on', () => {
+    const saved = JSON.parse(JSON.stringify(runRecordExportObject(record())))
+    const broken = (patch: (r: Record<string, unknown>) => void) => {
+      const copy = JSON.parse(JSON.stringify(saved))
+      patch(copy.record)
+      return () => parseRunRecordPackage(copy)
+    }
+    expect(broken(r => { delete r.scenarioHash })).toThrow('runRecord.scenarioHash: expected a nonempty string')
+    expect(broken(r => { (r.manifest as Record<string, unknown>).producer = 'worker' }))
+      .toThrow('runRecord.manifest.producer: expected one of browser, cli')
+    expect(broken(r => { (r.manifest as Record<string, unknown>).physicsSwitches = ['noSuchSwitch'] }))
+      .toThrow('runRecord.manifest.physicsSwitches[0]: expected one of')
+    expect(broken(r => { (r.mc as Record<string, unknown>).seed = null })).toThrow('runRecord.mc.seed')
   })
 })

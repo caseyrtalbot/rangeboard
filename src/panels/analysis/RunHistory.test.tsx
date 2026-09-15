@@ -27,7 +27,7 @@ const basis = `Monte Carlo estimate · ${summary.replicates} replicates`
 function view(props: Partial<Parameters<typeof RunHistoryView>[0]> = {}) {
   return renderToStaticMarkup(<RunHistoryView
     runs={[listed]} opened={null} notice={null} error={null} save={save}
-    onOpen={() => {}} onDelete={() => {}} onSave={() => {}} {...props} />)
+    onOpen={() => {}} onDelete={() => {}} onSave={() => {}} onImport={() => {}} {...props} />)
 }
 
 describe('RunHistoryView', () => {
@@ -41,6 +41,14 @@ describe('RunHistoryView', () => {
     expect(html).toContain('>Open</button>')
     expect(html).toContain('>Delete</button>')
     expect(html).toContain('>Save to history</button>')
+    expect(html).toContain('>Import run</button>')
+  })
+
+  it('offers import beside save and never disables it with the save reason', () => {
+    const html = view({ runs: [], save: { ...save, enabled: false, reason: 'No finished ensemble to save' } })
+    expect(html).toContain('title="Read a saved-run JSON file into this history"')
+    expect(html.indexOf('>Import run</button>')).toBeLessThan(html.indexOf('>Save to history</button>'))
+    expect(html.match(/disabled=""/g)).toHaveLength(1)
   })
 
   it('reports the empty list, the eviction notice and the load error', () => {
@@ -96,5 +104,36 @@ describe('RunRecordView', () => {
     expect(html).toContain(`<dt>seed</dt><dd>${summary.seed}</dd>`)
     expect(html).toContain('<dt>buildRevision</dt><dd>—</dd>')
     expect(html).not.toContain('[object Object]')
+  })
+
+  it('gives every tile its own lineage, collapsed, with the scenario hash', () => {
+    const html = renderToStaticMarkup(<RunRecordView record={record} />)
+    // One lineage per tile, and each is closed until the reader opens it.
+    expect(html.match(/Lineage<\/summary>/g)).toHaveLength(4)
+    expect(html).not.toContain('<details class="analysis-disclosure" open')
+    for (const label of ['Kills', 'Leakers', 'First detect', 'Min warning']) {
+      expect(html).toContain(`aria-label="${label} lineage"`)
+    }
+    for (const field of ['Seed', 'Replicates', 'Uncertainty', 'Run mode', 'Engine revision',
+      'Draw policy', 'Data package', 'Overrides', 'Physics switches', 'Fidelity floor', 'Producer']) {
+      expect(html).toContain(`<dt>${field}</dt>`)
+    }
+    expect(html).toContain('<dt>Scenario hash</dt><dd>basis</dd>')
+    expect(html).toContain(`<dt>Seed</dt><dd>${record.manifest.seed}</dd>`)
+    expect(html).toContain('<dt>Overrides</dt><dd>none</dd>')
+  })
+
+  it('offers JSON and one button per CSV table, the sensitivity one only with rows', () => {
+    const html = renderToStaticMarkup(<RunRecordView record={record} />)
+    expect(html).toContain('aria-label="Export this run"')
+    for (const label of ['JSON', 'Threat CSV', 'Effector CSV', 'Sensitivity CSV']) {
+      expect(html).toContain(`>${label}</button>`)
+    }
+    expect(html).toContain('title="This run carries no sensitivity result"')
+    expect(record.sensitivity).toBeNull()
+    const withRows = renderToStaticMarkup(<RunRecordView record={{ ...record, sensitivity: {
+      stat: 'leakers', rows: [], nominal: 1, replicates: 2, seed: 7, elapsedMs: 1 } }} />)
+    expect(withRows).toContain('title="Export the sensitivity rows"')
+    expect(withRows).not.toContain('title="Export the sensitivity rows" disabled')
   })
 })
