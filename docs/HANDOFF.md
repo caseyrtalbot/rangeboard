@@ -12,41 +12,79 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, branch `main`, base commit `e199461`, equal to
-  `origin/main`. The working tree is dirty and uncommitted: Task 1 fixes in
-  `src/playback/{shot,attrition,sim,intercept}.ts` and their tests, plus the docs listed in
-  the [review-fix record](field-te/evidence/cr-fixes-2026-09-14/README.md). Casey decides
-  the commit.
-- No lane worktrees or lane branches exist. Task 1 ran as three lanes in the shared tree.
+- Repository `~/Projects/rangeboard`, branch `main`, base commit `63486ca`, equal to
+  `origin/main` (pushed 2026-09-14). Working tree clean.
+- No lane worktrees or lane branches exist.
 - Plan: Phases 0 to 3 complete, each marked in the plan with its merge commit. The four
-  Phase 3 review findings closed on 2026-09-14. Phase 4 not started.
-- `npm run check` on the dirty tree passed on 2026-09-14: 186 test files, 2,075 tests,
-  engine CLI, library, schema, docs, typecheck, lint, build and bundle budget.
-- Open defects: none recorded. Three unselected follow-ups are listed in the review-fix
-  record.
+  Phase 3 review findings closed in `63486ca`. Phase 4 not started.
+- `npm run check` on `63486ca` passed on 2026-09-14: 186 test files, 2,075 tests, engine
+  CLI, library, schema, docs, typecheck, lint, build and bundle budget.
+- Open defects: none recorded. Unselected follow-ups from the
+  [review-fix record](field-te/evidence/cr-fixes-2026-09-14/README.md) and the CR-04
+  hand review of 2026-09-14: the CR-04 regression test drives a hand-written sampler,
+  not `sampleFlightPath`; `profileMeetTau` finds the first crossing inside its last
+  doubling, not the earliest overall (needs a target faster than three times the flyout);
+  the fallback solve under limited flight costs about 112 sampler calls and the CR-01
+  bracket multiplies it, unprofiled; the `interceptAt` doc comment still claims
+  "bit for bit" for every no-option call.
 
 ## Tasking
 
-Tasks run in this order. Each is one session task with its own gate.
+Tasks run in this order. Each is one session task with its own gate. Phase 4 follows
+[plan section 6](IMPLEMENTATION_PLAN.md#6-phase-4-hypothesis-tools); this section adds the
+source pointers and the constraints the plan does not carry.
 
-### Task 1: commit the review fixes
+### Task 1: Phase 4 contract 4.a (sequential)
 
-- Outcome: the Task 1 working tree lands on `main` as one commit, or as Casey directs.
-  This file does not authorize that commit.
-- Owned files: the dirty paths above and nothing else. Stage only those paths.
-- Completion checks: `git status` clean after the commit; `npm run check` unchanged.
-- Stop: the commit exists. Do not start Phase 4 in the same task.
+- Outcome: `OptimizeRequest`, `OptimizeResult` and `CalibrationRecord` typed in
+  `src/model/types.ts` and a new `src/playback/optimizeTypes.ts`, with
+  `npm run schema:generate` run and `npm run schema:check` passing. Fields per the plan
+  table: objective, movable ids, bounds, budget; candidates with intervals and a trace;
+  field, prior, observed, posterior, accepted.
+- Owned files: those two files, the generated schema and their tests. No lane code.
+- Constraints: types only, no behavior. `Scenario` gains nothing; an optimize request is
+  an analysis request, not scenario content. Reuse the interval and statistic shapes the
+  analysis screens already consume (`src/analysis/`), never a second interval type.
+- Completion checks: `npm run check` passes.
+- Stop: the contract merged to `main`, this file rewritten with the lane briefs issued.
 
-### Task 2: Phase 4, hypothesis tools
+### Task 2: Phase 4 lanes 4.1 to 4.4 (parallel, four worktrees)
 
-- Begins at [plan section 6](IMPLEMENTATION_PLAN.md#6-phase-4-hypothesis-tools) after
-  Task 1 lands. Contract 4.a is sequential and comes first.
-- Every lane brief must tell the worker to remove its worktree at the merge, as
-  [WORKFLOW.md](WORKFLOW.md#handoffs-and-orchestration) requires. The Phase 3 briefs
-  omitted this line and left six worktrees behind.
+- Begins after Task 1. Each lane gets a bounded brief with disjoint file ownership per the
+  plan table, its own worktree and branch `p4/<lane>`, test selection scoped with
+  `--dir src`, and the instruction to remove the worktree at the merge.
+- Source pointers per lane:
+  - 4.1 placement optimizer: the worker must sit in the worker value-import graph
+    (`docs/ENGINEERING_REFERENCE.md` section 3, worker isolation). Model it on
+    `src/playback/mc.worker.ts`, `mcClient.ts`, `workerPool.ts` and `workerSlot.ts`; the
+    store reaches it only through `src/state/analysisRequests.ts`. Common random numbers
+    come from the existing seeded draw policy (`src/playback/policy.ts`).
+  - 4.2 calibrate from counts: an accepted posterior becomes an override through
+    `useOverrides.setOverride(modelId, field, value, reason)` in `src/state/overrides.ts`;
+    a blank reason throws. Overrides stay out of `Scenario` and history and reach a run
+    through the trial manifest.
+  - 4.3 compare and record: `CompareScreen.tsx` exists; `RunHistory.tsx` already holds
+    `RunRecordView`, and `src/io/persist.ts` already exports `exportRunRecord`. The lane
+    extends those instead of creating parallel `RunRecord.tsx` and `exportRun.ts` files
+    unless the contract decides otherwise; record that decision in the brief.
+  - 4.4 SQLite export: `sql.js` must load lazily. The bundle budget in
+    `scripts/check-bundle.mjs` is 360 kB entry and 400 kB initial, gzip; the entry stood at
+    335 kB at the Phase 0 gate. A static import fails `npm run test:bundle`.
+- One integrator owns `src/model/types.ts`, schema generation, `AnalysisNavigation.tsx`,
+  `package.json`, shared docs and the merges.
 - Lane briefs that describe engagement physics can trip a Fable safeguard at launch.
   On 2026-09-14 the CR-04 lane failed that way before any edit and ran on Opus instead.
   Open each brief with the tool's purpose line from the top of this file.
+- Stop: four lanes merged, worktrees removed, `npm run check` green on `main`.
+
+### Task 3: Phase 4 UI lane 4.5 and gate 4.d
+
+- After 4.1 merges: `PlacementScreen.tsx` and its `AnalysisNavigation.tsx` entry
+  (`src/panels/analysis/screens/navigation.ts` holds the screen list per phase). Browser
+  check required.
+- Gate per plan 4.d: `npm run check` and a browser check of the whole loop. Then mark
+  Phase 4 in the plan with its merge commit, review `PROJECT_GUIDE.md`,
+  `ENGINEERING_REFERENCE.md` and `VERIFICATION.md`, and rewrite this file.
 
 ## Landmines
 

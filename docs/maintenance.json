@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "fb9b6e0c2836ebfd92e04d5baf396e8c9133b2aaab5c4b14380179a403f12852",
+      "sha256": "0ff87e1644e1203a17250d27c4cfab43f5d70428a80222bd08fa1313bc286fc0",
       "reviewedAt": "2026-09-14",
-      "note": "Task 1 review fixes CR-01 to CR-04 closed 2026-09-14; evidence record indexed"
+      "note": "Phase 4 handoff: position at 63486ca, contract 4.a, lanes 4.1-4.4, UI lane and gate, source pointers and CR-04 review follow-ups"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
