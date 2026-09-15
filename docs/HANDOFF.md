@@ -12,114 +12,123 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, branch `main`, base commit `63486ca`, equal to
-  `origin/main` (pushed 2026-09-14). Working tree clean.
-- No lane worktrees or lane branches exist.
-- Plan: Phases 0 to 3 complete, each marked in the plan with its merge commit. The four
-  Phase 3 review findings closed in `63486ca`. Phase 4 not started.
-- `npm run check` on `63486ca` passed on 2026-09-14: 186 test files, 2,075 tests, engine
-  CLI, library, schema, docs, typecheck, lint, build and bundle budget.
-- Open defects: none recorded. Unselected follow-ups from the
-  [review-fix record](field-te/evidence/cr-fixes-2026-09-14/README.md) and the CR-04
-  hand review of 2026-09-14: the CR-04 regression test drives a hand-written sampler,
-  not `sampleFlightPath`; `profileMeetTau` finds the first crossing inside its last
-  doubling, not the earliest overall (needs a target faster than three times the flyout);
-  the fallback solve under limited flight costs about 112 sampler calls and the CR-01
-  bracket multiplies it, unprofiled; the `interceptAt` doc comment still claims
-  "bit for bit" for every no-option call.
+- Repository `~/Projects/rangeboard`, branch `main`, base commit `cf4992d` plus this
+  handoff commit. `origin/main` is at `63486ca`; nothing from Phase 4 is pushed.
+- Dirty paths not owned by Phase 4: `src/App.tsx`, `src/index.css`, `src/io/storageKeys.ts`,
+  `src/panels/Toolbar.tsx`, `src/panels/Toolbar.test.tsx` and
+  `scripts/e2e/board-shell.e2e.mjs` carry the uncommitted shell-rework slice (right
+  drawer) of a separate session. Do not stage, revert or build on them from this
+  handoff. `npm run docs:check` on the dirty tree asks for a `DESIGN_SYSTEM.md` and guide
+  review because of them; the committed tree passes.
+- No lane worktrees or lane branches exist; the five `p4/*` branches were merged and
+  deleted.
+- Plan: Phases 0 to 4 complete, each marked in the plan with its merge commits. Phase 4
+  is the last phase in the plan; there is no Phase 5 tasking.
+- Gate on the committed tree at `891c4f0`: `npm run check` passed (198 test files, 2,159
+  tests, then the two record fixes added 2 tests), `npm run check:bundle` passed with the
+  entry at 360,308 bytes gzip against the budget raised to 364,000 in `4f50104`, and the
+  whole-loop browser check is recorded in
+  [the Phase 4 gate record](field-te/evidence/p4-gate-2026-09-15/README.md).
+- Open defects found at the gate and not fixed: an accepted override is recorded in both
+  manifests but no engine path reads it, so a calibration changes no run result; on the
+  firing-scenario laydown the default physical kinetic model fires the Coyote's magazine
+  and kills nothing, so every placement ties and every Sobol index is undefined.
 
 ## Tasking
 
-Tasks run in this order. Each is one session task with its own gate. Phase 4 follows
-[plan section 6](IMPLEMENTATION_PLAN.md#6-phase-4-hypothesis-tools); this section adds the
-source pointers and the constraints the plan does not carry.
+Tasks run in this order. Each is one session task with its own gate. None is selected;
+the user picks. Each is a follow-up from the Phase 4 gate, not plan tasking.
 
-### Task 1: Phase 4 contract 4.a (sequential)
+### Task 1: Apply overrides to the run
 
-- Outcome: `OptimizeRequest`, `OptimizeResult` and `CalibrationRecord` typed in
-  `src/model/types.ts` and a new `src/playback/optimizeTypes.ts`, with
-  `npm run schema:generate` run and `npm run schema:check` passing. Fields per the plan
-  table: objective, movable ids, bounds, budget; candidates with intervals and a trace;
-  field, prior, observed, posterior, accepted.
-- Owned files: those two files, the generated schema and their tests. No lane code.
-- Constraints: types only, no behavior. `Scenario` gains nothing; an optimize request is
-  an analysis request, not scenario content. Reuse the interval and statistic shapes the
-  analysis screens already consume (`src/analysis/`), never a second interval type.
-- Completion checks: `npm run check` passes.
-- Stop: the contract merged to `main`, this file rewritten with the lane briefs issued.
+- Outcome: an override in `useOverrides` replaces the library field value the engine reads,
+  for the trial, the replicate run, the sensitivity and sweep runs and the optimizer, and
+  the manifest keeps recording it. A calibrated `pk` of 0.02 lowers kills.
+- Source pointers: `src/state/overrides.ts` (`activeOverrides`), the trial launch in
+  `src/state/analysisRequests.ts` (the only place overrides enter a request today, as
+  manifest content), `src/playback/trialTypes.ts` (`TrialManifest.overrides`),
+  `src/model/types.ts` (`specFields`, `dropEditedProvenance`), the sampled scenario in
+  `src/analysis/uncertainty.ts` (`sampleScenario` is where a per-replicate value is set).
+- Constraints: overrides stay out of `Scenario` and history. The engine CLI
+  (`scripts/run-engine.mjs`, `src/engine/index.ts`) must apply the same rule from the
+  manifest so the browser and CLI summaries stay equal at one seed. The three protected
+  parity suites and `estimate.parity` carry no overrides and must not move.
+- Completion checks: a test where one override changes a replicate outcome; the CLI
+  parity test still passes; `npm run check`.
 
-### Task 2: Phase 4 lanes 4.1 to 4.4 (parallel, four worktrees)
+### Task 2: Zero-kill kinetic outcome on the firing laydown
 
-- Begins after Task 1. Each lane gets a bounded brief with disjoint file ownership per the
-  plan table, its own worktree and branch `p4/<lane>`, test selection scoped with
-  `--dir src`, and the instruction to remove the worktree at the merge.
-- Source pointers per lane:
-  - 4.1 placement optimizer: the worker must sit in the worker value-import graph
-    (`docs/ENGINEERING_REFERENCE.md` section 3, worker isolation). Model it on
-    `src/playback/mc.worker.ts`, `mcClient.ts`, `workerPool.ts` and `workerSlot.ts`; the
-    store reaches it only through `src/state/analysisRequests.ts`. Common random numbers
-    come from the existing seeded draw policy (`src/playback/policy.ts`).
-  - 4.2 calibrate from counts: an accepted posterior becomes an override through
-    `useOverrides.setOverride(modelId, field, value, reason)` in `src/state/overrides.ts`;
-    a blank reason throws. Overrides stay out of `Scenario` and history and reach a run
-    through the trial manifest.
-  - 4.3 compare and record: `CompareScreen.tsx` exists; `RunHistory.tsx` already holds
-    `RunRecordView`, and `src/io/persist.ts` already exports `exportRunRecord`. The lane
-    extends those instead of creating parallel `RunRecord.tsx` and `exportRun.ts` files
-    unless the contract decides otherwise; record that decision in the brief.
-  - 4.4 SQLite export: `sql.js` must load lazily. The bundle budget in
-    `scripts/check-bundle.mjs` is 360 kB entry and 400 kB initial, gzip; the entry stood at
-    335 kB at the Phase 0 gate. A static import fails `npm run test:bundle`.
-- One integrator owns `src/model/types.ts`, schema generation, `AnalysisNavigation.tsx`,
-  `package.json`, shared docs and the merges.
-- Lane briefs that describe engagement physics can trip a Fable safeguard at launch.
-  On 2026-09-14 the CR-04 lane failed that way before any edit and ran on Opus instead.
-  Open each brief with the tool's purpose line from the top of this file.
-- Stop: four lanes merged, worktrees removed, `npm run check` green on `main`.
+- Outcome: a written finding on why the physical kinetic model (`src/playback/pk/kinetic.ts`,
+  lane 3.5) yields no defeat effect from four Coyote shots on the firing-scenario probe
+  where `legacyKineticPk` yields 2.25 kills, and either a defect fix or a documented
+  model limit with the datasheet reasoning.
+- Source pointers: `docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`,
+  gate screenshots `02-run.png` and `04-outcome.png`, `src/playback/kinetic.verify.test.ts`,
+  the Phase 3 gate comparison note on no-arrival classifications.
+- Constraints: no parity fixture moves without a hand-derived replacement in the report.
 
-### Task 3: Phase 4 UI lane 4.5 and gate 4.d
+### Task 3: Entry chunk lazy split
 
-- After 4.1 merges: `PlacementScreen.tsx` and its `AnalysisNavigation.tsx` entry
-  (`src/panels/analysis/screens/navigation.ts` holds the screen list per phase). Browser
-  check required.
-- Gate per plan 4.d: `npm run check` and a browser check of the whole loop. Then mark
-  Phase 4 in the plan with its merge commit, review `PROJECT_GUIDE.md`,
-  `ENGINEERING_REFERENCE.md` and `VERIFICATION.md`, and rewrite this file.
+- Outcome: the entry chunk back under 340 kB gzip with the budget lowered again, by
+  loading an engine or analysis addition lazily. Measure with `npm run build && npm run
+  check:bundle`; `npm run check` does not run `check:bundle`.
+- Source pointers: `scripts/check-bundle.mjs` (history of raises in its comment),
+  `src/io/persist.ts` and `src/io/runRecordPackage.ts` (the split made at the gate),
+  `src/state/analysisRequests.ts` (the optimize wiring is the newest entry weight).
+
+### Task 4: Smaller follow-ups, each a short task
+
+- `RunRecord` gains `sobol: SobolResult | null` so the SQLite `sobol` table fills
+  (`src/model/runRecord.ts`, `src/io/exportSqlite.ts` already reads the field, the save
+  path in `OutcomeScreen.tsx`).
+- `CalibrationRecord` persistence, if the user wants the record beyond the override
+  reason text (`src/analysis/calibrate.ts` returns it; nothing stores it).
+- `OptimizeResult` carries no `stopped` field; a cut run is read from
+  `trace.length < budget.evaluations`. Add a field if a screen needs the reason.
+- `exportPng.svgMarkup` has no unit test; the project has no jsdom.
+- `WEAK_TIME_CV = 0.5` in `calibrate.ts` is a planning constant with no source.
+- From the Phase 3 review-fix record: the CR-04 regression test drives a hand-written
+  sampler; `profileMeetTau` finds the first crossing inside its last doubling; the limited
+  flight fallback solve is unprofiled; the `interceptAt` doc comment still says "bit for
+  bit" for every no-option call.
 
 ## Landmines
 
+- An override is a record, not an applied value, until Task 1 lands. The Systems tab
+  shows it as in force; the engine reads the library value.
+- The optimizer ranks ties by trace order, so when no placement changes the objective the
+  starting laydown is candidate 1 and Apply moves nothing. Under common random numbers
+  kill draws key by effector and ship, not position, so laydowns that all cover the path
+  tie exactly.
+- `npm run check` does not run `check:bundle`; run it after `build` at every gate. The
+  entry stands 3.7 kB under the 364 kB budget.
+- `sql.js` must stay behind `await import` with its wasm URL; a static import puts 326 kB
+  gzip of wasm into the initial set.
 - The three protected suites run constant-speed flight. `interceptAt` keeps their
-  closed-form time through the residual gate `closesOnSample`, not through a presence
-  check on `sampleFlightAt`; `attrition.ts` sets that sampler on every threat with a path.
-  Any change to the gate tolerance moves their pinned swing and standard-error values.
-- `salvoCooldownS` is the minimum spacing between assignments. A modeled optical dwell
-  reserves the effector to the later of cooldown and effect time. Changing that to effect
-  time plus cooldown changes every modeled DE re-attack spacing.
-- The optical dwell solve declines a shot as `no-dwell-solution` when no converged effect
-  time lies inside the window. Callers test `shot.rejected` for truthiness only.
-- The memo dependency set widens by `flightDeviationM` only when the spec has flight
-  limits and `noFlightLimits` is clear; legacy scenarios keep their prior memo behavior.
+  closed-form time through the residual gate `closesOnSample`; any change to the gate
+  tolerance moves their pinned values.
+- `salvoCooldownS` is the minimum spacing between assignments; a modeled optical dwell
+  reserves the effector to the later of cooldown and effect time.
+- The optical dwell solve declines a shot as `no-dwell-solution`; callers test
+  `shot.rejected` for truthiness only.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - Physics tab semantics: a checked box selects the prior planning fallback; a cleared box
-  selects the physical model. Every physical path carries a fidelity tag.
-- `FlightPath` has no altitude profile. `climbRateMps` is recorded and unused; the engine
-  invents no altitude change.
-- Iron Beam's sourced `dwellToEffectS` spread is not in the runtime provenance ordering
-  or `PF_SPREAD`; optical shots use the documented 2 dB event-level default.
-- The Spynel recognize-range mismatch against the vendor sheet is retained by design.
-- Bounded flight changes arrival classification in the layered estimate fixture. The
+  selects the physical model.
+- `FlightPath` has no altitude profile; `climbRateMps` is recorded and unused.
+- Bounded flight changes arrival classification in the layered estimate fixture; the
   resulting drop in leakers and kills is not evidence of improved defeat.
-- Phase 2 remnants stay out of scope until selected: per-sensor classification flag,
-  fusion latency quantization, unmodeled elevation accuracy and the C2 editor gaps.
+- Lane briefs that describe engagement physics can trip a Fable safeguard at launch. Open
+  each brief with the tool's purpose line from the top of this file; every Phase 4 brief
+  did and none tripped.
 - Every edit to a registered reference document needs
-  `npm run docs:review -- <document> --note "..."`, or `npm run docs:check` fails.
+  `npm run docs:review -- <document> --note "..."`, or `npm run docs:check` fails. Guides
+  fingerprint `src/`, so a source commit after a docs review invalidates it.
 
 ## Evidence
 
+- [Phase 4 gate, 2026-09-15](field-te/evidence/p4-gate-2026-09-15/README.md)
 - [Phase 3 review fixes CR-01 to CR-04, 2026-09-14](field-te/evidence/cr-fixes-2026-09-14/README.md)
 - [Phase 3 integration review, 2026-09-11](CodeReview.md)
 - [Phase 3 gate](field-te/evidence/p3-gate-2026-09-10/README.md)
 - [Estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)
-- [Phase 3 lane rules and briefs as issued](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-lane-common.md)
-- [Phase 2 gate](field-te/evidence/p2-gate-2026-09-10/README.md)
