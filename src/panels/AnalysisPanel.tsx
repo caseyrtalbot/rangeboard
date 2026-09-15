@@ -4,6 +4,7 @@ import { CompareScreen } from './analysis/screens/CompareScreen'
 import { FragilityScreen } from './analysis/screens/FragilityScreen'
 import { NowScreen } from './analysis/screens/NowScreen'
 import { OutcomeScreen } from './analysis/screens/OutcomeScreen'
+import { PlacementScreen } from './analysis/screens/PlacementScreen'
 import { PHASE_SCREENS } from './analysis/screens/navigation'
 import type { AnalysisScreen } from './analysis/screens/navigation'
 
@@ -19,6 +20,7 @@ export function AnalysisPanel({ phase = 'execute', screen }: AnalysisPanelProps)
   return (
     <div className="inspector-body analysis-panel">
       {active === 'fragility' && <FragilityScreen />}
+      {active === 'placement' && <PlacementScreen />}
       {active === 'now' && <NowScreen />}
       {active === 'outcome' && <OutcomeScreen />}
       {active === 'compare' && <CompareScreen />}

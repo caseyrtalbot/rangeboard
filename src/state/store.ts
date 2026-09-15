@@ -24,7 +24,7 @@ import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
 import { LAYER_PRESETS } from './layers'
 import { selectEffectiveLayers } from './selectors'
 import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } from './runState'
-import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
+import { freshPlayback, IDLE_MC, IDLE_OPTIMIZE, IDLE_TRIAL } from './runState'
 import type { MorrisResult, PoolProgress, SobolResult } from '../playback/mcTypes'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
@@ -65,7 +65,8 @@ import {
 } from '../io/viewState'
 // Keep worker execution behind analysisRequests; summaries are types, not store runtime dependencies.
 import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
-import type { AnalysisSinks, SensitivityMessage, SweepSpec } from './analysisRequests'
+import type { AnalysisSinks, OptimizeSpec, SensitivityMessage, SweepSpec } from './analysisRequests'
+import type { OptimizeWorkerMessage } from '../playback/optimizeTypes'
 
 /**
  * The lens system is gone, so every run is stamped with the old default lens
@@ -74,6 +75,7 @@ import type { AnalysisSinks, SensitivityMessage, SweepSpec } from './analysisReq
 const OBSERVED_PRESET_ID = 'run-summary'
 import {
   acceptMcMessage,
+  acceptOptimizeMessage,
   acceptPoolProgress,
   acceptSensitivityMessage,
   acceptSweepMessage,
@@ -81,6 +83,7 @@ import {
   cancelAnalysis,
   requestAnalysis,
   requestCancel,
+  requestOptimize,
   requestSobol,
 } from './analysisRequests'
 
@@ -383,6 +386,24 @@ export interface Store {
   sweepMessage: (m: McSweepMessage) => void
   /** Ask a running sweep to stop at its next cell, as `cancelMonteCarlo`. */
   cancelSweep: () => void
+
+  // Placement optimization
+  /**
+   * Launch a placement optimization for the current scenario and run id on its
+   * own worker slot (an optimization already there is replaced). A no-op under
+   * deterministic mode, with no movable entity, or with no bounds polygon.
+   */
+  runOptimize: (spec: OptimizeSpec) => void
+  /** Optimize worker message sink; a message from another run is ignored. */
+  optimizeMessage: (m: OptimizeWorkerMessage) => void
+  /**
+   * Ask a running optimization to stop at its next checkpoint. Its
+   * `optimize-done` then carries the trace so far, so the result reads as a
+   * cut run rather than a cancelled one with nothing in it.
+   */
+  cancelOptimize: () => void
+  /** Drop the placement result, its incumbent and its error. */
+  clearOptimize: () => void
 }
 
 /** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
@@ -439,6 +460,7 @@ export const useStore = create<Store>()((set, get) => {
     sensitivity: (m) => get().sensitivityMessage(m),
     sweep: (m) => get().sweepMessage(m),
     trial: (m) => get().trialMessage(m),
+    optimize: (m) => get().optimizeMessage(m),
   }
 
   /**
@@ -1392,6 +1414,7 @@ export const useStore = create<Store>()((set, get) => {
       cancelAnalysis('sensitivity')
       cancelAnalysis('sweep')
       cancelAnalysis('trial')
+      cancelAnalysis('optimize')
       get().playbackCommand({ type: 'newRun', reason })
     },
 
@@ -1462,6 +1485,17 @@ export const useStore = create<Store>()((set, get) => {
       const { sweep } = get().mc
       if (sweep.status === 'running' && sweep.runId != null) requestCancel('sweep', sweep.runId)
     },
+
+    runOptimize: (spec) => requestOptimize(get(), set, sinks, spec),
+
+    optimizeMessage: (m) => set((st) => acceptOptimizeMessage(st, m) ?? st),
+
+    cancelOptimize: () => {
+      const { optimize } = get().mc
+      if (optimize.status === 'running' && optimize.runId != null) requestCancel('optimize', optimize.runId)
+    },
+
+    clearOptimize: () => set((st) => ({ mc: { ...st.mc, optimize: IDLE_OPTIMIZE, optimizeBest: null } })),
 
     pinBaseline: (label) => {
       const { scenario, mc, playback } = get()
