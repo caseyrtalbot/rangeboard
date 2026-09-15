@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import type { Override, OverrideSet } from '../model/libraryField'
-import type { Scenario } from '../model/types'
-import { specFields } from '../model/types'
+
+// The record and the rule live store-free in the model, where the engine CLI reads them.
+export { activeOverrides, applyOverrides } from '../model/applyOverrides'
 
 /**
  * User replacements of library field values, in their own store. An override is
@@ -59,27 +60,3 @@ export const useOverrides = create<OverridesStore>()((set) => ({
 
   restoreOverrides: (saved) => set({ overrides: saved.overrides }),
 }))
-
-/** Position of one field in a model's spec key order; an unknown field sorts last. */
-function rank(order: string[], field: string): number {
-  const at = order.indexOf(field)
-  return at < 0 ? order.length : at
-}
-
-/**
- * The overrides a run must record: those on a model this scenario's library
- * carries, in library order, then in the model's spec field order (an unknown
- * field last, by name). `createTrialManifest` writes the result into the
- * manifest, so the order is the manifest's order and has to be stable.
- */
-export function activeOverrides(overrides: Override[], scenario: Scenario): Override[] {
-  const out: Override[] = []
-  for (const model of scenario.library) {
-    const mine = overrides.filter((o) => o.modelId === model.id)
-    if (mine.length === 0) continue
-    const order = Object.keys(specFields(model))
-    mine.sort((a, b) => rank(order, a.field) - rank(order, b.field) || a.field.localeCompare(b.field))
-    out.push(...mine)
-  }
-  return out
-}

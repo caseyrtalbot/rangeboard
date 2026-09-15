@@ -27,7 +27,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
-| `npm run engine -- <scenario.json> --replicates N --seed S --out run.json` | Run a fixed replicate count over worker threads and write a run record |
+| `npm run engine -- <scenario.json> --replicates N --seed S --out run.json [--overrides overrides.json]` | Run a fixed replicate count over worker threads, an override set applied from the manifest, and write a run record |
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
 | `npm run check` | Complete documentation, type, library, schema, engine, test, lint and build gate |
 

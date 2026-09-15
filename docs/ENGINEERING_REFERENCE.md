@@ -192,7 +192,17 @@ Breaking one of these breaks the app.
   `runReplicates` at one seed (`workerPool.test.ts`). The result lives in the
   `mc` slice: view state, never persisted, never in `past`. `resetRun` and `replaceScenario`
   clear it; edits, undo and redo use `analysisBasisSignature` to mark mismatched results
-  stale. The signature includes domain fields by default, removes named presentation and
+  stale, and each run keeps the override list it applied (`AnalysisRunState.overrides`,
+  `activeOverrides` at launch) as the second half of its identity: an override edit that
+  changes the values in force reaches the store through `useOverrides.subscribe` and
+  `overridesChanged` (`runsForOverridesChange` in `scenarioInstall.ts`), which marks the
+  replicate, sensitivity, sweep and optimize runs stale, drops a trial whose manifest
+  lists other values, and restarts a started playback as a configuration change. Save
+  to history (`runRecordOf`, `panels/analysis/mc.ts`) and `pinBaseline` write that list,
+  never the overrides in force at the click; the Outcome and Compare forecasts and the
+  export's requirement validity run `trialForecast`, the picture of the captured
+  scenario with the manifest's overrides applied, so a detection-side override raises
+  no forecast-trial disagreement. The signature includes domain fields by default, removes named presentation and
   evidence metadata, resolves scenario/entity/link defaults, and uses `uncertainFields`
   for effective spreads and draw identities. Raw model specs are conservatively included;
   object key order is ignored and array order is preserved. See the input matrix in
@@ -278,8 +288,9 @@ Breaking one of these breaks the app.
   `activeOverrides`), `physicsSwitches`, `fidelityFloor` and `producer`. Every manifest
   comparison goes through `sameManifest`, which compares the array keys by value because
   a structured clone from a worker never shares array identity; `trialClient.ts` carries
-  its own copy so it never imports the engine. The selector skips the record keys, so an
-  override edit after launch never orphans a ready trial. Build provenance is
+  its own copy so it never imports the engine. The selector skips the record keys; it is
+  the store (`overridesChanged`) that drops a ready trial when an override edit changes
+  the values in force, and a re-recorded reason keeps it. Build provenance is
   explicitly null until a build revision is supplied; the version tag is not a commit hash.
   `trialClient.ts` owns a third independent worker slot (over `workerSlot.ts`), released at
   completion, error, replacement or cancellation. Adapter and `acceptTrialMessage` require
@@ -839,7 +850,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   existing result is unchanged; `spreadBasisFor` names the step that answered. An
   override (`useOverrides`, `src/state/overrides.ts`) never edits the scenario library:
   it is a separate record with a reason and a date, listed in the trial manifest, and
-  the Settings Systems tab (`src/panels/settings/SystemsTab.tsx`) shows it beside the
+  applied for one run by `applyOverrides` (`src/model/applyOverrides.ts`, the value
+  written over a copy of the model's spec with its provenance row dropped): the trial
+  and the engine CLI apply the manifest's list, the replicate, sensitivity, sweep and
+  optimize requests apply the active list before the worker starts, and the board
+  scenario, its basis signature and history keep the library value.
+  The Settings Systems tab (`src/panels/settings/SystemsTab.tsx`) shows it beside the
   source value with reset per field, per system and all. `sampleSpread` is the one inverse-CDF sample
   (lognormal `sigmaDb` a power ratio, triangular bounds fractions of the nominal, a beta
   with `pseudo` the PF table rescaled to the nominal, a beta without it the row's stated

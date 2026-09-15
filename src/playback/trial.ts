@@ -1,5 +1,6 @@
 import type { Scenario } from '../model/types'
 import { runSettings } from '../model/types'
+import { applyOverrides } from '../model/applyOverrides'
 import { idHash } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
 import { resolvedThresholds } from './detection'
@@ -27,11 +28,13 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
     manifest.replicateIndex !== idHash(manifest.runId) ||
     !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')
   ) throw new Error('Invalid trial manifest identity or seed')
+  // The manifest's overrides are the values in force; the captured scenario keeps the library's.
+  const s = applyOverrides(scenario, manifest.overrides)
 
   const observations: TrialResult['observations'] = []
   const jamDecisions: TrialResult['jamDecisions'] = []
   const tracks: TrackEstimate[] = []
-  const policy = monteCarloPolicy(manifest.seed, manifest.replicateIndex, resolvedThresholds(scenario))
+  const policy = monteCarloPolicy(manifest.seed, manifest.replicateIndex, resolvedThresholds(s))
   const draw = {
     ...policy,
     jam(probability: number, effectorId: string, uasId: string, tEffectS: number) {
@@ -41,13 +44,13 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
     },
   }
   const assessments = assessAllThreats(
-    scenario, draw, (observation) => observations.push(observation), (estimate) => tracks.push(estimate),
+    s, draw, (observation) => observations.push(observation), (estimate) => tracks.push(estimate),
   )
   // False tracks (kind-9 draws only) join the trial's track history; the
   // operator queue in resolveEngagements reads the same load.
   const falseLoad = prepareFalseTracks(
-    scenario, draw, scenarioHorizonS(scenario), (estimate) => tracks.push(estimate),
+    s, draw, scenarioHorizonS(s), (estimate) => tracks.push(estimate),
   )
-  const report = resolveEngagements(scenario, assessments, draw, falseLoad)
+  const report = resolveEngagements(s, assessments, draw, falseLoad)
   return { manifest: Object.freeze({ ...manifest }), assessments, report, observations, jamDecisions, tracks }
 }

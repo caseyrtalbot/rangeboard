@@ -7,11 +7,43 @@
 import type { BandSeries, McSummary, SensitivitySummary, Stat, SweepSummary } from '../../playback/mcRun'
 import { BAND80_MIN_N, BAND95_MIN_N, STAT_CONF } from '../../playback/mcRun'
 import { DT } from '../../playback/clock'
+import type { RunRecord } from '../../model/runRecord'
+import { createRunManifest } from '../../model/runRecord'
+import type { Scenario } from '../../model/types'
+import { newId } from '../../model/types'
+import { defaultBaselineLabel } from '../../state/baseline'
 import type { McState } from '../../state/runState'
 
 /** The summary of a finished run for `runId`, else null. */
 export function currentSummary(mc: McState, runId: string): McSummary | null {
   return mc.status === 'done' && mc.runId === runId ? mc.summary : null
+}
+
+/**
+ * The record Save to history writes for a finished ensemble. Its manifest
+ * names the overrides the run applied at launch (`McState.overrides`), never
+ * the overrides in force at the save. The caller has checked the run is
+ * current and passes the sensitivity companion only when it shares the basis.
+ */
+export function runRecordOf(
+  scenario: Scenario,
+  mc: McState,
+  runId: string,
+  signature: string,
+  sensitivity: SensitivitySummary | null,
+  savedAt = new Date().toISOString(),
+): RunRecord {
+  if (mc.summary == null) throw new Error('No finished ensemble to save.')
+  return {
+    id: newId('run'),
+    savedAt,
+    label: defaultBaselineLabel(scenario.name, savedAt),
+    manifest: createRunManifest(scenario, mc.runId ?? runId, signature, { overrides: mc.overrides }),
+    scenario,
+    scenarioHash: signature,
+    mc: mc.summary,
+    sensitivity,
+  }
 }
 
 /** The summary of a finished sweep for `runId`, else null. */

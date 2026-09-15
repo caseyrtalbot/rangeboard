@@ -184,20 +184,22 @@ describe('OutcomeScreen', () => {
 })
 
 describe('Save to history', () => {
-  it('records the overrides in force at the save in the manifest', async () => {
+  it('records the overrides the run applied at launch in the manifest, not those in force at the save', async () => {
+    // The override store is empty at the save; the run kept its own list.
+    useOverrides.getState().resetAll()
     complete()
     const scenario = useStore.getState().scenario
     const model = scenario.library[0]
-    useOverrides.getState().resetAll()
-    useOverrides.getState().setOverride(model.id, 'pk', 0.8333, 'Calibrated from counts')
+    const applied = { modelId: model.id, field: 'pk', value: 0.8333, reason: 'Calibrated from counts', date: '2026-09-15T00:00:00.000Z' }
     const signature = analysisBasisSignature(scenario)
-    useStore.setState({ mc: { ...useStore.getState().mc, status: 'done', runId: 'run-1', basisSignature: signature, summary: {} as McSummary } })
+    useStore.setState({ mc: { ...useStore.getState().mc, status: 'done', runId: 'run-1', basisSignature: signature,
+      summary: {} as McSummary, overrides: [applied] } })
     interaction.saved.length = 0
     render()
     expect(interaction.save?.enabled).toBe(true)
     await interaction.save!.run()
-    const record = interaction.saved[0] as { manifest: { overrides: Array<{ modelId: string; field: string; value: unknown }> } }
-    expect(record.manifest.overrides).toEqual([expect.objectContaining({ modelId: model.id, field: 'pk', value: 0.8333 })])
-    useOverrides.getState().resetAll()
+    const record = interaction.saved[0] as { manifest: { overrides: unknown[] } }
+    expect(record.manifest.overrides).toEqual([applied])
+    expect(useOverrides.getState().overrides).toEqual([])
   })
 })

@@ -1,9 +1,11 @@
+import type { Override } from '../model/libraryField'
 import type { Scenario } from '../model/types'
 import { markPresentationVariant } from '../model/scenario'
+import { activeOverrides, sameAppliedOverrides } from '../model/applyOverrides'
 import { cancelAnalysis } from './analysisRequests'
 import type { RingOverrides } from './rings'
 import { pruneRingOverrides } from './rings'
-import type { McState, PlaybackState, TrialState } from './runState'
+import type { AnalysisRunState, McState, PlaybackState, TrialState } from './runState'
 import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
 
@@ -68,7 +70,12 @@ export type InstallOp = ScenarioInstall['op']
  *   invalidate only what no longer describes the board; replace cancels every
  *   worker and starts a clean run marked `scenario-loaded`.
  */
-export function installScenario(st: ScenarioSlices, install: ScenarioInstall): ScenarioSlices {
+export function installScenario(
+  st: ScenarioSlices,
+  install: ScenarioInstall,
+  /** The override store's list; a run stays current only while its applied overrides match it. */
+  overrides: readonly Override[] = [],
+): ScenarioSlices {
   switch (install.op) {
     case 'edit': {
       if (install.next === st.scenario) return st
@@ -76,7 +83,7 @@ export function installScenario(st: ScenarioSlices, install: ScenarioInstall): S
         past: pushSnapshot(st.past, st.scenario),
         future: [],
         selection: st.selection,
-      })
+      }, overrides)
     }
     case 'undo': {
       if (st.past.length === 0) return st
@@ -85,7 +92,7 @@ export function installScenario(st: ScenarioSlices, install: ScenarioInstall): S
         past: st.past.slice(0, -1),
         future: [st.scenario, ...st.future],
         selection: pruneSelection(st.selection, restored),
-      })
+      }, overrides)
     }
     case 'redo': {
       if (st.future.length === 0) return st
@@ -94,7 +101,7 @@ export function installScenario(st: ScenarioSlices, install: ScenarioInstall): S
         past: pushSnapshot(st.past, st.scenario),
         future: st.future.slice(1),
         selection: pruneSelection(st.selection, restored),
-      })
+      }, overrides)
     }
     case 'replace': {
       cancelAnalysis('mc')
@@ -121,15 +128,35 @@ function respond(
   st: ScenarioSlices,
   next: Scenario,
   decided: Pick<ScenarioSlices, 'past' | 'future' | 'selection'>,
+  overrides: readonly Override[],
 ): ScenarioSlices {
   return {
     scenario: next,
     ...decided,
     ringOverrides: pruneRingOverrides(st.ringOverrides, next),
     playback: playbackForScenarioChange(st.playback, next),
-    mc: mcForScenarioChange(st.mc, next),
-    trial: trialForScenarioChange(st.trial, next),
+    mc: mcForScenarioChange(st.mc, next, overrides),
+    trial: trialForScenarioChange(st.trial, next, overrides),
   }
+}
+
+type RunSlices = Pick<ScenarioSlices, 'scenario' | 'playback' | 'mc' | 'trial'>
+
+/**
+ * The runs' answer to an override edit, which installs no scenario. A run
+ * whose applied overrides no longer match the values in force goes stale, and
+ * a trial is dropped, by the rule a configuration change applies; a playback
+ * that held a dropped trial restarts as a configuration change. Returns the
+ * input object when nothing changes.
+ */
+export function runsForOverridesChange(st: RunSlices, overrides: readonly Override[]): RunSlices {
+  const mc = mcForScenarioChange(st.mc, st.scenario, overrides)
+  const trial = trialForScenarioChange(st.trial, st.scenario, overrides)
+  if (mc === st.mc && trial === st.trial) return st
+  const playback = trial !== st.trial && st.playback.basisSignature != null
+    ? freshPlayback(st.playback.runSeq, st.playback.speedMult, 'configuration-changed')
+    : st.playback
+  return { ...st, playback, mc, trial }
 }
 
 function pushSnapshot(past: Scenario[], snapshot: Scenario): Scenario[] {
@@ -180,19 +207,23 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
 }
 
 /**
- * The replicates describe the board they ran on. A configuration change makes
- * them stale: the worker is stopped and the summary is kept for reference, but
- * it is no longer the current answer. Bands read `status === 'done'` only. The
- * sensitivity run carries its own signature, so each side goes stale on its own.
+ * The replicates describe the board they ran on and the overrides they
+ * applied. A configuration or override change makes them stale: the worker is
+ * stopped and the summary is kept for reference, but it is no longer the
+ * current answer. Bands read `status === 'done'` only. The sensitivity run
+ * carries its own identity, so each side goes stale on its own.
  */
-function mcForScenarioChange(mc: McState, next: Scenario): McState {
+function mcForScenarioChange(mc: McState, next: Scenario, overrides: readonly Override[]): McState {
   const live = (status: McState['status']): boolean => status === 'running' || status === 'done'
   if (!live(mc.status) && !live(mc.sensitivity.status) && !live(mc.sweep.status) && !live(mc.optimize.status)) return mc
   const signature = analysisBasisSignature(next)
-  const mcStale = live(mc.status) && mc.basisSignature !== signature
-  const sensStale = live(mc.sensitivity.status) && mc.sensitivity.basisSignature !== signature
-  const sweepStale = live(mc.sweep.status) && mc.sweep.basisSignature !== signature
-  const optimizeStale = live(mc.optimize.status) && mc.optimize.basisSignature !== signature
+  const active = activeOverrides(overrides, next)
+  const stale = (run: AnalysisRunState<unknown>): boolean =>
+    live(run.status) && (run.basisSignature !== signature || !sameAppliedOverrides(run.overrides, active))
+  const mcStale = stale(mc)
+  const sensStale = stale(mc.sensitivity)
+  const sweepStale = stale(mc.sweep)
+  const optimizeStale = stale(mc.optimize)
   if (!mcStale && !sensStale && !sweepStale && !optimizeStale) return mc
   if (mcStale) cancelAnalysis('mc')
   if (sensStale) cancelAnalysis('sensitivity')
@@ -207,9 +238,11 @@ function mcForScenarioChange(mc: McState, next: Scenario): McState {
   }
 }
 
-/** Use the same material-input definition as playback and ensemble analysis. */
-function trialForScenarioChange(trial: TrialState, next: Scenario): TrialState {
-  if (trial.manifest == null || trial.manifest.basisSignature === analysisBasisSignature(next)) {
+/** Use the same material-input definition as playback and ensemble analysis, plus the manifest's overrides. */
+function trialForScenarioChange(trial: TrialState, next: Scenario, overrides: readonly Override[]): TrialState {
+  const manifest = trial.manifest
+  if (manifest == null || (manifest.basisSignature === analysisBasisSignature(next) &&
+    sameAppliedOverrides(manifest.overrides, activeOverrides(overrides, next)))) {
     return trial
   }
   cancelAnalysis('trial')

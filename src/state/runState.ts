@@ -1,3 +1,4 @@
+import type { Override } from '../model/libraryField'
 import type { Scenario } from '../model/types'
 import { newId } from '../model/types'
 import type { McSummary, SensitivitySummary, SweepSummary } from '../playback/mcRun'
@@ -71,6 +72,12 @@ export interface AnalysisRunState<S> {
   summary: S | null
   /** analysisBasisSignature of the scenario the summary was computed on. */
   basisSignature: string | null
+  /**
+   * The overrides the run applied over that scenario's library, `activeOverrides`
+   * at launch. Part of the run's identity beside the basis signature: an
+   * override edit that changes the values in force makes the run stale.
+   */
+  overrides: Override[]
   error: string | null
 }
 
@@ -85,6 +92,7 @@ export const IDLE_SENSITIVITY: SensitivityState = {
   total: 0,
   summary: null,
   basisSignature: null,
+  overrides: [],
   error: null,
 }
 
@@ -130,6 +138,7 @@ export const IDLE_MC: McState = {
   total: 0,
   summary: null,
   basisSignature: null,
+  overrides: [],
   error: null,
   sensitivity: IDLE_SENSITIVITY,
   sweep: IDLE_SWEEP,

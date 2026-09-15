@@ -763,6 +763,15 @@ describe('baseline save parsing', () => {
     expect(parseBaselineSave(save(null))).toEqual({ schemaVersion: 1, baseline: null })
   })
 
+  it('keeps the overrides the ensemble applied, and a pin without the record carries none', () => {
+    const applied = { modelId: 'lib-coyote', field: 'pk', value: 0.02, reason: 'calibrated', date: '2026-09-15T00:00:00.000Z' }
+    expect(parseBaselineSave(save({ ...pinned, overrides: [applied] })).baseline?.overrides).toEqual([applied])
+    const { overrides: _none, ...before } = pinned
+    expect(parseBaselineSave(save(before)).baseline?.overrides).toEqual([])
+    expect(() => parseBaselineSave(save({ ...pinned, overrides: [{ ...applied, reason: '' }] })))
+      .toThrow('baseline.overrides[0].reason: expected a nonempty string')
+  })
+
   it.each([
     ['another schema version', save(pinned, 2), 'schemaVersion: expected 1'],
     ['a missing label', save({ ...pinned, label: '' }), 'baseline.label: expected a nonempty string'],

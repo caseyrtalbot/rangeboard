@@ -39,10 +39,16 @@ describe('trial manifest overrides', () => {
     const done: TrialWorkerMessage = { type: 'trial-done', requestToken, runId, basisSignature, result: runTrial(scenario, manifest) }
     worker.send(done)
     expect(useStore.getState().trial.status).toBe('ready')
-    // A later reset never rewrites the record and never orphans the ready trial.
-    useOverrides.getState().resetAll()
     const selection = selectTrialSelection(useStore.getState())
     expect(selection.status).toBe('ready')
     if (selection.status === 'ready') expect(selection.result.manifest.overrides).toHaveLength(1)
+    // The same value under a new reason rewrites no record and keeps the trial.
+    useOverrides.getState().setOverride('lib-kurfs', 'detectRangeM', 3200, 'survey restated')
+    expect(useStore.getState().trial.status).toBe('ready')
+    expect(useStore.getState().trial.manifest?.overrides[0].reason).toBe('site survey')
+    // A reset changes the values in force, so the trial that ran on the override is dropped.
+    useOverrides.getState().resetAll()
+    expect(useStore.getState().trial.status).toBe('idle')
+    expect(selectTrialSelection(useStore.getState()).status).toBe('idle')
   })
 })

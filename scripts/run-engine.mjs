@@ -1,7 +1,7 @@
 // Headless engine runner. Runs a fixed replicate count on a scenario JSON over
 // a worker_threads pool and writes a RunRecord.
 //   npm run engine -- <scenario.json> --replicates 10000 --seed 4821 --out run.json
-//     [--workers N] [--uncertainty aleatory|total] [--label text]
+//     [--workers N] [--uncertainty aleatory|total] [--overrides overrides.json] [--label text]
 // Builds dist-engine/ (npm run engine:build) when the bundle is missing.
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -25,6 +25,8 @@ Options:
   --seed N                Monte Carlo seed (default: the scenario's own)
   --uncertainty MODE      aleatory | total (default: the scenario's own)
   --workers N             threads in the pool (default: every core)
+  --overrides FILE        override set JSON ({ "overrides": [...] }, as the browser
+                          saves it); the run reads these values over the library's
   --label TEXT            record label (default: cli)
   --out FILE              RunRecord path (default: run.json)
   --help                  this text
@@ -87,6 +89,15 @@ function runPool(scenario, ranges, workers) {
   })
 }
 
+/** The override set a `--overrides` file carries: the persisted `OverrideSet` shape. */
+export function readOverrideSet(path) {
+  const parsed = JSON.parse(readFileSync(resolve(path), 'utf8'))
+  if (!Array.isArray(parsed?.overrides)) {
+    throw new Error(`--overrides must be a JSON object with an overrides array, got ${path}`)
+  }
+  return parsed.overrides
+}
+
 /** The scenario with the CLI's run settings applied. */
 export function applyRunFlags(scenario, flags) {
   const out = { ...scenario, targetHalfWidth: null, runMode: 'monte-carlo' }
@@ -110,6 +121,7 @@ export async function main(argv) {
       seed: { type: 'string' },
       uncertainty: { type: 'string' },
       workers: { type: 'string' },
+      overrides: { type: 'string' },
       label: { type: 'string' },
       out: { type: 'string', default: 'run.json' },
       help: { type: 'boolean', default: false },
@@ -124,11 +136,20 @@ export async function main(argv) {
   const scenario = applyRunFlags(engine.parseScenarioJson(readFileSync(resolve(positionals[0]), 'utf8')), values)
   const { replicates, seed } = engine.runSettings(scenario)
   const workers = values.workers ? integer(values.workers, 'workers') : availableParallelism()
+  const runId = crypto.randomUUID()
+  const basisSignature = engine.analysisBasisSignature(scenario)
+  // The manifest records the overrides in force, as the browser's does; the run
+  // applies them from the manifest by the one rule every browser path applies.
+  const manifest = engine.createRunManifest(scenario, runId, basisSignature, {
+    overrides: values.overrides ? engine.activeOverrides(readOverrideSet(values.overrides), scenario) : [],
+    producer: 'cli',
+  })
+  const run = engine.applyOverrides(scenario, manifest.overrides)
 
   // The retained numbers: the same budget the browser worker applies, so a
   // record the CLI writes is one the browser could have produced.
-  engine.assertSummaryFits(scenario, engine.DEFAULT_BUDGET)
-  const perReplicate = engine.summaryNumbers(scenario) / 7
+  engine.assertSummaryFits(run, engine.DEFAULT_BUDGET)
+  const perReplicate = engine.summaryNumbers(run) / 7
   const budget = engine.DEFAULT_BUDGET.retainedNumbers
   if (perReplicate * replicates > budget) {
     throw new Error(
@@ -138,18 +159,17 @@ export async function main(argv) {
   }
 
   const t0 = performance.now()
-  const partials = await runPool(scenario, chunkRanges(replicates, workers), workers)
+  const partials = await runPool(run, chunkRanges(replicates, workers), workers)
   const merged = engine.mergePartials(partials)
   const wallMs = performance.now() - t0
-  const mc = engine.finishSummary(scenario, merged, { rule: 'replicates', at: replicates }, wallMs)
+  const mc = engine.finishSummary(run, merged, { rule: 'replicates', at: replicates }, wallMs)
 
-  const runId = crypto.randomUUID()
-  const basisSignature = engine.analysisBasisSignature(scenario)
+  // The record keeps the scenario as loaded; the manifest says what was written over it.
   const record = {
     id: runId,
     savedAt: new Date().toISOString(),
     label: values.label ?? 'cli',
-    manifest: engine.createRunManifest(scenario, runId, basisSignature, { producer: 'cli' }),
+    manifest,
     scenario,
     scenarioHash: basisSignature,
     mc,

@@ -29,7 +29,7 @@
       ],
       "sha256": "c2d2293dcf34b1717f431689fd8d2d05c18ee5bd59f4b9767334c38ae16fba19",
       "reviewedAt": "2026-09-15",
-      "note": "Reviewed the right drawer change in src/App.tsx; the README names no panel behavior or shortcut, so no text changes."
+      "note": "Rebase of Task 1 onto e35c0f1. Drawer session note stands: reviewed the right drawer change in src/App.tsx; the README names no panel behavior or shortcut, so no text changes."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "deb8fe72c873c0369caf0f1afbb2d80c8ed07912c0267d48352627d163fefeb4",
+      "sha256": "aca2a970d5e47bc757b75bba7754bbcc390f2b6883ac6448283384b373660281",
       "reviewedAt": "2026-09-15",
-      "note": "Reviewed the right drawer slice (App.tsx, Toolbar.tsx, storageKeys.ts, index.css, Toolbar test); the right panel section describes the drawer button, ], the saved open state and which actions reopen it."
+      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "45487b9162d738e0720a81fe13a25538c14dec62dedc0131fadc02cc282ec1c0",
+      "sha256": "05a4198cbaa2d1a3121b2addaccff70ac28a02efcb0182ac4dbd539001bdd0c1",
       "reviewedAt": "2026-09-15",
-      "note": "Reviewed the right drawer slice; the storage key list names RIGHT_PANEL_OPEN_KEY, the App.tsx map names the drawer, and the keyboard map names ] and the camera center shift."
+      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "411df39763f7c8983744ffb193dae20dd9f87feabad43165d88f3a6cd52d2a8c",
+      "sha256": "b57b0a7e2f71970b9def89adadb7eac6ddd0ab9c55ab7846ad6f11f4e26524a2",
       "reviewedAt": "2026-09-15",
-      "note": "Reviewed RIGHT_PANEL_OPEN_KEY and the two drawer tests in board-shell.e2e.mjs; updated the shell spec description."
+      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "689f2e54d356c9f693cb9d2019d849b9cb57a4dff586ba0d6734ed94586b48cb",
+      "sha256": "dd74cbd1e9db6ffb6f1c5263d4561b23925443426516c4ec06644f390b679284",
       "reviewedAt": "2026-09-15",
-      "note": "Reviewed the two drawer tests added to board-shell.e2e.mjs; the gate still runs npm run test:e2e unchanged, so no text changes."
+      "note": "Rebase of Task 1 (apply overrides) onto the right drawer slice e35c0f1; both reviews stand, the drawer note and the Task 1 note recorded in their branch commits."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "fb1fc72332e5bdf90c83b3d56666e4f4996e59a7fbeefed12cda51a2d04b3457",
+      "sha256": "075309cfeb681115a62ef27d07ba39727e7e7e03d5f19053910df5861fba53ed",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 pushed to origin/main 2026-09-15; tasking is gate follow-ups; shell-rework dirty paths named"
+      "note": "Position: main moved to e35c0f1 by the shell session; Task 1 gate numbers recorded"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -109,7 +109,7 @@
       ],
       "sha256": "386f254f7420a3ef3f4f4f4a9ea07fa756d496c8f9f051fd2b58255626948837",
       "reviewedAt": "2026-09-15",
-      "note": "Reviewed the drawer toggle and closed-drawer rules and the Declutter row alignment in index.css; the right panel paragraph describes the drawer."
+      "note": "Rebase of Task 1 onto e35c0f1. Drawer session note stands: reviewed the drawer toggle and closed-drawer rules and the Declutter row alignment in index.css; the right panel paragraph describes the drawer."
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",

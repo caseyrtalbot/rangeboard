@@ -207,6 +207,7 @@ export { kineticPk, missDistanceSigmaM } from '../playback/pk'
 // Library, priors and the parameter basis the loop samples from.
 export type { FidelityTier, LibraryField, Override, PhysicsSwitch } from '../model/libraryField'
 export { DATA_PACKAGE_VERSION } from '../model/libraryField'
+export { activeOverrides, applyOverrides } from '../model/applyOverrides'
 export { SEED_LIBRARY } from '../model/seedLibrary'
 export { initialLibrary, initialSystemPresets } from '../model/libraryLifecycle'
 export type { ClassPrior, ClassPriorTable, FieldPrior } from '../analysis/classPriors'

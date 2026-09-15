@@ -1,20 +1,14 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { buildAarSummary } from '../../../analysis/aar'
-import { engagementPicture } from '../../../analysis/impact'
 import { trialKpisAt } from '../../../analysis/liveStats'
 import { assessRunValidity } from '../../../analysis/runValidity'
 import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
-import { trialResultOf } from '../../../analysis/trialResult'
+import { trialForecast, trialResultOf } from '../../../analysis/trialResult'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { formatTime } from '../../../geometry/geo'
 import { saveRun } from '../../../io/runStore'
-import { createRunManifest } from '../../../model/runRecord'
-import type { RunRecord } from '../../../model/runRecord'
-import { newId } from '../../../model/types'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
-import { defaultBaselineLabel } from '../../../state/baseline'
-import { activeOverrides, useOverrides } from '../../../state/overrides'
 import { useStore } from '../../../state/store'
 import { selectRunComplete } from '../../../state/selectors'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
@@ -24,6 +18,7 @@ import {
 } from '../DebriefRecord'
 import type { RunHistorySave } from '../RunHistory'
 import { RunHistory } from '../RunHistory'
+import { runRecordOf } from '../mc'
 import { SystemStatus } from '../SystemStatus'
 import { trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow } from '../threatReadout'
@@ -99,8 +94,9 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
     const kpis = trialKpisAt(view, view.durationS)
     const rows = trialOutcomeRows(view)
     const systems = trialSystemTelemetryAt(view, view.durationS)
-    // Forecast is retained only for the labeled requirement record and export.
-    const forecast = engagementPicture(view.scenario)
+    // Forecast is retained only for the labeled requirement record and export;
+    // it runs the values the trial ran, the manifest's overrides included.
+    const forecast = trialForecast(view)
     const validity = view.validity ?? assessRunValidity(view.scenario, forecast.assessments)
     const aar = buildAarSummary(view.scenario, forecast.assessments, forecast.report, forecast.impacts)
     return { kpis, rows, systems, forecast, validity, aar }
@@ -182,23 +178,10 @@ function useRunHistorySave(): RunHistorySave {
     reason,
     run: () => {
       if (!summary) return Promise.reject(new Error('No finished ensemble to save.'))
-      const savedAt = new Date().toISOString()
       const sensitivity = mc.sensitivity.status === 'done' && mc.sensitivity.basisSignature === signature
         ? mc.sensitivity.summary : null
-      const record: RunRecord = {
-        id: newId('run'),
-        savedAt,
-        label: defaultBaselineLabel(scenario.name, savedAt),
-        // The record names the overrides in force at the save, as the trial manifest does at launch.
-        manifest: createRunManifest(scenario, mc.runId ?? playbackRunId, signature, {
-          overrides: activeOverrides(useOverrides.getState().overrides, scenario),
-        }),
-        scenario,
-        scenarioHash: signature,
-        mc: summary,
-        sensitivity,
-      }
-      return saveRun(record)
+      // The record names the overrides the run applied at launch, as the trial manifest does.
+      return saveRun(runRecordOf(scenario, mc, playbackRunId, signature, sensitivity))
     },
   }
 }

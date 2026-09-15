@@ -27,7 +27,8 @@ import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } f
 import { freshPlayback, IDLE_MC, IDLE_OPTIMIZE, IDLE_TRIAL } from './runState'
 import type { MorrisResult, PoolProgress, SobolResult } from '../playback/mcTypes'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
-import { EMPTY_SELECTION, installScenario } from './scenarioInstall'
+import { EMPTY_SELECTION, installScenario, runsForOverridesChange } from './scenarioInstall'
+import { useOverrides } from './overrides'
 import type { PlaybackCommand } from './playbackCommands'
 import type { PinnedBaseline } from './baseline'
 import { buildBaseline } from './baseline'
@@ -367,11 +368,20 @@ export interface Store {
   /** Sobol result of the current run; null clears it. */
   setSobolResult: (sobol: SobolResult | null) => void
 
+  /**
+   * Answer an override edit, which installs no scenario: a run whose applied
+   * overrides no longer match the values in force goes stale and a trial is
+   * dropped, as a configuration change does. The override store's subscription
+   * calls this; nothing else needs to.
+   */
+  overridesChanged: () => void
+
   // Baseline
   /**
-   * Keep the current scenario and its finished ensemble as the baseline. A no-op
-   * without a done summary for the current run and analysis basis. The label
-   * defaults to the scenario name and the pin time.
+   * Keep the current scenario and its finished ensemble as the baseline, with
+   * the overrides the ensemble applied. A no-op without a done summary for the
+   * current run and analysis basis. The label defaults to the scenario name and
+   * the pin time.
    */
   pinBaseline: (label?: string) => void
   clearBaseline: () => void
@@ -474,7 +484,7 @@ export const useStore = create<Store>()((set, get) => {
     const st = get()
     const { scenario, past, future, selection, playback, mc, trial, ui } = st
     const slices = { scenario, past, future, selection, playback, mc, trial, ringOverrides: ui.ringOverrides }
-    const next = installScenario(slices, op)
+    const next = installScenario(slices, op, useOverrides.getState().overrides)
     if (next === slices) return
     const { ringOverrides, ...rest } = next
     if (ringOverrides !== ui.ringOverrides) writeRingOverrides(ringOverrides)
@@ -1497,12 +1507,19 @@ export const useStore = create<Store>()((set, get) => {
 
     clearOptimize: () => set((st) => ({ mc: { ...st.mc, optimize: IDLE_OPTIMIZE, optimizeBest: null } })),
 
+    overridesChanged: () => {
+      const { scenario, playback, mc, trial } = get()
+      const slices = { scenario, playback, mc, trial }
+      const next = runsForOverridesChange(slices, useOverrides.getState().overrides)
+      if (next !== slices) set(next)
+    },
+
     pinBaseline: (label) => {
       const { scenario, mc, playback } = get()
       if (mc.status !== 'done' || mc.runId !== playback.runId || !mc.summary) return
       const scenarioHash = analysisBasisSignature(scenario)
       if (mc.basisSignature != null && mc.basisSignature !== scenarioHash) return
-      set({ baseline: buildBaseline(scenario, mc.summary, scenarioHash, label) })
+      set({ baseline: buildBaseline(scenario, mc.summary, scenarioHash, label, undefined, mc.overrides) })
     },
 
     clearBaseline: () => set({ baseline: null }),
@@ -1510,4 +1527,9 @@ export const useStore = create<Store>()((set, get) => {
     restoreBaseline: (baseline) => set({ baseline }),
 
   }
+})
+
+// An override edit installs no scenario; the runs answer through the store.
+useOverrides.subscribe((state, prev) => {
+  if (state.overrides !== prev.overrides) useStore.getState().overridesChanged()
 })

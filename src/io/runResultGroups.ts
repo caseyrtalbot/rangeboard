@@ -12,6 +12,7 @@ import { trialTrackStatesAt } from '../playback/trialTrackState'
 import type { TrialManifest, TrialJamDecision } from '../playback/trialTypes'
 import type { SensorScanObservation } from '../playback/detection'
 import { analysisBasisSignature } from '../state/analysisBasis'
+import { applyOverrides } from '../model/applyOverrides'
 
 export interface TrialResultGroup {
   basis: 'simulated-trial'
@@ -50,8 +51,9 @@ export function buildTrialResultGroup(trial: TrialResultView): TrialResultGroup 
   if (Object.values(counts).some(value => !Number.isInteger(value) || value < 0)) {
     throw new Error('Invalid trial counts')
   }
+  // The requirement validity reads the values the trial ran, the manifest's overrides included.
   const validity = view.validity ?? assessRunValidity({
-    ...view.scenario, runMode: 'monte-carlo', uncertainty: 'aleatory',
+    ...applyOverrides(view.scenario, view.manifest.overrides), runMode: 'monte-carlo', uncertainty: 'aleatory',
   }, view.assessments)
   const tracks = view.assessments.filter(a => a.status !== 'no-path')
   const warnings = tracks.map(a => a.warningS).filter((t): t is number => t != null && Number.isFinite(t))

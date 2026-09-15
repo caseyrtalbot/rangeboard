@@ -20,6 +20,7 @@ import { runSettings } from '../model/types'
 import { emptyScenario } from '../model/seed'
 import type { SeedAdoption } from '../model/libraryLifecycle'
 import { reconcileLibraryReport, reconcileSeeded } from '../model/libraryLifecycle'
+import type { Override } from '../model/libraryField'
 import { DATA_PACKAGE_VERSION } from '../model/libraryField'
 import { useStore } from '../state/store'
 import { analysisBasisSignature } from '../state/analysisBasis'
@@ -205,7 +206,23 @@ export function parseBaselineSave(raw: string): BaselineSave {
   return { schemaVersion: 1, baseline: {
     pinnedAt: b.pinnedAt as string, label: b.label as string, scenarioHash: b.scenarioHash as string,
     scenario: parseScenarioData(b.scenario), mc: validateMcSummary(b.mc, 'baseline.mc'),
+    overrides: baselineOverrides(b.overrides),
   } }
+}
+
+/** The overrides a pinned ensemble applied; a baseline pinned before the record carries none. */
+function baselineOverrides(value: unknown): Override[] {
+  if (value === undefined) return []
+  if (!Array.isArray(value)) throw new Error('baseline.overrides: expected an array')
+  return value.map((entry, i) => {
+    const path = `baseline.overrides[${i}]`
+    const o = objectAt(entry, path)
+    for (const key of ['modelId', 'field', 'reason', 'date'] as const) {
+      if (typeof o[key] !== 'string' || !o[key]) throw new Error(`${path}.${key}: expected a nonempty string`)
+    }
+    if (!Object.hasOwn(o, 'value')) throw new Error(`${path}.value: expected a value`)
+    return { modelId: o.modelId as string, field: o.field as string, value: o.value, reason: o.reason as string, date: o.date as string }
+  })
 }
 
 const BASELINE_ERROR = 'Baseline not saved'

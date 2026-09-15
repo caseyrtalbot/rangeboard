@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { engagementPicture } from '../../../analysis/impact'
 import { trialKpisAt } from '../../../analysis/liveStats'
 import { assessRunValidity } from '../../../analysis/runValidity'
+import { trialForecast } from '../../../analysis/trialResult'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { trialSeriesOf } from '../../../analysis/trialSeries'
 import { BandChart } from '../../../charts/BandChart'
@@ -105,7 +105,8 @@ function CompletedCompare({ view, mc, baseline }: { view: TrialResultView; mc: M
         lo: finite(salvoBand?.lo), hi: finite(salvoBand?.hi), unit: 'salvos',
         note: salvoBand ? 'One effector; its salvo interval is the aggregate interval.' : 'Aggregate interval unavailable; per-effector intervals cannot be added.' },
     ]
-    const forecast = engagementPicture(view.scenario)
+    // The forecast runs the values the trial ran, the manifest's overrides included.
+    const forecast = trialForecast(view)
     const validity = assessRunValidity(view.scenario, forecast.assessments, undefined, { assessments: view.assessments, kills: kpis.kills, mc })
     return { rows, population, trial: trialSeriesOf(view, view.durationS).kpi.find(series => series.id === 'kpi.expectedKills')!,
       findings: validity.findings.filter(finding => finding.id !== 'planning-envelope') }

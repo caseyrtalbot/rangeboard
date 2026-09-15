@@ -1,3 +1,4 @@
+import type { Override } from '../model/libraryField'
 import type { Scenario } from '../model/types'
 import { newId, runSettings } from '../model/types'
 import type {
@@ -39,7 +40,7 @@ import { loopEnd } from '../playback/sampling'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { createTrialManifest, sameManifest } from '../playback/trialTypes'
-import { activeOverrides, useOverrides } from './overrides'
+import { activeOverrides, applyOverrides, useOverrides } from './overrides'
 import type { AnalysisRunState, McState, PlaybackState, TrialState } from './runState'
 import { IDLE_SENSITIVITY, IDLE_SWEEP } from './runState'
 import { analysisBasisSignature } from './analysisBasis'
@@ -142,6 +143,17 @@ interface Launch<M> {
 const UNAVAILABLE = 'Web Worker unavailable'
 
 /**
+ * The overrides a launch applies: the list the run keeps as part of its
+ * identity, and the values written over the board scenario's library in the
+ * scenario the worker runs (`applyOverrides`). The board scenario, its basis
+ * signature and history keep the library values; a trial applies the same rule
+ * inside `runTrial` from the manifest it records them in.
+ */
+function launchOverrides(scenario: Scenario): Override[] {
+  return activeOverrides(useOverrides.getState().overrides, scenario)
+}
+
+/**
  * Request one analysis for the current scenario and run. Publishes the pending
  * state, then starts the worker; the environment without a Worker and every
  * synchronous startup failure end the request through its sink. Nothing is
@@ -224,10 +236,11 @@ function mcLaunch(
   const settings = runSettings(st.scenario)
   if (settings.runMode === 'deterministic') return null
   const runId = st.playback.runId
+  const overrides = launchOverrides(st.scenario)
   return {
     pending: { mc: {
       // The total is where the loop ends: the cap under a half-width target.
-      ...pendingRun(st, loopEnd(settings)),
+      ...pendingRun(st, loopEnd(settings), overrides),
       // A new replicate run starts with no pool progress. The Morris and Sobol
       // results describe the same board until its basis changes, so they stay.
       pool: null,
@@ -240,7 +253,7 @@ function mcLaunch(
       optimize: st.mc.optimize,
       optimizeBest: st.mc.optimizeBest,
     } },
-    start: (deliver) => startPooledRun(st.scenario, runId, deliver, onPool),
+    start: (deliver) => startPooledRun(applyOverrides(st.scenario, overrides), runId, deliver, onPool),
     unavailable: { type: 'error', runId, message: UNAVAILABLE },
   }
 }
@@ -256,17 +269,19 @@ function sensitivityLaunch(
   // uncertainFields would pull attrition.ts into the store. A sweep on the
   // shared slot is replaced; its pending state goes with it. A new sensitivity
   // run clears the Morris and Sobol results of the last one.
+  const overrides = launchOverrides(st.scenario)
   const pending: AnalysisPatch = { mc: {
-    ...st.mc, sensitivity: pendingRun(st, 0), sweep: replaced(st.mc.sweep, IDLE_SWEEP), morris: null, sobol: null,
+    ...st.mc, sensitivity: pendingRun(st, 0, overrides), sweep: replaced(st.mc.sweep, IDLE_SWEEP), morris: null, sobol: null,
   } }
+  const scenario = applyOverrides(st.scenario, overrides)
   if (sensitivityDepth === 'quick') {
     return {
       pending,
-      start: (deliver) => startSensitivity(st.scenario, runId, deliver),
+      start: (deliver) => startSensitivity(scenario, runId, deliver),
       unavailable: { type: 'sens-error', runId, message: UNAVAILABLE },
     }
   }
-  const request: McMorrisRequest = { type: 'morris', runId, scenario: st.scenario, response }
+  const request: McMorrisRequest = { type: 'morris', runId, scenario, response }
   return {
     pending,
     start: (deliver) => startMorris(request, deliver),
@@ -293,7 +308,10 @@ export function requestSobol(
     return
   }
   const runId = st.playback.runId
-  const request: McSobolRequest = { type: 'sobol', runId, scenario: st.scenario, kept, response: morris.response }
+  // The stage continues the screening's run, so it applies the overrides that run kept.
+  const request: McSobolRequest = {
+    type: 'sobol', runId, scenario: applyOverrides(st.scenario, sens.overrides), kept, response: morris.response,
+  }
   launch<SensitivityMessage>({
     // The run stays live on its identity; the evaluation count starts over.
     pending: { mc: { ...st.mc, sensitivity: { ...sens, progress: 0, total: 0 } } },
@@ -324,6 +342,7 @@ function optimizeLaunch(st: AnalysisSlices, spec: OptimizeSpec): Launch<Optimize
   const bounds = spec.bounds ?? rangeBounds(st.scenario)
   if (bounds == null || spec.movableIds.length === 0) return null
   const runId = st.playback.runId
+  const overrides = launchOverrides(st.scenario)
   const budget: OptimizeBudget = {
     evaluations: spec.evaluations ?? OPTIMIZE_DEFAULTS.evaluations,
     replicates: spec.replicates ?? OPTIMIZE_DEFAULTS.replicates,
@@ -333,7 +352,7 @@ function optimizeLaunch(st: AnalysisSlices, spec: OptimizeSpec): Launch<Optimize
   const request: OptimizeRequest = {
     type: 'optimize',
     runId,
-    scenario: st.scenario,
+    scenario: applyOverrides(st.scenario, overrides),
     objective: spec.objective,
     movableIds: spec.movableIds,
     bounds,
@@ -341,7 +360,7 @@ function optimizeLaunch(st: AnalysisSlices, spec: OptimizeSpec): Launch<Optimize
   }
   return {
     // A new run starts with no incumbent; the first progress message brings one.
-    pending: { mc: { ...st.mc, optimize: pendingRun(st, budget.evaluations), optimizeBest: null } },
+    pending: { mc: { ...st.mc, optimize: pendingRun(st, budget.evaluations, overrides), optimizeBest: null } },
     start: (deliver) => startOptimize(request, deliver),
     unavailable: { type: 'optimize-error', runId, message: UNAVAILABLE },
   }
@@ -355,24 +374,25 @@ function replaced<S extends AnalysisRunState<unknown>>(run: S, idle: S): S {
 function sweepLaunch(st: AnalysisSlices, spec: SweepSpec): Launch<McSweepMessage> | null {
   if (runSettings(st.scenario).runMode === 'deterministic') return null
   const runId = st.playback.runId
+  const overrides = launchOverrides(st.scenario)
   const request: McSweepRequest = {
     type: 'sweep',
     runId,
-    scenario: st.scenario,
+    scenario: applyOverrides(st.scenario, overrides),
     factors: spec.factors,
     replicatesPerCell: spec.replicatesPerCell ?? SWEEP_DEFAULTS.replicatesPerCell,
     responses: spec.responses ?? SWEEP_DEFAULTS.responses,
   }
   const cells = spec.factors.reduce((n, f) => n * f.values.length, 1)
   return {
-    pending: { mc: { ...st.mc, sweep: pendingRun(st, cells), sensitivity: replaced(st.mc.sensitivity, IDLE_SENSITIVITY) } },
+    pending: { mc: { ...st.mc, sweep: pendingRun(st, cells, overrides), sensitivity: replaced(st.mc.sensitivity, IDLE_SENSITIVITY) } },
     start: (deliver) => startSweep(request, deliver),
     unavailable: { type: 'sweep-error', runId, message: UNAVAILABLE },
   }
 }
 
-/** A run identified by the current playback run and analysis basis, with nothing done yet. */
-function pendingRun<S>(st: AnalysisSlices, total: number): AnalysisRunState<S> {
+/** A run identified by the current playback run, analysis basis and applied overrides, with nothing done yet. */
+function pendingRun<S>(st: AnalysisSlices, total: number, overrides: Override[]): AnalysisRunState<S> {
   return {
     runId: st.playback.runId,
     status: 'running',
@@ -380,6 +400,7 @@ function pendingRun<S>(st: AnalysisSlices, total: number): AnalysisRunState<S> {
     total,
     summary: null,
     basisSignature: analysisBasisSignature(st.scenario),
+    overrides,
     error: null,
   }
 }

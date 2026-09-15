@@ -1,3 +1,4 @@
+import type { Override } from '../model/libraryField'
 import type { Scenario } from '../model/types'
 import type { BandSeries, IntervalMethod, McSummary, Stat, StopRule } from '../playback/mcRun'
 import { invalid, objectAt } from '../io/runtimeValidation'
@@ -15,6 +16,8 @@ export interface PinnedBaseline {
   mc: McSummary
   /** `analysisBasisSignature` of `scenario` at the pin. */
   scenarioHash: string
+  /** The overrides the ensemble applied over the scenario's library (`McState.overrides`). */
+  overrides: Override[]
 }
 
 /** Scenario name and local pin time, the default label. */
@@ -29,8 +32,9 @@ export function buildBaseline(
   scenarioHash: string,
   label?: string,
   pinnedAt = new Date().toISOString(),
+  overrides: Override[] = [],
 ): PinnedBaseline {
-  return { pinnedAt, label: label?.trim() || defaultBaselineLabel(scenario.name, pinnedAt), scenario, mc, scenarioHash }
+  return { pinnedAt, label: label?.trim() || defaultBaselineLabel(scenario.name, pinnedAt), scenario, mc, scenarioHash, overrides }
 }
 
 const INTERVALS: readonly IntervalMethod[] = ['t', 'wilson', 'rule-of-three', 'none']

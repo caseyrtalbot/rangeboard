@@ -10,6 +10,9 @@ import type { TrialJamDecision, TrialManifest, TrialResult } from '../playback/t
 import { sameManifest } from '../playback/trialTypes'
 import { TRIAL_DRAW_POLICY_VERSION, TRIAL_ENGINE_REVISION } from '../playback/trialTypes'
 import type { RunValidityAssessment } from './runValidity'
+import type { EngagementPicture } from './impact'
+import { engagementPicture } from './impact'
+import { applyOverrides } from '../model/applyOverrides'
 
 export interface TrialResultView {
   scenario: Scenario
@@ -215,4 +218,14 @@ export function trialSnapshotAt(view: TrialResultView, horizonS: number): TrialS
     counts, tracksRendered: index.tracks > 0, reportedLeakers: view.hasActiveAsset ? counts.arrivedUndefeated : null,
     ...(complete ? { summary: { status: 'ready' as const, counts, validity: view.validity } } : {}),
   }
+}
+
+/**
+ * The deterministic forecast a trial is compared with: the engagement picture
+ * of the captured scenario with the manifest's overrides applied, the values
+ * the trial ran on. With no override this is the picture of the captured
+ * scenario itself, the same object `applyOverrides` returns.
+ */
+export function trialForecast(view: TrialResultView): EngagementPicture {
+  return engagementPicture(applyOverrides(view.scenario, view.manifest.overrides))
 }
