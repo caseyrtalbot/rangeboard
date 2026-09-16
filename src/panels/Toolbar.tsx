@@ -14,6 +14,15 @@ import type { BoundaryType, EnvironmentSpec, Roe, Scenario } from '../model/type
 import { emptyScenario } from '../model/seed'
 import { exportScenario, importScenarioFile, scenarioHasWork } from '../io/persist'
 import { StorageMenu } from '../ui/StorageMenu'
+import type { BoardPhase } from '../state/runState'
+import { formatRunLabel } from '../state/labels'
+import { nextTabIndex } from '../ui/rovingTabs'
+
+const PHASES: { id: BoardPhase; label: string }[] = [
+  { id: 'prepare', label: 'Prepare' },
+  { id: 'execute', label: 'Execute' },
+  { id: 'analyze', label: 'Analyze' },
+]
 
 const SettingsPanel = lazy(() => import('./SettingsPanel').then((module) => ({ default: module.SettingsPanel })))
 
@@ -201,12 +210,25 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
 }
 
 /**
- * The top bar. Memoized with no props, so an `App` render never reaches it; it
- * subscribes to the scenario fields it shows, never to the whole scenario.
+ * The top bar: identity and file actions on the left, the lifecycle tablist in the
+ * centre, run status and the view controls on the right. Memoized and given only
+ * primitives and stable handlers, so an `App` render never reaches it; it subscribes
+ * to the scenario fields it shows, never to the whole scenario.
  */
-export const Toolbar = memo(function Toolbar({ drawerOpen, onToggleDrawer }: {
+export const Toolbar = memo(function Toolbar({
+  drawerOpen,
+  onToggleDrawer,
+  boardPhase,
+  runSeq,
+  runPhase,
+  onOpenPhase,
+}: {
   drawerOpen: boolean
   onToggleDrawer: () => void
+  boardPhase: BoardPhase
+  runSeq: number
+  runPhase: string
+  onOpenPhase: (phase: BoardPhase) => void
 }) {
   const scenarioName = useStore((s) => s.scenario.name)
   const environment = useStore((s) => s.scenario.environment)
@@ -219,60 +241,87 @@ export const Toolbar = memo(function Toolbar({ drawerOpen, onToggleDrawer }: {
 
   return (
     <header className="toolbar">
-      <div className="brand">Rangeboard</div>
-      <input
-        className="scenario-name"
-        value={scenarioName}
-        onChange={(e) => setScenarioName(e.target.value)}
-        aria-label="Scenario name"
-        title="Scenario name"
-      />
-      <OverflowMenu />
-
-      <div className="spacer" />
-
-      <SettingsButton />
-      <StorageMenu />
-
-      <div className="status-pills" aria-label="Status">
-        <RoeMenu />
-        {threatWez && (
-          <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
-            WEZ On
-          </State>
-        )}
-        {derates.length > 0 && (
-          <State tone="warning" title={`Sensor ranges derated: ${derates.join(', ')}`}>
-            Env Derate
-          </State>
-        )}
-        {spawnWarning && (
-          <State tone="warning" title={spawnWarning.hint}>
-            Spawn In Ring {spawnWarning.count}
-          </State>
-        )}
-        {save.error != null ? (
-          <State tone="critical" title={save.error} role="alert">
-            Save failed
-          </State>
-        ) : (
-          save.lastAutosaveAt != null && (
-            <State tone="inactive" title="Last autosave to browser storage">
-              Saved {clockHHMM(save.lastAutosaveAt)}
-            </State>
-          )
-        )}
+      <div className="toolbar-left">
+        <div className="brand">Rangeboard</div>
+        <input
+          className="scenario-name"
+          value={scenarioName}
+          onChange={(e) => setScenarioName(e.target.value)}
+          aria-label="Scenario name"
+          title="Scenario name"
+        />
+        <OverflowMenu />
       </div>
 
-      {/* The one drawer control. The filled column marks the drawer as open. */}
-      <button id="drawer-toggle" type="button" className="tb-menu tb-drawer-toggle"
-        aria-controls="board-workspace-panel" aria-expanded={drawerOpen} aria-label="Workspace drawer"
-        title={`${drawerOpen ? 'Close' : 'Open'} drawer (])`} onClick={onToggleDrawer}>
-        <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
-          <rect x="0.5" y="0.5" width="13" height="11" fill="none" stroke="currentColor" />
-          <rect x="8.5" y="0.5" width="5" height="11" fill={drawerOpen ? 'currentColor' : 'none'} stroke="currentColor" />
-        </svg>
-      </button>
+      <nav className="board-phases" role="tablist" aria-label="Lifecycle views">
+        {PHASES.map((phase, index) => (
+          <button
+            key={phase.id}
+            id={`board-phase-${phase.id}`}
+            role="tab"
+            aria-selected={boardPhase === phase.id}
+            aria-controls="board-workspace"
+            tabIndex={boardPhase === phase.id ? 0 : -1}
+            onClick={() => onOpenPhase(phase.id)}
+            onKeyDown={(event) => {
+              const to = nextTabIndex(event.key, index, PHASES.length)
+              if (to < 0) return
+              event.preventDefault()
+              onOpenPhase(PHASES[to].id)
+              document.getElementById(`board-phase-${PHASES[to].id}`)?.focus()
+            }}
+          >
+            <span className="num">0{index + 1}</span> {phase.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="toolbar-right">
+        <span className="board-run-context"><span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}</span>
+
+        <SettingsButton />
+        <StorageMenu />
+
+        <div className="status-pills" aria-label="Status">
+          <RoeMenu />
+          {threatWez && (
+            <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
+              WEZ On
+            </State>
+          )}
+          {derates.length > 0 && (
+            <State tone="warning" title={`Sensor ranges derated: ${derates.join(', ')}`}>
+              Env Derate
+            </State>
+          )}
+          {spawnWarning && (
+            <State tone="warning" title={spawnWarning.hint}>
+              Spawn In Ring {spawnWarning.count}
+            </State>
+          )}
+          {save.error != null ? (
+            <State tone="critical" title={save.error} role="alert">
+              Save failed
+            </State>
+          ) : (
+            save.lastAutosaveAt != null && (
+              <State tone="inactive" title="Last autosave to browser storage">
+                Saved {clockHHMM(save.lastAutosaveAt)}
+              </State>
+            )
+          )}
+        </div>
+
+        {/* The one drawer control. The filled column marks the drawer as open. */}
+        <button id="drawer-toggle" type="button" className="tb-menu tb-drawer-toggle"
+          aria-controls="board-workspace-panel" aria-expanded={drawerOpen} aria-label="Workspace drawer"
+          title={`${drawerOpen ? 'Close' : 'Open'} drawer (])`} onClick={onToggleDrawer}>
+          <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="13" height="11" fill="none" stroke="currentColor" />
+            <rect x="8.5" y="0.5" width="5" height="11" fill={drawerOpen ? 'currentColor' : 'none'} stroke="currentColor" />
+          </svg>
+        </button>
+      </div>
     </header>
   )
 })

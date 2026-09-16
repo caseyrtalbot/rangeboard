@@ -496,7 +496,9 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                store-bound hook FootprintLayer and HudLayer share),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
                style source)
-src/panels/    Toolbar, ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
+src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, the lifecycle tabs, run
+               status, settings, storage, status pills, drawer toggle),
+               ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
                LibraryEditor, settings/ (RunTab, SystemsTab, PhysicsTab and
                CalibrateDialog), AnalysisPanel (+ analysis/screens/ for the

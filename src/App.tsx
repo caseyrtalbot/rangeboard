@@ -17,7 +17,6 @@ import type { EntityWorkspaceSection } from './panels/EntityWorkspace'
 import { LibraryEditor } from './panels/LibraryEditor'
 import { BoardPreparation } from './panels/BoardPreparation'
 import type { AnalysisScreen } from './panels/analysis/screens/navigation'
-import { formatRunLabel } from './state/labels'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
 import { toggleAnalysisRun } from './playback/runSession'
@@ -53,12 +52,6 @@ const RIGHT_CLOSE_DRAG = 60
 function savedRightOpen(): boolean {
   return readSetting(RIGHT_PANEL_OPEN_KEY) !== '0'
 }
-
-const PHASES: { id: BoardPhase; label: string }[] = [
-  { id: 'prepare', label: 'Prepare' },
-  { id: 'execute', label: 'Execute' },
-  { id: 'analyze', label: 'Analyze' },
-]
 
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'analysis', label: 'Overview' },
@@ -100,50 +93,6 @@ function selectSelectionKey(s: Store): string {
   return s.selection.entityIds.join('|')
 }
 
-/**
- * The lifecycle tablist (ARIA tabs, roving tabindex). Memoized: `App` re-renders on
- * every selection change and this chrome reads none of it.
- */
-const LifecycleNav = memo(function LifecycleNav({
-  boardPhase,
-  runSeq,
-  runPhase,
-  onOpenPhase,
-}: {
-  boardPhase: BoardPhase
-  runSeq: number
-  runPhase: string
-  onOpenPhase: (phase: BoardPhase) => void
-}) {
-  return (
-    <nav className="board-lifecycle" aria-label="Board lifecycle">
-      <div className="board-phases" role="tablist" aria-label="Lifecycle views">
-        {PHASES.map((phase, index) => (
-          <button
-            key={phase.id}
-            id={`board-phase-${phase.id}`}
-            role="tab"
-            aria-selected={boardPhase === phase.id}
-            aria-controls="board-workspace"
-            tabIndex={boardPhase === phase.id ? 0 : -1}
-            onClick={() => onOpenPhase(phase.id)}
-            onKeyDown={(event) => {
-              const to = nextTabIndex(event.key, index, PHASES.length)
-              if (to < 0) return
-              event.preventDefault()
-              onOpenPhase(PHASES[to].id)
-              document.getElementById(`board-phase-${PHASES[to].id}`)?.focus()
-            }}
-          >
-            <span className="num">0{index + 1}</span> {phase.label}
-          </button>
-        ))}
-      </div>
-      <span className="board-run-context"><span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}</span>
-    </nav>
-  )
-})
-
 /** The board resource rail. Memoized: every handler it takes is stable. */
 const ResourceRail = memo(function ResourceRail({
   libraryOpen,
@@ -171,7 +120,8 @@ const ResourceRail = memo(function ResourceRail({
   )
 })
 
-/** The right-panel tab bar (ARIA tabs). Memoized for the same reason as `LifecycleNav`. */
+/** The right-panel tab bar (ARIA tabs). Memoized: `App` re-renders on every selection
+ * change and this chrome reads none of it. */
 const PanelTabs = memo(function PanelTabs({
   activeTab,
   setRightTab,
@@ -726,8 +676,8 @@ export default function App() {
 
   const board = (
     <div className="app board-app" data-board-phase={boardPhase}>
-      <Toolbar drawerOpen={rightOpen} onToggleDrawer={toggleRight} />
-      <LifecycleNav boardPhase={boardPhase} runSeq={runSeq} runPhase={runPhase} onOpenPhase={openPhase} />
+      <Toolbar drawerOpen={rightOpen} onToggleDrawer={toggleRight}
+        boardPhase={boardPhase} runSeq={runSeq} runPhase={runPhase} onOpenPhase={openPhase} />
       <div className="main" id="board-workspace" role="tabpanel" aria-labelledby={`board-phase-${boardPhase}`}>
 
         <ResourceRail

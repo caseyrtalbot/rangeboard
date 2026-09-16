@@ -237,3 +237,21 @@ test('playback bar: the engagement open state is restored from storage', async (
   assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'true')
   assert.deepEqual(errors, [])
 })
+
+test('header: the lifecycle tabs and run status sit in the 40 px header and no phase row renders', async (t) => {
+  const { page, errors } = await open(t)
+  const bar = await page.locator('.toolbar').boundingBox()
+  assert.equal(Math.round(bar.height), 40, 'the header is 40 px high')
+  const overflow = await page.evaluate(() => {
+    const el = document.querySelector('.toolbar')
+    return el.scrollWidth - el.clientWidth
+  })
+  assert.equal(overflow, 0, `the header does not scroll sideways: ${overflow}`)
+  assert.equal(await has(page, '.toolbar [role="tablist"][aria-label="Lifecycle views"]'), true, 'the tablist is in the header')
+  const runText = await page.textContent('.toolbar .board-run-context')
+  assert.ok(runText.startsWith('RUN-'), `the run status is in the header: ${runText}`)
+  assert.equal(await has(page, '.board-lifecycle'), false, 'no phase row renders')
+  await page.click('.toolbar #board-phase-execute')
+  await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+  assert.deepEqual(errors, [])
+})

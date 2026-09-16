@@ -23,7 +23,9 @@ describe('Board toolbar grouping', () => {
   })
 
   it('keeps Board identity, scenario, file trigger and status in the top bar', () => {
-    const html = render(<Toolbar drawerOpen onToggleDrawer={() => {}} />)
+    const html = render(
+      <Toolbar drawerOpen onToggleDrawer={() => {}} boardPhase="prepare" runSeq={1} runPhase="idle" onOpenPhase={() => {}} />,
+    )
 
     expect(html).toContain('Rangeboard')
     expect(html).toContain('aria-label="Scenario name"')
@@ -34,6 +36,14 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('aria-controls="board-workspace-panel" aria-expanded="true" aria-label="Workspace drawer"')
     expect(html).not.toContain('aria-label="Board tools"')
     expect(html).not.toContain('aria-label="Theme"')
+
+    // The lifecycle tabs and the run status moved into the bar; the phase row is gone.
+    expect(html).toContain('role="tablist" aria-label="Lifecycle views"')
+    expect(html).toContain('id="board-phase-prepare" role="tab" aria-selected="true"')
+    expect(html).toContain('class="board-run-context"')
+    const order = ['Rangeboard', 'Lifecycle views', 'board-run-context', 'Workspace drawer'].map((mark) => html.indexOf(mark))
+    expect(order.every((position) => position >= 0)).toBe(true)
+    expect(order).toEqual([...order].sort((a, b) => a - b))
   })
 
   it('orders canvas tools before range setup, view and history', () => {

@@ -10,7 +10,8 @@ maps changes to checks.
 
 ## Board features
 
-The Board shell provides Prepare, Execute and Analyze lifecycle views. These are local
+The Board shell provides Prepare, Execute and Analyze lifecycle views. The three tabs and
+the run status sit in the header. There is no separate phase row. These are local
 navigation choices stored only for the session: changing a view preserves the playback
 cursor, observed horizon and analysis basis. Execute starts with engagement layers and
 retains its own session-only layer override; Prepare and Analyze share the saved layers.

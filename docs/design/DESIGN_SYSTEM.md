@@ -90,7 +90,8 @@ axis and rows, and the KPI sub-line. The Board right panel defaults to 408 px (2
 44 percent of the viewport); an existing saved width is preserved. The right panel is a
 drawer: the drawer button at the right end of the top bar, or `]`, closes and opens it,
 and a resize drag 60 px past the minimum also closes it. A closed drawer gives its width to
-the canvas and holds the board center. A selection does not reopen it. Its lifecycle and
+the canvas and holds the board center. A selection does not reopen it. The header is 40 px high. It carries the lifecycle tabs in
+its center and the run status at the start of its right group; the phase row is gone. Its lifecycle and
 analysis navigation sit outside the scroll body. Labels wrap and no panel text may be inaccessible.
 
 ## 4. Components

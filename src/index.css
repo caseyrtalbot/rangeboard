@@ -331,19 +331,36 @@ body,
 
 /* ---------- Toolbar ---------- */
 
-/* The board bar holds one row at 1440px. Secondary controls sit
-   behind the View and overflow menus, so the bar must never wrap. */
+/* The board bar holds one 40 px row at 1400px. Three columns: identity, the
+   lifecycle tablist, the view controls. The two outer tracks share the space
+   evenly, so the tablist sits at the bar centre. The right track never falls
+   below its content, and the left track gives width back first, so a long
+   scenario name shrinks instead of the controls colliding or being hidden. */
 .toolbar {
+  display: grid;
+  grid-template-columns: minmax(min-content, 1fr) auto minmax(max-content, 1fr);
+  align-items: stretch;
+  height: 40px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar-left,
+.toolbar-right {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 10px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
-  flex-wrap: nowrap;
+  min-width: 0;
 }
 
-.toolbar > * {
+.toolbar-right {
+  justify-content: flex-end;
+}
+
+.toolbar-left > *,
+.toolbar-right > * {
   flex: 0 0 auto;
 }
 
@@ -354,10 +371,14 @@ body,
   font-weight: var(--type-title-weight);
 }
 
-/* Borderless inline name. A rule appears on hover and on focus only. */
-.scenario-name {
+/* Borderless inline name. A rule appears on hover and on focus only. It is the
+   one shrinking item in the left group, so a narrow bar never hides a control. */
+.toolbar-left > .scenario-name {
   flex: 0 1 184px;
   min-width: 88px;
+}
+
+.scenario-name {
   padding: 4px 2px;
   background: transparent;
   border: 0;
@@ -374,15 +395,6 @@ body,
 .scenario-name:focus-visible {
   border-bottom-color: var(--accent);
   outline: none;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.toolbar > .spacer {
-  flex: 1 1 0;
-  min-width: 8px;
 }
 
 button {
@@ -4007,26 +4019,18 @@ input[type='number'] {
   font-size: var(--type-dense-size);
 }
 
-/* Board lifecycle chrome stays outside the independently scrolling panel. */
-.board-lifecycle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0 var(--panel-pad);
-  min-height: 48px;
-  flex: 0 0 auto;
-  background: var(--surface-panel);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
+/* The lifecycle tabs sit in the centre column of the bar. Each button fills the
+   bar height, so the selected underline lands on the bar's bottom edge. */
 .board-phases {
   display: flex;
   align-self: stretch;
+  justify-self: center;
   gap: var(--space-4);
 }
 
 .board-phases button {
+  align-self: stretch;
+  padding: 0 var(--space-3);
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
@@ -4045,7 +4049,9 @@ input[type='number'] {
 
 .board-run-context {
   color: var(--text-secondary);
+  font-family: var(--font-mono);
   font-size: var(--type-meta-size);
+  white-space: nowrap;
 }
 
 .board-panel-heading {

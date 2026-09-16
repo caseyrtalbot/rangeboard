@@ -262,7 +262,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   keeps a closed drawer closed, and that a resize drag past the minimum closes it. Two
   playback-bar tests open and close the engagement strip from the Engagement toggle, check
   the 36 px bar height, the strip position above the bar, the canvas height change and the
-  saved open state, and check that the saved state restores on reload. The
+  saved open state, and check that the saved state restores on reload. One header test
+  checks the 40 px header, the lifecycle tablist and run status inside it, and that no
+  phase row renders. The
   debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.

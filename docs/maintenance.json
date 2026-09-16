@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "c1839becaf7ae1b14aee600efeded1db4e27b1e717389e2fd92a3b925e893aa8",
+      "sha256": "a30fd964b11cf7d58fcd9578f6e0d4682e38f9fd256f42b4da342165e77cc6a5",
       "reviewedAt": "2026-09-15",
-      "note": "Slice 2 merged after Task 1: re-read src changes (playback bar toggle, App-held strip flag); no text change needed."
+      "note": "Read README.md in full against the header rework. It names no toolbar, lifecycle nav or phase row, so no text change is needed."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "6d20a2fb78397447c14911c0a768748cbfde2e1842383447b1f6fb300108caac",
+      "sha256": "704b6a8cb4fe7efea392d209ef14f28e003bfdee257053d4dd23b6c51817c169",
       "reviewedAt": "2026-09-15",
-      "note": "Slice 2 merged after Task 1; the right panel section names the Engagement toggle, the 36 px bar and the saved open state."
+      "note": "Re-read the header rules in src/index.css after widening the .toolbar right grid track so the bar never overlaps at 1400 px. The Board features text already states that the tabs and run status sit in the header, so no further text change is needed."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "2cf434d86ec8562164b414693f2c23728ac65289436208e76e2a9a20bc9664b5",
+      "sha256": "1c22a5ba581ce01fd9c15416bc85d1b00040ef8b01227515cce534029354eb3b",
       "reviewedAt": "2026-09-15",
-      "note": "Slice 2 merged after Task 1; the TimelineBar map entry names the Engagement toggle and the App-held open flag; ENGSTRIP_OPEN_KEY unchanged."
+      "note": "Re-read the .toolbar, .toolbar-left/.toolbar-right and .board-phases rules in src/index.css after the grid track fix. The src/panels Toolbar map entry lists the header contents and stays accurate."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "3fa17b5a8da09be287cb36997d85825f7ceb6c478c9afa07256022b2a7dfd66a",
+      "sha256": "81279a459296f8f51a2089d401c6b5110f8880dcc4de1a4df72322a2d6050837",
       "reviewedAt": "2026-09-15",
-      "note": "Slice 2 merged after Task 1; the e2e paragraph names the two playback-bar tests."
+      "note": "Read scripts/e2e/board-shell.e2e.mjs after adding the header test; recorded the new header check for the 40 px bar, the lifecycle tablist, the run status and the absent phase row."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "9524c87e366a11704a83cfee2d4ca2e875384e9105961131b1bb0b4971e8e1bd",
+      "sha256": "e8d8b929fb676f3870fe7951af14b503bd67671fe585dbfed2753c71ce7dc621",
       "reviewedAt": "2026-09-15",
-      "note": "Slice 2 merged after Task 1: re-read src changes (playback bar toggle, App-held strip flag); no text change needed."
+      "note": "Read docs/WORKFLOW.md in full against the header rework. It covers process, the CI gate and documentation maintenance only, names no board chrome, so no text change is needed."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "4bf615c9238008b6efb5ab3dbb7da6b60787f21208913abec7ba913af56cfa75",
+      "sha256": "775fede4d6a5bb3ed329e608244c52f0233f2b69bb68333a2355cb1cecd99624",
       "reviewedAt": "2026-09-15",
-      "note": "Slice 2 merged after Task 1: re-read src changes (playback bar toggle, App-held strip flag); no text change needed."
+      "note": "Re-read src/index.css .toolbar after the grid track fix: the outer tracks share space evenly so the tabs stay centred, the right track never falls below its content and the scenario name shrinks first. The 40 px header text stays accurate."
     },
     {
       "document": "docs/IMPLEMENTATION_PLAN.md",
