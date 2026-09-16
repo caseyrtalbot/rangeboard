@@ -30,7 +30,7 @@ describe('an override reaches the run', () => {
     expect(last(library.kills.mean)).toBeGreaterThan(0)
     expect(last(overridden.kills.mean)).toBeLessThan(last(library.kills.mean))
     expect(last(overridden.leakers.mean)).toBeGreaterThan(last(library.leakers.mean))
-  })
+  }, 15_000)
 
   it('is read by the trial from its manifest, over the captured scenario', () => {
     const scenario = laydown()

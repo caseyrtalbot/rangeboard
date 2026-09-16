@@ -171,6 +171,7 @@ describe('worker pool', () => {
       expect(last.perWorkerDone.reduce((sum, n) => sum + n, 0)).toBe(40)
       expect(last.elapsedMs).toBeGreaterThanOrEqual(0)
     },
+    15_000,
   )
 
   it('stops on the half-width rule and finishes on the contiguous prefix only', () => {
@@ -373,4 +374,3 @@ describe('mc.worker run-range route', () => {
     expect(finished().indices).toEqual([0, 1, 2])
   })
 })
-

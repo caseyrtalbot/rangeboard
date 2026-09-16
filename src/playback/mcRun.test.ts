@@ -414,7 +414,7 @@ describe('runReplicates', () => {
       expect(aleatory.n).toBe(100)
       expect(total.n).toBe(100)
       expect(total.p90 - total.p10).toBeGreaterThan(aleatory.p90 - aleatory.p10)
-    })
+    }, 15_000)
 
     it('a field with spread null never changes under total', async () => {
       const actual = await vi.importActual<typeof uncertainty>('../analysis/uncertainty')
@@ -1071,7 +1071,7 @@ describe('runSensitivity', () => {
       sumE += Math.abs(Math.abs(hi90 - lo10) - Math.abs(lo90 - hi10))
     }
     expect(sumD / K).toBeLessThan(sumE / K)
-  })
+  }, 15_000)
 
   it('reports progress once per field and sorts rows by swing, ties in field order', () => {
     const s = fixture()

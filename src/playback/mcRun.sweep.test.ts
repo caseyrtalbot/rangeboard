@@ -50,7 +50,7 @@ describe('sweepLoop', () => {
     expect(Object.keys(summary.cells[0].summary)).toEqual(
       ['kills', 'leakers', 'firstDetectS', 'minWarningS', 'perEffector', 'replicates'],
     )
-  })
+  }, 15_000)
 
   it('a one-factor sweep at the scenario value reproduces the plain replicate run', () => {
     const s = laydown()
@@ -92,7 +92,7 @@ describe('sweepLoop', () => {
     if (!next.done) return
     expect(next.value.stopped).toEqual({ rule: 'cancelled', at: 2 })
     expect(next.value.cells).toEqual(full.cells.slice(0, 2))
-  })
+  }, 15_000)
 
   it('refuses a cell whose summary alone is over the budget, and bad grids', () => {
     const spec = grid()

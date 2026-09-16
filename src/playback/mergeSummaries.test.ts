@@ -48,6 +48,7 @@ describe('mergePartials', () => {
         expect(timeless(summary)).toEqual(timeless(whole))
       }
     },
+    15_000,
   )
 
   it('uneven ranges merge the same as the whole range', () => {

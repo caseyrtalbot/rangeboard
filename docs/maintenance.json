@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "cc58ebe919701fd90f986c7ca14d6fbb5d52e78ff928612d5ee18ed057d113ad",
+      "sha256": "20adb8f7ae44761dddd0cfb4b99e275728195a0fc53e82226007382ea7443298",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed the sampling timeout-only test change against the Monte Carlo feature map; no behavior or source ownership changed, so prose remains current."
+      "note": "Reviewed explicit timeout headroom for the hosted runner's compute-heavy Monte Carlo tests; product behavior and source ownership remain unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "a0685330e4ff08a93224f7e39ed40d55e8a9c9ff7dba8538cab3e8238afb8733",
+      "sha256": "ec4824491d4f02b29b0965c114579c2c7e25f5f20bb917a626d8cba9ceb28165",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed the sampling timeout-only test change against real-mode statistics and sampling invariants; assertions and engine behavior are unchanged, so prose remains current."
+      "note": "Reviewed explicit timeout headroom for compute-heavy sampling, pooling, merge, sweep and override tests; assertions and analytical invariants remain unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
