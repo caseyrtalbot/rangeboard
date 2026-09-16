@@ -18,7 +18,6 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
 | [HANDOFF.md](HANDOFF.md) | Position, tasking ahead and landmines; rewritten in place, never a journal |
-| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Calibration blueprint implementation: phases, lanes, owners, file sets and stop conditions |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when
@@ -33,12 +32,13 @@ the original bytes from the capture commit when checking an old manifest.
 
 ### Design proposals
 
-Proposals preserve design decisions for review; implementation requires separate approval.
+Proposals preserve design decisions as issued; the records below them show what was built.
 
-- [Playback realism implementation proposal, 2026-09-07](field-te/evidence/playback-realism-plan-2026-09-07.md)
+- [Playback realism implementation proposal, 2026-09-07; stages R0 to R5 delivered by the R4 and R5 records](field-te/evidence/playback-realism-plan-2026-09-07.md)
 
 ### Completion and integration records
 
+- [Calibration implementation plan, Phases 0 to 4 complete 2026-09-15](IMPLEMENTATION_PLAN.md)
 - [Phase 3 integration code review, 2026-09-11](CodeReview.md)
 - [Phase 3 review fixes CR-01 to CR-04, 2026-09-14](field-te/evidence/cr-fixes-2026-09-14/README.md)
 - [Calibration Phase 0 gate evidence, 2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md)

@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "4462d1e2ed7b3eb0f2db7cbea3bbed2d3397cbaf68bd47450a4f8845b5a87e95",
-      "reviewedAt": "2026-09-15",
-      "note": "Zero-kill kinetic finding indexed in the historical evidence list beside the Phase 4 gate line."
+      "sha256": "156d3f0d5336a4e2c87131ace0378877f29c37690e27d3b6405897cf2cca0522",
+      "reviewedAt": "2026-09-16",
+      "note": "Documentation sweep 2026-09-16: the completed calibration plan moves from current references to historical completion records; the playback realism proposal entry states that R0 to R5 were delivered."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b6b5e526895f30577f24f085e4e9ffef4a9ea8d3d0db6dab0191f2cb3aae1783",
+      "sha256": "4d00eb150ee7ae4a2fdc25c88fbfcbf5a912d4db329d00ff4b7b7b05109bafd9",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slice 4: capture.mjs gains cross-folder sameAs pointers and a sibling scan. The historical evidence row already states identical repeats are sameAs entries and large captures are .json.gz, so no text change is needed."
+      "note": "Documentation sweep 2026-09-16: completed work is recorded in the evidence index and commits; the plan is no longer a current reference."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "9f373ad56e574810a2d959068d7c9cac7d5edc74e9750a9b0ddaa690f5f1bbbf",
+      "sha256": "8c258e6dc5427345f49c8735d81d288e547ef9c67a645ca0f26534f5bcb222cd",
       "reviewedAt": "2026-09-16",
-      "note": "Recorded the 2026-09-16 combined local gate: 2,175 tests, bundle budget, and 11 browser checks all pass; retained kinetic repair as the next bounded task."
+      "note": "Documentation sweep 2026-09-16: position updated for the pushed evidence storage merge, the historical plan and the evidence gate; tasking and landmines unchanged."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -110,17 +110,11 @@
       "sha256": "775fede4d6a5bb3ed329e608244c52f0233f2b69bb68333a2355cb1cecd99624",
       "reviewedAt": "2026-09-15",
       "note": "Re-read src/index.css .toolbar after the grid track fix: the outer tracks share space evenly so the tabs stay centred, the right track never falls below its content and the scenario name shrinks first. The 40 px header text stays accurate."
-    },
-    {
-      "document": "docs/IMPLEMENTATION_PLAN.md",
-      "inputs": [],
-      "sha256": "5b5f467b9dda606c29cb8d63d405ff496f54d5cd590815383f751919015b2845",
-      "reviewedAt": "2026-09-15",
-      "note": "Phase 4 complete paragraph appended after the 4.d Gate section, naming the lane merges and the gate record."
     }
   ],
   "historical": [
     "docs/CodeReview.md",
+    "docs/IMPLEMENTATION_PLAN.md",
     "docs/field-te/",
     "docs/te-compilation/",
     "docs/inventory/",

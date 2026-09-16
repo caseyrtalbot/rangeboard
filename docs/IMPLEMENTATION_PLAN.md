@@ -1,5 +1,8 @@
 # RangeBoard calibration implementation plan
 
+Status: every phase is complete as of 2026-09-15. This is a historical record since
+2026-09-16; its phase marks name the merge commits and gate records.
+
 RangeBoard is a modeling and simulation tool for test and evaluation planning. It estimates detection, track and outcome probabilities for a counter-UAS system under test from published datasheet values and open literature. The estimates size a test plan: how many trials, which conditions, and where to place sensors on a range. Every model is an empirical statistical model used as a surrogate for the system under test. The software controls no hardware, connects to no system and produces no targeting data. All inputs are open-source vendor specifications.
 
 Current reference. Written 2026-09-10 against `ffde21b`. The design it implements is the

@@ -5,24 +5,27 @@ physical and statistical models are surrogates built from public vendor data and
 literature. It controls no hardware and produces no targeting data.
 
 This is one file, rewritten in place and never appended. Git history is the archive.
-Completed work lives in the phase marks of [the plan](IMPLEMENTATION_PLAN.md), the dated
-evidence indexed in [docs/README.md](README.md) and the commit log. This file holds only
-the position, the tasking ahead and the landmines. A fresh agent starts from the plan,
-this file and the docs index. This file does not authorize a commit, push or merge.
+Completed work lives in the dated evidence indexed in [docs/README.md](README.md),
+including the completed [calibration plan](IMPLEMENTATION_PLAN.md), and the commit log. This file holds only
+the position, the tasking ahead and the landmines. A fresh agent starts from this file
+and the docs index. This file does not authorize a commit, push or merge.
 
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  contains the board-header slice (`8e4545e`), the zero-kill kinetic finding (`8766728`)
-  and this reconciliation. `origin/main` remains at `1ee0169` pending a separately
-  authorized publication step.
+  `origin/main` matches it at the evidence storage merge (`5bd19c0`, 2026-09-16), which
+  follows the board-header slice (`8e4545e`) and the zero-kill kinetic finding (`8766728`).
 - The authoritative checkout is `~/Projects/rangeboard` on `main`. No lane worktrees,
   unmerged local task branches or stashes remain after this cleanup.
 - The board-header slice moves the lifecycle tabs and run status into the 40 px header,
   removes the separate phase row and keeps the existing drawer and playback-bar behavior.
   Its source, tests, current guides and documentation fingerprints are integrated.
-- Plan: Phases 0 to 4 complete, each marked in the plan with its merge commits. Phase 4
-  is the last phase in the plan; there is no Phase 5 tasking.
+- Plan: Phases 0 to 4 complete, each marked in the plan with its merge commits. The plan
+  is a historical record; there is no Phase 5 tasking.
+- Evidence storage: `npm run check` runs `check:evidence`, which fails on a byte-identical
+  JSON copy or an uncompressed JSON capture over 512 kB. New captures go through
+  `scripts/evidence/capture.mjs`; screenshots get `oxipng -o 4 --strip safe`. The evidence
+  tree is 31 MB after the 2026-09-16 cleanup.
 - The zero-kill kinetic task is done on this branch and is a written finding, not a code
   change. No engine file changed. The finding is
   [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md);
