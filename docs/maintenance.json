@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b6b2be171be71a6ff074dcfd51fc3dfcf6d493309ba0c090732689a023007517",
+      "sha256": "850fc1d3fe2cda84be770b46914220996ecd3be373a74d2ded06b9cefa532015",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slice 4: capture.mjs sameAs pointers may cross into a sibling capture folder and writeCapture scans siblings by default; the numerical harness bullet now names both pointer forms."
+      "note": "Evidence slice 5: browser checks gain the lossless oxipng step for screenshots."
     },
     {
       "document": "docs/WORKFLOW.md",

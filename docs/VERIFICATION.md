@@ -210,6 +210,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 
 ## Browser checks
 
+Run `oxipng -o 4 --strip safe` (Homebrew `oxipng`) on new evidence screenshots before
+committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 percent.
+
 - Phase 1 gate checks (`docs/field-te/evidence/p1-gate-2026-09-10/`): the Run tab lists
   every run setting with its default; Run on Prepare with nothing touched finishes on the
   pool with the stop rule and the pool size in the progress line; Fragility under the full
