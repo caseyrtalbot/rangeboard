@@ -32,7 +32,7 @@ export function useRingModel(): RingModel {
   // entity that changed.
   const prevRings = useRef<EntityRings[]>([])
   const model = useMemo(
-    // eslint-disable-next-line react/refs -- the previous records lend identities; one render stale by design
+    // oxlint-disable-next-line react/refs -- the previous records lend identities; one render stale by design
     () => prepareRingModel(scenario, view, selectedUasId, prevRings.current),
     [scenario, view, selectedUasId],
   )

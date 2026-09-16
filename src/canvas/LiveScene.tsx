@@ -159,7 +159,7 @@ export function LiveScene(props: Props) {
   )
   const prevTracks = useRef<Map<string, LiveTrack> | null>(null)
   const tracks = useMemo(
-    // eslint-disable-next-line react/refs -- previous frame lends unchanged track identities
+    // oxlint-disable-next-line react/refs -- previous frame lends unchanged track identities
     () => stableTracks(geometry.tracks, prevTracks.current),
     [geometry.tracks],
   )
@@ -211,10 +211,10 @@ export function LiveScene(props: Props) {
           sy: pos.y * camera.scale + camera.y,
         }
       }),
-      // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
+      // oxlint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
       { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
     )
-    // eslint-disable-next-line react/refs -- same one-frame hysteresis as the sticky set
+    // oxlint-disable-next-line react/refs -- same one-frame hysteresis as the sticky set
     return stablePlacements(fresh, prevPlacements.current)
   }, [labelText, tracks, camera, size])
   // A moved label changes the placements but seldom the spoke set; the set
@@ -224,7 +224,7 @@ export function LiveScene(props: Props) {
     () =>
       stableIds(
         new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
-        // eslint-disable-next-line react/refs -- last frame's spoke set lends its identity; one frame stale by design
+        // oxlint-disable-next-line react/refs -- last frame's spoke set lends its identity; one frame stale by design
         prevSpokeIds.current,
       ),
     [labelPlacements],

@@ -276,7 +276,7 @@ export function ThreatWezLayer({
   // keeps its previous object, so its memoized ring re-renders only on a zoom.
   const prevWez = useRef<ThreatWez[]>([])
   const wezList = useMemo(
-    // eslint-disable-next-line react/refs -- the previous zones lend identities; one render stale by design
+    // oxlint-disable-next-line react/refs -- the previous zones lend identities; one render stale by design
     () => stableWez(threatWezList(scenario), prevWez.current),
     [scenario],
   )

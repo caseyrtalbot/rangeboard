@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "43538576223b0f959b99e7b4f8d52f12a189b20dcd6ce41603e13efb4eec5ca9",
+      "sha256": "da8113696c9e97e531b367d75792ad6554bd520de466046126f8a75be74fc218",
       "reviewedAt": "2026-09-16",
-      "note": "Dropped the deleted HANDOFF.md current-reference row and dead historical links; cancelled plans remain in Git history. Index still lists the living current guides."
+      "note": "Restored HANDOFF.md as a current reference after rewriting it as the living session document."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "a27148a09db785ac59d0cce8d183b3cb84fc5d2df50beb688f37e8f19c1cd49e",
+      "sha256": "bd3171992a97ed0bc96ab8d64983f19f4d4b33cf611d51a89749da83d6e65a62",
       "reviewedAt": "2026-09-16",
-      "note": "src/ was Prettier-rewrapped with printWidth 100; product ownership, Board features and source entry points are unchanged."
+      "note": "Reviewed suppression comments, the read-only specFields view and its regression coverage, and formatting-only store test changes. Feature behavior and source entry points are unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "ac95e832a9dbe8f61987464b1e69ad4de65a1211dc2e9c8b011ad07d2d6b95f2",
+      "sha256": "0060b0995f799f3956212e6f2d84315dd72b27220b01bdf9c86138b47448c870",
       "reviewedAt": "2026-09-16",
-      "note": "Section 7 now names Prettier, generated-file exclusions and tsconfig strict/noImplicitOverride/noImplicitReturns. src/ layout change is formatter-only; architectural invariants are unchanged."
+      "note": "Reviewed model provenance and override consumers: specFields retains spec identity and key order with a read-only unknown-value view. Suppression names and test formatting do not change rendering, history, run identity or numerical behavior."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -88,9 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b59ed6c4df2886d690c79a85fa0285bdfd2676e06cd4210f2cf5707fc8606187",
+      "sha256": "f564befe12da71e973d016c4d556aa01cdd8d01cba8460bc62f6dca219b18f91",
       "reviewedAt": "2026-09-16",
-      "note": "Session state is the task message after HANDOFF.md removal; source material no longer names te-plan.md. package.json and scripts/ gained Prettier; the quality workflow still runs npm run check."
+      "note": "Session state and handoff protocol again name docs/HANDOFF.md as the rewritten-in-place position, tasking and landmines file."
+    },
+    {
+      "document": "docs/HANDOFF.md",
+      "inputs": [],
+      "sha256": "801049e894b84179726de42641c23cd0a1b714887df739ced1ed97acb86959e1",
+      "reviewedAt": "2026-09-16",
+      "note": "Removed completed Task 1 from tasking, recorded the current local gate and dirty ownership, and retained reproduced JSON identity findings and unstarted Tasks 2 and 3."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

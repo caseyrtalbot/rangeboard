@@ -48,14 +48,12 @@ function prepareReadyTrial() {
 function reset() {
   useStore.setState((st) => ({ ui: { ...st.ui, boardPhase: 'prepare', executeLayers: null } }))
   // The fresh scenario runs Monte Carlo; the slices under test start from the envelope mode.
-  useStore
-    .getState()
-    .replaceScenario({
-      ...emptyScenario(),
-      runMode: 'deterministic',
-      uncertainty: 'aleatory',
-      targetHalfWidth: null,
-    })
+  useStore.getState().replaceScenario({
+    ...emptyScenario(),
+    runMode: 'deterministic',
+    uncertainty: 'aleatory',
+    targetHalfWidth: null,
+  })
 }
 
 describe('store scenario actions', () => {
@@ -1326,39 +1324,33 @@ describe('monte carlo slice', () => {
       spread: { kind: 'lognormal' as const, sigmaDb: 3 },
     }
     const interval = { value: 0.5, lo: 0.4, hi: 0.6, bootstrap: 200, confidence: 0.95 }
-    useStore
-      .getState()
-      .setPoolProgress({
-        workers: 2,
-        done: 3,
-        total: 4,
-        stopRule: 'replicates',
-        elapsedMs: 5,
-        perWorkerDone: [2, 1],
-      })
-    useStore
-      .getState()
-      .setMorrisResult({
-        method: 'morris',
-        trajectories: 10,
-        fields: [{ field, mu: 1, muStar: 1, sigma: 0 }],
-        ranking: [0],
-        kept: [0],
-        response: 'leakers',
-        seed: 4821,
-        evaluations: 20,
-      })
-    useStore
-      .getState()
-      .setSobolResult({
-        method: 'saltelli',
-        base: 256,
-        evaluations: 768,
-        fields: [{ field, firstOrder: interval, total: interval }],
-        ranking: [0],
-        response: 'leakers',
-        seed: 4821,
-      })
+    useStore.getState().setPoolProgress({
+      workers: 2,
+      done: 3,
+      total: 4,
+      stopRule: 'replicates',
+      elapsedMs: 5,
+      perWorkerDone: [2, 1],
+    })
+    useStore.getState().setMorrisResult({
+      method: 'morris',
+      trajectories: 10,
+      fields: [{ field, mu: 1, muStar: 1, sigma: 0 }],
+      ranking: [0],
+      kept: [0],
+      response: 'leakers',
+      seed: 4821,
+      evaluations: 20,
+    })
+    useStore.getState().setSobolResult({
+      method: 'saltelli',
+      base: 256,
+      evaluations: 768,
+      fields: [{ field, firstOrder: interval, total: interval }],
+      ranking: [0],
+      response: 'leakers',
+      seed: 4821,
+    })
     const mc = useStore.getState().mc
     expect(mc.pool?.done).toBe(3)
     expect(mc.morris?.fields[0].muStar).toBe(1)

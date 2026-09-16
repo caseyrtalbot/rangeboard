@@ -135,11 +135,9 @@ const edits: [string, () => void][] = [
     'connection draw identity',
     () => {
       const s = useStore.getState().scenario
-      useStore
-        .getState()
-        .patchScenario({
-          connections: s.connections.map((c, i) => (i === 0 ? { ...c, id: 'changed-draw-id' } : c)),
-        })
+      useStore.getState().patchScenario({
+        connections: s.connections.map((c, i) => (i === 0 ? { ...c, id: 'changed-draw-id' } : c)),
+      })
     },
   ],
 ]
@@ -600,13 +598,11 @@ describe('complete analysis basis and request ownership', () => {
   it('object property order is irrelevant while completed results remain current', () => {
     finish()
     const s = useStore.getState().scenario
-    useStore
-      .getState()
-      .patchScenario({
-        environment: Object.fromEntries(
-          Object.entries(s.environment).reverse(),
-        ) as Scenario['environment'],
-      })
+    useStore.getState().patchScenario({
+      environment: Object.fromEntries(
+        Object.entries(s.environment).reverse(),
+      ) as Scenario['environment'],
+    })
     expectCurrent(true)
   })
 

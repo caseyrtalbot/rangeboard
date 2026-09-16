@@ -578,9 +578,10 @@ export function basisFor(model: SpecModel, field: string): Provenance['basis'] {
 }
 
 /** The spec fields a provenance row can name: the sensor, uas, effector or c2 spec. */
-export function specFields(model: SpecModel): Record<string, unknown> {
+export function specFields(model: SpecModel): Readonly<Record<string, unknown>> {
   const spec = model.sensor ?? model.uas ?? model.effector ?? model.c2
-  return (spec ?? {}) as unknown as Record<string, unknown>
+  // Dynamic provenance names may be absent; unknown permits reads without claiming a value type.
+  return (spec ?? {}) as Readonly<Record<string, unknown>>
 }
 
 /**

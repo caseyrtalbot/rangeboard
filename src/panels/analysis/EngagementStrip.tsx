@@ -39,7 +39,7 @@ interface Lane {
 }
 
 /** Censor members before grouping so future arrivals cannot affect group outcomes. */
-// eslint-disable-next-line react/only-export-components -- colocated pure regression-test seam
+// oxlint-disable-next-line react/only-export-components -- colocated pure regression-test seam
 export function censorLane(lane: Lane, horizon: ExecutionHorizon): Lane {
   if (!horizon.scoped) return lane
   return {
