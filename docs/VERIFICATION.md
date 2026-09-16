@@ -23,13 +23,16 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run library:check` | Reject a stale generated library or prior file and run the data health check |
 | `npm run docs:check` | Lint Markdown, validate local links, placement and source review |
 | `npm run test:docs` | Exercise documentation maintenance failure paths |
+| `npm run evidence:report` | Measure `docs/field-te/evidence`: size by type, duplicate JSON groups, uncompressed JSON over 512 kB |
+| `npm run check:evidence` | Fail on a byte-identical JSON copy or an uncompressed JSON capture over 512 kB, except paths in `scripts/evidence/allowlist.json` |
+| `npm run test:evidence` | Test the evidence gate and the shared capture helper |
 | `npm run test:bundle` | Test bundle accounting and over-budget rejection |
 | `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
 | `npm run engine -- <scenario.json> --replicates N --seed S --out run.json [--overrides overrides.json]` | Run a fixed replicate count over worker threads, an override set applied from the manifest, and write a run record |
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
-| `npm run check` | Complete documentation, type, library, schema, engine, test, lint and build gate |
+| `npm run check` | Complete documentation, evidence, type, library, schema, engine, test, lint and build gate |
 
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
@@ -188,9 +191,15 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   [numerical-capture.ts.txt](field-te/evidence/r5-sampled-experience-2026-09-08/numerical-capture.ts.txt).
   It captures assessments, deterministic attrition, aleatory MC, total MC and sensitivity
   for the firing and detection-outside-rings fixtures with four replicates. Keep fixture
-  IDs, seed and settings fixed and compare complete serialized captures. Its relative
-  imports require a scratch test under `src/playback/`; redirect the output for a new
-  capture and remove the scratch test afterward. Preserve dated baseline files.
+  IDs, seed and settings fixed. New captures go through `scripts/evidence/capture.mjs`:
+  `writeCapture` serializes once, hashes, and records the entry in the folder's
+  `manifest.json` `captures` list; an identical repeat becomes a `sameAs` entry instead of
+  a second file (`<tag>` in the same folder, or `../<folder>/<tag>` when a sibling capture
+  folder already holds the bytes), and anything over 512 KB is stored as `.json.gz`. `compareCapture` hashes
+  the new serialization against the manifest rather than reading the stored file. The
+  relative TypeScript imports still need a Vitest scratch test under `src/playback/`, which
+  imports the helper with the `@ts-expect-error` convention; remove it afterward.
+  Preserve dated baseline files.
 - Trial adapter checks colocate with `analysis/trialResult.ts`, `trialSeries.ts`,
   `playback/trialTrackState.ts`, `trialSweepAt.ts`, `state/trialSelectors.ts` and
   `useTrialResult.ts`. Store transport tests are in `state/store.trial.test.ts`;
@@ -200,6 +209,9 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   convention because the app tsconfig omits Node types. `vite-node` is not installed.
 
 ## Browser checks
+
+Run `oxipng -o 4 --strip safe` (Homebrew `oxipng`) on new evidence screenshots before
+committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 percent.
 
 - Phase 1 gate checks (`docs/field-te/evidence/p1-gate-2026-09-10/`): the Run tab lists
   every run setting with its default; Run on Prepare with nothing touched finishes on the

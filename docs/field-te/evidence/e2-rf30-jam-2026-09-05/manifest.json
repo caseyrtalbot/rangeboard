@@ -1,0 +1,30 @@
+{
+  "captures": [
+    {
+      "tag": "numerical-before",
+      "file": "numerical-before.json",
+      "sha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+      "bytes": 249511
+    },
+    {
+      "tag": "numerical-after",
+      "sha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+      "bytes": 249511,
+      "sameAs": "numerical-before"
+    },
+    {
+      "tag": "numerical-after-layered-acoustic-merops",
+      "file": "numerical-after-layered-acoustic-merops.json.gz",
+      "sha256": "ce6c597842bd1e9ef324eeba81ae230340d853db3d2b1c797374d1975fb6249f",
+      "bytes": 3892798,
+      "gzipBytes": 480247
+    },
+    {
+      "tag": "numerical-before-layered-acoustic-merops",
+      "file": "numerical-before-layered-acoustic-merops.json.gz",
+      "sha256": "6381042dd63984a7a95f9cf4b1f78e61e83cf0f4871d5abea313d89412f79166",
+      "bytes": 3892777,
+      "gzipBytes": 480258
+    }
+  ]
+}

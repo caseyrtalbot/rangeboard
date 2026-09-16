@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "91c2a3a90f47c8c2e5f5e316c0bc6c7f58620186ef57b54e6faad7fa2588d504",
-      "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate: package.json and lock gain the pinned sql.js 1.14.2 dependency; no guidance change needed after reading the diff."
+      "sha256": "59c1412eb961d0a23dbc06dba27a5d16302cb6cb2a6040b25da048a1b28f771f",
+      "reviewedAt": "2026-09-16",
+      "note": "Evidence slice 3: package.json gains check:evidence and inserts it plus test:evidence into the check chain. AGENTS.md names only npm run check for the complete local gate, which stays true."
     },
     {
       "document": "CLAUDE.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "a30fd964b11cf7d58fcd9578f6e0d4682e38f9fd256f42b4da342165e77cc6a5",
-      "reviewedAt": "2026-09-15",
-      "note": "Read README.md in full against the header rework. It names no toolbar, lifecycle nav or phase row, so no text change is needed."
+      "sha256": "6e8a3d60e409b9c3b8801305d5a3d5fc3bf3128f00d83b1c386dd3814e2a07ca",
+      "reviewedAt": "2026-09-16",
+      "note": "Evidence slice 3: the check chain gains check:evidence and test:evidence. README names only npm run check and the Node version, so no text change is needed."
     },
     {
       "document": "docs/README.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "81279a459296f8f51a2089d401c6b5110f8880dcc4de1a4df72322a2d6050837",
-      "reviewedAt": "2026-09-15",
-      "note": "Read scripts/e2e/board-shell.e2e.mjs after adding the header test; recorded the new header check for the 40 px bar, the lifecycle tablist, the run status and the absent phase row."
+      "sha256": "850fc1d3fe2cda84be770b46914220996ecd3be373a74d2ded06b9cefa532015",
+      "reviewedAt": "2026-09-16",
+      "note": "Evidence slice 5: browser checks gain the lossless oxipng step for screenshots."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "e8d8b929fb676f3870fe7951af14b503bd67671fe585dbfed2753c71ce7dc621",
-      "reviewedAt": "2026-09-15",
-      "note": "Read docs/WORKFLOW.md in full against the header rework. It covers process, the CI gate and documentation maintenance only, names no board chrome, so no text change is needed."
+      "sha256": "b6b5e526895f30577f24f085e4e9ffef4a9ea8d3d0db6dab0191f2cb3aae1783",
+      "reviewedAt": "2026-09-16",
+      "note": "Evidence slice 4: capture.mjs gains cross-folder sameAs pointers and a sibling scan. The historical evidence row already states identical repeats are sameAs entries and large captures are .json.gz, so no text change is needed."
     },
     {
       "document": "docs/HANDOFF.md",

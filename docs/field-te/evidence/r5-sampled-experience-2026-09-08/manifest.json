@@ -1,0 +1,16 @@
+{
+  "captures": [
+    {
+      "tag": "numerical-after",
+      "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6",
+      "bytes": 1683876,
+      "sameAs": "../r4-trial-lifecycle-2026-09-07/numerical-before"
+    },
+    {
+      "tag": "numerical-before",
+      "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6",
+      "bytes": 1683876,
+      "sameAs": "../r4-trial-lifecycle-2026-09-07/numerical-before"
+    }
+  ]
+}

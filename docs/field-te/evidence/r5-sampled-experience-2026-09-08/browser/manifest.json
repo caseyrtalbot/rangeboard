@@ -1,0 +1,18 @@
+{
+  "captures": [
+    {
+      "tag": "export",
+      "file": "export.json.gz",
+      "sha256": "862785cfa763d98bef3de8692726e0a64396fe4e1a84d796ae9fe35840c6c5af",
+      "bytes": 1996184,
+      "gzipBytes": 151626
+    },
+    {
+      "tag": "retained-trial",
+      "file": "retained-trial.json.gz",
+      "sha256": "b91577f63516b7ca58affbb517c693f4aceb8a4f2003ddef44dd53bb33cf82c7",
+      "bytes": 833691,
+      "gzipBytes": 63904
+    }
+  ]
+}

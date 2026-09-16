@@ -16,6 +16,9 @@ in Git history. Historical phase labels and proposed actions do not authorize ne
    under [evidence](field-te/evidence/). Never tune the model to the fixture.
 4. Make the bounded change and run focused checks. Run `npm run check` for the complete
    local gate. Add browser or parity evidence as described in [verification](VERIFICATION.md).
+   Engine captures go through `scripts/evidence/capture.mjs`, and `npm run check:evidence`
+   fails on a byte-identical JSON copy or an uncompressed JSON capture over 512 kB, with
+   `scripts/evidence/allowlist.json` naming the fixtures that tests import.
 5. Update affected references, review source fingerprints, inspect the diff and report
    results and remaining uncertainty. Commit/push only when authorized.
 
@@ -45,7 +48,7 @@ the same change; do not retain competing active descriptions or mark an active g
 | --- | --- |
 | Agent instructions | Root `AGENTS.md`, kept to at most 80 lines. `CLAUDE.md` only redirects to it. No session state or architecture dump. |
 | Current references | Root `README.md`, this workflow, project/engineering/verification guides, `docs/README.md`, and the design system. Each is registered in [maintenance.json](maintenance.json). |
-| Historical evidence | `docs/field-te/`, including dated captures and model dossiers. Dates, measurements and limitations describe the capture, not the current tree. Preserve evidence paths used by tests and scripts. |
+| Historical evidence | `docs/field-te/`, including dated captures and model dossiers. Dates, measurements and limitations describe the capture, not the current tree. Preserve evidence paths used by tests and scripts. An identical repeat is recorded as a manifest `sameAs` entry, and a large capture is stored as `.json.gz`. |
 | Source material | `docs/te-compilation/`, `docs/inventory/`, `docs/threat/`, and `docs/te-plan.md`. Preserve unique source content and distinguish original intent from implemented behavior. |
 | Session state | A task message selects work. The central [handoff](HANDOFF.md) holds the position, the tasking ahead and the landmines; rewrite it in place after the selected change passes its gate. Completed work is recorded in the plan, the evidence index and commits, never in the handoff. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
 

@@ -53,5 +53,13 @@
     "parity-before.log": "ae0281ad0529d93d91dbcf755ff5ab2365f5cc96cc53975b2d33824f505af0c2",
     "parity-probe.ts.txt": "49e717d3a270377557da0363e03701dba0c141e1bb90fb535edd9e67c0ddce2d",
     "worker-graph.json": "e47b8c56d7845c10ab4a3e6d0e87f2a93aaa27fc4729c380a52c674160b206e9"
-  }
+  },
+  "captures": [
+    {
+      "tag": "numerical-baseline",
+      "sha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+      "bytes": 249511,
+      "sameAs": "../e2-rf30-jam-2026-09-05/numerical-before"
+    }
+  ]
 }
