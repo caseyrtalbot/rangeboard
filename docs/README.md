@@ -51,6 +51,7 @@ Proposals preserve design decisions for review; implementation requires separate
 - [Calibration Phase 3 gate evidence, 2026-09-10](field-te/evidence/p3-gate-2026-09-10/README.md)
 - [Calibration Phase 3 estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)
 - [Hypothesis tools Phase 4 gate evidence, 2026-09-15](field-te/evidence/p4-gate-2026-09-15/README.md)
+- [Zero-kill kinetic outcome on the firing laydown, 2026-09-15](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, common rules](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-lane-common.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, field key and unit table](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-fields.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.1 threat flight](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.1.md)

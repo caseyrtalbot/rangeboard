@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "0817950d4ade53dde0221487a11dbfd18593de3e2e477f5b0a583c1591b6012a",
+      "sha256": "4462d1e2ed7b3eb0f2db7cbea3bbed2d3397cbaf68bd47450a4f8845b5a87e95",
       "reviewedAt": "2026-09-15",
-      "note": "Phase 4 gate record indexed beside the Phase 3 gate lines."
+      "note": "Zero-kill kinetic finding indexed in the historical evidence list beside the Phase 4 gate line."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1c403d22ecae1d83f4456b2c0223e7a2de813fa244358c48d3d80b7283e30562",
+      "sha256": "2209e5f32db1453b16df9de7d4612bdf3572bc5578476d4d9e4fefe735b0561f",
       "reviewedAt": "2026-09-15",
-      "note": "Task 1 merged fast-forward into main and pushed; branch deleted"
+      "note": "Zero-kill kinetic task: Position moved to branch p4f/kinetic-zero-kill on main 31a6d5d with the finding delivered and no engine change; the open-defect bullet now names shot.ts:319, the 282 m miss sigma and why the fix is not landed; old Task 1 removed and the survivors renumbered, with the horizon fix and the estimate-path recapture added as Task 3; six landmines added on the horizon defect, the verify-suite regime, which suites the physical Pk path can move, the layered fixture's zero flight time and the missing terminal-homing term."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
