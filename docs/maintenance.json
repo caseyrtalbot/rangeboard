@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "704b6a8cb4fe7efea392d209ef14f28e003bfdee257053d4dd23b6c51817c169",
-      "reviewedAt": "2026-09-15",
-      "note": "Re-read the header rules in src/index.css after widening the .toolbar right grid track so the bar never overlaps at 1400 px. The Board features text already states that the tabs and run status sit in the header, so no further text change is needed."
+      "sha256": "cc58ebe919701fd90f986c7ca14d6fbb5d52e78ff928612d5ee18ed057d113ad",
+      "reviewedAt": "2026-09-16",
+      "note": "Reviewed the sampling timeout-only test change against the Monte Carlo feature map; no behavior or source ownership changed, so prose remains current."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1c22a5ba581ce01fd9c15416bc85d1b00040ef8b01227515cce534029354eb3b",
-      "reviewedAt": "2026-09-15",
-      "note": "Re-read the .toolbar, .toolbar-left/.toolbar-right and .board-phases rules in src/index.css after the grid track fix. The src/panels Toolbar map entry lists the header contents and stays accurate."
+      "sha256": "a0685330e4ff08a93224f7e39ed40d55e8a9c9ff7dba8538cab3e8238afb8733",
+      "reviewedAt": "2026-09-16",
+      "note": "Reviewed the sampling timeout-only test change against real-mode statistics and sampling invariants; assertions and engine behavior are unchanged, so prose remains current."
     },
     {
       "document": "docs/VERIFICATION.md",

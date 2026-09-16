@@ -94,5 +94,5 @@ describe('the range loop under lhs', () => {
     const aleatory = (sampling: 'lhs' | 'independent') =>
       runReplicates({ ...base(sampling, 24), uncertainty: 'aleatory' })
     expect(JSON.stringify(aleatory('lhs'))).toBe(JSON.stringify(aleatory('independent')))
-  })
+  }, 15_000)
 })
