@@ -14,7 +14,7 @@ interface SobolChartProps {
 }
 
 /**
- * The gutter holds a model name and a field key, so it is wider than the Tornado's:
+ * The gutter holds a model name and a field key:
  * 24 characters of 11 px mono at about 6 px each from a 2 px inset. A longer label is cut
  * in the middle, not at the end, because the field key is the identity and the model name
  * is context; the hidden ranking block below the svg carries every label whole.
@@ -97,7 +97,7 @@ const HIDDEN = {
  * band and the first-order upper bound can run past the end of the total bar, which reads
  * as a drawing error rather than as a bootstrap spread.
  *
- * Plain SVG for the reason the Tornado is: Recharts has no row-span primitive and gives a
+ * Plain SVG: Recharts has no row-span primitive and gives a
  * non-Recharts child no width, so the chart owns its shell and measures its host.
  */
 export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChartProps) {
@@ -105,7 +105,7 @@ export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChar
   const hostRef = useRef<HTMLDivElement>(null)
   const [measured, setMeasured] = useState(0)
 
-  // Same pattern as the Tornado: the container width is read, never polled.
+  // The container width is read, never polled.
   useEffect(() => {
     if (width != null) return
     const el = hostRef.current

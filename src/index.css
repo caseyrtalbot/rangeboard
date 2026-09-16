@@ -2283,12 +2283,6 @@ select.nu-unit {
   cursor: pointer;
 }
 
-.section-head {
-  cursor: pointer;
-  user-select: none;
-  gap: 6px;
-}
-
 .chevron {
   display: inline-block;
   font-size: var(--type-meta-size);
@@ -2306,22 +2300,6 @@ select.nu-unit {
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.section-headline {
-  color: var(--text);
-  font-size: var(--type-meta-size);
-  text-transform: none;
-  letter-spacing: normal;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.section-extra {
-  display: flex;
-  align-items: center;
 }
 
 .apply-check {
@@ -3197,21 +3175,6 @@ input[type='number'] {
 .chart-ladder-svg {
   display: block;
   max-width: 100%;
-}
-
-.chart-tornado {
-  width: 100%;
-  min-width: 0;
-}
-
-.chart-tornado-svg {
-  display: block;
-  max-width: 100%;
-}
-
-/* The gutter tag rides in a foreignObject; it must not add box spacing of its own. */
-.chart-tornado-svg foreignObject > * {
-  margin: 0;
 }
 
 .chart-sobol {
@@ -4583,7 +4546,7 @@ input[type='number'] {
 }
 
 /* Analysis prose, statistical intervals and evidence labels always wrap. */
-.board-app .right-panel :is(.section-headline, .live-state, .ts,
+.board-app .right-panel :is(.live-state, .ts,
   .outcome-metric > span, .outcome-metric small, .capacity-row > span,
   .gate-head strong, .gate-failures div, .system-name, .system-live-summary,
   .component-copy strong, .component-copy small, .threat-data-title,
@@ -4719,8 +4682,7 @@ input[type='number'] {
   min-width: 0;
 }
 
-.board-app .right-panel .wg-toggle,
-.section-toggle {
+.board-app .right-panel .wg-toggle {
   display: flex;
   flex: 1 1 auto;
   align-items: baseline;
@@ -4733,18 +4695,6 @@ input[type='number'] {
   background: transparent;
   border: 0;
   white-space: normal;
-}
-
-.section-title {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.section-toggle .section-headline {
-  flex: 1 0 100%;
-  text-align: left;
-  padding-left: var(--space-3);
 }
 
 .analysis-scope {

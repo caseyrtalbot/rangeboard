@@ -481,7 +481,7 @@ src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.
                series helpers), TimeSeries (a lazy shell whose fallback holds the plot
                box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
                render), BandChart (the recharts ensemble band with the trial and a dashed
-               baseline), SweepMap (the CSS-grid factor sweep map), Ladder and Tornado
+               baseline), SweepMap (the CSS-grid factor sweep map), Ladder and SobolChart
                (plain SVG). Props only; never reads the store. exportPng.ts (svgMarkup,
                svgToPng, chartPng, exportChartPng: a recharts SVG to PNG with computed
                paint baked in)
@@ -508,7 +508,7 @@ src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, the lifecycle ta
                analysis/ForecastSettings.tsx for forecast/MC controls),
                TimelineBar (owns the rAF loop; publishes the clock only; holds the
                Engagement toggle whose open flag lives in App state), CommandPalette,
-               Glyph.tsx (symbology), ringLabels.ts (ring names), headlines.ts
+               Glyph.tsx (symbology), ringLabels.ts (ring names)
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
                restore, observe, flush and stop, and owns the read, the recovery, the
                write gate, the 500 ms debounce, the pagehide and visibilitychange flush;
@@ -981,8 +981,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `Scenario.observedPresetId` is written on reset and first play only and stays out of
   the basis signature. `SURVIVAL_LABELS`
   and `KPI_LABELS` (`panels/analysis/labels.ts`) remain the one name table; `useTrialResult`
-  supplies trial cursor telemetry. AnalysisSection uses keyboard-operable disclosure
-  buttons with named content regions. Trial series remain cursor/observation-bounded in
+  supplies trial cursor telemetry. Trial series remain cursor/observation-bounded in
   Analyze too. DebriefRecord retains completion guards, current-result readers and exports
   behind Evidence products and exports `TrialEventLedger` and `TrialManifestRecord`, which
   the Outcome records rows open in place; the outcome tiles render once, on Outcome.
@@ -1015,11 +1014,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   outcomes. Execute moves full-path fields into a Planned path block labeled Planned
   arrival and Planned CPA; Prepare and Analyze retain full-path scope. Forecast
   expected-defeat semantics remain separate from sampled hard/mission kills.
-  `expectedCount` (`headlines.ts`) formats forecast counts, and null `reportedLeakers`
-  remains the no-asset signal for display. Model source disclosures preserve all provenance fields.
+  Null `reportedLeakers` remains the no-asset signal for display.
+  Model source disclosures preserve all provenance fields.
   `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL`
   (`SystemStatus.tsx`) the one component-state word.
-- **Forecast chart series** (`src/analysis/series.ts`): every builder is pure `(scenario, id?) =>
+- **Forecast chart series** (`src/analysis/series.ts`, retained for numerical regression
+  tests, not imported by the app or engine entry): every builder is pure `(scenario, id?) =>
   Series[]`, `LadderRow[]` or `ChartMark[]`, a series sampled from t = 0 at DT to
   `scenarioDurationS`, NaN where undefined, one `engagementPicture` call per builder.
   `trackSlots` assigns the five chart hues by first detection and never reassigns under a
@@ -1028,8 +1028,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   the full time axis and scrub navigation. Scope text reads “Shown through T+m:ss”
   or “No outcomes observed yet” in the legend accessibility label, or a visually hidden
   span when no legend is shown.
-  Ladder clips spans and their labels at the horizon. Tornado shows the Analyze forecast
-  placeholder for a scoped horizon. Builders and full-run numerical results stay intact.
+  Ladder clips spans and their labels at the horizon.
+  Builders and full-run numerical results stay intact.
   `src/analysis/trialSeries.ts` separately builds `simulated-trial` step series and ladders
   from retained observations and events. Samples, marks and spans end at the trial horizon;
   `useTrialResult` supplies the same bounded series to the screens and detail panes.

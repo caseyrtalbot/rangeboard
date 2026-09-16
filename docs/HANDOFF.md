@@ -13,12 +13,11 @@ commit, push or merge.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  matches `origin/main` at `34c20ed` (2026-09-16), which follows the cancelled-plan
-  removal (`3408294`) and the evidence-storage merge (`5bd19c0`).
-- The working tree is uncommitted. Existing handoff/index/workflow/maintenance edits
-  remain, alongside suppression comments in the four canvas/panel sites, the read-only
-  `specFields` view and its new tests, and formatting-only changes to
-  `src/state/store.analysis.test.ts` and `src/state/store.test.ts`. Preserve these edits.
+  is based on `35efbc3` (2026-09-16); the lint/model-field cleanup is committed there.
+- The working tree contains uncommitted repository hygiene changes: removal of four
+  unused modules (`Tornado`, `AnalysisSection`, `OutcomeSummary`, `headlines`) and
+  their tests, exclusive CSS cleanup, and associated comment/documentation corrections.
+  Preserve these edits. The forecast-series module remains for numerical comparisons.
 - Prettier 3.9.6 owns `.ts`, `.tsx` and `.mjs` layout (`prettier.config.mjs`, printWidth
   100, no semicolons, single quotes). `npm run format` writes; `npm run format:check` is
   in `npm run check`. Generated modules stay out of the formatter:
@@ -26,12 +25,12 @@ commit, push or merge.
 - Application tsconfigs enable `strict`, `noImplicitOverride` and `noImplicitReturns`.
   `noUncheckedIndexedAccess` (~2,025 errors) and `exactOptionalPropertyTypes` (~112) are
   not on.
-- Integrated local gate on the working tree based on `34c20ed`: `npm run check` passed
-  (203 test files, 2,181
-  tests, plus docs, evidence, engine CLI, library, schema, typecheck, lint, format and
-  build). `npm run check:bundle` passed with the entry at 361,508 bytes gzip against the
-  364,000 budget; initial JavaScript plus CSS is 377,289 bytes. Schema generation
-  produced no diff. This slice changes no UI behavior and had no live browser pass.
+- Integrated local gate on the working tree based on `35efbc3` (2026-09-17):
+  `npm run check` passed (199 test files, 2,139 tests, plus docs, evidence, engine CLI,
+  library, schema, typecheck, lint, format and build). `npm run check:bundle` passed
+  with the entry at 361,509 bytes gzip against the 364,000 budget; initial JavaScript
+  plus CSS is 377,181 bytes. All 11 Board shell browser checks passed at
+  `http://127.0.0.1:5389`; the temporary server was stopped. Existing lint warnings remain.
 - Open defect, diagnosed and quantified but not fixed: `src/playback/shot.ts:319` charges
   the assignment-to-release delay as an open-loop coast of the fire-control track, so at
   the Coyote's `engageTimeS` of 60 s the miss 1 sigma is 282 m against a 10 m lethal

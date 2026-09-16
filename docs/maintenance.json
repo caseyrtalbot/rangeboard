@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "bd3171992a97ed0bc96ab8d64983f19f4d4b33cf611d51a89749da83d6e65a62",
+      "sha256": "47b2d273e18addf72cf579879ddbda293d21769a311102370b28e78243809e0e",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed suppression comments, the read-only specFields view and its regression coverage, and formatting-only store test changes. Feature behavior and source entry points are unchanged."
+      "note": "Removed four modules unreachable from the app and engine plus their private tests and CSS; active feature entry points remain unchanged. Forecast series and numerical comparison tests are retained."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "0060b0995f799f3956212e6f2d84315dd72b27220b01bdf9c86138b47448c870",
+      "sha256": "48af4375aec76b021acc05a0366aef811465d712daee238abdb66dc1195af078",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed model provenance and override consumers: specFields retains spec identity and key order with a read-only unknown-value view. Suppression names and test formatting do not change rendering, history, run identity or numerical behavior."
+      "note": "Removed stale descriptions of Tornado, AnalysisSection and headlines; documented forecast series as retained numerical test support. No active numerical or runtime behavior changed."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "801049e894b84179726de42641c23cd0a1b714887df739ced1ed97acb86959e1",
+      "sha256": "cad25682c2d9833bfae8c5ac55e3fa660fab67400dcd2ec62d8f64b1d643a9da",
       "reviewedAt": "2026-09-16",
-      "note": "Removed completed Task 1 from tasking, recorded the current local gate and dirty ownership, and retained reproduced JSON identity findings and unstarted Tasks 2 and 3."
+      "note": "Updated base commit, hygiene working-tree ownership, retained forecast-series scope and verified full gate, bundle and browser results; deferred tasks unchanged."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "63a3d76231540b002347c54f753eafbc23917ef223277de2023585c10f121db3",
+      "sha256": "c3e1da779fd6dfde2b4b6941eac1f3097ed037ce3c9c53e2bfae7d0a94e3f2e9",
       "reviewedAt": "2026-09-16",
-      "note": "src/ui and src/charts were Prettier-rewrapped; tokens, kit components and footprintStyle rules are unchanged."
+      "note": "Removed only Tornado and AnalysisSection exclusive CSS, preserving shared chevrons, outcome metrics and widget toggle rules. Design tokens and active component rules remain unchanged."
     }
   ],
   "historical": [
