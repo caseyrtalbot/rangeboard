@@ -1,0 +1,29 @@
+{
+  "captures": [
+    {
+      "tag": "layered-before",
+      "file": "layered-before.json.gz",
+      "sha256": "8f299a7eccc8c4355cc9e225932d6c576b4393eb389d8967e14d5ebfe4973774",
+      "bytes": 1819401,
+      "gzipBytes": 26416
+    },
+    {
+      "tag": "layered-after",
+      "sha256": "8f299a7eccc8c4355cc9e225932d6c576b4393eb389d8967e14d5ebfe4973774",
+      "bytes": 1819401,
+      "sameAs": "layered-before"
+    },
+    {
+      "tag": "numerical-before",
+      "file": "numerical-before.json",
+      "sha256": "078fa0ecd3681668666c99ba195520c91395303e2033cc4a877de54708f4f5c1",
+      "bytes": 422990
+    },
+    {
+      "tag": "numerical-after",
+      "sha256": "078fa0ecd3681668666c99ba195520c91395303e2033cc4a877de54708f4f5c1",
+      "bytes": 422990,
+      "sameAs": "numerical-before"
+    }
+  ]
+}

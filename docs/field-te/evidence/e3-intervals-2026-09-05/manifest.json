@@ -1,0 +1,16 @@
+{
+  "captures": [
+    {
+      "tag": "numerical-after",
+      "sha256": "078fa0ecd3681668666c99ba195520c91395303e2033cc4a877de54708f4f5c1",
+      "bytes": 422990,
+      "sameAs": "../e2-motion-fix-2026-09-05/numerical-before"
+    },
+    {
+      "tag": "numerical-before",
+      "sha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+      "bytes": 249511,
+      "sameAs": "../e2-rf30-jam-2026-09-05/numerical-before"
+    }
+  ]
+}

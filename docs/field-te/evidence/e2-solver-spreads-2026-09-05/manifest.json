@@ -1,0 +1,60 @@
+{
+  "captures": [
+    {
+      "tag": "numerical-before",
+      "sha256": "078fa0ecd3681668666c99ba195520c91395303e2033cc4a877de54708f4f5c1",
+      "bytes": 422990,
+      "sameAs": "../e2-motion-fix-2026-09-05/numerical-before"
+    },
+    {
+      "tag": "detection-after-solver",
+      "sha256": "ea55353405d687c3efe0f16c4deeb3304148093099705c460d6cb9536d730412",
+      "bytes": 931700,
+      "sameAs": "../e2-radar-2026-09-05/detection-after"
+    },
+    {
+      "tag": "detection-after",
+      "sha256": "ea55353405d687c3efe0f16c4deeb3304148093099705c460d6cb9536d730412",
+      "bytes": 931700,
+      "sameAs": "../e2-radar-2026-09-05/detection-after"
+    },
+    {
+      "tag": "layered-before",
+      "file": "layered-before.json.gz",
+      "sha256": "50c6761783c6c99429573b3bc6b9b6a8130330d7067877f6ef4ab052a6f407b6",
+      "bytes": 2983406,
+      "gzipBytes": 480698
+    },
+    {
+      "tag": "layered-after-solver",
+      "sha256": "50c6761783c6c99429573b3bc6b9b6a8130330d7067877f6ef4ab052a6f407b6",
+      "bytes": 2983406,
+      "sameAs": "layered-before"
+    },
+    {
+      "tag": "layered-after",
+      "sha256": "50c6761783c6c99429573b3bc6b9b6a8130330d7067877f6ef4ab052a6f407b6",
+      "bytes": 2983406,
+      "sameAs": "layered-before"
+    },
+    {
+      "tag": "numerical-after-solver",
+      "sha256": "584c18652e95c2d4d2b48660f5f7c2a300f2bdcb00d20f1b8588ba9d32124a54",
+      "bytes": 423000,
+      "sameAs": "../e2-radar-2026-09-05/numerical-after"
+    },
+    {
+      "tag": "numerical-after",
+      "sha256": "584c18652e95c2d4d2b48660f5f7c2a300f2bdcb00d20f1b8588ba9d32124a54",
+      "bytes": 423000,
+      "sameAs": "../e2-radar-2026-09-05/numerical-after"
+    },
+    {
+      "tag": "detection-before",
+      "file": "detection-before.json.gz",
+      "sha256": "9a74c175ff544e13ad9e3c726af3f83a846a77507fd9ac74b8c0bb119c5febf0",
+      "bytes": 931700,
+      "gzipBytes": 65641
+    }
+  ]
+}

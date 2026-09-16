@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { LARGE_CAPTURE_BYTES, compareCapture, readCapture, writeCapture } from './evidence/capture.mjs'
 
 function fixture(t) {
-  const dir = join(mkdtempSync(join(tmpdir(), 'rangeboard-capture-test-')), 'evidence')
-  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const root = mkdtempSync(join(tmpdir(), 'rangeboard-capture-test-'))
+  const dir = join(root, 'evidence')
+  t.after(() => rmSync(root, { recursive: true, force: true }))
   const manifest = () => JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'))
   return { dir, manifest }
 }
@@ -89,4 +90,32 @@ test('unrelated manifest keys survive a capture', t => {
   assert.deepEqual(after.gates, { tests: { exitCode: 0 } })
   assert.deepEqual(after.captures.map(item => item.tag), ['seed', 'next'])
   assert.equal(readFileSync(join(dir, 'manifest.json'), 'utf8').endsWith('}\n'), true)
+})
+
+test('bytes already held by a sibling folder record a cross-folder sameAs', t => {
+  const { dir, manifest } = fixture(t)
+  const earlier = join(dirname(dir), 'e2-radar-2026-09-05')
+  const value = bulky(5)
+  writeCapture(earlier, 'numerical-after', value, { limitBytes: 1024 })
+  const entry = writeCapture(dir, 'numerical-before', structuredClone(value), { limitBytes: 1024 })
+  assert.equal(entry.sameAs, '../e2-radar-2026-09-05/numerical-after')
+  assert.ok(!existsSync(join(dir, 'numerical-before.json.gz')))
+  assert.deepEqual(readCapture(dir, 'numerical-before'), value)
+  assert.equal(compareCapture(dir, 'numerical-before', structuredClone(value)).match, true)
+  assert.equal(compareCapture(dir, 'numerical-before', bulky(6)).match, false)
+  // A same-folder pointer wins and chains through the cross-folder one.
+  const chained = writeCapture(dir, 'numerical-after', structuredClone(value), { limitBytes: 1024 })
+  assert.equal(chained.sameAs, 'numerical-before')
+  assert.deepEqual(readCapture(dir, 'numerical-after'), value)
+  assert.equal(manifest().captures.length, 2)
+})
+
+test('siblings: false ignores other folders and writes the file', t => {
+  const { dir } = fixture(t)
+  const value = bulky(7)
+  writeCapture(join(dirname(dir), 'earlier'), 'series', value, { limitBytes: 1024 })
+  const entry = writeCapture(dir, 'series', structuredClone(value), { limitBytes: 1024, siblings: false })
+  assert.equal(entry.file, 'series.json.gz')
+  assert.equal(entry.sameAs, undefined)
+  assert.ok(existsSync(join(dir, 'series.json.gz')))
 })

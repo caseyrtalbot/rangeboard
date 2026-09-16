@@ -1,0 +1,29 @@
+{
+  "captures": [
+    {
+      "tag": "parity-before",
+      "file": "parity-before.json.gz",
+      "sha256": "e87786f1900585ede0242888c33514a34f96c46dc35bb80a2fbcfd497e79ed44",
+      "bytes": 1683738,
+      "gzipBytes": 84246
+    },
+    {
+      "tag": "parity-after",
+      "sha256": "e87786f1900585ede0242888c33514a34f96c46dc35bb80a2fbcfd497e79ed44",
+      "bytes": 1683738,
+      "sameAs": "parity-before"
+    },
+    {
+      "tag": "parity-wave5-after",
+      "sha256": "e87786f1900585ede0242888c33514a34f96c46dc35bb80a2fbcfd497e79ed44",
+      "bytes": 1683738,
+      "sameAs": "parity-before"
+    },
+    {
+      "tag": "parity-wave5-before",
+      "sha256": "e87786f1900585ede0242888c33514a34f96c46dc35bb80a2fbcfd497e79ed44",
+      "bytes": 1683738,
+      "sameAs": "parity-before"
+    }
+  ]
+}

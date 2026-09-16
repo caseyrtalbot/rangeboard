@@ -48,7 +48,7 @@ The preserved R0/R3 fixed-ID harness ran on Node 22.23.1 before and after change
 both firing and outside-detection fixtures with seed 4821 and four replicates. It includes
 deterministic assessments/report, aleatory MC, total MC and sensitivity.
 
-- [Before](numerical-before.json) and [after](numerical-after.json) are byte-identical:
+- [Before](numerical-before.json.gz) and [after](numerical-before.json.gz) are byte-identical:
   **no fields excluded**, including all R3 release metadata.
 - They also exactly match the preserved R3 Node 22 after capture.
 - [Parity record](numerical-parity.json) records hashes, byte count and comparison scope.
@@ -65,7 +65,7 @@ deterministic assessments/report, aleatory MC, total MC and sensitivity.
 Real isolated Chromium used owned port 5454 and Node 22.23.1. The user's origin and port
 5174 were untouched. [Browser results](browser/r4-browser.json) record 15 checks, timestamps,
 worker construction/termination audit and zero page/console errors. The retained
-[scenario and trial](browser/retained-trial.json) exactly match a direct invocation of
+[scenario and trial](browser/retained-trial.json.gz) exactly match a direct invocation of
 `runTrial` under its manifest. Scripts are [main](r4-browser.mjs.txt) and
 [settled compact capture](r4-compact.mjs.txt).
 

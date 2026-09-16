@@ -194,7 +194,8 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   IDs, seed and settings fixed. New captures go through `scripts/evidence/capture.mjs`:
   `writeCapture` serializes once, hashes, and records the entry in the folder's
   `manifest.json` `captures` list; an identical repeat becomes a `sameAs` entry instead of
-  a second file, and anything over 512 KB is stored as `.json.gz`. `compareCapture` hashes
+  a second file (`<tag>` in the same folder, or `../<folder>/<tag>` when a sibling capture
+  folder already holds the bytes), and anything over 512 KB is stored as `.json.gz`. `compareCapture` hashes
   the new serialization against the manifest rather than reading the stored file. The
   relative TypeScript imports still need a Vitest scratch test under `src/playback/`, which
   imports the helper with the `@ts-expect-error` convention; remove it afterward.

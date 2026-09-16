@@ -1,0 +1,17 @@
+{
+  "captures": [
+    {
+      "tag": "numerical-before",
+      "file": "numerical-before.json.gz",
+      "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6",
+      "bytes": 1683876,
+      "gzipBytes": 84253
+    },
+    {
+      "tag": "numerical-after",
+      "sha256": "692db20000653392a95c8e14d53276ea517c0905bb0abd069f5f35adba76b2a6",
+      "bytes": 1683876,
+      "sameAs": "numerical-before"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "captures": [
+    {
+      "tag": "numerical-after",
+      "sha256": "078fa0ecd3681668666c99ba195520c91395303e2033cc4a877de54708f4f5c1",
+      "bytes": 422990,
+      "sameAs": "../e2-motion-fix-2026-09-05/numerical-before"
+    },
+    {
+      "tag": "numerical-before",
+      "sha256": "078fa0ecd3681668666c99ba195520c91395303e2033cc4a877de54708f4f5c1",
+      "bytes": 422990,
+      "sameAs": "../e2-motion-fix-2026-09-05/numerical-before"
+    },
+    {
+      "tag": "stop-after",
+      "file": "stop-after.json.gz",
+      "sha256": "022cfdf6c70f781bfc33d7e67c17bff9a6d07c267f0d1a58c8231e4afcedbf45",
+      "bytes": 2159576,
+      "gzipBytes": 34952
+    },
+    {
+      "tag": "stop-before",
+      "file": "stop-before.json.gz",
+      "sha256": "9b7753acdcaa3f75c5b8f13b34970b0787116491204c19fb1acd821fcbadd4d3",
+      "bytes": 2187690,
+      "gzipBytes": 34862
+    }
+  ]
+}

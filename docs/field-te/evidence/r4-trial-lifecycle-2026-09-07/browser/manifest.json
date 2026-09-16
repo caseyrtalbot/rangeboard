@@ -1,0 +1,11 @@
+{
+  "captures": [
+    {
+      "tag": "retained-trial",
+      "file": "retained-trial.json.gz",
+      "sha256": "c5fee07cca79e7a3e4525ee8e172197f936af0e8b2282669987e82d2087d2c9d",
+      "bytes": 576887,
+      "gzipBytes": 83523
+    }
+  ]
+}

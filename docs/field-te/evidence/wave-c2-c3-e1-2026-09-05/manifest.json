@@ -208,5 +208,20 @@
     "R-F-31 practical work budgets unresolved",
     "localStorage recovery is not crash/cross-tab durability",
     "E2/E3 physics and independent validation remain future work"
+  ],
+  "captures": [
+    {
+      "tag": "numerical-baseline",
+      "sha256": "8258bbbb92b1fc1f7eb73c125c6485cdacb728098a820cb8201beba890e925a2",
+      "bytes": 249511,
+      "sameAs": "../e2-rf30-jam-2026-09-05/numerical-before"
+    },
+    {
+      "tag": "wave-run-export",
+      "file": "wave-run-export.json.gz",
+      "sha256": "d90c82136252bf8fb5595f481a283672adb622602f57c31e7bb5070b25ccb481",
+      "bytes": 917268,
+      "gzipBytes": 62940
+    }
   ]
 }

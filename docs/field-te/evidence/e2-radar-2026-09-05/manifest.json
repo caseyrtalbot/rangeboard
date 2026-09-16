@@ -1,0 +1,23 @@
+{
+  "captures": [
+    {
+      "tag": "detection-after",
+      "file": "detection-after.json.gz",
+      "sha256": "ea55353405d687c3efe0f16c4deeb3304148093099705c460d6cb9536d730412",
+      "bytes": 931700,
+      "gzipBytes": 65641
+    },
+    {
+      "tag": "layered-after",
+      "sha256": "50c6761783c6c99429573b3bc6b9b6a8130330d7067877f6ef4ab052a6f407b6",
+      "bytes": 2983406,
+      "sameAs": "../e2-solver-spreads-2026-09-05/layered-before"
+    },
+    {
+      "tag": "numerical-after",
+      "file": "numerical-after.json",
+      "sha256": "584c18652e95c2d4d2b48660f5f7c2a300f2bdcb00d20f1b8588ba9d32124a54",
+      "bytes": 423000
+    }
+  ]
+}
